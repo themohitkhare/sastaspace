@@ -1,0 +1,36 @@
+FROM python:3.9-slim
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install UV
+RUN pip install uv
+
+# Set up UV environment
+ENV UV_CACHE_DIR=/tmp/uv-cache
+ENV UV_PYTHON=/usr/local/bin/python
+
+WORKDIR /app
+
+# Copy requirements and install dependencies with UV
+COPY requirements.txt ./
+RUN uv pip install --no-cache -r requirements.txt
+
+# Copy application code
+COPY . .
+
+# Set environment variables
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONDONTWRITEBYTECODE=1
+
+# Create a non-root user for security
+RUN useradd --create-home --shell /bin/bash app && chown -R app:app /app
+USER app
+
+# Expose port
+EXPOSE 8000
+
+# Default command (can be overridden in docker-compose)
+CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
