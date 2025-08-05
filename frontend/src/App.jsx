@@ -22,7 +22,9 @@ function App() {
   useEffect(() => {
     const checkAuth = async () => {
       try {
+        console.log('Checking authentication...');
         const response = await authAPI.getCurrentUser();
+        console.log('Auth response:', response.data);
         setUser(response.data);
       } catch (error) {
         console.log('Auth check failed:', error.message);

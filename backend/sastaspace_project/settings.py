@@ -87,14 +87,18 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'sastaspace_project.wsgi.application'
 
+# Database configuration with authentication
 DATABASES = {
     'default': {
         'ENGINE': 'djongo',
-        'NAME': os.getenv('MONGODB_NAME'),
+        'NAME': os.getenv('MONGODB_NAME', 'sastaspace'),
         'ENFORCE_SCHEMA': False,
         'CLIENT': {
-            'host': os.getenv('MONGODB_HOST'),
+            'host': os.getenv('MONGODB_HOST', 'mongodb'),
             'port': int(os.getenv('MONGODB_PORT', 27017)),
+            'username': os.getenv('MONGODB_USERNAME', 'admin'),
+            'password': os.getenv('MONGODB_PASSWORD', 'password123'),
+            'authSource': 'admin',
         }
     }
 }

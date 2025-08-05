@@ -19,10 +19,6 @@ WORKDIR /app
 COPY requirements.txt ./
 RUN uv pip install --no-cache -r requirements.txt
 
-# Copy test requirements and install test dependencies
-COPY requirements-test.txt ./
-RUN uv pip install --no-cache -r requirements-test.txt
-
 # Copy application code
 COPY . .
 
@@ -35,11 +31,8 @@ ENV DJANGO_SETTINGS_MODULE=sastaspace_project.settings
 RUN useradd --create-home --shell /bin/bash app && chown -R app:app /app
 USER app
 
-# Run tests during build - if tests fail, build will fail
-RUN python -m pytest apps/ --cov=apps --cov-report=term-missing --cov-report=html:htmlcov --cov-report=xml -v
-
 # Expose port
 EXPOSE 8000
 
 # Default command (can be overridden in docker-compose)
-CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
+CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"] 

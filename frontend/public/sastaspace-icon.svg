@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">
+  <!-- Background circle -->
+  <circle cx="50" cy="50" r="45" fill="#3B82F6" stroke="#1E40AF" stroke-width="2"/>
+  
+  <!-- Portfolio/document icon -->
+  <rect x="25" y="20" width="50" height="60" rx="4" fill="white" stroke="#1E40AF" stroke-width="2"/>
+  
+  <!-- Document lines -->
+  <line x1="30" y1="35" x2="70" y2="35" stroke="#1E40AF" stroke-width="2"/>
+  <line x1="30" y1="45" x2="65" y2="45" stroke="#1E40AF" stroke-width="1.5"/>
+  <line x1="30" y1="55" x2="60" y2="55" stroke="#1E40AF" stroke-width="1.5"/>
+  <line x1="30" y1="65" x2="55" y2="65" stroke="#1E40AF" stroke-width="1.5"/>
+  
+  <!-- Star icon representing excellence/quality -->
+  <polygon points="75,15 77,20 82,20 78,23 80,28 75,25 70,28 72,23 68,20 73,20" fill="#F59E0B"/>
+  
+  <!-- Small portfolio icon -->
+  <rect x="15" y="70" width="12" height="15" rx="2" fill="#10B981" stroke="#047857" stroke-width="1"/>
+  <line x1="18" y1="75" x2="24" y2="75" stroke="white" stroke-width="1"/>
+  <line x1="18" y1="80" x2="22" y2="80" stroke="white" stroke-width="0.8"/>
+</svg> 

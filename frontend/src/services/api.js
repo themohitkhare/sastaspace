@@ -31,7 +31,15 @@ api.interceptors.request.use(
 
 // Response interceptor to handle errors
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    // Check if response is HTML instead of JSON
+    const contentType = response.headers['content-type'] || '';
+    if (contentType.includes('text/html') && !contentType.includes('application/json')) {
+      console.log('Received HTML instead of JSON:', response.data);
+      return Promise.reject(new Error('Invalid response format'));
+    }
+    return response;
+  },
   (error) => {
     console.log('API Error:', error);
     if (error.response?.status === 401) {
@@ -53,7 +61,7 @@ export const authAPI = {
     api.post('/accounts/logout/'),
   
   getCurrentUser: () => 
-    api.get('/users/'),
+    api.get('/users/me/'),
 };
 
 export const profileAPI = {
