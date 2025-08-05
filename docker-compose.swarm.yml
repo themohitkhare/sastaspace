@@ -3,10 +3,21 @@ version: '3.8'
 services:
   mongodb:
     image: mongo:6.0
+    ports:
+      - "27017:27017"
     volumes:
       - mongo_data:/data/db
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: password123
     networks:
       - app-network
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.runCommand({ping: 1})"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
     deploy:
       placement:
         constraints:
@@ -22,6 +33,10 @@ services:
         max_attempts: 3
 
   django:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.prod
+      target: production
     image: sastaspace-django:latest
     command: bash -c "gunicorn sastaspace_project.wsgi:application --bind 0.0.0.0:8000 --workers 4"
     volumes:

@@ -10,10 +10,17 @@ const PublicPortfolioPage = () => {
 
   useEffect(() => {
     const fetchPortfolio = async () => {
+      if (!slug) {
+        setError('Invalid portfolio URL');
+        setLoading(false);
+        return;
+      }
+
       try {
         const response = await portfolioAPI.getPublicPortfolio(slug);
         setPortfolio(response.data);
       } catch (error) {
+        console.error('Portfolio fetch error:', error);
         setError('Portfolio not found');
       } finally {
         setLoading(false);
@@ -49,7 +56,7 @@ const PublicPortfolioPage = () => {
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="text-center">
             <h1 className="text-3xl font-bold text-gray-900 mb-2">
-              {portfolio.slug.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+              {portfolio.slug ? portfolio.slug.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'Portfolio'}
             </h1>
             <p className="text-lg text-gray-600">Professional Portfolio</p>
           </div>

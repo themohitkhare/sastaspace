@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 
 const HomePage = () => {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
 
   return (
     <div className="bg-white">
@@ -23,7 +23,7 @@ const HomePage = () => {
                     Dashboard
                   </Link>
                   <button
-                    onClick={() => window.location.href = '/accounts/logout/'}
+                    onClick={logout}
                     className="text-gray-700 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium"
                   >
                     Logout
