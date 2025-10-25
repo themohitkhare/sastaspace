@@ -1,0 +1,20 @@
+#!/bin/bash
+
+# A simple script to view and filter structured JSON logs.
+# Usage: bin/dev-log [filter_string]
+
+LOG_FILE="log/development.log"
+
+if [ ! -f "$LOG_FILE" ]; then
+  echo "Log file not found: $LOG_FILE"
+  echo "Run 'bin/rails server' or 'bin/rails console' to generate logs."
+  exit 1
+fi
+
+if [ -z "$1" ]; then
+  # No filter, just show the log file
+  cat "$LOG_FILE" | grep -E '^{.*}$' | jq -C .
+else
+  # Filter logs by the provided string
+  cat "$LOG_FILE" | grep -E '^{.*}$' | grep --color=always -E "$1|$" | jq -C .
+fi
