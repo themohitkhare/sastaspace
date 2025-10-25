@@ -44,4 +44,32 @@ module Authenticable
   def current_user
     @current_user
   end
+
+  def user_signed_in?
+    @current_user.present?
+  end
+
+  def authenticate_user_optional
+    token = request.headers['Authorization']&.split(' ')&.last
+    return unless token
+
+    # Check if token is blacklisted
+    if Rails.env.test?
+      if Authenticable.instance_variable_get(:@test_blacklisted_tokens)&.include?(token)
+        return
+      end
+    else
+      if Rails.cache.read("blacklisted_token_#{token}")
+        return
+      end
+    end
+
+    begin
+      decoded_token = Auth::JsonWebToken.decode(token)
+      @current_user = User.find(decoded_token[:user_id])
+    rescue ActiveRecord::RecordNotFound, JWT::DecodeError, JWT::ExpiredSignature
+      # Silently ignore authentication errors for optional auth
+      @current_user = nil
+    end
+  end
 end

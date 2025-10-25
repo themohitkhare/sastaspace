@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2025_10_25_150001) do
+ActiveRecord::Schema[8.1].define(version: 2025_10_25_160000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "vector"
@@ -78,11 +78,20 @@ ActiveRecord::Schema[8.1].define(version: 2025_10_25_150001) do
   end
 
   create_table "categories", force: :cascade do |t|
+    t.boolean "active", default: true
     t.datetime "created_at", null: false
     t.text "description"
+    t.json "metadata", default: {}
     t.string "name", null: false
+    t.bigint "parent_id"
+    t.string "slug", default: "", null: false
+    t.integer "sort_order", default: 0
     t.datetime "updated_at", null: false
+    t.index ["active"], name: "index_categories_on_active"
     t.index ["name"], name: "index_categories_on_name", unique: true
+    t.index ["parent_id", "sort_order"], name: "index_categories_on_parent_id_and_sort_order"
+    t.index ["parent_id"], name: "index_categories_on_parent_id"
+    t.index ["slug"], name: "index_categories_on_slug", unique: true
   end
 
   create_table "clothing_items", force: :cascade do |t|
@@ -214,6 +223,7 @@ ActiveRecord::Schema[8.1].define(version: 2025_10_25_150001) do
   add_foreign_key "ai_analyses", "clothing_items"
   add_foreign_key "ai_analyses", "users"
   add_foreign_key "audit_logs", "users"
+  add_foreign_key "categories", "categories", column: "parent_id"
   add_foreign_key "clothing_items", "users"
   add_foreign_key "export_jobs", "users"
   add_foreign_key "inventory_items", "brands"

@@ -3,21 +3,23 @@ FactoryBot.define do
   factory :category do
     name { Faker::Commerce.department }
     description { Faker::Lorem.sentence }
+    sort_order { 1 }
+    active { true }
     
     trait :clothing do
-      name { Category::CLOTHING_CATEGORIES.sample }
+      name { %w[Tops Bottoms Dresses Outerwear Undergarments].sample }
     end
     
     trait :shoes do
-      name { Category::SHOES_CATEGORIES.sample }
+      name { %w[Athletic Dress Shoes Casual Boots].sample }
     end
     
     trait :accessories do
-      name { Category::ACCESSORIES_CATEGORIES.sample }
+      name { %w[Bags Belts Hats Scarves Sunglasses].sample }
     end
     
     trait :jewelry do
-      name { Category::JEWELRY_CATEGORIES.sample }
+      name { %w[Necklaces Rings Earrings Bracelets Watches].sample }
     end
   end
 end

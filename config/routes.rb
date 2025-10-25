@@ -23,6 +23,19 @@ Rails.application.routes.draw do
       post "auth/logout" => "auth#logout"
       post "auth/logout_all" => "auth#logout_all"
 
+      # Categories
+      resources :categories, only: [:index, :show] do
+        collection do
+          get :tree      # Full hierarchical tree
+          get :roots     # Root categories only
+        end
+        
+        member do
+          get :children  # Direct children
+          get :inventory_items  # Items in this category
+        end
+      end
+
       # Inventory items
       resources :inventory_items do
         member do
