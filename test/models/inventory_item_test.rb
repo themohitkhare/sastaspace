@@ -98,12 +98,12 @@ class InventoryItemTest < ActiveSupport::TestCase
   end
 
   test "by_type scope should filter by item type" do
-    clothing_item = create(:inventory_item, :clothing)
+    inventory_item = create(:inventory_item, :clothing)
     shoes_item = create(:inventory_item, :shoes)
     
-    clothing_items = InventoryItem.by_type('clothing')
-    assert_includes clothing_items, clothing_item
-    assert_not_includes clothing_items, shoes_item
+    inventory_items = InventoryItem.by_type('clothing')
+    assert_includes inventory_items, inventory_item
+    assert_not_includes inventory_items, shoes_item
   end
 
   test "by_category scope should filter by category name" do
@@ -177,13 +177,13 @@ class InventoryItemTest < ActiveSupport::TestCase
   end
 
   test "similar_items should return items of same type" do
-    clothing_item1 = create(:inventory_item, :clothing, name: "Clothing Item 1")
-    clothing_item2 = create(:inventory_item, :clothing, name: "Clothing Item 2")
+    inventory_item1 = create(:inventory_item, :clothing, name: "Inventory Item 1")
+    inventory_item2 = create(:inventory_item, :clothing, name: "Inventory Item 2")
     shoes_item = create(:inventory_item, :shoes, name: "Shoes Item")
     
-    similar = clothing_item1.similar_items
-    assert_includes similar, clothing_item2
+    similar = inventory_item1.similar_items
+    assert_includes similar, inventory_item2
     assert_not_includes similar, shoes_item
-    assert_not_includes similar, clothing_item1 # Should not include self
+    assert_not_includes similar, inventory_item1 # Should not include self
   end
 end

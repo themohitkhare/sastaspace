@@ -23,13 +23,6 @@ Rails.application.routes.draw do
       post "auth/logout" => "auth#logout"
       post "auth/logout_all" => "auth#logout_all"
 
-      # Clothing items
-      resources :clothing_items do
-        member do
-          post :photo
-        end
-      end
-
       # Inventory items
       resources :inventory_items do
         member do
@@ -50,17 +43,17 @@ Rails.application.routes.draw do
       post "ai/analyze" => "ai_analysis#analyze_image"
       get "ai/analysis/:id" => "ai_analysis#get_analysis"
       get "ai/analyses" => "ai_analysis#index"
-      post "clothing_items/:id/analyze" => "ai_analysis#analyze_image"
-      get "clothing_items/:id/analysis" => "ai_analysis#get_analysis"
-      delete "clothing_items/:id/analysis" => "ai_analysis#destroy"
+      post "inventory_items/:id/analyze" => "ai_analysis#analyze_image"
+      get "inventory_items/:id/analysis" => "ai_analysis#get_analysis"
+      delete "inventory_items/:id/analysis" => "ai_analysis#destroy"
 
       # Outfits
       resources :outfits do
         member do
           post :duplicate
           put :toggle_favorite
-          post :clothing_items
-          delete "clothing_items/:clothing_item_id" => :remove_clothing_item
+          post :inventory_items
+          delete "inventory_items/:inventory_item_id" => :remove_inventory_item
         end
       end
 

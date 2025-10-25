@@ -3,13 +3,13 @@ require "test_helper"
 class OllamaImageAnalyzerTest < ActiveSupport::TestCase
   def setup
     @service = Ollama::ImageAnalyzer.new
-    @clothing_item = create(:clothing_item, :with_photo)
+    @inventory_item = create(:inventory_item, :with_photo)
   end
 
   test "analyze_image returns analysis result" do
     OllamaStubs.setup_image_analysis_stub
 
-    result = @service.analyze_image(@clothing_item.photo)
+    result = @service.analyze_image(@inventory_item.photo)
 
     assert result.success?, "Analysis should succeed"
     assert result.response.present?, "Should return analysis response"
@@ -20,7 +20,7 @@ class OllamaImageAnalyzerTest < ActiveSupport::TestCase
   test "analyze_image handles API errors gracefully" do
     OllamaStubs.setup_image_analysis_error_stub
 
-    result = @service.analyze_image(@clothing_item.photo)
+    result = @service.analyze_image(@inventory_item.photo)
 
     assert_not result.success?, "Analysis should fail"
     assert result.error.present?, "Should return error message"
@@ -29,7 +29,7 @@ class OllamaImageAnalyzerTest < ActiveSupport::TestCase
   test "analyze_image handles connection errors" do
     OllamaStubs.setup_ollama_unavailable_stub
 
-    result = @service.analyze_image(@clothing_item.photo)
+    result = @service.analyze_image(@inventory_item.photo)
 
     assert_not result.success?, "Analysis should fail"
     assert result.error.present?, "Should return error message"
@@ -39,7 +39,7 @@ class OllamaImageAnalyzerTest < ActiveSupport::TestCase
     OllamaStubs.setup_image_analysis_stub
 
     custom_prompt = "Describe the style and occasion suitability of this clothing item"
-    result = @service.analyze_image(@clothing_item.photo, prompt: custom_prompt)
+    result = @service.analyze_image(@inventory_item.photo, prompt: custom_prompt)
 
     assert result.success?, "Analysis should succeed"
     # The service should use the custom prompt
@@ -49,11 +49,11 @@ class OllamaImageAnalyzerTest < ActiveSupport::TestCase
     OllamaStubs.setup_image_analysis_stub
 
     # First analysis
-    result1 = @service.analyze_image(@clothing_item.photo)
+    result1 = @service.analyze_image(@inventory_item.photo)
     assert result1.success?
 
     # Second analysis with same image should use cache
-    result2 = @service.analyze_image(@clothing_item.photo)
+    result2 = @service.analyze_image(@inventory_item.photo)
     assert result2.success?
     assert_equal result1.response, result2.response, "Should return cached result"
   end
@@ -62,11 +62,11 @@ class OllamaImageAnalyzerTest < ActiveSupport::TestCase
     OllamaStubs.setup_image_analysis_stub
 
     # First analysis
-    result1 = @service.analyze_image(@clothing_item.photo)
+    result1 = @service.analyze_image(@inventory_item.photo)
     assert result1.success?
 
     # Force re-analysis
-    result2 = @service.analyze_image(@clothing_item.photo, force: true)
+    result2 = @service.analyze_image(@inventory_item.photo, force: true)
     assert result2.success?
     # Results might be different due to AI variability
   end
@@ -89,7 +89,7 @@ class OllamaImageAnalyzerTest < ActiveSupport::TestCase
   test "analyze_image handles large images" do
     # Mock large image
     large_image = StringIO.new("x" * (15.megabytes))
-    @clothing_item.photo.attach(
+    @inventory_item.photo.attach(
       io: large_image,
       filename: "large.jpg",
       content_type: "image/jpeg"
@@ -97,7 +97,7 @@ class OllamaImageAnalyzerTest < ActiveSupport::TestCase
 
     OllamaStubs.setup_image_analysis_stub
 
-    result = @service.analyze_image(@clothing_item.photo)
+    result = @service.analyze_image(@inventory_item.photo)
 
     assert result.success?, "Should handle large images"
   end
@@ -110,7 +110,7 @@ class OllamaImageAnalyzerTest < ActiveSupport::TestCase
       "done" => true
     })
 
-    result = @service.analyze_image(@clothing_item.photo)
+    result = @service.analyze_image(@inventory_item.photo)
 
     assert result.success?
     assert result.response.include?("blue cotton t-shirt"), "Should contain analysis text"
@@ -123,7 +123,7 @@ class OllamaImageAnalyzerTest < ActiveSupport::TestCase
     WebMock.stub_request(:post, /.*\/api\/generate/)
       .to_timeout
 
-    result = @service.analyze_image(@clothing_item.photo)
+    result = @service.analyze_image(@inventory_item.photo)
 
     assert_not result.success?, "Should handle timeout"
     assert result.error.include?("timeout"), "Should return timeout error"
