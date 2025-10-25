@@ -186,4 +186,187 @@ class InventoryItemTest < ActiveSupport::TestCase
     assert_not_includes similar, shoes_item
     assert_not_includes similar, inventory_item1 # Should not include self
   end
+
+  # Image attachment tests
+  test "should have one attached primary image" do
+    item = create(:inventory_item, :clothing)
+    assert_respond_to item, :primary_image
+    assert_not item.primary_image.attached?
+  end
+
+  test "should have many attached additional images" do
+    item = create(:inventory_item, :clothing)
+    assert_respond_to item, :additional_images
+    assert_equal 0, item.additional_images.count
+  end
+
+  test "should validate primary image content type" do
+    item = build(:inventory_item, :clothing)
+    
+    # Valid image types
+    %w[image/png image/jpg image/jpeg image/webp].each do |content_type|
+      item.primary_image.attach(
+        io: StringIO.new('fake image data'),
+        filename: 'test.jpg',
+        content_type: content_type
+      )
+      assert item.valid?, "Should be valid with content type #{content_type}"
+      item.primary_image.detach
+    end
+    
+    # Invalid image type
+    item.primary_image.attach(
+      io: StringIO.new('fake image data'),
+      filename: 'test.txt',
+      content_type: 'text/plain'
+    )
+    assert_not item.valid?
+    assert_includes item.errors[:primary_image], 'is not a valid content type'
+  end
+
+  test "should validate primary image size" do
+    item = build(:inventory_item, :clothing)
+    
+    # Create a file larger than 5MB
+    large_file = Tempfile.new(['large', '.jpg'])
+    large_file.write('x' * (6 * 1024 * 1024)) # 6MB
+    large_file.rewind
+    
+    item.primary_image.attach(
+      io: large_file,
+      filename: 'large.jpg',
+      content_type: 'image/jpeg'
+    )
+    
+    assert_not item.valid?
+    assert_includes item.errors[:primary_image], 'is too large'
+    
+    large_file.close
+    large_file.unlink
+  end
+
+  test "should validate additional images content type" do
+    item = build(:inventory_item, :clothing)
+    
+    # Valid image types
+    item.additional_images.attach([
+      {
+        io: StringIO.new('fake image data'),
+        filename: 'test1.jpg',
+        content_type: 'image/jpeg'
+      },
+      {
+        io: StringIO.new('fake image data'),
+        filename: 'test2.png',
+        content_type: 'image/png'
+      }
+    ])
+    assert item.valid?
+    
+    item.additional_images.detach
+    
+    # Invalid image type
+    item.additional_images.attach(
+      io: StringIO.new('fake image data'),
+      filename: 'test.txt',
+      content_type: 'text/plain'
+    )
+    assert_not item.valid?
+    assert_includes item.errors[:additional_images], 'is not a valid content type'
+  end
+
+  test "should validate additional images size" do
+    item = build(:inventory_item, :clothing)
+    
+    # Create a file larger than 5MB
+    large_file = Tempfile.new(['large', '.jpg'])
+    large_file.write('x' * (6 * 1024 * 1024)) # 6MB
+    large_file.rewind
+    
+    item.additional_images.attach(
+      io: large_file,
+      filename: 'large.jpg',
+      content_type: 'image/jpeg'
+    )
+    
+    assert_not item.valid?
+    assert_includes item.errors[:additional_images], 'is too large'
+    
+    large_file.close
+    large_file.unlink
+  end
+
+  test "primary_image_variants should return variants when image attached" do
+    item = create(:inventory_item, :clothing)
+    
+    # No image attached
+    variants = item.primary_image_variants
+    assert_equal({}, variants)
+    
+    # Attach image
+    item.primary_image.attach(
+      io: File.open(Rails.root.join('test', 'fixtures', 'files', 'sample_image.jpg')),
+      filename: 'test.jpg',
+      content_type: 'image/jpeg'
+    )
+    
+    variants = item.primary_image_variants
+    assert_includes variants.keys, :thumb
+    assert_includes variants.keys, :medium
+    assert_includes variants.keys, :large
+  end
+
+  test "additional_image_variants should return variants when image attached" do
+    item = create(:inventory_item, :clothing)
+    
+    # No image attached
+    variants = item.additional_image_variants(nil)
+    assert_equal({}, variants)
+    
+    # Attach image
+    item.additional_images.attach(
+      io: File.open(Rails.root.join('test', 'fixtures', 'files', 'sample_image.jpg')),
+      filename: 'test.jpg',
+      content_type: 'image/jpeg'
+    )
+    
+    image = item.additional_images.first
+    variants = item.additional_image_variants(image)
+    assert_includes variants.keys, :thumb
+    assert_includes variants.keys, :medium
+    assert_includes variants.keys, :large
+  end
+
+  test "should enqueue ImageProcessingJob after image attachment" do
+    item = create(:inventory_item, :clothing)
+    
+    assert_enqueued_with(job: ImageProcessingJob) do
+      item.primary_image.attach(
+        io: File.open(Rails.root.join('test', 'fixtures', 'files', 'sample_image.jpg')),
+        filename: 'test.jpg',
+        content_type: 'image/jpeg'
+      )
+      item.save!
+    end
+  end
+
+  test "should enqueue ImageProcessingJob for additional images" do
+    item = create(:inventory_item, :clothing)
+    
+    assert_enqueued_with(job: ImageProcessingJob) do
+      item.additional_images.attach([
+        {
+          io: File.open(Rails.root.join('test', 'fixtures', 'files', 'sample_image.jpg')),
+          filename: 'test1.jpg',
+          content_type: 'image/jpeg'
+        },
+        {
+          io: File.open(Rails.root.join('test', 'fixtures', 'files', 'sample_image.jpg')),
+          filename: 'test2.jpg',
+          content_type: 'image/jpeg'
+        }
+      ])
+      item.save!
+    end
+  end
 end

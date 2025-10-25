@@ -50,6 +50,15 @@ class InventoryItem < ApplicationRecord
   validates :item_type, presence: true
   validates :category, presence: true
   
+  # Image validations
+  validates :primary_image, 
+    content_type: { in: ['image/png', 'image/jpg', 'image/jpeg', 'image/webp'] },
+    size: { less_than: 5.megabytes }
+    
+  validates :additional_images, 
+    content_type: { in: ['image/png', 'image/jpg', 'image/jpeg', 'image/webp'] },
+    size: { less_than: 5.megabytes }
+  
   # Flexible metadata as JSON
   store_accessor :metadata, :color, :size, :material, :season, :occasion,
                  :care_instructions, :fit_notes, :style_notes
@@ -93,7 +102,39 @@ class InventoryItem < ApplicationRecord
     }.compact
   end
   
+  # Image variants for different use cases
+  def primary_image_variants
+    return {} unless primary_image.attached?
+    
+    {
+      thumb: primary_image.variant(resize_to_limit: [150, 150]),
+      medium: primary_image.variant(resize_to_limit: [400, 400]), 
+      large: primary_image.variant(resize_to_limit: [800, 800])
+    }
+  end
+  
+  def additional_image_variants(image)
+    return {} unless image.attached?
+    
+    {
+      thumb: image.variant(resize_to_limit: [150, 150]),
+      medium: image.variant(resize_to_limit: [400, 400]),
+      large: image.variant(resize_to_limit: [800, 800])
+    }
+  end
+  
+  # Security: Strip EXIF data and process images
+  after_create_commit :process_images
+  after_update_commit :process_images
+  
   private
+  
+  def process_images
+    ImageProcessingJob.perform_later(self) if primary_image.attached?
+    additional_images.each do |image|
+      ImageProcessingJob.perform_later(self, image.id) if image.attached?
+    end
+  end
   
   def validate_type_specific_fields
     case item_type
