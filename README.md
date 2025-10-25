@@ -129,13 +129,64 @@ All API endpoints are namespaced under `/api/v1/`:
 - **Outfits** - `/api/v1/outfits`
 - **AI Analysis** - `/api/v1/ai/*`
 
-## Security & Privacy
+## Observability & Monitoring
 
-- JWT-based authentication
-- Rate limiting on all endpoints
-- Input validation and sanitization
-- GDPR compliance features
-- Secure file upload handling
+This application includes comprehensive observability features for local development and production monitoring.
+
+### Health Endpoints
+
+- **GET /up** - Liveness check (simple app status)
+- **GET /health** - Detailed health check (database, cache, queue, storage)
+- **GET /api/v1/health** - API health check (includes Ollama service)
+- **GET /ready** - Readiness check (migrations, queues, storage)
+
+### Structured Logging
+
+All logs are structured JSON format with correlation IDs:
+
+```json
+{
+  "timestamp": "2025-10-25T17:30:00Z",
+  "level": "INFO",
+  "message": "Health check performed",
+  "request_id": "abc123-def456",
+  "user_id": 42,
+  "controller": "Api::V1::HealthController",
+  "action": "show",
+  "healthy": true,
+  "checks": ["database", "cache", "queue"]
+}
+```
+
+### Metrics Collection
+
+Metrics are collected via ActiveSupport::Notifications and logged:
+
+- **Request metrics** - Duration, status codes, controller/action
+- **Job metrics** - Queue latency, success/failure rates
+- **Cache metrics** - Hit/miss rates, operation duration
+
+### Viewing Logs
+
+```bash
+# View all logs
+bin/dev-log
+
+# Filter logs by type
+bin/dev-log "METRIC"
+bin/dev-log "ERROR"
+bin/dev-log "request_id"
+
+# Traditional Rails log tail
+tail -f log/development.log
+```
+
+### Request Correlation
+
+All requests include correlation IDs:
+- **X-Request-ID header** - Unique identifier for each request
+- **Request ID middleware** - Automatically generates/forwards IDs
+- **Structured logging** - All logs include request_id for correlation
 
 ## Deployment
 
