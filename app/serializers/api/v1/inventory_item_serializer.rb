@@ -20,8 +20,10 @@ module Api
           purchase_date: @inventory_item.purchase_date,
           wear_count: @inventory_item.wear_count,
           last_worn_at: @inventory_item.last_worn_at,
-          primary_image_url: @inventory_item.primary_image.attached? ? url_for(@inventory_item.primary_image) : nil,
-          additional_images: @inventory_item.additional_images.map { |img| url_for(img) },
+          images: {
+            primary: serialize_image_with_variants(@inventory_item.primary_image),
+            additional: @inventory_item.additional_images.map { |img| serialize_image_with_variants(img) }
+          },
           created_at: @inventory_item.created_at,
           updated_at: @inventory_item.updated_at
         }
@@ -50,6 +52,23 @@ module Api
           id: tag.id,
           name: tag.name,
           color: tag.color
+        }
+      end
+      
+      def serialize_image_with_variants(image)
+        return nil unless image.attached?
+        
+        {
+          id: image.id,
+          filename: image.filename.to_s,
+          content_type: image.content_type,
+          byte_size: image.byte_size,
+          urls: {
+            original: url_for(image),
+            thumb: url_for(image.variant(resize_to_limit: [150, 150])),
+            medium: url_for(image.variant(resize_to_limit: [400, 400])),
+            large: url_for(image.variant(resize_to_limit: [800, 800]))
+          }
         }
       end
       

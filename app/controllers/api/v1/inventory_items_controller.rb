@@ -289,7 +289,7 @@ module Api
       def inventory_item_params
         params.require(:inventory_item).permit(
           :name, :item_type, :description, :status, :category_id, :brand_id,
-          :purchase_price, :purchase_date,
+          :purchase_price, :purchase_date, :primary_image, additional_images: [],
           metadata: [:color, :size, :material, :season, :occasion, :care_instructions, :fit_notes, :style_notes],
           tag_ids: []
         )
