@@ -45,6 +45,14 @@ module ActiveSupport
     fixtures :all
 
     # Add more helper methods to be used by all tests here...
+    
+    # Clean up Redis after each test
+    def teardown
+      super
+      if defined?($redis) && $redis
+        $redis.flushdb
+      end
+    end
   end
 end
 

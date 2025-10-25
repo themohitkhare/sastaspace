@@ -1,6 +1,35 @@
 #!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# This script runs the ActiveJob worker locally for development
+# It processes jobs from the Redis queue
 
 require_relative "../config/environment"
-require "solid_queue/cli"
 
-SolidQueue::Cli.start(ARGV)
+puts "Starting ActiveJob worker..."
+puts "Environment: #{Rails.env}"
+puts "Redis URL: #{ENV.fetch('REDIS_URL', 'redis://127.0.0.1:6379/0')}"
+puts "Press Ctrl+C to stop"
+
+# Start the worker
+Rails.application.config.active_job.queue_adapter = :redis
+
+# Simple worker loop
+loop do
+  begin
+    # Process jobs
+    Rails.application.config.active_job.queue_adapter.enqueued_jobs.each do |job|
+      puts "Processing job: #{job.class.name}"
+      job.perform_now
+    end
+    
+    # Sleep briefly to avoid busy waiting
+    sleep 0.1
+  rescue Interrupt
+    puts "\nShutting down worker..."
+    break
+  rescue StandardError => e
+    puts "Error processing job: #{e.message}"
+    sleep 1
+  end
+end
