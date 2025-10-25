@@ -1,6 +1,10 @@
 require "test_helper"
 
 class ApiV1AuthTest < ActionDispatch::IntegrationTest
+  def setup
+    # Clear token blacklist between tests
+    Authenticable.instance_variable_set(:@test_blacklisted_tokens, [])
+  end
   test "POST /api/v1/auth/register with valid data creates user and returns JWT" do
     user_data = {
       email: "test@example.com",
@@ -10,7 +14,7 @@ class ApiV1AuthTest < ActionDispatch::IntegrationTest
       last_name: "Doe"
     }
 
-    post "/api/v1/auth/register", params: user_data, headers: api_v1_headers
+    post "/api/v1/auth/register", params: user_data.to_json, headers: api_v1_headers
 
     assert_success_response
     body = json_response
@@ -33,7 +37,7 @@ class ApiV1AuthTest < ActionDispatch::IntegrationTest
       password_confirmation: "different"
     }
 
-    post "/api/v1/auth/register", params: invalid_data, headers: api_v1_headers
+    post "/api/v1/auth/register", params: invalid_data.to_json, headers: api_v1_headers
 
     assert_error_response(:unprocessable_entity, "VALIDATION_ERROR")
     body = json_response
@@ -52,7 +56,7 @@ class ApiV1AuthTest < ActionDispatch::IntegrationTest
       password_confirmation: "Password123!"
     }
 
-    post "/api/v1/auth/register", params: user_data, headers: api_v1_headers
+    post "/api/v1/auth/register", params: user_data.to_json, headers: api_v1_headers
 
     assert_error_response(:unprocessable_entity, "VALIDATION_ERROR")
     body = json_response
@@ -65,7 +69,7 @@ class ApiV1AuthTest < ActionDispatch::IntegrationTest
     post "/api/v1/auth/login", params: {
       email: user.email,
       password: "Password123!"
-    }, headers: api_v1_headers
+    }.to_json, headers: api_v1_headers
 
     assert_success_response
     body = json_response
@@ -79,7 +83,7 @@ class ApiV1AuthTest < ActionDispatch::IntegrationTest
     post "/api/v1/auth/login", params: {
       email: "nope@example.com",
       password: "wrong"
-    }, headers: api_v1_headers
+    }.to_json, headers: api_v1_headers
 
     assert_unauthorized_response
   end
@@ -90,7 +94,7 @@ class ApiV1AuthTest < ActionDispatch::IntegrationTest
     post "/api/v1/auth/login", params: {
       email: user.email,
       password: "WrongPassword123!"
-    }, headers: api_v1_headers
+    }.to_json, headers: api_v1_headers
 
     assert_unauthorized_response
   end
@@ -126,7 +130,7 @@ class ApiV1AuthTest < ActionDispatch::IntegrationTest
 
     post "/api/v1/auth/refresh", params: {
       refresh_token: refresh_token
-    }, headers: api_v1_headers
+    }.to_json, headers: api_v1_headers
 
     assert_success_response
     body = json_response
@@ -139,7 +143,7 @@ class ApiV1AuthTest < ActionDispatch::IntegrationTest
   test "POST /api/v1/auth/refresh with invalid refresh token returns 401" do
     post "/api/v1/auth/refresh", params: {
       refresh_token: "invalid_refresh_token"
-    }, headers: api_v1_headers
+    }.to_json, headers: api_v1_headers
 
     assert_unauthorized_response
   end
@@ -160,12 +164,11 @@ class ApiV1AuthTest < ActionDispatch::IntegrationTest
   private
 
   def generate_jwt_token(user)
-    # This will be implemented in the actual JWT service
-    "jwt_token_for_#{user.id}"
+    Auth::JsonWebToken.encode(user_id: user.id)
   end
 
   def generate_refresh_token(user)
-    # This will be implemented in the actual JWT service
+    # For now, return a placeholder since refresh tokens aren't implemented
     "refresh_token_for_#{user.id}"
   end
 end
