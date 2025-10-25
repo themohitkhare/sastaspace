@@ -30,6 +30,21 @@ Rails.application.routes.draw do
         end
       end
 
+      # Inventory items
+      resources :inventory_items do
+        member do
+          patch :worn
+          get :similar
+          post :primary_image, action: :attach_primary_image
+          post :additional_images, action: :attach_additional_images
+          delete :primary_image, action: :detach_primary_image
+          delete 'additional_images/:image_id', action: :detach_additional_image
+        end
+        collection do
+          get :search
+        end
+      end
+
       # AI Analysis
       post "ai/analyze" => "ai_analysis#analyze_image"
       get "ai/analysis/:id" => "ai_analysis#get_analysis"

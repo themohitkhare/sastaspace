@@ -1,0 +1,117 @@
+class InventoryItem < ApplicationRecord
+  belongs_to :user
+  belongs_to :category
+  belongs_to :brand, optional: true
+  
+  has_one_attached :primary_image
+  has_many_attached :additional_images
+  
+  has_many :outfit_items, dependent: :destroy
+  has_many :outfits, through: :outfit_items
+  has_many :ai_analyses, dependent: :destroy
+  has_many :inventory_tags, dependent: :destroy
+  has_many :tags, through: :inventory_tags
+  
+  # Core validations
+  validates :name, presence: true
+  validates :item_type, presence: true
+  validates :category, presence: true
+  
+  # Flexible metadata as JSON
+  store_accessor :metadata, :color, :size, :material, :season, :occasion,
+                 :care_instructions, :fit_notes, :style_notes
+  
+  # Item types
+  enum :item_type, {
+    clothing: 'clothing',
+    shoes: 'shoes', 
+    accessories: 'accessories',
+    jewelry: 'jewelry'
+  }
+  
+  # Status tracking
+  enum :status, { active: 0, archived: 1, donated: 2, sold: 3 }
+  
+  # Scopes for filtering
+  scope :by_type, ->(type) { where(item_type: type) }
+  scope :by_category, ->(category) { joins(:category).where(categories: { name: category }) }
+  scope :by_season, ->(season) { where("metadata->>'season' = ?", season) }
+  scope :by_color, ->(color) { where("metadata->>'color' LIKE ?", "%#{color}%") }
+  scope :by_brand, ->(brand) { joins(:brand).where(brands: { name: brand }) }
+  scope :recently_worn, -> { where.not(last_worn_at: nil).order(last_worn_at: :desc) }
+  scope :never_worn, -> { where(last_worn_at: nil) }
+  scope :most_worn, -> { order(wear_count: :desc) }
+  
+  # Type-specific validations
+  validate :validate_type_specific_fields
+  
+  def increment_wear_count!
+    increment!(:wear_count)
+    update!(last_worn_at: Time.current)
+  end
+  
+  def similar_items(limit: 5)
+    # Placeholder for AI similarity search
+    # Will be implemented when vector embeddings are ready
+    InventoryItem.where(item_type: item_type)
+                 .where.not(id: id)
+                 .limit(limit)
+  end
+  
+  def metadata_summary
+    {
+      color: color,
+      size: size,
+      material: material,
+      season: season,
+      occasion: occasion
+    }.compact
+  end
+  
+  private
+  
+  def validate_type_specific_fields
+    case item_type
+    when 'clothing'
+      validate_clothing_fields
+    when 'shoes'
+      validate_shoes_fields
+    when 'accessories'
+      validate_accessories_fields
+    when 'jewelry'
+      validate_jewelry_fields
+    end
+  end
+  
+  def validate_clothing_fields
+    # Clothing-specific validations
+    if size.present? && !valid_clothing_size?
+      errors.add(:size, 'is not a valid clothing size')
+    end
+  end
+  
+  def validate_shoes_fields
+    # Shoes-specific validations
+    if size.present? && !valid_shoe_size?
+      errors.add(:size, 'is not a valid shoe size')
+    end
+  end
+  
+  def validate_accessories_fields
+    # Accessories-specific validations
+  end
+  
+  def validate_jewelry_fields
+    # Jewelry-specific validations
+  end
+  
+  def valid_clothing_size?
+    # Basic clothing size validation
+    %w[XS S M L XL XXL].include?(size) || size.match?(/\d+/)
+  end
+  
+  def valid_shoe_size?
+    # Basic shoe size validation
+    size.match?(/\d+(\.\d+)?/) && size.to_f.between?(3, 15)
+  end
+end

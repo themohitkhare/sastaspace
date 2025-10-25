@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2025_10_25_110406) do
+ActiveRecord::Schema[8.1].define(version: 2025_10_25_140607) do
   create_table "active_storage_attachments", force: :cascade do |t|
     t.bigint "blob_id", null: false
     t.datetime "created_at", null: false
@@ -65,6 +65,22 @@ ActiveRecord::Schema[8.1].define(version: 2025_10_25_110406) do
     t.index ["user_id"], name: "index_audit_logs_on_user_id"
   end
 
+  create_table "brands", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.text "description"
+    t.string "name", null: false
+    t.datetime "updated_at", null: false
+    t.index ["name"], name: "index_brands_on_name", unique: true
+  end
+
+  create_table "categories", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.text "description"
+    t.string "name", null: false
+    t.datetime "updated_at", null: false
+    t.index ["name"], name: "index_categories_on_name", unique: true
+  end
+
   create_table "clothing_items", force: :cascade do |t|
     t.string "analysis_status"
     t.string "brand"
@@ -96,6 +112,43 @@ ActiveRecord::Schema[8.1].define(version: 2025_10_25_110406) do
     t.index ["user_id"], name: "index_export_jobs_on_user_id"
   end
 
+  create_table "inventory_items", force: :cascade do |t|
+    t.integer "brand_id"
+    t.integer "category_id", null: false
+    t.datetime "created_at", null: false
+    t.text "description"
+    t.binary "embedding_vector"
+    t.string "item_type", null: false
+    t.datetime "last_worn_at"
+    t.json "metadata", default: {}
+    t.string "name", null: false
+    t.date "purchase_date"
+    t.decimal "purchase_price", precision: 8, scale: 2
+    t.integer "status", default: 0
+    t.datetime "updated_at", null: false
+    t.integer "user_id", null: false
+    t.integer "wear_count", default: 0
+    t.index ["brand_id"], name: "index_inventory_items_on_brand_id"
+    t.index ["category_id"], name: "index_inventory_items_on_category_id"
+    t.index ["embedding_vector"], name: "index_inventory_items_on_embedding_vector"
+    t.index ["item_type"], name: "index_inventory_items_on_item_type"
+    t.index ["last_worn_at"], name: "index_inventory_items_on_last_worn_at"
+    t.index ["status"], name: "index_inventory_items_on_status"
+    t.index ["user_id", "category_id"], name: "index_inventory_items_on_user_id_and_category_id"
+    t.index ["user_id", "item_type"], name: "index_inventory_items_on_user_id_and_item_type"
+    t.index ["user_id"], name: "index_inventory_items_on_user_id"
+  end
+
+  create_table "inventory_tags", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.integer "inventory_item_id", null: false
+    t.integer "tag_id", null: false
+    t.datetime "updated_at", null: false
+    t.index ["inventory_item_id", "tag_id"], name: "index_inventory_tags_on_inventory_item_id_and_tag_id", unique: true
+    t.index ["inventory_item_id"], name: "index_inventory_tags_on_inventory_item_id"
+    t.index ["tag_id"], name: "index_inventory_tags_on_tag_id"
+  end
+
   create_table "outfit_items", force: :cascade do |t|
     t.integer "clothing_item_id", null: false
     t.datetime "created_at", null: false
@@ -120,6 +173,14 @@ ActiveRecord::Schema[8.1].define(version: 2025_10_25_110406) do
     t.integer "user_id", null: false
     t.string "weather_condition"
     t.index ["user_id"], name: "index_outfits_on_user_id"
+  end
+
+  create_table "tags", force: :cascade do |t|
+    t.string "color", default: "#3B82F6"
+    t.datetime "created_at", null: false
+    t.string "name", null: false
+    t.datetime "updated_at", null: false
+    t.index ["name"], name: "index_tags_on_name", unique: true
   end
 
   create_table "user_profiles", force: :cascade do |t|
@@ -151,6 +212,11 @@ ActiveRecord::Schema[8.1].define(version: 2025_10_25_110406) do
   add_foreign_key "audit_logs", "users"
   add_foreign_key "clothing_items", "users"
   add_foreign_key "export_jobs", "users"
+  add_foreign_key "inventory_items", "brands"
+  add_foreign_key "inventory_items", "categories"
+  add_foreign_key "inventory_items", "users"
+  add_foreign_key "inventory_tags", "inventory_items"
+  add_foreign_key "inventory_tags", "tags"
   add_foreign_key "outfit_items", "clothing_items"
   add_foreign_key "outfit_items", "outfits"
   add_foreign_key "outfits", "users"
