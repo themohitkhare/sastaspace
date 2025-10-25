@@ -44,7 +44,7 @@ FactoryBot.define do
       metadata do
         {
           color: Faker::Color.color_name,
-          size: Faker::Number.between(from: 6, to: 12).to_s,
+          size: "#{Faker::Number.between(from: 6, to: 12)}.#{Faker::Number.between(from: 0, to: 9)}",
           material: Faker::Commerce.material,
           season: %w[spring summer fall winter].sample,
           occasion: %w[casual formal work party].sample,
