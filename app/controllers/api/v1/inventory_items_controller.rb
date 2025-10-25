@@ -129,6 +129,42 @@ module Api
         }
       end
       
+      # GET /api/v1/inventory_items/:id/similar
+      def similar
+        limit = params[:limit]&.to_i || 10
+        similar_items = @inventory_item.find_similar_items(limit: limit)
+        
+        render json: {
+          success: true,
+          data: {
+            similar_items: similar_items.map { |item| serialize_inventory_item(item) },
+            base_item: serialize_inventory_item(@inventory_item)
+          },
+          message: 'Similar items retrieved successfully',
+          timestamp: Time.current.iso8601
+        }
+      end
+      
+      # POST /api/v1/inventory_items/semantic_search
+      def semantic_search
+        query = params[:q]&.strip
+        return render_search_error('Search query required') if query.blank?
+        
+        limit = params[:limit]&.to_i || 20
+        items = VectorSearchService.semantic_search(current_user, query, limit: limit)
+        
+        render json: {
+          success: true,
+          data: {
+            inventory_items: items.map { |item| serialize_inventory_item(item) },
+            query: query,
+            total_results: items.count
+          },
+          message: 'Semantic search completed successfully',
+          timestamp: Time.current.iso8601
+        }
+      end
+      
       # GET /api/v1/inventory_items/search
       def search
         query = params[:q]
@@ -153,22 +189,6 @@ module Api
             query: query
           },
           message: 'Search completed successfully',
-          timestamp: Time.current.iso8601
-        }
-      end
-      
-      # GET /api/v1/inventory_items/:id/similar
-      def similar
-        limit = params[:limit]&.to_i || 5
-        similar_items = @inventory_item.similar_items(limit: limit)
-        
-        render json: {
-          success: true,
-          data: {
-            similar_items: similar_items.map { |item| serialize_inventory_item(item) },
-            original_item: serialize_inventory_item(@inventory_item)
-          },
-          message: 'Similar items retrieved successfully',
           timestamp: Time.current.iso8601
         }
       end
