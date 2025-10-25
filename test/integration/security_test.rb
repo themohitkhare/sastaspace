@@ -9,13 +9,13 @@ class SecurityTest < ActionDispatch::IntegrationTest
   end
 
   test "unauthorized requests return 401" do
-    get "/api/v1/clothing_items", headers: api_v1_headers
+    get "/api/v1/inventory_items", headers: api_v1_headers
 
     assert_unauthorized_response
   end
 
   test "invalid JWT token returns 401" do
-    get "/api/v1/clothing_items", headers: api_v1_headers("invalid_token")
+    get "/api/v1/inventory_items", headers: api_v1_headers("invalid_token")
 
     assert_unauthorized_response
   end
@@ -23,23 +23,23 @@ class SecurityTest < ActionDispatch::IntegrationTest
   test "expired JWT token returns 401" do
     expired_token = generate_expired_jwt_token(@user)
 
-    get "/api/v1/clothing_items", headers: api_v1_headers(expired_token)
+    get "/api/v1/inventory_items", headers: api_v1_headers(expired_token)
 
     assert_unauthorized_response
   end
 
   test "users cannot access other users' data" do
-    other_item = create(:clothing_item, user: @other_user)
+    other_item = create(:inventory_item, user: @other_user)
 
-    get "/api/v1/clothing_items/#{other_item.id}", headers: api_v1_headers(@token)
+    get "/api/v1/inventory_items/#{other_item.id}", headers: api_v1_headers(@token)
 
     assert_not_found_response
   end
 
   test "users cannot modify other users' data" do
-    other_item = create(:clothing_item, user: @other_user)
+    other_item = create(:inventory_item, user: @other_user)
 
-    put "/api/v1/clothing_items/#{other_item.id}",
+    put "/api/v1/inventory_items/#{other_item.id}",
         params: { name: "Hacked Name" },
         headers: api_v1_headers(@token)
 
@@ -47,9 +47,9 @@ class SecurityTest < ActionDispatch::IntegrationTest
   end
 
   test "users cannot delete other users' data" do
-    other_item = create(:clothing_item, user: @other_user)
+    other_item = create(:inventory_item, user: @other_user)
 
-    delete "/api/v1/clothing_items/#{other_item.id}",
+    delete "/api/v1/inventory_items/#{other_item.id}",
            headers: api_v1_headers(@token)
 
     assert_not_found_response
@@ -58,7 +58,7 @@ class SecurityTest < ActionDispatch::IntegrationTest
   test "rate limiting prevents abuse" do
     # Mock rate limit exceeded
     RateLimiter.stubs(:exceeded?).returns(true)
-    get "/api/v1/clothing_items", headers: api_v1_headers(@token)
+    get "/api/v1/inventory_items", headers: api_v1_headers(@token)
 
     assert_response :too_many_requests
     body = json_response
@@ -68,7 +68,7 @@ class SecurityTest < ActionDispatch::IntegrationTest
   test "rate limiting allows normal usage" do
     # Mock rate limit not exceeded
     RateLimiter.stubs(:exceeded?).returns(false)
-    get "/api/v1/clothing_items", headers: api_v1_headers(@token)
+    get "/api/v1/inventory_items", headers: api_v1_headers(@token)
 
     assert_success_response
   end
@@ -131,9 +131,9 @@ class SecurityTest < ActionDispatch::IntegrationTest
 
   test "POST /api/v1/users/delete deletes user account and data" do
     # Create user data
-    clothing_item = create(:clothing_item, user: @user)
+    inventory_item = create(:inventory_item, user: @user)
     outfit = create(:outfit, user: @user)
-    analysis = create(:ai_analysis, clothing_item: clothing_item)
+    analysis = create(:ai_analysis, inventory_item: inventory_item)
 
     delete "/api/v1/users/delete",
            params: { password: "Password123!" },
@@ -143,7 +143,7 @@ class SecurityTest < ActionDispatch::IntegrationTest
 
     # Verify user and data are deleted
     assert_raises(ActiveRecord::RecordNotFound) { @user.reload }
-    assert_raises(ActiveRecord::RecordNotFound) { clothing_item.reload }
+    assert_raises(ActiveRecord::RecordNotFound) { inventory_item.reload }
     assert_raises(ActiveRecord::RecordNotFound) { outfit.reload }
     assert_raises(ActiveRecord::RecordNotFound) { analysis.reload }
   end
@@ -165,7 +165,7 @@ class SecurityTest < ActionDispatch::IntegrationTest
   end
 
   test "account deletion purges attached files" do
-    clothing_item = create(:clothing_item, :with_photo, user: @user)
+    inventory_item = create(:inventory_item, :with_photo, user: @user)
 
     delete "/api/v1/users/delete",
            params: { password: "Password123!" },
@@ -174,7 +174,7 @@ class SecurityTest < ActionDispatch::IntegrationTest
     assert_success_response
 
     # Verify files are purged
-    assert_not clothing_item.photo.attached?, "Photo should be purged"
+    assert_not inventory_item.photo.attached?, "Photo should be purged"
   end
 
   test "account deletion creates audit log" do
@@ -217,14 +217,14 @@ class SecurityTest < ActionDispatch::IntegrationTest
   end
 
   test "file uploads are validated for type and size" do
-    clothing_item = create(:clothing_item, user: @user)
+    inventory_item = create(:inventory_item, user: @user)
 
     # Test invalid file type
     invalid_file = {
       photo: fixture_file_upload("sample_text.txt", "text/plain")
     }
 
-    post "/api/v1/clothing_items/#{clothing_item.id}/photo",
+    post "/api/v1/inventory_items/#{inventory_item.id}/photo",
          params: invalid_file,
          headers: api_v1_headers(@token)
 
@@ -236,7 +236,7 @@ class SecurityTest < ActionDispatch::IntegrationTest
   test "SQL injection attempts are prevented" do
     malicious_input = "'; DROP TABLE users; --"
 
-    get "/api/v1/clothing_items?q=#{malicious_input}",
+    get "/api/v1/inventory_items?q=#{malicious_input}",
         headers: api_v1_headers(@token)
 
     # Should not cause database error
@@ -246,7 +246,7 @@ class SecurityTest < ActionDispatch::IntegrationTest
   test "XSS attempts are sanitized" do
     malicious_name = "<script>alert('xss')</script>"
 
-    post "/api/v1/clothing_items",
+    post "/api/v1/inventory_items",
          params: { name: malicious_name, category: "top" },
          headers: api_v1_headers(@token)
 

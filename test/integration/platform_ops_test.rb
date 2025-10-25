@@ -89,7 +89,7 @@ class PlatformOpsTest < ActionDispatch::IntegrationTest
   end
 
   test "error responses have consistent envelope format" do
-    get "/api/v1/clothing_items/999999", headers: api_v1_headers("invalid_token")
+    get "/api/v1/inventory_items/999999", headers: api_v1_headers("invalid_token")
 
     assert_response :unauthorized
     body = JSON.parse(@response.body)
@@ -105,7 +105,7 @@ class PlatformOpsTest < ActionDispatch::IntegrationTest
     user = create(:user)
     token = generate_jwt_token(user)
 
-    get "/api/v1/clothing_items", headers: api_v1_headers(token)
+    get "/api/v1/inventory_items", headers: api_v1_headers(token)
 
     assert_response :success
     body = JSON.parse(@response.body)
@@ -116,59 +116,59 @@ class PlatformOpsTest < ActionDispatch::IntegrationTest
   end
 
   test "GET requests support ETag caching" do
-    clothing_item = create(:clothing_item, :with_photo)
-    user = clothing_item.user
+    inventory_item = create(:inventory_item, :with_photo)
+    user = inventory_item.user
     token = generate_jwt_token(user)
 
     # First request
-    get "/api/v1/clothing_items/#{clothing_item.id}", headers: api_v1_headers(token)
+    get "/api/v1/inventory_items/#{inventory_item.id}", headers: api_v1_headers(token)
 
     assert_response :success
     etag = @response.headers["ETag"]
     assert etag.present?, "Should include ETag header"
 
     # Second request with If-None-Match
-    get "/api/v1/clothing_items/#{clothing_item.id}",
+    get "/api/v1/inventory_items/#{inventory_item.id}",
         headers: api_v1_headers(token).merge("If-None-Match" => etag)
 
     assert_response :not_modified, "Should return 304 for unchanged resource"
   end
 
   test "GET requests support Last-Modified caching" do
-    clothing_item = create(:clothing_item, :with_photo)
-    user = clothing_item.user
+    inventory_item = create(:inventory_item, :with_photo)
+    user = inventory_item.user
     token = generate_jwt_token(user)
 
     # First request
-    get "/api/v1/clothing_items/#{clothing_item.id}", headers: api_v1_headers(token)
+    get "/api/v1/inventory_items/#{inventory_item.id}", headers: api_v1_headers(token)
 
     assert_response :success
     last_modified = @response.headers["Last-Modified"]
     assert last_modified.present?, "Should include Last-Modified header"
 
     # Second request with If-Modified-Since
-    get "/api/v1/clothing_items/#{clothing_item.id}",
+    get "/api/v1/inventory_items/#{inventory_item.id}",
         headers: api_v1_headers(token).merge("If-Modified-Since" => last_modified)
 
     assert_response :not_modified, "Should return 304 for unchanged resource"
   end
 
   test "ETag changes when resource is updated" do
-    clothing_item = create(:clothing_item, :with_photo)
-    user = clothing_item.user
+    inventory_item = create(:inventory_item, :with_photo)
+    user = inventory_item.user
     token = generate_jwt_token(user)
 
     # Get initial ETag
-    get "/api/v1/clothing_items/#{clothing_item.id}", headers: api_v1_headers(token)
+    get "/api/v1/inventory_items/#{inventory_item.id}", headers: api_v1_headers(token)
     initial_etag = @response.headers["ETag"]
 
     # Update resource
-    put "/api/v1/clothing_items/#{clothing_item.id}",
+    put "/api/v1/inventory_items/#{inventory_item.id}",
         params: { name: "Updated Name" },
         headers: api_v1_headers(token)
 
     # Get new ETag
-    get "/api/v1/clothing_items/#{clothing_item.id}", headers: api_v1_headers(token)
+    get "/api/v1/inventory_items/#{inventory_item.id}", headers: api_v1_headers(token)
     new_etag = @response.headers["ETag"]
 
     assert_not_equal initial_etag, new_etag, "ETag should change after update"
@@ -179,13 +179,13 @@ class PlatformOpsTest < ActionDispatch::IntegrationTest
     token = generate_jwt_token(user)
 
     # Create items with associations
-    clothing_items = create_list(:clothing_item, 5, :with_photo, user: user)
-    clothing_items.each { |item| create(:ai_analysis, clothing_item: item) }
+    inventory_items = create_list(:inventory_item, 5, :with_photo, user: user)
+    inventory_items.each { |item| create(:ai_analysis, inventory_item: item) }
 
     # Mock query counter
     query_count = 0
     ActiveRecord::Base.connection.stubs(:execute).returns([])
-    get "/api/v1/clothing_items", headers: api_v1_headers(token)
+    get "/api/v1/inventory_items", headers: api_v1_headers(token)
 
     # Should not have N+1 queries
     assert query_count < 10, "Should not have excessive queries (N+1 prevention)"
@@ -196,12 +196,12 @@ class PlatformOpsTest < ActionDispatch::IntegrationTest
     token = generate_jwt_token(user)
 
     # Create test data
-    create_list(:clothing_item, 10, user: user)
+    create_list(:inventory_item, 10, user: user)
 
     # Mock slow query detection
     slow_queries = []
     ActiveRecord::Base.connection.stubs(:execute).returns([])
-    get "/api/v1/clothing_items?category=top", headers: api_v1_headers(token)
+    get "/api/v1/inventory_items?category=top", headers: api_v1_headers(token)
 
     assert slow_queries.empty?, "Should not have table scans (proper indexes)"
   end
@@ -277,7 +277,7 @@ class PlatformOpsTest < ActionDispatch::IntegrationTest
 
     paths = body["paths"]
     assert paths["/api/v1/auth/login"].present?, "Should document auth endpoints"
-    assert paths["/api/v1/clothing_items"].present?, "Should document clothing items endpoints"
+    assert paths["/api/v1/inventory_items"].present?, "Should document clothing items endpoints"
     assert paths["/api/v1/outfits"].present?, "Should document outfit endpoints"
   end
 

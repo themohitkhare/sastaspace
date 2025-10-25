@@ -88,28 +88,6 @@
           null
         ]
       },
-      "/home/mkhare/Development/sastaspace/app/models/user.rb": {
-        "lines": [
-          1,
-          1,
-          null,
-          1,
-          1,
-          1,
-          1,
-          1,
-          null,
-          1,
-          null
-        ]
-      },
-      "/home/mkhare/Development/sastaspace/app/models/application_record.rb": {
-        "lines": [
-          1,
-          1,
-          null
-        ]
-      },
       "/home/mkhare/Development/sastaspace/app/models/inventory_item.rb": {
         "lines": [
           1,
@@ -253,6 +231,28 @@
           null,
           0,
           null,
+          null
+        ]
+      },
+      "/home/mkhare/Development/sastaspace/app/models/application_record.rb": {
+        "lines": [
+          1,
+          1,
+          null
+        ]
+      },
+      "/home/mkhare/Development/sastaspace/app/models/user.rb": {
+        "lines": [
+          1,
+          1,
+          null,
+          1,
+          1,
+          1,
+          1,
+          1,
+          null,
+          1,
           null
         ]
       },
@@ -1290,38 +1290,6 @@
         ],
         "branches": {}
       },
-      "/home/mkhare/Development/sastaspace/app/models/ai_analysis.rb": {
-        "lines": [
-          0,
-          null,
-          0
-        ],
-        "branches": {}
-      },
-      "/home/mkhare/Development/sastaspace/app/models/audit_log.rb": {
-        "lines": [
-          0,
-          null,
-          0
-        ],
-        "branches": {}
-      },
-      "/home/mkhare/Development/sastaspace/app/models/clothing_item.rb": {
-        "lines": [
-          0,
-          null,
-          0
-        ],
-        "branches": {}
-      },
-      "/home/mkhare/Development/sastaspace/app/models/export_job.rb": {
-        "lines": [
-          0,
-          null,
-          0
-        ],
-        "branches": {}
-      },
       "/home/mkhare/Development/sastaspace/app/models/inventory_tag.rb": {
         "lines": [
           0,
@@ -1329,22 +1297,6 @@
           0,
           null,
           0,
-          0
-        ],
-        "branches": {}
-      },
-      "/home/mkhare/Development/sastaspace/app/models/outfit.rb": {
-        "lines": [
-          0,
-          null,
-          0
-        ],
-        "branches": {}
-      },
-      "/home/mkhare/Development/sastaspace/app/models/outfit_item.rb": {
-        "lines": [
-          0,
-          null,
           0
         ],
         "branches": {}
@@ -1358,14 +1310,6 @@
           0,
           null,
           0,
-          0
-        ],
-        "branches": {}
-      },
-      "/home/mkhare/Development/sastaspace/app/models/user_profile.rb": {
-        "lines": [
-          0,
-          null,
           0
         ],
         "branches": {}
@@ -1716,6 +1660,6 @@
         "branches": {}
       }
     },
-    "timestamp": 1761405162
+    "timestamp": 1761414108
   }
 }

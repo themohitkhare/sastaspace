@@ -63,10 +63,10 @@ class UserTest < ActiveSupport::TestCase
   end
 
   # Associations
-  test "has many clothing items" do
+  test "has many inventory items" do
     user = create(:user)
-    item = create(:clothing_item, user: user)
-    assert_includes user.clothing_items, item
+    item = create(:inventory_item, user: user)
+    assert_includes user.inventory_items, item
   end
 
   test "has many outfits" do
@@ -77,8 +77,8 @@ class UserTest < ActiveSupport::TestCase
 
   test "has many ai analyses" do
     user = create(:user)
-    item = create(:clothing_item, user: user)
-    analysis = create(:ai_analysis, clothing_item: item)
+    item = create(:inventory_item, user: user)
+    analysis = create(:ai_analysis, inventory_item: item)
     assert_includes user.ai_analyses, analysis
   end
 
