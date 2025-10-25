@@ -46,12 +46,10 @@ module ActiveSupport
 
     # Add more helper methods to be used by all tests here...
     
-    # Clean up Redis after each test
+    # Clean up after each test
     def teardown
       super
-      if defined?($redis) && $redis
-        $redis.flushdb
-      end
+      # No Redis cleanup needed since we're using PostgreSQL
     end
   end
 end

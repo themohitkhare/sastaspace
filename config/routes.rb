@@ -42,6 +42,7 @@ Rails.application.routes.draw do
         end
         collection do
           get :search
+          post :semantic_search
         end
       end
 

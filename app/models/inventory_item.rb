@@ -12,6 +12,39 @@ class InventoryItem < ApplicationRecord
   has_many :inventory_tags, dependent: :destroy
   has_many :tags, through: :inventory_tags
   
+  # Vector search capabilities - using Rails scopes with Arel.sql
+  def similar_items(limit: 5)
+    return [] unless embedding_vector.present?
+    
+    vector_str = "[#{embedding_vector.join(',')}]"
+    
+    user.inventory_items
+        .where.not(id: id)
+        .where.not(embedding_vector: nil)
+        .order(Arel.sql("embedding_vector <-> '#{vector_str}'::vector"))
+        .limit(limit)
+  end
+  
+  def find_similar_items(limit: 10)
+    return [] unless embedding_vector.present?
+    
+    vector_str = "[#{embedding_vector.join(',')}]"
+    
+    user.inventory_items
+        .where.not(id: id)
+        .where.not(embedding_vector: nil)
+        .order(Arel.sql("embedding_vector <-> '#{vector_str}'::vector"))
+        .limit(limit)
+  end
+  
+  # Scope-based approach for direct vector search
+  scope :similar_to, ->(vector, limit: 10) {
+    vector_str = "[#{vector.join(',')}]"
+    where.not(embedding_vector: nil)
+         .order(Arel.sql("embedding_vector <-> '#{vector_str}'::vector"))
+         .limit(limit)
+  }
+  
   # Core validations
   validates :name, presence: true
   validates :item_type, presence: true
@@ -48,14 +81,6 @@ class InventoryItem < ApplicationRecord
   def increment_wear_count!
     increment!(:wear_count)
     update!(last_worn_at: Time.current)
-  end
-  
-  def similar_items(limit: 5)
-    # Placeholder for AI similarity search
-    # Will be implemented when vector embeddings are ready
-    InventoryItem.where(item_type: item_type)
-                 .where.not(id: id)
-                 .limit(limit)
   end
   
   def metadata_summary

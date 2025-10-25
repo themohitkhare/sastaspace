@@ -10,7 +10,11 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2025_10_25_140607) do
+ActiveRecord::Schema[8.1].define(version: 2025_10_25_150001) do
+  # These are extensions that must be enabled in order to support this database
+  enable_extension "pg_catalog.plpgsql"
+  enable_extension "vector"
+
   create_table "active_storage_attachments", force: :cascade do |t|
     t.bigint "blob_id", null: false
     t.datetime "created_at", null: false
@@ -117,7 +121,7 @@ ActiveRecord::Schema[8.1].define(version: 2025_10_25_140607) do
     t.integer "category_id", null: false
     t.datetime "created_at", null: false
     t.text "description"
-    t.binary "embedding_vector"
+    t.vector "embedding_vector", limit: 1536
     t.string "item_type", null: false
     t.datetime "last_worn_at"
     t.json "metadata", default: {}
@@ -130,7 +134,7 @@ ActiveRecord::Schema[8.1].define(version: 2025_10_25_140607) do
     t.integer "wear_count", default: 0
     t.index ["brand_id"], name: "index_inventory_items_on_brand_id"
     t.index ["category_id"], name: "index_inventory_items_on_category_id"
-    t.index ["embedding_vector"], name: "index_inventory_items_on_embedding_vector"
+    t.index ["embedding_vector"], name: "index_inventory_items_on_embedding_vector", opclass: :vector_cosine_ops, using: :hnsw
     t.index ["item_type"], name: "index_inventory_items_on_item_type"
     t.index ["last_worn_at"], name: "index_inventory_items_on_last_worn_at"
     t.index ["status"], name: "index_inventory_items_on_status"
