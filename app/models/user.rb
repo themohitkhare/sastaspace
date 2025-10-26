@@ -8,4 +8,22 @@ class User < ApplicationRecord
   validates :last_name, presence: true
 
   has_many :inventory_items, dependent: :destroy
+  has_many :refresh_tokens, dependent: :destroy
+
+  # Invalidate all refresh tokens when password changes
+  before_save :invalidate_refresh_tokens_on_password_change
+
+  # Invalidate all refresh tokens for this user (e.g., on password change)
+  def invalidate_all_refresh_tokens!
+    refresh_tokens.update_all(blacklisted: true)
+  end
+
+  private
+
+  def invalidate_refresh_tokens_on_password_change
+    return unless password_digest_changed?
+
+    # Invalidate all refresh tokens when password changes
+    invalidate_all_refresh_tokens!
+  end
 end

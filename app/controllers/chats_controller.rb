@@ -48,4 +48,3 @@ class ChatsController < ApplicationController
     params.require(:chat).permit(:model_name)
   end
 end
-

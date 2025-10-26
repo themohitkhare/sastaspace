@@ -3,14 +3,16 @@ module Api
     class AuthController < ApplicationController
       include Authenticable
 
-      # Only protect the 'me' endpoint with authentication
-      before_action :authenticate_user!, only: [ :me ]
+      # Only protect these endpoints with authentication
+      before_action :authenticate_user!, only: [ :me, :logout, :logout_all ]
       before_action :parse_json_params, only: [ :register, :login, :refresh ]
       def register
         user = User.new(user_params)
 
         if user.save
-          token = Auth::JsonWebToken.encode(user_id: user.id)
+          access_token = Auth::JsonWebToken.encode_access_token(user_id: user.id)
+          refresh_token_record = RefreshToken.create_for_user!(user)
+
           render json: {
             success: true,
             data: {
@@ -21,7 +23,8 @@ module Api
                 last_name: user.last_name,
                 created_at: user.created_at
               },
-              token: token
+              token: access_token,
+              refresh_token: refresh_token_record.token
             },
             message: "User created successfully",
             timestamp: Time.current.iso8601
@@ -43,7 +46,9 @@ module Api
         user = User.find_by(email: params[:email])
 
         if user&.authenticate(params[:password])
-          token = Auth::JsonWebToken.encode(user_id: user.id)
+          access_token = Auth::JsonWebToken.encode_access_token(user_id: user.id)
+          refresh_token_record = RefreshToken.create_for_user!(user)
+
           render json: {
             success: true,
             data: {
@@ -54,7 +59,8 @@ module Api
                 last_name: user.last_name,
                 created_at: user.created_at
               },
-              token: token
+              token: access_token,
+              refresh_token: refresh_token_record.token
             },
             message: "Login successful",
             timestamp: Time.current.iso8601
@@ -72,37 +78,24 @@ module Api
       end
 
       def refresh
-        # For now, implement a basic refresh that validates the refresh token
-        # and returns a new access token
-        refresh_token = params[:refresh_token]
+        refresh_token_param = params[:refresh_token]
 
-        if refresh_token.present? && refresh_token.start_with?("refresh_token_for_")
-          # Extract user ID from refresh token (basic implementation)
-          user_id = refresh_token.split("_").last.to_i
-          user = User.find_by(id: user_id)
+        unless refresh_token_param.present?
+          return render json: {
+            success: false,
+            error: {
+              code: "AUTHENTICATION_ERROR",
+              message: "Refresh token is required"
+            },
+            timestamp: Time.current.iso8601
+          }, status: :unauthorized
+        end
 
-          if user
-            new_token = Auth::JsonWebToken.encode(user_id: user.id)
-            render json: {
-              success: true,
-              data: {
-                token: new_token,
-                refresh_token: refresh_token # Return same refresh token for now
-              },
-              timestamp: Time.current.iso8601
-            }, status: :ok
-          else
-            render json: {
-              success: false,
-              error: {
-                code: "AUTHENTICATION_ERROR",
-                message: "Invalid refresh token"
-              },
-              timestamp: Time.current.iso8601
-            }, status: :unauthorized
-          end
-        else
-          render json: {
+        # Find the refresh token in database
+        refresh_token_record = RefreshToken.find_by(token: refresh_token_param)
+
+        unless refresh_token_record
+          return render json: {
             success: false,
             error: {
               code: "AUTHENTICATION_ERROR",
@@ -111,6 +104,59 @@ module Api
             timestamp: Time.current.iso8601
           }, status: :unauthorized
         end
+
+        # Check if token is blacklisted
+        if refresh_token_record.blacklisted?
+          return render json: {
+            success: false,
+            error: {
+              code: "AUTHENTICATION_ERROR",
+              message: "Refresh token has been revoked"
+            },
+            timestamp: Time.current.iso8601
+          }, status: :unauthorized
+        end
+
+        # Check if token has expired
+        unless refresh_token_record.active?
+          return render json: {
+            success: false,
+            error: {
+              code: "AUTHENTICATION_ERROR",
+              message: "Refresh token has expired"
+            },
+            timestamp: Time.current.iso8601
+          }, status: :unauthorized
+        end
+
+        # Get the user
+        user = refresh_token_record.user
+
+        # Blacklist the old refresh token (token rotation)
+        refresh_token_record.blacklist!
+
+        # Generate new tokens
+        new_access_token = Auth::JsonWebToken.encode_access_token(user_id: user.id)
+        new_refresh_token = RefreshToken.create_for_user!(user)
+
+        render json: {
+          success: true,
+          data: {
+            token: new_access_token,
+            refresh_token: new_refresh_token.token
+          },
+          timestamp: Time.current.iso8601
+        }, status: :ok
+      rescue ActiveRecord::RecordInvalid => e
+        render json: {
+          success: false,
+          error: {
+            code: "AUTHENTICATION_ERROR",
+            message: "Failed to refresh token",
+            details: e.message
+          },
+          timestamp: Time.current.iso8601
+        }, status: :internal_server_error
       end
 
       def me
@@ -132,8 +178,18 @@ module Api
       end
 
       def logout
-        # JWT tokens are stateless, so we just return success
-        # In a production app, you might want to implement token blacklisting
+        # Current user is available from authenticate_user! before_action
+        token = request.headers["Authorization"]&.split(" ")&.last
+
+        # Blacklist the current access token
+        if Rails.env.test?
+          blacklist = Authenticable.instance_variable_get(:@test_blacklisted_tokens) || []
+          blacklist << token
+          Authenticable.instance_variable_set(:@test_blacklisted_tokens, blacklist)
+        else
+          Rails.cache.write("blacklisted_token_#{token}", true, expires_in: 15.minutes)
+        end
+
         render json: {
           success: true,
           data: {
@@ -144,52 +200,27 @@ module Api
       end
 
       def logout_all
-        # JWT tokens are stateless, so we implement a simple blacklist
-        # In a production app, you would use Redis or database for this
+        # Invalidate ALL refresh tokens for this user
+        # This will force re-authentication on all devices
+        current_user.invalidate_all_refresh_tokens!
+
+        # Also blacklist the current access token
         token = request.headers["Authorization"]&.split(" ")&.last
-
-        if token.present?
-          # Decode token to get user info
-          begin
-            decoded_token = Auth::JsonWebToken.decode(token)
-            user_id = decoded_token[:user_id]
-
-            # Store token in blacklist
-            if Rails.env.test?
-              blacklist = Authenticable.instance_variable_get(:@test_blacklisted_tokens) || []
-              blacklist << token
-              Authenticable.instance_variable_set(:@test_blacklisted_tokens, blacklist)
-            else
-              Rails.cache.write("blacklisted_token_#{token}", true, expires_in: 24.hours)
-            end
-
-            render json: {
-              success: true,
-              data: {
-                message: "Logout from all devices successful"
-              },
-              timestamp: Time.current.iso8601
-            }, status: :ok
-          rescue ExceptionHandler::InvalidToken
-            render json: {
-              success: false,
-              error: {
-                code: "AUTHENTICATION_ERROR",
-                message: "Invalid token"
-              },
-              timestamp: Time.current.iso8601
-            }, status: :unauthorized
-          end
+        if Rails.env.test?
+          blacklist = Authenticable.instance_variable_get(:@test_blacklisted_tokens) || []
+          blacklist << token
+          Authenticable.instance_variable_set(:@test_blacklisted_tokens, blacklist)
         else
-          render json: {
-            success: false,
-            error: {
-              code: "AUTHENTICATION_ERROR",
-              message: "Token required"
-            },
-            timestamp: Time.current.iso8601
-          }, status: :unauthorized
+          Rails.cache.write("blacklisted_token_#{token}", true, expires_in: 15.minutes)
         end
+
+        render json: {
+          success: true,
+          data: {
+            message: "Logout from all devices successful. All sessions have been invalidated."
+          },
+          timestamp: Time.current.iso8601
+        }, status: :ok
       end
 
       private

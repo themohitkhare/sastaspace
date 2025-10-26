@@ -3,7 +3,17 @@ module Auth
   class JsonWebToken
     SECRET_KEY = Rails.application.credentials.secret_key_base || Rails.application.secret_key_base
 
-    def self.encode(payload, exp = 24.hours.from_now)
+    # Generate a short-lived access token (15 minutes)
+    def self.encode_access_token(payload)
+      encode(payload, exp: 15.minutes.from_now)
+    end
+
+    # Generate a longer-lived refresh token (30 days)
+    def self.encode_refresh_token(payload)
+      encode(payload, exp: 30.days.from_now)
+    end
+
+    def self.encode(payload, exp: 24.hours.from_now)
       payload[:exp] = exp.to_i
       JWT.encode(payload, SECRET_KEY)
     end
@@ -13,6 +23,8 @@ module Auth
       HashWithIndifferentAccess.new(decoded)
     rescue JWT::DecodeError => e
       raise ExceptionHandler::InvalidToken, e.message
+    rescue JWT::ExpiredSignature => e
+      raise ExceptionHandler::ExpiredToken, "Token has expired"
     end
   end
 end
