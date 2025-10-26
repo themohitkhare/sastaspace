@@ -6,6 +6,6 @@ class User < ApplicationRecord
   validates :password_confirmation, presence: true, on: :create
   validates :first_name, presence: true
   validates :last_name, presence: true
-  
+
   has_many :inventory_items, dependent: :destroy
 end

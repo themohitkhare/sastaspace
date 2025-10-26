@@ -12,9 +12,9 @@ class Api::V1::InventoryItemsTest < ActionDispatch::IntegrationTest
   test "GET /api/v1/inventory_items should return user's inventory items" do
     other_user = create(:user)
     other_item = create(:inventory_item, :clothing, user: other_user)
-    
+
     get "/api/v1/inventory_items", headers: api_v1_headers(@token)
-    
+
     assert_success_response
     body = json_response
     assert_equal 1, body["data"]["inventory_items"].length
@@ -23,9 +23,9 @@ class Api::V1::InventoryItemsTest < ActionDispatch::IntegrationTest
 
   test "GET /api/v1/inventory_items should support filtering by item_type" do
     shoes_item = create(:inventory_item, :shoes, user: @user)
-    
+
     get "/api/v1/inventory_items?item_type=clothing", headers: api_v1_headers(@token)
-    
+
     assert_success_response
     body = json_response
     assert_equal 1, body["data"]["inventory_items"].length
@@ -34,7 +34,7 @@ class Api::V1::InventoryItemsTest < ActionDispatch::IntegrationTest
 
   test "GET /api/v1/inventory_items should support filtering by category" do
     get "/api/v1/inventory_items?category=#{@category.name}", headers: api_v1_headers(@token)
-    
+
     assert_success_response
     body = json_response
     assert_equal 1, body["data"]["inventory_items"].length
@@ -42,7 +42,7 @@ class Api::V1::InventoryItemsTest < ActionDispatch::IntegrationTest
 
   test "GET /api/v1/inventory_items should support filtering by season" do
     get "/api/v1/inventory_items?season=summer", headers: api_v1_headers(@token)
-    
+
     assert_success_response
     body = json_response
     assert_equal 1, body["data"]["inventory_items"].length
@@ -50,7 +50,7 @@ class Api::V1::InventoryItemsTest < ActionDispatch::IntegrationTest
 
   test "GET /api/v1/inventory_items should support filtering by color" do
     get "/api/v1/inventory_items?color=blue", headers: api_v1_headers(@token)
-    
+
     assert_success_response
     body = json_response
     assert_equal 1, body["data"]["inventory_items"].length
@@ -58,7 +58,7 @@ class Api::V1::InventoryItemsTest < ActionDispatch::IntegrationTest
 
   test "GET /api/v1/inventory_items should support pagination" do
     get "/api/v1/inventory_items?page=1&per_page=10", headers: api_v1_headers(@token)
-    
+
     assert_success_response
     body = json_response
     assert body["data"]["pagination"].present?
@@ -68,7 +68,7 @@ class Api::V1::InventoryItemsTest < ActionDispatch::IntegrationTest
 
   test "GET /api/v1/inventory_items/:id should return specific inventory item" do
     get "/api/v1/inventory_items/#{@inventory_item.id}", headers: api_v1_headers(@token)
-    
+
     assert_success_response
     body = json_response
     assert_equal @inventory_item.id, body["data"]["inventory_item"]["id"]
@@ -77,16 +77,16 @@ class Api::V1::InventoryItemsTest < ActionDispatch::IntegrationTest
 
   test "GET /api/v1/inventory_items/:id should return 404 for non-existent item" do
     get "/api/v1/inventory_items/99999", headers: api_v1_headers(@token)
-    
+
     assert_not_found_response
   end
 
   test "GET /api/v1/inventory_items/:id should return 404 for other user's item" do
     other_user = create(:user)
     other_item = create(:inventory_item, :clothing, user: other_user)
-    
+
     get "/api/v1/inventory_items/#{other_item.id}", headers: api_v1_headers(@token)
-    
+
     assert_not_found_response
   end
 
@@ -105,9 +105,9 @@ class Api::V1::InventoryItemsTest < ActionDispatch::IntegrationTest
         }
       }
     }
-    
+
     post "/api/v1/inventory_items", params: inventory_item_params, headers: api_v1_headers(@token)
-    
+
     assert_response :created
     body = json_response
     assert body["success"]
@@ -122,9 +122,9 @@ class Api::V1::InventoryItemsTest < ActionDispatch::IntegrationTest
         item_type: "invalid_type" # Invalid item type
       }
     }
-    
+
     post "/api/v1/inventory_items", params: inventory_item_params, headers: api_v1_headers(@token)
-    
+
     assert_error_response(:unprocessable_entity, "VALIDATION_ERROR")
   end
 
@@ -135,9 +135,9 @@ class Api::V1::InventoryItemsTest < ActionDispatch::IntegrationTest
         description: "Updated description"
       }
     }
-    
+
     patch "/api/v1/inventory_items/#{@inventory_item.id}", params: update_params, headers: api_v1_headers(@token)
-    
+
     assert_success_response
     body = json_response
     assert_equal "Updated Name", body["data"]["inventory_item"]["name"]
@@ -150,15 +150,15 @@ class Api::V1::InventoryItemsTest < ActionDispatch::IntegrationTest
         name: "" # Invalid - empty name
       }
     }
-    
+
     patch "/api/v1/inventory_items/#{@inventory_item.id}", params: update_params, headers: api_v1_headers(@token)
-    
+
     assert_error_response(:unprocessable_entity, "VALIDATION_ERROR")
   end
 
   test "DELETE /api/v1/inventory_items/:id should delete inventory item" do
     delete "/api/v1/inventory_items/#{@inventory_item.id}", headers: api_v1_headers(@token)
-    
+
     assert_success_response
     assert_raises(ActiveRecord::RecordNotFound) do
       @inventory_item.reload
@@ -167,9 +167,9 @@ class Api::V1::InventoryItemsTest < ActionDispatch::IntegrationTest
 
   test "PATCH /api/v1/inventory_items/:id/worn should increment wear count" do
     initial_count = @inventory_item.wear_count
-    
+
     patch "/api/v1/inventory_items/#{@inventory_item.id}/worn", headers: api_v1_headers(@token)
-    
+
     assert_success_response
     body = json_response
     assert_equal initial_count + 1, body["data"]["inventory_item"]["wear_count"]
@@ -178,9 +178,9 @@ class Api::V1::InventoryItemsTest < ActionDispatch::IntegrationTest
 
   test "GET /api/v1/inventory_items/search should search by name and description" do
     searchable_item = create(:inventory_item, user: @user, name: "Blue Jeans", description: "Comfortable denim")
-    
+
     get "/api/v1/inventory_items/search?q=jeans", headers: api_v1_headers(@token)
-    
+
     assert_success_response
     body = json_response
     assert_equal 1, body["data"]["inventory_items"].length
@@ -189,15 +189,15 @@ class Api::V1::InventoryItemsTest < ActionDispatch::IntegrationTest
 
   test "GET /api/v1/inventory_items/search should return error without query" do
     get "/api/v1/inventory_items/search", headers: api_v1_headers(@token)
-    
+
     assert_error_response(:bad_request, "SEARCH_ERROR")
   end
 
   test "GET /api/v1/inventory_items/:id/similar should return similar items" do
     similar_item = create(:inventory_item, :clothing, user: @user)
-    
+
     get "/api/v1/inventory_items/#{@inventory_item.id}/similar", headers: api_v1_headers(@token)
-    
+
     assert_success_response
     body = json_response
     assert_equal 1, body["data"]["similar_items"].length
@@ -207,13 +207,13 @@ class Api::V1::InventoryItemsTest < ActionDispatch::IntegrationTest
   test "should require authentication for all endpoints" do
     get "/api/v1/inventory_items"
     assert_unauthorized_response
-    
+
     post "/api/v1/inventory_items", params: { inventory_item: { name: "Test" } }
     assert_unauthorized_response
-    
+
     patch "/api/v1/inventory_items/1", params: { inventory_item: { name: "Test" } }
     assert_unauthorized_response
-    
+
     delete "/api/v1/inventory_items/1"
     assert_unauthorized_response
   end

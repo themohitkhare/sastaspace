@@ -10,18 +10,18 @@ module Instrumentation
 
   def instrument_request
     start_time = Time.current
-    
+
     ActiveSupport::Notifications.instrument("request.started", {
       controller: self.class.name,
       action: action_name,
       request_id: request.env["REQUEST_ID"],
       user_id: current_user&.id
     })
-    
+
     yield
-    
+
     duration = ((Time.current - start_time) * 1000).round(2)
-    
+
     ActiveSupport::Notifications.instrument("request.completed", {
       controller: self.class.name,
       action: action_name,
@@ -32,7 +32,7 @@ module Instrumentation
     })
   rescue => e
     duration = ((Time.current - start_time) * 1000).round(2)
-    
+
     ActiveSupport::Notifications.instrument("request.failed", {
       controller: self.class.name,
       action: action_name,
@@ -42,7 +42,7 @@ module Instrumentation
       error_message: e.message,
       duration_ms: duration
     })
-    
+
     raise
   end
 end

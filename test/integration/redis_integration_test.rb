@@ -18,7 +18,7 @@ class RedisIntegrationTest < ActiveSupport::TestCase
   test "redis namespace isolation" do
     # Write to cache
     Rails.cache.write("namespace_test", "value")
-    
+
     # Verify it's in the correct namespace
     keys = $redis.keys("sastaspace:cache:test:*")
     assert keys.any? { |key| key.include?("namespace_test") }

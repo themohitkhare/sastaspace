@@ -23,7 +23,7 @@ module Sastaspace
     #
     # config.time_zone = "Central Time (US & Canada)"
     # config.eager_load_paths << Rails.root.join("extras")
-    
+
     # Add Request ID middleware for correlation tracking
     require_relative "../app/middleware/request_id_middleware"
     config.middleware.use RequestIdMiddleware

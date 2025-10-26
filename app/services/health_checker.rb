@@ -43,7 +43,7 @@ class HealthChecker
   def self.cache_status
     Rails.cache.write("health_check", "ok", expires_in: 1.minute)
     cached_value = Rails.cache.read("health_check")
-    
+
     if cached_value == "ok"
       { status: "healthy", message: "Cache store operational" }
     else
@@ -64,7 +64,7 @@ class HealthChecker
   private
 
   def self.all_services_healthy?
-    [database_status, redis_status, cache_status, jobs_status].all? do |service|
+    [ database_status, redis_status, cache_status, jobs_status ].all? do |service|
       service[:status] == "healthy"
     end
   end

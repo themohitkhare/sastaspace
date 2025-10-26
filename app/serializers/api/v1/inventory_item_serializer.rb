@@ -4,7 +4,7 @@ module Api
       def initialize(inventory_item)
         @inventory_item = inventory_item
       end
-      
+
       def as_json
         {
           id: @inventory_item.id,
@@ -28,9 +28,9 @@ module Api
           updated_at: @inventory_item.updated_at
         }
       end
-      
+
       private
-      
+
       def serialize_category(category)
         {
           id: category.id,
@@ -38,7 +38,7 @@ module Api
           description: category.description
         }
       end
-      
+
       def serialize_brand(brand)
         {
           id: brand.id,
@@ -46,7 +46,7 @@ module Api
           description: brand.description
         }
       end
-      
+
       def serialize_tag(tag)
         {
           id: tag.id,
@@ -54,10 +54,10 @@ module Api
           color: tag.color
         }
       end
-      
+
       def serialize_image_with_variants(image)
         return nil unless image.attached?
-        
+
         {
           id: image.id,
           filename: image.filename.to_s,
@@ -65,13 +65,13 @@ module Api
           byte_size: image.byte_size,
           urls: {
             original: url_for(image),
-            thumb: url_for(image.variant(resize_to_limit: [150, 150])),
-            medium: url_for(image.variant(resize_to_limit: [400, 400])),
-            large: url_for(image.variant(resize_to_limit: [800, 800]))
+            thumb: url_for(image.variant(resize_to_limit: [ 150, 150 ])),
+            medium: url_for(image.variant(resize_to_limit: [ 400, 400 ])),
+            large: url_for(image.variant(resize_to_limit: [ 800, 800 ]))
           }
         }
       end
-      
+
       def url_for(attachment)
         Rails.application.routes.url_helpers.url_for(attachment)
       end

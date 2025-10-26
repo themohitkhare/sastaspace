@@ -8,7 +8,7 @@ module Api
         @include_item_count = options[:include_item_count] || false
         @user = options[:user]
       end
-      
+
       def as_json
         result = {
           id: @category.id,
@@ -25,27 +25,27 @@ module Api
           created_at: @category.created_at.iso8601,
           updated_at: @category.updated_at.iso8601
         }
-        
+
         # Add item count if requested
         if @include_item_count
           result[:item_count] = @category.total_item_count(@user)
         end
-        
+
         # Add children if requested
         if @include_children
           result[:children] = @category.subcategories.active.ordered.map do |child|
             CategorySerializer.new(child, @options).as_json
           end
         end
-        
+
         result
       end
-      
+
       # Class method for serializing multiple categories
       def self.serialize_collection(categories, options = {})
         categories.map { |category| new(category, options).as_json }
       end
-      
+
       # Class method for serializing category tree
       def self.serialize_tree(categories, options = {})
         categories.map do |category|

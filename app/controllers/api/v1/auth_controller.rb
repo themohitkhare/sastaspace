@@ -2,13 +2,13 @@ module Api
   module V1
     class AuthController < ApplicationController
       include Authenticable
-      
+
       # Only protect the 'me' endpoint with authentication
-      before_action :authenticate_user!, only: [:me]
-      before_action :parse_json_params, only: [:register, :login, :refresh]
+      before_action :authenticate_user!, only: [ :me ]
+      before_action :parse_json_params, only: [ :register, :login, :refresh ]
       def register
         user = User.new(user_params)
-        
+
         if user.save
           token = Auth::JsonWebToken.encode(user_id: user.id)
           render json: {
@@ -41,7 +41,7 @@ module Api
 
       def login
         user = User.find_by(email: params[:email])
-        
+
         if user&.authenticate(params[:password])
           token = Auth::JsonWebToken.encode(user_id: user.id)
           render json: {
@@ -75,12 +75,12 @@ module Api
         # For now, implement a basic refresh that validates the refresh token
         # and returns a new access token
         refresh_token = params[:refresh_token]
-        
+
         if refresh_token.present? && refresh_token.start_with?('refresh_token_for_')
           # Extract user ID from refresh token (basic implementation)
           user_id = refresh_token.split('_').last.to_i
           user = User.find_by(id: user_id)
-          
+
           if user
             new_token = Auth::JsonWebToken.encode(user_id: user.id)
             render json: {
@@ -147,13 +147,13 @@ module Api
         # JWT tokens are stateless, so we implement a simple blacklist
         # In a production app, you would use Redis or database for this
         token = request.headers['Authorization']&.split(' ')&.last
-        
+
         if token.present?
           # Decode token to get user info
           begin
             decoded_token = Auth::JsonWebToken.decode(token)
             user_id = decoded_token[:user_id]
-            
+
             # Store token in blacklist
             if Rails.env.test?
               blacklist = Authenticable.instance_variable_get(:@test_blacklisted_tokens) || []
@@ -162,7 +162,7 @@ module Api
             else
               Rails.cache.write("blacklisted_token_#{token}", true, expires_in: 24.hours)
             end
-            
+
             render json: {
               success: true,
               data: {

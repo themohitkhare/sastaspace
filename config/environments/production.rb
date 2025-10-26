@@ -48,7 +48,7 @@ Rails.application.configure do
 
   # Use Solid Cache with PostgreSQL backend
   config.cache_store = :solid_cache_store
-  
+
   # Use Solid Queue with PostgreSQL backend
   config.active_job.queue_adapter = :solid_queue
 

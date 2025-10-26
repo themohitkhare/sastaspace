@@ -5,105 +5,105 @@ class VectorSearchServiceTest < ActiveSupport::TestCase
     @user = create(:user)
     @category = create(:category, name: 'tops')
     @brand = create(:brand, name: 'Nike')
-    
+
     # Create inventory items with mock vectors
-    @item1 = create(:inventory_item, 
-                   user: @user, 
-                   category: @category, 
+    @item1 = create(:inventory_item,
+                   user: @user,
+                   category: @category,
                    brand: @brand,
                    name: 'Blue T-Shirt',
                    item_type: 'clothing',
                    embedding_vector: Array.new(1536) { rand(-1.0..1.0) })
-    
-    @item2 = create(:inventory_item, 
-                   user: @user, 
-                   category: @category, 
+
+    @item2 = create(:inventory_item,
+                   user: @user,
+                   category: @category,
                    brand: @brand,
                    name: 'Red T-Shirt',
                    item_type: 'clothing',
                    embedding_vector: Array.new(1536) { rand(-1.0..1.0) })
-    
-    @item3 = create(:inventory_item, 
-                   user: @user, 
-                   category: @category, 
+
+    @item3 = create(:inventory_item,
+                   user: @user,
+                   category: @category,
                    brand: @brand,
                    name: 'Green T-Shirt',
                    item_type: 'clothing',
                    embedding_vector: nil) # No vector
   end
-  
+
   test "find_similar_items returns items with vectors" do
     query_vector = Array.new(1536) { rand(-1.0..1.0) }
-    
+
     # Mock the find_by_sql method
-    InventoryItem.stubs(:find_by_sql).returns([@item1, @item2])
-    
+    InventoryItem.stubs(:find_by_sql).returns([ @item1, @item2 ])
+
     results = VectorSearchService.find_similar_items(@user, query_vector, limit: 5)
-    
+
     assert_equal 2, results.count
     assert_includes results, @item1
     assert_includes results, @item2
     assert_not_includes results, @item3
   end
-  
+
   test "semantic_search generates embedding and finds similar items" do
     query_text = "blue casual shirt"
-    
+
     # Mock the embedding generator
     mock_embedding = Array.new(1536) { rand(-1.0..1.0) }
     Ollama::EmbeddingGenerator.stubs(:generate_text_embedding).returns(mock_embedding)
-    
+
     # Mock the find_by_sql method to return our test items
-    InventoryItem.stubs(:find_by_sql).returns([@item1])
-    
+    InventoryItem.stubs(:find_by_sql).returns([ @item1 ])
+
     results = VectorSearchService.semantic_search(@user, query_text, limit: 10)
-    
+
     assert_equal 1, results.count
     assert_includes results, @item1
   end
-  
+
   test "semantic_search returns empty array when embedding generation fails" do
     query_text = "blue casual shirt"
-    
+
     # Mock embedding generation failure
     Ollama::EmbeddingGenerator.stubs(:generate_text_embedding).returns(nil)
-    
+
     results = VectorSearchService.semantic_search(@user, query_text, limit: 10)
-    
+
     assert_equal 0, results.count
   end
-  
+
   test "find_items_by_image_similarity works with image vectors" do
     image_vector = Array.new(1536) { rand(-1.0..1.0) }
-    
+
     # Mock the find_by_sql method
-    InventoryItem.stubs(:find_by_sql).returns([@item1, @item2])
-    
+    InventoryItem.stubs(:find_by_sql).returns([ @item1, @item2 ])
+
     results = VectorSearchService.find_items_by_image_similarity(@user, image_vector, limit: 5)
-    
+
     assert_equal 2, results.count
     assert_includes results, @item1
     assert_includes results, @item2
   end
-  
+
   test "recommend_outfit_items finds complementary items" do
     bottoms_category = create(:category, name: 'bottoms')
-    @bottom_item = create(:inventory_item, 
-                         user: @user, 
-                         category: bottoms_category, 
+    @bottom_item = create(:inventory_item,
+                         user: @user,
+                         category: bottoms_category,
                          name: 'Blue Jeans',
                          item_type: 'clothing',
                          embedding_vector: Array.new(1536) { rand(-1.0..1.0) })
-    
+
     # Mock the find_by_sql method to return the bottom item
-    InventoryItem.stubs(:find_by_sql).returns([@bottom_item])
-    
+    InventoryItem.stubs(:find_by_sql).returns([ @bottom_item ])
+
     results = VectorSearchService.recommend_outfit_items(@user, @item1, limit: 3)
-    
+
     assert_equal 1, results.count
     assert_includes results, @bottom_item
   end
-  
+
   test "complementary_category? correctly identifies complementary categories" do
     assert VectorSearchService.send(:complementary_category?, 'tops', 'bottoms')
     assert VectorSearchService.send(:complementary_category?, 'tops', 'dresses')

@@ -7,9 +7,9 @@ module Api
         @user = create(:user)
         @category = create(:category, :clothing)
         @brand = create(:brand)
-        @inventory_item = create(:inventory_item, :clothing, 
-          user: @user, 
-          category: @category, 
+        @inventory_item = create(:inventory_item, :clothing,
+          user: @user,
+          category: @category,
           brand: @brand,
           metadata: { color: 'blue', size: 'M' }
         )
@@ -61,7 +61,7 @@ module Api
       test 'should serialize tags' do
         tag1 = create(:tag, name: 'casual', color: '#blue')
         tag2 = create(:tag, name: 'summer', color: '#yellow')
-        @inventory_item.tags << [tag1, tag2]
+        @inventory_item.tags << [ tag1, tag2 ]
 
         serialized = @serializer.as_json
         tags = serialized[:tags]
