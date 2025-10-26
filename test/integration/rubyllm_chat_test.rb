@@ -21,7 +21,7 @@ class RubyllmChatTest < ActionDispatch::IntegrationTest
 
   test "can show a chat with messages" do
     chat = Chat.create!(model: @model)
-    
+
     # Add a test message
     chat.messages.create!(role: "user", content: "Test message")
 
@@ -47,9 +47,8 @@ class RubyllmChatTest < ActionDispatch::IntegrationTest
 
   test "acts_as_chat provides ask method" do
     chat = Chat.create!(model: @model)
-    
+
     # This should not raise an error (even if API key is not set)
     assert_respond_to chat, :ask
   end
 end
-

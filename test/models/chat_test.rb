@@ -13,7 +13,7 @@ class ChatTest < ActiveSupport::TestCase
 
   test "can create a chat with model" do
     chat = Chat.create!(model: @model)
-    
+
     assert_not_nil chat.id
     assert_equal @model, chat.model
     assert chat.model_id.present?
@@ -29,14 +29,14 @@ class ChatTest < ActiveSupport::TestCase
 
   test "acts_as_chat provides ask method" do
     chat = Chat.create!(model: @model)
-    
+
     # This should not raise an error (even if API key is not set)
     assert_respond_to chat, :ask
   end
 
   test "can add messages to chat" do
     chat = Chat.create!(model: @model)
-    
+
     message1 = chat.messages.create!(role: "user", content: "First message")
     message2 = chat.messages.create!(role: "assistant", content: "Response")
 
@@ -45,4 +45,3 @@ class ChatTest < ActiveSupport::TestCase
     assert chat.messages.include?(message2)
   end
 end
-

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2025_10_26_101216) do
+ActiveRecord::Schema[8.1].define(version: 2025_10_26_121146) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "vector"
@@ -44,19 +44,20 @@ ActiveRecord::Schema[8.1].define(version: 2025_10_26_101216) do
   end
 
   create_table "ai_analyses", force: :cascade do |t|
+    t.jsonb "analysis_data", default: {}
     t.string "analysis_type"
-    t.integer "clothing_item_id", null: false
     t.decimal "confidence_score"
     t.datetime "created_at", null: false
     t.boolean "high_confidence"
     t.string "image_hash"
+    t.integer "inventory_item_id", null: false
     t.string "model_used"
     t.integer "processing_time_ms"
     t.text "prompt_used"
     t.text "response"
     t.datetime "updated_at", null: false
     t.integer "user_id", null: false
-    t.index ["clothing_item_id"], name: "index_ai_analyses_on_clothing_item_id"
+    t.index ["inventory_item_id"], name: "index_ai_analyses_on_inventory_item_id"
     t.index ["user_id"], name: "index_ai_analyses_on_user_id"
   end
 
@@ -238,6 +239,19 @@ ActiveRecord::Schema[8.1].define(version: 2025_10_26_101216) do
     t.index ["user_id"], name: "index_outfits_on_user_id"
   end
 
+  create_table "refresh_tokens", force: :cascade do |t|
+    t.boolean "blacklisted", default: false, null: false
+    t.datetime "created_at", null: false
+    t.datetime "expires_at", null: false
+    t.string "token", null: false
+    t.datetime "updated_at", null: false
+    t.bigint "user_id", null: false
+    t.index ["blacklisted"], name: "index_refresh_tokens_on_blacklisted"
+    t.index ["expires_at"], name: "index_refresh_tokens_on_expires_at"
+    t.index ["token"], name: "index_refresh_tokens_on_token", unique: true
+    t.index ["user_id"], name: "index_refresh_tokens_on_user_id"
+  end
+
   create_table "tags", force: :cascade do |t|
     t.string "color", default: "#3B82F6"
     t.datetime "created_at", null: false
@@ -283,7 +297,7 @@ ActiveRecord::Schema[8.1].define(version: 2025_10_26_101216) do
 
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
-  add_foreign_key "ai_analyses", "clothing_items"
+  add_foreign_key "ai_analyses", "inventory_items"
   add_foreign_key "ai_analyses", "users"
   add_foreign_key "audit_logs", "users"
   add_foreign_key "categories", "categories", column: "parent_id"
@@ -302,6 +316,7 @@ ActiveRecord::Schema[8.1].define(version: 2025_10_26_101216) do
   add_foreign_key "outfit_items", "clothing_items"
   add_foreign_key "outfit_items", "outfits"
   add_foreign_key "outfits", "users"
+  add_foreign_key "refresh_tokens", "users"
   add_foreign_key "tool_calls", "messages"
   add_foreign_key "user_profiles", "users"
 end
