@@ -15,8 +15,8 @@ class VectorSearchService
   end
 
   def self.semantic_search(user, query_text, limit: 10)
-    # Generate embedding from text using Ollama
-    query_vector = Ollama::EmbeddingGenerator.generate_text_embedding(query_text)
+    # Generate embedding from text using the embedding service
+    query_vector = Services::EmbeddingService.generate_text_embedding(query_text)
 
     return [] unless query_vector.present?
 
