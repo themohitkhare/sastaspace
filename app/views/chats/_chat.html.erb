@@ -1,0 +1,5 @@
+<div id="chat_<%= chat.id %>">
+  <strong><%= link_to "Chat ##{chat.id}", chat_path(chat), class: "text-blue-600 hover:text-blue-800" %></strong>
+  <p class="text-sm text-gray-600">Created: <%= chat.created_at.strftime("%Y-%m-%d %H:%M") %></p>
+</div>
+

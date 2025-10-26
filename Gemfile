@@ -26,6 +26,9 @@ gem "jwt"
 # PostgreSQL vector search for Rails
 gem "neighbor"
 
+# RubyLLM for AI chat functionality
+gem "ruby_llm"
+
 # Pagination
 gem "kaminari"
 

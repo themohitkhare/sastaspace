@@ -9,6 +9,13 @@ Rails.application.routes.draw do
   get "health" => "health#show"
   get "ready" => "ready#show"
 
+  # RubyLLM Chat demo routes
+  resources :chats, only: [ :index, :show, :new, :create ] do
+    member do
+      post :stream
+    end
+  end
+
   # API routes
   namespace :api do
     namespace :v1 do
