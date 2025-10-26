@@ -105,6 +105,68 @@ bin/rails test test/integration/api/v1/auth_test.rb
 - **Service Tests** - Business logic testing
 - **Job Tests** - Background job testing
 
+## Database Performance & N+1 Prevention
+
+### Bullet Gem
+
+This project uses the [Bullet gem](https://github.com/flyerhzm/bullet) in development to detect N+1 queries and unused eager loading.
+
+Bullet is configured to log warnings in development mode:
+- **Console warnings** - Real-time notifications in the Rails console
+- **Rails logger** - Logged to `log/development.log`
+- **Bullet logger** - Separate log file in `log/bullet.log`
+
+### Eager Loading Best Practices
+
+Always eager load associations when accessing related data in serializers or views:
+
+```ruby
+# ✅ GOOD: Eager load associations
+@inventory_items = current_user.inventory_items
+                              .includes(:category, :brand, :tags,
+                                        primary_image_attachment: :blob,
+                                        additional_images_attachments: :blob)
+                              .page(params[:page])
+
+# ❌ BAD: Causes N+1 queries
+@inventory_items = current_user.inventory_items.page(params[:page])
+# Serializer will trigger separate queries for category, brand, tags, and images
+```
+
+### Active Storage Eager Loading
+
+For Active Storage attachments, always eager load both the attachment and blob:
+
+```ruby
+# Eager load Active Storage attachments
+.includes(primary_image_attachment: :blob,
+          additional_images_attachments: :blob)
+```
+
+### Database Indexes
+
+Key indexes for performance:
+- `index_inventory_items_on_user_id` - User-scoped queries
+- `index_inventory_items_on_user_id_and_created_at` - Sorted user queries
+- `index_inventory_items_on_category_id` - Category filtering
+- `index_inventory_items_on_created_at` - Sorting by date
+- `index_categories_on_parent_id` - Hierarchical queries
+
+### Checking for N+1 Queries
+
+When Bullet detects N+1 queries, you'll see warnings in:
+1. **Development console** - Inline warnings
+2. **Logs** - `log/bullet.log` and `log/development.log`
+
+Example warning:
+```
+N+1 Query detected
+InventoryItem => [:category]
+Add to your query: .includes(:category)
+```
+
+Always fix N+1 warnings before merging to main.
+
 ## Architecture
 
 ### Models
