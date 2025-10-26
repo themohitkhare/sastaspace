@@ -9,7 +9,7 @@ class AddVectorToInventoryItems < ActiveRecord::Migration[8.1]
       # Add new vector column
       add_column :inventory_items, :embedding_vector, :vector, limit: 1536
     end
-    
+
     # Add HNSW index for vector similarity search
     add_index :inventory_items, :embedding_vector, using: :hnsw, opclass: :vector_cosine_ops
   end

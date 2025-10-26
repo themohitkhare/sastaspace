@@ -25,7 +25,7 @@ class BrandTest < ActiveSupport::TestCase
   test "should restrict destroy when inventory items exist" do
     brand = create(:brand)
     create(:inventory_item, brand: brand)
-    
+
     assert_raises(ActiveRecord::DeleteRestrictionError) do
       brand.destroy
     end

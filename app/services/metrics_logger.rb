@@ -30,7 +30,7 @@ class MetricsLogger
     # Subscribe to job events
     ActiveSupport::Notifications.subscribe("perform.active_job") do |name, start, finish, id, payload|
       duration = ((finish - start) * 1000).round(2)
-      
+
       log_metric("job", {
         type: "completed",
         job_class: payload[:job].class.name,
@@ -50,7 +50,7 @@ class MetricsLogger
     # Subscribe to cache events
     ActiveSupport::Notifications.subscribe("cache_read.active_support") do |name, start, finish, id, payload|
       duration = ((finish - start) * 1000).round(2)
-      
+
       log_metric("cache", {
         type: "read",
         hit: payload[:hit],
@@ -61,7 +61,7 @@ class MetricsLogger
 
     ActiveSupport::Notifications.subscribe("cache_write.active_support") do |name, start, finish, id, payload|
       duration = ((finish - start) * 1000).round(2)
-      
+
       log_metric("cache", {
         type: "write",
         duration_ms: duration,

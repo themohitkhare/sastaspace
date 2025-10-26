@@ -12,7 +12,7 @@ FactoryBot.define do
     purchase_date { Faker::Date.between(from: 2.years.ago, to: Date.current) }
     wear_count { 0 }
     last_worn_at { nil }
-    
+
     metadata do
       {
         color: Faker::Color.color_name,
@@ -22,10 +22,10 @@ FactoryBot.define do
         occasion: %w[casual formal work party].sample
       }
     end
-    
+
     trait :clothing do
       item_type { :clothing }
-      association :category, factory: [:category, :clothing]
+      association :category, factory: [ :category, :clothing ]
       metadata do
         {
           color: Faker::Color.color_name,
@@ -37,10 +37,10 @@ FactoryBot.define do
         }
       end
     end
-    
+
     trait :shoes do
       item_type { :shoes }
-      association :category, factory: [:category, :shoes]
+      association :category, factory: [ :category, :shoes ]
       metadata do
         {
           color: Faker::Color.color_name,
@@ -52,10 +52,10 @@ FactoryBot.define do
         }
       end
     end
-    
+
     trait :accessories do
       item_type { :accessories }
-      association :category, factory: [:category, :accessories]
+      association :category, factory: [ :category, :accessories ]
       metadata do
         {
           color: Faker::Color.color_name,
@@ -65,10 +65,10 @@ FactoryBot.define do
         }
       end
     end
-    
+
     trait :jewelry do
       item_type { :jewelry }
-      association :category, factory: [:category, :jewelry]
+      association :category, factory: [ :category, :jewelry ]
       metadata do
         {
           color: Faker::Color.color_name,
@@ -80,7 +80,7 @@ FactoryBot.define do
         }
       end
     end
-    
+
     trait :with_tags do
       after(:create) do |item|
         create_list(:tag, 3).each do |tag|
@@ -88,18 +88,18 @@ FactoryBot.define do
         end
       end
     end
-    
+
     trait :never_worn do
       wear_count { 0 }
       last_worn_at { nil }
     end
-    
+
     trait :frequently_worn do
       wear_count { Faker::Number.between(from: 20, to: 100) }
       last_worn_at { Faker::Date.between(from: 1.week.ago, to: Date.current) }
     end
   end
-  
+
   factory :inventory_tag do
     inventory_item
     tag

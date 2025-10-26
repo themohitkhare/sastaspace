@@ -19,7 +19,7 @@ class CategoryTest < ActiveSupport::TestCase
     parent = create(:category, name: "Parent")
     @category.parent_id = parent.id
     @category.save!
-    
+
     duplicate_category = build(:category, name: @category.name, parent_id: parent.id)
     assert_not duplicate_category.valid?
     assert_includes duplicate_category.errors[:name], "has already been taken"
@@ -28,10 +28,10 @@ class CategoryTest < ActiveSupport::TestCase
   test "name can be duplicate across different parents" do
     parent1 = create(:category, name: "Parent 1")
     parent2 = create(:category, name: "Parent 2")
-    
+
     category1 = create(:category, name: "Child", parent_id: parent1.id)
     category2 = build(:category, name: "Child", parent_id: parent2.id)
-    
+
     assert category2.valid?
   end
 
@@ -67,7 +67,7 @@ class CategoryTest < ActiveSupport::TestCase
   test "should have hierarchical associations" do
     parent = create(:category, name: "Parent")
     child = create(:category, name: "Child", parent_id: parent.id)
-    
+
     assert_equal parent, child.parent_category
     assert_includes parent.subcategories, child
   end
@@ -76,8 +76,8 @@ class CategoryTest < ActiveSupport::TestCase
     grandparent = create(:category, name: "Grandparent")
     parent = create(:category, name: "Parent", parent_id: grandparent.id)
     child = create(:category, name: "Child", parent_id: parent.id)
-    
-    assert_equal [grandparent, parent], child.ancestors
+
+    assert_equal [ grandparent, parent ], child.ancestors
   end
 
   test "descendants should return all children recursively" do
@@ -85,7 +85,7 @@ class CategoryTest < ActiveSupport::TestCase
     child1 = create(:category, name: "Child 1", parent_id: parent.id)
     child2 = create(:category, name: "Child 2", parent_id: parent.id)
     grandchild = create(:category, name: "Grandchild", parent_id: child1.id)
-    
+
     descendants = parent.descendants
     assert_includes descendants, child1
     assert_includes descendants, child2
@@ -118,7 +118,7 @@ class CategoryTest < ActiveSupport::TestCase
     grandparent = create(:category, name: "Grandparent")
     parent = create(:category, name: "Parent", parent_id: grandparent.id)
     child = create(:category, name: "Child", parent_id: parent.id)
-    
+
     assert_equal "Grandparent > Parent > Child", child.full_path
   end
 
@@ -126,10 +126,10 @@ class CategoryTest < ActiveSupport::TestCase
     user = create(:user)
     parent = create(:category, name: "Parent")
     child = create(:category, name: "Child", parent_id: parent.id)
-    
+
     create(:inventory_item, user: user, category: parent, item_type: 'clothing')
     create(:inventory_item, user: user, category: child, item_type: 'clothing')
-    
+
     assert_equal 2, parent.total_item_count(user)
     assert_equal 1, child.total_item_count(user)
   end
@@ -139,14 +139,14 @@ class CategoryTest < ActiveSupport::TestCase
     root2 = create(:category, name: "Root 2")
     child = create(:category, name: "Child", parent_id: root1.id)
     inactive = create(:category, name: "Inactive", active: false)
-    
+
     assert_includes Category.root_categories, root1
     assert_includes Category.root_categories, root2
     assert_not_includes Category.root_categories, child
-    
+
     assert_includes Category.active, root1
     assert_not_includes Category.active, inactive
-    
+
     assert_includes Category.subcategories_of(root1), child
     assert_not_includes Category.subcategories_of(root1), root2
   end
@@ -154,7 +154,7 @@ class CategoryTest < ActiveSupport::TestCase
   test "should restrict destroy when inventory items exist" do
     category = create(:category)
     create(:inventory_item, category: category, item_type: 'clothing')
-    
+
     assert_raises(ActiveRecord::DeleteRestrictionError) do
       category.destroy
     end
@@ -163,9 +163,9 @@ class CategoryTest < ActiveSupport::TestCase
   test "should handle circular references gracefully" do
     parent = create(:category, name: "Parent")
     child = create(:category, name: "Child", parent_id: parent.id)
-    
+
     # This should not cause infinite recursion
-    assert_equal [parent], child.ancestors
+    assert_equal [ parent ], child.ancestors
     assert_includes parent.descendants, child
   end
 
@@ -174,10 +174,10 @@ class CategoryTest < ActiveSupport::TestCase
     level2 = create(:category, name: "Level 2", parent_id: level1.id)
     level3 = create(:category, name: "Level 3", parent_id: level2.id)
     level4 = create(:category, name: "Level 4", parent_id: level3.id)
-    
-    assert_equal [level1, level2, level3], level4.ancestors
+
+    assert_equal [ level1, level2, level3 ], level4.ancestors
     assert_equal "Level 1 > Level 2 > Level 3 > Level 4", level4.full_path
-    
+
     descendants = level1.descendants
     assert_includes descendants, level2
     assert_includes descendants, level3
@@ -214,8 +214,8 @@ class CategoryTest < ActiveSupport::TestCase
 
   test "should handle complex metadata structures" do
     complex_metadata = {
-      "colors" => ["red", "blue"],
-      "seasons" => ["spring", "summer"],
+      "colors" => [ "red", "blue" ],
+      "seasons" => [ "spring", "summer" ],
       "nested" => { "deep" => { "value" => 123 } }
     }
     category = create(:category, metadata: complex_metadata)

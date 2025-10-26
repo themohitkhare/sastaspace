@@ -20,7 +20,7 @@ Rails.application.configure do
 
   # Show full error reports.
   config.consider_all_requests_local = true
-  
+
   # Use Solid Cache with PostgreSQL backend for test environment
   config.cache_store = :solid_cache_store
 

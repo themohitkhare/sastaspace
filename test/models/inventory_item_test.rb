@@ -55,9 +55,9 @@ class InventoryItemTest < ActiveSupport::TestCase
   test "should increment wear count" do
     item = create(:inventory_item, :clothing)
     initial_count = item.wear_count
-    
+
     item.increment_wear_count!
-    
+
     assert_equal initial_count + 1, item.wear_count
     assert_not_nil item.last_worn_at
   end
@@ -65,7 +65,7 @@ class InventoryItemTest < ActiveSupport::TestCase
   test "should validate clothing size" do
     item = build(:inventory_item, :clothing, metadata: { size: 'XL' })
     assert item.valid?
-    
+
     item.metadata = { size: 'INVALID_SIZE' }
     assert_not item.valid?
     assert_includes item.errors[:size], 'is not a valid clothing size'
@@ -74,21 +74,21 @@ class InventoryItemTest < ActiveSupport::TestCase
   test "should validate shoe size" do
     item = build(:inventory_item, :shoes, metadata: { size: '9' })
     assert item.valid?
-    
+
     item.metadata = { size: '20' } # Invalid shoe size
     assert_not item.valid?
     assert_includes item.errors[:size], 'is not a valid shoe size'
   end
 
   test "metadata_summary should return compact metadata" do
-    item = create(:inventory_item, metadata: { 
-      color: 'blue', 
-      size: 'M', 
+    item = create(:inventory_item, metadata: {
+      color: 'blue',
+      size: 'M',
       material: 'cotton',
       season: 'summer',
       occasion: 'casual'
     })
-    
+
     summary = item.metadata_summary
     assert_equal 'blue', summary[:color]
     assert_equal 'M', summary[:size]
@@ -100,7 +100,7 @@ class InventoryItemTest < ActiveSupport::TestCase
   test "by_type scope should filter by item type" do
     inventory_item = create(:inventory_item, :clothing)
     shoes_item = create(:inventory_item, :shoes)
-    
+
     inventory_items = InventoryItem.by_type('clothing')
     assert_includes inventory_items, inventory_item
     assert_not_includes inventory_items, shoes_item
@@ -109,10 +109,10 @@ class InventoryItemTest < ActiveSupport::TestCase
   test "by_category scope should filter by category name" do
     tops_category = create(:category, name: 'tops')
     bottoms_category = create(:category, name: 'bottoms')
-    
+
     tops_item = create(:inventory_item, :clothing, name: "Tops Item", category: tops_category)
     bottoms_item = create(:inventory_item, :clothing, name: "Bottoms Item", category: bottoms_category)
-    
+
     tops_items = InventoryItem.by_category('tops')
     assert_includes tops_items, tops_item
     assert_not_includes tops_items, bottoms_item
@@ -121,7 +121,7 @@ class InventoryItemTest < ActiveSupport::TestCase
   test "by_season scope should filter by season metadata" do
     summer_item = create(:inventory_item, :clothing, name: "Summer Item", metadata: { season: 'summer' })
     winter_item = create(:inventory_item, :clothing, name: "Winter Item", metadata: { season: 'winter' })
-    
+
     summer_items = InventoryItem.by_season('summer')
     assert_includes summer_items, summer_item
     assert_not_includes summer_items, winter_item
@@ -130,7 +130,7 @@ class InventoryItemTest < ActiveSupport::TestCase
   test "by_color scope should filter by color metadata" do
     blue_item = create(:inventory_item, :clothing, name: "Blue Item", metadata: { color: 'blue' })
     red_item = create(:inventory_item, :clothing, name: "Red Item", metadata: { color: 'red' })
-    
+
     blue_items = InventoryItem.by_color('blue')
     assert_includes blue_items, blue_item
     assert_not_includes blue_items, red_item
@@ -139,7 +139,7 @@ class InventoryItemTest < ActiveSupport::TestCase
   test "recently_worn scope should return items worn recently" do
     recently_worn = create(:inventory_item, :clothing, last_worn_at: 1.day.ago)
     never_worn = create(:inventory_item, :clothing, last_worn_at: nil)
-    
+
     recently_worn_items = InventoryItem.recently_worn
     assert_includes recently_worn_items, recently_worn
     assert_not_includes recently_worn_items, never_worn
@@ -148,7 +148,7 @@ class InventoryItemTest < ActiveSupport::TestCase
   test "never_worn scope should return items never worn" do
     recently_worn = create(:inventory_item, :clothing, last_worn_at: 1.day.ago)
     never_worn = create(:inventory_item, :clothing, last_worn_at: nil)
-    
+
     never_worn_items = InventoryItem.never_worn
     assert_includes never_worn_items, never_worn
     assert_not_includes never_worn_items, recently_worn
@@ -157,7 +157,7 @@ class InventoryItemTest < ActiveSupport::TestCase
   test "most_worn scope should return items ordered by wear count" do
     low_wear = create(:inventory_item, :clothing, name: "Low Wear Item", wear_count: 1)
     high_wear = create(:inventory_item, :clothing, name: "High Wear Item", wear_count: 10)
-    
+
     most_worn_items = InventoryItem.most_worn
     assert_equal high_wear, most_worn_items.first
     assert_equal low_wear, most_worn_items.last
@@ -167,10 +167,10 @@ class InventoryItemTest < ActiveSupport::TestCase
     item = create(:inventory_item, :clothing)
     tag1 = create(:tag)
     tag2 = create(:tag)
-    
+
     item.tags << tag1
     item.tags << tag2
-    
+
     assert_includes item.tags, tag1
     assert_includes item.tags, tag2
     assert_equal 2, item.tags.count
@@ -180,7 +180,7 @@ class InventoryItemTest < ActiveSupport::TestCase
     inventory_item1 = create(:inventory_item, :clothing, name: "Inventory Item 1")
     inventory_item2 = create(:inventory_item, :clothing, name: "Inventory Item 2")
     shoes_item = create(:inventory_item, :shoes, name: "Shoes Item")
-    
+
     similar = inventory_item1.similar_items
     assert_includes similar, inventory_item2
     assert_not_includes similar, shoes_item
@@ -202,7 +202,7 @@ class InventoryItemTest < ActiveSupport::TestCase
 
   test "should validate primary image content type" do
     item = build(:inventory_item, :clothing)
-    
+
     # Valid image types
     %w[image/png image/jpg image/jpeg image/webp].each do |content_type|
       item.primary_image.attach(
@@ -213,7 +213,7 @@ class InventoryItemTest < ActiveSupport::TestCase
       assert item.valid?, "Should be valid with content type #{content_type}"
       item.primary_image.detach
     end
-    
+
     # Invalid image type
     item.primary_image.attach(
       io: StringIO.new('fake image data'),
@@ -226,28 +226,28 @@ class InventoryItemTest < ActiveSupport::TestCase
 
   test "should validate primary image size" do
     item = build(:inventory_item, :clothing)
-    
+
     # Create a file larger than 5MB
-    large_file = Tempfile.new(['large', '.jpg'])
+    large_file = Tempfile.new([ 'large', '.jpg' ])
     large_file.write('x' * (6 * 1024 * 1024)) # 6MB
     large_file.rewind
-    
+
     item.primary_image.attach(
       io: large_file,
       filename: 'large.jpg',
       content_type: 'image/jpeg'
     )
-    
+
     assert_not item.valid?
     assert_includes item.errors[:primary_image], 'is too large'
-    
+
     large_file.close
     large_file.unlink
   end
 
   test "should validate additional images content type" do
     item = build(:inventory_item, :clothing)
-    
+
     # Valid image types
     item.additional_images.attach([
       {
@@ -262,9 +262,9 @@ class InventoryItemTest < ActiveSupport::TestCase
       }
     ])
     assert item.valid?
-    
+
     item.additional_images.detach
-    
+
     # Invalid image type
     item.additional_images.attach(
       io: StringIO.new('fake image data'),
@@ -277,39 +277,39 @@ class InventoryItemTest < ActiveSupport::TestCase
 
   test "should validate additional images size" do
     item = build(:inventory_item, :clothing)
-    
+
     # Create a file larger than 5MB
-    large_file = Tempfile.new(['large', '.jpg'])
+    large_file = Tempfile.new([ 'large', '.jpg' ])
     large_file.write('x' * (6 * 1024 * 1024)) # 6MB
     large_file.rewind
-    
+
     item.additional_images.attach(
       io: large_file,
       filename: 'large.jpg',
       content_type: 'image/jpeg'
     )
-    
+
     assert_not item.valid?
     assert_includes item.errors[:additional_images], 'is too large'
-    
+
     large_file.close
     large_file.unlink
   end
 
   test "primary_image_variants should return variants when image attached" do
     item = create(:inventory_item, :clothing)
-    
+
     # No image attached
     variants = item.primary_image_variants
     assert_equal({}, variants)
-    
+
     # Attach image
     item.primary_image.attach(
       io: File.open(Rails.root.join('test', 'fixtures', 'files', 'sample_image.jpg')),
       filename: 'test.jpg',
       content_type: 'image/jpeg'
     )
-    
+
     variants = item.primary_image_variants
     assert_includes variants.keys, :thumb
     assert_includes variants.keys, :medium
@@ -318,18 +318,18 @@ class InventoryItemTest < ActiveSupport::TestCase
 
   test "additional_image_variants should return variants when image attached" do
     item = create(:inventory_item, :clothing)
-    
+
     # No image attached
     variants = item.additional_image_variants(nil)
     assert_equal({}, variants)
-    
+
     # Attach image
     item.additional_images.attach(
       io: File.open(Rails.root.join('test', 'fixtures', 'files', 'sample_image.jpg')),
       filename: 'test.jpg',
       content_type: 'image/jpeg'
     )
-    
+
     image = item.additional_images.first
     variants = item.additional_image_variants(image)
     assert_includes variants.keys, :thumb
@@ -339,7 +339,7 @@ class InventoryItemTest < ActiveSupport::TestCase
 
   test "should enqueue ImageProcessingJob after image attachment" do
     item = create(:inventory_item, :clothing)
-    
+
     assert_enqueued_with(job: ImageProcessingJob) do
       item.primary_image.attach(
         io: File.open(Rails.root.join('test', 'fixtures', 'files', 'sample_image.jpg')),
@@ -352,7 +352,7 @@ class InventoryItemTest < ActiveSupport::TestCase
 
   test "should enqueue ImageProcessingJob for additional images" do
     item = create(:inventory_item, :clothing)
-    
+
     assert_enqueued_with(job: ImageProcessingJob) do
       item.additional_images.attach([
         {
