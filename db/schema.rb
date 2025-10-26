@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2025_10_25_160000) do
+ActiveRecord::Schema[8.1].define(version: 2025_10_26_093221) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "vector"
@@ -88,6 +88,7 @@ ActiveRecord::Schema[8.1].define(version: 2025_10_25_160000) do
     t.integer "sort_order", default: 0
     t.datetime "updated_at", null: false
     t.index ["active"], name: "index_categories_on_active"
+    t.index ["created_at"], name: "index_categories_on_created_at"
     t.index ["name"], name: "index_categories_on_name", unique: true
     t.index ["parent_id", "sort_order"], name: "index_categories_on_parent_id_and_sort_order"
     t.index ["parent_id"], name: "index_categories_on_parent_id"
@@ -143,11 +144,13 @@ ActiveRecord::Schema[8.1].define(version: 2025_10_25_160000) do
     t.integer "wear_count", default: 0
     t.index ["brand_id"], name: "index_inventory_items_on_brand_id"
     t.index ["category_id"], name: "index_inventory_items_on_category_id"
+    t.index ["created_at"], name: "index_inventory_items_on_created_at"
     t.index ["embedding_vector"], name: "index_inventory_items_on_embedding_vector", opclass: :vector_cosine_ops, using: :hnsw
     t.index ["item_type"], name: "index_inventory_items_on_item_type"
     t.index ["last_worn_at"], name: "index_inventory_items_on_last_worn_at"
     t.index ["status"], name: "index_inventory_items_on_status"
     t.index ["user_id", "category_id"], name: "index_inventory_items_on_user_id_and_category_id"
+    t.index ["user_id", "created_at"], name: "index_inventory_items_on_user_id_and_created_at"
     t.index ["user_id", "item_type"], name: "index_inventory_items_on_user_id_and_item_type"
     t.index ["user_id"], name: "index_inventory_items_on_user_id"
   end
@@ -215,6 +218,7 @@ ActiveRecord::Schema[8.1].define(version: 2025_10_25_160000) do
     t.string "last_name"
     t.string "password_digest"
     t.datetime "updated_at", null: false
+    t.index ["created_at"], name: "index_users_on_created_at"
     t.index ["email"], name: "index_users_on_email", unique: true
   end
 

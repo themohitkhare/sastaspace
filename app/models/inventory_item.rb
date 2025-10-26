@@ -2,41 +2,47 @@ class InventoryItem < ApplicationRecord
   belongs_to :user
   belongs_to :category
   belongs_to :brand, optional: true
-  
+
   has_one_attached :primary_image
   has_many_attached :additional_images
-  
+
   has_many :outfit_items, dependent: :destroy
   has_many :outfits, through: :outfit_items
   has_many :ai_analyses, dependent: :destroy
   has_many :inventory_tags, dependent: :destroy
   has_many :tags, through: :inventory_tags
-  
+
   # Vector search capabilities - using Rails scopes with Arel.sql
   def similar_items(limit: 5)
     return [] unless embedding_vector.present?
-    
+
     vector_str = "[#{embedding_vector.join(',')}]"
-    
+
     user.inventory_items
+        .includes(:category, :brand, :tags,
+                  primary_image_attachment: :blob,
+                  additional_images_attachments: :blob)
         .where.not(id: id)
         .where.not(embedding_vector: nil)
         .order(Arel.sql("embedding_vector <-> '#{vector_str}'::vector"))
         .limit(limit)
   end
-  
+
   def find_similar_items(limit: 10)
     return [] unless embedding_vector.present?
-    
+
     vector_str = "[#{embedding_vector.join(',')}]"
-    
+
     user.inventory_items
+        .includes(:category, :brand, :tags,
+                  primary_image_attachment: :blob,
+                  additional_images_attachments: :blob)
         .where.not(id: id)
         .where.not(embedding_vector: nil)
         .order(Arel.sql("embedding_vector <-> '#{vector_str}'::vector"))
         .limit(limit)
   end
-  
+
   # Scope-based approach for direct vector search
   scope :similar_to, ->(vector, limit: 10) {
     vector_str = "[#{vector.join(',')}]"
@@ -44,36 +50,36 @@ class InventoryItem < ApplicationRecord
          .order(Arel.sql("embedding_vector <-> '#{vector_str}'::vector"))
          .limit(limit)
   }
-  
+
   # Core validations
   validates :name, presence: true
   validates :item_type, presence: true
   validates :category, presence: true
-  
+
   # Image validations
-  validates :primary_image, 
-    content_type: { in: ['image/png', 'image/jpg', 'image/jpeg', 'image/webp'] },
+  validates :primary_image,
+    content_type: { in: [ "image/png", "image/jpg", "image/jpeg", "image/webp" ] },
     size: { less_than: 5.megabytes }
-    
-  validates :additional_images, 
-    content_type: { in: ['image/png', 'image/jpg', 'image/jpeg', 'image/webp'] },
+
+  validates :additional_images,
+    content_type: { in: [ "image/png", "image/jpg", "image/jpeg", "image/webp" ] },
     size: { less_than: 5.megabytes }
-  
+
   # Flexible metadata as JSON
   store_accessor :metadata, :color, :size, :material, :season, :occasion,
                  :care_instructions, :fit_notes, :style_notes
-  
+
   # Item types
   enum :item_type, {
-    clothing: 'clothing',
-    shoes: 'shoes', 
-    accessories: 'accessories',
-    jewelry: 'jewelry'
+    clothing: "clothing",
+    shoes: "shoes",
+    accessories: "accessories",
+    jewelry: "jewelry"
   }
-  
+
   # Status tracking
   enum :status, { active: 0, archived: 1, donated: 2, sold: 3 }
-  
+
   # Scopes for filtering
   scope :by_type, ->(type) { where(item_type: type) }
   scope :by_category, ->(category) { joins(:category).where(categories: { name: category }) }
@@ -83,15 +89,15 @@ class InventoryItem < ApplicationRecord
   scope :recently_worn, -> { where.not(last_worn_at: nil).order(last_worn_at: :desc) }
   scope :never_worn, -> { where(last_worn_at: nil) }
   scope :most_worn, -> { order(wear_count: :desc) }
-  
+
   # Type-specific validations
   validate :validate_type_specific_fields
-  
+
   def increment_wear_count!
     increment!(:wear_count)
     update!(last_worn_at: Time.current)
   end
-  
+
   def metadata_summary
     {
       color: color,
@@ -101,81 +107,81 @@ class InventoryItem < ApplicationRecord
       occasion: occasion
     }.compact
   end
-  
+
   # Image variants for different use cases
   def primary_image_variants
     return {} unless primary_image.attached?
-    
+
     {
-      thumb: primary_image.variant(resize_to_limit: [150, 150]),
-      medium: primary_image.variant(resize_to_limit: [400, 400]), 
-      large: primary_image.variant(resize_to_limit: [800, 800])
+      thumb: primary_image.variant(resize_to_limit: [ 150, 150 ]),
+      medium: primary_image.variant(resize_to_limit: [ 400, 400 ]),
+      large: primary_image.variant(resize_to_limit: [ 800, 800 ])
     }
   end
-  
+
   def additional_image_variants(image)
     return {} unless image.attached?
-    
+
     {
-      thumb: image.variant(resize_to_limit: [150, 150]),
-      medium: image.variant(resize_to_limit: [400, 400]),
-      large: image.variant(resize_to_limit: [800, 800])
+      thumb: image.variant(resize_to_limit: [ 150, 150 ]),
+      medium: image.variant(resize_to_limit: [ 400, 400 ]),
+      large: image.variant(resize_to_limit: [ 800, 800 ])
     }
   end
-  
+
   # Security: Strip EXIF data and process images
   after_create_commit :process_images
   after_update_commit :process_images
-  
+
   private
-  
+
   def process_images
     ImageProcessingJob.perform_later(self) if primary_image.attached?
     additional_images.each do |image|
       ImageProcessingJob.perform_later(self, image.id) if image.attached?
     end
   end
-  
+
   def validate_type_specific_fields
     case item_type
-    when 'clothing'
+    when "clothing"
       validate_clothing_fields
-    when 'shoes'
+    when "shoes"
       validate_shoes_fields
-    when 'accessories'
+    when "accessories"
       validate_accessories_fields
-    when 'jewelry'
+    when "jewelry"
       validate_jewelry_fields
     end
   end
-  
+
   def validate_clothing_fields
     # Clothing-specific validations
     if size.present? && !valid_clothing_size?
-      errors.add(:size, 'is not a valid clothing size')
+      errors.add(:size, "is not a valid clothing size")
     end
   end
-  
+
   def validate_shoes_fields
     # Shoes-specific validations
     if size.present? && !valid_shoe_size?
-      errors.add(:size, 'is not a valid shoe size')
+      errors.add(:size, "is not a valid shoe size")
     end
   end
-  
+
   def validate_accessories_fields
     # Accessories-specific validations
   end
-  
+
   def validate_jewelry_fields
     # Jewelry-specific validations
   end
-  
+
   def valid_clothing_size?
     # Basic clothing size validation
     %w[XS S M L XL XXL].include?(size) || size.match?(/\d+/)
   end
-  
+
   def valid_shoe_size?
     # Basic shoe size validation
     size.match?(/\d+(\.\d+)?/) && size.to_f.between?(3, 15)
