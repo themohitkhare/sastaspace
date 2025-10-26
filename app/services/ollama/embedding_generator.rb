@@ -5,9 +5,9 @@ class Ollama::EmbeddingGenerator
     # Use Ollama to generate text embedding
     response = generate_embedding(text)
 
-    return nil unless response&.dig('embedding')
+    return nil unless response&.dig("embedding")
 
-    response['embedding']
+    response["embedding"]
   rescue StandardError => e
     Rails.logger.error "Failed to generate text embedding: #{e.message}"
     nil
@@ -19,9 +19,9 @@ class Ollama::EmbeddingGenerator
     # Use Ollama to generate image embedding
     response = generate_image_embedding_from_path(image_path)
 
-    return nil unless response&.dig('embedding')
+    return nil unless response&.dig("embedding")
 
-    response['embedding']
+    response["embedding"]
   rescue StandardError => e
     Rails.logger.error "Failed to generate image embedding: #{e.message}"
     nil
@@ -41,7 +41,7 @@ class Ollama::EmbeddingGenerator
     # This would integrate with your existing Ollama service
     # For now, return a placeholder
     {
-      'embedding' => Array.new(1536) { rand(-1.0..1.0) }
+      "embedding" => Array.new(1536) { rand(-1.0..1.0) }
     }
   end
 
@@ -50,7 +50,7 @@ class Ollama::EmbeddingGenerator
     # This would integrate with your existing Ollama service
     # For now, return a placeholder
     {
-      'embedding' => Array.new(1536) { rand(-1.0..1.0) }
+      "embedding" => Array.new(1536) { rand(-1.0..1.0) }
     }
   end
 
@@ -69,6 +69,6 @@ class Ollama::EmbeddingGenerator
     parts << metadata[:season] if metadata[:season]
     parts << metadata[:occasion] if metadata[:occasion]
 
-    parts.compact.join(' ')
+    parts.compact.join(" ")
   end
 end

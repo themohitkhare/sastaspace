@@ -44,7 +44,7 @@ Rails.application.routes.draw do
           post :primary_image, action: :attach_primary_image
           post :additional_images, action: :attach_additional_images
           delete :primary_image, action: :detach_primary_image
-          delete 'additional_images/:image_id', action: :detach_additional_image
+          delete "additional_images/:image_id", action: :detach_additional_image
         end
         collection do
           get :search

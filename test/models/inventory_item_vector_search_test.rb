@@ -1,33 +1,33 @@
-require 'test_helper'
+require "test_helper"
 
 class InventoryItemVectorSearchTest < ActiveSupport::TestCase
   def setup
     @user = create(:user)
-    @category = create(:category, name: 'tops')
-    @brand = create(:brand, name: 'Nike')
+    @category = create(:category, name: "tops")
+    @brand = create(:brand, name: "Nike")
 
     @item1 = create(:inventory_item,
                    user: @user,
                    category: @category,
                    brand: @brand,
-                   name: 'Blue T-Shirt',
-                   item_type: 'clothing',
+                   name: "Blue T-Shirt",
+                   item_type: "clothing",
                    embedding_vector: Array.new(1536) { rand(-1.0..1.0) })
 
     @item2 = create(:inventory_item,
                    user: @user,
                    category: @category,
                    brand: @brand,
-                   name: 'Red T-Shirt',
-                   item_type: 'clothing',
+                   name: "Red T-Shirt",
+                   item_type: "clothing",
                    embedding_vector: Array.new(1536) { rand(-1.0..1.0) })
 
     @item3 = create(:inventory_item,
                    user: @user,
                    category: @category,
                    brand: @brand,
-                   name: 'Green T-Shirt',
-                   item_type: 'clothing',
+                   name: "Green T-Shirt",
+                   item_type: "clothing",
                    embedding_vector: nil)
   end
 

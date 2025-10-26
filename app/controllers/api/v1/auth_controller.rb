@@ -23,15 +23,15 @@ module Api
               },
               token: token
             },
-            message: 'User created successfully',
+            message: "User created successfully",
             timestamp: Time.current.iso8601
           }, status: :created
         else
           render json: {
             success: false,
             error: {
-              code: 'VALIDATION_ERROR',
-              message: 'User creation failed',
+              code: "VALIDATION_ERROR",
+              message: "User creation failed",
               details: user.errors.as_json
             },
             timestamp: Time.current.iso8601
@@ -56,15 +56,15 @@ module Api
               },
               token: token
             },
-            message: 'Login successful',
+            message: "Login successful",
             timestamp: Time.current.iso8601
           }, status: :ok
         else
           render json: {
             success: false,
             error: {
-              code: 'AUTHENTICATION_ERROR',
-              message: 'Invalid email or password'
+              code: "AUTHENTICATION_ERROR",
+              message: "Invalid email or password"
             },
             timestamp: Time.current.iso8601
           }, status: :unauthorized
@@ -76,9 +76,9 @@ module Api
         # and returns a new access token
         refresh_token = params[:refresh_token]
 
-        if refresh_token.present? && refresh_token.start_with?('refresh_token_for_')
+        if refresh_token.present? && refresh_token.start_with?("refresh_token_for_")
           # Extract user ID from refresh token (basic implementation)
-          user_id = refresh_token.split('_').last.to_i
+          user_id = refresh_token.split("_").last.to_i
           user = User.find_by(id: user_id)
 
           if user
@@ -95,8 +95,8 @@ module Api
             render json: {
               success: false,
               error: {
-                code: 'AUTHENTICATION_ERROR',
-                message: 'Invalid refresh token'
+                code: "AUTHENTICATION_ERROR",
+                message: "Invalid refresh token"
               },
               timestamp: Time.current.iso8601
             }, status: :unauthorized
@@ -105,8 +105,8 @@ module Api
           render json: {
             success: false,
             error: {
-              code: 'AUTHENTICATION_ERROR',
-              message: 'Invalid refresh token'
+              code: "AUTHENTICATION_ERROR",
+              message: "Invalid refresh token"
             },
             timestamp: Time.current.iso8601
           }, status: :unauthorized
@@ -137,7 +137,7 @@ module Api
         render json: {
           success: true,
           data: {
-            message: 'Logout successful'
+            message: "Logout successful"
           },
           timestamp: Time.current.iso8601
         }, status: :ok
@@ -146,7 +146,7 @@ module Api
       def logout_all
         # JWT tokens are stateless, so we implement a simple blacklist
         # In a production app, you would use Redis or database for this
-        token = request.headers['Authorization']&.split(' ')&.last
+        token = request.headers["Authorization"]&.split(" ")&.last
 
         if token.present?
           # Decode token to get user info
@@ -166,7 +166,7 @@ module Api
             render json: {
               success: true,
               data: {
-                message: 'Logout from all devices successful'
+                message: "Logout from all devices successful"
               },
               timestamp: Time.current.iso8601
             }, status: :ok
@@ -174,8 +174,8 @@ module Api
             render json: {
               success: false,
               error: {
-                code: 'AUTHENTICATION_ERROR',
-                message: 'Invalid token'
+                code: "AUTHENTICATION_ERROR",
+                message: "Invalid token"
               },
               timestamp: Time.current.iso8601
             }, status: :unauthorized
@@ -184,8 +184,8 @@ module Api
           render json: {
             success: false,
             error: {
-              code: 'AUTHENTICATION_ERROR',
-              message: 'Token required'
+              code: "AUTHENTICATION_ERROR",
+              message: "Token required"
             },
             timestamp: Time.current.iso8601
           }, status: :unauthorized
@@ -195,7 +195,7 @@ module Api
       private
 
       def parse_json_params
-        if request.content_type == 'application/json'
+        if request.content_type == "application/json"
           request.body.rewind
           json_params = JSON.parse(request.body.read)
           params.merge!(json_params)

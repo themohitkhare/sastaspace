@@ -18,7 +18,7 @@ class AnalyzeClothingImageJob < ApplicationJob
     inventory_item.ai_analyses.create!(
       analysis_type: :visual_analysis,
       analysis_data: analysis,
-      confidence_score: analysis['confidence'] || 0.8
+      confidence_score: analysis["confidence"] || 0.8
     )
 
     Rails.logger.info "Analysis completed for inventory item #{inventory_item_id}"
@@ -33,10 +33,10 @@ class AnalyzeClothingImageJob < ApplicationJob
     # Use existing Ollama service for analysis
     # This would integrate with your existing Ollama::InventoryAnalyzer
     {
-      'item_type' => inventory_item.item_type,
-      'colors' => extract_colors(inventory_item),
-      'style' => analyze_style(inventory_item),
-      'confidence' => 0.85
+      "item_type" => inventory_item.item_type,
+      "colors" => extract_colors(inventory_item),
+      "style" => analyze_style(inventory_item),
+      "confidence" => 0.85
     }
   end
 
@@ -52,6 +52,6 @@ class AnalyzeClothingImageJob < ApplicationJob
 
   def analyze_style(inventory_item)
     # Placeholder for style analysis
-    inventory_item.metadata_summary[:occasion] || 'casual'
+    inventory_item.metadata_summary[:occasion] || "casual"
   end
 end

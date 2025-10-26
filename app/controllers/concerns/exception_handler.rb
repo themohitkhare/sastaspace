@@ -13,8 +13,8 @@ module ExceptionHandler
     render json: {
       success: false,
       error: {
-        code: 'AUTHENTICATION_ERROR',
-        message: 'Invalid token',
+        code: "AUTHENTICATION_ERROR",
+        message: "Invalid token",
         details: e.message
       },
       timestamp: Time.current.iso8601
@@ -25,8 +25,8 @@ module ExceptionHandler
     render json: {
       success: false,
       error: {
-        code: 'AUTHENTICATION_ERROR',
-        message: 'Missing token',
+        code: "AUTHENTICATION_ERROR",
+        message: "Missing token",
         details: e.message
       },
       timestamp: Time.current.iso8601

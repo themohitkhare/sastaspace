@@ -1,19 +1,19 @@
-require 'test_helper'
+require "test_helper"
 
 class Ollama::EmbeddingGeneratorTest < ActiveSupport::TestCase
   def setup
     @user = create(:user)
-    @category = create(:category, name: 'tops')
-    @brand = create(:brand, name: 'Nike')
+    @category = create(:category, name: "tops")
+    @brand = create(:brand, name: "Nike")
     @inventory_item = create(:inventory_item,
                            user: @user,
                            category: @category,
                            brand: @brand,
-                           name: 'Blue T-Shirt',
-                           color: 'blue',
-                           material: 'cotton',
-                           season: 'summer',
-                           occasion: 'casual')
+                           name: "Blue T-Shirt",
+                           color: "blue",
+                           material: "cotton",
+                           season: "summer",
+                           occasion: "casual")
   end
 
   test "generate_text_embedding returns embedding for valid text" do
@@ -21,7 +21,7 @@ class Ollama::EmbeddingGeneratorTest < ActiveSupport::TestCase
 
     # Mock the Ollama API response
     mock_response = {
-      'embedding' => Array.new(1536) { rand(-1.0..1.0) }
+      "embedding" => Array.new(1536) { rand(-1.0..1.0) }
     }
 
     Ollama::EmbeddingGenerator.stub(:generate_embedding, mock_response) do
@@ -52,11 +52,11 @@ class Ollama::EmbeddingGeneratorTest < ActiveSupport::TestCase
   end
 
   test "generate_image_embedding returns embedding for valid image" do
-    image_path = Rails.root.join('test', 'fixtures', 'files', 'test_image.jpg')
+    image_path = Rails.root.join("test", "fixtures", "files", "test_image.jpg")
 
     # Mock the Ollama API response
     mock_response = {
-      'embedding' => Array.new(1536) { rand(-1.0..1.0) }
+      "embedding" => Array.new(1536) { rand(-1.0..1.0) }
     }
 
     Ollama::EmbeddingGenerator.stub(:generate_image_embedding_from_path, mock_response) do
@@ -69,7 +69,7 @@ class Ollama::EmbeddingGeneratorTest < ActiveSupport::TestCase
   end
 
   test "generate_image_embedding returns nil for non-existent file" do
-    image_path = '/non/existent/path.jpg'
+    image_path = "/non/existent/path.jpg"
 
     result = Ollama::EmbeddingGenerator.generate_image_embedding(image_path)
     assert_nil result
@@ -90,13 +90,13 @@ class Ollama::EmbeddingGeneratorTest < ActiveSupport::TestCase
   test "build_item_description includes all relevant fields" do
     description = Ollama::EmbeddingGenerator.send(:build_item_description, @inventory_item)
 
-    assert_includes description, 'Blue T-Shirt'
-    assert_includes description, 'tops'
-    assert_includes description, 'Nike'
-    assert_includes description, 'blue'
-    assert_includes description, 'cotton'
-    assert_includes description, 'summer'
-    assert_includes description, 'casual'
+    assert_includes description, "Blue T-Shirt"
+    assert_includes description, "tops"
+    assert_includes description, "Nike"
+    assert_includes description, "blue"
+    assert_includes description, "cotton"
+    assert_includes description, "summer"
+    assert_includes description, "casual"
   end
 
   test "build_item_description handles missing optional fields" do
@@ -104,10 +104,10 @@ class Ollama::EmbeddingGeneratorTest < ActiveSupport::TestCase
 
     description = Ollama::EmbeddingGenerator.send(:build_item_description, @inventory_item)
 
-    assert_includes description, 'Blue T-Shirt'
-    assert_includes description, 'tops'
-    assert_not_includes description, 'Nike'
-    assert_not_includes description, 'blue'
-    assert_not_includes description, 'cotton'
+    assert_includes description, "Blue T-Shirt"
+    assert_includes description, "tops"
+    assert_not_includes description, "Nike"
+    assert_not_includes description, "blue"
+    assert_not_includes description, "cotton"
   end
 end

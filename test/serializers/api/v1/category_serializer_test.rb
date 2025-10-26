@@ -8,8 +8,8 @@ class Api::V1::CategorySerializerTest < ActiveSupport::TestCase
     @grandchild = create(:category, name: "Grandchild Category", parent_id: @child.id)
 
     # Create some inventory items
-    create(:inventory_item, user: @user, category: @parent, item_type: 'clothing')
-    create(:inventory_item, user: @user, category: @child, item_type: 'clothing')
+    create(:inventory_item, user: @user, category: @parent, item_type: "clothing")
+    create(:inventory_item, user: @user, category: @child, item_type: "clothing")
   end
 
   test "should serialize basic category attributes" do

@@ -5,7 +5,7 @@ class ActiveSupport::TestCase
   def setup
     # Ensure pgvector extension is available in test database
     begin
-      ActiveRecord::Base.connection.execute('CREATE EXTENSION IF NOT EXISTS vector')
+      ActiveRecord::Base.connection.execute("CREATE EXTENSION IF NOT EXISTS vector")
     rescue ActiveRecord::StatementInvalid => e
       if e.message.include?('extension "vector" does not exist')
         skip "pgvector extension not available in test database"
