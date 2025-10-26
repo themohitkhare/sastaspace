@@ -49,9 +49,9 @@ class VectorSearchServiceTest < ActiveSupport::TestCase
   test "semantic_search generates embedding and finds similar items" do
     query_text = "blue casual shirt"
 
-    # Mock the embedding generator
+    # Mock the embedding service
     mock_embedding = Array.new(1536) { rand(-1.0..1.0) }
-    Ollama::EmbeddingGenerator.stubs(:generate_text_embedding).returns(mock_embedding)
+    Services::EmbeddingService.stubs(:generate_text_embedding).returns(mock_embedding)
 
     # Mock the find_by_sql method to return our test items
     InventoryItem.stubs(:find_by_sql).returns([ @item1 ])
@@ -66,7 +66,7 @@ class VectorSearchServiceTest < ActiveSupport::TestCase
     query_text = "blue casual shirt"
 
     # Mock embedding generation failure
-    Ollama::EmbeddingGenerator.stubs(:generate_text_embedding).returns(nil)
+    Services::EmbeddingService.stubs(:generate_text_embedding).returns(nil)
 
     results = VectorSearchService.semantic_search(@user, query_text, limit: 10)
 

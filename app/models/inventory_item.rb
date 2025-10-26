@@ -8,7 +8,7 @@ class InventoryItem < ApplicationRecord
 
   has_many :outfit_items, dependent: :destroy
   has_many :outfits, through: :outfit_items
-  has_many :ai_analyses, dependent: :destroy
+  has_many :ai_analyses, dependent: :destroy, class_name: "AiAnalysis"
   has_many :inventory_tags, dependent: :destroy
   has_many :tags, through: :inventory_tags
 

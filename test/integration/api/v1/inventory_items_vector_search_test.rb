@@ -70,8 +70,8 @@ class Api::V1::InventoryItemsVectorSearchTest < ActionDispatch::IntegrationTest
   test "POST /api/v1/inventory_items/semantic_search performs semantic search" do
     query = "blue casual shirt"
 
-    # Mock the embedding generator and vector search
-    Ollama::EmbeddingGenerator.stub(:generate_text_embedding, Array.new(1536) { rand(-1.0..1.0) }) do
+    # Mock the embedding service and vector search
+    Services::EmbeddingService.stub(:generate_text_embedding, Array.new(1536) { rand(-1.0..1.0) }) do
       InventoryItem.stub(:similar_to, [ @item1 ]) do
         post "/api/v1/inventory_items/semantic_search",
              params: { q: query },
@@ -115,8 +115,8 @@ class Api::V1::InventoryItemsVectorSearchTest < ActionDispatch::IntegrationTest
   test "POST /api/v1/inventory_items/semantic_search respects limit parameter" do
     query = "blue casual shirt"
 
-    # Mock the embedding generator and vector search
-    Ollama::EmbeddingGenerator.stub(:generate_text_embedding, Array.new(1536) { rand(-1.0..1.0) }) do
+    # Mock the embedding service and vector search
+    Services::EmbeddingService.stub(:generate_text_embedding, Array.new(1536) { rand(-1.0..1.0) }) do
       InventoryItem.stub(:similar_to, [ @item1, @item2 ]) do
         post "/api/v1/inventory_items/semantic_search",
              params: { q: query, limit: 5 },
@@ -135,7 +135,7 @@ class Api::V1::InventoryItemsVectorSearchTest < ActionDispatch::IntegrationTest
     query = "blue casual shirt"
 
     # Mock embedding generation failure
-    Ollama::EmbeddingGenerator.stub(:generate_text_embedding, nil) do
+    Services::EmbeddingService.stub(:generate_text_embedding, nil) do
       post "/api/v1/inventory_items/semantic_search",
            params: { q: query },
            headers: { "Authorization" => "Bearer #{@auth_token}" }
