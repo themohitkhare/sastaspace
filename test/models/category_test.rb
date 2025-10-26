@@ -127,8 +127,8 @@ class CategoryTest < ActiveSupport::TestCase
     parent = create(:category, name: "Parent")
     child = create(:category, name: "Child", parent_id: parent.id)
 
-    create(:inventory_item, user: user, category: parent, item_type: 'clothing')
-    create(:inventory_item, user: user, category: child, item_type: 'clothing')
+    create(:inventory_item, user: user, category: parent, item_type: "clothing")
+    create(:inventory_item, user: user, category: child, item_type: "clothing")
 
     assert_equal 2, parent.total_item_count(user)
     assert_equal 1, child.total_item_count(user)
@@ -153,7 +153,7 @@ class CategoryTest < ActiveSupport::TestCase
 
   test "should restrict destroy when inventory items exist" do
     category = create(:category)
-    create(:inventory_item, category: category, item_type: 'clothing')
+    create(:inventory_item, category: category, item_type: "clothing")
 
     assert_raises(ActiveRecord::DeleteRestrictionError) do
       category.destroy

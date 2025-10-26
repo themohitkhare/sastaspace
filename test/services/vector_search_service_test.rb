@@ -1,34 +1,34 @@
-require 'test_helper'
+require "test_helper"
 
 class VectorSearchServiceTest < ActiveSupport::TestCase
   def setup
     @user = create(:user)
-    @category = create(:category, name: 'tops')
-    @brand = create(:brand, name: 'Nike')
+    @category = create(:category, name: "tops")
+    @brand = create(:brand, name: "Nike")
 
     # Create inventory items with mock vectors
     @item1 = create(:inventory_item,
                    user: @user,
                    category: @category,
                    brand: @brand,
-                   name: 'Blue T-Shirt',
-                   item_type: 'clothing',
+                   name: "Blue T-Shirt",
+                   item_type: "clothing",
                    embedding_vector: Array.new(1536) { rand(-1.0..1.0) })
 
     @item2 = create(:inventory_item,
                    user: @user,
                    category: @category,
                    brand: @brand,
-                   name: 'Red T-Shirt',
-                   item_type: 'clothing',
+                   name: "Red T-Shirt",
+                   item_type: "clothing",
                    embedding_vector: Array.new(1536) { rand(-1.0..1.0) })
 
     @item3 = create(:inventory_item,
                    user: @user,
                    category: @category,
                    brand: @brand,
-                   name: 'Green T-Shirt',
-                   item_type: 'clothing',
+                   name: "Green T-Shirt",
+                   item_type: "clothing",
                    embedding_vector: nil) # No vector
   end
 
@@ -87,12 +87,12 @@ class VectorSearchServiceTest < ActiveSupport::TestCase
   end
 
   test "recommend_outfit_items finds complementary items" do
-    bottoms_category = create(:category, name: 'bottoms')
+    bottoms_category = create(:category, name: "bottoms")
     @bottom_item = create(:inventory_item,
                          user: @user,
                          category: bottoms_category,
-                         name: 'Blue Jeans',
-                         item_type: 'clothing',
+                         name: "Blue Jeans",
+                         item_type: "clothing",
                          embedding_vector: Array.new(1536) { rand(-1.0..1.0) })
 
     # Mock the find_by_sql method to return the bottom item
@@ -105,10 +105,10 @@ class VectorSearchServiceTest < ActiveSupport::TestCase
   end
 
   test "complementary_category? correctly identifies complementary categories" do
-    assert VectorSearchService.send(:complementary_category?, 'tops', 'bottoms')
-    assert VectorSearchService.send(:complementary_category?, 'tops', 'dresses')
-    assert VectorSearchService.send(:complementary_category?, 'dresses', 'shoes')
-    assert_not VectorSearchService.send(:complementary_category?, 'tops', 'tops')
-    assert_not VectorSearchService.send(:complementary_category?, 'shoes', 'tops')
+    assert VectorSearchService.send(:complementary_category?, "tops", "bottoms")
+    assert VectorSearchService.send(:complementary_category?, "tops", "dresses")
+    assert VectorSearchService.send(:complementary_category?, "dresses", "shoes")
+    assert_not VectorSearchService.send(:complementary_category?, "tops", "tops")
+    assert_not VectorSearchService.send(:complementary_category?, "shoes", "tops")
   end
 end

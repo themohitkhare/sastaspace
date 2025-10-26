@@ -15,6 +15,6 @@ class ApplicationController < ActionController::Base
   private
 
   def set_request_id_header
-    response.headers['X-Request-ID'] = request.env['REQUEST_ID']
+    response.headers["X-Request-ID"] = request.env["REQUEST_ID"]
   end
 end

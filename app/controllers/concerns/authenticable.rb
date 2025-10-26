@@ -12,18 +12,18 @@ module Authenticable
   private
 
   def authenticate_user!
-    token = request.headers['Authorization']&.split(' ')&.last
-    raise ExceptionHandler::MissingToken, 'Token is missing' unless token
+    token = request.headers["Authorization"]&.split(" ")&.last
+    raise ExceptionHandler::MissingToken, "Token is missing" unless token
 
     # Check if token is blacklisted
     # In test environment, use a simple module variable since cache is disabled
     if Rails.env.test?
       if Authenticable.instance_variable_get(:@test_blacklisted_tokens)&.include?(token)
-        raise ExceptionHandler::InvalidToken, 'Token has been revoked'
+        raise ExceptionHandler::InvalidToken, "Token has been revoked"
       end
     else
       if Rails.cache.read("blacklisted_token_#{token}")
-        raise ExceptionHandler::InvalidToken, 'Token has been revoked'
+        raise ExceptionHandler::InvalidToken, "Token has been revoked"
       end
     end
 
@@ -33,8 +33,8 @@ module Authenticable
     render json: {
       success: false,
       error: {
-        code: 'AUTHENTICATION_ERROR',
-        message: 'Invalid token',
+        code: "AUTHENTICATION_ERROR",
+        message: "Invalid token",
         details: e.message
       },
       timestamp: Time.current.iso8601
@@ -50,7 +50,7 @@ module Authenticable
   end
 
   def authenticate_user_optional
-    token = request.headers['Authorization']&.split(' ')&.last
+    token = request.headers["Authorization"]&.split(" ")&.last
     return unless token
 
     # Check if token is blacklisted

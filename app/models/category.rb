@@ -3,8 +3,8 @@ class Category < ApplicationRecord
   validates :slug, presence: true, uniqueness: true
 
   has_many :inventory_items, dependent: :restrict_with_exception
-  has_many :subcategories, class_name: 'Category', foreign_key: 'parent_id', dependent: :destroy
-  belongs_to :parent_category, class_name: 'Category', foreign_key: 'parent_id', optional: true
+  has_many :subcategories, class_name: "Category", foreign_key: "parent_id", dependent: :destroy
+  belongs_to :parent_category, class_name: "Category", foreign_key: "parent_id", optional: true
 
   before_validation :generate_slug, if: -> { name.present? && slug.blank? }
 
@@ -34,7 +34,7 @@ class Category < ApplicationRecord
 
   # Full path for display
   def full_path
-    (ancestors + [ self ]).map(&:name).join(' > ')
+    (ancestors + [ self ]).map(&:name).join(" > ")
   end
 
   # Item count including subcategories

@@ -15,7 +15,7 @@ class Api::V1::CategoriesTest < ActionDispatch::IntegrationTest
     @sneakers = create(:category, name: "Sneakers", parent_id: @shoes.id, sort_order: 1)
 
     # Create some inventory items
-    @clothing_item = create(:inventory_item, user: @user, category: @t_shirts, item_type: 'clothing')
+    @clothing_item = create(:inventory_item, user: @user, category: @t_shirts, item_type: "clothing")
     # @shoes_item = create(:inventory_item, user: @user, category: @sneakers, item_type: 'shoes')
   end
 

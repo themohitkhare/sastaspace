@@ -24,6 +24,6 @@ class TagTest < ActiveSupport::TestCase
 
   test "should have default color" do
     tag = create(:tag, color: nil)
-    assert_equal '#3B82F6', tag.color
+    assert_equal "#3B82F6", tag.color
   end
 end
