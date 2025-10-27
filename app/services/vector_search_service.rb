@@ -16,7 +16,7 @@ class VectorSearchService
 
   def self.semantic_search(user, query_text, limit: 10)
     # Generate embedding from text using the embedding service
-    query_vector = Services::EmbeddingService.generate_text_embedding(query_text)
+    query_vector = EmbeddingService.generate_text_embedding(query_text)
 
     return [] unless query_vector.present?
 

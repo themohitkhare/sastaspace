@@ -94,12 +94,12 @@ class AiAnalysisTest < ActiveSupport::TestCase
       inventory_item: @inventory_item,
       user: @user,
       analysis_type: "visual_analysis",
-      analysis_data: { "item_type" => "clothing", "colors" => ["blue", "white"] },
+      analysis_data: { "item_type" => "clothing", "colors" => [ "blue", "white" ] },
       confidence_score: 0.85
     )
 
     assert_equal "clothing", analysis.item_type
-    assert_equal ["blue", "white"], analysis.colors
+    assert_equal [ "blue", "white" ], analysis.colors
   end
 
   test "high_confidence scope works" do
@@ -126,4 +126,3 @@ class AiAnalysisTest < ActiveSupport::TestCase
     assert_not_includes high_confidence_analyses, low_analysis
   end
 end
-

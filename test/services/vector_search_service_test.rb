@@ -51,7 +51,7 @@ class VectorSearchServiceTest < ActiveSupport::TestCase
 
     # Mock the embedding service
     mock_embedding = Array.new(1536) { rand(-1.0..1.0) }
-    Services::EmbeddingService.stubs(:generate_text_embedding).returns(mock_embedding)
+    EmbeddingService.stubs(:generate_text_embedding).returns(mock_embedding)
 
     # Mock the find_by_sql method to return our test items
     InventoryItem.stubs(:find_by_sql).returns([ @item1 ])
@@ -66,7 +66,7 @@ class VectorSearchServiceTest < ActiveSupport::TestCase
     query_text = "blue casual shirt"
 
     # Mock embedding generation failure
-    Services::EmbeddingService.stubs(:generate_text_embedding).returns(nil)
+    EmbeddingService.stubs(:generate_text_embedding).returns(nil)
 
     results = VectorSearchService.semantic_search(@user, query_text, limit: 10)
 

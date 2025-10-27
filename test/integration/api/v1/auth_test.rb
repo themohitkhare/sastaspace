@@ -80,7 +80,7 @@ class ApiV1AuthTest < ActionDispatch::IntegrationTest
     assert body["data"]["refresh_token"].present?, "Expected refresh token in response"
     assert body["data"]["user"]["email"] == user.email, "Expected user email in response"
     assert_not body["data"]["user"]["password_digest"].present?, "Password digest should not be exposed"
-    
+
     # Verify refresh token was created
     assert RefreshToken.where(user: user, token: body["data"]["refresh_token"]).exists?, "Refresh token should exist in database"
   end
@@ -144,15 +144,15 @@ class ApiV1AuthTest < ActionDispatch::IntegrationTest
     assert body["data"]["token"].present?, "Expected new JWT token"
     assert body["data"]["refresh_token"].present?, "Expected new refresh token"
     assert body["data"]["refresh_token"] != refresh_token.token, "New refresh token should be different"
-    
+
     # Old refresh token should be blacklisted
     refresh_token.reload
     assert refresh_token.blacklisted?, "Old refresh token should be blacklisted"
-    
+
     # New refresh token should be in database
     assert RefreshToken.where(token: body["data"]["refresh_token"]).exists?, "New refresh token should exist"
   end
-  
+
   test "POST /api/v1/auth/refresh rotates token and prevents reuse" do
     user = create(:user)
     refresh_token = RefreshToken.create_for_user!(user)
@@ -183,7 +183,7 @@ class ApiV1AuthTest < ActionDispatch::IntegrationTest
 
     assert_success_response
   end
-  
+
   test "POST /api/v1/auth/refresh with expired token returns error" do
     user = create(:user)
     refresh_token = RefreshToken.create!(
@@ -211,7 +211,7 @@ class ApiV1AuthTest < ActionDispatch::IntegrationTest
   test "POST /api/v1/auth/logout_all revokes all user refresh tokens" do
     user = create(:user)
     access_token = generate_access_token(user)
-    
+
     # Create multiple refresh tokens for the user
     token1 = RefreshToken.create_for_user!(user)
     token2 = RefreshToken.create_for_user!(user)
@@ -227,7 +227,7 @@ class ApiV1AuthTest < ActionDispatch::IntegrationTest
     # All refresh tokens should be blacklisted
     user.refresh_tokens.reload
     assert_equal 3, user.refresh_tokens.blacklisted.count, "All tokens should be blacklisted"
-    
+
     # Try to use a blacklisted refresh token
     post "/api/v1/auth/refresh", params: {
       refresh_token: token1.token
@@ -239,7 +239,7 @@ class ApiV1AuthTest < ActionDispatch::IntegrationTest
     get "/api/v1/auth/me", headers: api_v1_headers(access_token)
     assert_unauthorized_response
   end
-  
+
   test "POST /api/v1/auth/logout revokes current access token" do
     user = create(:user)
     access_token = generate_access_token(user)
@@ -252,23 +252,23 @@ class ApiV1AuthTest < ActionDispatch::IntegrationTest
     get "/api/v1/auth/me", headers: api_v1_headers(access_token)
     assert_unauthorized_response
   end
-  
+
   test "password change invalidates all refresh tokens" do
     user = create(:user, email: "test@example.com", password: "Password123!")
-    
+
     # Create some refresh tokens
     token1 = RefreshToken.create_for_user!(user)
     token2 = RefreshToken.create_for_user!(user)
-    
+
     assert_equal 0, user.refresh_tokens.blacklisted.count, "No tokens should be blacklisted yet"
-    
+
     # Change password
     user.update!(password: "NewPassword123!", password_confirmation: "NewPassword123!")
-    
+
     # All refresh tokens should be blacklisted
     user.refresh_tokens.reload
     assert_equal 2, user.refresh_tokens.blacklisted.count, "All tokens should be blacklisted after password change"
-    
+
     # Try to use a token after password change
     post "/api/v1/auth/refresh", params: {
       refresh_token: token1.token

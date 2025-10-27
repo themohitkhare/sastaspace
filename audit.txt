@@ -10,7 +10,9 @@
 │   ├── controllers
 │   │   ├── api
 │   │   │   └── v1
+│   │   │       ├── ai_analysis_controller.rb
 │   │   │       ├── auth_controller.rb
+│   │   │       ├── categories_controller.rb
 │   │   │       └── inventory_items_controller.rb
 │   │   ├── concerns
 │   │   │   ├── authenticable.rb
@@ -19,6 +21,7 @@
 │   │   │   ├── .keep
 │   │   │   └── structured_logging.rb
 │   │   ├── application_controller.rb
+│   │   ├── chats_controller.rb
 │   │   ├── health_controller.rb
 │   │   ├── ready_controller.rb
 │   │   └── up_controller.rb
@@ -33,7 +36,8 @@
 │   ├── jobs
 │   │   ├── analyze_clothing_image_job.rb
 │   │   ├── application_job.rb
-│   │   └── export_user_data_job.rb
+│   │   ├── export_user_data_job.rb
+│   │   └── image_processing_job.rb
 │   ├── mailers
 │   │   └── application_mailer.rb
 │   ├── middleware
@@ -43,34 +47,44 @@
 │   │   │   └── .keep
 │   │   ├── ai_analysis.rb
 │   │   ├── application_record.rb
-│   │   ├── audit_log.rb
 │   │   ├── brand.rb
 │   │   ├── category.rb
-│   │   ├── clothing_item.rb
-│   │   ├── export_job.rb
+│   │   ├── chat.rb
 │   │   ├── inventory_item.rb
 │   │   ├── inventory_tag.rb
-│   │   ├── outfit_item.rb
-│   │   ├── outfit.rb
+│   │   ├── message.rb
+│   │   ├── model.rb
+│   │   ├── refresh_token.rb
 │   │   ├── tag.rb
-│   │   ├── user_profile.rb
+│   │   ├── tool_call.rb
 │   │   └── user.rb
 │   ├── serializers
 │   │   └── api
 │   │       └── v1
+│   │           ├── category_serializer.rb
 │   │           └── inventory_item_serializer.rb
 │   ├── services
 │   │   ├── auth
 │   │   │   └── json_web_token.rb
 │   │   ├── ollama
-│   │   │   ├── embedding_generator.rb
-│   │   │   └── image_analyzer.rb
+│   │   ├── accessories_analyzer.rb
+│   │   ├── analyzer_factory.rb
+│   │   ├── clothing_analyzer.rb
+│   │   ├── embedding_service.rb
 │   │   ├── health_checker.rb
+│   │   ├── inventory_analyzer.rb
+│   │   ├── jewelry_analyzer.rb
 │   │   ├── metrics_logger.rb
 │   │   ├── rate_limiter.rb
 │   │   ├── readiness_checker.rb
+│   │   ├── shoes_analyzer.rb
 │   │   └── vector_search_service.rb
 │   └── views
+│       ├── chats
+│       │   ├── _chat.html.erb
+│       │   ├── index.html.erb
+│       │   ├── new.html.erb
+│       │   └── show.html.erb
 │       ├── layouts
 │       │   ├── application.html.erb
 │       │   ├── mailer.html.erb
@@ -103,7 +117,8 @@
 │   │   ├── content_security_policy.rb
 │   │   ├── filter_parameter_logging.rb
 │   │   ├── inflections.rb
-│   │   └── metrics.rb
+│   │   ├── metrics.rb
+│   │   └── ruby_llm.rb
 │   ├── locales
 │   │   └── en.yml
 │   ├── application.rb
@@ -156,7 +171,17 @@
 │   │   ├── 20251025110406_add_high_confidence_to_ai_analyses.rb
 │   │   ├── 20251025140607_drop_solid_queue_tables.rb
 │   │   ├── 20251025150000_enable_pgvector.rb
-│   │   └── 20251025150001_add_vector_to_inventory_items.rb
+│   │   ├── 20251025150001_add_vector_to_inventory_items.rb
+│   │   ├── 20251025160000_add_hierarchical_fields_to_categories.rb
+│   │   ├── 20251026093221_add_created_at_indexes_to_tables.rb
+│   │   ├── 20251026101048_create_chats.rb
+│   │   ├── 20251026101049_create_messages.rb
+│   │   ├── 20251026101050_create_tool_calls.rb
+│   │   ├── 20251026101051_create_models.rb
+│   │   ├── 20251026101052_add_references_to_chats_tool_calls_and_messages.rb
+│   │   ├── 20251026101216_add_user_to_chats.rb
+│   │   ├── 20251026103056_create_refresh_tokens.rb
+│   │   └── 20251026121146_fix_ai_analyses_for_inventory_items.rb
 │   ├── seeds
 │   │   └── inventory_items.rb
 │   ├── cable_schema.rb
@@ -212,9 +237,7 @@
 │   │   ├── additional.rb
 │   │   ├── brands.rb
 │   │   ├── categories.rb
-│   │   ├── clothing_items.rb
 │   │   ├── inventory_items.rb
-│   │   ├── outfits.rb
 │   │   ├── tags.rb
 │   │   └── users.rb
 │   ├── fixtures
@@ -229,34 +252,37 @@
 │   │   │   └── v1
 │   │   │       ├── ai_analysis_test.rb
 │   │   │       ├── auth_test.rb
-│   │   │       ├── clothing_items_test.rb
+│   │   │       ├── categories_test.rb
 │   │   │       ├── inventory_items_test.rb
-│   │   │       ├── inventory_items_vector_search_test.rb
-│   │   │       └── outfits_test.rb
+│   │   │       └── inventory_items_vector_search_test.rb
 │   │   ├── .keep
 │   │   ├── platform_ops_test.rb
 │   │   ├── redis_integration_test.rb
+│   │   ├── rubyllm_chat_test.rb
 │   │   └── security_test.rb
 │   ├── jobs
-│   │   ├── analyze_clothing_image_job_test.rb
-│   │   └── analyze_clothing_image_job_vector_test.rb
+│   │   └── image_processing_job_test.rb
 │   ├── mailers
 │   │   └── .keep
 │   ├── models
+│   │   ├── ai_analysis_test.rb
 │   │   ├── brand_test.rb
 │   │   ├── category_test.rb
-│   │   ├── clothing_item_test.rb
+│   │   ├── chat_test.rb
 │   │   ├── inventory_item_test.rb
 │   │   ├── inventory_item_vector_search_test.rb
 │   │   ├── .keep
-│   │   ├── outfit_item_test.rb
-│   │   ├── outfit_test.rb
+│   │   ├── refresh_token_test.rb
 │   │   ├── tag_test.rb
 │   │   └── user_test.rb
+│   ├── serializers
+│   │   └── api
+│   │       └── v1
+│   │           ├── category_serializer_test.rb
+│   │           └── inventory_item_serializer_test.rb
 │   ├── services
 │   │   ├── ollama
-│   │   │   ├── embedding_generator_test.rb
-│   │   │   └── image_analyzer_test.rb
+│   │   ├── analyzer_factory_test.rb
 │   │   └── vector_search_service_test.rb
 │   ├── support
 │   │   ├── api_helpers.rb
@@ -285,11 +311,12 @@
 ├── .rubocop.yml
 └── .ruby-version
 
-70 directories, 213 files
+74 directories, 235 files
 
 📄 Rails Key Files:
 ===================
 ./app/controllers/application_controller.rb
+./app/controllers/chats_controller.rb
 ./app/controllers/health_controller.rb
 ./app/controllers/ready_controller.rb
 ./app/controllers/up_controller.rb
@@ -298,26 +325,33 @@
 ./app/jobs/analyze_clothing_image_job.rb
 ./app/jobs/application_job.rb
 ./app/jobs/export_user_data_job.rb
+./app/jobs/image_processing_job.rb
 ./app/mailers/application_mailer.rb
 ./app/middleware/request_id_middleware.rb
 ./app/models/ai_analysis.rb
 ./app/models/application_record.rb
-./app/models/audit_log.rb
 ./app/models/brand.rb
 ./app/models/category.rb
-./app/models/clothing_item.rb
-./app/models/export_job.rb
+./app/models/chat.rb
 ./app/models/inventory_item.rb
 ./app/models/inventory_tag.rb
-./app/models/outfit_item.rb
-./app/models/outfit.rb
+./app/models/message.rb
+./app/models/model.rb
+./app/models/refresh_token.rb
 ./app/models/tag.rb
-./app/models/user_profile.rb
+./app/models/tool_call.rb
 ./app/models/user.rb
+./app/services/accessories_analyzer.rb
+./app/services/analyzer_factory.rb
+./app/services/clothing_analyzer.rb
+./app/services/embedding_service.rb
 ./app/services/health_checker.rb
+./app/services/inventory_analyzer.rb
+./app/services/jewelry_analyzer.rb
 ./app/services/metrics_logger.rb
 ./app/services/rate_limiter.rb
 ./app/services/readiness_checker.rb
+./app/services/shoes_analyzer.rb
 ./app/services/vector_search_service.rb
 ./config/application.rb
 ./config/boot.rb
@@ -337,6 +371,7 @@
 ./config/initializers/filter_parameter_logging.rb
 ./config/initializers/inflections.rb
 ./config/initializers/metrics.rb
+./config/initializers/ruby_llm.rb
 ./config/locales/en.yml
 ./config/puma.rb
 ./config/queue.yml
@@ -374,6 +409,16 @@
 ./db/migrate/20251025140607_drop_solid_queue_tables.rb
 ./db/migrate/20251025150000_enable_pgvector.rb
 ./db/migrate/20251025150001_add_vector_to_inventory_items.rb
+./db/migrate/20251025160000_add_hierarchical_fields_to_categories.rb
+./db/migrate/20251026093221_add_created_at_indexes_to_tables.rb
+./db/migrate/20251026101048_create_chats.rb
+./db/migrate/20251026101049_create_messages.rb
+./db/migrate/20251026101050_create_tool_calls.rb
+./db/migrate/20251026101051_create_models.rb
+./db/migrate/20251026101052_add_references_to_chats_tool_calls_and_messages.rb
+./db/migrate/20251026101216_add_user_to_chats.rb
+./db/migrate/20251026103056_create_refresh_tokens.rb
+./db/migrate/20251026121146_fix_ai_analyses_for_inventory_items.rb
 ./db/queue_schema.rb
 ./db/schema.rb
 ./db/seeds/inventory_items.rb
@@ -388,25 +433,24 @@
 ./test/factories/additional.rb
 ./test/factories/brands.rb
 ./test/factories/categories.rb
-./test/factories/clothing_items.rb
 ./test/factories/inventory_items.rb
-./test/factories/outfits.rb
 ./test/factories/tags.rb
 ./test/factories/users.rb
 ./test/integration/platform_ops_test.rb
 ./test/integration/redis_integration_test.rb
+./test/integration/rubyllm_chat_test.rb
 ./test/integration/security_test.rb
-./test/jobs/analyze_clothing_image_job_test.rb
-./test/jobs/analyze_clothing_image_job_vector_test.rb
+./test/jobs/image_processing_job_test.rb
+./test/models/ai_analysis_test.rb
 ./test/models/brand_test.rb
 ./test/models/category_test.rb
-./test/models/clothing_item_test.rb
+./test/models/chat_test.rb
 ./test/models/inventory_item_test.rb
 ./test/models/inventory_item_vector_search_test.rb
-./test/models/outfit_item_test.rb
-./test/models/outfit_test.rb
+./test/models/refresh_token_test.rb
 ./test/models/tag_test.rb
 ./test/models/user_test.rb
+./test/services/analyzer_factory_test.rb
 ./test/services/vector_search_service_test.rb
 ./test/support/api_helpers.rb
 ./test/support/factory_bot.rb
