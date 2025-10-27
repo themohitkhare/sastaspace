@@ -1,7 +1,7 @@
 RubyLLM.configure do |config|
-  # OpenAI configuration
-  config.openai_api_key = ENV["OPENAI_API_KEY"] || Rails.application.credentials.dig(:openai_api_key)
-  config.openai_api_base = ENV["OPENAI_API_BASE"]
+  # OpenAI configuration (can also be used for Ollama-compatible APIs)
+  config.openai_api_key = ENV["OPENAI_API_KEY"] || Rails.application.credentials.dig(:openai_api_key) || "ollama"
+  config.openai_api_base = ENV["OPENAI_API_BASE"] || ENV["OLLAMA_API_BASE"] || "http://localhost:11434/v1"
   config.openai_organization_id = ENV["OPENAI_ORGANIZATION_ID"]
 
   # Anthropic configuration
@@ -32,7 +32,7 @@ RubyLLM.configure do |config|
   config.openrouter_api_key = ENV["OPENROUTER_API_KEY"] || Rails.application.credentials.dig(:openrouter_api_key)
 
   # Ollama configuration
-  config.ollama_api_base = ENV["OLLAMA_API_BASE"] || "http://localhost:11434"
+  config.ollama_api_base = ENV["OLLAMA_API_BASE"] || "http://localhost:11434/v1"
 
   # Set default models
   # config.default_model = "gpt-4.1-nano"

@@ -28,7 +28,7 @@ module Api
 
       test "POST /api/v1/ai/analyze also queues analysis job" do
         params = { inventory_item_id: @inventory_item.id }
-        
+
         assert_enqueued_jobs 1, only: AnalyzeClothingImageJob do
           post "/api/v1/ai/analyze",
                params: params,

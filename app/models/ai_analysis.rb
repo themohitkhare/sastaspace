@@ -49,4 +49,3 @@ class AiAnalysis < ApplicationRecord
     analysis_data_hash["category_suggestion"]
   end
 end
-

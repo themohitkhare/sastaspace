@@ -11,16 +11,16 @@ module Services
     # Main analysis entry point
     def analyze
       chat = create_or_find_chat
-      
+
       # Analyze the inventory item
       results = perform_analysis(chat)
-      
+
       # Save results to AiAnalysis
       save_analysis(results)
-      
+
       # Generate and store embedding
       generate_embedding
-      
+
       results
     end
 
@@ -60,7 +60,7 @@ module Services
 
     def save_analysis(results)
       start_time = Time.current
-      
+
       ai_analysis = AiAnalysis.create!(
         inventory_item: inventory_item,
         user: inventory_item.user,
@@ -72,15 +72,15 @@ module Services
         prompt_used: analysis_prompt,
         high_confidence: (results["confidence"] || 0) > 0.8
       )
-      
+
       Rails.logger.info "Created AI analysis #{ai_analysis.id} for inventory item #{inventory_item.id}"
       ai_analysis
     end
 
     def generate_embedding
       # Use RubyLLM to generate embedding for the inventory item
-      embedding = Services::EmbeddingService.generate_for_item(inventory_item)
-      
+      embedding = EmbeddingService.generate_for_item(inventory_item)
+
       inventory_item.update!(embedding_vector: embedding) if embedding.present?
     end
 

@@ -12,7 +12,7 @@ module Api
       def analyze_image
         # Queue analysis job
         AnalyzeClothingImageJob.perform_later(@inventory_item.id)
-        
+
         render json: {
           success: true,
           data: {
@@ -65,7 +65,7 @@ module Api
       # DELETE /api/v1/inventory_items/:id/analysis
       def destroy
         @ai_analysis.destroy!
-        
+
         render json: {
           success: true,
           message: "Analysis deleted successfully",
@@ -146,4 +146,3 @@ module Api
     end
   end
 end
-
