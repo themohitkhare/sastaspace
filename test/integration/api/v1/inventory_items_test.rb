@@ -3,7 +3,7 @@ require "test_helper"
 class Api::V1::InventoryItemsTest < ActionDispatch::IntegrationTest
   def setup
     @user = create(:user)
-    @token = Auth::JsonWebToken.encode(user_id: @user.id)
+    @token = Auth::JsonWebToken.encode_access_token(user_id: @user.id)
     @category = create(:category, :clothing)
     @brand = create(:brand)
     @inventory_item = create(:inventory_item, :clothing, user: @user, category: @category, brand: @brand)

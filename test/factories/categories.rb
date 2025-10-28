@@ -1,25 +1,25 @@
 # Category factory for testing
 FactoryBot.define do
   factory :category do
-    name { Faker::Commerce.department }
+    sequence(:name) { |n| "#{Faker::Commerce.department} #{n}" }
     description { Faker::Lorem.sentence }
     sort_order { 1 }
     active { true }
 
     trait :clothing do
-      name { %w[Tops Bottoms Dresses Outerwear Undergarments].sample }
+      sequence(:name) { |n| "#{%w[Tops Bottoms Dresses Outerwear Undergarments].sample} #{n}" }
     end
 
     trait :shoes do
-      name { %w[Athletic Dress Shoes Casual Boots].sample }
+      sequence(:name) { |n| "#{%w[Athletic Dress Shoes Casual Boots].sample} #{n}" }
     end
 
     trait :accessories do
-      name { %w[Bags Belts Hats Scarves Sunglasses].sample }
+      sequence(:name) { |n| "#{%w[Bags Belts Hats Scarves Sunglasses].sample} #{n}" }
     end
 
     trait :jewelry do
-      name { %w[Necklaces Rings Earrings Bracelets Watches].sample }
+      sequence(:name) { |n| "#{%w[Necklaces Rings Earrings Bracelets Watches].sample} #{n}" }
     end
   end
 end

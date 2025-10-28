@@ -22,7 +22,8 @@ module Api
           last_worn_at: @inventory_item.last_worn_at,
           images: {
             primary: serialize_image_with_variants(@inventory_item.primary_image),
-            additional: @inventory_item.additional_images.map { |img| serialize_image_with_variants(img) }
+
+         additional: @inventory_item.additional_images.attached? ? @inventory_item.additional_images.map { |img| serialize_image_with_variants(img) } : []
           },
           created_at: @inventory_item.created_at,
           updated_at: @inventory_item.updated_at
@@ -56,7 +57,7 @@ module Api
       end
 
       def serialize_image_with_variants(image)
-        return nil unless image.attached?
+        return nil if image.nil? || (image.respond_to?(:attached?) && !image.attached?)
 
         {
           id: image.id,

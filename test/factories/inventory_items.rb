@@ -5,7 +5,7 @@ FactoryBot.define do
     category
     brand
     sequence(:name) { |n| "Inventory Item #{n}" }
-    item_type { InventoryItem.item_types.keys.sample }
+    item_type { :clothing }
     description { Faker::Lorem.paragraph }
     status { :active }
     purchase_price { Faker::Commerce.price(range: 10.0..500.0) }
@@ -97,6 +97,16 @@ FactoryBot.define do
     trait :frequently_worn do
       wear_count { Faker::Number.between(from: 20, to: 100) }
       last_worn_at { Faker::Date.between(from: 1.week.ago, to: Date.current) }
+    end
+
+    trait :with_photo do
+      after(:create) do |item|
+        item.primary_image.attach(
+          io: File.open(Rails.root.join("test", "fixtures", "files", "sample_image.jpg")),
+          filename: "test.jpg",
+          content_type: "image/jpeg"
+        )
+      end
     end
   end
 

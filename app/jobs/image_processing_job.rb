@@ -22,7 +22,7 @@ class ImageProcessingJob < ApplicationJob
   private
 
   def process_image_variants(image)
-    return unless image.attached?
+    return if image.nil? || (image.respond_to?(:attached?) && !image.attached?)
 
     # Pre-generate commonly used variants
     image.variant(resize_to_limit: [ 150, 150 ]) # thumb
@@ -33,7 +33,7 @@ class ImageProcessingJob < ApplicationJob
   end
 
   def strip_exif_data(image)
-    return unless image.attached?
+    return if image.nil? || (image.respond_to?(:attached?) && !image.attached?)
 
     # For now, we'll rely on Active Storage's built-in processing
     # In production, you might want to use ImageMagick or similar

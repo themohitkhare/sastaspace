@@ -5,6 +5,8 @@ module Api
 
       before_action :authenticate_user!
       before_action :set_inventory_item, only: [ :show, :update, :destroy, :worn, :similar ]
+      
+      rescue_from ActionDispatch::Http::Parameters::ParseError, with: :handle_parse_error
 
       # GET /api/v1/inventory_items
       def index
@@ -295,12 +297,34 @@ module Api
       end
 
       def inventory_item_params
-        params.require(:inventory_item).permit(
-          :name, :item_type, :description, :status, :category_id, :brand_id,
-          :purchase_price, :purchase_date, :primary_image, additional_images: [],
-          metadata: [ :color, :size, :material, :season, :occasion, :care_instructions, :fit_notes, :style_notes ],
-          tag_ids: []
-        )
+        begin
+          permitted = params.require(:inventory_item).permit(
+            :name, :item_type, :description, :status, :category_id, :brand_id,
+            :purchase_price, :purchase_date, :primary_image, additional_images: [],
+            metadata: {}, # Allow any metadata hash structure
+            tag_ids: []
+          )
+          permitted
+        rescue ActionController::ParameterMissing => e
+          Rails.logger.error "Parameter missing: #{e.message}"
+          raise
+        rescue StandardError => e
+          Rails.logger.error "Error parsing parameters: #{e.message}"
+          raise
+        end
+      end
+
+      def handle_parse_error(exception)
+        Rails.logger.error "Parse error: #{exception.message}"
+        render json: {
+          success: false,
+          error: {
+            code: "PARSE_ERROR",
+            message: "Error parsing request parameters",
+            details: exception.message
+          },
+          timestamp: Time.current.iso8601
+        }, status: :bad_request
       end
 
       def apply_filters(inventory_items)
