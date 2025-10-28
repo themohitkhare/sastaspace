@@ -3,7 +3,7 @@ require "test_helper"
 class Api::V1::CategoriesTest < ActionDispatch::IntegrationTest
   def setup
     @user = create(:user)
-    @token = Auth::JsonWebToken.encode(user_id: @user.id)
+    @token = Auth::JsonWebToken.encode_access_token(user_id: @user.id)
 
     # Create hierarchical categories
     @clothing = create(:category, name: "Clothing", sort_order: 1)

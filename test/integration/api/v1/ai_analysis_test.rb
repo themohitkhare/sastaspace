@@ -5,7 +5,7 @@ module Api
     class AiAnalysisTest < ActionDispatch::IntegrationTest
       setup do
         @user = FactoryBot.create(:user)
-        @token = JsonWebToken.encode(user_id: @user.id)
+        @token = Auth::JsonWebToken.encode_access_token(user_id: @user.id)
         @category = FactoryBot.create(:category, name: "Tops")
         @inventory_item = FactoryBot.create(:inventory_item,
                                             user: @user,

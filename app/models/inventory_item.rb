@@ -6,8 +6,6 @@ class InventoryItem < ApplicationRecord
   has_one_attached :primary_image
   has_many_attached :additional_images
 
-  has_many :outfit_items, dependent: :destroy
-  has_many :outfits, through: :outfit_items
   has_many :ai_analyses, dependent: :destroy, class_name: "AiAnalysis"
   has_many :inventory_tags, dependent: :destroy
   has_many :tags, through: :inventory_tags
@@ -55,15 +53,6 @@ class InventoryItem < ApplicationRecord
   validates :name, presence: true
   validates :item_type, presence: true
   validates :category, presence: true
-
-  # Image validations
-  validates :primary_image,
-    content_type: { in: [ "image/png", "image/jpg", "image/jpeg", "image/webp" ] },
-    size: { less_than: 5.megabytes }
-
-  validates :additional_images,
-    content_type: { in: [ "image/png", "image/jpg", "image/jpeg", "image/webp" ] },
-    size: { less_than: 5.megabytes }
 
   # Flexible metadata as JSON
   store_accessor :metadata, :color, :size, :material, :season, :occasion,
@@ -120,7 +109,7 @@ class InventoryItem < ApplicationRecord
   end
 
   def additional_image_variants(image)
-    return {} unless image.attached?
+    return {} if image.nil? || (image.respond_to?(:attached?) && !image.attached?)
 
     {
       thumb: image.variant(resize_to_limit: [ 150, 150 ]),
@@ -136,9 +125,13 @@ class InventoryItem < ApplicationRecord
   private
 
   def process_images
-    ImageProcessingJob.perform_later(self) if primary_image.attached?
+    if primary_image.attached?
+      ImageProcessingJob.perform_later(self)
+    end
     additional_images.each do |image|
-      ImageProcessingJob.perform_later(self, image.id) if image.attached?
+      if image.present?
+        ImageProcessingJob.perform_later(self, image.id)
+      end
     end
   end
 

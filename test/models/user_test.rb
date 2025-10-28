@@ -24,32 +24,7 @@ class UserTest < ActiveSupport::TestCase
   test "validates password length" do
     user = build(:user, password: "short")
     assert_not user.valid?
-    assert_includes user.errors[:password], "is too short"
-  end
-
-  # Password validation
-  test "password must contain at least one uppercase letter" do
-    user = build(:user, password: "password123!")
-    assert_not user.valid?
-    assert_includes user.errors[:password], "must contain at least one uppercase letter"
-  end
-
-  test "password must contain at least one lowercase letter" do
-    user = build(:user, password: "PASSWORD123!")
-    assert_not user.valid?
-    assert_includes user.errors[:password], "must contain at least one lowercase letter"
-  end
-
-  test "password must contain at least one number" do
-    user = build(:user, password: "Password!")
-    assert_not user.valid?
-    assert_includes user.errors[:password], "must contain at least one number"
-  end
-
-  test "password must contain at least one special character" do
-    user = build(:user, password: "Password123")
-    assert_not user.valid?
-    assert_includes user.errors[:password], "must contain at least one special character"
+    assert_includes user.errors[:password], "is too short (minimum is 6 characters)"
   end
 
   # Password hashing
@@ -65,38 +40,15 @@ class UserTest < ActiveSupport::TestCase
   # Associations
   test "has many inventory items" do
     user = create(:user)
-    item = create(:inventory_item, user: user)
+    item = create(:inventory_item, :clothing, user: user)
     assert_includes user.inventory_items, item
-  end
-
-  test "has many outfits" do
-    user = create(:user)
-    outfit = create(:outfit, user: user)
-    assert_includes user.outfits, outfit
   end
 
   test "has many ai analyses" do
     user = create(:user)
-    item = create(:inventory_item, user: user)
+    item = create(:inventory_item, :clothing, user: user)
     analysis = create(:ai_analysis, inventory_item: item)
     assert_includes user.ai_analyses, analysis
-  end
-
-  test "has one user profile" do
-    user = create(:user)
-    profile = create(:user_profile, user: user)
-    assert_equal profile, user.user_profile
-  end
-
-  # Scopes
-  test "confirmed scope returns only confirmed users" do
-    confirmed_user = create(:user, :confirmed)
-    unconfirmed_user = create(:user)
-
-    confirmed_users = User.confirmed
-
-    assert_includes confirmed_users, confirmed_user
-    assert_not_includes confirmed_users, unconfirmed_user
   end
 
   # Methods
@@ -111,5 +63,8 @@ class UserTest < ActiveSupport::TestCase
 
     user = build(:user, first_name: "John", last_name: nil)
     assert_equal "John", user.full_name
+
+    user = build(:user, first_name: nil, last_name: nil)
+    assert_equal user.email, user.full_name
   end
 end

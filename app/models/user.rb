@@ -19,6 +19,10 @@ class User < ApplicationRecord
     refresh_tokens.update_all(blacklisted: true)
   end
 
+  def full_name
+    [first_name, last_name].compact.join(" ").presence || email
+  end
+
   private
 
   def invalidate_refresh_tokens_on_password_change
