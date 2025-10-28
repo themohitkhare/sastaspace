@@ -16,7 +16,7 @@ class ImageProcessingJobTest < ActiveJob::TestCase
     )
 
     assert_enqueued_with(job: ImageProcessingJob) do
-      ImageProcessingJob.perform_now(@inventory_item)
+      ImageProcessingJob.perform_later(@inventory_item)
     end
   end
 

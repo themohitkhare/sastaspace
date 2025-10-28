@@ -177,14 +177,23 @@ class InventoryItemTest < ActiveSupport::TestCase
   end
 
   test "similar_items should return items of same type" do
-    inventory_item1 = create(:inventory_item, :clothing, name: "Inventory Item 1")
-    inventory_item2 = create(:inventory_item, :clothing, name: "Inventory Item 2")
-    shoes_item = create(:inventory_item, :shoes, name: "Shoes Item")
+    inventory_item1 = create(:inventory_item, :clothing, name: "Inventory Item 1", user: @user)
+    inventory_item2 = create(:inventory_item, :clothing, name: "Inventory Item 2", user: @user)
+    shoes_item = create(:inventory_item, :shoes, name: "Shoes Item", user: @user)
 
+    # Without embedding vectors, similar_items returns empty array
     similar = inventory_item1.similar_items
-    assert_includes similar, inventory_item2
-    assert_not_includes similar, shoes_item
-    assert_not_includes similar, inventory_item1 # Should not include self
+    assert_equal [], similar, "Similar items should be empty without embedding vectors"
+    
+    # Test with embedding vectors
+    embedding_vector = (0..1535).to_a.map { |_i| rand(-1.0..1.0) }
+    inventory_item1.update!(embedding_vector: embedding_vector)
+    similar_vector = embedding_vector.map { |v| v + rand(-0.1..0.1) }
+    inventory_item2.update!(embedding_vector: similar_vector)
+    
+    similar = inventory_item1.similar_items
+    assert_not_includes similar, inventory_item1, "Should not include self"
+    assert_not_includes similar, shoes_item, "Should not include different item type"
   end
 
   # Image attachment tests

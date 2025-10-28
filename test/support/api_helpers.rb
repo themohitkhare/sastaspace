@@ -42,6 +42,20 @@ module ApiHelpers
     headers.merge!(auth_headers(token)) if token
     headers
   end
+
+  def generate_jwt_token(user)
+    Auth::JsonWebToken.encode_access_token(user_id: user.id)
+  end
+
+  def generate_access_token(user)
+    Auth::JsonWebToken.encode_access_token(user_id: user.id)
+  end
+
+  def generate_expired_jwt_token(user)
+    # Create a token with expired time
+    payload = { user_id: user.id, exp: 1.hour.ago.to_i }
+    JWT.encode(payload, Rails.application.secret_key_base)
+  end
 end
 
 # Include in integration tests

@@ -39,14 +39,21 @@ module Api
       end
 
       test "GET /api/v1/inventory_items/:id/analysis retrieves analysis" do
+        # Reload to ensure association is fresh
+        @inventory_item.reload
+        
         analysis = AiAnalysis.create!(
           inventory_item: @inventory_item,
           user: @user,
           analysis_type: "visual_analysis",
           analysis_data: { "color" => "blue", "style" => "casual" },
           confidence_score: 0.85,
+          high_confidence: true,
           model_used: "gpt-4o-mini"
         )
+        
+        # Reload inventory item to pick up new analysis
+        @inventory_item.reload
 
         get "/api/v1/inventory_items/#{@inventory_item.id}/analysis",
             headers: { "Authorization" => "Bearer #{@token}" }
@@ -87,13 +94,20 @@ module Api
       end
 
       test "DELETE /api/v1/inventory_items/:id/analysis deletes analysis" do
+        # Reload to ensure association is fresh
+        @inventory_item.reload
+        
         analysis = AiAnalysis.create!(
           inventory_item: @inventory_item,
           user: @user,
           analysis_type: "visual_analysis",
           analysis_data: { "color" => "blue" },
-          confidence_score: 0.85
+          confidence_score: 0.85,
+          high_confidence: true
         )
+        
+        # Reload inventory item to pick up new analysis
+        @inventory_item.reload
 
         delete "/api/v1/inventory_items/#{@inventory_item.id}/analysis",
                headers: { "Authorization" => "Bearer #{@token}" }
