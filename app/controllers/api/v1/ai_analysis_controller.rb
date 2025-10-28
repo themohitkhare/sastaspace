@@ -102,15 +102,9 @@ module Api
       end
 
       def set_ai_analysis
-        if params[:id].present?
-          # If ID is provided directly, it's the analysis ID
-          @ai_analysis = AiAnalysis.joins(:inventory_item)
-                                  .where(id: params[:id], inventory_items: { user_id: current_user.id })
-                                  .first
-        else
-          # Otherwise, get the latest analysis for the inventory item
-          @ai_analysis = @inventory_item.ai_analyses.order(created_at: :desc).first
-        end
+        # Always get the latest analysis for the inventory item
+        # The :id param is used by set_inventory_item to find the inventory_item
+        @ai_analysis = @inventory_item.ai_analyses.reload.order(created_at: :desc).first
 
         unless @ai_analysis
           render json: {

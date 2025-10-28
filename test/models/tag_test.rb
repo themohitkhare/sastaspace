@@ -23,7 +23,8 @@ class TagTest < ActiveSupport::TestCase
   end
 
   test "should have default color" do
-    tag = create(:tag, color: nil)
+    # Create tag without specifying color to test database default
+    tag = Tag.create!(name: "Test Tag #{Time.now.to_i}")
     assert_equal "#3B82F6", tag.color
   end
 end

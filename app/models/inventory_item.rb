@@ -82,6 +82,12 @@ class InventoryItem < ApplicationRecord
   # Type-specific validations
   validate :validate_type_specific_fields
 
+  # Image validations
+  validate :validate_primary_image_content_type
+  validate :validate_primary_image_size
+  validate :validate_additional_images_content_type
+  validate :validate_additional_images_size
+
   def increment_wear_count!
     increment!(:wear_count)
     update!(last_worn_at: Time.current)
@@ -178,5 +184,47 @@ class InventoryItem < ApplicationRecord
   def valid_shoe_size?
     # Basic shoe size validation
     size.match?(/\d+(\.\d+)?/) && size.to_f.between?(3, 15)
+  end
+
+  def validate_primary_image_content_type
+    return unless primary_image.attached?
+
+    allowed_types = %w[image/jpeg image/jpg image/png image/webp]
+    unless allowed_types.include?(primary_image.content_type)
+      errors.add(:primary_image, "is not a valid content type")
+    end
+  end
+
+  def validate_primary_image_size
+    return unless primary_image.attached?
+
+    max_size = 5.megabytes
+    if primary_image.byte_size > max_size
+      errors.add(:primary_image, "is too large")
+    end
+  end
+
+  def validate_additional_images_content_type
+    return unless additional_images.attached?
+
+    allowed_types = %w[image/jpeg image/jpg image/png image/webp]
+    additional_images.each do |image|
+      unless allowed_types.include?(image.content_type)
+        errors.add(:additional_images, "is not a valid content type")
+        break
+      end
+    end
+  end
+
+  def validate_additional_images_size
+    return unless additional_images.attached?
+
+    max_size = 5.megabytes
+    additional_images.each do |image|
+      if image.byte_size > max_size
+        errors.add(:additional_images, "is too large")
+        break
+      end
+    end
   end
 end
