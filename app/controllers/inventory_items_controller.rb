@@ -2,7 +2,7 @@ class InventoryItemsController < ApplicationController
   include SessionAuthenticable
 
   before_action :authenticate_user!
-  before_action :set_inventory_item, only: [:show, :edit, :update, :destroy]
+  before_action :set_inventory_item, only: [ :show, :edit, :update, :destroy ]
 
   def index
     @inventory_items = current_user.inventory_items
@@ -11,7 +11,7 @@ class InventoryItemsController < ApplicationController
 
     # Apply filters
     @inventory_items = @inventory_items.where(category_id: params[:category_id]) if params[:category_id].present?
-    
+
     # Apply search
     if params[:search].present?
       search_term = "%#{params[:search]}%"
@@ -47,7 +47,7 @@ class InventoryItemsController < ApplicationController
     if @inventory_item.save
       # Handle image uploads
       @inventory_item.primary_image.attach(params[:inventory_item][:primary_image]) if params[:inventory_item] && params[:inventory_item][:primary_image].present?
-      
+
       if params[:inventory_item] && params[:inventory_item][:additional_images].present?
         Array(params[:inventory_item][:additional_images]).each do |image|
           @inventory_item.additional_images.attach(image)
@@ -76,7 +76,7 @@ class InventoryItemsController < ApplicationController
     if @inventory_item.update(inventory_item_params.except(:color, :size))
       # Handle image uploads
       @inventory_item.primary_image.attach(params[:inventory_item][:primary_image]) if params[:inventory_item] && params[:inventory_item][:primary_image].present?
-      
+
       if params[:inventory_item] && params[:inventory_item][:additional_images].present?
         Array(params[:inventory_item][:additional_images]).each do |image|
           @inventory_item.additional_images.attach(image)
@@ -104,8 +104,7 @@ class InventoryItemsController < ApplicationController
   def inventory_item_params
     params.require(:inventory_item).permit(
       :name, :description, :category_id, :item_type, :purchase_price, :purchase_date,
-      metadata: [:color, :size, :material, :season, :occasion, :care_instructions, :fit_notes, :style_notes]
+      metadata: [ :color, :size, :material, :season, :occasion, :care_instructions, :fit_notes, :style_notes ]
     )
   end
 end
-

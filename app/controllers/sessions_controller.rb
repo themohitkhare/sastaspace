@@ -7,21 +7,68 @@ class SessionsController < ApplicationController
   end
 
   def create
-    user = User.find_by(email: params[:email])
+    # Call JWT API to login user
+    response = Auth::SessionService.login(params[:email], params[:password], request)
 
-    if user&.authenticate(params[:password])
-      sign_in(user)
-      redirect_to inventory_items_path, notice: "Welcome back, #{user.first_name}!"
+    if response[:success]
+      # Store tokens in httpOnly cookies
+      cookies.signed[:access_token] = {
+        value: response[:data][:token],
+        httponly: true,
+        secure: Rails.env.production?,
+        same_site: :lax,
+        expires: 15.minutes.from_now
+      }
+      cookies.signed[:refresh_token] = {
+        value: response[:data][:refresh_token],
+        httponly: true,
+        secure: Rails.env.production?,
+        same_site: :lax,
+        expires: params[:remember_me] == "1" ? 30.days.from_now : 7.days.from_now
+      }
+
+      # Set current user for immediate use
+      @current_user = User.find(response[:data][:user][:id])
+      session[:user_id] = @current_user.id
+
+      redirect_to inventory_items_path, notice: "Welcome back, #{@current_user.first_name}!"
     else
-      flash.now[:alert] = "Invalid email or password"
+      flash.now[:alert] = response[:error][:message] || "Invalid email or password"
       @user = User.new(email: params[:email])
       render :new, status: :unprocessable_entity
     end
   end
 
   def destroy
+    # Call logout API to invalidate token
+    logout_user_via_api if cookies.signed[:access_token]
+
+    # Clear cookies and session
+    cookies.delete(:access_token)
+    cookies.delete(:refresh_token)
     sign_out
+
     redirect_to root_path, notice: "Signed out successfully"
   end
-end
 
+  private
+
+
+  def logout_user_via_api
+    token = cookies.signed[:access_token]
+    return unless token
+
+    uri = URI("#{request.base_url}/api/v1/auth/logout")
+    http = Net::HTTP.new(uri.host, uri.port)
+    http.use_ssl = uri.scheme == "https"
+
+    request_obj = Net::HTTP::Post.new(uri.path, {
+      "Content-Type" => "application/json",
+      "Authorization" => "Bearer #{token}"
+    })
+
+    http.request(request_obj)
+  rescue StandardError
+    # Silently fail on logout - cookies are cleared anyway
+  end
+end
