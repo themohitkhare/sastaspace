@@ -21,10 +21,10 @@ module Auth
     def self.decode(token)
       decoded = JWT.decode(token, SECRET_KEY)[0]
       HashWithIndifferentAccess.new(decoded)
-    rescue JWT::DecodeError => e
-      raise ExceptionHandler::InvalidToken, e.message
     rescue JWT::ExpiredSignature => e
       raise ExceptionHandler::ExpiredToken, "Token has expired"
+    rescue JWT::DecodeError => e
+      raise ExceptionHandler::InvalidToken, e.message
     end
   end
 end

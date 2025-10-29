@@ -38,8 +38,8 @@ module ExceptionHandler
     render json: {
       success: false,
       error: {
-        code: "TOKEN_EXPIRED",
-        message: "Token has expired",
+        code: "AUTHENTICATION_ERROR",
+        message: "Invalid token",
         details: e.message
       },
       timestamp: Time.current.iso8601
