@@ -10,7 +10,7 @@ class RequestIdMiddleware
 
     # Set response header
     status, headers, response = @app.call(env)
-    headers["X-Request-ID"] = request_id
+    headers["X-Request-ID"] = request_id if headers && headers.is_a?(Hash)
 
     [ status, headers, response ]
   end

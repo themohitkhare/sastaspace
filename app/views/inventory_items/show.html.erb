@@ -1,0 +1,66 @@
+<div style="max-width: 1000px; margin: 0 auto; padding: 20px;">
+  <div style="margin-bottom: 20px;">
+    <%= link_to "← Back to Inventory", inventory_items_path, style: "color: #007bff; text-decoration: none;" %>
+  </div>
+
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px;">
+    <div>
+      <% if @inventory_item.primary_image.attached? %>
+        <%= image_tag @inventory_item.primary_image, alt: @inventory_item.name, style: "width: 100%; border-radius: 8px; border: 1px solid #ddd;" %>
+      <% else %>
+        <div style="width: 100%; height: 400px; background: #f0f0f0; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #6c757d;">
+          No image
+        </div>
+      <% end %>
+
+      <% if @inventory_item.additional_images.attached? %>
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 10px; margin-top: 15px;">
+          <% @inventory_item.additional_images.each do |image| %>
+            <%= image_tag image, alt: "Additional image", style: "width: 100%; height: 100px; object-fit: cover; border-radius: 4px; border: 1px solid #ddd;" %>
+          <% end %>
+        </div>
+      <% end %>
+
+      <div style="margin-top: 20px;">
+        <%= link_to "Add Image", "#", style: "padding: 8px 15px; background: #17a2b8; color: white; text-decoration: none; border-radius: 4px; display: inline-block;" %>
+      </div>
+    </div>
+
+    <div>
+      <h1 style="margin-top: 0;"><%= @inventory_item.name %></h1>
+
+      <div style="margin-bottom: 15px;">
+        <strong>Category:</strong> <%= @inventory_item.category.name %>
+      </div>
+
+      <div style="margin-bottom: 15px;">
+        <strong>Type:</strong> <%= @inventory_item.item_type.humanize %>
+      </div>
+
+      <% if @inventory_item.description.present? %>
+        <div style="margin-bottom: 15px;">
+          <strong>Description:</strong>
+          <p><%= @inventory_item.description %></p>
+        </div>
+      <% end %>
+
+      <% if @inventory_item.metadata&.dig("color").present? %>
+        <div style="margin-bottom: 15px;">
+          <strong>Color:</strong> <%= @inventory_item.metadata["color"] %>
+        </div>
+      <% end %>
+
+      <% if @inventory_item.metadata&.dig("size").present? %>
+        <div style="margin-bottom: 15px;">
+          <strong>Size:</strong> <%= @inventory_item.metadata["size"] %>
+        </div>
+      <% end %>
+
+      <div style="margin-top: 30px;">
+        <%= link_to "Edit", edit_inventory_item_path(@inventory_item), style: "padding: 8px 15px; background: #ffc107; color: #000; text-decoration: none; border-radius: 4px; margin-right: 10px;" %>
+        <%= link_to "Delete", @inventory_item, method: :delete, data: { confirm: "Are you sure?" }, style: "padding: 8px 15px; background: #dc3545; color: white; text-decoration: none; border-radius: 4px;" %>
+      </div>
+    </div>
+  </div>
+</div>
+
