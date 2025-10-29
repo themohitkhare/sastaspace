@@ -13,7 +13,7 @@ class SearchTest < ApplicationSystemTestCase
     visit "/login"
     fill_in "Email", with: @user.email
     fill_in "Password", with: "Password123!"
-    click_button "Sign in"
+    click_button "Sign In"
   end
 
   test "user can search inventory items by name" do
@@ -94,4 +94,3 @@ class SearchTest < ApplicationSystemTestCase
     assert_no_text "Blue Jeans" # Should be filtered out by category
   end
 end
-

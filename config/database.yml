@@ -22,7 +22,8 @@ development:
 # Do not set this db to the same as development or production.
 test:
   <<: *default
-  database: sastaspace_test
+  # Support parallel testing - each worker gets its own database
+  database: <%= ENV['TEST_ENV_NUMBER'].present? ? "sastaspace_test_#{ENV['TEST_ENV_NUMBER']}" : "sastaspace_test" %>
 
 # Store production database configuration via DATABASE_URL
 production:

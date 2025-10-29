@@ -10,7 +10,7 @@ class InventoryItemsTest < ApplicationSystemTestCase
     visit "/login"
     fill_in "Email", with: @user.email
     fill_in "Password", with: "Password123!"
-    click_button "Sign in"
+    click_button "Sign In"
   end
 
   test "user can view list of inventory items" do
@@ -78,4 +78,3 @@ class InventoryItemsTest < ApplicationSystemTestCase
     assert_text "A nice jacket"
   end
 end
-

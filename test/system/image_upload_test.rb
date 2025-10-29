@@ -9,7 +9,7 @@ class ImageUploadTest < ApplicationSystemTestCase
     visit "/login"
     fill_in "Email", with: @user.email
     fill_in "Password", with: "Password123!"
-    click_button "Sign in"
+    click_button "Sign In"
   end
 
   test "user can upload primary image when creating item" do
@@ -42,7 +42,7 @@ class ImageUploadTest < ApplicationSystemTestCase
     attach_file "Primary Image", image_path
 
     # Upload additional images
-    attach_file "Additional Images", [image_path, image_path]
+    attach_file "Additional Images", [ image_path, image_path ]
 
     click_button "Create Item"
 
@@ -82,4 +82,3 @@ class ImageUploadTest < ApplicationSystemTestCase
     assert_text "Pink T-Shirt"
   end
 end
-

@@ -3,7 +3,8 @@ import { Application } from "@hotwired/stimulus"
 const application = Application.start()
 
 // Configure Stimulus development experience
-application.debug = process.env.NODE_ENV === "development" || window.location.hostname === "localhost"
+// In Rails with importmap, we check the hostname instead of process.env
+application.debug = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1" || window.location.hostname.includes("lvh.me")
 window.Stimulus   = application
 
 export { application }

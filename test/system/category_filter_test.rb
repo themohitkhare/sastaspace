@@ -84,4 +84,3 @@ class CategoryFilterTest < ApplicationSystemTestCase
     assert_text "No items found in this category"
   end
 end
-
