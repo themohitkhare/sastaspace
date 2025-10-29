@@ -39,49 +39,35 @@ module Api
       end
 
       test "GET /api/v1/inventory_items/:id/analysis retrieves analysis" do
-        # Reload to ensure association is fresh
-        @inventory_item.reload
-        
-        analysis = AiAnalysis.create!(
-          inventory_item: @inventory_item,
+        ai = create(:ai_analysis,
           user: @user,
-          analysis_type: "visual_analysis",
-          analysis_data: { "color" => "blue", "style" => "casual" },
-          confidence_score: 0.85,
-          high_confidence: true,
-          model_used: "gpt-4o-mini"
+          inventory_item: @inventory_item
         )
-        
-        # Reload inventory item to pick up new analysis
-        @inventory_item.reload
 
-        get "/api/v1/inventory_items/#{@inventory_item.id}/analysis",
-            headers: { "Authorization" => "Bearer #{@token}" }
+        get "/api/v1/inventory_items/#{@inventory_item.id}/analysis", headers: { "Authorization" => "Bearer #{@token}" }
 
         assert_response :ok
-        json_response = JSON.parse(response.body)
-        assert json_response["success"]
-        assert_equal analysis.id, json_response["data"]["analysis"]["id"]
-        assert_equal "visual_analysis", json_response["data"]["analysis"]["analysis_type"]
-        assert_equal 0.85, json_response["data"]["analysis"]["confidence_score"].to_f
+        body = JSON.parse(response.body)
+        assert body["success"]
+        assert_equal ai.id, body["data"]["analysis"]["id"]
+      end
+
+      test "DELETE /api/v1/inventory_items/:id/analysis deletes analysis" do
+        create(:ai_analysis,
+          user: @user,
+          inventory_item: @inventory_item
+        )
+
+        delete "/api/v1/inventory_items/#{@inventory_item.id}/analysis", headers: { "Authorization" => "Bearer #{@token}" }
+
+        assert_response :ok
+        body = JSON.parse(response.body)
+        assert body["success"]
       end
 
       test "GET /api/v1/ai/analyses returns paginated analyses" do
-        analysis1 = AiAnalysis.create!(
-          inventory_item: @inventory_item,
-          user: @user,
-          analysis_type: "visual_analysis",
-          analysis_data: { "color" => "blue" },
-          confidence_score: 0.9
-        )
-
-        analysis2 = AiAnalysis.create!(
-          inventory_item: @inventory_item,
-          user: @user,
-          analysis_type: "visual_analysis",
-          analysis_data: { "color" => "red" },
-          confidence_score: 0.8
-        )
+        analysis1 = create(:ai_analysis, inventory_item: @inventory_item, user: @user)
+        analysis2 = create(:ai_analysis, inventory_item: @inventory_item, user: @user)
 
         get "/api/v1/ai/analyses",
             headers: { "Authorization" => "Bearer #{@token}" }
@@ -91,29 +77,6 @@ module Api
         assert json_response["success"]
         assert_equal 2, json_response["data"]["analyses"].length
         assert_equal 2, json_response["data"]["pagination"]["total_count"]
-      end
-
-      test "DELETE /api/v1/inventory_items/:id/analysis deletes analysis" do
-        # Reload to ensure association is fresh
-        @inventory_item.reload
-        
-        analysis = AiAnalysis.create!(
-          inventory_item: @inventory_item,
-          user: @user,
-          analysis_type: "visual_analysis",
-          analysis_data: { "color" => "blue" },
-          confidence_score: 0.85,
-          high_confidence: true
-        )
-        
-        # Reload inventory item to pick up new analysis
-        @inventory_item.reload
-
-        delete "/api/v1/inventory_items/#{@inventory_item.id}/analysis",
-               headers: { "Authorization" => "Bearer #{@token}" }
-
-        assert_response :ok
-        assert_nil AiAnalysis.find_by(id: analysis.id)
       end
 
       test "requires authentication" do

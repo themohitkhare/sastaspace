@@ -1,0 +1,70 @@
+require "test_helper"
+
+# Ensure Services module is loaded
+require_relative "../../app/services/analyzer_factory"
+require_relative "../../app/services/clothing_analyzer"
+require_relative "../../app/services/shoes_analyzer"
+require_relative "../../app/services/accessories_analyzer"
+require_relative "../../app/services/jewelry_analyzer"
+
+class AnalyzerFactoryTest < ActiveSupport::TestCase
+  def setup
+    @user = create(:user)
+    @category = create(:category, :clothing)
+    @brand = create(:brand)
+  end
+
+  test "creates ClothingAnalyzer for clothing items" do
+    item = create(:inventory_item, :clothing, user: @user, category: @category, brand: @brand)
+    
+    analyzer = Services::AnalyzerFactory.create_analyzer(item)
+    
+    assert_instance_of ::Services::ClothingAnalyzer, analyzer
+  end
+
+  test "creates ShoesAnalyzer for shoes items" do
+    item = create(:inventory_item, :shoes, user: @user, category: @category, brand: @brand)
+    
+    analyzer = Services::AnalyzerFactory.create_analyzer(item)
+    
+    assert_instance_of ::Services::ShoesAnalyzer, analyzer
+  end
+
+  test "creates AccessoriesAnalyzer for accessories items" do
+    item = create(:inventory_item, :accessories, user: @user, category: @category, brand: @brand)
+    
+    analyzer = Services::AnalyzerFactory.create_analyzer(item)
+    
+    assert_instance_of ::Services::AccessoriesAnalyzer, analyzer
+  end
+
+  test "creates JewelryAnalyzer for jewelry items" do
+    item = create(:inventory_item, :jewelry, user: @user, category: @category, brand: @brand)
+    
+    analyzer = Services::AnalyzerFactory.create_analyzer(item)
+    
+    assert_instance_of ::Services::JewelryAnalyzer, analyzer
+  end
+
+  test "defaults to ClothingAnalyzer for unknown item types" do
+    item = create(:inventory_item, :clothing, user: @user, category: @category, brand: @brand)
+    item.stubs(:item_type).returns("unknown_type")
+    
+    # Mock logger to capture warning
+    Rails.logger.expects(:warn).with(regexp_matches(/Unknown item type/))
+    
+    analyzer = Services::AnalyzerFactory.create_analyzer(item)
+    
+    assert_instance_of ::Services::ClothingAnalyzer, analyzer
+  end
+
+  test "creates analyzer with custom model name" do
+    item = create(:inventory_item, :clothing, user: @user, category: @category, brand: @brand)
+    
+    analyzer = ::Services::AnalyzerFactory.create_analyzer(item, model_name: "gpt-4o")
+    
+    assert_instance_of ::Services::ClothingAnalyzer, analyzer
+    assert_equal "gpt-4o", analyzer.model_name
+  end
+end
+

@@ -5,7 +5,7 @@ module Api
 
       before_action :authenticate_user!
       before_action :set_inventory_item, only: [ :show, :update, :destroy, :worn, :similar ]
-      
+
       rescue_from ActionDispatch::Http::Parameters::ParseError, with: :handle_parse_error
 
       # GET /api/v1/inventory_items

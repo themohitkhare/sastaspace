@@ -95,7 +95,7 @@ class SecurityTest < ActionDispatch::IntegrationTest
     malicious_name = "<script>alert('xss')</script>"
 
     category = create(:category, :clothing)
-    
+
     post "/api/v1/inventory_items",
          params: { inventory_item: { name: malicious_name, item_type: "clothing", category_id: category.id } }.to_json,
          headers: api_v1_headers(@token)
@@ -111,5 +111,4 @@ class SecurityTest < ActionDispatch::IntegrationTest
   end
 
   private
-
 end
