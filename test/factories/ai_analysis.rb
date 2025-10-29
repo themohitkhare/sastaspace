@@ -9,7 +9,7 @@ FactoryBot.define do
     analysis_data do
       {
         item_type: "clothing",
-        colors: ["blue", "white"],
+        colors: [ "blue", "white" ],
         style: "casual",
         material: "cotton",
         brand_suggestion: "Nike",

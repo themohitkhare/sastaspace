@@ -25,7 +25,7 @@ class PlatformOpsTest < ActionDispatch::IntegrationTest
   test "GET /api/v1/health returns health status" do
     # Health check endpoint just returns status
     get "/api/v1/health"
-    
+
     # Just verify it returns a response
     assert @response.status.present?
     body = JSON.parse(@response.body)
@@ -35,7 +35,7 @@ class PlatformOpsTest < ActionDispatch::IntegrationTest
   test "GET /ready returns readiness status" do
     # Test endpoint exists and responds
     get "/ready"
-    
+
     # Just verify it returns a response with status
     assert @response.status.present?
     body = JSON.parse(@response.body)
@@ -211,4 +211,13 @@ class PlatformOpsTest < ActionDispatch::IntegrationTest
     assert body.present?, "Should return documentation"
   end
 
+  test "GET /ready returns not_ready when checks fail" do
+    ReadyController.any_instance.stubs(:check_migrations).raises(StandardError, "fail")
+
+    get "/ready"
+
+    assert_response :service_unavailable
+    body = JSON.parse(@response.body)
+    assert_equal "not_ready", body["status"]
+  end
 end

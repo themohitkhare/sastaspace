@@ -1,0 +1,104 @@
+require "test_helper"
+
+# Ensure Services module is loaded
+require_relative "../../app/services/inventory_analyzer"
+require_relative "../../app/services/clothing_analyzer"
+
+class ClothingAnalyzerTest < ActiveSupport::TestCase
+  def setup
+    @user = create(:user)
+    @category = create(:category, :clothing)
+    @brand = create(:brand)
+    @inventory_item = create(:inventory_item, :clothing, 
+                            user: @user, 
+                            category: @category, 
+                            brand: @brand,
+                            name: "Blue T-Shirt")
+    
+    @analyzer = Services::ClothingAnalyzer.new(@inventory_item)
+    
+    # Create model for chat
+    @model = Model.first_or_create!(
+      name: "gpt-4o-mini",
+      provider: "openai",
+      model_id: "gpt-4o-mini",
+      context_window: 128_000
+    )
+  end
+
+  test "initializes with inventory item" do
+    assert_equal @inventory_item, @analyzer.inventory_item
+  end
+
+  test "defaults to gpt-4o-mini model" do
+    assert_equal "gpt-4o-mini", @analyzer.model_name
+  end
+
+  test "can initialize with custom model" do
+    analyzer = Services::ClothingAnalyzer.new(@inventory_item, model_name: "gpt-4o")
+    assert_equal "gpt-4o", analyzer.model_name
+  end
+
+  test "creates chat for analysis" do
+    chat = @analyzer.send(:create_or_find_chat)
+    
+    assert_not_nil chat
+    assert_equal @user, chat.user
+    assert_equal @model.id, chat.model_id
+  end
+
+  test "builds clothing analysis prompt" do
+    prompt = @analyzer.send(:clothing_analysis_prompt)
+    
+    assert_includes prompt, "fashion analysis"
+    assert_includes prompt, @inventory_item.item_type
+    assert_includes prompt, "Blue T-Shirt"
+  end
+
+  test "extracts colors from text" do
+    text = "This is a red and blue shirt with green accents"
+    colors = @analyzer.send(:extract_colors_from_text, text)
+    
+    assert_includes colors, "red"
+    assert_includes colors, "blue"
+    assert_includes colors, "green"
+  end
+
+  test "extract colors returns unknown when no colors found" do
+    text = "This is a generic description without color words"
+    colors = @analyzer.send(:extract_colors_from_text, text)
+    
+    assert_includes colors, "unknown"
+  end
+
+  test "parse analysis response extracts JSON" do
+    content = 'Here is the analysis: {"colors": ["blue"], "style": "casual", "confidence": 0.9}'
+    result = @analyzer.send(:parse_analysis_response, content)
+    
+    assert_equal ["blue"], result["colors"]
+    assert_equal "casual", result["style"]
+    assert_equal 0.9, result["confidence"]
+  end
+
+  test "parse analysis response handles fallback for non-JSON" do
+    content = "This is a plain text analysis without JSON"
+    result = @analyzer.send(:parse_analysis_response, content)
+    
+    assert_not_nil result["item_type"]
+    assert_not_nil result["colors"]
+    assert result["confidence"] < 1.0
+  end
+
+  test "parse analysis response handles JSON parsing errors gracefully" do
+    content = 'Invalid JSON: {colors: ["blue"]}'
+    result = @analyzer.send(:parse_analysis_response, content)
+    
+    assert_not_nil result
+    assert_includes result["colors"], "unknown"
+  end
+
+  test "analysis type is visual_analysis" do
+    assert_equal "visual_analysis", @analyzer.send(:analysis_type)
+  end
+end
+

@@ -21,9 +21,9 @@ class ReadyController < ApplicationController
 
   def check_readiness
     checks = {
-      migrations: check_migrations,
-      queues: check_queues,
-      storage: check_storage
+      migrations: safe_check { check_migrations },
+      queues: safe_check { check_queues },
+      storage: safe_check { check_storage }
     }
 
     ready = checks.values.all? { |check| check[:status] == "ok" }
@@ -61,6 +61,12 @@ class ReadyController < ApplicationController
     duration = ((Time.current - start_time) * 1000).round(2)
 
     { status: "ok", duration_ms: duration }
+  rescue => e
+    { status: "error", error: e.message }
+  end
+
+  def safe_check
+    yield
   rescue => e
     { status: "error", error: e.message }
   end

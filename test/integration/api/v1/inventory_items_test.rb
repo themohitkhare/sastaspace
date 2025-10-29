@@ -43,7 +43,7 @@ class Api::V1::InventoryItemsTest < ActionDispatch::IntegrationTest
   test "GET /api/v1/inventory_items should support filtering by season" do
     # Update item with known season
     @inventory_item.update!(metadata: { season: "summer", color: "red", size: "M" })
-    
+
     get "/api/v1/inventory_items?season=summer", headers: api_v1_headers(@token)
 
     assert_success_response
@@ -54,7 +54,7 @@ class Api::V1::InventoryItemsTest < ActionDispatch::IntegrationTest
   test "GET /api/v1/inventory_items should support filtering by color" do
     # Update item with known color
     @inventory_item.update!(metadata: { season: "summer", color: "blue", size: "M" })
-    
+
     get "/api/v1/inventory_items?color=blue", headers: api_v1_headers(@token)
 
     assert_success_response
@@ -169,7 +169,7 @@ class Api::V1::InventoryItemsTest < ActionDispatch::IntegrationTest
     body = json_response
     assert body["success"]
     assert body["message"].present?
-    
+
     # Verify item was actually deleted
     assert_raises(ActiveRecord::RecordNotFound) do
       @inventory_item.reload
@@ -208,7 +208,7 @@ class Api::V1::InventoryItemsTest < ActionDispatch::IntegrationTest
     # Set up embedding vectors for similarity search
     embedding_vector = (0..1535).to_a.map { |_i| rand(-1.0..1.0) }
     @inventory_item.update!(embedding_vector: embedding_vector)
-    
+
     similar_item = create(:inventory_item, :clothing, user: @user)
     similar_vector = embedding_vector.map { |v| v + rand(-0.1..0.1) }
     similar_item.update!(embedding_vector: similar_vector)
