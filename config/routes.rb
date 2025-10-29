@@ -9,6 +9,17 @@ Rails.application.routes.draw do
   get "health" => "health#show"
   get "ready" => "ready#show"
 
+  # Root route
+  root "inventory_items#index"
+
+  # Authentication routes
+  get "login", to: "sessions#new"
+  post "login", to: "sessions#create"
+  delete "logout", to: "sessions#destroy"
+
+  # Frontend routes
+  resources :inventory_items
+
   # RubyLLM Chat demo routes
   resources :chats, only: [ :index, :show, :new, :create ] do
     member do

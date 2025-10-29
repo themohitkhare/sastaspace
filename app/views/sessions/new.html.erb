@@ -1,0 +1,24 @@
+<div style="max-width: 400px; margin: 50px auto; padding: 20px;">
+  <h1>Login</h1>
+
+  <%= form_with url: login_path, local: true do |form| %>
+    <% if flash[:alert] %>
+      <div style="color: red; padding: 10px; margin-bottom: 15px; border: 1px solid red;">
+        <%= flash[:alert] %>
+      </div>
+    <% end %>
+
+    <div style="margin-bottom: 15px;">
+      <%= form.label :email, "Email" %>
+      <%= form.email_field :email, value: @user&.email, required: true, style: "width: 100%; padding: 8px; margin-top: 5px;" %>
+    </div>
+
+    <div style="margin-bottom: 15px;">
+      <%= form.label :password, "Password" %>
+      <%= form.password_field :password, required: true, style: "width: 100%; padding: 8px; margin-top: 5px;" %>
+    </div>
+
+    <%= form.submit "Sign in", style: "width: 100%; padding: 10px; background: #007bff; color: white; border: none; cursor: pointer;" %>
+  <% end %>
+</div>
+

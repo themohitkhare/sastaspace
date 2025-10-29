@@ -1,0 +1,83 @@
+<div style="max-width: 800px; margin: 0 auto; padding: 20px;">
+  <h1>Add New Item</h1>
+
+  <%= form_with model: @inventory_item, local: true, multipart: true do |form| %>
+    <% if @inventory_item.errors.any? %>
+      <div style="color: red; padding: 10px; margin-bottom: 15px; border: 1px solid red;">
+        <h3 style="margin-top: 0;"><%= pluralize(@inventory_item.errors.count, "error") %> prohibited this item from being saved:</h3>
+        <ul style="margin: 0; padding-left: 20px;">
+          <% @inventory_item.errors.full_messages.each do |message| %>
+            <li><%= message %></li>
+          <% end %>
+        </ul>
+      </div>
+    <% end %>
+
+    <div style="margin-bottom: 15px;">
+      <%= form.label :name, "Name", style: "display: block; margin-bottom: 5px; font-weight: bold;" %>
+      <%= form.text_field :name, required: true, style: "width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;" %>
+    </div>
+
+    <div style="margin-bottom: 15px;">
+      <%= form.label :category_id, "Category", style: "display: block; margin-bottom: 5px; font-weight: bold;" %>
+      <%= form.select :category_id, options_from_collection_for_select(@categories, :id, :name, @inventory_item.category_id), { include_blank: "Select a category" }, { required: true, style: "width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;" } %>
+    </div>
+
+    <div style="margin-bottom: 15px;">
+      <%= form.label :item_type, "Item Type", style: "display: block; margin-bottom: 5px; font-weight: bold;" %>
+      <%= form.select :item_type, options_for_select([["Clothing", "clothing"], ["Shoes", "shoes"], ["Accessories", "accessories"], ["Jewelry", "jewelry"]], @inventory_item.item_type), { include_blank: "Select item type" }, { required: true, style: "width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;" } %>
+    </div>
+
+    <div style="margin-bottom: 15px;">
+      <%= form.label :description, "Description", style: "display: block; margin-bottom: 5px; font-weight: bold;" %>
+      <%= form.text_area :description, rows: 4, style: "width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;" %>
+    </div>
+
+    <div style="margin-bottom: 15px;">
+      <%= form.label :color, "Color", style: "display: block; margin-bottom: 5px; font-weight: bold;" %>
+      <%= form.text_field :color, value: @inventory_item.metadata&.dig("color"), style: "width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;" %>
+    </div>
+
+    <div style="margin-bottom: 15px;">
+      <%= form.label :size, "Size", style: "display: block; margin-bottom: 5px; font-weight: bold;" %>
+      <%= form.text_field :size, value: @inventory_item.metadata&.dig("size"), style: "width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;" %>
+    </div>
+
+    <div style="margin-bottom: 15px;">
+      <%= form.label :primary_image, "Primary Image", style: "display: block; margin-bottom: 5px; font-weight: bold;" %>
+      <%= form.file_field :primary_image, accept: "image/*", style: "width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;" %>
+      <div id="primary-image-preview" style="margin-top: 10px;"></div>
+    </div>
+
+    <div style="margin-bottom: 15px;">
+      <%= form.label :additional_images, "Additional Images", style: "display: block; margin-bottom: 5px; font-weight: bold;" %>
+      <%= form.file_field :additional_images, multiple: true, accept: "image/*", style: "width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;" %>
+    </div>
+
+    <div style="margin-top: 20px;">
+      <%= form.submit "Create Item", style: "padding: 10px 20px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 16px;" %>
+      <%= link_to "Cancel", inventory_items_path, style: "margin-left: 10px; padding: 10px 20px; background: #6c757d; color: white; text-decoration: none; border-radius: 4px; display: inline-block;" %>
+    </div>
+  <% end %>
+</div>
+
+<script>
+  // Image preview functionality
+  document.addEventListener('DOMContentLoaded', function() {
+    const primaryImageInput = document.querySelector('input[name="inventory_item[primary_image]"]');
+    if (primaryImageInput) {
+      primaryImageInput.addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (file) {
+          const reader = new FileReader();
+          reader.onload = function(e) {
+            const preview = document.getElementById('primary-image-preview');
+            preview.innerHTML = '<img src="' + e.target.result + '" alt="Image preview" style="max-width: 300px; max-height: 300px; border: 1px solid #ddd; border-radius: 4px; margin-top: 10px;" />';
+          };
+          reader.readAsDataURL(file);
+        }
+      });
+    }
+  });
+</script>
+
