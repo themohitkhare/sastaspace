@@ -20,7 +20,11 @@ Rails.application.routes.draw do
   post "register", to: "registrations#create"
 
   # Frontend routes
-  resources :inventory_items
+  resources :inventory_items do
+    collection do
+      delete :bulk_delete
+    end
+  end
 
   # RubyLLM Chat demo routes
   resources :chats, only: [ :index, :show, :new, :create ] do

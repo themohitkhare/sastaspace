@@ -69,16 +69,24 @@ export default class extends Controller {
   }
 
   validatePassword() {
+    if (!this.hasPasswordTarget) return true
+    
     const password = this.passwordTarget.value
     
     if (!password) {
-      this.showError(this.passwordErrorTarget, "Password is required")
+      if (this.hasPasswordErrorTarget) {
+        this.showError(this.passwordErrorTarget, "Password is required")
+      }
       return false
     } else if (password.length < 6) {
-      this.showError(this.passwordErrorTarget, "Password must be at least 6 characters")
+      if (this.hasPasswordErrorTarget) {
+        this.showError(this.passwordErrorTarget, "Password must be at least 6 characters")
+      }
       return false
     } else {
-      this.clearError(this.passwordErrorTarget)
+      if (this.hasPasswordErrorTarget) {
+        this.clearError(this.passwordErrorTarget)
+      }
       return true
     }
   }
@@ -134,24 +142,33 @@ export default class extends Controller {
     // The form will submit normally, but we can add client-side validation first
     
     // For registration form, validate all fields
+    // For login form, only validate email if present
     let isValid = true
     
     if (this.hasEmailTarget) isValid = this.validateEmail() && isValid
     if (this.hasFirstNameTarget) isValid = this.validateFirstName() && isValid
     if (this.hasLastNameTarget) isValid = this.validateLastName() && isValid
-    if (this.hasPasswordTarget) isValid = this.validatePassword() && isValid
-    if (this.hasPasswordConfirmationTarget) isValid = this.validatePasswordConfirmation() && isValid
+    if (this.hasPasswordTarget && this.hasPasswordConfirmationTarget) {
+      // Only validate password confirmation if it exists (registration form)
+      isValid = this.validatePassword() && this.validatePasswordConfirmation() && isValid
+    } else if (this.hasPasswordTarget) {
+      // For login, just check password is not empty
+      isValid = this.validatePassword() && isValid
+    }
     
     if (!isValid) {
       event.preventDefault()
       return false
     }
-    
-    // Disable submit button to prevent double submission
-    if (this.hasSubmitButtonTarget) {
-      this.submitButtonTarget.disabled = true
-      this.submitButtonTarget.textContent = "Submitting..."
-    }
+    // Defer disabling to next tick so the native submit isn't blocked by a disabled button
+    setTimeout(() => {
+      if (this.hasSubmitButtonTarget) {
+        this.submitButtonTarget.disabled = true
+        this.submitButtonTarget.textContent = "Submitting..."
+      }
+    }, 0)
+
+    return true
   }
 
   showError(target, message) {
