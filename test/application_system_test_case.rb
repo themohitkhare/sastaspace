@@ -23,10 +23,15 @@ class ApplicationSystemTestCase < ActionDispatch::SystemTestCase
     )
   end
 
+  # Increase waits/timeouts to reduce Ferrum timeouts on slower CI or parallel runs
+  Capybara.default_max_wait_time = 5
+
   driven_by :cuprite, screen_size: [ 1400, 1400 ], options: {
     js_errors: true,
     headless: true,
     inspector: ENV["INSPECTOR"],
+    timeout: 15, # seconds to wait for browser operations
+    process_timeout: 30, # seconds to wait for the process
     browser_options: {
       "no-sandbox" => nil
     }

@@ -3,8 +3,8 @@ require "test_helper"
 class AiAnalysisTest < ActiveSupport::TestCase
   setup do
     @user = FactoryBot.create(:user)
-    @category = FactoryBot.create(:category, name: "Tops")
-    @brand = FactoryBot.create(:brand, name: "Nike")
+    @category = FactoryBot.create(:category, :clothing)
+    @brand = FactoryBot.create(:brand)
     @inventory_item = FactoryBot.create(:inventory_item,
                                        user: @user,
                                        category: @category,

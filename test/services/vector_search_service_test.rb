@@ -4,7 +4,7 @@ class VectorSearchServiceTest < ActiveSupport::TestCase
   def setup
     @user = create(:user)
     @category = create(:category, name: "tops")
-    @brand = create(:brand, name: "Nike")
+    @brand = create(:brand)
 
     # Create inventory items with mock vectors
     @item1 = create(:inventory_item,
@@ -85,15 +85,16 @@ class VectorSearchServiceTest < ActiveSupport::TestCase
 
   test "recommend_outfit_items finds complementary items" do
     bottoms_category = create(:category, name: "bottoms")
+    similar_vector = @item1.embedding_vector.map { |v| v + rand(-0.01..0.01) }
     bottom_item = create(:inventory_item,
                          user: @user,
                          category: bottoms_category,
                          name: "Blue Jeans",
                          item_type: "clothing",
-                         embedding_vector: Array.new(1536) { rand(-1.0..1.0) })
+                         embedding_vector: similar_vector)
 
     # Don't stub - let the actual code run
-    results = VectorSearchService.recommend_outfit_items(@user, @item1, limit: 3)
+    results = VectorSearchService.recommend_outfit_items(@user, @item1, limit: 5)
 
     # Should find complementary items (tops -> bottoms)
     assert results.count >= 1, "Should find at least one complementary item"

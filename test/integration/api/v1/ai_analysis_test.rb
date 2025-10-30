@@ -6,7 +6,7 @@ module Api
       setup do
         @user = FactoryBot.create(:user)
         @token = Auth::JsonWebToken.encode_access_token(user_id: @user.id)
-        @category = FactoryBot.create(:category, name: "Tops")
+        @category = FactoryBot.create(:category, :clothing)
         @inventory_item = FactoryBot.create(:inventory_item,
                                             user: @user,
                                             category: @category,

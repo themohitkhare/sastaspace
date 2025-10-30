@@ -77,7 +77,7 @@ class InventoryItem < ApplicationRecord
   scope :by_brand, ->(brand) { joins(:brand).where(brands: { name: brand }) }
   scope :recently_worn, -> { where.not(last_worn_at: nil).order(last_worn_at: :desc) }
   scope :never_worn, -> { where(last_worn_at: nil) }
-  scope :most_worn, -> { order(wear_count: :desc) }
+  scope :most_worn, -> { reorder(wear_count: :desc, created_at: :desc) }
 
   # Type-specific validations
   validate :validate_type_specific_fields

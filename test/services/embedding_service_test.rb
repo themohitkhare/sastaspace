@@ -4,7 +4,7 @@ class EmbeddingServiceTest < ActiveSupport::TestCase
   def setup
     @user = create(:user)
     @category = create(:category, :clothing)
-    @brand = create(:brand, name: "Nike")
+    @brand = create(:brand)
     @inventory_item = create(:inventory_item, :clothing,
                             user: @user,
                             category: @category,
@@ -54,6 +54,6 @@ class EmbeddingServiceTest < ActiveSupport::TestCase
 
     assert_includes description, "Blue T-Shirt"
     assert_includes description, "clothing"
-    assert_includes description, "Nike"
+    assert_includes description, @brand.name
   end
 end

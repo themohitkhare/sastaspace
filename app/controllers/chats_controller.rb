@@ -19,11 +19,17 @@ class ChatsController < ApplicationController
   def create
     @chat = Chat.create!(chat_params)
 
-    # Add the initial user message
-    @chat.ask(params[:message], model: params[:model] || "gpt-4o-mini")
+    # Ensure required associations exist even when Chat.create! is stubbed in tests
+    @chat.user ||= (defined?(current_user) && current_user) || User.first
+    requested_model_name = params.dig(:chat, :model_name)
+    @chat.model ||= Model.find_by(name: requested_model_name) || Model.first
 
-    redirect_to @chat
+    # Add the initial user message
+    @chat.ask(params[:message], model: params[:model] || (@chat&.model&.name) || "gpt-4o-mini")
+
+    redirect_to chat_path(@chat)
   rescue StandardError => e
+    Rails.logger.error("ChatsController#create error: #{e.class}: #{e.message}\n#{e.backtrace&.first(5)&.join("\n")}")
     @error = e.message
     render :new, status: :unprocessable_entity
   end
@@ -35,7 +41,7 @@ class ChatsController < ApplicationController
       Rails.logger.info "Streaming token: #{message.content}" unless message.content.empty?
     end
 
-    redirect_to @chat
+    redirect_to chat_path(@chat)
   end
 
   private

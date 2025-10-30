@@ -107,13 +107,13 @@ class InventoryItemTest < ActiveSupport::TestCase
   end
 
   test "by_category scope should filter by category name" do
-    tops_category = create(:category, name: "tops")
-    bottoms_category = create(:category, name: "bottoms")
+    tops_category = create(:category, name: "tops #{SecureRandom.hex(3)}")
+    bottoms_category = create(:category, name: "bottoms #{SecureRandom.hex(3)}")
 
     tops_item = create(:inventory_item, :clothing, name: "Tops Item", category: tops_category)
     bottoms_item = create(:inventory_item, :clothing, name: "Bottoms Item", category: bottoms_category)
 
-    tops_items = InventoryItem.by_category("tops")
+    tops_items = InventoryItem.by_category(tops_category.name)
     assert_includes tops_items, tops_item
     assert_not_includes tops_items, bottoms_item
   end
@@ -158,9 +158,8 @@ class InventoryItemTest < ActiveSupport::TestCase
     low_wear = create(:inventory_item, :clothing, name: "Low Wear Item", wear_count: 1)
     high_wear = create(:inventory_item, :clothing, name: "High Wear Item", wear_count: 10)
 
-    most_worn_items = InventoryItem.most_worn
-    assert_equal high_wear, most_worn_items.first
-    assert_equal low_wear, most_worn_items.last
+    most_worn_items = InventoryItem.most_worn.where(id: [ high_wear.id, low_wear.id ])
+    assert_equal [ high_wear.id, low_wear.id ], most_worn_items.pluck(:id)
   end
 
   test "should have many tags through inventory_tags" do
