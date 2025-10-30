@@ -24,11 +24,6 @@
     </div>
 
     <div style="margin-bottom: 15px;">
-      <%= form.label :item_type, "Item Type", style: "display: block; margin-bottom: 5px; font-weight: bold;" %>
-      <%= form.select :item_type, options_for_select(InventoryItem.item_types.map { |key, value| [key.humanize, key] }, @inventory_item.item_type), { include_blank: "Select item type" }, { required: true, style: "width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;" } %>
-    </div>
-
-    <div style="margin-bottom: 15px;">
       <%= form.label :description, "Description", style: "display: block; margin-bottom: 5px; font-weight: bold;" %>
       <%= form.text_area :description, rows: 4, style: "width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;" %>
     </div>
@@ -45,7 +40,7 @@
 
     <div style="margin-bottom: 15px;">
       <%= form.label :primary_image, "Primary Image", style: "display: block; margin-bottom: 5px; font-weight: bold;" %>
-      <%= form.file_field :primary_image, accept: "image/*", style: "width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;" %>
+      <%= form.file_field :primary_image, accept: "image/*", direct_upload: true, style: "width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;" %>
       <% if @inventory_item.primary_image.attached? %>
         <div style="margin-top: 10px;">
           <%= image_tag @inventory_item.primary_image, alt: "Current image", style: "max-width: 300px; max-height: 300px; border: 1px solid #ddd; border-radius: 4px;" %>
@@ -55,7 +50,7 @@
 
     <div style="margin-bottom: 15px;">
       <%= form.label :additional_images, "Additional Images", style: "display: block; margin-bottom: 5px; font-weight: bold;" %>
-      <%= form.file_field :additional_images, multiple: true, accept: "image/*", style: "width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;" %>
+      <%= form.file_field :additional_images, multiple: true, accept: "image/*", direct_upload: true, style: "width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;" %>
     </div>
 
     <div style="margin-top: 20px;">

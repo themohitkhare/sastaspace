@@ -82,21 +82,7 @@
               class: "form-input" } %>
       </div>
 
-      <!-- Type Filter -->
-      <div>
-        <%= form.label :item_type, "Type", class: "form-label" %>
-        <%= form.select :item_type,
-            options_for_select([
-              ["All Types", ""],
-              ["Clothing", "clothing"],
-              ["Shoes", "shoes"],
-              ["Accessories", "accessories"],
-              ["Jewelry", "jewelry"]
-            ], params[:item_type]),
-            {},
-            { data: { inventory_target: "typeFilter", action: "change->inventory#applyFilters" },
-              class: "form-input" } %>
-      </div>
+      
     </div>
     
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -129,7 +115,7 @@
     </div>
 
     <div class="flex items-center gap-2">
-      <% if params[:search].present? || params[:category_id].present? || params[:item_type].present? || params[:color].present? || params[:season].present? %>
+      <% if params[:search].present? || params[:category_id].present? || params[:color].present? || params[:season].present? %>
         <%= link_to "Clear Filters", inventory_items_path, 
             data: { action: "click->inventory#clearFilters" },
             class: "btn-secondary text-sm" %>
@@ -199,7 +185,7 @@
                   <%= item.name %>
                 </h3>
                 <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                  <%= item.category.name %>
+                  <%= item.subcategory&.name || item.category.name %>
                 </p>
                 <% if item.metadata&.dig("color").present? %>
                   <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">
@@ -233,9 +219,7 @@
               <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                 Category
               </th>
-              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                Type
-              </th>
+              
               <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                 Details
               </th>
@@ -276,9 +260,7 @@
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                   <%= item.category.name %>
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                  <%= item.item_type.humanize %>
-                </td>
+                
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                   <% if item.metadata&.dig("color").present? || item.metadata&.dig("size").present? %>
                     <span>

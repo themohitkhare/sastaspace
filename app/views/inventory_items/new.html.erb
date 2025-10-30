@@ -126,64 +126,15 @@
       <!-- Step 3: Images -->
       <div data-form-wizard-target="step" class="hidden space-y-4">
         <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">Step 3: Upload Images</h2>
-        
-        <div data-controller="image-upload">
-          <!-- Primary Image -->
-          <div class="mb-6">
-            <%= form.label :primary_image, "Primary Image", class: "form-label" %>
-            <div
-              data-image-upload-target="dropZone"
-              class="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-8 text-center hover:border-primary-500 transition-colors cursor-pointer"
-            >
-              <input
-                type="file"
-                name="inventory_item[primary_image]"
-                accept="image/*"
-                data-image-upload-target="fileInput"
-                data-action="change->image-upload#selectFiles"
-                class="hidden"
-              >
-              <button
-                type="button"
-                data-action="click->image-upload#selectFiles"
-                class="text-primary-600 hover:text-primary-700 dark:text-primary-400 font-medium"
-              >
-                Click to upload or drag and drop
-              </button>
-              <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">PNG, JPG, WEBP up to 5MB</p>
-            </div>
-            <div data-image-upload-target="primaryPreview" class="mt-4"></div>
-          </div>
 
-          <!-- Additional Images -->
-          <div>
-            <%= form.label :additional_images, "Additional Images (Optional)", class: "form-label" %>
-            <div
-              data-image-upload-target="dropZone"
-              class="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-8 text-center hover:border-primary-500 transition-colors cursor-pointer"
-            >
-              <input
-                type="file"
-                name="inventory_item[additional_images][]"
-                accept="image/*"
-                multiple
-                data-image-upload-target="fileInput"
-                data-action="change->image-upload#selectFiles"
-                class="hidden"
-              >
-              <button
-                type="button"
-                data-action="click->image-upload#selectFiles"
-                class="text-primary-600 hover:text-primary-700 dark:text-primary-400 font-medium"
-              >
-                Click to upload multiple images or drag and drop
-              </button>
-              <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">PNG, JPG, WEBP up to 5MB each</p>
-            </div>
-            <div data-image-upload-target="additionalPreviews" class="mt-4 grid grid-cols-4 gap-4"></div>
-          </div>
-          
-          <div data-image-upload-target="errorMessage" class="hidden mt-4 p-3 bg-red-50 border border-red-200 text-red-800 rounded dark:bg-red-900 dark:border-red-700 dark:text-red-200"></div>
+        <div class="mb-6">
+          <%= form.label :primary_image, "Primary Image", class: "form-label" %>
+          <%= form.file_field :primary_image, accept: "image/*", direct_upload: true, class: "form-input" %>
+        </div>
+
+        <div>
+          <%= form.label :additional_images, "Additional Images (Optional)", class: "form-label" %>
+          <%= form.file_field :additional_images, multiple: true, accept: "image/*", direct_upload: true, class: "form-input" %>
         </div>
       </div>
 

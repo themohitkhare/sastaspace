@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2025_10_26_121146) do
+ActiveRecord::Schema[8.1].define(version: 2025_10_30_170500) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "vector"
@@ -105,26 +105,6 @@ ActiveRecord::Schema[8.1].define(version: 2025_10_26_121146) do
     t.index ["user_id"], name: "index_chats_on_user_id"
   end
 
-  create_table "clothing_items", force: :cascade do |t|
-    t.string "analysis_status"
-    t.string "brand"
-    t.string "category"
-    t.string "color"
-    t.datetime "created_at", null: false
-    t.string "image_hash"
-    t.datetime "last_analyzed_at"
-    t.string "name"
-    t.text "notes"
-    t.string "occasion"
-    t.decimal "price"
-    t.date "purchase_date"
-    t.string "season"
-    t.string "size"
-    t.datetime "updated_at", null: false
-    t.integer "user_id", null: false
-    t.index ["user_id"], name: "index_clothing_items_on_user_id"
-  end
-
   create_table "export_jobs", force: :cascade do |t|
     t.datetime "completed_at"
     t.datetime "created_at", null: false
@@ -142,13 +122,13 @@ ActiveRecord::Schema[8.1].define(version: 2025_10_26_121146) do
     t.datetime "created_at", null: false
     t.text "description"
     t.vector "embedding_vector", limit: 1536
-    t.string "item_type", null: false
     t.datetime "last_worn_at"
     t.json "metadata", default: {}
     t.string "name", null: false
     t.date "purchase_date"
     t.decimal "purchase_price", precision: 8, scale: 2
     t.integer "status", default: 0
+    t.bigint "subcategory_id"
     t.datetime "updated_at", null: false
     t.integer "user_id", null: false
     t.integer "wear_count", default: 0
@@ -156,12 +136,11 @@ ActiveRecord::Schema[8.1].define(version: 2025_10_26_121146) do
     t.index ["category_id"], name: "index_inventory_items_on_category_id"
     t.index ["created_at"], name: "index_inventory_items_on_created_at"
     t.index ["embedding_vector"], name: "index_inventory_items_on_embedding_vector", opclass: :vector_cosine_ops, using: :hnsw
-    t.index ["item_type"], name: "index_inventory_items_on_item_type"
     t.index ["last_worn_at"], name: "index_inventory_items_on_last_worn_at"
     t.index ["status"], name: "index_inventory_items_on_status"
+    t.index ["subcategory_id"], name: "index_inventory_items_on_subcategory_id"
     t.index ["user_id", "category_id"], name: "index_inventory_items_on_user_id_and_category_id"
     t.index ["user_id", "created_at"], name: "index_inventory_items_on_user_id_and_created_at"
-    t.index ["user_id", "item_type"], name: "index_inventory_items_on_user_id_and_item_type"
     t.index ["user_id"], name: "index_inventory_items_on_user_id"
   end
 
@@ -214,13 +193,11 @@ ActiveRecord::Schema[8.1].define(version: 2025_10_26_121146) do
   end
 
   create_table "outfit_items", force: :cascade do |t|
-    t.integer "clothing_item_id", null: false
     t.datetime "created_at", null: false
     t.text "notes"
     t.integer "outfit_id", null: false
     t.integer "position"
     t.datetime "updated_at", null: false
-    t.index ["clothing_item_id"], name: "index_outfit_items_on_clothing_item_id"
     t.index ["outfit_id"], name: "index_outfit_items_on_outfit_id"
   end
 
@@ -303,17 +280,16 @@ ActiveRecord::Schema[8.1].define(version: 2025_10_26_121146) do
   add_foreign_key "categories", "categories", column: "parent_id"
   add_foreign_key "chats", "models"
   add_foreign_key "chats", "users"
-  add_foreign_key "clothing_items", "users"
   add_foreign_key "export_jobs", "users"
   add_foreign_key "inventory_items", "brands"
   add_foreign_key "inventory_items", "categories"
+  add_foreign_key "inventory_items", "categories", column: "subcategory_id"
   add_foreign_key "inventory_items", "users"
   add_foreign_key "inventory_tags", "inventory_items"
   add_foreign_key "inventory_tags", "tags"
   add_foreign_key "messages", "chats"
   add_foreign_key "messages", "models"
   add_foreign_key "messages", "tool_calls"
-  add_foreign_key "outfit_items", "clothing_items"
   add_foreign_key "outfit_items", "outfits"
   add_foreign_key "outfits", "users"
   add_foreign_key "refresh_tokens", "users"

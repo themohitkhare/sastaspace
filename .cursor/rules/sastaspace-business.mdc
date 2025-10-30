@@ -1,0 +1,71 @@
+---
+alwaysApply: true
+---
+# SastaSpace Development Rules
+
+You are an expert Rails developer building SastaSpace, an AI-powered digital wardrobe application. Follow these rules strictly for consistent, high-quality development.
+
+## Project Context
+
+### Business Vision
+SastaSpace is an AI-powered digital closet that analyzes what users own, suggests what to wear, and helps them buy smarter. We transform wardrobe management through local AI processing with Apple-quality UX for a global audience.
+
+### Core Value Proposition
+- **Save Money**: Reduce duplicate purchases by 40% through wardrobe analytics
+- **Save Time**: 5-minute outfit decisions with AI assistance  
+- **Look Better**: AI-backed confidence in style choices
+- **Live Sustainably**: Maximize existing wardrobe potential
+
+## Architecture & Technology
+
+### Stack Requirements
+- **Backend**: Rails 8 monolith with PostgreSQL + pgvector
+- **AI Engine**: Local Ollama (privacy-first, no cloud dependencies)
+- **Frontend**: Rails + Hotwire + Tailwind with Apple-inspired design
+- **Image Analysis**: Multi-type AI analyzers (clothing, shoes, accessories, jewelry)
+
+### Core Data Models
+1. **User**: Authentication and preferences
+2. **InventoryItem**: Core wardrobe items with AI analysis
+3. **Category**: Hierarchical categorization system
+4. **Brand**: Brand management and analytics
+5. **Tag**: Flexible tagging and smart collections
+6. **AiAnalysis**: AI-powered item insights with confidence scoring
+7. **Outfit**: Complete outfit combinations with wear tracking
+8. **Chat/Message**: AI assistant conversations
+
+## Development Standards
+
+### Code Quality Principles
+- **Do It Once, Do It Right**: Quality over speed, sustainable codebase
+- **Apple-Like Quality**: Every interaction should feel premium and intuitive
+- **Privacy by Design**: User data stays local, AI processing on-device
+- **Global Accessibility**: WCAG AA compliance, multi-cultural design
+
+### Rails Best Practices
+- Follow Rails conventions strictly
+- Use Hotwire (Turbo + Stimulus) for SPA-like experience
+- Implement comprehensive test coverage with Minitest
+- Use background jobs for AI processing
+- Implement proper error handling and logging
+- Follow RESTful API design principles
+
+### Apple Design System Requirements
+- **Typography**: San Francisco-inspired font stack with clear hierarchy
+- **Colors**: Semantic naming (primary: #007AFF, system grays)
+- **Spacing**: 4pt grid system with consistent rhythm
+- **Components**: Rounded corners (8px default), subtle shadows
+- **Interactions**: 300ms spring animations, haptic feedback patterns
+- **Navigation**: Tab bar (49pt height), large titles, swipe gestures
+
+## AI Integration Standards
+
+### Local Ollama Requirements
+- Use local Ollama models: llava:13b (vision), llama3.2:8b (text), nomic-embed (embeddings)
+- Implement graceful degradation when Ollama unavailable
+- Type-specific analyzers: ClothingAnalyzer, ShoesAnalyzer, AccessoriesAnalyzer, JewelryAnalyzer
+- Background job processing for all AI operations
+- Vector embeddings for similarity search
+- Confidence scoring for all AI results
+
+### AI Analysis Standards

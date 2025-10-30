@@ -11,7 +11,7 @@ class InventoryItemsController < ApplicationController
 
     # Apply filters
     @inventory_items = @inventory_items.where(category_id: params[:category_id]) if params[:category_id].present?
-    @inventory_items = @inventory_items.where(item_type: params[:item_type]) if params[:item_type].present?
+    # Removed item_type filtering; derive from category hierarchy if needed
 
     # Filter by color (metadata)
     if params[:color].present?
@@ -50,6 +50,7 @@ class InventoryItemsController < ApplicationController
   end
 
   def show
+    redirect_to edit_inventory_item_path(@inventory_item)
   end
 
   def new
@@ -60,6 +61,18 @@ class InventoryItemsController < ApplicationController
   def create
     @inventory_item = current_user.inventory_items.build(inventory_item_params)
     @categories = Category.active.order(:name)
+
+    # Normalize category/subcategory: if a selected category has a parent, treat it as subcategory
+    if @inventory_item.category_id.present?
+      selected = Category.find_by(id: @inventory_item.category_id)
+      if selected&.parent_id.present?
+        @inventory_item.subcategory_id = selected.id
+        # set category to top-level ancestor
+        node = selected
+        node = node.respond_to?(:parent_category) ? node.parent_category : node.parent while node&.parent_id.present?
+        @inventory_item.category_id = node&.id || selected.id
+      end
+    end
 
     # Handle metadata fields from form
     if params[:inventory_item]
@@ -99,6 +112,16 @@ class InventoryItemsController < ApplicationController
     end
 
     if @inventory_item.update(inventory_item_params.except(:color, :size))
+      # Normalize category/subcategory after update
+      if @inventory_item.category_id.present?
+        selected = Category.find_by(id: @inventory_item.category_id)
+        if selected&.parent_id.present?
+          @inventory_item.update_column(:subcategory_id, selected.id)
+          node = selected
+          node = node.respond_to?(:parent_category) ? node.parent_category : node.parent while node&.parent_id.present?
+          @inventory_item.update_column(:category_id, node&.id || selected.id)
+        end
+      end
       # Handle image uploads
       @inventory_item.primary_image.attach(params[:inventory_item][:primary_image]) if params[:inventory_item] && params[:inventory_item][:primary_image].present?
 
@@ -141,7 +164,7 @@ class InventoryItemsController < ApplicationController
 
   def inventory_item_params
     params.require(:inventory_item).permit(
-      :name, :description, :category_id, :item_type, :purchase_price, :purchase_date,
+      :name, :description, :category_id, :subcategory_id, :purchase_price, :purchase_date,
       metadata: [ :color, :size, :material, :season, :occasion, :care_instructions, :fit_notes, :style_notes ]
     )
   end

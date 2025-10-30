@@ -1,0 +1,8 @@
+<div class="rounded border p-4 bg-white shadow">
+  <div class="font-medium"><%= outfit.name.presence || "Untitled" %></div>
+  <div class="text-sm text-gray-500"><%= outfit.description %></div>
+  <div class="mt-2">
+    <%= link_to "View", outfit_path(outfit), class: "text-blue-600" %>
+  </div>
+</div>
+

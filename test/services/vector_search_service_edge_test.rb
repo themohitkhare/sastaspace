@@ -27,8 +27,8 @@ class VectorSearchServiceEdgeTest < ActiveSupport::TestCase
     base_item.update!(embedding_vector: [ 0.1 ] * 1536)
 
     # Create many similar items
-    10.times do
-      item = create(:inventory_item, :clothing, user: @user)
+    10.times do |i|
+      item = create(:inventory_item, :clothing, user: @user, category: base_item.category, brand: base_item.brand, name: "Similar #{i}")
       item.update!(embedding_vector: [ 0.1 ] * 1536)
     end
 
