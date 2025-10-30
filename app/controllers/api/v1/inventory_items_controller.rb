@@ -4,7 +4,7 @@ module Api
       include Authenticable
 
       before_action :authenticate_user!
-      before_action :set_inventory_item, only: [ :show, :update, :destroy, :worn, :similar ]
+      before_action :set_inventory_item, only: [ :show, :update, :destroy, :worn, :similar, :attach_primary_image, :attach_additional_images, :detach_primary_image, :detach_additional_image ]
 
       rescue_from ActionDispatch::Http::Parameters::ParseError, with: :handle_parse_error
 

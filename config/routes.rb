@@ -1,4 +1,10 @@
 Rails.application.routes.draw do
+  resources :outfits do
+    collection do
+      get :builder
+      get :inspiration
+    end
+  end
   # Define your application routes per the DSL in https://guides.rubyonrails.org/routing.html
 
   # Reveal health status on /up that returns 200 if the app boots with no exceptions, otherwise 500.
@@ -105,6 +111,14 @@ Rails.application.routes.draw do
       # API Documentation
       get "docs" => "docs#show"
       get "docs/openapi" => "docs#openapi"
+      resources :outfits do
+        member do
+          patch :wear
+          patch :favorite
+          get :suggestions
+          post :duplicate
+        end
+      end
     end
   end
 

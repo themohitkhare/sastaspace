@@ -5,7 +5,6 @@ FactoryBot.define do
     category
     brand
     sequence(:name) { |n| "Inventory Item #{n}" }
-    item_type { :clothing }
     description { Faker::Lorem.paragraph }
     status { :active }
     purchase_price { Faker::Commerce.price(range: 10.0..500.0) }
@@ -16,7 +15,8 @@ FactoryBot.define do
     metadata do
       {
         color: Faker::Color.color_name,
-        size: %w[XS S M L XL XXL].sample,
+        # Use numeric default to satisfy both clothing and shoes validations
+        size: "9",
         material: Faker::Commerce.material,
         season: %w[spring summer fall winter].sample,
         occasion: %w[casual formal work party].sample
@@ -24,7 +24,7 @@ FactoryBot.define do
     end
 
     trait :clothing do
-      item_type { :clothing }
+      item_type { "clothing" }
       association :category, factory: [ :category, :clothing ]
       metadata do
         {
@@ -39,7 +39,7 @@ FactoryBot.define do
     end
 
     trait :shoes do
-      item_type { :shoes }
+      item_type { "shoes" }
       association :category, factory: [ :category, :shoes ]
       metadata do
         {
@@ -54,7 +54,7 @@ FactoryBot.define do
     end
 
     trait :accessories do
-      item_type { :accessories }
+      item_type { "accessories" }
       association :category, factory: [ :category, :accessories ]
       metadata do
         {
@@ -67,7 +67,7 @@ FactoryBot.define do
     end
 
     trait :jewelry do
-      item_type { :jewelry }
+      item_type { "jewelry" }
       association :category, factory: [ :category, :jewelry ]
       metadata do
         {

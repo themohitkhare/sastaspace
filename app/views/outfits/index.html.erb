@@ -1,0 +1,9 @@
+<div class="container mx-auto p-6" data-controller="outfit-gallery">
+  <h1 class="text-2xl font-semibold mb-4">My Outfits</h1>
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <% @outfits.each do |outfit| %>
+      <%= render partial: "outfit_card", locals: { outfit: outfit } %>
+    <% end %>
+  </div>
+</div>
+

@@ -1,0 +1,6 @@
+<div class="container mx-auto p-6">
+  <h1 class="text-2xl font-semibold mb-2"><%= @outfit.name %></h1>
+  <p class="text-gray-600 mb-4"><%= @outfit.description %></p>
+  <div class="text-sm text-gray-500">Created <%= time_ago_in_words(@outfit.created_at) %> ago</div>
+</div>
+

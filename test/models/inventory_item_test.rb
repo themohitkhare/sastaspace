@@ -81,7 +81,7 @@ class InventoryItemTest < ActiveSupport::TestCase
   end
 
   test "metadata_summary should return compact metadata" do
-    item = create(:inventory_item, metadata: {
+    item = create(:inventory_item, :clothing, metadata: {
       color: "blue",
       size: "M",
       material: "cotton",

@@ -87,16 +87,17 @@ class InventoryManagementTest < ApplicationSystemTestCase
     assert_no_text item1.name
   end
 
-  test "filtering by item type" do
-    item1 = create(:inventory_item, name: "Clothing Item", item_type: :clothing, user: @user, category: @category)
-    item2 = create(:inventory_item, name: "Shoe Item", item_type: :shoes, user: @user, category: @category, metadata: { size: "9.5" })
+  test "filtering by item type via category" do
+    shoes_category = create(:category, :shoes)
+    item1 = create(:inventory_item, name: "Clothing Item", user: @user, category: @category)
+    item2 = create(:inventory_item, name: "Shoe Item", user: @user, category: shoes_category, metadata: { size: "9.5" })
 
     visit inventory_items_path
 
     # Wait for filters to be visible
-    assert_field "Type", wait: 5
+    assert_field "Category", wait: 5
 
-    select "Shoes", from: "Type"
+    select shoes_category.name, from: "Category"
     # Form should auto-submit with Stimulus controller
     sleep 1.5
 

@@ -8,6 +8,7 @@ class User < ApplicationRecord
   validates :last_name, presence: true
 
   has_many :inventory_items, dependent: :destroy
+  has_many :outfits, dependent: :destroy
   has_many :ai_analyses, dependent: :destroy
   has_many :refresh_tokens, dependent: :destroy
 

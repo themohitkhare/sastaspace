@@ -8,7 +8,8 @@ FactoryBot.define do
     high_confidence { true }
     analysis_data do
       {
-        item_type: "clothing",
+        # retain semantic hints without depending on model column
+        category_type: "clothing",
         colors: [ "blue", "white" ],
         style: "casual",
         material: "cotton",

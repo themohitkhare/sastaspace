@@ -30,6 +30,11 @@ export default class extends Controller {
         this.showStep(this.currentStepValue)
         this.updateProgress()
         this.scrollToTop()
+        if (this.currentStepValue === this.totalStepsValue) {
+          // Force toggle in case guards prevented updates
+          this.nextButtonTargets.forEach(btn => btn.classList.add("hidden"))
+          this.submitButtonTargets.forEach(btn => btn.classList.remove("hidden"))
+        }
       }
     }
   }
@@ -79,20 +84,22 @@ export default class extends Controller {
   }
 
   updateNavigationButtons() {
-    if (this.hasPreviousButtonTargets) {
+    // Recompute total steps in case DOM changed
+    this.totalStepsValue = this.stepTargets.length
+    if (this.hasPreviousButtonTarget) {
       this.previousButtonTargets.forEach(button => {
         button.classList.toggle("hidden", this.currentStepValue === 1)
         button.disabled = this.currentStepValue === 1
       })
     }
 
-    if (this.hasNextButtonTargets) {
+    if (this.hasNextButtonTarget) {
       this.nextButtonTargets.forEach(button => {
         button.classList.toggle("hidden", this.currentStepValue === this.totalStepsValue)
       })
     }
 
-    if (this.hasSubmitButtonTargets) {
+    if (this.hasSubmitButtonTarget) {
       this.submitButtonTargets.forEach(button => {
         button.classList.toggle("hidden", this.currentStepValue !== this.totalStepsValue)
       })
