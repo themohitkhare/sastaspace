@@ -2,10 +2,9 @@ require "application_system_test_case"
 
 class LoginTest < ApplicationSystemTestCase
   test "user can login with valid credentials" do
-    user = create(:user, email: "test@example.com", password: "Password123!")
+    user = create(:user, password: "Password123!")
 
-    visit root_path
-    click_on "Login"
+    visit "/login"
 
     fill_in "Email", with: user.email
     fill_in "Password", with: "Password123!"
@@ -16,8 +15,7 @@ class LoginTest < ApplicationSystemTestCase
   end
 
   test "user cannot login with invalid credentials" do
-    visit root_path
-    click_on "Login"
+    visit "/login"
 
     fill_in "Email", with: "wrong@example.com"
     fill_in "Password", with: "WrongPassword123!"
@@ -28,7 +26,7 @@ class LoginTest < ApplicationSystemTestCase
   end
 
   test "user is redirected to inventory after successful login" do
-    user = create(:user, email: "test@example.com", password: "Password123!")
+    user = create(:user, password: "Password123!")
 
     visit "/inventory_items"
     # Should redirect to login when not authenticated

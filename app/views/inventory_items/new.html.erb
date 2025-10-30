@@ -1,83 +1,259 @@
-<div style="max-width: 800px; margin: 0 auto; padding: 20px;">
-  <h1>Add New Item</h1>
+<div data-controller="form-wizard" class="max-w-4xl mx-auto">
+  <div class="card">
+    <div class="card-header">
+      <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Add New Item</h1>
+    </div>
 
-  <%= form_with model: @inventory_item, local: true, multipart: true do |form| %>
-    <% if @inventory_item.errors.any? %>
-      <div style="color: red; padding: 10px; margin-bottom: 15px; border: 1px solid red;">
-        <h3 style="margin-top: 0;"><%= pluralize(@inventory_item.errors.count, "error") %> prohibited this item from being saved:</h3>
-        <ul style="margin: 0; padding-left: 20px;">
-          <% @inventory_item.errors.full_messages.each do |message| %>
-            <li><%= message %></li>
-          <% end %>
-        </ul>
+    <%= form_with model: @inventory_item, local: true, multipart: true, class: "card-body space-y-6" do |form| %>
+      <% if @inventory_item.errors.any? %>
+        <div class="p-4 bg-red-50 border border-red-200 text-red-800 rounded dark:bg-red-900 dark:border-red-700 dark:text-red-200">
+          <h3 class="font-semibold mb-2"><%= pluralize(@inventory_item.errors.count, "error") %> prohibited this item from being saved:</h3>
+          <ul class="list-disc list-inside space-y-1">
+            <% @inventory_item.errors.full_messages.each do |message| %>
+              <li><%= message %></li>
+            <% end %>
+          </ul>
+        </div>
+      <% end %>
+
+      <!-- Progress Bar -->
+      <div class="mb-6">
+        <div class="w-full bg-gray-200 rounded-full h-2 dark:bg-gray-700">
+          <div data-form-wizard-target="progressBar" class="bg-primary-600 h-2 rounded-full transition-all duration-300" style="width: 25%;"></div>
+        </div>
+      </div>
+
+      <!-- Step Indicators -->
+      <div class="flex justify-between mb-8">
+        <% ["Type", "Details", "Images", "Metadata"].each_with_index do |step_name, index| %>
+          <div class="flex items-center">
+            <div
+              data-form-wizard-target="stepIndicator"
+              class="flex items-center justify-center w-10 h-10 rounded-full border-2 bg-primary-600 text-white border-primary-500"
+            >
+              <%= index + 1 %>
+            </div>
+            <span class="ml-2 text-sm font-medium text-gray-700 dark:text-gray-300 hidden sm:inline"><%= step_name %></span>
+            <% if index < 3 %>
+              <div class="hidden sm:block w-16 h-0.5 bg-gray-300 dark:bg-gray-600 mx-4"></div>
+            <% end %>
+          </div>
+        <% end %>
+      </div>
+
+      <!-- Step 1: Type Selection -->
+      <div data-form-wizard-target="step" class="space-y-4">
+        <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">Step 1: Select Item Type</h2>
+        
+        <div>
+          <%= form.label :item_type, "Item Type", class: "form-label" %>
+          <%= form.select :item_type,
+              options_for_select([
+                ["Select item type", ""],
+                ["Clothing", "clothing"],
+                ["Shoes", "shoes"],
+                ["Accessories", "accessories"],
+                ["Jewelry", "jewelry"]
+              ], @inventory_item.item_type),
+              {},
+              { required: true, class: "form-input",
+                data: { action: "change->form-wizard#validateCurrentStep" } } %>
+        </div>
+
+        <div>
+          <%= form.label :category_id, "Category", class: "form-label" %>
+          <div data-controller="category-picker">
+            <%= form.hidden_field :category_id, required: true,
+                data: { category_picker_target: "selectedCategory",
+                        action: "category-selected->category-picker#selectCategory" } %>
+            <button
+              type="button"
+              data-action="click->category-picker#open"
+              data-category-picker-target="selectedCategory"
+              class="form-input text-left w-full bg-white dark:bg-gray-700"
+            >
+              <%= @inventory_item.category&.name || "Select a category" %>
+            </button>
+            
+            <!-- Category Picker Modal -->
+            <div
+              data-category-picker-target="modal"
+              class="hidden fixed inset-0 z-50 overflow-y-auto"
+              aria-labelledby="modal-title"
+              role="dialog"
+              aria-modal="true"
+            >
+              <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+                <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" data-action="click->category-picker#close"></div>
+
+                <div class="inline-block align-bottom bg-white dark:bg-gray-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full" data-action="click->category-picker#preventClose">
+                  <div class="bg-white dark:bg-gray-800 px-4 pt-5 pb-4 sm:p-6">
+                    <div class="flex items-center justify-between mb-4">
+                      <h3 class="text-lg font-medium text-gray-900 dark:text-white">Select Category</h3>
+                      <button type="button" data-action="click->category-picker#close" class="text-gray-400 hover:text-gray-500">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                      </button>
+                    </div>
+                    
+                    <div data-category-picker-target="breadcrumbs" class="mb-4 text-sm text-gray-600 dark:text-gray-400"></div>
+                    
+                    <ul data-category-picker-target="categoryList" class="max-h-96 overflow-y-auto border border-gray-200 dark:border-gray-700 rounded-lg"></ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 2: Item Details -->
+      <div data-form-wizard-target="step" class="hidden space-y-4">
+        <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">Step 2: Item Details</h2>
+        
+        <div>
+          <%= form.label :name, "Name", class: "form-label" %>
+          <%= form.text_field :name, required: true, class: "form-input",
+              data: { action: "blur->form-wizard#validateCurrentStep" } %>
+        </div>
+
+        <div>
+          <%= form.label :description, "Description", class: "form-label" %>
+          <%= form.text_area :description, rows: 4, class: "form-input" %>
+        </div>
+      </div>
+
+      <!-- Step 3: Images -->
+      <div data-form-wizard-target="step" class="hidden space-y-4">
+        <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">Step 3: Upload Images</h2>
+        
+        <div data-controller="image-upload">
+          <!-- Primary Image -->
+          <div class="mb-6">
+            <%= form.label :primary_image, "Primary Image", class: "form-label" %>
+            <div
+              data-image-upload-target="dropZone"
+              class="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-8 text-center hover:border-primary-500 transition-colors cursor-pointer"
+            >
+              <input
+                type="file"
+                name="inventory_item[primary_image]"
+                accept="image/*"
+                data-image-upload-target="fileInput"
+                data-action="change->image-upload#selectFiles"
+                class="hidden"
+              >
+              <button
+                type="button"
+                data-action="click->image-upload#selectFiles"
+                class="text-primary-600 hover:text-primary-700 dark:text-primary-400 font-medium"
+              >
+                Click to upload or drag and drop
+              </button>
+              <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">PNG, JPG, WEBP up to 5MB</p>
+            </div>
+            <div data-image-upload-target="primaryPreview" class="mt-4"></div>
+          </div>
+
+          <!-- Additional Images -->
+          <div>
+            <%= form.label :additional_images, "Additional Images (Optional)", class: "form-label" %>
+            <div
+              data-image-upload-target="dropZone"
+              class="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-8 text-center hover:border-primary-500 transition-colors cursor-pointer"
+            >
+              <input
+                type="file"
+                name="inventory_item[additional_images][]"
+                accept="image/*"
+                multiple
+                data-image-upload-target="fileInput"
+                data-action="change->image-upload#selectFiles"
+                class="hidden"
+              >
+              <button
+                type="button"
+                data-action="click->image-upload#selectFiles"
+                class="text-primary-600 hover:text-primary-700 dark:text-primary-400 font-medium"
+              >
+                Click to upload multiple images or drag and drop
+              </button>
+              <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">PNG, JPG, WEBP up to 5MB each</p>
+            </div>
+            <div data-image-upload-target="additionalPreviews" class="mt-4 grid grid-cols-4 gap-4"></div>
+          </div>
+          
+          <div data-image-upload-target="errorMessage" class="hidden mt-4 p-3 bg-red-50 border border-red-200 text-red-800 rounded dark:bg-red-900 dark:border-red-700 dark:text-red-200"></div>
+        </div>
+      </div>
+
+      <!-- Step 4: Metadata -->
+      <div data-form-wizard-target="step" class="hidden space-y-4">
+        <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">Step 4: Additional Details</h2>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <%= form.label :color, "Color", class: "form-label" %>
+            <%= form.text_field :color, value: @inventory_item.metadata&.dig("color"), class: "form-input" %>
+          </div>
+
+          <div>
+            <%= form.label :size, "Size", class: "form-label" %>
+            <%= form.text_field :size, value: @inventory_item.metadata&.dig("size"), class: "form-input" %>
+          </div>
+
+          <div>
+            <%= form.label :season, "Season", class: "form-label" %>
+            <%= form.select :season,
+                options_for_select([
+                  ["", ""],
+                  ["Spring", "spring"],
+                  ["Summer", "summer"],
+                  ["Fall", "fall"],
+                  ["Winter", "winter"],
+                  ["All-Season", "all-season"]
+                ], @inventory_item.metadata&.dig("season")),
+                {},
+                { class: "form-input" } %>
+          </div>
+
+          <div>
+            <%= form.label :occasion, "Occasion", class: "form-label" %>
+            <%= form.text_field :occasion, value: @inventory_item.metadata&.dig("occasion"), class: "form-input",
+                placeholder: "e.g., casual, formal, work" %>
+          </div>
+        </div>
+      </div>
+
+      <!-- Navigation Buttons -->
+      <div class="flex justify-between pt-6 border-t border-gray-200 dark:border-gray-700">
+        <button
+          type="button"
+          data-form-wizard-target="previousButton"
+          data-action="click->form-wizard#previous"
+          class="btn-secondary hidden"
+        >
+          Previous
+        </button>
+
+        <div class="flex gap-3 ml-auto">
+          <%= link_to "Cancel", inventory_items_path, class: "btn-secondary" %>
+          
+          <button
+            type="button"
+            data-form-wizard-target="nextButton"
+            data-action="click->form-wizard#next"
+            class="btn-primary"
+          >
+            Next
+          </button>
+
+          <%= form.submit "Create Item",
+              data: { form_wizard_target: "submitButton" },
+              class: "btn-primary hidden" %>
+        </div>
       </div>
     <% end %>
-
-    <div style="margin-bottom: 15px;">
-      <%= form.label :name, "Name", style: "display: block; margin-bottom: 5px; font-weight: bold;" %>
-      <%= form.text_field :name, required: true, style: "width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;" %>
-    </div>
-
-    <div style="margin-bottom: 15px;">
-      <%= form.label :category_id, "Category", style: "display: block; margin-bottom: 5px; font-weight: bold;" %>
-      <%= form.select :category_id, options_from_collection_for_select(@categories, :id, :name, @inventory_item.category_id), { include_blank: "Select a category" }, { required: true, style: "width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;" } %>
-    </div>
-
-    <div style="margin-bottom: 15px;">
-      <%= form.label :item_type, "Item Type", style: "display: block; margin-bottom: 5px; font-weight: bold;" %>
-      <%= form.select :item_type, options_for_select([["Clothing", "clothing"], ["Shoes", "shoes"], ["Accessories", "accessories"], ["Jewelry", "jewelry"]], @inventory_item.item_type), { include_blank: "Select item type" }, { required: true, style: "width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;" } %>
-    </div>
-
-    <div style="margin-bottom: 15px;">
-      <%= form.label :description, "Description", style: "display: block; margin-bottom: 5px; font-weight: bold;" %>
-      <%= form.text_area :description, rows: 4, style: "width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;" %>
-    </div>
-
-    <div style="margin-bottom: 15px;">
-      <%= form.label :color, "Color", style: "display: block; margin-bottom: 5px; font-weight: bold;" %>
-      <%= form.text_field :color, value: @inventory_item.metadata&.dig("color"), style: "width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;" %>
-    </div>
-
-    <div style="margin-bottom: 15px;">
-      <%= form.label :size, "Size", style: "display: block; margin-bottom: 5px; font-weight: bold;" %>
-      <%= form.text_field :size, value: @inventory_item.metadata&.dig("size"), style: "width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;" %>
-    </div>
-
-    <div style="margin-bottom: 15px;">
-      <%= form.label :primary_image, "Primary Image", style: "display: block; margin-bottom: 5px; font-weight: bold;" %>
-      <%= form.file_field :primary_image, accept: "image/*", style: "width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;" %>
-      <div id="primary-image-preview" style="margin-top: 10px;"></div>
-    </div>
-
-    <div style="margin-bottom: 15px;">
-      <%= form.label :additional_images, "Additional Images", style: "display: block; margin-bottom: 5px; font-weight: bold;" %>
-      <%= form.file_field :additional_images, multiple: true, accept: "image/*", style: "width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;" %>
-    </div>
-
-    <div style="margin-top: 20px;">
-      <%= form.submit "Create Item", style: "padding: 10px 20px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 16px;" %>
-      <%= link_to "Cancel", inventory_items_path, style: "margin-left: 10px; padding: 10px 20px; background: #6c757d; color: white; text-decoration: none; border-radius: 4px; display: inline-block;" %>
-    </div>
-  <% end %>
+  </div>
 </div>
-
-<script>
-  // Image preview functionality
-  document.addEventListener('DOMContentLoaded', function() {
-    const primaryImageInput = document.querySelector('input[name="inventory_item[primary_image]"]');
-    if (primaryImageInput) {
-      primaryImageInput.addEventListener('change', function(e) {
-        const file = e.target.files[0];
-        if (file) {
-          const reader = new FileReader();
-          reader.onload = function(e) {
-            const preview = document.getElementById('primary-image-preview');
-            preview.innerHTML = '<img src="' + e.target.result + '" alt="Image preview" style="max-width: 300px; max-height: 300px; border: 1px solid #ddd; border-radius: 4px; margin-top: 10px;" />';
-          };
-          reader.readAsDataURL(file);
-        }
-      });
-    }
-  });
-</script>
-

@@ -6,7 +6,7 @@ module Auth
       user = User.find_by(email: email)
 
       if user&.authenticate(password)
-        access_token = JsonWebToken.encode_access_token(user_id: user.id)
+        access_token = Auth::JsonWebToken.encode_access_token(user_id: user.id)
         refresh_token_record = RefreshToken.create_for_user!(user)
 
         {
@@ -58,7 +58,7 @@ module Auth
       )
 
       if user.save
-        access_token = JsonWebToken.encode_access_token(user_id: user.id)
+        access_token = Auth::JsonWebToken.encode_access_token(user_id: user.id)
         refresh_token_record = RefreshToken.create_for_user!(user)
 
         {

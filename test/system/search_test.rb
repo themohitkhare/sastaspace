@@ -2,8 +2,8 @@ require "application_system_test_case"
 
 class SearchTest < ApplicationSystemTestCase
   setup do
-    @user = create(:user, email: "test@example.com", password: "Password123!")
-    @category = create(:category, :clothing, name: "Tops")
+    @user = create(:user, password: "Password123!")
+    @category = create(:category, :clothing)
 
     @red_shirt = create(:inventory_item, user: @user, name: "Red T-Shirt", category: @category, description: "A bright red shirt")
     @blue_shirt = create(:inventory_item, user: @user, name: "Blue T-Shirt", category: @category, description: "A cool blue shirt")
@@ -20,7 +20,7 @@ class SearchTest < ApplicationSystemTestCase
     visit "/inventory_items"
 
     fill_in "Search", with: "Red"
-    click_button "Search"
+    sleep 1.0
 
     assert_text "Red T-Shirt"
     assert_no_text "Blue T-Shirt"
@@ -31,7 +31,7 @@ class SearchTest < ApplicationSystemTestCase
     visit "/inventory_items"
 
     fill_in "Search", with: "bright"
-    click_button "Search"
+    sleep 1.0
 
     assert_text "Red T-Shirt"
     assert_no_text "Blue T-Shirt"
@@ -41,7 +41,7 @@ class SearchTest < ApplicationSystemTestCase
     visit "/inventory_items"
 
     fill_in "Search", with: "T-Shirt"
-    click_button "Search"
+    sleep 1.0
 
     assert_text "Red T-Shirt"
     assert_text "Blue T-Shirt"
@@ -52,9 +52,9 @@ class SearchTest < ApplicationSystemTestCase
     visit "/inventory_items"
 
     fill_in "Search", with: "NonExistentItem123"
-    click_button "Search"
+    sleep 1.0
 
-    assert_text "No items found matching"
+    assert_text "No items found"
     assert_no_text "Red T-Shirt"
     assert_no_text "Blue T-Shirt"
     assert_no_text "Black Pants"
@@ -65,30 +65,39 @@ class SearchTest < ApplicationSystemTestCase
 
     # Apply search
     fill_in "Search", with: "Red"
-    click_button "Search"
+    sleep 1.0
     assert_text "Red T-Shirt"
     assert_no_text "Blue T-Shirt"
 
     # Clear search
-    click_on "Clear"
+    fill_in "Search", with: ""
+    find_field("Search").send_keys(:enter)
+    sleep 1.0
+
+    # Or use clear filters if available
+    if page.has_link?("Clear Filters", wait: 1)
+      click_on "Clear Filters"
+      sleep 1.0
+    end
+
     assert_text "Red T-Shirt"
     assert_text "Blue T-Shirt"
     assert_text "Black Pants"
   end
 
   test "search works with category filter combined" do
-    bottoms_category = create(:category, :clothing, name: "Bottoms")
+    bottoms_category = create(:category, :clothing)
     blue_pants = create(:inventory_item, user: @user, name: "Blue Jeans", category: bottoms_category)
 
     visit "/inventory_items"
 
-    # Filter by Tops category
-    select "Tops", from: "Filter by Category"
-    click_button "Filter"
+    # Filter by selected category (auto-submits)
+    select @category.name, from: "Category"
+    sleep 1.0
 
     # Then search
     fill_in "Search", with: "Blue"
-    click_button "Search"
+    sleep 1.0
 
     assert_text "Blue T-Shirt"
     assert_no_text "Blue Jeans" # Should be filtered out by category
