@@ -28,17 +28,7 @@ class HealthCheckerTest < ActiveSupport::TestCase
     assert_equal "unhealthy", status[:status]
   end
 
-  test "redis_status handles connection gracefully" do
-    # Redis status check may fail if Redis isn't configured in test
-    # Just verify the method returns a status hash
-    begin
-      status = HealthChecker.redis_status
-      assert status[:status].present?
-    rescue NameError => e
-      # Redis constant not available, skip this test
-      skip "Redis not available in test environment: #{e.message}"
-    end
-  end
+  # Redis-based checks removed: Redis no longer used in the project
 
   test "jobs_status healthy when jobs can be enqueued" do
     job = mock()

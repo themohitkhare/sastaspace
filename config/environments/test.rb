@@ -36,6 +36,13 @@ Rails.application.configure do
   # Active Storage service for tests
   config.active_storage.service = :test
 
+  # Provide host for url_for in tests
+  host = 'http://test.local'
+  config.action_controller.default_url_options = { host: host }
+  config.after_initialize do
+    Rails.application.routes.default_url_options[:host] = host
+  end
+
   # Print deprecation notices to the stderr.
   config.active_support.deprecation = :stderr
 

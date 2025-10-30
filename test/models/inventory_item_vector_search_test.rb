@@ -3,8 +3,8 @@ require "test_helper"
 class InventoryItemVectorSearchTest < ActiveSupport::TestCase
   def setup
     @user = create(:user)
-    @category = create(:category, name: "tops")
-    @brand = create(:brand, name: "Nike")
+    @category = create(:category, :clothing)
+    @brand = create(:brand)
 
     @item1 = create(:inventory_item,
                    user: @user,

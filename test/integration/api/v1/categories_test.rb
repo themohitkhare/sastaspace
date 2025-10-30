@@ -6,13 +6,20 @@ class Api::V1::CategoriesTest < ActionDispatch::IntegrationTest
     @token = Auth::JsonWebToken.encode_access_token(user_id: @user.id)
 
     # Create hierarchical categories
-    @clothing = create(:category, name: "Clothing", sort_order: 1)
-    @tops = create(:category, name: "Tops", parent_id: @clothing.id, sort_order: 1)
-    @t_shirts = create(:category, name: "T-Shirts", parent_id: @tops.id, sort_order: 1)
-    @blouses = create(:category, name: "Blouses", parent_id: @tops.id, sort_order: 2)
+    @clothing_name = "Clothing #{SecureRandom.hex(4)}"
+    @tops_name = "Tops #{SecureRandom.hex(4)}"
+    @tshirts_name = "T-Shirts #{SecureRandom.hex(4)}"
+    @blouses_name = "Blouses #{SecureRandom.hex(4)}"
+    @shoes_name = "Shoes #{SecureRandom.hex(4)}"
+    @sneakers_name = "Sneakers #{SecureRandom.hex(4)}"
 
-    @shoes = create(:category, name: "Shoes", sort_order: 2)
-    @sneakers = create(:category, name: "Sneakers", parent_id: @shoes.id, sort_order: 1)
+    @clothing = create(:category, name: @clothing_name, sort_order: 1)
+    @tops = create(:category, name: @tops_name, parent_id: @clothing.id, sort_order: 1)
+    @t_shirts = create(:category, name: @tshirts_name, parent_id: @tops.id, sort_order: 1)
+    @blouses = create(:category, name: @blouses_name, parent_id: @tops.id, sort_order: 2)
+
+    @shoes = create(:category, name: @shoes_name, sort_order: 2)
+    @sneakers = create(:category, name: @sneakers_name, parent_id: @shoes.id, sort_order: 1)
 
     # Create some inventory items
     @clothing_item = create(:inventory_item, user: @user, category: @t_shirts, item_type: "clothing")
@@ -51,8 +58,8 @@ class Api::V1::CategoriesTest < ActionDispatch::IntegrationTest
 
     # Should include our root categories
     category_names = categories.map { |c| c["name"] }
-    assert_includes category_names, "Clothing"
-    assert_includes category_names, "Shoes"
+    assert_includes category_names, @clothing_name
+    assert_includes category_names, @shoes_name
   end
 
   test "GET /api/v1/categories/:id should return specific category" do
@@ -63,8 +70,8 @@ class Api::V1::CategoriesTest < ActionDispatch::IntegrationTest
     category = body["data"]["category"]
 
     assert_equal @clothing.id, category["id"]
-    assert_equal "Clothing", category["name"]
-    assert_equal "clothing", category["slug"]
+    assert_equal @clothing_name, category["name"]
+    assert_equal @clothing.slug, category["slug"]
     assert category["is_root"]
     assert_not category["is_leaf"]
   end
@@ -77,21 +84,21 @@ class Api::V1::CategoriesTest < ActionDispatch::IntegrationTest
     categories = body["data"]["categories"]
 
     # Find clothing category in tree
-    clothing_category = categories.find { |c| c["name"] == "Clothing" }
+    clothing_category = categories.find { |c| c["name"] == @clothing_name }
     assert_not_nil clothing_category
 
     # Should have children
     assert clothing_category["children"].length > 0
 
     # Find tops category
-    tops_category = clothing_category["children"].find { |c| c["name"] == "Tops" }
+    tops_category = clothing_category["children"].find { |c| c["name"] == @tops_name }
     assert_not_nil tops_category
 
     # Should have its own children
     assert tops_category["children"].length > 0
     child_names = tops_category["children"].map { |c| c["name"] }
-    assert_includes child_names, "T-Shirts"
-    assert_includes child_names, "Blouses"
+    assert_includes child_names, @tshirts_name
+    assert_includes child_names, @blouses_name
   end
 
   test "GET /api/v1/categories/roots should return only root categories" do
@@ -108,8 +115,8 @@ class Api::V1::CategoriesTest < ActionDispatch::IntegrationTest
 
     # Should include our root categories
     category_names = categories.map { |c| c["name"] }
-    assert_includes category_names, "Clothing"
-    assert_includes category_names, "Shoes"
+    assert_includes category_names, @clothing_name
+    assert_includes category_names, @shoes_name
   end
 
   test "GET /api/v1/categories/:id/children should return direct children" do
@@ -127,7 +134,7 @@ class Api::V1::CategoriesTest < ActionDispatch::IntegrationTest
     assert children.length > 0
 
     child_names = children.map { |c| c["name"] }
-    assert_includes child_names, "Tops"
+    assert_includes child_names, @tops_name
 
     # Children should not have their own children in this response
     children.each do |child|

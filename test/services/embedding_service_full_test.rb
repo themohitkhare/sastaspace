@@ -8,13 +8,13 @@ class EmbeddingServiceFullTest < ActiveSupport::TestCase
   end
 
   test "build_item_description includes all relevant fields" do
-    @item.brand = create(:brand, name: "Nike")
+    @item.brand = create(:brand)
     description = EmbeddingService.send(:build_item_description, @item)
 
     assert_includes description, @item.name
     assert_includes description, @item.item_type
     assert_includes description, @category.name
-    assert_includes description, "Nike"
+    assert_includes description, @item.brand.name
   end
 
   test "build_item_description handles missing optional fields" do
