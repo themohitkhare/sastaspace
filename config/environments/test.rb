@@ -17,7 +17,7 @@ Rails.application.configure do
   # Configure public file server for tests with Cache-Control for performance.
   config.public_file_server.enabled = true
   config.public_file_server.headers = {
-    'Cache-Control' => "public, max-age=#{1.hour.to_i}"
+    "Cache-Control" => "public, max-age=#{1.hour.to_i}"
   }
 
   # Show full error reports and disable caching.
@@ -37,7 +37,7 @@ Rails.application.configure do
   config.active_storage.service = :test
 
   # Provide host for url_for in tests
-  host = 'http://test.local'
+  host = "http://test.local"
   config.action_controller.default_url_options = { host: host }
   config.after_initialize do
     Rails.application.routes.default_url_options[:host] = host

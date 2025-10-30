@@ -12,12 +12,12 @@ class InventoryItemsController < ApplicationController
     # Apply filters
     @inventory_items = @inventory_items.where(category_id: params[:category_id]) if params[:category_id].present?
     @inventory_items = @inventory_items.where(item_type: params[:item_type]) if params[:item_type].present?
-    
+
     # Filter by color (metadata)
     if params[:color].present?
       @inventory_items = @inventory_items.where(Arel.sql("metadata->>'color' ILIKE ?"), "%#{params[:color]}%")
     end
-    
+
     # Filter by season (metadata)
     if params[:season].present?
       @inventory_items = @inventory_items.where(Arel.sql("metadata->>'season' = ?"), params[:season])
@@ -33,7 +33,7 @@ class InventoryItemsController < ApplicationController
     end
 
     @categories = Category.active.order(:name)
-    
+
     # Get unique colors and seasons for filter dropdowns
     @available_colors = current_user.inventory_items
       .where(Arel.sql("metadata->>'color' IS NOT NULL AND metadata->>'color' != ''"))
@@ -42,9 +42,9 @@ class InventoryItemsController < ApplicationController
       .compact
       .uniq
       .sort
-    
+
     @available_seasons = %w[spring summer fall winter all-season]
-    
+
     # Paginate results
     @inventory_items = @inventory_items.page(params[:page]).per(24) # 24 items per page (good for grid/list views)
   end
@@ -124,7 +124,7 @@ class InventoryItemsController < ApplicationController
     item_ids = params[:item_ids] || []
     items = current_user.inventory_items.where(id: item_ids)
     count = items.count
-    
+
     if count > 0
       items.destroy_all
       redirect_to inventory_items_path, notice: "#{count} item(s) deleted successfully"
