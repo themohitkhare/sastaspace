@@ -7,6 +7,7 @@ export default class extends Controller {
     "modal",
     "categoryTree",
     "selectedCategory",
+    "hiddenInput",
     "breadcrumbs",
     "searchInput",
     "categoryList",
@@ -58,7 +59,9 @@ export default class extends Controller {
       }
 
       const data = await response.json()
-      this.categories = data.data || data.categories || []
+      // API responds with { success, data: { categories: [...] } }
+      // Older variants may return { categories: [...] }
+      this.categories = (data.data && data.data.categories) || data.categories || []
       this.renderCategories()
     } catch (error) {
       console.error("Error loading categories:", error)
@@ -144,6 +147,14 @@ export default class extends Controller {
     if (this.hasSelectedCategoryTarget) {
       this.selectedCategoryTarget.textContent = category.name
       this.selectedCategoryTarget.dataset.categoryId = category.id
+    }
+
+    // Update hidden input field value for form submission
+    if (this.hasHiddenInputTarget) {
+      this.hiddenInputTarget.value = category.id
+      // Trigger change/input events to notify any listeners/validation
+      this.hiddenInputTarget.dispatchEvent(new Event("input", { bubbles: true }))
+      this.hiddenInputTarget.dispatchEvent(new Event("change", { bubbles: true }))
     }
 
     // Trigger change event

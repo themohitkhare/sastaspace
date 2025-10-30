@@ -64,8 +64,7 @@
           <%= form.label :category_id, "Category", class: "form-label" %>
           <div data-controller="category-picker">
             <%= form.hidden_field :category_id, required: true,
-                data: { category_picker_target: "selectedCategory",
-                        action: "category-selected->category-picker#selectCategory" } %>
+                data: { category_picker_target: "hiddenInput" } %>
             <button
               type="button"
               data-action="click->category-picker#open"
