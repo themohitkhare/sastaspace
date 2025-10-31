@@ -29,16 +29,6 @@
     </div>
 
     <div style="margin-bottom: 15px;">
-      <%= form.label :color, "Color", style: "display: block; margin-bottom: 5px; font-weight: bold;" %>
-      <%= form.text_field :color, value: @inventory_item.metadata&.dig("color"), style: "width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;" %>
-    </div>
-
-    <div style="margin-bottom: 15px;">
-      <%= form.label :size, "Size", style: "display: block; margin-bottom: 5px; font-weight: bold;" %>
-      <%= form.text_field :size, value: @inventory_item.metadata&.dig("size"), style: "width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;" %>
-    </div>
-
-    <div style="margin-bottom: 15px;">
       <%= form.label :primary_image, "Primary Image", style: "display: block; margin-bottom: 5px; font-weight: bold;" %>
       <%= form.file_field :primary_image, accept: "image/*", direct_upload: true, style: "width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;" %>
       <% if @inventory_item.primary_image.attached? %>

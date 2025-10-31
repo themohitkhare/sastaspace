@@ -15,21 +15,17 @@ class ImageUploadTest < ApplicationSystemTestCase
   test "user can upload primary image when creating item" do
     visit "/inventory_items/new"
 
-    # Step 1
-    select "Clothing", from: "Item Type"
-    find("input[name='inventory_item[category_id]']", visible: false).set(@category.id)
+    # Step 1: Category
+    find("input[name='inventory_item[category_id]']", visible: false).set(@category.id.to_s)
     find("button[data-form-wizard-target='nextButton']").click
 
-    # Step 2
+    # Step 2: Details
     fill_in "Name", with: "Blue Shirt"
     find("button[data-form-wizard-target='nextButton']").click
 
-    # Step 3
+    # Step 3: Images
     image_path = Rails.root.join("test", "fixtures", "files", "sample_image.jpg")
     attach_file "inventory_item[primary_image]", image_path, visible: false
-    find("button[data-form-wizard-target='nextButton']").click
-
-    # Step 4
     page.execute_script("document.querySelector('form').requestSubmit()")
 
     assert_text "Item created successfully"
@@ -40,25 +36,21 @@ class ImageUploadTest < ApplicationSystemTestCase
   test "user can upload additional images when creating item" do
     visit "/inventory_items/new"
 
-    # Step 1
-    select "Clothing", from: "Item Type"
-    find("input[name='inventory_item[category_id]']", visible: false).set(@category.id)
+    # Step 1: Category
+    find("input[name='inventory_item[category_id]']", visible: false).set(@category.id.to_s)
     find("button[data-form-wizard-target='nextButton']").click
 
-    # Step 2
+    # Step 2: Details
     fill_in "Name", with: "Red Dress"
     find("button[data-form-wizard-target='nextButton']").click
 
-    # Step 3
+    # Step 3: Images
     image_path = Rails.root.join("test", "fixtures", "files", "sample_image.jpg")
     attach_file "inventory_item[primary_image]", image_path, visible: false
 
     # Upload additional images
     attach_file "inventory_item[additional_images][]", [ image_path, image_path ], visible: false
 
-    find("button[data-form-wizard-target='nextButton']").click
-
-    # Step 4
     page.execute_script("document.querySelector('form').requestSubmit()")
 
     assert_text "Item created successfully"
@@ -82,22 +74,19 @@ class ImageUploadTest < ApplicationSystemTestCase
   test "user sees image preview after upload" do
     visit "/inventory_items/new"
 
-    # Step 1
-    select "Clothing", from: "Item Type"
-    find("input[name='inventory_item[category_id]']", visible: false).set(@category.id)
+    # Step 1: Category
+    find("input[name='inventory_item[category_id]']", visible: false).set(@category.id.to_s)
     find("button[data-form-wizard-target='nextButton']").click
 
-    # Step 2
+    # Step 2: Details
     fill_in "Name", with: "Pink T-Shirt"
     find("button[data-form-wizard-target='nextButton']").click
 
-    # Step 3
+    # Step 3: Images
     image_path = Rails.root.join("test", "fixtures", "files", "sample_image.jpg")
     attach_file "inventory_item[primary_image]", image_path, visible: false
 
     # Preview is optional in headless; continue to submit
-
-    find("button[data-form-wizard-target='nextButton']").click
     page.execute_script("document.querySelector('form').requestSubmit()")
     assert_text "Pink T-Shirt"
   end

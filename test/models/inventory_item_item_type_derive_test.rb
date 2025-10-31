@@ -3,8 +3,12 @@ require "test_helper"
 class InventoryItemItemTypeDeriveTest < ActiveSupport::TestCase
   test "item_type derives from top-level Shoes category" do
     user = create(:user)
-    shoes = create(:category, name: "Shoes", parent_category: nil)
-    sneakers = create(:category, name: "Sneakers", parent_category: shoes)
+    shoes = Category.find_or_create_by!(name: "Shoes") do |c|
+      c.parent_category = nil
+    end
+    sneakers = Category.find_or_create_by!(name: "Sneakers") do |c|
+      c.parent_category = shoes
+    end
     item = create(:inventory_item, user: user, category: sneakers, subcategory: sneakers, metadata: { size: "9" })
     assert_equal "shoes", item.item_type
   end
@@ -21,5 +25,3 @@ class InventoryItemItemTypeDeriveTest < ActiveSupport::TestCase
     assert_equal({}, item.additional_image_variants(nil))
   end
 end
-
-

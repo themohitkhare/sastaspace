@@ -25,5 +25,3 @@ class Api::V1::InventoryItemsAttachmentsNotFoundTest < ActionDispatch::Integrati
     assert_equal false, body["success"]
   end
 end
-
-

@@ -10,6 +10,10 @@ class ChatsControllerTest < ActionDispatch::IntegrationTest
       context_window: 128_000
     )
     @chat = Chat.create!(user: @user, model: @model)
+    
+    # Stub authentication for HTML controller
+    ChatsController.any_instance.stubs(:authenticate_user!).returns(true)
+    ChatsController.any_instance.stubs(:current_user).returns(@user)
   end
 
   test "index lists all chats" do
@@ -61,5 +65,41 @@ class ChatsControllerTest < ActionDispatch::IntegrationTest
     }
 
     assert_response :unprocessable_entity
+  end
+
+  test "stream action sends message to chat" do
+    # Stub ask to yield a message and return nil
+    message_token = OpenStruct.new(content: "token")
+    Chat.any_instance.stubs(:ask).yields(message_token).returns(nil)
+
+    post "/chats/#{@chat.id}/stream", params: {
+      message: "Stream test",
+      model: @model.name
+    }
+
+    assert_redirected_to chat_path(@chat)
+  end
+
+  test "stream action uses default model when not provided" do
+    # Stub ask to yield a message and return nil
+    message_token = OpenStruct.new(content: "token")
+    Chat.any_instance.stubs(:ask).yields(message_token).returns(nil)
+
+    post "/chats/#{@chat.id}/stream", params: {
+      message: "Stream test"
+    }
+
+    assert_redirected_to chat_path(@chat)
+  end
+
+  test "set_chat finds chat by id" do
+    get chat_path(@chat)
+    assert_response :success
+  end
+
+  test "set_chat raises error for invalid chat id" do
+    assert_raises(ActiveRecord::RecordNotFound) do
+      get chat_path(id: 999_999)
+    end
   end
 end

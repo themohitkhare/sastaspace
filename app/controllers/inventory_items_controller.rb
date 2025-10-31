@@ -58,6 +58,11 @@ class InventoryItemsController < ApplicationController
     @categories = Category.active.order(:name)
   end
 
+  def new_ai
+    @inventory_item = current_user.inventory_items.build
+    @categories = Category.active.order(:name)
+  end
+
   def create
     @inventory_item = current_user.inventory_items.build(inventory_item_params)
     @categories = Category.active.order(:name)
@@ -74,21 +79,54 @@ class InventoryItemsController < ApplicationController
       end
     end
 
-    # Handle metadata fields from form
-    if params[:inventory_item]
-      metadata = {}
-      metadata["color"] = params[:inventory_item][:color] if params[:inventory_item][:color].present?
-      metadata["size"] = params[:inventory_item][:size] if params[:inventory_item][:size].present?
-      @inventory_item.metadata = metadata if metadata.any?
-    end
-
     if @inventory_item.save
-      # Handle image uploads
-      @inventory_item.primary_image.attach(params[:inventory_item][:primary_image]) if params[:inventory_item] && params[:inventory_item][:primary_image].present?
+      # Handle blob_id from AI upload (attach existing blob)
+      if params[:inventory_item] && params[:inventory_item][:blob_id].present?
+        begin
+          blob = ActiveStorage::Blob.find(params[:inventory_item][:blob_id])
+          # Explicitly create attachment with correct name to ensure it's "primary_image" not "attachments"
+          @inventory_item.primary_image_attachment&.purge # Remove existing if any
+          @inventory_item.primary_image.attach(blob)
+          Rails.logger.info "Successfully attached blob #{blob.id} as primary image for inventory item #{@inventory_item.id}"
+
+          # Verify attachment was created correctly
+          @inventory_item.reload
+          attachment = @inventory_item.primary_image_attachment
+          if attachment
+            Rails.logger.info "Attachment verified: name=#{attachment.name}, blob_id=#{attachment.blob_id}, record=#{attachment.record_type}##{attachment.record_id}"
+          else
+            Rails.logger.error "Attachment not found after attach! Item ID: #{@inventory_item.id}, Blob ID: #{blob.id}"
+          end
+        rescue ActiveRecord::RecordNotFound => e
+          Rails.logger.error "Blob #{params[:inventory_item][:blob_id]} not found for inventory item: #{e.message}"
+        rescue StandardError => e
+          Rails.logger.error "Error attaching blob to inventory item: #{e.message}"
+          Rails.logger.error e.backtrace.first(5).join("\n")
+        end
+      end
+
+      # Handle image uploads (fallback if blob_id not present) - with deduplication
+      if params[:inventory_item] && params[:inventory_item][:primary_image].present?
+        blob = Services::BlobDeduplicationService.find_or_create_blob(
+          io: params[:inventory_item][:primary_image].open,
+          filename: params[:inventory_item][:primary_image].original_filename,
+          content_type: params[:inventory_item][:primary_image].content_type
+        )
+        @inventory_item.primary_image_attachment&.purge # Remove existing if any
+        @inventory_item.primary_image.attach(blob)
+      end
 
       if params[:inventory_item] && params[:inventory_item][:additional_images].present?
-        Array(params[:inventory_item][:additional_images]).each do |image|
-          @inventory_item.additional_images.attach(image)
+        Array(params[:inventory_item][:additional_images]).reject(&:blank?).each do |image|
+          # Skip if not an uploaded file (could be empty string)
+          next unless image.is_a?(ActionDispatch::Http::UploadedFile)
+          
+          blob = Services::BlobDeduplicationService.find_or_create_blob(
+            io: image.open,
+            filename: image.original_filename,
+            content_type: image.content_type
+          )
+          @inventory_item.additional_images.attach(blob)
         end
       end
 
@@ -103,15 +141,7 @@ class InventoryItemsController < ApplicationController
   end
 
   def update
-    # Handle metadata fields from form
-    if params[:inventory_item]
-      metadata = @inventory_item.metadata || {}
-      metadata["color"] = params[:inventory_item][:color] if params[:inventory_item].key?(:color)
-      metadata["size"] = params[:inventory_item][:size] if params[:inventory_item].key?(:size)
-      @inventory_item.metadata = metadata
-    end
-
-    if @inventory_item.update(inventory_item_params.except(:color, :size))
+    if @inventory_item.update(inventory_item_params)
       # Normalize category/subcategory after update
       if @inventory_item.category_id.present?
         selected = Category.find_by(id: @inventory_item.category_id)
@@ -122,12 +152,49 @@ class InventoryItemsController < ApplicationController
           @inventory_item.update_column(:category_id, node&.id || selected.id)
         end
       end
-      # Handle image uploads
-      @inventory_item.primary_image.attach(params[:inventory_item][:primary_image]) if params[:inventory_item] && params[:inventory_item][:primary_image].present?
+
+      # Handle blob_id from AI upload (only attach if not already attached)
+      if params[:inventory_item] && params[:inventory_item][:blob_id].present? && !@inventory_item.primary_image.attached?
+        begin
+          blob = ActiveStorage::Blob.find(params[:inventory_item][:blob_id])
+          # Explicitly create attachment with correct name
+          @inventory_item.primary_image.attach(blob)
+          @inventory_item.reload
+
+          # Verify attachment was created correctly
+          attachment = @inventory_item.primary_image_attachment
+          if attachment
+            Rails.logger.info "Attachment verified on update: name=#{attachment.name}, blob_id=#{attachment.blob_id}"
+          else
+            Rails.logger.error "Attachment not found after attach on update! Item ID: #{@inventory_item.id}, Blob ID: #{blob.id}"
+          end
+        rescue ActiveRecord::RecordNotFound => e
+          Rails.logger.warn "Blob #{params[:inventory_item][:blob_id]} not found: #{e.message}"
+        end
+      end
+
+      # Handle image uploads (fallback if blob_id not present) - with deduplication
+      if params[:inventory_item] && params[:inventory_item][:primary_image].present?
+        blob = Services::BlobDeduplicationService.find_or_create_blob(
+          io: params[:inventory_item][:primary_image].open,
+          filename: params[:inventory_item][:primary_image].original_filename,
+          content_type: params[:inventory_item][:primary_image].content_type
+        )
+        @inventory_item.primary_image_attachment&.purge # Remove existing if any
+        @inventory_item.primary_image.attach(blob)
+      end
 
       if params[:inventory_item] && params[:inventory_item][:additional_images].present?
-        Array(params[:inventory_item][:additional_images]).each do |image|
-          @inventory_item.additional_images.attach(image)
+        Array(params[:inventory_item][:additional_images]).reject(&:blank?).each do |image|
+          # Skip if not an uploaded file (could be empty string)
+          next unless image.is_a?(ActionDispatch::Http::UploadedFile)
+          
+          blob = Services::BlobDeduplicationService.find_or_create_blob(
+            io: image.open,
+            filename: image.original_filename,
+            content_type: image.content_type
+          )
+          @inventory_item.additional_images.attach(blob)
         end
       end
 
@@ -164,7 +231,7 @@ class InventoryItemsController < ApplicationController
 
   def inventory_item_params
     params.require(:inventory_item).permit(
-      :name, :description, :category_id, :subcategory_id, :purchase_price, :purchase_date,
+      :name, :description, :category_id, :subcategory_id, :purchase_price, :purchase_date, :blob_id,
       metadata: [ :color, :size, :material, :season, :occasion, :care_instructions, :fit_notes, :style_notes ]
     )
   end

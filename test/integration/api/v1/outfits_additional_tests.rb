@@ -29,5 +29,3 @@ class Api::V1::OutfitsAdditionalTests < ActionDispatch::IntegrationTest
     assert_equal "VALIDATION_ERROR", json.dig("error", "code")
   end
 end
-
-

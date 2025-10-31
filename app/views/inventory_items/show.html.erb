@@ -31,10 +31,9 @@
 
       <div style="margin-bottom: 15px;">
         <strong>Category:</strong> <%= @inventory_item.category.name %>
-      </div>
-
-      <div style="margin-bottom: 15px;">
-        <strong>Type:</strong> <%= @inventory_item.item_type.humanize %>
+        <% if @inventory_item.subcategory.present? %>
+          <span style="color: #6c757d;"> → <%= @inventory_item.subcategory.name %></span>
+        <% end %>
       </div>
 
       <% if @inventory_item.description.present? %>
@@ -44,21 +43,9 @@
         </div>
       <% end %>
 
-      <% if @inventory_item.metadata&.dig("color").present? %>
-        <div style="margin-bottom: 15px;">
-          <strong>Color:</strong> <%= @inventory_item.metadata["color"] %>
-        </div>
-      <% end %>
-
-      <% if @inventory_item.metadata&.dig("size").present? %>
-        <div style="margin-bottom: 15px;">
-          <strong>Size:</strong> <%= @inventory_item.metadata["size"] %>
-        </div>
-      <% end %>
-
       <div style="margin-top: 30px;">
         <%= link_to "Edit", edit_inventory_item_path(@inventory_item), style: "padding: 8px 15px; background: #ffc107; color: #000; text-decoration: none; border-radius: 4px; margin-right: 10px;" %>
-        <%= link_to "Delete", @inventory_item, method: :delete, data: { confirm: "Are you sure?" }, style: "padding: 8px 15px; background: #dc3545; color: white; text-decoration: none; border-radius: 4px;" %>
+        <%= link_to "Delete", @inventory_item, data: { turbo_method: :delete, turbo_confirm: "Are you sure you want to delete '#{@inventory_item.name}'?" }, style: "padding: 8px 15px; background: #dc3545; color: white; text-decoration: none; border-radius: 4px;" %>
       </div>
     </div>
   </div>

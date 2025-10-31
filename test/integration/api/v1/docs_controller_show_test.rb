@@ -10,5 +10,3 @@ class Api::V1::DocsControllerShowTest < ActionDispatch::IntegrationTest
     assert body.key?("paths")
   end
 end
-
-

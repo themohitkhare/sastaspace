@@ -3,7 +3,7 @@ require "test_helper"
 class ReadinessCheckerTest < ActiveSupport::TestCase
   test "check_all returns ready when all checks pass" do
     checker = ReadinessChecker.new
-    ActiveRecord::Base.connection.stubs(:execute).returns([[1]])
+    ActiveRecord::Base.connection.stubs(:execute).returns([ [ 1 ] ])
     Rails.cache.stubs(:write).returns(true)
     Rails.cache.stubs(:read).returns("pong")
     ActiveStorage::Blob.stubs(:count).returns(0)

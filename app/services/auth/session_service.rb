@@ -2,12 +2,14 @@
 # Instead of making HTTP calls or instantiating controllers, we reuse the logic
 module Auth
   class SessionService
-    def self.login(email, password, _original_request = nil)
+    def self.login(email, password, _original_request = nil, remember_me: false)
       user = User.find_by(email: email)
 
       if user&.authenticate(password)
         access_token = Auth::JsonWebToken.encode_access_token(user_id: user.id)
-        refresh_token_record = RefreshToken.create_for_user!(user)
+        # Set refresh token expiration based on remember_me
+        refresh_token_expires_in = remember_me ? 30.days : 7.days
+        refresh_token_record = RefreshToken.create_for_user!(user, expires_in: refresh_token_expires_in)
 
         {
           success: true,

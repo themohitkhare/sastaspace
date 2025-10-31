@@ -26,7 +26,7 @@ class RegistrationsControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "create renders errors on failure" do
-    Auth::SessionService.stubs(:register).returns({ success: false, error: { message: "Invalid", details: { email: ["taken"] } } })
+    Auth::SessionService.stubs(:register).returns({ success: false, error: { message: "Invalid", details: { email: [ "taken" ] } } })
 
     post register_path, params: { user: { email: "bad", password: "short" } }, headers: { "Accept" => "text/html" }
 

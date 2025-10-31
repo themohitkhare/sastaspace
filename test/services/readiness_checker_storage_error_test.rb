@@ -9,5 +9,3 @@ class ReadinessCheckerStorageErrorTest < ActiveSupport::TestCase
     assert_match /storage down/, result[:error]
   end
 end
-
-

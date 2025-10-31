@@ -29,5 +29,3 @@ class Api::V1::InventoryItemsSpecialFiltersMoreTest < ActionDispatch::Integratio
     refute_includes names, worn.name
   end
 end
-
-

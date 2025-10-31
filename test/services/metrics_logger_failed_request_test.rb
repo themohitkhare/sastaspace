@@ -26,5 +26,3 @@ class MetricsLoggerFailedRequestTest < ActiveSupport::TestCase
     end
   end
 end
-
-

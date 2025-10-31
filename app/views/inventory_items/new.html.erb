@@ -25,7 +25,7 @@
 
       <!-- Step Indicators -->
       <div class="flex justify-between mb-8">
-        <% ["Type", "Details", "Images", "Metadata"].each_with_index do |step_name, index| %>
+        <% ["Category", "Details", "Images"].each_with_index do |step_name, index| %>
           <div class="flex items-center">
             <div
               data-form-wizard-target="stepIndicator"
@@ -41,25 +41,10 @@
         <% end %>
       </div>
 
-      <!-- Step 1: Type Selection -->
+      <!-- Step 1: Category Selection -->
       <div data-form-wizard-target="step" class="space-y-4">
-        <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">Step 1: Select Item Type</h2>
+        <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">Step 1: Select Category</h2>
         
-        <div>
-          <%= form.label :item_type, "Item Type", class: "form-label" %>
-          <%= form.select :item_type,
-              options_for_select([
-                ["Select item type", ""],
-                ["Clothing", "clothing"],
-                ["Shoes", "shoes"],
-                ["Accessories", "accessories"],
-                ["Jewelry", "jewelry"]
-              ], @inventory_item.item_type),
-              {},
-              { required: true, class: "form-input",
-                data: { action: "change->form-wizard#validateCurrentStep" } } %>
-        </div>
-
         <div>
           <%= form.label :category_id, "Category", class: "form-label" %>
           <div data-controller="category-picker">
@@ -96,7 +81,7 @@
                       </button>
                     </div>
                     
-                    <div data-category-picker-target="breadcrumbs" class="mb-4 text-sm text-gray-600 dark:text-gray-400"></div>
+                    <div data-category-picker-target="breadcrumbs" class="mb-4 text-sm text-gray-600 dark:text-gray-400 hidden"></div>
                     
                     <ul data-category-picker-target="categoryList" class="max-h-96 overflow-y-auto border border-gray-200 dark:border-gray-700 rounded-lg"></ul>
                   </div>
@@ -138,43 +123,7 @@
         </div>
       </div>
 
-      <!-- Step 4: Metadata -->
-      <div data-form-wizard-target="step" class="hidden space-y-4">
-        <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">Step 4: Additional Details</h2>
-        
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <%= form.label :color, "Color", class: "form-label" %>
-            <%= form.text_field :color, value: @inventory_item.metadata&.dig("color"), class: "form-input" %>
-          </div>
-
-          <div>
-            <%= form.label :size, "Size", class: "form-label" %>
-            <%= form.text_field :size, value: @inventory_item.metadata&.dig("size"), class: "form-input" %>
-          </div>
-
-          <div>
-            <%= form.label :season, "Season", class: "form-label" %>
-            <%= form.select :season,
-                options_for_select([
-                  ["", ""],
-                  ["Spring", "spring"],
-                  ["Summer", "summer"],
-                  ["Fall", "fall"],
-                  ["Winter", "winter"],
-                  ["All-Season", "all-season"]
-                ], @inventory_item.metadata&.dig("season")),
-                {},
-                { class: "form-input" } %>
-          </div>
-
-          <div>
-            <%= form.label :occasion, "Occasion", class: "form-label" %>
-            <%= form.text_field :occasion, value: @inventory_item.metadata&.dig("occasion"), class: "form-input",
-                placeholder: "e.g., casual, formal, work" %>
-          </div>
-        </div>
-      </div>
+      <!-- Metadata fields removed - now included in description for vector search -->
 
       <!-- Navigation Buttons -->
       <div class="flex justify-between pt-6 border-t border-gray-200 dark:border-gray-700">

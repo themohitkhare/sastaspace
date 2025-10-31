@@ -13,19 +13,15 @@ class InventoryWizardSubmitTest < ApplicationSystemTestCase
     @category = create(:category, :clothing)
     visit "/inventory_items/new"
 
-    # Step 1
-    select "Clothing", from: "Item Type"
-    find("input[name='inventory_item[category_id]']", visible: false).set(@category.id)
+    # Step 1: Category
+    find("input[name='inventory_item[category_id]']", visible: false).set(@category.id.to_s)
     find("button[data-form-wizard-target='nextButton']").click
 
-    # Step 2
+    # Step 2: Details
     fill_in "Name", with: "Wizard Submit Check"
     find("button[data-form-wizard-target='nextButton']").click
 
-    # Step 3
-    find("button[data-form-wizard-target='nextButton']").click
-
-    # Step 4 - verify Next hidden and Submit visible
+    # Step 3: Images - verify Next hidden and Submit visible
     assert_no_selector "button[data-form-wizard-target='nextButton']", wait: 5, visible: true
     assert_selector "input[type='submit'][data-form-wizard-target='submitButton']:not(.hidden)", wait: 5
   end

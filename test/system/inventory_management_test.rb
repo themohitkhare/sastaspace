@@ -138,10 +138,9 @@ class InventoryManagementTest < ApplicationSystemTestCase
     # Wait for page load
     assert_selector "h1", wait: 5
 
-    # Step 1: Type and Category
+    # Step 1: Category
     assert_text "Step 1", wait: 5
-    select "Clothing", from: "Item Type"
-
+    
     # Category picker - fill hidden field directly for testing
     find("input[name='inventory_item[category_id]']", visible: false).set(@category.id.to_s)
 
@@ -157,15 +156,8 @@ class InventoryManagementTest < ApplicationSystemTestCase
     find("button[data-form-wizard-target='nextButton']").click
     sleep 0.5
 
-    # Step 3: Images (skip for now)
+    # Step 3: Images (skip and submit)
     assert_text "Step 3", wait: 5
-    find("button[data-form-wizard-target='nextButton']").click
-    sleep 0.5
-
-    # Step 4: Metadata
-    assert_text "Step 4", wait: 5
-    fill_in "Color", with: "Blue"
-    fill_in "Size", with: "M"
 
     # Submit form (use requestSubmit to avoid hidden element issues)
     page.execute_script("document.querySelector('form').requestSubmit()")

@@ -7,10 +7,18 @@ class SessionsController < ApplicationController
   end
 
   def create
-    # Call JWT API to login user
-    response = Auth::SessionService.login(params[:email], params[:password], request)
+    # Check if remember_me checkbox was checked
+    remember_me = params[:remember_me].present? && (params[:remember_me] == "1" || params[:remember_me] == true)
+    
+    # Call JWT API to login user, passing remember_me
+    response = Auth::SessionService.login(params[:email], params[:password], request, remember_me: remember_me)
 
     if response[:success]
+      # Set cookie expiration to match refresh token expiration in database
+      refresh_token_expires = remember_me ? 30.days.from_now : 7.days.from_now
+      
+      Rails.logger.debug "Remember me: #{remember_me}, refresh token expires in: #{refresh_token_expires}"
+      
       # Store tokens in httpOnly cookies
       cookies.signed[:access_token] = {
         value: response[:data][:token],
@@ -24,7 +32,7 @@ class SessionsController < ApplicationController
         httponly: true,
         secure: Rails.env.production?,
         same_site: :lax,
-        expires: params[:remember_me] == "1" ? 30.days.from_now : 7.days.from_now
+        expires: refresh_token_expires
       }
 
       # Set current user for immediate use

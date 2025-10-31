@@ -29,6 +29,7 @@ Rails.application.routes.draw do
   resources :inventory_items do
     collection do
       delete :bulk_delete
+      get :new_ai
     end
   end
 
@@ -79,6 +80,8 @@ Rails.application.routes.draw do
         collection do
           get :search
           post :semantic_search
+          post :analyze_image_for_creation
+          get "analyze_image_status/:job_id", action: :analyze_image_status
         end
       end
 

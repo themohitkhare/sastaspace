@@ -23,5 +23,3 @@ class RemoveItemTypeAndDropClothingItems < ActiveRecord::Migration[7.1]
     # clothing_items table is legacy and won’t be recreated automatically
   end
 end
-
-

@@ -52,7 +52,46 @@ module Api
       def create
         @inventory_item = current_user.inventory_items.build(inventory_item_params)
 
+        # Normalize category/subcategory if needed
+        if @inventory_item.category_id.present?
+          selected = Category.find_by(id: @inventory_item.category_id)
+          if selected&.parent_id.present?
+            @inventory_item.subcategory_id = selected.id
+            node = selected
+            node = node.respond_to?(:parent_category) ? node.parent_category : node.parent while node&.parent_id.present?
+            @inventory_item.category_id = node&.id || selected.id
+          end
+        end
+
         if @inventory_item.save
+          # Handle blob_id from AI upload if present
+          if params[:inventory_item] && params[:inventory_item][:blob_id].present?
+            begin
+              blob = ActiveStorage::Blob.find(params[:inventory_item][:blob_id])
+              # Explicitly create attachment with correct name to ensure it's "primary_image" not "attachments"
+              @inventory_item.primary_image_attachment&.purge # Remove existing if any
+              @inventory_item.primary_image.attach(blob)
+              Rails.logger.info "Successfully attached blob #{blob.id} as primary image for inventory item #{@inventory_item.id}"
+
+              # Reload to ensure attachment is available for serialization
+              @inventory_item.reload
+
+              # Verify attachment was created correctly
+              attachment = @inventory_item.primary_image_attachment
+              if attachment
+                Rails.logger.info "Attachment verified: name=#{attachment.name}, blob_id=#{attachment.blob_id}, record=#{attachment.record_type}##{attachment.record_id}"
+              else
+                Rails.logger.error "Attachment not found after attach! Item ID: #{@inventory_item.id}, Blob ID: #{blob.id}"
+              end
+            rescue ActiveRecord::RecordNotFound => e
+              Rails.logger.warn "Blob #{params[:inventory_item][:blob_id]} not found: #{e.message}"
+            rescue StandardError => e
+              Rails.logger.error "Error attaching blob to inventory item: #{e.message}"
+              Rails.logger.error e.backtrace.first(5).join("\n")
+              # Continue anyway - item creation succeeded, just image attachment failed
+            end
+          end
+
           render json: {
             success: true,
             data: {
@@ -201,8 +240,16 @@ module Api
 
       # POST /api/v1/inventory_items/:id/primary_image
       def attach_primary_image
+        # Support both file upload and blob_id
         if params[:image].present?
-          @inventory_item.primary_image.attach(params[:image])
+          # Use deduplication for new image uploads
+          blob = Services::BlobDeduplicationService.find_or_create_blob(
+            io: params[:image].open,
+            filename: params[:image].original_filename,
+            content_type: params[:image].content_type
+          )
+          @inventory_item.primary_image_attachment&.purge # Remove existing if any
+          @inventory_item.primary_image.attach(blob)
           render json: {
             success: true,
             data: {
@@ -211,12 +258,44 @@ module Api
             message: "Primary image attached successfully",
             timestamp: Time.current.iso8601
           }
+        elsif params[:blob_id].present?
+          begin
+            blob = ActiveStorage::Blob.find(params[:blob_id])
+            # Explicitly create attachment with correct name
+            @inventory_item.primary_image_attachment&.purge # Remove existing if any
+            @inventory_item.primary_image.attach(blob)
+            @inventory_item.reload
+
+            # Verify attachment was created correctly
+            attachment = @inventory_item.primary_image_attachment
+            unless attachment && attachment.name == "primary_image"
+              Rails.logger.error "Attachment created with wrong name! Expected 'primary_image', got '#{attachment&.name}'"
+            end
+
+            render json: {
+              success: true,
+              data: {
+                image_url: url_for(@inventory_item.primary_image)
+              },
+              message: "Primary image attached successfully",
+              timestamp: Time.current.iso8601
+            }
+          rescue ActiveRecord::RecordNotFound
+            render json: {
+              success: false,
+              error: {
+                code: "BLOB_NOT_FOUND",
+                message: "Blob not found"
+              },
+              timestamp: Time.current.iso8601
+            }, status: :not_found
+          end
         else
           render json: {
             success: false,
             error: {
               code: "MISSING_IMAGE",
-              message: "Image file is required"
+              message: "Image file or blob_id is required"
             },
             timestamp: Time.current.iso8601
           }, status: :bad_request
@@ -226,7 +305,15 @@ module Api
       # POST /api/v1/inventory_items/:id/additional_images
       def attach_additional_images
         if params[:images].present?
-          @inventory_item.additional_images.attach(params[:images])
+          # Use deduplication for additional image uploads
+          Array(params[:images]).each do |image|
+            blob = Services::BlobDeduplicationService.find_or_create_blob(
+              io: image.open,
+              filename: image.original_filename,
+              content_type: image.content_type
+            )
+            @inventory_item.additional_images.attach(blob)
+          end
           render json: {
             success: true,
             data: {
@@ -277,6 +364,144 @@ module Api
         }, status: :not_found
       end
 
+      # POST /api/v1/inventory_items/analyze_image_for_creation
+      # Accepts an image upload and starts AI analysis in background
+      def analyze_image_for_creation
+        unless params[:image].present?
+          return render json: {
+            success: false,
+            error: {
+              code: "MISSING_IMAGE",
+              message: "Image file is required"
+            },
+            timestamp: Time.current.iso8601
+          }, status: :bad_request
+        end
+
+        # Validate image
+        image = params[:image]
+        allowed_types = %w[image/jpeg image/jpg image/png image/webp]
+
+        unless allowed_types.include?(image.content_type)
+          return render json: {
+            success: false,
+            error: {
+              code: "INVALID_IMAGE_TYPE",
+              message: "Image must be JPEG, PNG, or WebP"
+            },
+            timestamp: Time.current.iso8601
+          }, status: :bad_request
+        end
+
+        max_size = 5.megabytes
+        if image.size > max_size
+          return render json: {
+            success: false,
+            error: {
+              code: "IMAGE_TOO_LARGE",
+              message: "Image must be less than 5MB"
+            },
+            timestamp: Time.current.iso8601
+          }, status: :bad_request
+        end
+
+        begin
+          # Create or reuse an existing ActiveStorage blob for the image (deduplication)
+          blob = Services::BlobDeduplicationService.find_or_create_blob(
+            io: image.open,
+            filename: image.original_filename,
+            content_type: image.content_type
+          )
+
+          # Generate unique job ID
+          job_id = SecureRandom.uuid
+
+          # Queue background job
+          AnalyzeImageForCreationJob.perform_later(blob.id, current_user.id, job_id)
+
+          render json: {
+            success: true,
+            data: {
+              job_id: job_id,
+              blob_id: blob.id, # Include blob ID so frontend can attach it later
+              status: "processing",
+              message: "Image analysis started"
+            },
+            timestamp: Time.current.iso8601
+          }, status: :accepted
+        rescue StandardError => e
+          Rails.logger.error "Error starting image analysis: #{e.message}"
+          render json: {
+            success: false,
+            error: {
+              code: "ANALYSIS_ERROR",
+              message: "Failed to start image analysis: #{e.message}"
+            },
+            timestamp: Time.current.iso8601
+          }, status: :internal_server_error
+        end
+      end
+
+      # GET /api/v1/inventory_items/analyze_image_status/:job_id
+      # Poll for analysis job status and results
+      def analyze_image_status
+        job_id = params[:job_id]
+
+        unless job_id.present?
+          return render json: {
+            success: false,
+            error: {
+              code: "MISSING_JOB_ID",
+              message: "Job ID is required"
+            },
+            timestamp: Time.current.iso8601
+          }, status: :bad_request
+        end
+
+        status_data = AnalyzeImageForCreationJob.get_status(job_id)
+
+        case status_data["status"]
+        when "completed"
+          render json: {
+            success: true,
+            data: {
+              job_id: job_id,
+              status: "completed",
+              analysis: status_data["data"]
+            },
+            timestamp: Time.current.iso8601
+          }
+        when "processing"
+          render json: {
+            success: true,
+            data: {
+              job_id: job_id,
+              status: "processing"
+            },
+            timestamp: Time.current.iso8601
+          }
+        when "failed"
+          render json: {
+            success: false,
+            data: {
+              job_id: job_id,
+              status: "failed",
+              error: status_data["error"]
+            },
+            timestamp: Time.current.iso8601
+          }, status: :unprocessable_entity
+        else
+          render json: {
+            success: false,
+            error: {
+              code: "JOB_NOT_FOUND",
+              message: status_data["error"] || "Job not found or expired"
+            },
+            timestamp: Time.current.iso8601
+          }, status: :not_found
+        end
+      end
+
       private
 
       def set_inventory_item
@@ -300,7 +525,7 @@ module Api
         begin
           permitted = params.require(:inventory_item).permit(
             :name, :item_type, :description, :status, :category_id, :brand_id,
-            :purchase_price, :purchase_date, :primary_image, additional_images: [],
+            :purchase_price, :purchase_date, :primary_image, :blob_id, additional_images: [],
             metadata: {}, # Allow any metadata hash structure
             tag_ids: []
           )

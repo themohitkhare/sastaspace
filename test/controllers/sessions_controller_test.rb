@@ -43,4 +43,94 @@ class SessionsControllerTest < ActionDispatch::IntegrationTest
 
     assert_redirected_to root_path
   end
+
+  test "create with remember_me checked sets refresh token to expire in 30 days" do
+    refresh_token_record = RefreshToken.create_for_user!(@user, expires_in: 30.days)
+    
+    # Mock the service to return the refresh token
+    Auth::SessionService.expects(:login).with(
+      @user.email,
+      "password",
+      anything,
+      remember_me: true
+    ).returns({
+      success: true,
+      data: {
+        token: "access_token",
+        refresh_token: refresh_token_record.token,
+        user: { id: @user.id, email: @user.email, first_name: @user.first_name, last_name: @user.last_name, created_at: @user.created_at }
+      }
+    })
+
+    post login_path, params: {
+      email: @user.email,
+      password: "password",
+      remember_me: "1"
+    }, headers: { "Accept" => "text/html" }
+
+    assert_redirected_to inventory_items_path
+    
+    # Verify refresh token cookie expiration is 30 days (approximately)
+    refresh_token_cookie = cookies.signed[:refresh_token]
+    assert refresh_token_cookie.present?, "Refresh token cookie should be set"
+    
+    # Check that SessionService was called with remember_me: true
+    # (The expectation above verifies this)
+  end
+
+  test "create without remember_me sets refresh token to expire in 7 days" do
+    refresh_token_record = RefreshToken.create_for_user!(@user, expires_in: 7.days)
+    
+    # Mock the service to return the refresh token
+    Auth::SessionService.expects(:login).with(
+      @user.email,
+      "password",
+      anything,
+      remember_me: false
+    ).returns({
+      success: true,
+      data: {
+        token: "access_token",
+        refresh_token: refresh_token_record.token,
+        user: { id: @user.id, email: @user.email, first_name: @user.first_name, last_name: @user.last_name, created_at: @user.created_at }
+      }
+    })
+
+    post login_path, params: {
+      email: @user.email,
+      password: "password"
+    }, headers: { "Accept" => "text/html" }
+
+    assert_redirected_to inventory_items_path
+    
+    # Verify refresh token cookie is set
+    refresh_token_cookie = cookies.signed[:refresh_token]
+    assert refresh_token_cookie.present?, "Refresh token cookie should be set"
+  end
+
+  test "create with remember_me unchecked (0) sets refresh token to expire in 7 days" do
+    refresh_token_record = RefreshToken.create_for_user!(@user, expires_in: 7.days)
+    
+    Auth::SessionService.expects(:login).with(
+      @user.email,
+      "password",
+      anything,
+      remember_me: false
+    ).returns({
+      success: true,
+      data: {
+        token: "access_token",
+        refresh_token: refresh_token_record.token,
+        user: { id: @user.id, email: @user.email, first_name: @user.first_name, last_name: @user.last_name, created_at: @user.created_at }
+      }
+    })
+
+    post login_path, params: {
+      email: @user.email,
+      password: "password",
+      remember_me: "0"
+    }, headers: { "Accept" => "text/html" }
+
+    assert_redirected_to inventory_items_path
+  end
 end

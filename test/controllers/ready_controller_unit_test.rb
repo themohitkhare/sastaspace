@@ -24,5 +24,3 @@ class ReadyControllerUnitTest < ActionDispatch::IntegrationTest
     assert result[:duration_ms].is_a?(Numeric)
   end
 end
-
-

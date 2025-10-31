@@ -34,19 +34,19 @@ class InventoryItemsTest < ApplicationSystemTestCase
 
   test "user can navigate to create new inventory item page" do
     visit "/inventory_items"
-    click_on "Add Item"
+    # There are two "Add Item" buttons - use the manual one
+    click_on "Add Item Manually"
 
     assert_current_path "/inventory_items/new"
-    assert_text "Step 1: Select Item Type"
-    assert_field "Item Type"
+    assert_text "Step 1: Select Category"
+    assert_selector "button[data-category-picker-target='selectedCategory']"
   end
 
   test "user can create a new inventory item" do
     visit "/inventory_items/new"
 
-    # Step 1: Type and Category
-    select "Clothing", from: "Item Type"
-    find("input[name='inventory_item[category_id]']", visible: false).set(@category.id)
+    # Step 1: Category
+    find("input[name='inventory_item[category_id]']", visible: false).set(@category.id.to_s)
 
     # Navigate through wizard
     next_button = find("button[data-form-wizard-target='nextButton']", wait: 5)
@@ -62,14 +62,6 @@ class InventoryItemsTest < ApplicationSystemTestCase
     sleep 0.5
 
     # Step 3: Skip images
-    next_button = find("button[data-form-wizard-target='nextButton']")
-    next_button.click
-    sleep 0.5
-
-    # Step 4: Metadata
-    fill_in "Color", with: "Red"
-    fill_in "Size", with: "M"
-
     # Submit form (use requestSubmit)
     page.execute_script("document.querySelector('form').requestSubmit()")
 
@@ -81,8 +73,6 @@ class InventoryItemsTest < ApplicationSystemTestCase
     visit "/inventory_items/new"
 
     # Step 1: open category picker
-    select "Clothing", from: "Item Type"
-
     # Open modal
     find("button[data-category-picker-target='selectedCategory']").click
 
@@ -96,7 +86,6 @@ class InventoryItemsTest < ApplicationSystemTestCase
   test "clicking a category sets the hidden input value" do
     visit "/inventory_items/new"
 
-    select "Clothing", from: "Item Type"
     find("button[data-category-picker-target='selectedCategory']").click
 
     # Click the leaf category item (text may include counts)
@@ -111,12 +100,11 @@ class InventoryItemsTest < ApplicationSystemTestCase
     visit "/inventory_items/new"
 
     # Try to proceed without filling required fields
-    select "Clothing", from: "Item Type"
     next_button = find("button[data-form-wizard-target='nextButton']", wait: 5)
 
     # If validation works, it should not proceed or show an error
     # For now, just verify the wizard is working
-    assert_text "Step 1: Select Item Type"
+    assert_text "Step 1: Select Category"
   end
 
   test "user can view details of an inventory item" do

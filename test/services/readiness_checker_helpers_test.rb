@@ -21,5 +21,3 @@ class ReadinessCheckerHelpersTest < ActiveSupport::TestCase
     assert_match /oops/, result[:error]
   end
 end
-
-
