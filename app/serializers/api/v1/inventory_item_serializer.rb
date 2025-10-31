@@ -59,22 +59,49 @@ module Api
       def serialize_image_with_variants(image)
         return nil if image.nil? || (image.respond_to?(:attached?) && !image.attached?)
 
-        {
-          id: image.id,
-          filename: image.filename.to_s,
-          content_type: image.content_type,
-          byte_size: image.byte_size,
-          urls: {
-            original: url_for(image),
-            thumb: url_for(image.variant(resize_to_limit: [ 150, 150 ])),
-            medium: url_for(image.variant(resize_to_limit: [ 400, 400 ])),
-            large: url_for(image.variant(resize_to_limit: [ 800, 800 ]))
+        begin
+          {
+            id: image.id,
+            filename: image.filename.to_s,
+            content_type: image.content_type,
+            byte_size: image.byte_size,
+            urls: {
+              original: url_for(image),
+              thumb: safe_variant_url(image, [ 150, 150 ]),
+              medium: safe_variant_url(image, [ 400, 400 ]),
+              large: safe_variant_url(image, [ 800, 800 ])
+            }
           }
-        }
+        rescue StandardError => e
+          Rails.logger.warn "Failed to serialize image: #{e.message}"
+          {
+            id: image.id,
+            filename: image.filename.to_s,
+            content_type: image.content_type,
+            byte_size: image.byte_size,
+            urls: {
+              original: nil,
+              thumb: nil,
+              medium: nil,
+              large: nil
+            }
+          }
+        end
       end
 
       def url_for(attachment)
         Rails.application.routes.url_helpers.url_for(attachment)
+      rescue StandardError => e
+        Rails.logger.warn "Failed to generate URL for attachment: #{e.message}"
+        nil
+      end
+
+      def safe_variant_url(image, dimensions)
+        variant = image.variant(resize_to_limit: dimensions)
+        url_for(variant)
+      rescue StandardError => e
+        Rails.logger.warn "Failed to generate variant URL: #{e.message}"
+        nil
       end
     end
   end

@@ -6,5 +6,3 @@ class InventoryItemVariantsNilTest < ActiveSupport::TestCase
     assert_equal({}, item.primary_image_variants)
   end
 end
-
-

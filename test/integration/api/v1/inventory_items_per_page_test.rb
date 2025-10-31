@@ -16,5 +16,3 @@ class Api::V1::InventoryItemsPerPageTest < ActionDispatch::IntegrationTest
     assert_equal 2, body.dig("data", "inventory_items").length
   end
 end
-
-

@@ -16,5 +16,3 @@ class RateLimiterCacheBackendTest < ActiveSupport::TestCase
     end
   end
 end
-
-

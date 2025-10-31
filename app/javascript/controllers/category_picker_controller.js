@@ -21,6 +21,7 @@ export default class extends Controller {
 
   connect() {
     this.categories = []
+    this.allCategories = [] // Store all categories for filtering
     this.currentPath = []
     this.loadCategories()
   }
@@ -29,7 +30,11 @@ export default class extends Controller {
     if (this.hasModalTarget) {
       this.modalTarget.classList.remove("hidden")
       document.body.style.overflow = "hidden"
-      this.loadCategories()
+      // Reset to root view when opening
+      this.currentPath = []
+      this.updateBreadcrumbs()
+      // Load all categories instead of just roots for easier browsing
+      this.loadAllCategories()
     }
   }
 
@@ -66,6 +71,34 @@ export default class extends Controller {
     } catch (error) {
       console.error("Error loading categories:", error)
       this.showError("Failed to load categories. Please try again.")
+    }
+  }
+
+  async loadAllCategories() {
+    try {
+      // Load all categories (not just roots)
+      const url = `${this.apiUrlValue}`
+
+      const response = await fetch(url, {
+        headers: {
+          "Accept": "application/json",
+          "X-Requested-With": "XMLHttpRequest"
+        },
+        credentials: "same-origin"
+      })
+
+      if (!response.ok) {
+        throw new Error("Failed to load categories")
+      }
+
+      const data = await response.json()
+      this.allCategories = (data.data && data.data.categories) || data.categories || []
+      this.categories = this.allCategories // Show all categories by default
+      this.renderCategories()
+    } catch (error) {
+      console.error("Error loading all categories:", error)
+      // Fallback to roots if loading all fails
+      this.loadCategories()
     }
   }
 
@@ -172,23 +205,23 @@ export default class extends Controller {
     const breadcrumbs = this.breadcrumbsTarget
     breadcrumbs.innerHTML = ""
 
-    // Root breadcrumb
-    const rootItem = document.createElement("span")
-    rootItem.className = "cursor-pointer text-primary-600 dark:text-primary-400 hover:underline"
-    rootItem.textContent = "All Categories"
-    rootItem.addEventListener("click", () => {
-      this.currentPath = []
-      this.updateBreadcrumbs()
-      this.loadCategories()
-    })
-    breadcrumbs.appendChild(rootItem)
+    // Only show breadcrumbs if we're in a subcategory (navigated into a category)
+    // When showing all categories, hide breadcrumbs entirely
+    if (this.currentPath.length === 0) {
+      breadcrumbs.classList.add("hidden")
+      return
+    }
 
-    // Path breadcrumbs
+    breadcrumbs.classList.remove("hidden")
+
+    // Path breadcrumbs (only shown when navigating into subcategories)
     this.currentPath.forEach((category, index) => {
-      const separator = document.createElement("span")
-      separator.className = "mx-2 text-gray-400"
-      separator.textContent = "/"
-      breadcrumbs.appendChild(separator)
+      if (index > 0) {
+        const separator = document.createElement("span")
+        separator.className = "mx-2 text-gray-400"
+        separator.textContent = "/"
+        breadcrumbs.appendChild(separator)
+      }
 
       const item = document.createElement("span")
       if (index === this.currentPath.length - 1) {
@@ -223,12 +256,31 @@ export default class extends Controller {
     }
   }
 
-  async searchCategories(query) {
+  searchCategories(event) {
+    const query = event.target.value.trim()
     if (!query || query.length < 2) {
-      this.loadCategories()
+      // If search is cleared, show all categories again
+      this.categories = this.allCategories.length > 0 ? this.allCategories : this.categories
+      this.renderCategories()
       return
     }
 
+    // Filter from all categories (not just currently displayed ones)
+    const sourceCategories = this.allCategories.length > 0 ? this.allCategories : this.categories
+    const filtered = sourceCategories.filter(cat => 
+      cat.name.toLowerCase().includes(query.toLowerCase())
+    )
+    
+    this.categories = filtered
+    this.renderCategories()
+    
+    // If no results and we haven't loaded all categories yet, try API search
+    if (filtered.length === 0 && this.allCategories.length === 0) {
+      this.searchCategoriesAPI(query)
+    }
+  }
+
+  async searchCategoriesAPI(query) {
     try {
       const response = await fetch(`${this.apiUrlValue}?search=${encodeURIComponent(query)}`, {
         headers: {
@@ -243,7 +295,7 @@ export default class extends Controller {
       }
 
       const data = await response.json()
-      this.categories = data.data || data.categories || []
+      this.categories = (data.data && data.data.categories) || data.categories || []
       this.renderCategories()
     } catch (error) {
       console.error("Error searching categories:", error)

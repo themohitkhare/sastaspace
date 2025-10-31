@@ -19,5 +19,3 @@ class ReadinessCheckerDetailsTest < ActiveSupport::TestCase
     assert_match /boom/, err[:error]
   end
 end
-
-

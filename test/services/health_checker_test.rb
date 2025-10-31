@@ -28,8 +28,6 @@ class HealthCheckerTest < ActiveSupport::TestCase
     assert_equal "unhealthy", status[:status]
   end
 
-  # Redis-based checks removed: Redis no longer used in the project
-
   test "jobs_status healthy when jobs can be enqueued" do
     job = mock()
     job.expects(:job_id).returns("test-123")
@@ -50,7 +48,6 @@ class HealthCheckerTest < ActiveSupport::TestCase
 
   test "overall_status is healthy when all services are healthy" do
     HealthChecker.stubs(:database_status).returns({ status: "healthy" })
-    HealthChecker.stubs(:redis_status).returns({ status: "healthy" })
     HealthChecker.stubs(:cache_status).returns({ status: "healthy" })
     HealthChecker.stubs(:jobs_status).returns({ status: "healthy" })
 
@@ -59,8 +56,7 @@ class HealthCheckerTest < ActiveSupport::TestCase
 
   test "overall_status is unhealthy when any service is unhealthy" do
     HealthChecker.stubs(:database_status).returns({ status: "healthy" })
-    HealthChecker.stubs(:redis_status).returns({ status: "unhealthy" })
-    HealthChecker.stubs(:cache_status).returns({ status: "healthy" })
+    HealthChecker.stubs(:cache_status).returns({ status: "unhealthy" })
     HealthChecker.stubs(:jobs_status).returns({ status: "healthy" })
 
     assert_equal "unhealthy", HealthChecker.overall_status
@@ -68,7 +64,6 @@ class HealthCheckerTest < ActiveSupport::TestCase
 
   test "check_all returns comprehensive status" do
     HealthChecker.stubs(:database_status).returns({ status: "healthy" })
-    HealthChecker.stubs(:redis_status).returns({ status: "healthy" })
     HealthChecker.stubs(:cache_status).returns({ status: "healthy" })
     HealthChecker.stubs(:jobs_status).returns({ status: "healthy" })
 
@@ -77,7 +72,6 @@ class HealthCheckerTest < ActiveSupport::TestCase
     assert result[:timestamp].present?
     assert result[:services].present?
     assert result[:services][:database].present?
-    assert result[:services][:redis].present?
     assert result[:services][:cache].present?
     assert result[:services][:jobs].present?
   end

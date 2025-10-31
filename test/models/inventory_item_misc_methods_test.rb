@@ -6,5 +6,3 @@ class InventoryItemMiscMethodsTest < ActiveSupport::TestCase
     assert_equal({}, item.metadata_summary)
   end
 end
-
-

@@ -33,11 +33,14 @@
           </svg>
         </button>
       </div>
-      <%= link_to new_inventory_item_path, class: "btn-primary" do %>
-        <svg class="w-5 h-5 mr-2 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+      <%= link_to new_ai_inventory_items_path, class: "btn-primary inline-flex items-center gap-2" do %>
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
         </svg>
-        Add Item
+        Add Item with AI
+      <% end %>
+      <%= link_to new_inventory_item_path, class: "btn-secondary" do %>
+        Add Item Manually
       <% end %>
     </div>
   </div>
@@ -130,7 +133,7 @@
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"></path>
       </svg>
       <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">
-        <% if params[:search].present? || params[:category_id].present? || params[:item_type].present? %>
+        <% if params[:search].present? || params[:category_id].present? %>
           No items found
         <% else %>
           You haven't added any items yet
@@ -139,7 +142,7 @@
       <p class="text-gray-500 dark:text-gray-400 mb-6">
         <% if params[:search].present? %>
           No items match your search "<%= params[:search] %>"
-        <% elsif params[:category_id].present? || params[:item_type].present? %>
+        <% elsif params[:category_id].present? %>
           Try adjusting your filters
         <% else %>
           Get started by adding your first item to your inventory
@@ -187,15 +190,22 @@
                 <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
                   <%= item.subcategory&.name || item.category.name %>
                 </p>
-                <% if item.metadata&.dig("color").present? %>
-                  <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">
-                    <%= item.metadata["color"] %>
-                    <% if item.metadata&.dig("size").present? %>
-                      • <%= item.metadata["size"] %>
-                    <% end %>
-                  </p>
-                <% end %>
               <% end %>
+              
+              <!-- Actions -->
+              <div class="mt-3 flex items-center gap-2 pt-3 border-t border-gray-200 dark:border-gray-700">
+                <%= link_to edit_inventory_item_path(item), 
+                    class: "flex-1 text-center text-sm text-gray-600 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 transition-colors",
+                    title: "Edit" do %>
+                  Edit
+                <% end %>
+                <%= link_to item, 
+                    data: { turbo_method: :delete, turbo_confirm: "Are you sure you want to delete '#{item.name}'?" },
+                    class: "flex-1 text-center text-sm text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 transition-colors",
+                    title: "Delete" do %>
+                  Delete
+                <% end %>
+              </div>
             </div>
           </div>
         <% end %>
@@ -262,13 +272,9 @@
                 </td>
                 
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                  <% if item.metadata&.dig("color").present? || item.metadata&.dig("size").present? %>
-                    <span>
-                      <%= item.metadata&.dig("color") %>
-                      <% if item.metadata&.dig("size").present? %>
-                        <% if item.metadata&.dig("color").present? %> • <% end %>
-                        <%= item.metadata["size"] %>
-                      <% end %>
+                  <% if item.description.present? %>
+                    <span class="truncate max-w-xs block" title="<%= item.description %>">
+                      <%= truncate(item.description, length: 50) %>
                     </span>
                   <% else %>
                     <span class="text-gray-400">—</span>
@@ -276,7 +282,10 @@
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                   <%= link_to "View", item, class: "text-primary-600 hover:text-primary-900 dark:text-primary-400 dark:hover:text-primary-300 mr-4" %>
-                  <%= link_to "Edit", edit_inventory_item_path(item), class: "text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-300" %>
+                  <%= link_to "Edit", edit_inventory_item_path(item), class: "text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-300 mr-4" %>
+                  <%= link_to "Delete", item, 
+                      data: { turbo_method: :delete, turbo_confirm: "Are you sure you want to delete '#{item.name}'?" },
+                      class: "text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300" %>
                 </td>
               </tr>
             <% end %>

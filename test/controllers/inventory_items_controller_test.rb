@@ -76,10 +76,11 @@ class InventoryItemsControllerTest < ActionDispatch::IntegrationTest
   test "update updates item and redirects on success" do
     item = create(:inventory_item, :clothing, user: @user, category: @category, name: "Old")
     patch inventory_item_path(item), params: {
-      inventory_item: { name: "New Name", color: "red", size: "L" }
+      inventory_item: { name: "New Name", description: "Updated description" }
     }
     assert_redirected_to inventory_items_path
     assert_equal "New Name", item.reload.name
+    assert_equal "Updated description", item.reload.description
   end
 
   test "update attaches images when provided" do
@@ -118,5 +119,65 @@ class InventoryItemsControllerTest < ActionDispatch::IntegrationTest
   test "bulk_delete with no items shows alert and redirects" do
     delete bulk_delete_inventory_items_path, params: { item_ids: [] }
     assert_redirected_to inventory_items_path
+  end
+
+  test "create handles empty string in additional_images array gracefully" do
+    file = fixture_file_upload("sample_image.jpg", "image/jpeg")
+    
+    # Simulate empty string in additional_images (what Rails sends when no file selected)
+    assert_difference -> { @user.inventory_items.count }, +1 do
+      post inventory_items_path, params: {
+        inventory_item: {
+          name: "Item with empty additional_images",
+          description: "Test description",
+          category_id: @category.id,
+          primary_image: file,
+          additional_images: [""] # Empty string from empty file input
+        }
+      }
+    end
+    
+    item = @user.inventory_items.order(created_at: :desc).first
+    assert item.primary_image.attached?, "Primary image should be attached"
+    assert_equal 0, item.additional_images.count, "No additional images should be attached when empty string provided"
+    assert_redirected_to inventory_items_path
+  end
+
+  test "create handles additional_images with mixed empty strings and files" do
+    file = fixture_file_upload("sample_image.jpg", "image/jpeg")
+    addl_file = fixture_file_upload("sample_image.jpg", "image/jpeg")
+    
+    # Simulate array with empty strings and actual files
+    assert_difference -> { @user.inventory_items.count }, +1 do
+      post inventory_items_path, params: {
+        inventory_item: {
+          name: "Item with mixed additional_images",
+          description: "Test description",
+          category_id: @category.id,
+          primary_image: file,
+          additional_images: ["", addl_file, ""] # Empty strings mixed with actual file
+        }
+      }
+    end
+    
+    item = @user.inventory_items.order(created_at: :desc).first
+    assert item.primary_image.attached?, "Primary image should be attached"
+    assert_equal 1, item.additional_images.count, "Only actual files should be attached"
+    assert_redirected_to inventory_items_path
+  end
+
+  test "update handles empty string in additional_images array gracefully" do
+    item = create(:inventory_item, :clothing, user: @user, category: @category)
+    file = fixture_file_upload("sample_image.jpg", "image/jpeg")
+    
+    # Simulate empty string in additional_images
+    patch inventory_item_path(item), params: {
+      inventory_item: {
+        additional_images: [""] # Empty string from empty file input
+      }
+    }
+    
+    assert_redirected_to inventory_items_path
+    assert_equal 0, item.reload.additional_images.count, "No additional images should be attached when empty string provided"
   end
 end

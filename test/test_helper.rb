@@ -5,13 +5,13 @@ require "simplecov"
 
 # Configure SimpleCov for parallel testing
 # Give every process a unique command name to avoid clobbering results
-worker_id = ENV['TEST_ENV_NUMBER'] || ENV['PARALLEL_WORKERS'] || nil
+worker_id = ENV["TEST_ENV_NUMBER"] || ENV["PARALLEL_WORKERS"] || nil
 SimpleCov.command_name(
   [
-    'minitest',
+    "minitest",
     (worker_id && "w#{worker_id}"),
     "pid#{Process.pid}"
-  ].compact.join('-')
+  ].compact.join("-")
 )
 
 SimpleCov.start "rails" do
@@ -19,7 +19,7 @@ SimpleCov.start "rails" do
   merge_timeout 3600
 
   # Ensure we track files even if not loaded in a given worker
-  track_files 'app/**/*.rb'
+  track_files "app/**/*.rb"
 
   add_filter "/bin/"
   add_filter "/db/"
@@ -81,11 +81,11 @@ Dir[Rails.root.join("test", "support", "**", "*.rb")].each { |f| require f }
 
 # Optionally collate results from multiple workers or separate suites
 # Enable by setting SIMPLECOV_COLLATE=1 on the final run
-if ENV['SIMPLECOV_COLLATE'] == '1'
+if ENV["SIMPLECOV_COLLATE"] == "1"
   at_exit do
     begin
-      require 'simplecov'
-      SimpleCov.collate Dir[File.join('coverage', '**', '.resultset*.json')] do
+      require "simplecov"
+      SimpleCov.collate Dir[File.join("coverage", "**", ".resultset*.json")] do
         formatter SimpleCov::Formatter::HTMLFormatter
       end
     rescue StandardError => e

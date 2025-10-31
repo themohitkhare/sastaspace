@@ -10,11 +10,26 @@ module SessionAuthenticable
   private
 
   def authenticate_user!
-    user = get_current_user_from_jwt || get_current_user_from_session
-
-    unless user
-      redirect_to login_path, alert: "Please sign in to continue"
-      return
+    # Best practice: Use JWT tokens when they exist, fallback to session only if no tokens at all
+    # This ensures proper token validation while maintaining backward compatibility
+    if cookies.signed[:access_token].present? || cookies.signed[:refresh_token].present?
+      # Tokens exist - must validate them (try refresh if expired)
+      user = get_current_user_from_jwt
+      unless user
+        # Tokens exist but are invalid/expired and refresh failed - clear everything
+        cookies.delete(:access_token)
+        cookies.delete(:refresh_token)
+        session.delete(:user_id)
+        redirect_to login_path, alert: "Your session has expired. Please sign in again."
+        return
+      end
+    else
+      # No tokens exist - fallback to session (for backward compatibility)
+      user = get_current_user_from_session
+      unless user
+        redirect_to login_path, alert: "Please sign in to continue"
+        return
+      end
     end
 
     @current_user = user
@@ -23,7 +38,24 @@ module SessionAuthenticable
   end
 
   def current_user
-    @current_user ||= get_current_user_from_jwt || get_current_user_from_session
+    return @current_user if @current_user
+
+    # Best practice: Use JWT tokens when they exist, fallback to session only if no tokens at all
+    if cookies.signed[:access_token].present? || cookies.signed[:refresh_token].present?
+      # Tokens exist - must validate them
+      @current_user = get_current_user_from_jwt
+      # If tokens are invalid/expired and refresh failed, clear everything
+      if @current_user.nil?
+        cookies.delete(:access_token)
+        cookies.delete(:refresh_token)
+        session.delete(:user_id)
+      end
+    else
+      # No tokens exist - fallback to session (for backward compatibility)
+      @current_user = get_current_user_from_session
+    end
+
+    @current_user
   end
 
   def user_signed_in?
@@ -49,8 +81,18 @@ module SessionAuthenticable
     User.find_by(id: decoded_token[:user_id])
   rescue JWT::ExpiredSignature, JWT::DecodeError
     # Try to refresh token if expired
-    refresh_access_token
+    refreshed_user = refresh_access_token
+    if refreshed_user.nil?
+      # Refresh failed - clear both cookies and session to force logout
+      cookies.delete(:access_token)
+      cookies.delete(:refresh_token)
+      session.delete(:user_id)
+      return nil
+    end
+    refreshed_user
   rescue ActiveRecord::RecordNotFound
+    # User not found - clear session
+    session.delete(:user_id)
     nil
   end
 
@@ -85,11 +127,24 @@ module SessionAuthenticable
 
       # Get user from new token
       decoded_token = Auth::JsonWebToken.decode(response[:data][:token])
-      User.find_by(id: decoded_token[:user_id])
+      user = User.find_by(id: decoded_token[:user_id])
+      # Update session with user ID for consistency
+      session[:user_id] = user.id if user
+      user
     else
+      # Refresh failed - clear everything
+      Rails.logger.warn "Token refresh failed in SessionAuthenticable, clearing auth"
+      cookies.delete(:access_token)
+      cookies.delete(:refresh_token)
+      session.delete(:user_id)
       nil
     end
-  rescue StandardError
+  rescue StandardError => e
+    # Refresh error - clear everything
+    Rails.logger.error "Token refresh error in SessionAuthenticable: #{e.message}"
+    cookies.delete(:access_token)
+    cookies.delete(:refresh_token)
+    session.delete(:user_id)
     nil
   end
 

@@ -13,5 +13,3 @@ class Api::V1::DocsControllerEquivalenceTest < ActionDispatch::IntegrationTest
     assert_equal body_a, body_b
   end
 end
-
-

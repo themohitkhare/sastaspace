@@ -3,6 +3,9 @@ require "test_helper"
 class RateLimiterTest < ActiveSupport::TestCase
   setup do
     Rails.cache.clear
+    # Ensure memory store has some data so bypass check doesn't trigger
+    # (RateLimiter uses memory store fallback when NullStore is used)
+    RateLimiter.memory_store["_initialized"] = { expires_at: Time.now + 1.hour }
   end
 
   test "allowed? permits up to the limit within period" do

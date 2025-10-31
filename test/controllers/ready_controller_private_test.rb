@@ -18,5 +18,3 @@ class ReadyControllerPrivateTest < ActiveSupport::TestCase
     assert_equal %i[migrations queues storage], result[:checks].keys
   end
 end
-
-

@@ -14,5 +14,3 @@ class MetricsLoggerCacheTest < ActiveSupport::TestCase
     end
   end
 end
-
-

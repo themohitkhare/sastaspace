@@ -20,5 +20,3 @@ class Api::V1::InventoryItemsUpdateParseErrorTest < ActionDispatch::IntegrationT
     assert_equal "PARSE_ERROR", body.dig("error", "code")
   end
 end
-
-

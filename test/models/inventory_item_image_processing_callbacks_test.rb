@@ -37,5 +37,3 @@ class InventoryItemImageProcessingCallbacksTest < ActiveSupport::TestCase
     end
   end
 end
-
-
