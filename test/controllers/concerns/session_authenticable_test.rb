@@ -7,11 +7,11 @@ class SessionAuthenticableTest < ActionDispatch::IntegrationTest
   end
 
   test "get_current_user_from_session returns user when session exists" do
-    post login_path, params: { 
-      email: @user.email, 
-      password: "password123" 
+    post login_path, params: {
+      email: @user.email,
+      password: "password123"
     }, headers: { "Accept" => "text/html" }
-    
+
     # Stub authentication to succeed
     Auth::SessionService.stubs(:login).returns({
       success: true,
@@ -29,11 +29,11 @@ class SessionAuthenticableTest < ActionDispatch::IntegrationTest
 
   test "sign_in and sign_out work correctly" do
     # Test through actual controller flow
-    post login_path, params: { 
-      email: @user.email, 
-      password: "password123" 
+    post login_path, params: {
+      email: @user.email,
+      password: "password123"
     }, headers: { "Accept" => "text/html" }
-    
+
     Auth::SessionService.stubs(:login).returns({
       success: true,
       data: {
@@ -54,4 +54,3 @@ class SessionAuthenticableTest < ActionDispatch::IntegrationTest
     assert_nil session[:user_id]
   end
 end
-

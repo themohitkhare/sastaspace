@@ -15,7 +15,7 @@ class Auth::SessionServiceTest < ActiveSupport::TestCase
     # Find the refresh token in database
     refresh_token = RefreshToken.find_by(token: response[:data][:refresh_token])
     assert refresh_token.present?, "Refresh token should be created in database"
-    
+
     # Check expiration is approximately 30 days (allow 1 day tolerance)
     expected_expiry = 30.days.from_now
     assert_in_delta expected_expiry.to_i, refresh_token.expires_at.to_i, 1.day.to_i,
@@ -32,7 +32,7 @@ class Auth::SessionServiceTest < ActiveSupport::TestCase
     # Find the refresh token in database
     refresh_token = RefreshToken.find_by(token: response[:data][:refresh_token])
     assert refresh_token.present?, "Refresh token should be created in database"
-    
+
     # Check expiration is approximately 7 days (allow 1 day tolerance)
     expected_expiry = 7.days.from_now
     assert_in_delta expected_expiry.to_i, refresh_token.expires_at.to_i, 1.day.to_i,
@@ -81,7 +81,7 @@ class Auth::SessionServiceTest < ActiveSupport::TestCase
     assert response[:data][:token].present?, "Should return access token"
     assert response[:data][:refresh_token].present?, "Should return refresh token"
     assert_equal "newuser@example.com", response[:data][:user][:email]
-    
+
     # Verify user was created in database
     user = User.find_by(email: "newuser@example.com")
     assert user.present?, "User should be created"
@@ -154,4 +154,3 @@ class Auth::SessionServiceTest < ActiveSupport::TestCase
     assert_equal "stringkeys@example.com", response[:data][:user][:email]
   end
 end
-

@@ -127,7 +127,7 @@ class MetricsLoggerTest < ActiveSupport::TestCase
     # Should be valid JSON - find complete JSON object (may span multiple lines)
     json_match = logs.match(/\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\}/m)
     assert_not_nil json_match, "Should contain JSON log entry"
-    
+
     # Try to parse the matched JSON
     begin
       parsed = JSON.parse(json_match[0])

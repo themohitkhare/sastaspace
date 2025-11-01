@@ -31,11 +31,51 @@ export default class extends Controller {
     // Ensure blob_id is attached when form is submitted (before it's sent)
     const form = this.element.closest("form")
     if (form) {
+      // Use submit event (not Turbo submit) and ensure we run first
       form.addEventListener("submit", (e) => {
-        // Attach blob_id right before submission
-        this.attachPrimaryImage()
+        console.log("Form submit event triggered. blobId:", this.blobId)
+        
+        // Attach blob_id right before submission - ensure it happens synchronously
+        if (this.blobId) {
+          this.attachPrimaryImage()
+          
+          // Force a synchronous DOM update
+          const input = form.querySelector('input[name="inventory_item[blob_id]"]')
+          if (input) {
+            // Ensure the value is set
+            input.value = this.blobId
+            console.log("✓ Set blob_id input value directly:", input.value)
+          }
+        }
+        
+        // Verify blob_id is in the form one more time right before submit
+        const finalCheck = form.querySelector('input[name="inventory_item[blob_id]"]')
+        if (finalCheck && finalCheck.value) {
+          console.log("✓ Final check passed - blob_id will be submitted:", finalCheck.value)
+          
+          // Double-check by serializing form data
+          const formData = new FormData(form)
+          const blobIdValue = formData.get("inventory_item[blob_id]")
+          if (blobIdValue) {
+            console.log("✓ Confirmed blob_id in FormData:", blobIdValue)
+          } else {
+            console.error("✗ blob_id NOT in FormData even though input exists!")
+            // Last resort: try to add it again
+            const lastResortInput = document.createElement("input")
+            lastResortInput.type = "hidden"
+            lastResortInput.name = "inventory_item[blob_id]"
+            lastResortInput.value = this.blobId
+            form.appendChild(lastResortInput)
+            console.log("⚠ Added blob_id input as last resort")
+          }
+        } else {
+          console.error("✗ Final check FAILED - blob_id will NOT be submitted!")
+          if (this.blobId) {
+            console.error("   But blobId is available:", this.blobId, "- something went wrong")
+          }
+        }
         // Don't prevent default - let form submit normally
-      }, { capture: true }) // Use capture phase to ensure it runs first
+      }, { capture: true, once: false }) // Use capture phase to ensure it runs first
     }
   }
 
@@ -127,6 +167,16 @@ export default class extends Controller {
     // Store job ID and blob ID, then start polling
     this.jobId = data.data.job_id
     this.blobId = data.data.blob_id // Store blob ID for later attachment
+    
+    console.log("Image uploaded. Received blobId:", this.blobId, "jobId:", this.jobId)
+    
+    // Attach blob_id to form immediately so it's always available when form submits
+    if (this.blobId) {
+      this.attachPrimaryImage()
+    } else {
+      console.error("No blob_id received from upload response!")
+    }
+    
     this.startPolling()
   }
 
@@ -215,7 +265,7 @@ export default class extends Controller {
 
   attachPrimaryImage() {
     if (!this.blobId) {
-      console.warn("No blobId available to attach to form")
+      console.warn("No blobId available to attach to form. blobId:", this.blobId)
       return
     }
 
@@ -230,6 +280,7 @@ export default class extends Controller {
     const existingInput = form.querySelector('input[name="inventory_item[blob_id]"]')
     if (existingInput) {
       existingInput.remove()
+      console.log("Removed existing blob_id input")
     }
 
     // Create new hidden input with blob_id
@@ -241,12 +292,29 @@ export default class extends Controller {
     
     console.log("Attached blob_id to form:", this.blobId, "Form action:", form.action)
     
-    // Verify it was added
+    // Verify it was added - with more detailed logging
     const verify = form.querySelector('input[name="inventory_item[blob_id]"]')
     if (verify) {
-      console.log("Verified blob_id input exists with value:", verify.value)
+      console.log("✓ Verified blob_id input exists with value:", verify.value)
+      
+      // Double-check by creating FormData to see what would be submitted
+      const formData = new FormData(form)
+      // FormData.get() works with nested keys like "inventory_item[blob_id]"
+      const blobIdInFormData = formData.get("inventory_item[blob_id]")
+      if (blobIdInFormData) {
+        console.log("✓ Confirmed blob_id is in FormData:", blobIdInFormData)
+      } else {
+        // Also check all entries to debug
+        console.log("Debug: Checking all FormData entries...")
+        for (const [key, value] of formData.entries()) {
+          if (key.includes("blob")) {
+            console.log(`Found blob-related field: ${key} = ${value}`)
+          }
+        }
+        console.warn("⚠ blob_id not found in FormData with key 'inventory_item[blob_id]', but input exists in DOM")
+      }
     } else {
-      console.error("Failed to add blob_id input to form!")
+      console.error("✗ Failed to add blob_id input to form!")
     }
   }
 

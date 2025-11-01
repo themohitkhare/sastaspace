@@ -419,6 +419,11 @@ module Api
           # Queue background job
           AnalyzeImageForCreationJob.perform_later(blob.id, current_user.id, job_id)
 
+          # Store blob_id in session as fallback (in case form submission fails to include it)
+          session[:pending_blob_id] = blob.id.to_s
+          
+          Rails.logger.info "Image upload initiated. Blob ID: #{blob.id}, Job ID: #{job_id}, User: #{current_user.id}"
+
           render json: {
             success: true,
             data: {

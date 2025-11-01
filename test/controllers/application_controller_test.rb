@@ -31,7 +31,7 @@ class ApplicationControllerTest < ActionDispatch::IntegrationTest
     # ExceptionHandler adds rescue_from callbacks - verify they're registered
     # Check if the class responds to exception handling
     assert ApplicationController.respond_to?(:rescue_from), "Should support rescue_from"
-    
+
     # Verify exception classes exist
     assert defined?(ExceptionHandler::InvalidToken)
     assert defined?(ExceptionHandler::MissingToken)
@@ -45,4 +45,3 @@ class ApplicationControllerTest < ActionDispatch::IntegrationTest
     assert controller.respond_to?(:current_user, true)
   end
 end
-

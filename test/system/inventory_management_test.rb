@@ -140,7 +140,7 @@ class InventoryManagementTest < ApplicationSystemTestCase
 
     # Step 1: Category
     assert_text "Step 1", wait: 5
-    
+
     # Category picker - fill hidden field directly for testing
     find("input[name='inventory_item[category_id]']", visible: false).set(@category.id.to_s)
 

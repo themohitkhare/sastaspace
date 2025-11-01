@@ -11,7 +11,7 @@ class ChatsControllerTest < ActionDispatch::IntegrationTest
       context_window: 128_000
     )
     @chat = Chat.create!(user: @user, model: @model)
-    
+
     # Stub authentication for HTML controller
     ChatsController.any_instance.stubs(:authenticate_user!).returns(true)
     ChatsController.any_instance.stubs(:current_user).returns(@user)

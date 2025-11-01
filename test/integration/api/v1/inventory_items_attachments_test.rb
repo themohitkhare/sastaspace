@@ -13,7 +13,7 @@ class Api::V1::InventoryItemsAttachmentsTest < ActionDispatch::IntegrationTest
   test "POST /api/v1/inventory_items/:id/primary_image attaches image" do
     file = fixture_file_upload("sample_image.jpg", "image/jpeg")
     post "/api/v1/inventory_items/#{@item.id}/primary_image", params: { image: file }, headers: api_v1_headers(@token)
-    
+
     # Accept success or check for specific error if ActiveStorage is not configured in test
     if @response.status == 500
       # Check if it's an ActiveStorage error - if so, skip for now
@@ -24,7 +24,7 @@ class Api::V1::InventoryItemsAttachmentsTest < ActionDispatch::IntegrationTest
         flunk "Expected success but got 500. Response: #{@response.body[0..500]}"
       end
     end
-    
+
     assert_response :success
     body = JSON.parse(@response.body)
     assert body["data"]["image_url"].present?

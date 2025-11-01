@@ -59,4 +59,3 @@ class HealthControllerTest < ActionDispatch::IntegrationTest
     assert body["services"]["jobs"].present?
   end
 end
-

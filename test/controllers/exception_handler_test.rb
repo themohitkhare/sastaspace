@@ -44,4 +44,3 @@ class ExceptionHandlerTest < ActionDispatch::IntegrationTest
     assert body["error"]["details"].present?
   end
 end
-

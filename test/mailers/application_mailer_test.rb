@@ -15,4 +15,3 @@ class ApplicationMailerTest < ActionMailer::TestCase
     end
   end
 end
-
