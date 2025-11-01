@@ -1,22 +1,79 @@
-<div class="container mx-auto p-6" data-controller="outfit-builder">
-  <h1 class="text-2xl font-semibold mb-4">Create Outfit</h1>
+<div class="p-6" data-controller="outfit-builder">
+  <div class="mb-6">
+    <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Create New Outfit</h1>
+    <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">Build your perfect outfit by selecting items from your wardrobe</p>
+  </div>
 
-  <%= form_with model: @outfit, url: outfits_path, class: "space-y-4" do |f| %>
-    <div>
-      <%= f.label :name, class: "block text-sm font-medium text-gray-700" %>
-      <%= f.text_field :name, class: "mt-1 block w-full border rounded p-2" %>
-    </div>
-    <div>
-      <%= f.label :description, class: "block text-sm font-medium text-gray-700" %>
-      <%= f.text_area :description, rows: 3, class: "mt-1 block w-full border rounded p-2" %>
+  <%= form_with model: @outfit, url: outfits_path, local: true, class: "space-y-6", data: { turbo: false } do |f| %>
+    <!-- Outfit Details -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+      <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">Outfit Details</h2>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <%= f.label :name, "Outfit Name", class: "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" %>
+          <%= f.text_field :name, required: true, class: "form-input w-full",
+              placeholder: "e.g., Weekend Casual", 
+              data: { outfit_builder_target: "outfitName" } %>
+        </div>
+        <div>
+          <%= f.label :occasion, "Occasion", class: "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" %>
+          <%= f.select :occasion, 
+              options_for_select([
+                ['Casual', 'casual'],
+                ['Formal', 'formal'],
+                ['Business', 'business'],
+                ['Sporty', 'sporty'],
+                ['Evening', 'evening'],
+                ['Other', 'other']
+              ]), 
+              { prompt: 'Select occasion' },
+              { class: "form-input w-full" } %>
+        </div>
+      </div>
+      <div class="mt-4">
+        <%= f.label :description, "Description", class: "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" %>
+        <%= f.text_area :description, rows: 3, class: "form-input w-full",
+            placeholder: "Add any notes about this outfit..." %>
+      </div>
+
+      <!-- Hidden field for inventory_item_ids -->
+      <input type="hidden" name="outfit[inventory_item_ids][]" value="" />
     </div>
 
-    <%= render partial: "builder_canvas" %>
+    <!-- Outfit Canvas -->
+    <%= render partial: "builder_canvas", locals: { f: f } %>
+
+    <!-- Completeness Score & Color Analysis -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4" data-outfit-builder-target="completenessScore">
+        <h3 class="text-sm font-medium text-gray-900 dark:text-white mb-2">Outfit Completeness</h3>
+        <div class="flex items-center space-x-2">
+          <div class="flex-1 bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+            <div class="bg-primary-600 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+          </div>
+          <span class="text-sm font-medium text-gray-700 dark:text-gray-300">0%</span>
+        </div>
+        <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">Start adding items to build your outfit</p>
+      </div>
+
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4" data-outfit-builder-target="colorAnalysis">
+        <h3 class="text-sm font-medium text-gray-900 dark:text-white mb-2">Color Coordination</h3>
+        <div class="text-sm text-gray-500 dark:text-gray-400 text-center py-4">
+          Add items to analyze color coordination
+        </div>
+      </div>
+    </div>
+
+    <!-- Item Selector -->
+    <%= render partial: "item_selector" %>
+
+    <!-- AI Suggestions -->
     <%= render partial: "ai_suggestions" %>
 
-    <div>
-      <%= f.submit "Save Outfit", class: "px-4 py-2 bg-blue-600 text-white rounded" %>
+    <!-- Form Actions -->
+    <div class="flex justify-end space-x-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+      <%= link_to "Cancel", outfits_path, class: "btn-secondary" %>
+      <%= f.submit "Save Outfit", class: "btn-primary" %>
     </div>
   <% end %>
 </div>
-

@@ -1,5 +1,21 @@
-<div class="border rounded p-4" data-controller="ai-suggestions">
-  <div class="font-medium mb-2">AI Suggestions</div>
-  <div data-ai-suggestions-target="list" class="text-sm text-gray-600">No suggestions yet.</div>
+<div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6" data-controller="ai-suggestions" data-ai-suggestions-outfit-id-value="<%= local_assigns[:outfit_id] || '' %>">
+  <div class="flex items-center justify-between mb-4">
+    <h2 class="text-xl font-semibold text-gray-900 dark:text-white">AI Suggestions</h2>
+    <span class="text-xs text-gray-500 dark:text-gray-400">Powered by AI</span>
+  </div>
+  
+  <div data-ai-suggestions-target="error" class="hidden mb-4 p-3 bg-red-50 dark:bg-red-900 border border-red-200 dark:border-red-700 text-red-800 dark:text-red-200 rounded text-sm"></div>
+  
+  <div data-ai-suggestions-target="list" class="min-h-[200px]">
+    <div class="text-center py-8 text-gray-500 dark:text-gray-400">
+      <p class="text-sm">Start building your outfit to see AI suggestions.</p>
+    </div>
+  </div>
+  
+  <div data-ai-suggestions-target="loading" class="hidden">
+    <div class="text-center py-8">
+      <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+      <p class="mt-2 text-sm text-gray-500">Loading suggestions...</p>
+    </div>
+  </div>
 </div>
-

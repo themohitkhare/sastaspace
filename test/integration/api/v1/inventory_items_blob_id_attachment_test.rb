@@ -110,20 +110,20 @@ class Api::V1::InventoryItemsBlobIdAttachmentTest < ActionDispatch::IntegrationT
           blob_id: blob.id
         }
       }
-      
+
       # Debug: If not redirected, check response and validation errors
       unless response.redirect?
         # Try to extract error details from the response
         error_details = "Status: #{response.status}\n"
         error_details += "Body: #{response.body[0..500]}"
-        
+
         # Try to get validation errors from assigns (if available in integration tests)
         begin
           item = assigns(:inventory_item) if respond_to?(:assigns)
           if item && item.is_a?(InventoryItem) && item.errors.any?
             error_details += "\nValidation errors: #{item.errors.full_messages.join(', ')}"
           end
-          
+
           # Check category and item_type
           if item
             error_details += "\nCategory: #{item.category&.name}, item_type: #{item.item_type rescue 'error'}"
@@ -131,7 +131,7 @@ class Api::V1::InventoryItemsBlobIdAttachmentTest < ActionDispatch::IntegrationT
         rescue NoMethodError
           # assigns might not be available in integration tests
         end
-        
+
         flunk "Expected redirect but got #{response.status}.\n#{error_details}"
       end
     end
@@ -165,20 +165,20 @@ class Api::V1::InventoryItemsBlobIdAttachmentTest < ActionDispatch::IntegrationT
           blob_id: invalid_blob_id
         }
       }
-      
+
       # Debug: If not redirected, check response and validation errors
       unless response.redirect?
         # Try to extract error details from the response
         error_details = "Status: #{response.status}\n"
         error_details += "Body: #{response.body[0..500]}"
-        
+
         # Try to get validation errors from assigns (if available in integration tests)
         begin
           item = assigns(:inventory_item) if respond_to?(:assigns)
           if item && item.is_a?(InventoryItem) && item.errors.any?
             error_details += "\nValidation errors: #{item.errors.full_messages.join(', ')}"
           end
-          
+
           # Check category and item_type
           if item
             error_details += "\nCategory: #{item.category&.name}, item_type: #{item.item_type rescue 'error'}"
@@ -186,7 +186,7 @@ class Api::V1::InventoryItemsBlobIdAttachmentTest < ActionDispatch::IntegrationT
         rescue NoMethodError
           # assigns might not be available in integration tests
         end
-        
+
         flunk "Expected redirect but got #{response.status}.\n#{error_details}"
       end
     end
@@ -249,25 +249,25 @@ class Api::V1::InventoryItemsBlobIdAttachmentTest < ActionDispatch::IntegrationT
   test "POST inventory_items_path uses session blob_id fallback when blob_id not in params" do
     # This tests the session fallback mechanism we added
     # Simulate the full flow: API endpoint sets session, then HTML form submission uses it
-    
+
     # Step 1: Call the API endpoint that sets session[:pending_blob_id]
     # This simulates what happens when user uploads image via AI creation flow
     Api::V1::InventoryItemsController.any_instance.stubs(:authenticate_user!).returns(true)
     Api::V1::InventoryItemsController.any_instance.stubs(:current_user).returns(@user)
-    
+
     # Make API request - this should set session[:pending_blob_id]
-    # In Rails integration tests, cookies (including session cookies) are automatically 
+    # In Rails integration tests, cookies (including session cookies) are automatically
     # maintained between requests, so the session should persist
     post "/api/v1/inventory_items/analyze_image_for_creation",
          params: { image: @image_file },
          headers: auth_headers(@token)
-    
+
     assert_response :accepted
     body = json_response
     assert body["success"]
     blob_id = body["data"]["blob_id"]
     assert blob_id.present?, "Response should include blob_id"
-    
+
     # Step 2: Now use HTML controller, which should read from session
     # Stub authentication for HTML controller
     # IMPORTANT: We need to stub session access to simulate the session being set by the API call
@@ -275,7 +275,7 @@ class Api::V1::InventoryItemsBlobIdAttachmentTest < ActionDispatch::IntegrationT
     # Here we simulate that by stubbing the session access
     InventoryItemsController.any_instance.stubs(:authenticate_user!).returns(true)
     InventoryItemsController.any_instance.stubs(:current_user).returns(@user)
-    
+
     # Stub session to return the blob_id that was set by the API endpoint
     # This simulates the session cookie being shared between API and HTML requests
     # In integration tests, we can't directly access session between requests,
