@@ -69,7 +69,7 @@ class OutfitsAiSuggestionsTest < ApplicationSystemTestCase
 
     # Wait for page to load
     assert_selector "[data-outfit-builder-target]", wait: 5
-    
+
     # Wait for items to load
     begin
       assert_selector("[data-item-id]", wait: 20)
@@ -98,7 +98,7 @@ class OutfitsAiSuggestionsTest < ApplicationSystemTestCase
 
     # Wait for page to load
     assert_selector "[data-outfit-builder-target]", wait: 5
-    
+
     # Wait for items to load
     begin
       assert_selector("[data-item-id]", wait: 20)
@@ -129,7 +129,7 @@ class OutfitsAiSuggestionsTest < ApplicationSystemTestCase
 
     # Wait for page to load and suggestions to appear
     assert_selector "[data-outfit-builder-target]", wait: 5
-    
+
     # Wait for items to load
     assert_no_text "Loading items...", wait: 10
     assert_text @shirt.name, wait: 10

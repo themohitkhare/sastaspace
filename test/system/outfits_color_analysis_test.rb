@@ -67,7 +67,7 @@ class OutfitsColorAnalysisTest < ApplicationSystemTestCase
 
     # Wait for page to load
     assert_selector "[data-outfit-builder-target]", wait: 5
-    
+
     # Wait for items to load
     begin
       assert_selector("[data-item-id]", wait: 20)

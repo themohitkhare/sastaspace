@@ -3,7 +3,7 @@ require "test_helper"
 class OutfitsControllerTest < ActionDispatch::IntegrationTest
   setup do
     @user = create(:user)
-    OutfitsController.any_instance.stubs(:require_login).returns(true)
+    OutfitsController.any_instance.stubs(:authenticate_user!).returns(true)
     OutfitsController.any_instance.stubs(:current_user).returns(@user)
   end
 
