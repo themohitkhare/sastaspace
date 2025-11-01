@@ -61,7 +61,7 @@ class OutfitsBuilderTest < ApplicationSystemTestCase
 
     # Wait for builder to load
     assert_selector "[data-outfit-builder-target]", wait: 5
-    
+
     # Wait for items to load - JavaScript fetch happens asynchronously
     # Items have data-item-id attribute when rendered
     # If items fail to load, error message will appear instead
@@ -74,7 +74,7 @@ class OutfitsBuilderTest < ApplicationSystemTestCase
       end
       raise e
     end
-    
+
     # Now verify specific items are visible
     assert_text @shirt.name, wait: 5
     assert_text @jeans.name, wait: 5
@@ -92,7 +92,7 @@ class OutfitsBuilderTest < ApplicationSystemTestCase
     end
 
     assert_selector "[data-outfit-builder-target]", wait: 5
-    
+
     # Wait for items to load
     begin
       assert_selector("[data-item-id]", wait: 20)
@@ -127,7 +127,7 @@ class OutfitsBuilderTest < ApplicationSystemTestCase
     end
 
     assert_selector "[data-outfit-builder-target]", wait: 5
-    
+
     # Wait for items to load
     begin
       assert_selector("[data-item-id]", wait: 20)
@@ -151,7 +151,7 @@ class OutfitsBuilderTest < ApplicationSystemTestCase
 
   test "user can add items to outfit canvas" do
     visit "/outfits/new"
-    
+
     # Wait for page to load
     if page.current_path == "/login"
       fill_in "Email", with: @user.email
@@ -159,9 +159,9 @@ class OutfitsBuilderTest < ApplicationSystemTestCase
       click_button "Sign In"
       visit "/outfits/new"
     end
-    
+
     assert_selector "[data-outfit-builder-target]", wait: 5
-    
+
     # Wait for items to load
     begin
       assert_selector("[data-item-id]", wait: 20)
@@ -172,7 +172,7 @@ class OutfitsBuilderTest < ApplicationSystemTestCase
       raise e
     end
     assert_text @shirt.name, wait: 10
-    
+
     # Canvas is rendered in the builder_canvas partial
     # Check that the builder controller is loaded
     assert_selector "[data-outfit-builder-target='canvas']", wait: 5
@@ -247,17 +247,17 @@ class OutfitsBuilderTest < ApplicationSystemTestCase
 
   test "user can create outfit with selected items" do
     visit "/outfits/new"
-    
+
     if page.current_path == "/login"
       fill_in "Email", with: @user.email
       fill_in "Password", with: "Password123!"
       click_button "Sign In"
       visit "/outfits/new"
     end
-    
+
     # Wait for page to load
     assert_selector "[data-outfit-builder-target]", wait: 5
-    
+
     # Wait for items to load
     assert_selector("[data-item-id]", wait: 15)
     assert_text @shirt.name, wait: 5
