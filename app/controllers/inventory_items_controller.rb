@@ -66,7 +66,7 @@ class InventoryItemsController < ApplicationController
   def create
     # Extract blob_id before building - it's not a model attribute
     blob_id = params[:inventory_item]&.dig(:blob_id) || params.dig(:inventory_item, :blob_id)
-    
+
     # Build item without blob_id (it's not a model attribute)
     item_params = inventory_item_params.except(:blob_id)
     @inventory_item = current_user.inventory_items.build(item_params)
@@ -87,28 +87,28 @@ class InventoryItemsController < ApplicationController
     if @inventory_item.save
       # Handle blob_id from AI upload (attach existing blob)
       Rails.logger.info "Checking for blob_id in params. Present: #{blob_id.present?}, Value: #{blob_id}"
-      
+
       # Also check for blob_id in session if not in params (fallback for AI uploads)
       blob_id ||= session[:pending_blob_id] if session[:pending_blob_id].present?
-      
+
       if blob_id.present?
         begin
           # Convert to integer to ensure proper lookup
           blob_id_int = blob_id.to_i
           blob = ActiveStorage::Blob.find_by(id: blob_id_int)
-          
+
           unless blob
             Rails.logger.error "Blob #{blob_id_int} not found in database"
           end
-          
+
           if blob
             # Explicitly create attachment with correct name to ensure it's "primary_image" not "attachments"
             @inventory_item.primary_image_attachment&.purge # Remove existing if any
             @inventory_item.primary_image.attach(blob)
-            
+
             # Note: ActiveStorage attachments are persisted automatically when attach() is called
             # No need to explicitly save as attach() creates the attachment record directly
-            
+
             Rails.logger.info "Successfully attached blob #{blob.id} as primary image for inventory item #{@inventory_item.id}"
 
             # Reload and verify attachment was created correctly
@@ -123,7 +123,7 @@ class InventoryItemsController < ApplicationController
               # Try attaching again as fallback
               @inventory_item.primary_image.attach(blob)
               @inventory_item.reload
-              
+
               # Final verification
               if @inventory_item.primary_image_attachment&.persisted?
                 Rails.logger.info "Attachment succeeded on retry"
@@ -199,7 +199,7 @@ class InventoryItemsController < ApplicationController
           # Convert to integer to ensure proper lookup
           blob_id_int = blob_id_param.to_i
           blob = ActiveStorage::Blob.find_by(id: blob_id_int)
-          
+
           if blob
             # Explicitly create attachment with correct name
             @inventory_item.primary_image.attach(blob)

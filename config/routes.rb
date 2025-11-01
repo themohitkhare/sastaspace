@@ -3,6 +3,7 @@ Rails.application.routes.draw do
     collection do
       get :builder
       get :inspiration
+      get :new_from_photo
     end
   end
   # Define your application routes per the DSL in https://guides.rubyonrails.org/routing.html
@@ -82,6 +83,7 @@ Rails.application.routes.draw do
           post :semantic_search
           post :analyze_image_for_creation
           get "analyze_image_status/:job_id", action: :analyze_image_status
+          post :batch_create
         end
       end
 
@@ -95,6 +97,11 @@ Rails.application.routes.draw do
 
       # Outfits
       resources :outfits do
+        collection do
+          get :color_analysis
+          post :analyze_photo
+          get "analyze_photo_status/:job_id", action: :analyze_photo_status
+        end
         member do
           post :duplicate
           put :toggle_favorite

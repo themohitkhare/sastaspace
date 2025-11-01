@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2025_10_30_170500) do
+ActiveRecord::Schema[8.1].define(version: 2025_11_01_143613) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "vector"
@@ -194,10 +194,12 @@ ActiveRecord::Schema[8.1].define(version: 2025_10_30_170500) do
 
   create_table "outfit_items", force: :cascade do |t|
     t.datetime "created_at", null: false
+    t.integer "inventory_item_id", null: false
     t.text "notes"
     t.integer "outfit_id", null: false
     t.integer "position"
     t.datetime "updated_at", null: false
+    t.index ["inventory_item_id"], name: "index_outfit_items_on_inventory_item_id"
     t.index ["outfit_id"], name: "index_outfit_items_on_outfit_id"
   end
 
@@ -227,6 +229,17 @@ ActiveRecord::Schema[8.1].define(version: 2025_10_30_170500) do
     t.index ["expires_at"], name: "index_refresh_tokens_on_expires_at"
     t.index ["token"], name: "index_refresh_tokens_on_token", unique: true
     t.index ["user_id"], name: "index_refresh_tokens_on_user_id"
+  end
+
+  create_table "solid_cache_entries", force: :cascade do |t|
+    t.integer "byte_size", null: false
+    t.datetime "created_at", null: false
+    t.binary "key", null: false
+    t.bigint "key_hash", null: false
+    t.binary "value", null: false
+    t.index ["byte_size"], name: "index_solid_cache_entries_on_byte_size"
+    t.index ["key_hash", "byte_size"], name: "index_solid_cache_entries_on_key_hash_and_byte_size"
+    t.index ["key_hash"], name: "index_solid_cache_entries_on_key_hash", unique: true
   end
 
   create_table "tags", force: :cascade do |t|
@@ -290,6 +303,7 @@ ActiveRecord::Schema[8.1].define(version: 2025_10_30_170500) do
   add_foreign_key "messages", "chats"
   add_foreign_key "messages", "models"
   add_foreign_key "messages", "tool_calls"
+  add_foreign_key "outfit_items", "inventory_items"
   add_foreign_key "outfit_items", "outfits"
   add_foreign_key "outfits", "users"
   add_foreign_key "refresh_tokens", "users"

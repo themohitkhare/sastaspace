@@ -1,9 +1,118 @@
-<div class="container mx-auto p-6" data-controller="outfit-gallery">
-  <h1 class="text-2xl font-semibold mb-4">My Outfits</h1>
-  <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-    <% @outfits.each do |outfit| %>
-      <%= render partial: "outfit_card", locals: { outfit: outfit } %>
+<div class="p-6" data-controller="outfit-gallery">
+  <div class="flex items-center justify-between mb-6">
+    <h1 class="text-3xl font-bold text-gray-900 dark:text-white">My Outfits</h1>
+    <%= link_to "New Outfit", new_outfit_path, class: "btn-primary" %>
+  </div>
+
+  <!-- Filters -->
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4 mb-6">
+    <%= form_with url: outfits_path, method: :get, local: true, data: { outfit_gallery_target: "filters", turbo_frame: "_top" }, class: "space-y-4" do |f| %>
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+        <!-- Search -->
+        <div>
+          <%= f.text_field :search, 
+              value: params[:search],
+              placeholder: "Search outfits...", 
+              class: "form-input w-full",
+              data: { 
+                outfit_gallery_target: "searchInput",
+                action: "input->outfit-gallery#handleSearch"
+              } %>
+        </div>
+
+        <!-- Occasion Filter -->
+        <div>
+          <%= f.select :occasion, 
+              options_for_select([["All Occasions", ""]] + @available_occasions.map { |o| [o.capitalize, o] }, params[:occasion]),
+              {},
+              { class: "form-input w-full" } %>
+        </div>
+
+        <!-- Date Range Filter -->
+        <div>
+          <%= f.select :date_range,
+              options_for_select([
+                ["All Time", ""],
+                ["Today", "today"],
+                ["This Week", "week"],
+                ["This Month", "month"],
+                ["This Year", "year"]
+              ], params[:date_range]),
+              {},
+              { class: "form-input w-full" } %>
+        </div>
+
+        <!-- Sort -->
+        <div>
+          <%= f.select :sort,
+              options_for_select([
+                ["Newest First", "recent"],
+                ["Oldest First", "oldest"],
+                ["Name (A-Z)", "name_asc"],
+                ["Name (Z-A)", "name_desc"]
+              ], params[:sort] || "recent"),
+              {},
+              { 
+                class: "form-input w-full",
+                data: { action: "change->outfit-gallery#submitFilters" }
+              } %>
+        </div>
+
+        <!-- Favorite Filter -->
+        <div class="flex items-center">
+          <%= f.check_box :favorite, 
+              { checked: params[:favorite] == "true", class: "form-checkbox mr-2" },
+              "true", 
+              nil %>
+          <%= f.label :favorite, "Favorites Only", class: "text-sm text-gray-700 dark:text-gray-300 cursor-pointer" %>
+        </div>
+      </div>
+
+      <div class="flex justify-between items-center">
+        <button type="submit" class="btn-primary">Apply Filters</button>
+        <% if params[:occasion].present? || params[:favorite].present? || params[:date_range].present? || params[:search].present? %>
+          <button 
+            type="button" 
+            class="btn-secondary"
+            data-action="click->outfit-gallery#clearFilters"
+          >
+            Clear Filters
+          </button>
+        <% end %>
+      </div>
     <% end %>
   </div>
+
+  <!-- Outfits Grid -->
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" data-outfit-gallery-target="outfitsGrid">
+    <% if @outfits.any? %>
+      <% @outfits.each do |outfit| %>
+        <%= render partial: "outfit_card", locals: { outfit: outfit } %>
+      <% end %>
+    <% else %>
+      <div class="col-span-full text-center py-12">
+        <svg class="mx-auto h-12 w-12 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+        </svg>
+        <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">No outfits found</h3>
+        <p class="text-gray-500 dark:text-gray-400 mb-4">
+          <% if params[:search].present? || params[:occasion].present? || params[:favorite].present? %>
+            Try adjusting your filters or create a new outfit.
+          <% else %>
+            Get started by creating your first outfit!
+          <% end %>
+        </p>
+        <%= link_to "Create Outfit", new_outfit_path, class: "btn-primary" %>
+      </div>
+    <% end %>
+  </div>
+
+  <!-- Pagination -->
+  <% if @outfits.respond_to?(:current_page) %>
+    <div class="mt-6 flex justify-center">
+      <%= paginate @outfits, theme: 'twitter-bootstrap-4' if defined?(Kaminari) %>
+    </div>
+  <% end %>
 </div>
+
 

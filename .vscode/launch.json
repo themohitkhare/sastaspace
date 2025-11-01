@@ -1,0 +1,172 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Rails server",
+            "type": "Ruby",
+            "request": "launch",
+            "program": "bundle",
+            "args": [
+                "exec",
+                "rails",
+                "server"
+            ],
+            "cwd": "${workspaceRoot}",
+            "env": {},
+            "useBundler": true
+        },
+        {
+            "name": "Run All Tests",
+            "type": "Ruby",
+            "request": "launch",
+            "program": "bundle",
+            "args": [
+                "exec",
+                "rails",
+                "test"
+            ],
+            "cwd": "${workspaceRoot}",
+            "env": {},
+            "useBundler": true
+        },
+        {
+            "name": "Run Current Test File",
+            "type": "Ruby",
+            "request": "launch",
+            "program": "bundle",
+            "args": [
+                "exec",
+                "rails",
+                "test",
+                "${file}"
+            ],
+            "cwd": "${workspaceRoot}",
+            "env": {},
+            "useBundler": true
+        },
+        {
+            "name": "Run Current Test (Line)",
+            "type": "Ruby",
+            "request": "launch",
+            "program": "bundle",
+            "args": [
+                "exec",
+                "rails",
+                "test",
+                "${file}:${lineNumber}"
+            ],
+            "cwd": "${workspaceRoot}",
+            "env": {},
+            "useBundler": true
+        },
+        {
+            "name": "Run System Tests",
+            "type": "Ruby",
+            "request": "launch",
+            "program": "bundle",
+            "args": [
+                "exec",
+                "rails",
+                "test:system"
+            ],
+            "cwd": "${workspaceRoot}",
+            "env": {},
+            "useBundler": true
+        },
+        {
+            "name": "Run Current System Test File",
+            "type": "Ruby",
+            "request": "launch",
+            "program": "bundle",
+            "args": [
+                "exec",
+                "rails",
+                "test",
+                "${file}"
+            ],
+            "cwd": "${workspaceRoot}",
+            "env": {
+                "RAILS_ENV": "test"
+            },
+            "useBundler": true
+        },
+        {
+            "name": "Debug Current Test File",
+            "type": "Ruby",
+            "request": "launch",
+            "program": "bundle",
+            "args": [
+                "exec",
+                "rails",
+                "test",
+                "${file}"
+            ],
+            "cwd": "${workspaceRoot}",
+            "env": {},
+            "useBundler": true,
+            "stopOnEntry": false
+        },
+        {
+            "name": "Debug Current System Test File",
+            "type": "Ruby",
+            "request": "launch",
+            "program": "bundle",
+            "args": [
+                "exec",
+                "rails",
+                "test",
+                "${file}"
+            ],
+            "cwd": "${workspaceRoot}",
+            "env": {
+                "RAILS_ENV": "test"
+            },
+            "useBundler": true,
+            "stopOnEntry": false
+        },
+        {
+            "name": "Run Tests with Pattern",
+            "type": "Ruby",
+            "request": "launch",
+            "program": "bundle",
+            "args": [
+                "exec",
+                "rails",
+                "test",
+                "-n",
+                "/${input:testPattern}/"
+            ],
+            "cwd": "${workspaceRoot}",
+            "env": {},
+            "useBundler": true
+        },
+        {
+            "name": "Run Outfit Tests",
+            "type": "Ruby",
+            "request": "launch",
+            "program": "bundle",
+            "args": [
+                "exec",
+                "rails",
+                "test",
+                "test/system/outfits_*.rb",
+                "test/integration/api/v1/outfit*.rb",
+                "test/controllers/outfits_controller_test.rb",
+                "test/services/*outfit*.rb"
+            ],
+            "cwd": "${workspaceRoot}",
+            "env": {},
+            "useBundler": true
+        }
+    ],
+    "inputs": [
+        {
+            "id": "testPattern",
+            "type": "promptString",
+            "description": "Enter test pattern to match"
+        }
+    ]
+}

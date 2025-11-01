@@ -62,6 +62,112 @@ class Api::V1::OutfitsApiTest < ActionDispatch::IntegrationTest
     assert_response :not_found
   end
 
+  test "POST /api/v1/outfits creates outfit with inventory_item_ids" do
+    # Create some inventory items for the user
+    category = create(:category, name: "T-Shirts #{SecureRandom.hex(4)}")
+    item1 = create(:inventory_item, user: @user, category: category, name: "Item 1")
+    item2 = create(:inventory_item, user: @user, category: category, name: "Item 2")
+
+    post "/api/v1/outfits",
+         params: {
+           outfit: {
+             name: "My Outfit",
+             description: "An outfit with items",
+             inventory_item_ids: [ item1.id, item2.id ]
+           }
+         }.to_json,
+         headers: api_headers
+
+    assert_response :created
+    body = JSON.parse(@response.body)
+    assert body["success"]
+
+    outfit = Outfit.find(body["data"]["outfit"]["id"])
+    assert_equal 2, outfit.inventory_items.count
+    assert_includes outfit.inventory_items, item1
+    assert_includes outfit.inventory_items, item2
+  end
+
+  test "POST /api/v1/outfits creates outfit without items when inventory_item_ids not provided" do
+    post "/api/v1/outfits",
+         params: {
+           outfit: {
+             name: "Empty Outfit",
+             description: "An outfit without items"
+           }
+         }.to_json,
+         headers: api_headers
+
+    assert_response :created
+    body = JSON.parse(@response.body)
+    assert body["success"]
+
+    outfit = Outfit.find(body["data"]["outfit"]["id"])
+    assert_equal 0, outfit.inventory_items.count
+  end
+
+  test "POST /api/v1/outfits ignores inventory_item_ids that don't belong to user" do
+    other_user = create(:user)
+    category = create(:category, name: "T-Shirts #{SecureRandom.hex(4)}")
+    my_item = create(:inventory_item, user: @user, category: category, name: "My Item")
+    other_item = create(:inventory_item, user: other_user, category: category, name: "Other Item")
+
+    post "/api/v1/outfits",
+         params: {
+           outfit: {
+             name: "My Outfit",
+             inventory_item_ids: [ my_item.id, other_item.id ]
+           }
+         }.to_json,
+         headers: api_headers
+
+    assert_response :created
+    body = JSON.parse(@response.body)
+
+    outfit = Outfit.find(body["data"]["outfit"]["id"])
+    assert_equal 1, outfit.inventory_items.count
+    assert_includes outfit.inventory_items, my_item
+    assert_not_includes outfit.inventory_items, other_item
+  end
+
+  test "POST /api/v1/outfits serializes outfit with items" do
+    category = create(:category, name: "T-Shirts #{SecureRandom.hex(4)}")
+    item = create(:inventory_item, user: @user, category: category, name: "Test Item")
+
+    post "/api/v1/outfits",
+         params: {
+           outfit: {
+             name: "Test Outfit",
+             inventory_item_ids: [ item.id ]
+           }
+         }.to_json,
+         headers: api_headers
+
+    assert_response :created
+    body = JSON.parse(@response.body)
+    assert body["success"]
+    assert body["data"]["outfit"]["items"].is_a?(Array)
+    assert_equal 1, body["data"]["outfit"]["items"].length
+    assert_equal item.id, body["data"]["outfit"]["items"].first["id"]
+    assert_equal item.name, body["data"]["outfit"]["items"].first["name"]
+  end
+
+  test "GET /api/v1/outfits/:id includes items in serialization" do
+    category = create(:category, name: "T-Shirts #{SecureRandom.hex(4)}")
+    outfit = @user.outfits.create!(name: "Test Outfit")
+    item = create(:inventory_item, user: @user, category: category, name: "Test Item")
+    outfit.outfit_items.create!(inventory_item: item, position: 0)
+
+    get "/api/v1/outfits/#{outfit.id}", headers: api_headers
+
+    assert_response :success
+    body = JSON.parse(@response.body)
+    assert body["success"]
+    assert body["data"]["outfit"]["items"].is_a?(Array)
+    assert_equal 1, body["data"]["outfit"]["items"].length
+    assert_equal item.id, body["data"]["outfit"]["items"].first["id"]
+  end
+
   private
 
   def api_headers

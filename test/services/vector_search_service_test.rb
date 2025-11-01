@@ -102,11 +102,19 @@ class VectorSearchServiceTest < ActiveSupport::TestCase
   end
 
   test "complementary_category? correctly identifies complementary categories" do
+    # Tops complement bottoms
     assert VectorSearchService.send(:complementary_category?, "tops", "bottoms")
-    assert VectorSearchService.send(:complementary_category?, "tops", "dresses")
+    assert VectorSearchService.send(:complementary_category?, "tops", "jeans")
+    assert VectorSearchService.send(:complementary_category?, "tops", "pants")
+
+    # Dresses complement shoes and accessories (not tops)
     assert VectorSearchService.send(:complementary_category?, "dresses", "shoes")
+    assert VectorSearchService.send(:complementary_category?, "dresses", "accessories")
+
+    # Non-complementary pairs
     assert_not VectorSearchService.send(:complementary_category?, "tops", "tops")
-    assert_not VectorSearchService.send(:complementary_category?, "shoes", "tops")
+    assert_not VectorSearchService.send(:complementary_category?, "tops", "dresses") # Dresses don't need tops
+    assert_not VectorSearchService.send(:complementary_category?, "shoes", "tops") # Shoes don't complement tops directly
   end
 
   test "find_similar_items returns empty array for nil vector" do

@@ -1,0 +1,81 @@
+class AnalyzeOutfitPhotoJob < ApplicationJob
+  queue_as :default
+
+  # Store job status and results in Rails cache
+  def self.status_key(job_id)
+    "outfit_photo_analysis:#{job_id}"
+  end
+
+  def perform(image_blob_id, user_id, job_id)
+    @job_id = job_id  # Assign @job_id first so it's available in rescue block
+
+    @image_blob = ActiveStorage::Blob.find(image_blob_id)
+    @user = User.find(user_id)
+
+    Rails.logger.info "Starting outfit photo analysis (job: #{job_id})"
+
+    # Update status to processing
+    update_status("processing", nil, nil)
+
+    # Create analyzer and analyze
+    analyzer = Services::OutfitPhotoAnalyzer.new(
+      image_blob: @image_blob,
+      user: @user,
+      model_name: "qwen3-vl:8b"
+    )
+
+    results = analyzer.analyze
+
+    # Check if analysis failed
+    if results["error"].present? || (results["total_items"] || 0) == 0
+      error_msg = results["error"] || "No items detected in outfit photo"
+      update_status("failed", nil, { error: error_msg })
+      return
+    end
+
+    # Success - update status with results (include blob_id for attaching image to items)
+    results_with_blob = results.merge("blob_id" => @image_blob.id)
+    update_status("completed", results_with_blob, nil)
+
+    Rails.logger.info "Outfit photo analysis completed successfully (job: #{job_id}). Detected #{results['total_items']} items."
+  rescue StandardError => e
+    Rails.logger.error "Failed to analyze outfit photo (job: #{job_id}): #{e.message}"
+    Rails.logger.error e.backtrace.join("\n")
+    update_status("failed", nil, { error: e.message })
+    # Don't re-raise - background jobs should gracefully handle errors
+  end
+
+  private
+
+  def update_status(status, data, error)
+    status_data = {
+      "status" => status,
+      "data" => data,
+      "error" => error,
+      "updated_at" => Time.current.iso8601
+    }
+
+    # Store in Rails cache
+    Rails.cache.write(self.class.status_key(@job_id), status_data, expires_in: 1.hour)
+  end
+
+  def self.get_status(job_id)
+    key = status_key(job_id)
+
+    status_data = Rails.cache.read(key)
+
+    if status_data
+      # Ensure string keys for consistency
+      if status_data.is_a?(Hash)
+        status_data.stringify_keys
+      else
+        status_data
+      end
+    else
+      { "status" => "not_found", "error" => "Job not found or expired" }
+    end
+  rescue StandardError => e
+    Rails.logger.error "Error reading job status: #{e.message}"
+    { "status" => "error", "error" => "Could not retrieve job status" }
+  end
+end

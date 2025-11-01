@@ -52,7 +52,7 @@ module Api
       def create
         # Extract blob_id before building - it's not a model attribute
         blob_id_param = params[:inventory_item]&.dig(:blob_id)
-        
+
         # Build item without blob_id (it's not a model attribute)
         item_params = inventory_item_params.except(:blob_id)
         @inventory_item = current_user.inventory_items.build(item_params)
@@ -75,15 +75,15 @@ module Api
               # Convert to integer to ensure proper lookup
               blob_id = blob_id_param.to_i
               blob = ActiveStorage::Blob.find_by(id: blob_id)
-              
+
               if blob
                 # Explicitly create attachment with correct name to ensure it's "primary_image" not "attachments"
                 @inventory_item.primary_image_attachment&.purge # Remove existing if any
                 @inventory_item.primary_image.attach(blob)
-                
+
                 # Note: ActiveStorage attachments are persisted automatically when attach() is called
                 # No need to explicitly save as attach() creates the attachment record directly
-                
+
                 Rails.logger.info "Successfully attached blob #{blob.id} as primary image for inventory item #{@inventory_item.id}"
 
                 # Reload to ensure attachment is available for serialization
@@ -141,6 +141,128 @@ module Api
             },
             timestamp: Time.current.iso8601
           }, status: :unprocessable_entity
+        end
+      end
+
+      # POST /api/v1/inventory_items/batch_create
+      # Accepts array of item data from outfit analysis and creates multiple items atomically
+      def batch_create
+        items_array = params[:items] || params["items"]
+
+        unless items_array.is_a?(Array) && items_array.present?
+          return render json: {
+            success: false,
+            error: {
+              code: "INVALID_PARAMS",
+              message: "Items array is required"
+            },
+            timestamp: Time.current.iso8601
+          }, status: :bad_request
+        end
+
+        created_items = []
+        errors = []
+
+        # Use transaction to ensure atomicity
+        ActiveRecord::Base.transaction do
+          items_array.each_with_index do |item_data, index|
+            begin
+              # Convert to ActionController::Parameters if needed
+              # Handle both symbol and string keys from JSON
+              if item_data.is_a?(ActionController::Parameters)
+                item_params_hash = item_data
+              else
+                # Convert hash with symbol keys to string keys for Parameters
+                normalized_data = item_data.stringify_keys
+                item_params_hash = ActionController::Parameters.new(normalized_data)
+              end
+
+              # Extract blob_id if present (from outfit photo analysis) BEFORE permitting
+              blob_id = item_params_hash[:blob_id] || item_params_hash["blob_id"]
+
+              # Extract category_id before permitting (in case it gets lost)
+              category_id = (item_params_hash[:category_id] || item_params_hash["category_id"]).to_i if (item_params_hash[:category_id] || item_params_hash["category_id"]).present?
+
+              # Build item params - permit nested structure
+              item_params = item_params_hash.permit(
+                :name, :description, :category_id, :brand_id, :status,
+                metadata: {}, tag_ids: []
+              )
+
+              # Ensure category_id is set as integer (permit might convert to string or lose it)
+              item_params[:category_id] = category_id if category_id.present?
+
+              # Build and normalize category
+              item = current_user.inventory_items.build(item_params)
+
+              if item.category_id.present?
+                selected = Category.find_by(id: item.category_id)
+                if selected&.parent_id.present?
+                  item.subcategory_id = selected.id
+                  node = selected
+                  node = node.respond_to?(:parent_category) ? node.parent_category : node.parent while node&.parent_id.present?
+                  item.category_id = node&.id || selected.id
+                end
+              end
+
+              if item.save
+                # Handle blob attachment if provided
+                if blob_id.present?
+                  begin
+                    blob = ActiveStorage::Blob.find_by(id: blob_id.to_i)
+                    if blob
+                      item.primary_image.attach(blob)
+                      item.reload
+                      Rails.logger.info "Attached blob #{blob.id} to batch-created item #{item.id}"
+                    end
+                  rescue StandardError => e
+                    Rails.logger.warn "Failed to attach blob to item at index #{index}: #{e.message}"
+                    # Continue - item created, just image attachment failed
+                  end
+                end
+
+                created_items << item
+              else
+                errors << {
+                  index: index,
+                  errors: item.errors.full_messages
+                }
+              end
+            rescue StandardError => e
+              Rails.logger.error "Error creating item at index #{index}: #{e.message}"
+              errors << {
+                index: index,
+                errors: [ e.message ]
+              }
+            end
+          end
+
+          # If any errors, rollback transaction
+          if errors.any?
+            raise ActiveRecord::Rollback
+          end
+        end
+
+        if errors.any?
+          render json: {
+            success: false,
+            error: {
+              code: "BATCH_CREATE_ERROR",
+              message: "Some items failed to create",
+              details: errors
+            },
+            timestamp: Time.current.iso8601
+          }, status: :unprocessable_entity
+        else
+          render json: {
+            success: true,
+            data: {
+              inventory_items: created_items.map { |item| serialize_inventory_item(item) },
+              count: created_items.length
+            },
+            message: "Successfully created #{created_items.length} item(s)",
+            timestamp: Time.current.iso8601
+          }, status: :created
         end
       end
 
@@ -292,7 +414,7 @@ module Api
         elsif params[:blob_id].present?
           begin
             blob = ActiveStorage::Blob.find_by(id: params[:blob_id])
-            
+
             if blob
               # Explicitly create attachment with correct name
               @inventory_item.primary_image_attachment&.purge # Remove existing if any
@@ -464,7 +586,7 @@ module Api
 
           # Store blob_id in session as fallback (in case form submission fails to include it)
           session[:pending_blob_id] = blob.id.to_s
-          
+
           Rails.logger.info "Image upload initiated. Blob ID: #{blob.id}, Job ID: #{job_id}, User: #{current_user.id}"
 
           render json: {

@@ -1,1 +1,82 @@
-<h1>Edit Outfit</h1>
+<div class="p-6" data-controller="outfit-builder">
+  <div class="mb-6">
+    <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Edit Outfit</h1>
+    <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">Update your outfit details and items</p>
+  </div>
+
+  <%= form_with model: @outfit, url: outfit_path(@outfit), local: true, class: "space-y-6", data: { turbo: false } do |f| %>
+    <!-- Outfit Details -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+      <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">Outfit Details</h2>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <%= f.label :name, "Outfit Name", class: "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" %>
+          <%= f.text_field :name, required: true, class: "form-input w-full",
+              placeholder: "e.g., Weekend Casual", 
+              data: { outfit_builder_target: "outfitName" } %>
+        </div>
+        <div>
+          <%= f.label :occasion, "Occasion", class: "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" %>
+          <%= f.select :occasion, 
+              options_for_select([
+                ['Casual', 'casual'],
+                ['Formal', 'formal'],
+                ['Business', 'business'],
+                ['Sporty', 'sporty'],
+                ['Evening', 'evening'],
+                ['Other', 'other']
+              ], @outfit.occasion), 
+              { prompt: 'Select occasion' },
+              { class: "form-input w-full" } %>
+        </div>
+      </div>
+      <div class="mt-4">
+        <%= f.label :description, "Description", class: "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" %>
+        <%= f.text_area :description, rows: 3, class: "form-input w-full",
+            placeholder: "Add any notes about this outfit..." %>
+      </div>
+
+      <!-- Hidden field for inventory_item_ids -->
+      <input type="hidden" name="outfit[inventory_item_ids][]" value="" />
+      <% @outfit.inventory_items.each do |item| %>
+        <input type="hidden" name="outfit[inventory_item_ids][]" value="<%= item.id %>" />
+      <% end %>
+    </div>
+
+    <!-- Outfit Canvas -->
+    <%= render partial: "builder_canvas", locals: { f: f } %>
+
+    <!-- Completeness Score & Color Analysis -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4" data-outfit-builder-target="completenessScore">
+        <h3 class="text-sm font-medium text-gray-900 dark:text-white mb-2">Outfit Completeness</h3>
+        <div class="flex items-center space-x-2">
+          <div class="flex-1 bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+            <div class="bg-primary-600 h-2 rounded-full transition-all duration-300" style="width: <%= (@outfit.inventory_items.count.to_f / 4 * 100).clamp(0, 100) %>%"></div>
+          </div>
+          <span class="text-sm font-medium text-gray-700 dark:text-gray-300"><%= (@outfit.inventory_items.count.to_f / 4 * 100).clamp(0, 100).round %>%</span>
+        </div>
+        <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">Items in outfit</p>
+      </div>
+
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4" data-outfit-builder-target="colorAnalysis">
+        <h3 class="text-sm font-medium text-gray-900 dark:text-white mb-2">Color Coordination</h3>
+        <div class="text-sm text-gray-500 dark:text-gray-400 text-center py-4">
+          Add items to analyze color coordination
+        </div>
+      </div>
+    </div>
+
+    <!-- Item Selector -->
+    <%= render partial: "item_selector" %>
+
+    <!-- AI Suggestions -->
+    <%= render partial: "ai_suggestions", locals: { outfit_id: @outfit.id } %>
+
+    <!-- Form Actions -->
+    <div class="flex justify-end space-x-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+      <%= link_to "Cancel", outfit_path(@outfit), class: "btn-secondary" %>
+      <%= f.submit "Update Outfit", class: "btn-primary" %>
+    </div>
+  <% end %>
+</div>

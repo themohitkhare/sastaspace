@@ -12,6 +12,7 @@
       <div class="hidden md:flex items-center space-x-4">
         <% if user_signed_in? %>
           <%= link_to "Inventory", inventory_items_path, class: "px-3 py-2 rounded-md text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800" %>
+          <%= link_to "Outfits", outfits_path, class: "px-3 py-2 rounded-md text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800" %>
           <span class="text-sm text-gray-600 dark:text-gray-400">Hello, <%= current_user.first_name %>!</span>
           <%= link_to "Logout", logout_path, data: { turbo_method: :delete }, class: "px-3 py-2 rounded-md text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800" %>
         <% else %>
@@ -55,6 +56,7 @@
     <div class="px-2 pt-2 pb-3 space-y-1">
       <% if user_signed_in? %>
         <%= link_to "Inventory", inventory_items_path, class: "block px-3 py-2 rounded-md text-base font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800" %>
+        <%= link_to "Outfits", outfits_path, class: "block px-3 py-2 rounded-md text-base font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800" %>
         <div class="px-3 py-2 text-sm text-gray-600 dark:text-gray-400">Hello, <%= current_user.first_name %>!</div>
         <%= link_to "Logout", logout_path, data: { turbo_method: :delete }, class: "block px-3 py-2 rounded-md text-base font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800" %>
       <% else %>
