@@ -8,7 +8,8 @@ class Api::V1::InventoryItemsBlobIdAttachmentTest < ActionDispatch::IntegrationT
 
     @user = create(:user)
     @token = Auth::JsonWebToken.encode_access_token(user_id: @user.id)
-    @category = create(:category, :clothing, name: "T-Shirts")
+    # Use a name that definitely matches the clothing pattern
+    @category = create(:category, :clothing, name: "T-Shirts #{SecureRandom.hex(4)}")
     @image_file = fixture_file_upload("sample_image.jpg", "image/jpeg")
   end
 
@@ -17,11 +18,8 @@ class Api::V1::InventoryItemsBlobIdAttachmentTest < ActionDispatch::IntegrationT
     Rails.cache = @original_cache_store if @original_cache_store
   end
 
-  # Skip blob_id attachment tests - they require specific ActiveStorage/test environment setup
-  # The functionality works correctly in production/manual testing
-  # TODO: Fix test environment ActiveStorage configuration for blob_id attachment tests
+  # Test blob_id attachment functionality
   test "POST /api/v1/inventory_items attaches primary image via blob_id" do
-    skip "Requires ActiveStorage test environment configuration"
     # First, create a blob by uploading an image
     blob = ActiveStorage::Blob.create_and_upload!(
       io: @image_file.open,
@@ -41,9 +39,12 @@ class Api::V1::InventoryItemsBlobIdAttachmentTest < ActionDispatch::IntegrationT
          }.to_json,
          headers: api_v1_headers(@token)
 
-    # Accept 201 created or handle 500 error
-    if @response.status == 500
-      flunk "Expected 201 but got 500. Response: #{@response.body[0..500]}"
+    # Accept 201 created or handle 500 error with better error message
+    if response.status == 500
+      # Try to extract error from HTML response
+      error_match = response.body.match(/<pre class="exception_message">(.*?)<\/pre>/m)
+      error_msg = error_match ? error_match[1] : response.body[0..1000]
+      flunk "Expected 201 but got 500. Error: #{error_msg}"
     end
 
     assert_response :created
@@ -65,7 +66,6 @@ class Api::V1::InventoryItemsBlobIdAttachmentTest < ActionDispatch::IntegrationT
   end
 
   test "POST /api/v1/inventory_items handles invalid blob_id gracefully" do
-    skip "Requires ActiveStorage test environment configuration"
     invalid_blob_id = 99999
 
     post "/api/v1/inventory_items",
@@ -90,7 +90,6 @@ class Api::V1::InventoryItemsBlobIdAttachmentTest < ActionDispatch::IntegrationT
   end
 
   test "POST inventory_items_path (controller) attaches primary image via blob_id" do
-    skip "Requires ActiveStorage test environment configuration"
     # Create a blob
     blob = ActiveStorage::Blob.create_and_upload!(
       io: @image_file.open,
@@ -111,6 +110,30 @@ class Api::V1::InventoryItemsBlobIdAttachmentTest < ActionDispatch::IntegrationT
           blob_id: blob.id
         }
       }
+      
+      # Debug: If not redirected, check response and validation errors
+      unless response.redirect?
+        # Try to extract error details from the response
+        error_details = "Status: #{response.status}\n"
+        error_details += "Body: #{response.body[0..500]}"
+        
+        # Try to get validation errors from assigns (if available in integration tests)
+        begin
+          item = assigns(:inventory_item) if respond_to?(:assigns)
+          if item && item.is_a?(InventoryItem) && item.errors.any?
+            error_details += "\nValidation errors: #{item.errors.full_messages.join(', ')}"
+          end
+          
+          # Check category and item_type
+          if item
+            error_details += "\nCategory: #{item.category&.name}, item_type: #{item.item_type rescue 'error'}"
+          end
+        rescue NoMethodError
+          # assigns might not be available in integration tests
+        end
+        
+        flunk "Expected redirect but got #{response.status}.\n#{error_details}"
+      end
     end
 
     assert_redirected_to inventory_items_path, "Should redirect after creation"
@@ -127,7 +150,6 @@ class Api::V1::InventoryItemsBlobIdAttachmentTest < ActionDispatch::IntegrationT
   end
 
   test "POST inventory_items_path handles invalid blob_id gracefully" do
-    skip "Requires ActiveStorage test environment configuration"
     # Stub authentication for HTML controller
     InventoryItemsController.any_instance.stubs(:authenticate_user!).returns(true)
     InventoryItemsController.any_instance.stubs(:current_user).returns(@user)
@@ -143,6 +165,30 @@ class Api::V1::InventoryItemsBlobIdAttachmentTest < ActionDispatch::IntegrationT
           blob_id: invalid_blob_id
         }
       }
+      
+      # Debug: If not redirected, check response and validation errors
+      unless response.redirect?
+        # Try to extract error details from the response
+        error_details = "Status: #{response.status}\n"
+        error_details += "Body: #{response.body[0..500]}"
+        
+        # Try to get validation errors from assigns (if available in integration tests)
+        begin
+          item = assigns(:inventory_item) if respond_to?(:assigns)
+          if item && item.is_a?(InventoryItem) && item.errors.any?
+            error_details += "\nValidation errors: #{item.errors.full_messages.join(', ')}"
+          end
+          
+          # Check category and item_type
+          if item
+            error_details += "\nCategory: #{item.category&.name}, item_type: #{item.item_type rescue 'error'}"
+          end
+        rescue NoMethodError
+          # assigns might not be available in integration tests
+        end
+        
+        flunk "Expected redirect but got #{response.status}.\n#{error_details}"
+      end
     end
 
     assert_redirected_to inventory_items_path
@@ -153,7 +199,6 @@ class Api::V1::InventoryItemsBlobIdAttachmentTest < ActionDispatch::IntegrationT
   end
 
   test "end-to-end: analyze_image_for_creation returns blob_id, then create uses it" do
-    skip "Requires ActiveStorage test environment configuration"
     # This test simulates the full AI flow:
     # 1. Upload image for analysis
     # 2. Get blob_id from response
@@ -183,7 +228,14 @@ class Api::V1::InventoryItemsBlobIdAttachmentTest < ActionDispatch::IntegrationT
          }.to_json,
          headers: api_v1_headers(@token)
 
-    assert_response :created
+    # Debug: If 500 error, show the error message
+    if response.status == 500
+      error_match = response.body.match(/<pre class="exception_message">(.*?)<\/pre>/m)
+      error_msg = error_match ? error_match[1] : response.body[0..1000]
+      flunk "Expected 201 but got 500. Error: #{error_msg}"
+    end
+
+    assert_response :created, "Expected 201 but got #{response.status}. Response: #{response.body[0..500]}"
     body = json_response
     assert body["success"]
 
@@ -192,5 +244,70 @@ class Api::V1::InventoryItemsBlobIdAttachmentTest < ActionDispatch::IntegrationT
     # Verify the primary image is attached
     assert item.primary_image.attached?, "Primary image should be attached from blob_id"
     assert_equal blob_id.to_i, item.primary_image.blob.id, "Should attach the blob from analysis"
+  end
+
+  test "POST inventory_items_path uses session blob_id fallback when blob_id not in params" do
+    # This tests the session fallback mechanism we added
+    # Simulate the full flow: API endpoint sets session, then HTML form submission uses it
+    
+    # Step 1: Call the API endpoint that sets session[:pending_blob_id]
+    # This simulates what happens when user uploads image via AI creation flow
+    Api::V1::InventoryItemsController.any_instance.stubs(:authenticate_user!).returns(true)
+    Api::V1::InventoryItemsController.any_instance.stubs(:current_user).returns(@user)
+    
+    # Make API request - this should set session[:pending_blob_id]
+    # In Rails integration tests, cookies (including session cookies) are automatically 
+    # maintained between requests, so the session should persist
+    post "/api/v1/inventory_items/analyze_image_for_creation",
+         params: { image: @image_file },
+         headers: auth_headers(@token)
+    
+    assert_response :accepted
+    body = json_response
+    assert body["success"]
+    blob_id = body["data"]["blob_id"]
+    assert blob_id.present?, "Response should include blob_id"
+    
+    # Step 2: Now use HTML controller, which should read from session
+    # Stub authentication for HTML controller
+    # IMPORTANT: We need to stub session access to simulate the session being set by the API call
+    # In a real scenario, the session cookie from the API request would be available
+    # Here we simulate that by stubbing the session access
+    InventoryItemsController.any_instance.stubs(:authenticate_user!).returns(true)
+    InventoryItemsController.any_instance.stubs(:current_user).returns(@user)
+    
+    # Stub session to return the blob_id that was set by the API endpoint
+    # This simulates the session cookie being shared between API and HTML requests
+    # In integration tests, we can't directly access session between requests,
+    # so we stub it to test the controller's session fallback logic
+    # Create a mock that behaves like Rails session object
+    mock_session_hash = HashWithIndifferentAccess.new("pending_blob_id" => blob_id.to_s)
+    # Stub session to return our mock when accessed
+    InventoryItemsController.any_instance.stubs(:session).returns(mock_session_hash)
+
+    assert_difference -> { @user.inventory_items.count }, +1 do
+      # Submit form WITHOUT blob_id in params (simulating JavaScript failure)
+      # The HTML controller should read blob_id from session[:pending_blob_id]
+      post inventory_items_path, params: {
+        inventory_item: {
+          name: "Test Item with Session Blob",
+          description: "Description",
+          category_id: @category.id
+          # blob_id intentionally omitted to test session fallback
+        }
+      }, headers: { "Accept" => "text/html" }
+    end
+
+    assert_redirected_to inventory_items_path, "Should redirect after creation"
+
+    item = @user.inventory_items.order(created_at: :desc).first
+    assert_not_nil item, "Item should be created"
+
+    # Reload to ensure we have the latest state
+    item.reload
+
+    # Verify the primary image is attached via session fallback
+    assert item.primary_image.attached?, "Primary image should be attached via session fallback. Item errors: #{item.errors.full_messages}"
+    assert_equal blob_id.to_i, item.primary_image.blob.id, "Should attach the blob from session"
   end
 end
