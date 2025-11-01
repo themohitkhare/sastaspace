@@ -1,4 +1,5 @@
 require "test_helper"
+require "ostruct"
 
 class ChatsControllerTest < ActionDispatch::IntegrationTest
   setup do
@@ -98,8 +99,8 @@ class ChatsControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "set_chat raises error for invalid chat id" do
-    assert_raises(ActiveRecord::RecordNotFound) do
-      get chat_path(id: 999_999)
-    end
+    # Rails catches RecordNotFound and returns 404, so check for that response
+    get chat_path(id: 999_999)
+    assert_response :not_found
   end
 end

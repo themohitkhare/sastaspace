@@ -70,9 +70,12 @@ class SessionsControllerTest < ActionDispatch::IntegrationTest
 
     assert_redirected_to inventory_items_path
     
-    # Verify refresh token cookie expiration is 30 days (approximately)
-    refresh_token_cookie = cookies.signed[:refresh_token]
-    assert refresh_token_cookie.present?, "Refresh token cookie should be set"
+    # Verify refresh token cookie is set by checking Set-Cookie header
+    # In integration tests, signed cookies can be accessed from response headers
+    set_cookie_header = response.headers["Set-Cookie"]
+    cookie_header_string = Array(set_cookie_header).join(" ")
+    assert cookie_header_string.present?, "Set-Cookie header should be present"
+    assert cookie_header_string.include?("refresh_token"), "Refresh token cookie should be set"
     
     # Check that SessionService was called with remember_me: true
     # (The expectation above verifies this)
@@ -103,9 +106,11 @@ class SessionsControllerTest < ActionDispatch::IntegrationTest
 
     assert_redirected_to inventory_items_path
     
-    # Verify refresh token cookie is set
-    refresh_token_cookie = cookies.signed[:refresh_token]
-    assert refresh_token_cookie.present?, "Refresh token cookie should be set"
+    # Verify refresh token cookie is set by checking Set-Cookie header
+    set_cookie_header = response.headers["Set-Cookie"]
+    cookie_header_string = Array(set_cookie_header).join(" ")
+    assert cookie_header_string.present?, "Set-Cookie header should be present"
+    assert cookie_header_string.include?("refresh_token"), "Refresh token cookie should be set"
   end
 
   test "create with remember_me unchecked (0) sets refresh token to expire in 7 days" do
