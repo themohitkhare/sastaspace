@@ -12,7 +12,7 @@ module Api
           item_type: @inventory_item.item_type,
           description: @inventory_item.description,
           status: @inventory_item.status,
-          category: serialize_category(@inventory_item.category),
+          category: @inventory_item.category ? serialize_category(@inventory_item.category) : nil,
           brand: @inventory_item.brand ? serialize_brand(@inventory_item.brand) : nil,
           tags: @inventory_item.tags.map { |tag| serialize_tag(tag) },
           metadata: @inventory_item.metadata_summary,
@@ -28,11 +28,17 @@ module Api
           created_at: @inventory_item.created_at,
           updated_at: @inventory_item.updated_at
         }
+      rescue StandardError => e
+        Rails.logger.error "Error in InventoryItemSerializer#as_json: #{e.message}"
+        Rails.logger.error e.backtrace.first(10).join("\n")
+        raise
       end
 
       private
 
       def serialize_category(category)
+        return nil unless category
+
         {
           id: category.id,
           name: category.name,
@@ -60,6 +66,8 @@ module Api
         return nil if image.nil? || (image.respond_to?(:attached?) && !image.attached?)
 
         begin
+          # ActiveStorage::Attached::One delegates id, filename, etc. to blob
+          # So we can call these methods directly on the image object
           {
             id: image.id,
             filename: image.filename.to_s,
@@ -74,18 +82,36 @@ module Api
           }
         rescue StandardError => e
           Rails.logger.warn "Failed to serialize image: #{e.message}"
-          {
-            id: image.id,
-            filename: image.filename.to_s,
-            content_type: image.content_type,
-            byte_size: image.byte_size,
-            urls: {
-              original: nil,
-              thumb: nil,
-              medium: nil,
-              large: nil
+          Rails.logger.warn e.backtrace.first(3).join("\n") if Rails.logger
+          # Try to get basic info if available
+          begin
+            {
+              id: image.id,
+              filename: image.filename&.to_s,
+              content_type: image.content_type,
+              byte_size: image.byte_size,
+              urls: {
+                original: nil,
+                thumb: nil,
+                medium: nil,
+                large: nil
+              }
             }
-          }
+          rescue StandardError
+            # If even basic info fails, return minimal structure
+            {
+              id: nil,
+              filename: nil,
+              content_type: nil,
+              byte_size: nil,
+              urls: {
+                original: nil,
+                thumb: nil,
+                medium: nil,
+                large: nil
+              }
+            }
+          end
         end
       end
 

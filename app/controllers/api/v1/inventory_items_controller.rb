@@ -50,7 +50,12 @@ module Api
 
       # POST /api/v1/inventory_items
       def create
-        @inventory_item = current_user.inventory_items.build(inventory_item_params)
+        # Extract blob_id before building - it's not a model attribute
+        blob_id_param = params[:inventory_item]&.dig(:blob_id)
+        
+        # Build item without blob_id (it's not a model attribute)
+        item_params = inventory_item_params.except(:blob_id)
+        @inventory_item = current_user.inventory_items.build(item_params)
 
         # Normalize category/subcategory if needed
         if @inventory_item.category_id.present?
@@ -65,26 +70,37 @@ module Api
 
         if @inventory_item.save
           # Handle blob_id from AI upload if present
-          if params[:inventory_item] && params[:inventory_item][:blob_id].present?
+          if blob_id_param.present?
             begin
-              blob = ActiveStorage::Blob.find(params[:inventory_item][:blob_id])
-              # Explicitly create attachment with correct name to ensure it's "primary_image" not "attachments"
-              @inventory_item.primary_image_attachment&.purge # Remove existing if any
-              @inventory_item.primary_image.attach(blob)
-              Rails.logger.info "Successfully attached blob #{blob.id} as primary image for inventory item #{@inventory_item.id}"
+              # Convert to integer to ensure proper lookup
+              blob_id = blob_id_param.to_i
+              blob = ActiveStorage::Blob.find_by(id: blob_id)
+              
+              if blob
+                # Explicitly create attachment with correct name to ensure it's "primary_image" not "attachments"
+                @inventory_item.primary_image_attachment&.purge # Remove existing if any
+                @inventory_item.primary_image.attach(blob)
+                
+                # Note: ActiveStorage attachments are persisted automatically when attach() is called
+                # No need to explicitly save as attach() creates the attachment record directly
+                
+                Rails.logger.info "Successfully attached blob #{blob.id} as primary image for inventory item #{@inventory_item.id}"
 
-              # Reload to ensure attachment is available for serialization
-              @inventory_item.reload
+                # Reload to ensure attachment is available for serialization
+                @inventory_item.reload
 
-              # Verify attachment was created correctly
-              attachment = @inventory_item.primary_image_attachment
-              if attachment
-                Rails.logger.info "Attachment verified: name=#{attachment.name}, blob_id=#{attachment.blob_id}, record=#{attachment.record_type}##{attachment.record_id}"
+                # Verify attachment was created correctly
+                attachment = @inventory_item.primary_image_attachment
+                if attachment && attachment.persisted?
+                  Rails.logger.info "Attachment verified: name=#{attachment.name}, blob_id=#{attachment.blob_id}, record=#{attachment.record_type}##{attachment.record_id}"
+                else
+                  Rails.logger.error "Attachment not found or not persisted after attach! Item ID: #{@inventory_item.id}, Blob ID: #{blob.id}"
+                end
               else
-                Rails.logger.error "Attachment not found after attach! Item ID: #{@inventory_item.id}, Blob ID: #{blob.id}"
+                Rails.logger.warn "Blob #{blob_id} not found in database"
               end
             rescue ActiveRecord::RecordNotFound => e
-              Rails.logger.warn "Blob #{params[:inventory_item][:blob_id]} not found: #{e.message}"
+              Rails.logger.warn "Blob #{blob_id} not found: #{e.message}"
             rescue StandardError => e
               Rails.logger.error "Error attaching blob to inventory item: #{e.message}"
               Rails.logger.error e.backtrace.first(5).join("\n")
@@ -92,14 +108,29 @@ module Api
             end
           end
 
-          render json: {
-            success: true,
-            data: {
-              inventory_item: serialize_inventory_item(@inventory_item)
-            },
-            message: "Inventory item created successfully",
-            timestamp: Time.current.iso8601
-          }, status: :created
+          begin
+            serialized_item = serialize_inventory_item(@inventory_item)
+            render json: {
+              success: true,
+              data: {
+                inventory_item: serialized_item
+              },
+              message: "Inventory item created successfully",
+              timestamp: Time.current.iso8601
+            }, status: :created
+          rescue StandardError => e
+            Rails.logger.error "Error serializing inventory item: #{e.message}"
+            Rails.logger.error e.backtrace.first(10).join("\n")
+            # Return item without serialization error details, but log it
+            render json: {
+              success: false,
+              error: {
+                code: "SERIALIZATION_ERROR",
+                message: "Item created but failed to serialize: #{e.message}"
+              },
+              timestamp: Time.current.iso8601
+            }, status: :internal_server_error
+          end
         else
           render json: {
             success: false,
@@ -260,26 +291,38 @@ module Api
           }
         elsif params[:blob_id].present?
           begin
-            blob = ActiveStorage::Blob.find(params[:blob_id])
-            # Explicitly create attachment with correct name
-            @inventory_item.primary_image_attachment&.purge # Remove existing if any
-            @inventory_item.primary_image.attach(blob)
-            @inventory_item.reload
+            blob = ActiveStorage::Blob.find_by(id: params[:blob_id])
+            
+            if blob
+              # Explicitly create attachment with correct name
+              @inventory_item.primary_image_attachment&.purge # Remove existing if any
+              @inventory_item.primary_image.attach(blob)
+              @inventory_item.reload
 
-            # Verify attachment was created correctly
-            attachment = @inventory_item.primary_image_attachment
-            unless attachment && attachment.name == "primary_image"
-              Rails.logger.error "Attachment created with wrong name! Expected 'primary_image', got '#{attachment&.name}'"
+              # Verify attachment was created correctly
+              attachment = @inventory_item.primary_image_attachment
+              unless attachment && attachment.name == "primary_image"
+                Rails.logger.error "Attachment created with wrong name! Expected 'primary_image', got '#{attachment&.name}'"
+              end
+
+              render json: {
+                success: true,
+                data: {
+                  image_url: url_for(@inventory_item.primary_image)
+                },
+                message: "Primary image attached successfully",
+                timestamp: Time.current.iso8601
+              }
+            else
+              render json: {
+                success: false,
+                error: {
+                  code: "BLOB_NOT_FOUND",
+                  message: "Blob not found"
+                },
+                timestamp: Time.current.iso8601
+              }, status: :not_found
             end
-
-            render json: {
-              success: true,
-              data: {
-                image_url: url_for(@inventory_item.primary_image)
-              },
-              message: "Primary image attached successfully",
-              timestamp: Time.current.iso8601
-            }
           rescue ActiveRecord::RecordNotFound
             render json: {
               success: false,
@@ -534,6 +577,8 @@ module Api
             metadata: {}, # Allow any metadata hash structure
             tag_ids: []
           )
+          # Note: blob_id is permitted here so we can extract it, but it's removed
+          # before building the model since it's not a model attribute
           permitted
         rescue ActionController::ParameterMissing => e
           Rails.logger.error "Parameter missing: #{e.message}"
