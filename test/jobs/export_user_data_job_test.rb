@@ -8,7 +8,9 @@ class ExportUserDataJobTest < ActiveJob::TestCase
   end
 
   test "job is in correct queue" do
-    assert_equal "default", ExportUserDataJob.queue_name
+    # In Rails 8, check the job instance's queue name
+    job = ExportUserDataJob.new
+    assert_equal "default", job.queue_name
   end
 
   test "job can be performed" do

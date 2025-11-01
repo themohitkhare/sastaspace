@@ -3,7 +3,9 @@ require "test_helper"
 class InventoryTagTest < ActiveSupport::TestCase
   def setup
     @user = create(:user)
-    @category = create(:category, :clothing)
+    # Use unique category name to avoid collisions
+    category_name = "Clothing #{SecureRandom.hex(4)}"
+    @category = create(:category, name: category_name)
     @brand = create(:brand)
     @inventory_item = create(:inventory_item, :clothing, user: @user, category: @category, brand: @brand)
     @tag = create(:tag)
@@ -41,7 +43,8 @@ class InventoryTagTest < ActiveSupport::TestCase
   end
 
   test "allows different tags for same inventory item" do
-    tag2 = create(:tag, name: "Casual")
+    tag2_name = "Casual #{SecureRandom.hex(4)}"
+    tag2 = create(:tag, name: tag2_name)
 
     tag1 = InventoryTag.create!(inventory_item: @inventory_item, tag: @tag)
     tag2_record = InventoryTag.create!(inventory_item: @inventory_item, tag: tag2)

@@ -77,8 +77,7 @@ module Services
 
         # Check if our model is in the list
         model_exists = available_models.any? do |m|
-          m["name"] == model_name ||
-          m["name"].start_with?("#{model_name}:") ||
+          (m["name"] && (m["name"] == model_name || m["name"].start_with?("#{model_name}:"))) ||
           (m["model"] && (m["model"] == model_name || m["model"].start_with?("#{model_name}:")))
         end
 

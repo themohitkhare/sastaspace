@@ -3,7 +3,7 @@ module Instrumentation
   extend ActiveSupport::Concern
 
   included do
-    around_action :instrument_request, if: -> { respond_to?(:around_action) }
+    around_action :instrument_request
   end
 
   private

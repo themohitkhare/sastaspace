@@ -69,3 +69,43 @@ SastaSpace is an AI-powered digital closet that analyzes what users own, suggest
 - Confidence scoring for all AI results
 
 ### AI Analysis Standards
+
+## Testing Standards
+
+### Avoid Hard-Coding in Tests
+**Critical Rule**: Never hard-code values in tests that could cause collisions or break when tests run in parallel or in different orders.
+
+#### Guidelines:
+1. **Use Unique Identifiers**: Always use `SecureRandom.hex(4)`, `SecureRandom.uuid`, or FactoryBot sequences for names, emails, and other unique fields
+   ```ruby
+   # ❌ BAD: Hard-coded name can collide
+   category = create(:category, name: "T-Shirts")
+   
+   # ✅ GOOD: Unique name using SecureRandom
+   unique_name = "T-Shirts #{SecureRandom.hex(4)}"
+   category = create(:category, name: unique_name)
+   
+   # ✅ GOOD: Using FactoryBot sequence (already in factory)
+   category = create(:category)  # Factory uses sequence(:name)
+   ```
+
+2. **Use Unique File Paths**: For temp files, file paths, or mock paths in tests
+   ```ruby
+   # ❌ BAD: Hard-coded path
+   existing_path = "/tmp/existing_path.jpg"
+   
+   # ✅ GOOD: Unique path
+   existing_path = "/tmp/existing_path_#{SecureRandom.hex(4)}.jpg"
+   ```
+
+3. **Stub Order Matters**: When stubbing methods on an object, stub dependent methods BEFORE stubbing methods that return mocks/substitutes
+   ```ruby
+   # ✅ GOOD: Stub blob methods before stubbing service
+   @image_blob.stubs(:download).returns("fake data")
+   @image_blob.stubs(:content_type).returns("image/jpeg")
+   @image_blob.stubs(:service).returns(mock_service)
+   ```
+
+4. **Test Isolation**: Each test should be able to run independently in any order without affecting others
+
+5. **Use Test Fixtures/Factories**: Prefer FactoryBot factories with sequences over hard-coded test data

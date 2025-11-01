@@ -164,8 +164,8 @@ class InventoryItemTest < ActiveSupport::TestCase
 
   test "should have many tags through inventory_tags" do
     item = create(:inventory_item, :clothing)
-    tag1 = create(:tag)
-    tag2 = create(:tag)
+    tag1 = create(:tag, name: "Tag #{SecureRandom.hex(4)}")
+    tag2 = create(:tag, name: "Tag #{SecureRandom.hex(4)}")
 
     item.tags << tag1
     item.tags << tag2
