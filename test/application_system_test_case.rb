@@ -4,15 +4,15 @@ require "capybara/cuprite"
 class ApplicationSystemTestCase < ActionDispatch::SystemTestCase
   # Ensure DB changes are visible to the app server (no transactional tests)
   self.use_transactional_tests = false
-  
+
   # Enable parallel system tests
   # Each worker gets its own database and Capybara server port
   # Control worker count via PARALLEL_WORKERS env var (integer), or use :number_of_processors
   worker_count = if ENV["PARALLEL_WORKERS"]
                    ENV["PARALLEL_WORKERS"].to_i
-                 else
+  else
                    :number_of_processors
-                 end
+  end
   parallelize(workers: worker_count, with: :processes)
 
   setup do

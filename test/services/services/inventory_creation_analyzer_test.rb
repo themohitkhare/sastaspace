@@ -182,7 +182,7 @@ module Services
     test "check_ollama_availability! raises error when model not found" do
       WebMock.stub_request(:get, /.*\/api\/tags/).to_return(
         status: 200,
-        body: { "models" => [{ "name" => "other-model:8b" }] }.to_json
+        body: { "models" => [ { "name" => "other-model:8b" } ] }.to_json
       )
 
       assert_raises(StandardError) do
@@ -193,7 +193,7 @@ module Services
     test "check_ollama_availability! succeeds when model exists with exact name" do
       WebMock.stub_request(:get, /.*\/api\/tags/).to_return(
         status: 200,
-        body: { "models" => [{ "name" => "qwen3-vl:8b" }] }.to_json
+        body: { "models" => [ { "name" => "qwen3-vl:8b" } ] }.to_json
       )
 
       assert_nothing_raised do
@@ -204,7 +204,7 @@ module Services
     test "check_ollama_availability! succeeds when model exists with prefix match" do
       WebMock.stub_request(:get, /.*\/api\/tags/).to_return(
         status: 200,
-        body: { "models" => [{ "name" => "qwen3-vl:8b:latest" }] }.to_json
+        body: { "models" => [ { "name" => "qwen3-vl:8b:latest" } ] }.to_json
       )
 
       assert_nothing_raised do
@@ -258,7 +258,7 @@ module Services
     test "check_ollama_availability! handles model with model field" do
       WebMock.stub_request(:get, /.*\/api\/tags/).to_return(
         status: 200,
-        body: { "models" => [{ "name" => nil, "model" => "qwen3-vl:8b" }] }.to_json
+        body: { "models" => [ { "name" => nil, "model" => "qwen3-vl:8b" } ] }.to_json
       )
 
       assert_nothing_raised do
@@ -278,7 +278,7 @@ module Services
       @image_blob.stubs(:download).returns("fake image data")
       @image_blob.stubs(:content_type).returns("image/jpeg")
       @image_blob.stubs(:key).returns("test-key")
-      
+
       # Mock service to return a path
       mock_service = stub
       existing_path = "/tmp/existing_path_#{SecureRandom.hex(4)}.jpg"
@@ -476,7 +476,7 @@ module Services
     end
 
     test "parse_analysis_response handles JSON parse errors" do
-      result = @analyzer.send(:parse_analysis_response, '{ invalid json }')
+      result = @analyzer.send(:parse_analysis_response, "{ invalid json }")
 
       assert result["parse_error"]
       assert_equal "Unidentified Item", result["name"]
@@ -506,8 +506,8 @@ module Services
     test "find_matching_category matches synonyms" do
       # Synonym mapping requires exact category names, so use mapped names but ensure uniqueness
       # Clean up any existing categories first to avoid collisions
-      Category.where("name IN (?)", ["Bags", "Handbags", "Boots"]).destroy_all
-      
+      Category.where("name IN (?)", [ "Bags", "Handbags", "Boots" ]).destroy_all
+
       bags_category = create(:category, name: "Bags", active: true)
       result = @analyzer.send(:find_matching_category, "satchel")
       assert_equal bags_category, result
@@ -551,17 +551,17 @@ module Services
 
     test "find_matching_category only matches active categories" do
       unique_name = "T-Shirts #{SecureRandom.hex(4)}"
-      
+
       # Create inactive category first
       inactive_category = create(:category, name: unique_name, active: false)
-      
+
       # Verify inactive category is not found
       result = @analyzer.send(:find_matching_category, unique_name)
       assert_nil result, "Should not find inactive category"
-      
+
       # Update to active
       inactive_category.update!(active: true)
-      
+
       # Now should find it
       result = @analyzer.send(:find_matching_category, unique_name)
       assert_equal inactive_category, result
@@ -650,7 +650,7 @@ module Services
     def stub_ollama_available
       WebMock.stub_request(:get, /.*\/api\/tags/).to_return(
         status: 200,
-        body: { "models" => [{ "name" => "qwen3-vl:8b" }] }.to_json
+        body: { "models" => [ { "name" => "qwen3-vl:8b" } ] }.to_json
       )
     end
   end

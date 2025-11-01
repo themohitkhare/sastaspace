@@ -22,7 +22,7 @@ class StructuredLoggingTest < ActionDispatch::IntegrationTest
     # Access the method through a controller instance
     controller = UpController.new
     sanitized = controller.send(:sanitize_params, params)
-    
+
     assert_equal "test@example.com", sanitized[:email]
     assert_equal "visible", sanitized[:normal_field]
     assert_nil sanitized[:password]
@@ -41,4 +41,3 @@ class StructuredLoggingTest < ActionDispatch::IntegrationTest
     assert controller.respond_to?(:current_request_id, true)
   end
 end
-

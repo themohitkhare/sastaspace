@@ -40,7 +40,7 @@ class Services::BlobDeduplicationServiceTest < ActiveSupport::TestCase
 
     # Reset file pointers for second read - create a new file handle
     @io2.rewind if @io2.respond_to?(:rewind)
-    
+
     # Create second blob with same content
     blob2 = Services::BlobDeduplicationService.find_or_create_blob(
       io: @io2,
@@ -94,7 +94,7 @@ class Services::BlobDeduplicationServiceTest < ActiveSupport::TestCase
 
   test "find_or_create_blob falls back on error" do
     @io1.rewind if @io1.respond_to?(:rewind)
-    
+
     # Mock ActiveStorage::Blob to raise an error first time
     ActiveStorage::Blob.stubs(:compute_checksum).raises(StandardError.new("Checksum error"))
     ActiveStorage::Blob.stubs(:find_by).returns(nil)
@@ -114,7 +114,7 @@ class Services::BlobDeduplicationServiceTest < ActiveSupport::TestCase
     )
 
     assert_not_nil blob
-    
+
     # Restore original method
     ActiveStorage::Blob.unstub(:compute_checksum)
     ActiveStorage::Blob.unstub(:find_by)
@@ -134,4 +134,3 @@ class Services::BlobDeduplicationServiceTest < ActiveSupport::TestCase
     assert blob.content_type.start_with?("image/"), "Content type should be an image type"
   end
 end
-

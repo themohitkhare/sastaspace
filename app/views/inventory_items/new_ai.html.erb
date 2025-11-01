@@ -5,7 +5,7 @@
       <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">Upload an image and let AI fill in the details for you</p>
     </div>
 
-    <%= form_with model: @inventory_item, local: true, multipart: true, class: "card-body space-y-6" do |form| %>
+    <%= form_with model: @inventory_item, local: true, multipart: true, data: { turbo: false }, class: "card-body space-y-6" do |form| %>
       <% if @inventory_item.errors.any? %>
         <div class="p-4 bg-red-50 border border-red-200 text-red-800 rounded dark:bg-red-900 dark:border-red-700 dark:text-red-200">
           <h3 class="font-semibold mb-2"><%= pluralize(@inventory_item.errors.count, "error") %> prohibited this item from being saved:</h3>

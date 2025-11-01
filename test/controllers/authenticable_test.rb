@@ -42,7 +42,7 @@ class AuthenticableTest < ActionDispatch::IntegrationTest
     # In integration tests, we need to set cookies via the request
     # The cookie will be set by the controller, so test through actual flow
     get "/api/v1/inventory_items",
-        headers: { 
+        headers: {
           "Content-Type" => "application/json",
           "Cookie" => "access_token=#{@token}"
         }

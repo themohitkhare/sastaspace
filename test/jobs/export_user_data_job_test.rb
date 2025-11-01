@@ -20,4 +20,3 @@ class ExportUserDataJobTest < ActiveJob::TestCase
     end
   end
 end
-

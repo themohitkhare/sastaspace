@@ -12,7 +12,7 @@ class InstrumentationTest < ActionDispatch::IntegrationTest
     # Clean up any remaining subscribers
     @subscribers.each { |sub| ActiveSupport::Notifications.unsubscribe(sub) if sub }
     @subscribers.clear
-    
+
     # Unstub to prevent interference with other tests
     ApplicationController.any_instance.unstub(:authenticate_user!) rescue nil
     ApplicationController.any_instance.unstub(:current_user) rescue nil
@@ -31,10 +31,10 @@ class InstrumentationTest < ActionDispatch::IntegrationTest
 
     # Make actual request
     get "/up"
-    
+
     # Ensure response was successful (meaning around_action executed)
     assert_response :success
-    
+
     # Unsubscribe after request completes
     ActiveSupport::Notifications.unsubscribe(subscriber)
     @subscribers.delete(subscriber)
@@ -42,7 +42,7 @@ class InstrumentationTest < ActionDispatch::IntegrationTest
     # Check for request.started notification
     assert_not_empty notifications, "Should have received at least one notification. Instrumentation may not be working."
     started_notification = notifications.find { |n| n[:name] == "request.started" }
-    assert_not_nil started_notification, 
+    assert_not_nil started_notification,
                    "Should have received request.started notification. Received: #{notifications.map { |n| n[:name] }.inspect}"
     assert_equal "UpController", started_notification[:payload][:controller]
     assert_equal "show", started_notification[:payload][:action]
@@ -57,10 +57,10 @@ class InstrumentationTest < ActionDispatch::IntegrationTest
     @subscribers << subscriber
 
     get "/up"
-    
+
     # Ensure response was successful
     assert_response :success
-    
+
     # Unsubscribe after request completes
     ActiveSupport::Notifications.unsubscribe(subscriber)
     @subscribers.delete(subscriber)
@@ -103,7 +103,7 @@ class InstrumentationTest < ActionDispatch::IntegrationTest
       # Restore original show method
       UpController.define_method(:show, original_show)
     end
-    
+
     # Unsubscribe after request completes
     ActiveSupport::Notifications.unsubscribe(subscriber)
     @subscribers.delete(subscriber)
@@ -129,10 +129,10 @@ class InstrumentationTest < ActionDispatch::IntegrationTest
     @subscribers << subscriber
 
     get "/up"
-    
+
     # Ensure response was successful
     assert_response :success
-    
+
     # Unsubscribe after request completes
     ActiveSupport::Notifications.unsubscribe(subscriber)
     @subscribers.delete(subscriber)
@@ -140,9 +140,8 @@ class InstrumentationTest < ActionDispatch::IntegrationTest
     # Check for request.completed notification
     assert_not_empty notifications, "Should have received at least one notification"
     completed_notification = notifications.find { |n| n[:name] == "request.completed" }
-    assert_not_nil completed_notification, 
+    assert_not_nil completed_notification,
                    "Should have received request.completed notification. Received: #{notifications.map { |n| n[:name] }.inspect}"
     assert_equal @user.id, completed_notification[:payload][:user_id]
   end
 end
-

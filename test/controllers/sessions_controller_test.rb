@@ -46,7 +46,7 @@ class SessionsControllerTest < ActionDispatch::IntegrationTest
 
   test "create with remember_me checked sets refresh token to expire in 30 days" do
     refresh_token_record = RefreshToken.create_for_user!(@user, expires_in: 30.days)
-    
+
     # Mock the service to return the refresh token
     Auth::SessionService.expects(:login).with(
       @user.email,
@@ -69,21 +69,21 @@ class SessionsControllerTest < ActionDispatch::IntegrationTest
     }, headers: { "Accept" => "text/html" }
 
     assert_redirected_to inventory_items_path
-    
+
     # Verify refresh token cookie is set by checking Set-Cookie header
     # In integration tests, signed cookies can be accessed from response headers
     set_cookie_header = response.headers["Set-Cookie"]
     cookie_header_string = Array(set_cookie_header).join(" ")
     assert cookie_header_string.present?, "Set-Cookie header should be present"
     assert cookie_header_string.include?("refresh_token"), "Refresh token cookie should be set"
-    
+
     # Check that SessionService was called with remember_me: true
     # (The expectation above verifies this)
   end
 
   test "create without remember_me sets refresh token to expire in 7 days" do
     refresh_token_record = RefreshToken.create_for_user!(@user, expires_in: 7.days)
-    
+
     # Mock the service to return the refresh token
     Auth::SessionService.expects(:login).with(
       @user.email,
@@ -105,7 +105,7 @@ class SessionsControllerTest < ActionDispatch::IntegrationTest
     }, headers: { "Accept" => "text/html" }
 
     assert_redirected_to inventory_items_path
-    
+
     # Verify refresh token cookie is set by checking Set-Cookie header
     set_cookie_header = response.headers["Set-Cookie"]
     cookie_header_string = Array(set_cookie_header).join(" ")
@@ -115,7 +115,7 @@ class SessionsControllerTest < ActionDispatch::IntegrationTest
 
   test "create with remember_me unchecked (0) sets refresh token to expire in 7 days" do
     refresh_token_record = RefreshToken.create_for_user!(@user, expires_in: 7.days)
-    
+
     Auth::SessionService.expects(:login).with(
       @user.email,
       "password",
