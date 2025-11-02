@@ -204,6 +204,60 @@ class Api::V1::InventoryItemsTest < ActionDispatch::IntegrationTest
     assert_error_response(:bad_request, "SEARCH_ERROR")
   end
 
+  test "GET /api/v1/inventory_items should include image URLs in response when images are attached" do
+    # Attach an image to the inventory item
+    @inventory_item.primary_image.attach(
+      io: File.open(Rails.root.join("test", "fixtures", "files", "sample_image.jpg")),
+      filename: "test.jpg",
+      content_type: "image/jpeg"
+    )
+
+    get "/api/v1/inventory_items", headers: api_v1_headers(@token)
+
+    assert_success_response
+    body = json_response
+    item = body["data"]["inventory_items"].find { |i| i["id"] == @inventory_item.id }
+
+    assert_not_nil item, "Item should be in response"
+    assert_not_nil item["images"], "Images should be included"
+    assert_not_nil item["images"]["primary"], "Primary image should be included"
+
+    primary_image = item["images"]["primary"]
+    assert_includes primary_image.keys, "urls", "URLs should be included"
+    
+    urls = primary_image["urls"]
+    assert_includes urls.keys, "original", "Original URL should be present"
+    assert_includes urls.keys, "thumb", "Thumb URL should be present"
+    assert_includes urls.keys, "medium", "Medium URL should be present"
+    assert_includes urls.keys, "large", "Large URL should be present"
+
+    # Verify URLs are either valid strings or nil (if generation failed gracefully)
+    if urls["original"]
+      assert_kind_of String, urls["original"]
+      assert_match(/^(http|https|\/)/, urls["original"])
+    end
+    if urls["thumb"]
+      assert_kind_of String, urls["thumb"]
+      assert_match(/^(http|https|\/)/, urls["thumb"])
+    end
+  end
+
+  test "GET /api/v1/inventory_items should handle items without images gracefully" do
+    # Ensure item has no image
+    @inventory_item.primary_image.purge if @inventory_item.primary_image.attached?
+
+    get "/api/v1/inventory_items", headers: api_v1_headers(@token)
+
+    assert_success_response
+    body = json_response
+    item = body["data"]["inventory_items"].find { |i| i["id"] == @inventory_item.id }
+
+    assert_not_nil item, "Item should be in response"
+    assert_not_nil item["images"], "Images structure should be included"
+    assert_nil item["images"]["primary"], "Primary image should be nil when not attached"
+    assert_equal [], item["images"]["additional"], "Additional images should be empty array"
+  end
+
   test "GET /api/v1/inventory_items/:id/similar should return similar items" do
     # Set up embedding vectors for similarity search
     embedding_vector = (0..1535).to_a.map { |_i| rand(-1.0..1.0) }
