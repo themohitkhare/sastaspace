@@ -66,6 +66,9 @@ module Api
         return nil if image.nil? || (image.respond_to?(:attached?) && !image.attached?)
 
         begin
+          # Get original URL first as fallback for all variants
+          original_url = url_for(image)
+          
           # ActiveStorage::Attached::One delegates id, filename, etc. to blob
           # So we can call these methods directly on the image object
           {
@@ -74,10 +77,10 @@ module Api
             content_type: image.content_type,
             byte_size: image.byte_size,
             urls: {
-              original: url_for(image),
-              thumb: safe_variant_url(image, [ 150, 150 ]),
-              medium: safe_variant_url(image, [ 400, 400 ]),
-              large: safe_variant_url(image, [ 800, 800 ])
+              original: original_url,
+              thumb: safe_variant_url(image, [ 150, 150 ]) || original_url,
+              medium: safe_variant_url(image, [ 400, 400 ]) || original_url,
+              large: safe_variant_url(image, [ 800, 800 ]) || original_url
             }
           }
         rescue StandardError => e
@@ -116,18 +119,68 @@ module Api
       end
 
       def url_for(attachment)
-        Rails.application.routes.url_helpers.url_for(attachment)
-      rescue StandardError => e
-        Rails.logger.warn "Failed to generate URL for attachment: #{e.message}"
-        nil
+        # Use rails_blob_url helper for better URL generation
+        return nil unless attachment.attached?
+        
+        # Try using rails_blob_url first (more reliable)
+        begin
+          url_options = { host: default_host, protocol: default_protocol }
+          url_options[:port] = default_port if default_port
+          Rails.application.routes.url_helpers.rails_blob_url(attachment, **url_options)
+        rescue StandardError => e1
+          Rails.logger.warn "rails_blob_url failed: #{e1.message}, trying url_for"
+          # Fallback to url_for with options
+          begin
+            url_options = { host: default_host, protocol: default_protocol }
+            url_options[:port] = default_port if default_port
+            Rails.application.routes.url_helpers.url_for(attachment, **url_options)
+          rescue StandardError => e2
+            Rails.logger.warn "Failed to generate URL for attachment: #{e2.message}"
+            Rails.logger.warn e2.backtrace.first(3).join("\n") if Rails.logger
+            nil
+          end
+        end
       end
 
       def safe_variant_url(image, dimensions)
-        variant = image.variant(resize_to_limit: dimensions)
-        url_for(variant)
-      rescue StandardError => e
-        Rails.logger.warn "Failed to generate variant URL: #{e.message}"
-        nil
+        return nil unless image.attached?
+        
+        # Try to generate variant URL, but catch errors gracefully
+        # This prevents 500 errors when VIPS/ImageMagick is not installed
+        begin
+          # Check if variant can be created (this will fail if processor is not available)
+          variant = image.variant(resize_to_limit: dimensions)
+          
+          # If variant creation succeeded, generate URL
+          url_options = { host: default_host, protocol: default_protocol }
+          url_options[:port] = default_port if default_port
+          Rails.application.routes.url_helpers.rails_representation_url(variant, **url_options)
+        rescue LoadError, NoMethodError, RuntimeError => e
+          # These errors typically indicate VIPS/ImageMagick is not installed
+          # Return nil so caller can use original image URL as fallback
+          Rails.logger.debug "Variant processor not available (#{dimensions.join('x')}): #{e.class.name}"
+          nil
+        rescue StandardError => e
+          # Other errors (e.g., invalid image, processing failure)
+          Rails.logger.debug "Variant generation failed (#{dimensions.join('x')}): #{e.class.name} - #{e.message}"
+          nil
+        end
+      end
+      
+      def default_host
+        Rails.application.config.action_controller.default_url_options[:host] || 
+          Rails.application.routes.default_url_options[:host] || 
+          "localhost"
+      end
+      
+      def default_port
+        Rails.application.config.action_controller.default_url_options[:port] || 
+          Rails.application.routes.default_url_options[:port] || 
+          (Rails.env.development? ? 3000 : nil)
+      end
+      
+      def default_protocol
+        Rails.env.production? ? "https" : "http"
       end
     end
   end

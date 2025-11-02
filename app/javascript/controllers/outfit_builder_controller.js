@@ -61,6 +61,11 @@ export default class extends Controller {
       const data = await response.json()
       if (data.success) {
         this.inventoryItems = data.data.inventory_items || []
+        // Debug: Log first item to verify image structure
+        if (this.inventoryItems.length > 0) {
+          console.log("Sample inventory item:", this.inventoryItems[0])
+          console.log("Image structure:", this.inventoryItems[0]?.images)
+        }
         this.renderItemsGrid()
       } else {
         console.error("API returned error:", data.error)
@@ -82,28 +87,56 @@ export default class extends Controller {
       return
     }
 
+    // SVG placeholder as data URI (clothing icon)
+    const placeholderImage = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200' viewBox='0 0 200 200'%3E%3Crect width='200' height='200' fill='%23e5e7eb'/%3E%3Cg fill='%239ca3af'%3E%3Cpath d='M60 70h80v80H60z'/%3E%3Ccircle cx='100' cy='95' r='12'/%3E%3Cpath d='M70 135l30-25 20 15 20-20 30 30H70z'/%3E%3C/g%3E%3C/svg%3E"
+    
     this.itemsGridTarget.innerHTML = this.inventoryItems.map(item => {
-      const imageUrl = item.images?.primary?.urls?.thumb || item.images?.primary?.urls?.original || '/placeholder-item.png'
+      // Try to get image URL with proper fallback chain
+      let imageUrl = placeholderImage
+      if (item.images?.primary?.urls) {
+        imageUrl = item.images.primary.urls.thumb || item.images.primary.urls.medium || item.images.primary.urls.original || placeholderImage
+      }
+      
+      // Debug: Log if image URL is missing
+      if (!item.images?.primary?.urls) {
+        console.warn(`Item ${item.id} (${item.name}) has no image URLs:`, item.images)
+      }
+      
+      // Escape HTML attributes to prevent XSS and syntax errors
+      const escapeHtml = (str) => {
+        if (!str) return ''
+        return String(str)
+          .replace(/&/g, '&amp;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#x27;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+      }
+      
       const categoryName = item.category?.name || 'Uncategorized'
+      const escapedImageUrl = escapeHtml(imageUrl)
+      const escapedPlaceholder = escapeHtml(placeholderImage)
+      const escapedItemName = escapeHtml(item.name)
+      const escapedCategoryName = escapeHtml(categoryName)
       
       return `
         <div 
           class="border rounded-lg p-2 cursor-move hover:shadow-md transition-shadow bg-white dark:bg-gray-800"
           draggable="true"
           data-item-id="${item.id}"
-          data-item-name="${item.name}"
-          data-item-category="${categoryName}"
-          data-item-image="${imageUrl}"
+          data-item-name="${escapedItemName}"
+          data-item-category="${escapedCategoryName}"
+          data-item-image="${escapedImageUrl}"
           data-action="dragstart->outfit-builder#handleDragStart"
         >
           <img 
-            src="${imageUrl}" 
-            alt="${item.name}"
-            class="w-full h-24 object-cover rounded mb-2"
-            onerror="this.src='/placeholder-item.png'"
+            src="${escapedImageUrl}" 
+            alt="${escapedItemName}"
+            class="w-full h-24 object-cover rounded mb-2 bg-gray-100 dark:bg-gray-700"
+            onerror="this.src='${escapedPlaceholder}'"
           />
-          <div class="text-xs font-medium text-gray-900 dark:text-white truncate">${item.name}</div>
-          <div class="text-xs text-gray-500 dark:text-gray-400">${categoryName}</div>
+          <div class="text-xs font-medium text-gray-900 dark:text-white truncate">${escapedItemName}</div>
+          <div class="text-xs text-gray-500 dark:text-gray-400">${escapedCategoryName}</div>
         </div>
       `
     }).join('')
@@ -188,7 +221,28 @@ export default class extends Controller {
       return
     }
 
-    this.selectedItemsTarget.innerHTML = this.selectedItems.map((item, index) => `
+    // SVG placeholder as data URI (clothing icon)
+    const placeholderImage = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200' viewBox='0 0 200 200'%3E%3Crect width='200' height='200' fill='%23e5e7eb'/%3E%3Cg fill='%239ca3af'%3E%3Cpath d='M60 70h80v80H60z'/%3E%3Ccircle cx='100' cy='95' r='12'/%3E%3Cpath d='M70 135l30-25 20 15 20-20 30 30H70z'/%3E%3C/g%3E%3C/svg%3E"
+
+    // Escape HTML attributes to prevent XSS and syntax errors
+    const escapeHtml = (str) => {
+      if (!str) return ''
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#x27;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+    }
+
+    this.selectedItemsTarget.innerHTML = this.selectedItems.map((item, index) => {
+      const imageUrl = item.image_url || placeholderImage
+      const escapedImageUrl = escapeHtml(imageUrl)
+      const escapedPlaceholder = escapeHtml(placeholderImage)
+      const escapedItemName = escapeHtml(item.name)
+      const escapedCategory = escapeHtml(item.category)
+      
+      return `
       <div class="relative group border rounded-lg p-3 bg-white dark:bg-gray-800" data-item-id="${item.id}">
         <button
           type="button"
@@ -200,15 +254,16 @@ export default class extends Controller {
           ×
         </button>
         <img 
-          src="${item.image_url}" 
-          alt="${item.name}"
-          class="w-full h-24 object-cover rounded mb-2"
-          onerror="this.src='/placeholder-item.png'"
+          src="${escapedImageUrl}" 
+          alt="${escapedItemName}"
+          class="w-full h-24 object-cover rounded mb-2 bg-gray-100 dark:bg-gray-700"
+          onerror="this.src='${escapedPlaceholder}'"
         />
-        <div class="text-sm font-medium text-gray-900 dark:text-white truncate">${item.name}</div>
-        <div class="text-xs text-gray-500 dark:text-gray-400">${item.category}</div>
+        <div class="text-sm font-medium text-gray-900 dark:text-white truncate">${escapedItemName}</div>
+        <div class="text-xs text-gray-500 dark:text-gray-400">${escapedCategory}</div>
       </div>
-    `).join('')
+    `
+    }).join('')
   }
 
   updateCompletenessScore() {

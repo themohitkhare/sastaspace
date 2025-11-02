@@ -188,37 +188,56 @@ export default class extends Controller {
       return
     }
 
+    // SVG placeholder as data URI (clothing icon)
+    const placeholderImage = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200' viewBox='0 0 200 200'%3E%3Crect width='200' height='200' fill='%23e5e7eb'/%3E%3Cg fill='%239ca3af'%3E%3Cpath d='M60 70h80v80H60z'/%3E%3Ccircle cx='100' cy='95' r='12'/%3E%3Cpath d='M70 135l30-25 20 15 20-20 30 30H70z'/%3E%3C/g%3E%3C/svg%3E"
+
+    // Escape HTML attributes to prevent XSS and syntax errors
+    const escapeHtml = (str) => {
+      if (!str) return ''
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#x27;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+    }
+
     this.listTarget.innerHTML = `
       <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
         ${items.map(item => {
-          const imageUrl = item.images?.primary?.urls?.thumb || item.images?.primary?.urls?.original || '/placeholder-item.png'
+          const imageUrl = item.images?.primary?.urls?.thumb || item.images?.primary?.urls?.medium || item.images?.primary?.urls?.original || placeholderImage
           const categoryName = item.category?.name || 'Item'
+          
+          const escapedImageUrl = escapeHtml(imageUrl)
+          const escapedPlaceholder = escapeHtml(placeholderImage)
+          const escapedItemName = escapeHtml(item.name)
+          const escapedCategoryName = escapeHtml(categoryName)
           
           return `
             <div 
               class="border rounded-lg p-3 cursor-pointer hover:shadow-md transition-shadow bg-white dark:bg-gray-700"
               data-action="click->ai-suggestions#addSuggestion"
               data-item-id="${item.id}"
-              data-item-name="${item.name}"
-              data-item-category="${categoryName}"
-              data-item-image="${imageUrl}"
+              data-item-name="${escapedItemName}"
+              data-item-category="${escapedCategoryName}"
+              data-item-image="${escapedImageUrl}"
             >
               <img 
-                src="${imageUrl}" 
-                alt="${item.name}"
-                class="w-full h-20 object-cover rounded mb-2"
-                onerror="this.src='/placeholder-item.png'"
+                src="${escapedImageUrl}" 
+                alt="${escapedItemName}"
+                class="w-full h-20 object-cover rounded mb-2 bg-gray-100 dark:bg-gray-700"
+                onerror="this.src='${escapedPlaceholder}'"
               />
-              <div class="text-xs font-medium text-gray-900 dark:text-white truncate">${item.name}</div>
-              <div class="text-xs text-gray-500 dark:text-gray-400">${categoryName}</div>
+              <div class="text-xs font-medium text-gray-900 dark:text-white truncate">${escapedItemName}</div>
+              <div class="text-xs text-gray-500 dark:text-gray-400">${escapedCategoryName}</div>
               <button 
                 type="button"
                 class="mt-2 w-full px-2 py-1 text-xs bg-primary-600 text-white rounded hover:bg-primary-700"
                 data-action="click->ai-suggestions#addSuggestion"
                 data-item-id="${item.id}"
-                data-item-name="${item.name}"
-                data-item-category="${categoryName}"
-                data-item-image="${imageUrl}"
+                data-item-name="${escapedItemName}"
+                data-item-category="${escapedCategoryName}"
+                data-item-image="${escapedImageUrl}"
               >
                 Add to Outfit
               </button>

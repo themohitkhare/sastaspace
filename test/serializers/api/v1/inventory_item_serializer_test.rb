@@ -181,6 +181,71 @@ module Api
         assert_includes result.keys, :byte_size
         assert_includes result.keys, :urls
       end
+
+      test "should generate valid image URLs when image is attached" do
+        @inventory_item.primary_image.attach(
+          io: File.open(Rails.root.join("test", "fixtures", "files", "sample_image.jpg")),
+          filename: "test.jpg",
+          content_type: "image/jpeg"
+        )
+
+        serialized = @serializer.as_json
+        primary_image = serialized[:images][:primary]
+        urls = primary_image[:urls]
+
+        # URLs should be present and valid
+        assert_not_nil urls[:original], "Original URL should be generated"
+        assert_not_nil urls[:thumb], "Thumb URL should be generated"
+        assert_not_nil urls[:medium], "Medium URL should be generated"
+        assert_not_nil urls[:large], "Large URL should be generated"
+
+        # URLs should be strings
+        assert_kind_of String, urls[:original] if urls[:original]
+        assert_kind_of String, urls[:thumb] if urls[:thumb]
+        assert_kind_of String, urls[:medium] if urls[:medium]
+        assert_kind_of String, urls[:large] if urls[:large]
+
+        # URLs should contain valid format (either absolute URLs or relative paths)
+        if urls[:original]
+          assert_match(/^(http|https|\/)/, urls[:original], "Original URL should be valid")
+        end
+        if urls[:thumb]
+          assert_match(/^(http|https|\/)/, urls[:thumb], "Thumb URL should be valid")
+        end
+      end
+
+      test "should handle URL generation errors gracefully" do
+        @inventory_item.primary_image.attach(
+          io: File.open(Rails.root.join("test", "fixtures", "files", "sample_image.jpg")),
+          filename: "test.jpg",
+          content_type: "image/jpeg"
+        )
+
+        # Mock url_for to raise an error
+        @serializer.stubs(:url_for).raises(StandardError.new("URL generation failed"))
+
+        # Should not raise, but return nil URLs
+        serialized = @serializer.as_json
+        primary_image = serialized[:images][:primary]
+
+        # Should still return structure with nil URLs
+        assert_not_nil primary_image
+        assert_includes primary_image.keys, :urls
+        urls = primary_image[:urls]
+        # URLs might be nil if generation fails, which is acceptable
+        assert_not_nil urls
+      end
+
+      test "should return nil URLs structure when image attachment fails" do
+        # Create item without image
+        item_without_image = create(:inventory_item, :clothing, user: @user)
+        serializer = InventoryItemSerializer.new(item_without_image)
+
+        serialized = serializer.as_json
+        primary_image = serialized[:images][:primary]
+
+        assert_nil primary_image, "Primary image should be nil when not attached"
+      end
     end
   end
 end
