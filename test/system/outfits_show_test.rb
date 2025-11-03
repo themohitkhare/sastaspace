@@ -191,4 +191,47 @@ class OutfitsShowTest < ApplicationSystemTestCase
     # Should navigate to inventory item page
     assert_current_path(/inventory_items/, wait: 5)
   end
+
+  test "user can delete outfit from show page" do
+    outfit_to_delete = create(:outfit,
+      user: @user,
+      name: "Delete Me #{SecureRandom.hex(4)}"
+    )
+
+    visit outfit_path(outfit_to_delete)
+
+    if page.current_path == "/login"
+      fill_in "Email", with: @user.email
+      fill_in "Password", with: "Password123!"
+      click_button "Sign In"
+      visit outfit_path(outfit_to_delete)
+    end
+
+    assert_text outfit_to_delete.name, wait: 5
+
+    # Find delete link using more specific selector
+    delete_selector = "a[href='#{outfit_path(outfit_to_delete)}'][data-turbo-method='delete']"
+    
+    # Wait for the delete link to be present and visible
+    assert_selector delete_selector, text: /Delete/i, wait: 5
+    
+    # Handle confirmation and click in a way that prevents stale element errors
+    # Turbo uses data-turbo-confirm, which works with accept_confirm
+    # Try with message first, fallback to without message
+    begin
+      page.accept_confirm "Are you sure you want to delete this outfit?" do
+        # Find the element fresh right before clicking
+        find(delete_selector, text: /Delete/i, wait: 2).click
+      end
+    rescue Capybara::ModalNotFound
+      # Fallback: accept any confirmation dialog
+      page.accept_confirm do
+        find(delete_selector, text: /Delete/i, wait: 2).click
+      end
+    end
+      
+    # Wait for redirect
+    assert_current_path(/outfits/, wait: 5)
+    assert_no_text outfit_to_delete.name, wait: 5
+  end
 end

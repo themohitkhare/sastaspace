@@ -89,15 +89,9 @@ class OutfitsGalleryTest < ApplicationSystemTestCase
     # Filter by casual - check if select exists
     occasion_select = find("select[name*='occasion']", wait: 5) rescue nil
     if occasion_select
-      # Check what options are available
-      options = occasion_select.all("option").map(&:text).map(&:downcase)
-      if options.any? { |opt| opt.include?("casual") || opt == "casual" }
-        # Find the actual option value
-        casual_option = occasion_select.all("option").find { |opt| opt.text.downcase.include?("casual") || opt.text.downcase == "casual" }
-        if casual_option
-          select casual_option.text, from: occasion_select[:name]
-        end
-      end
+      # Choose option robustly
+      option = occasion_select.find("option", text: /casual/i, match: :first) rescue nil
+      option&.select_option
 
       # Submit form (might auto-submit or need manual submit)
       page.execute_script("document.querySelector('form').submit()") rescue nil

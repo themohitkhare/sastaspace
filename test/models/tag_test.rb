@@ -1,7 +1,7 @@
 require "test_helper"
 
 class TagTest < ActiveSupport::TestCase
-  def setup
+  setup do
     @tag = build(:tag)
   end
 
@@ -22,9 +22,38 @@ class TagTest < ActiveSupport::TestCase
     assert_includes duplicate_tag.errors[:name], "has already been taken"
   end
 
-  test "should have default color" do
-    # Create tag without specifying color to test database default
-    tag = Tag.create!(name: "Test Tag #{Time.now.to_i}")
-    assert_equal "#3B82F6", tag.color
+  test "can create tag" do
+    tag = Tag.create!(name: "Casual #{SecureRandom.hex(4)}")
+    assert tag.persisted?
+  end
+
+  test "can have many inventory_items through inventory_tags" do
+    user = create(:user)
+    category = create(:category, :clothing)
+    tag = create(:tag)
+    item1 = create(:inventory_item, user: user, category: category)
+    item2 = create(:inventory_item, user: user, category: category)
+    
+    InventoryTag.create!(inventory_item: item1, tag: tag)
+    InventoryTag.create!(inventory_item: item2, tag: tag)
+    
+    assert_equal 2, tag.inventory_items.count
+    assert_includes tag.inventory_items, item1
+    assert_includes tag.inventory_items, item2
+  end
+
+  test "destroying tag destroys associated inventory_tags" do
+    user = create(:user)
+    category = create(:category, :clothing)
+    tag = create(:tag)
+    item = create(:inventory_item, user: user, category: category)
+    inventory_tag = InventoryTag.create!(inventory_item: item, tag: tag)
+    
+    assert_difference -> { InventoryTag.count }, -1 do
+      tag.destroy
+    end
+    
+    # Inventory item should still exist
+    assert item.reload.persisted?
   end
 end

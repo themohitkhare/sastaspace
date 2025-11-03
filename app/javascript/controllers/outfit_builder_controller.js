@@ -5,11 +5,9 @@ export default class extends Controller {
     "canvas",
     "itemSelector",
     "selectedItems",
-    "completenessScore",
     "categoryTabs",
     "itemsGrid",
-    "searchInput",
-    "colorAnalysis"
+    "searchInput"
   ]
 
   static values = {
@@ -20,11 +18,72 @@ export default class extends Controller {
     this.selectedItems = [] // Array of {id, name, category, image_url}
     this.currentCategory = null
     this.inventoryItems = []
-    this.fetchInventoryItems()
+    this.isInitialized = false // Track if initialization is complete
+    
+    // Initialize from existing outfit items (for edit page)
+    this.initializeExistingItems()
+    
+    // Fetch inventory items and mark as initialized when done
+    this.fetchInventoryItems().then(() => {
+      this.isInitialized = true
+    }).catch(() => {
+      this.isInitialized = true // Mark as initialized even on error
+    })
+    
     this.setupCanvas()
     
     // Listen for AI suggestions
     this.element.addEventListener("ai-suggestions:item-suggested", this.handleItemSuggested.bind(this))
+    
+    // Ensure hidden fields are updated before form submission
+    // Form is a child of the controller element (not an ancestor)
+    const form = this.element.closest('form') || this.element.querySelector('form')
+    if (form) {
+      form.addEventListener("submit", (event) => {
+        console.log("Form submitting - updating hidden fields")
+        console.log("Selected items:", this.selectedItems)
+        console.log("Is initialized:", this.isInitialized)
+        
+        // Always update hidden fields before submission
+        this.updateHiddenField()
+        
+        // Small delay to ensure DOM updates complete
+        // Note: This is synchronous, so fields should be in DOM already
+        const hiddenFields = form.querySelectorAll('input[name="outfit[inventory_item_ids][]"]')
+        console.log(`Form submit: Found ${hiddenFields.length} hidden fields`)
+        hiddenFields.forEach((field, idx) => {
+          console.log(`  Submit field ${idx}: value="${field.value}"`)
+        })
+        
+        // Verify fields are present - if not, prevent submission
+        if (hiddenFields.length === 0 && this.selectedItems.length > 0) {
+          console.error("ERROR: Selected items exist but no hidden fields found!")
+          console.error("This indicates a bug in updateHiddenField()")
+        }
+      }, { capture: true }) // Use capture phase to run before default submission
+    }
+  }
+
+  initializeExistingItems() {
+    // Find all hidden fields with existing item IDs (only those marked as existing)
+    const hiddenFields = this.element.querySelectorAll('input[name="outfit[inventory_item_ids][]"].existing-outfit-item')
+    const existingItemIds = []
+    
+    hiddenFields.forEach(field => {
+      const value = field.value.trim()
+      if (value && value !== '') {
+        const id = parseInt(value)
+        if (!isNaN(id)) {
+          existingItemIds.push(id)
+        }
+      }
+    })
+
+    if (existingItemIds.length > 0) {
+      // We'll populate these after fetching inventory items
+      this.pendingItemIds = existingItemIds
+      console.log("Found existing outfit items:", existingItemIds)
+    }
   }
 
   setupCanvas() {
@@ -66,6 +125,13 @@ export default class extends Controller {
           console.log("Sample inventory item:", this.inventoryItems[0])
           console.log("Image structure:", this.inventoryItems[0]?.images)
         }
+        
+        // Load existing outfit items if we're editing
+        if (this.pendingItemIds && this.pendingItemIds.length > 0) {
+          this.loadExistingItems(this.pendingItemIds)
+          delete this.pendingItemIds
+        }
+        
         this.renderItemsGrid()
       } else {
         console.error("API returned error:", data.error)
@@ -121,13 +187,13 @@ export default class extends Controller {
       
       return `
         <div 
-          class="border rounded-lg p-2 cursor-move hover:shadow-md transition-shadow bg-white dark:bg-gray-800"
+          class="border rounded-lg p-2 cursor-pointer hover:shadow-md transition-shadow bg-white dark:bg-gray-800"
           draggable="true"
           data-item-id="${item.id}"
           data-item-name="${escapedItemName}"
           data-item-category="${escapedCategoryName}"
           data-item-image="${escapedImageUrl}"
-          data-action="dragstart->outfit-builder#handleDragStart"
+          data-action="dragstart->outfit-builder#handleDragStart click->outfit-builder#handleItemClick"
         >
           <img 
             src="${escapedImageUrl}" 
@@ -183,26 +249,51 @@ export default class extends Controller {
     })
   }
 
+  handleItemClick(event) {
+    // Prevent adding item if clicking on remove button
+    if (event.target.closest('button')) {
+      return
+    }
+    
+    const itemElement = event.currentTarget
+    const itemData = {
+      id: itemElement.dataset.itemId,
+      name: itemElement.dataset.itemName,
+      category: itemElement.dataset.itemCategory,
+      image_url: itemElement.dataset.itemImage
+    }
+    
+    this.addItemToOutfit(itemData)
+  }
+
   addItemToOutfit(itemData) {
+    // Normalize IDs for comparison (handle both string and number)
+    const normalizeId = (id) => parseInt(id)
+    const itemId = normalizeId(itemData.id)
+    
     // Check if item already exists
-    if (this.selectedItems.find(item => item.id === itemData.id)) {
+    if (this.selectedItems.find(item => normalizeId(item.id) === itemId)) {
       return
     }
 
     this.selectedItems.push(itemData)
     this.renderSelectedItems()
-    this.updateCompletenessScore()
     this.updateHiddenField()
-    this.updateColorAnalysis()
+    // Removed: updateCompletenessScore and updateColorAnalysis (progress bars removed)
     this.requestAiSuggestions()
   }
 
   removeItem(itemId) {
-    this.selectedItems = this.selectedItems.filter(item => item.id !== itemId)
+    // Normalize IDs for comparison (handle both string and number)
+    const normalizeId = (id) => parseInt(id)
+    const id = normalizeId(itemId)
+    
+    this.selectedItems = this.selectedItems.filter(item => {
+      return normalizeId(item.id) !== id
+    })
     this.renderSelectedItems()
-    this.updateCompletenessScore()
     this.updateHiddenField()
-    this.updateColorAnalysis()
+    // Removed: updateCompletenessScore and updateColorAnalysis (progress bars removed)
     this.requestAiSuggestions()
   }
 
@@ -246,8 +337,8 @@ export default class extends Controller {
       <div class="relative group border rounded-lg p-3 bg-white dark:bg-gray-800" data-item-id="${item.id}">
         <button
           type="button"
-          class="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600"
-          data-action="click->outfit-builder#removeItem"
+          class="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600 z-10"
+          data-action="click->outfit-builder#handleRemoveItem"
           data-item-id="${item.id}"
           aria-label="Remove item"
         >
@@ -266,76 +357,161 @@ export default class extends Controller {
     }).join('')
   }
 
-  updateCompletenessScore() {
-    if (!this.hasCompletenessScoreTarget) return
+  // Removed: All progress bar related methods (updateCompletenessScore, calculateCompletenessScore, getCompletenessMessage, updateColorAnalysis, renderColorAnalysis)
 
-    // Calculate completeness based on essential categories
-    const categories = this.selectedItems.map(item => item.category.toLowerCase())
-    const essentialCategories = ['tops', 'bottoms', 'shoes']
-    const hasEssential = essentialCategories.some(cat => 
-      categories.some(itemCat => itemCat.includes(cat))
-    )
-
-    const score = this.calculateCompletenessScore()
-    const percentage = Math.round(score * 100)
-
-    this.completenessScoreTarget.innerHTML = `
-      <div class="flex items-center space-x-2">
-        <div class="flex-1 bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-          <div 
-            class="bg-primary-600 h-2 rounded-full transition-all duration-300"
-            style="width: ${percentage}%"
-          ></div>
-        </div>
-        <span class="text-sm font-medium text-gray-700 dark:text-gray-300">${percentage}%</span>
-      </div>
-      <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">${this.getCompletenessMessage(score)}</p>
-    `
+  loadExistingItems(itemIds) {
+    // Find items from inventoryItems array and add to selectedItems
+    itemIds.forEach(itemId => {
+      const item = this.inventoryItems.find(inv => parseInt(inv.id) === parseInt(itemId))
+      if (item) {
+        // Convert API format to our format
+        const itemData = {
+          id: item.id,
+          name: item.name || 'Unnamed Item',
+          category: item.category?.name || 'Uncategorized',
+          image_url: item.images?.primary?.urls?.thumb || 
+                     item.images?.primary?.urls?.medium || 
+                     item.images?.primary?.urls?.original || 
+                     null
+        }
+        // Check if already added (avoid duplicates)
+        if (!this.selectedItems.find(sel => parseInt(sel.id) === parseInt(itemData.id))) {
+          this.selectedItems.push(itemData)
+        }
+      }
+    })
+    
+    // If some items weren't found in the current fetch, try to fetch them individually
+    const missingIds = itemIds.filter(id => !this.inventoryItems.find(inv => parseInt(inv.id) === parseInt(id)))
+    if (missingIds.length > 0) {
+      this.fetchMissingItems(missingIds)
+    } else {
+      // All items loaded, render the canvas and update hidden fields
+      this.renderSelectedItems()
+      // CRITICAL: Update hidden fields immediately after loading existing items
+      this.updateHiddenField()
+    }
   }
 
-  calculateCompletenessScore() {
-    const categories = this.selectedItems.map(item => item.category.toLowerCase())
-    
-    // Essential items
-    const hasTop = categories.some(cat => cat.includes('top') || cat.includes('shirt') || cat.includes('blouse'))
-    const hasBottom = categories.some(cat => cat.includes('bottom') || cat.includes('pant') || cat.includes('skirt'))
-    const hasShoes = categories.some(cat => cat.includes('shoe') || cat.includes('boot') || cat.includes('sandal'))
-    
-    let score = 0
-    if (hasTop) score += 0.3
-    if (hasBottom) score += 0.3
-    if (hasShoes) score += 0.2
-    
-    // Additional items boost score
-    const accessoryCount = categories.filter(cat => 
-      cat.includes('accessory') || cat.includes('bag') || cat.includes('jewelry')
-    ).length
-    score += Math.min(accessoryCount * 0.1, 0.2) // Max 0.2 for accessories
-    
-    return Math.min(score, 1.0)
-  }
-
-  getCompletenessMessage(score) {
-    if (score >= 0.8) return "Complete outfit! ✓"
-    if (score >= 0.5) return "Almost there - add shoes or accessories"
-    if (score >= 0.3) return "Good start - add more items"
-    return "Start adding items to build your outfit"
+  async fetchMissingItems(itemIds) {
+    // Fetch specific items that weren't in the main fetch
+    try {
+      const promises = itemIds.map(async (id) => {
+        try {
+          const response = await fetch(`/api/v1/inventory_items/${id}`, {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+              "Accept": "application/json",
+              "X-CSRF-Token": document.querySelector('meta[name="csrf-token"]')?.content || ""
+            },
+            credentials: "include"
+          })
+          
+          if (response.ok) {
+            const data = await response.json()
+            if (data.success && data.data) {
+              const item = data.data.inventory_item
+              const itemData = {
+                id: item.id,
+                name: item.name || 'Unnamed Item',
+                category: item.category?.name || 'Uncategorized',
+                image_url: item.images?.primary?.urls?.thumb || 
+                           item.images?.primary?.urls?.medium || 
+                           item.images?.primary?.urls?.original || 
+                           null
+              }
+              if (!this.selectedItems.find(sel => parseInt(sel.id) === parseInt(itemData.id))) {
+                this.selectedItems.push(itemData)
+              }
+            }
+          }
+        } catch (error) {
+          console.error(`Error fetching item ${id}:`, error)
+        }
+      })
+      
+      await Promise.all(promises)
+      this.renderSelectedItems()
+      // CRITICAL: Update hidden fields after fetching missing items
+      this.updateHiddenField()
+    } catch (error) {
+      console.error("Error fetching missing items:", error)
+      this.renderSelectedItems() // Render what we have
+      // Still update hidden fields with what we have
+      this.updateHiddenField()
+    }
   }
 
   updateHiddenField() {
-    const hiddenField = this.element.querySelector('input[name="outfit[inventory_item_ids][]"]')
-    if (hiddenField && hiddenField.parentElement) {
-      // Remove all existing hidden fields
-      hiddenField.parentElement.querySelectorAll('input[name="outfit[inventory_item_ids][]"]').forEach(el => el.remove())
+    // Find the form element - it's inside the controller element (child), not an ancestor
+    // Try closest first (in case form is parent), then querySelector (if form is child)
+    const form = this.element.closest('form') || this.element.querySelector('form')
+    if (!form) {
+      console.error("Could not find form element")
+      return
+    }
+
+    // Count existing fields before removal (for safety check)
+    const existingFieldsBefore = Array.from(form.querySelectorAll('input[name="outfit[inventory_item_ids][]"].existing-outfit-item'))
+    const existingFieldCount = existingFieldsBefore.length
+    const existingFieldValues = existingFieldsBefore.map(field => field.value).filter(v => v && v.trim() !== '')
+    
+    // Remove all existing hidden fields for inventory_item_ids
+    // This includes both existing-outfit-item fields and dynamically added ones
+    form.querySelectorAll('input[name="outfit[inventory_item_ids][]"]').forEach(el => el.remove())
+    
+    // Debug: Log selected items
+    console.log("Updating hidden fields for selected items:", this.selectedItems)
+    console.log("Selected items count:", this.selectedItems.length)
+    console.log("Existing fields before removal:", existingFieldCount)
+    console.log("Existing field values:", existingFieldValues)
+    console.log("Is initialized:", this.isInitialized)
+    
+    // SAFEGUARD: If selectedItems is empty but we're on edit page with existing fields and not initialized,
+    // this means initialization hasn't completed. Preserve the existing fields.
+    if (this.selectedItems.length === 0 && existingFieldValues.length > 0 && !this.isInitialized) {
+      console.warn("WARNING: selectedItems is empty but existing fields found and not initialized yet.")
+      console.warn("This should not happen if initialization is working correctly.")
+      console.warn("Re-adding existing fields as fallback...")
       
-      // Add new hidden fields for each selected item
-      this.selectedItems.forEach(item => {
+      // Re-add existing fields as fallback
+      existingFieldValues.forEach(value => {
         const input = document.createElement('input')
         input.type = 'hidden'
         input.name = 'outfit[inventory_item_ids][]'
-        input.value = item.id
-        hiddenField.parentElement.appendChild(input)
+        input.value = value
+        form.appendChild(input)
+        console.log("Re-added existing field:", input.name, "=", input.value)
       })
+      return
+    }
+    
+    // Add new hidden fields for each selected item
+    // CRITICAL: If selectedItems is empty, we remove all fields (this is intentional for clearing)
+    // But we should ensure selectedItems is properly populated before form submission
+    this.selectedItems.forEach((item, index) => {
+      const input = document.createElement('input')
+      input.type = 'hidden'
+      input.name = 'outfit[inventory_item_ids][]'
+      input.value = String(item.id) // Ensure it's a string
+      
+      // Append directly to the form to ensure it's submitted
+      form.appendChild(input)
+      
+      console.log(`Added hidden field ${index + 1}:`, input.name, "=", input.value, "for item:", item.name)
+    })
+    
+    // Verify fields were added
+    const allHiddenFields = form.querySelectorAll('input[name="outfit[inventory_item_ids][]"]')
+    console.log(`Total hidden fields after update: ${allHiddenFields.length}`)
+    if (allHiddenFields.length > 0) {
+      allHiddenFields.forEach((field, index) => {
+        console.log(`  Field ${index}: value="${field.value}"`)
+      })
+    } else {
+      console.warn("WARNING: No hidden fields were added! This means selectedItems is empty.")
+      console.warn("This is OK if user intentionally cleared all items, but may be a bug otherwise.")
     }
   }
 
@@ -400,117 +576,14 @@ export default class extends Controller {
     }
   }
 
-  removeItem(event) {
-    const itemId = event.currentTarget.dataset.itemId
-    this.removeItem(itemId)
-  }
-
-  async updateColorAnalysis() {
-    if (!this.hasColorAnalysisTarget) return
-
-    if (this.selectedItems.length === 0) {
-      this.colorAnalysisTarget.innerHTML = `
-        <div class="text-sm text-gray-500 dark:text-gray-400 text-center py-4">
-          Add items to analyze color coordination
-        </div>
-      `
-      return
-    }
-
-    // Extract item IDs for API call
-    const itemIds = this.selectedItems.map(item => parseInt(item.id)).filter(id => !isNaN(id))
-    
-    if (itemIds.length === 0) {
-      return
-    }
-
-    try {
-      const response = await fetch(`/api/v1/outfits/color_analysis?item_ids[]=${itemIds.join('&item_ids[]=')}`, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          "Accept": "application/json",
-          "X-CSRF-Token": document.querySelector('meta[name="csrf-token"]').content
-        },
-        credentials: "include"
-      })
-
-      const data = await response.json()
-      if (data.success && data.data) {
-        this.renderColorAnalysis(data.data)
-      }
-    } catch (error) {
-      console.error("Error fetching color analysis:", error)
-      // Silently fail - color analysis is nice-to-have
+  handleRemoveItem(event) {
+    event.preventDefault()
+    event.stopPropagation()
+    const itemId = event.currentTarget.dataset.itemId || event.currentTarget.closest('[data-item-id]')?.dataset.itemId
+    if (itemId) {
+      this.removeItem(parseInt(itemId))
     }
   }
 
-  renderColorAnalysis(analysis) {
-    if (!this.hasColorAnalysisTarget) return
-
-    const score = Math.round(analysis.score * 100)
-    const colors = Object.keys(analysis.colors || {})
-    const scoreColor = score >= 70 ? "text-green-600" : score >= 50 ? "text-yellow-600" : "text-red-600"
-    const barColor = score >= 70 ? "bg-green-600" : score >= 50 ? "bg-yellow-600" : "bg-red-600"
-
-    let html = `
-      <div class="space-y-3">
-        <div>
-          <div class="flex items-center justify-between mb-2">
-            <span class="text-sm font-medium text-gray-900 dark:text-white">Color Coordination</span>
-            <span class="text-sm font-bold ${scoreColor}">${score}%</span>
-          </div>
-          <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-            <div class="${barColor} h-2 rounded-full transition-all duration-300" style="width: ${score}%"></div>
-          </div>
-        </div>
-
-        <div class="text-sm text-gray-700 dark:text-gray-300">
-          ${analysis.feedback || "No feedback available"}
-        </div>
-    `
-
-    // Show colors detected
-    if (colors.length > 0) {
-      html += `
-        <div>
-          <span class="text-xs font-medium text-gray-600 dark:text-gray-400">Colors:</span>
-          <div class="flex flex-wrap gap-1 mt-1">
-            ${colors.map(color => `
-              <span class="px-2 py-1 text-xs bg-gray-100 dark:bg-gray-700 rounded text-gray-700 dark:text-gray-300">
-                ${color.charAt(0).toUpperCase() + color.slice(1)}
-              </span>
-            `).join('')}
-          </div>
-        </div>
-      `
-    }
-
-    // Show warnings
-    if (analysis.warnings && analysis.warnings.length > 0) {
-      html += `
-        <div class="text-xs text-yellow-700 dark:text-yellow-400">
-          <div class="font-medium mb-1">⚠️ Tips:</div>
-          <ul class="list-disc list-inside space-y-1">
-            ${analysis.warnings.map(warning => `<li>${warning}</li>`).join('')}
-          </ul>
-        </div>
-      `
-    }
-
-    // Show suggestions
-    if (analysis.suggestions && analysis.suggestions.length > 0) {
-      html += `
-        <div class="text-xs text-blue-700 dark:text-blue-400">
-          <div class="font-medium mb-1">💡 Suggestions:</div>
-          <ul class="list-disc list-inside space-y-1">
-            ${analysis.suggestions.map(suggestion => `<li>${suggestion}</li>`).join('')}
-          </ul>
-        </div>
-      `
-    }
-
-    html += `</div>`
-    this.colorAnalysisTarget.innerHTML = html
-  }
+  // Removed: updateColorAnalysis and renderColorAnalysis methods (progress bars removed)
 }

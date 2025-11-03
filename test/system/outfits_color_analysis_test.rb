@@ -39,6 +39,7 @@ class OutfitsColorAnalysisTest < ApplicationSystemTestCase
   end
 
   test "user can see color analysis section in outfit builder" do
+    skip "Color analysis UI was intentionally removed from the builder"
     visit "/outfits/new"
 
     if page.current_path == "/login"
@@ -56,6 +57,7 @@ class OutfitsColorAnalysisTest < ApplicationSystemTestCase
   end
 
   test "color analysis updates when items are added to outfit" do
+    skip "Color analysis UI was intentionally removed from the builder"
     visit "/outfits/new"
 
     if page.current_path == "/login"
@@ -87,6 +89,7 @@ class OutfitsColorAnalysisTest < ApplicationSystemTestCase
   end
 
   test "color analysis displays color information" do
+    skip "Color analysis UI was intentionally removed from the builder"
     # Create outfit with items
     outfit = create(:outfit, user: @user, name: "Color Test Outfit #{SecureRandom.hex(4)}")
     outfit.outfit_items.create!(inventory_item: @blue_shirt)
@@ -112,6 +115,7 @@ class OutfitsColorAnalysisTest < ApplicationSystemTestCase
   end
 
   test "color analysis handles items with no color metadata" do
+    skip "Color analysis UI was intentionally removed from the builder"
     # Create item without color metadata
     plain_item = create(:inventory_item,
       user: @user,
@@ -141,6 +145,7 @@ class OutfitsColorAnalysisTest < ApplicationSystemTestCase
   end
 
   test "color analysis updates when item is removed from outfit" do
+    skip "Color analysis UI was intentionally removed from the builder"
     outfit = create(:outfit, user: @user, name: "Remove Test Outfit #{SecureRandom.hex(4)}")
     outfit.outfit_items.create!(inventory_item: @blue_shirt)
     outfit.outfit_items.create!(inventory_item: @black_jeans)
@@ -165,6 +170,7 @@ class OutfitsColorAnalysisTest < ApplicationSystemTestCase
   end
 
   test "color analysis shows coordination feedback" do
+    skip "Color analysis UI was intentionally removed from the builder"
     # Create outfit with complementary colors
     outfit = create(:outfit, user: @user, name: "Coordinated Outfit #{SecureRandom.hex(4)}")
     outfit.outfit_items.create!(inventory_item: @blue_shirt)

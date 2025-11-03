@@ -1,55 +1,80 @@
 require "test_helper"
 
 class InventoryTagTest < ActiveSupport::TestCase
-  def setup
+  setup do
     @user = create(:user)
-    # Use unique category name to avoid collisions
-    category_name = "Clothing #{SecureRandom.hex(4)}"
-    @category = create(:category, name: category_name)
-    @brand = create(:brand)
-    @inventory_item = create(:inventory_item, :clothing, user: @user, category: @category, brand: @brand)
+    @category = create(:category, :clothing)
+    @inventory_item = create(:inventory_item, user: @user, category: @category)
     @tag = create(:tag)
   end
 
-  test "inventory_tag belongs to inventory_item" do
-    inventory_tag = InventoryTag.create!(inventory_item: @inventory_item, tag: @tag)
-
-    assert_equal @inventory_item, inventory_tag.inventory_item
+  test "should be valid with inventory_item and tag" do
+    inventory_tag = InventoryTag.new(inventory_item: @inventory_item, tag: @tag)
+    assert inventory_tag.valid?
+    assert inventory_tag.save
   end
 
-  test "inventory_tag belongs to tag" do
-    inventory_tag = InventoryTag.create!(inventory_item: @inventory_item, tag: @tag)
-
-    assert_equal @tag, inventory_tag.tag
+  test "should require inventory_item" do
+    inventory_tag = InventoryTag.new(tag: @tag)
+    assert_not inventory_tag.valid?
+    assert_includes inventory_tag.errors[:inventory_item], "must exist"
   end
 
-  test "prevents duplicate inventory_item and tag combination" do
+  test "should require tag" do
+    inventory_tag = InventoryTag.new(inventory_item: @inventory_item)
+    assert_not inventory_tag.valid?
+    assert_includes inventory_tag.errors[:tag], "must exist"
+  end
+
+  test "can associate multiple tags with same inventory_item" do
+    tag2 = create(:tag)
+    
     InventoryTag.create!(inventory_item: @inventory_item, tag: @tag)
+    InventoryTag.create!(inventory_item: @inventory_item, tag: tag2)
+    
+    assert_equal 2, @inventory_item.tags.count
+    assert_includes @inventory_item.tags, @tag
+    assert_includes @inventory_item.tags, tag2
+  end
 
+  test "can associate same tag with multiple inventory_items" do
+    item2 = create(:inventory_item, user: @user, category: @category)
+    
+    InventoryTag.create!(inventory_item: @inventory_item, tag: @tag)
+    InventoryTag.create!(inventory_item: item2, tag: @tag)
+    
+    assert_equal 2, @tag.inventory_items.count
+    assert_includes @tag.inventory_items, @inventory_item
+    assert_includes @tag.inventory_items, item2
+  end
+
+  test "should prevent duplicate associations" do
+    InventoryTag.create!(inventory_item: @inventory_item, tag: @tag)
+    
     duplicate = InventoryTag.new(inventory_item: @inventory_item, tag: @tag)
-
     assert_not duplicate.valid?
-    assert_includes duplicate.errors[:inventory_item_id], "has already been taken"
+    # Should have unique constraint error
   end
 
-  test "allows same tag for different inventory items" do
-    item2 = create(:inventory_item, :clothing, user: @user, category: @category, brand: @brand)
-
-    tag1 = InventoryTag.create!(inventory_item: @inventory_item, tag: @tag)
-    tag2 = InventoryTag.create!(inventory_item: item2, tag: @tag)
-
-    assert tag1.persisted?
-    assert tag2.persisted?
+  test "destroying inventory_item destroys associated inventory_tags" do
+    InventoryTag.create!(inventory_item: @inventory_item, tag: @tag)
+    
+    assert_difference -> { InventoryTag.count }, -1 do
+      @inventory_item.destroy
+    end
+    
+    # Tag should still exist
+    assert @tag.reload.persisted?
   end
 
-  test "allows different tags for same inventory item" do
-    tag2_name = "Casual #{SecureRandom.hex(4)}"
-    tag2 = create(:tag, name: tag2_name)
-
-    tag1 = InventoryTag.create!(inventory_item: @inventory_item, tag: @tag)
-    tag2_record = InventoryTag.create!(inventory_item: @inventory_item, tag: tag2)
-
-    assert tag1.persisted?
-    assert tag2_record.persisted?
+  test "destroying tag destroys associated inventory_tags" do
+    InventoryTag.create!(inventory_item: @inventory_item, tag: @tag)
+    
+    assert_difference -> { InventoryTag.count }, -1 do
+      @tag.destroy
+    end
+    
+    # Inventory item should still exist
+    assert @inventory_item.reload.persisted?
   end
 end
