@@ -1,0 +1,12 @@
+# DISABLED - Development phase
+# This workflow is disabled during development
+# Enable by renaming to deploy.yml when ready for production
+
+name: Deploy to Production
+
+on:
+  # Disabled - uncomment when ready
+  # push:
+  #   branches: [ main ]
+  # workflow_dispatch:
+
