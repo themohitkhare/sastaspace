@@ -11,7 +11,7 @@ gem "puma", ">= 5.0"
 # Use JavaScript with ESM import maps [https://github.com/rails/importmap-rails]
 gem "importmap-rails"
 # Hotwire's SPA-like page accelerator [https://turbo.hotwired.dev]
-gem "turbo-rails"
+gem "turbo-rails", "~> 2.0.20"
 # Hotwire's modest JavaScript framework [https://stimulus.hotwired.dev]
 gem "stimulus-rails"
 # Build JSON APIs with ease [https://github.com/rails/jbuilder]
@@ -37,14 +37,14 @@ gem "tzinfo-data", platforms: %i[ windows jruby ]
 
 # Use the database-backed adapters for Rails.cache, Active Job, and Action Cable
 gem "solid_cache"
-gem "solid_queue"
+gem "solid_queue", "~> 1.2.4"
 gem "solid_cable"
 
 # Reduces boot times through caching; required in config/boot.rb
 gem "bootsnap", require: false
 
 # Deploy this application anywhere as a Docker container [https://kamal-deploy.org]
-gem "kamal", require: false
+gem "kamal", "~> 2.8.2", require: false
 
 # Add HTTP asset caching/compression and X-Sendfile acceleration to Puma [https://github.com/basecamp/thruster/]
 gem "thruster", require: false
@@ -53,7 +53,8 @@ gem "thruster", require: false
 gem "image_processing", "~> 1.2"
 
 # Tailwind CSS for styling
-gem "tailwindcss-rails", "~> 2.0"
+# Pinned to v3 - v4 requires migration (see https://github.com/rails/tailwindcss-rails/blob/main/README.md#upgrading-your-application-from-tailwind-v3-to-v4)
+gem "tailwindcss-rails", "~> 3.3.1"
 
 group :development, :test do
   # See https://guides.rubyonrails.org/debugging_rails_applications.html#debugging-with-the-debug-gem
@@ -86,9 +87,9 @@ group :test do
   gem "factory_bot_rails"
   gem "faker"
   gem "simplecov", require: false
-  gem "webmock"
+  gem "webmock", "~> 3.26.1"
   gem "vcr"
   gem "minitest-reporters"
-  gem "shoulda-matchers"
+  gem "shoulda-matchers", "~> 7.0.1"
   gem "mocha"
 end
