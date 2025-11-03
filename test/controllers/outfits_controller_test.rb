@@ -166,6 +166,50 @@ class OutfitsControllerTest < ActionDispatch::IntegrationTest
     assert_includes outfit.inventory_items, item
   end
 
+  test "update updates outfit attributes and inventory_item_ids" do
+    category = create(:category, name: "Cat #{SecureRandom.hex(4)}")
+    item1 = create(:inventory_item, user: @user, category: category, name: "One")
+    item2 = create(:inventory_item, user: @user, category: category, name: "Two")
+    outfit = @user.outfits.create!(name: "Orig", description: "desc", occasion: "casual")
+    outfit.outfit_items.create!(inventory_item: item1)
+
+    patch outfit_path(outfit), params: {
+      outfit: {
+        name: "Updated Name",
+        description: "New desc",
+        occasion: "formal",
+        inventory_item_ids: [ item1.id, item2.id ]
+      }
+    }, headers: { "Accept" => "text/html" }
+
+    assert_redirected_to outfit_path(outfit)
+    outfit.reload
+    assert_equal "Updated Name", outfit.name
+    assert_equal "formal", outfit.occasion
+    assert_equal 2, outfit.inventory_items.count
+    assert_includes outfit.inventory_items, item1
+    assert_includes outfit.inventory_items, item2
+  end
+
+  test "update clears outfit_items when no inventory_item_ids provided" do
+    category = create(:category, name: "Cat #{SecureRandom.hex(4)}")
+    item1 = create(:inventory_item, user: @user, category: category, name: "One")
+    outfit = @user.outfits.create!(name: "Orig2", description: "desc", occasion: "casual")
+    outfit.outfit_items.create!(inventory_item: item1)
+
+    patch outfit_path(outfit), params: {
+      outfit: {
+        name: "Still Name",
+        description: "Still desc"
+        # no inventory_item_ids
+      }
+    }, headers: { "Accept" => "text/html" }
+
+    assert_redirected_to outfit_path(outfit)
+    outfit.reload
+    assert_equal 0, outfit.outfit_items.count
+  end
+
   test "index displays available_occasions for filter dropdown" do
     @user.outfits.create!(name: "Casual", occasion: "casual")
     @user.outfits.create!(name: "Formal", occasion: "formal")
@@ -174,5 +218,25 @@ class OutfitsControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
     # Should render filter form with occasion options
     assert_match(/occasion/i, @response.body)
+  end
+
+  test "destroy deletes outfit and redirects" do
+    outfit = @user.outfits.create!(name: "To Delete", description: "desc", occasion: "casual")
+    assert_difference -> { @user.outfits.count }, -1 do
+      delete outfit_path(outfit), headers: { "Accept" => "text/html" }
+    end
+    assert_redirected_to outfits_path
+  end
+
+  test "destroy deletes associated outfit_items" do
+    category = create(:category, name: "Cat #{SecureRandom.hex(4)}")
+    item = create(:inventory_item, user: @user, category: category, name: "Item")
+    outfit = @user.outfits.create!(name: "To Delete", description: "desc")
+    outfit.outfit_items.create!(inventory_item: item)
+
+    assert_difference -> { OutfitItem.count }, -1 do
+      delete outfit_path(outfit), headers: { "Accept" => "text/html" }
+    end
+    assert_redirected_to outfits_path
   end
 end

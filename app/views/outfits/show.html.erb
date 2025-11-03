@@ -75,10 +75,9 @@
     <%= link_to "← Back to Outfits", outfits_path, class: "text-primary-600 dark:text-primary-400 hover:underline" %>
     <div class="flex space-x-2">
       <%= link_to "Delete", outfit_path(@outfit), 
-          method: :delete,
           data: { 
-            confirm: "Are you sure you want to delete this outfit?",
-            turbo_method: :delete
+            turbo_method: :delete,
+            turbo_confirm: "Are you sure you want to delete this outfit?"
           },
           class: "btn-secondary text-red-600 hover:text-red-700" %>
     </div>
