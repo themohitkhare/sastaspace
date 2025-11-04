@@ -1,7 +1,6 @@
 module Api
   module V1
-    class InventoryItemsController < ApplicationController
-      include Authenticable
+    class InventoryItemsController < BaseController
 
       before_action :authenticate_user!
       before_action :set_inventory_item, only: [ :show, :update, :destroy, :worn, :similar, :attach_primary_image, :attach_additional_images, :detach_primary_image, :detach_additional_image ]

@@ -1,6 +1,7 @@
 module Api
   module V1
-    class HealthController < ActionController::API
+    class HealthController < BaseController
+      skip_before_action :authenticate_user!
       def show
         # Simple health check for API
         render json: {

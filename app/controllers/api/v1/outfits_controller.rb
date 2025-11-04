@@ -1,7 +1,6 @@
 module Api
   module V1
-    class OutfitsController < ApplicationController
-      include Authenticable
+    class OutfitsController < BaseController
       skip_before_action :authenticate_user!, only: [ :index, :show ]
       before_action :authenticate_user_optional, only: [ :index, :show ]
       before_action :set_outfit, only: [ :show, :update, :destroy, :wear, :favorite, :suggestions, :duplicate ]
