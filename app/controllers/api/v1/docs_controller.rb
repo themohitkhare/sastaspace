@@ -1,6 +1,7 @@
 module Api
   module V1
-    class DocsController < ActionController::API
+    class DocsController < BaseController
+      skip_before_action :authenticate_user!
       def show
         # Simple OpenAPI spec stub
         render json: {

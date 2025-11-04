@@ -1,7 +1,6 @@
 module Api
   module V1
-    class AuthController < ApplicationController
-      include Authenticable
+    class AuthController < BaseController
 
       # Only protect these endpoints with authentication
       before_action :authenticate_user!, only: [ :me, :logout, :logout_all ]
