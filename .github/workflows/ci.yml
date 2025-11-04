@@ -8,6 +8,7 @@ on:
 
 env:
   RAILS_ENV: test
+  RUBY_VERSION: 3.4.7
   DATABASE_USERNAME: postgres
   DATABASE_PASSWORD: postgres
   DATABASE_HOST: localhost
@@ -18,12 +19,6 @@ jobs:
     name: Rails & System Tests
     runs-on: ubuntu-latest
     
-    container:
-      image: ruby:3.4.7-slim
-      env:
-        BUNDLE_PATH: /usr/local/bundle
-      options: --user root
-    
     services:
       postgres:
         image: postgres:15
@@ -33,26 +28,31 @@ jobs:
           POSTGRES_DB: sastaspace_test
         ports:
           - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     
     steps:
     - name: Checkout code
       uses: actions/checkout@v5
       
+    - name: Set up Ruby
+      uses: ruby/setup-ruby@v1
+      with:
+        ruby-version: ${{ env.RUBY_VERSION }}
+        bundler-cache: true
+        
     - name: Install system dependencies
       run: |
-        apt-get update -qq
-        apt-get install -y --no-install-recommends \
-          build-essential \
-          git \
+        sudo apt-get update -qq
+        sudo apt-get install -y --no-install-recommends \
           libvips \
-          libyaml-dev \
-          pkg-config \
-          postgresql-client \
-          curl
+          postgresql-client
         
     - name: Install dependencies
       run: |
-        gem install bundler
         bundle install --jobs 4 --retry 3
         
     - name: Setup database
