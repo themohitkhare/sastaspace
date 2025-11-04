@@ -21,7 +21,7 @@ jobs:
     
     services:
       postgres:
-        image: postgres:15
+        image: pgvector/pgvector:pg18
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
@@ -58,7 +58,7 @@ jobs:
     - name: Setup database
       run: |
         bundle exec rails db:create
-        bundle exec rails db:schema:load
+        bundle exec rails db:schema:load || bundle exec rails db:migrate
         
     - name: Precompile assets
       run: |
