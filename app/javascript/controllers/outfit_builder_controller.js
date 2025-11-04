@@ -179,11 +179,23 @@ export default class extends Controller {
           .replace(/>/g, '&gt;')
       }
       
+      // Escape JavaScript strings (for use in inline event handlers)
+      const escapeJs = (str) => {
+        if (!str) return ''
+        return String(str)
+          .replace(/\\/g, '\\\\')
+          .replace(/'/g, "\\'")
+          .replace(/"/g, '\\"')
+          .replace(/\n/g, '\\n')
+          .replace(/\r/g, '\\r')
+      }
+      
       const categoryName = item.category?.name || 'Uncategorized'
       const escapedImageUrl = escapeHtml(imageUrl)
       const escapedPlaceholder = escapeHtml(placeholderImage)
       const escapedItemName = escapeHtml(item.name)
       const escapedCategoryName = escapeHtml(categoryName)
+      const jsEscapedPlaceholder = escapeJs(placeholderImage)
       
       return `
         <div 
@@ -199,7 +211,7 @@ export default class extends Controller {
             src="${escapedImageUrl}" 
             alt="${escapedItemName}"
             class="w-full h-24 object-cover rounded mb-2 bg-gray-100 dark:bg-gray-700"
-            onerror="this.src='${escapedPlaceholder}'"
+            onerror="this.src='${jsEscapedPlaceholder}'"
           />
           <div class="text-xs font-medium text-gray-900 dark:text-white truncate">${escapedItemName}</div>
           <div class="text-xs text-gray-500 dark:text-gray-400">${escapedCategoryName}</div>
@@ -325,11 +337,23 @@ export default class extends Controller {
         .replace(/</g, '&lt;')
         .replace(/>/g, '&gt;')
     }
+    
+    // Escape JavaScript strings (for use in inline event handlers)
+    const escapeJs = (str) => {
+      if (!str) return ''
+      return String(str)
+        .replace(/\\/g, '\\\\')
+        .replace(/'/g, "\\'")
+        .replace(/"/g, '\\"')
+        .replace(/\n/g, '\\n')
+        .replace(/\r/g, '\\r')
+    }
 
     this.selectedItemsTarget.innerHTML = this.selectedItems.map((item, index) => {
       const imageUrl = item.image_url || placeholderImage
       const escapedImageUrl = escapeHtml(imageUrl)
       const escapedPlaceholder = escapeHtml(placeholderImage)
+      const jsEscapedPlaceholder = escapeJs(placeholderImage)
       const escapedItemName = escapeHtml(item.name)
       const escapedCategory = escapeHtml(item.category)
       
@@ -348,7 +372,7 @@ export default class extends Controller {
           src="${escapedImageUrl}" 
           alt="${escapedItemName}"
           class="w-full h-24 object-cover rounded mb-2 bg-gray-100 dark:bg-gray-700"
-          onerror="this.src='${escapedPlaceholder}'"
+          onerror="this.src='${jsEscapedPlaceholder}'"
         />
         <div class="text-sm font-medium text-gray-900 dark:text-white truncate">${escapedItemName}</div>
         <div class="text-xs text-gray-500 dark:text-gray-400">${escapedCategory}</div>
