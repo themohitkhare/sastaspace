@@ -68,7 +68,7 @@ module Api
         begin
           # Get original URL first as fallback for all variants
           original_url = url_for(image)
-          
+
           # ActiveStorage::Attached::One delegates id, filename, etc. to blob
           # So we can call these methods directly on the image object
           {
@@ -121,7 +121,7 @@ module Api
       def url_for(attachment)
         # Use rails_blob_url helper for better URL generation
         return nil unless attachment.attached?
-        
+
         # Try using rails_blob_url first (more reliable)
         begin
           url_options = { host: default_host, protocol: default_protocol }
@@ -144,13 +144,13 @@ module Api
 
       def safe_variant_url(image, dimensions)
         return nil unless image.attached?
-        
+
         # Try to generate variant URL, but catch errors gracefully
         # This prevents 500 errors when VIPS/ImageMagick is not installed
         begin
           # Check if variant can be created (this will fail if processor is not available)
           variant = image.variant(resize_to_limit: dimensions)
-          
+
           # If variant creation succeeded, generate URL
           url_options = { host: default_host, protocol: default_protocol }
           url_options[:port] = default_port if default_port
@@ -166,19 +166,19 @@ module Api
           nil
         end
       end
-      
+
       def default_host
-        Rails.application.config.action_controller.default_url_options[:host] || 
-          Rails.application.routes.default_url_options[:host] || 
+        Rails.application.config.action_controller.default_url_options[:host] ||
+          Rails.application.routes.default_url_options[:host] ||
           "localhost"
       end
-      
+
       def default_port
-        Rails.application.config.action_controller.default_url_options[:port] || 
-          Rails.application.routes.default_url_options[:port] || 
+        Rails.application.config.action_controller.default_url_options[:port] ||
+          Rails.application.routes.default_url_options[:port] ||
           (Rails.env.development? ? 3000 : nil)
       end
-      
+
       def default_protocol
         Rails.env.production? ? "https" : "http"
       end

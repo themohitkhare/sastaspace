@@ -1,7 +1,6 @@
 module Api
   module V1
     class AiAnalysisController < BaseController
-
       before_action :authenticate_user!
       before_action :set_inventory_item, only: [ :analyze_image, :get_analysis, :destroy ]
       before_action :set_ai_analysis, only: [ :get_analysis, :destroy ]

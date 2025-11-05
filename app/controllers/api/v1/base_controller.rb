@@ -3,7 +3,7 @@ module Api
     class BaseController < ActionController::API
       # Include cookie support for API controllers (needed for Authenticable concern)
       include ActionController::Cookies
-      
+
       # Include concerns
       include Authenticable  # Authentication required by default (secure by default)
       include StructuredLogging
@@ -20,4 +20,3 @@ module Api
     end
   end
 end
-

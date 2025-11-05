@@ -134,18 +134,38 @@ module Api
         authorize_owner!
 
         limit = params[:limit]&.to_i || 6
-        exclude_ids = params[:exclude_ids] || []
+        exclude_ids = Array(params[:exclude_ids]).map(&:to_i).reject(&:zero?)
 
         # Get outfit items
         outfit_items = @outfit.inventory_items.includes(:category, :brand, :tags, primary_image_attachment: :blob)
+
+        Rails.logger.info "Generating suggestions for outfit #{@outfit.id} with #{outfit_items.count} items, excluding #{exclude_ids.length} IDs"
+
+        # If outfit has no items, return empty suggestions
+        if outfit_items.empty?
+          Rails.logger.info "Outfit has no items, returning empty suggestions"
+          return render json: {
+            success: true,
+            data: {
+              items: [],
+              outfit_id: @outfit.id,
+              existing_items_count: 0,
+              suggestions_count: 0
+            },
+            message: "Add items to your outfit to see AI suggestions",
+            timestamp: Time.current.iso8601
+          }
+        end
 
         # Get AI-powered suggestions using VectorSearchService
         suggested_items = VectorSearchService.suggest_outfit_items(
           current_user,
           outfit_items,
           limit: limit,
-          exclude_ids: exclude_ids.map(&:to_i)
+          exclude_ids: exclude_ids
         )
+
+        Rails.logger.info "Found #{suggested_items.count} suggestions for outfit #{@outfit.id}"
 
         # Serialize suggested items using the serializer
         suggested_data = suggested_items.map { |item| Api::V1::InventoryItemSerializer.new(item).as_json }
@@ -158,7 +178,7 @@ module Api
             existing_items_count: outfit_items.count,
             suggestions_count: suggested_items.count
           },
-          message: "AI suggestions generated successfully",
+          message: suggested_items.any? ? "AI suggestions generated successfully" : "No suggestions available. Try adding more items to your wardrobe.",
           timestamp: Time.current.iso8601
         }
       rescue ActiveRecord::RecordNotFound

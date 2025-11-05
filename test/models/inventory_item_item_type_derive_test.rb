@@ -15,7 +15,8 @@ class InventoryItemItemTypeDeriveTest < ActiveSupport::TestCase
 
   test "item_type maps from category name when no parent" do
     user = create(:user)
-    earrings = create(:category, name: "Earrings", parent_category: nil)
+    unique_name = "Earrings #{SecureRandom.hex(4)}"
+    earrings = create(:category, name: unique_name, parent_category: nil)
     item = create(:inventory_item, user: user, category: earrings)
     assert_equal "jewelry", item.item_type
   end

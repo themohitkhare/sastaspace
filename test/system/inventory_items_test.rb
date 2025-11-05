@@ -150,7 +150,7 @@ class InventoryItemsTest < ApplicationSystemTestCase
     assert_text "Delete Me", wait: 5
 
     # Find delete button (might be in a dropdown or direct button)
-    delete_button = find("a", text: /Delete/i, wait: 2) rescue 
+    delete_button = find("a", text: /Delete/i, wait: 2) rescue
                      find("button[data-action*='delete']", wait: 2) rescue
                      find("a[href='#{inventory_item_path(item)}'][data-turbo-method='delete']", wait: 2) rescue
                      nil
