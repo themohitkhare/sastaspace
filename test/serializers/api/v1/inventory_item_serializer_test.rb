@@ -59,16 +59,18 @@ module Api
       end
 
       test "should serialize tags" do
-        tag1 = create(:tag, name: "casual", color: "#blue")
-        tag2 = create(:tag, name: "summer", color: "#yellow")
+        tag1_name = "casual #{SecureRandom.hex(4)}"
+        tag2_name = "summer #{SecureRandom.hex(4)}"
+        tag1 = create(:tag, name: tag1_name, color: "#blue")
+        tag2 = create(:tag, name: tag2_name, color: "#yellow")
         @inventory_item.tags << [ tag1, tag2 ]
 
         serialized = @serializer.as_json
         tags = serialized[:tags]
 
         assert_equal 2, tags.length
-        assert_includes tags.map { |t| t[:name] }, "casual"
-        assert_includes tags.map { |t| t[:name] }, "summer"
+        assert_includes tags.map { |t| t[:name] }, tag1_name
+        assert_includes tags.map { |t| t[:name] }, tag2_name
       end
 
       test "should serialize metadata summary" do

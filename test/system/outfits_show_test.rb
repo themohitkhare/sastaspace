@@ -211,10 +211,10 @@ class OutfitsShowTest < ApplicationSystemTestCase
 
     # Find delete link using more specific selector
     delete_selector = "a[href='#{outfit_path(outfit_to_delete)}'][data-turbo-method='delete']"
-    
+
     # Wait for the delete link to be present and visible
     assert_selector delete_selector, text: /Delete/i, wait: 5
-    
+
     # Handle confirmation and click in a way that prevents stale element errors
     # Turbo uses data-turbo-confirm, which works with accept_confirm
     # Try with message first, fallback to without message
@@ -229,7 +229,7 @@ class OutfitsShowTest < ApplicationSystemTestCase
         find(delete_selector, text: /Delete/i, wait: 2).click
       end
     end
-      
+
     # Wait for redirect
     assert_current_path(/outfits/, wait: 5)
     assert_no_text outfit_to_delete.name, wait: 5

@@ -224,7 +224,7 @@ class Api::V1::InventoryItemsTest < ActionDispatch::IntegrationTest
 
     primary_image = item["images"]["primary"]
     assert_includes primary_image.keys, "urls", "URLs should be included"
-    
+
     urls = primary_image["urls"]
     assert_includes urls.keys, "original", "Original URL should be present"
     assert_includes urls.keys, "thumb", "Thumb URL should be present"

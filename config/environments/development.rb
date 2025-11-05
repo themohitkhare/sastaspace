@@ -40,7 +40,7 @@ Rails.application.configure do
   # Set localhost to be used by links generated in mailer templates and url_for helpers.
   config.action_mailer.default_url_options = { host: "localhost", port: 3000 }
   config.action_controller.default_url_options = { host: "localhost", port: 3000 }
-  
+
   # Ensure routes default_url_options is set for url_for helpers
   config.after_initialize do
     Rails.application.routes.default_url_options[:host] = "localhost"

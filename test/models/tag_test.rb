@@ -33,10 +33,10 @@ class TagTest < ActiveSupport::TestCase
     tag = create(:tag)
     item1 = create(:inventory_item, user: user, category: category)
     item2 = create(:inventory_item, user: user, category: category)
-    
+
     InventoryTag.create!(inventory_item: item1, tag: tag)
     InventoryTag.create!(inventory_item: item2, tag: tag)
-    
+
     assert_equal 2, tag.inventory_items.count
     assert_includes tag.inventory_items, item1
     assert_includes tag.inventory_items, item2
@@ -48,11 +48,11 @@ class TagTest < ActiveSupport::TestCase
     tag = create(:tag)
     item = create(:inventory_item, user: user, category: category)
     inventory_tag = InventoryTag.create!(inventory_item: item, tag: tag)
-    
+
     assert_difference -> { InventoryTag.count }, -1 do
       tag.destroy
     end
-    
+
     # Inventory item should still exist
     assert item.reload.persisted?
   end

@@ -1,7 +1,6 @@
 module Api
   module V1
     class AuthController < BaseController
-
       # Only protect these endpoints with authentication
       before_action :authenticate_user!, only: [ :me, :logout, :logout_all ]
       before_action :parse_json_params, only: [ :register, :login, :refresh ]
@@ -237,8 +236,12 @@ module Api
       def user_params
         # Handle both nested (:user) and direct parameter formats
         # Also handle JSON requests
-        user_data = params[:user] || params.permit!
-        user_data.permit(:email, :password, :password_confirmation, :first_name, :last_name)
+        if params[:user].present?
+          params[:user].permit(:email, :password, :password_confirmation, :first_name, :last_name)
+        else
+          # For direct parameter format (from JSON), permit only the expected keys
+          params.permit(:email, :password, :password_confirmation, :first_name, :last_name)
+        end
       end
     end
   end

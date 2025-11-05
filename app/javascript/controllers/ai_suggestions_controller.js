@@ -9,18 +9,22 @@ export default class extends Controller {
 
   connect() {
     // Listen for suggestions requested from outfit builder
-    document.addEventListener("outfit-builder:suggestions-requested", this.handleSuggestionsRequest.bind(this))
+    this.boundHandleSuggestionsRequest = this.handleSuggestionsRequest.bind(this)
+    document.addEventListener("outfit-builder:suggestions-requested", this.boundHandleSuggestionsRequest)
+    console.log("AI Suggestions controller connected")
   }
 
   disconnect() {
-    document.removeEventListener("outfit-builder:suggestions-requested", this.handleSuggestionsRequest.bind(this))
+    document.removeEventListener("outfit-builder:suggestions-requested", this.boundHandleSuggestionsRequest)
     if (this.requestTimeout) {
       clearTimeout(this.requestTimeout)
     }
   }
 
   async handleSuggestionsRequest(event) {
-    const items = event.detail.items || []
+    const items = event.detail?.items || []
+    console.log("AI Suggestions: Request received", { itemsCount: items.length, hasOutfitId: this.hasOutfitIdValue, outfitId: this.outfitIdValue })
+    
     if (!items || items.length === 0) {
       this.clearSuggestions()
       return
@@ -56,9 +60,41 @@ export default class extends Controller {
           credentials: "include"
         })
 
+        // Check response status before parsing JSON
+        if (!response.ok) {
+          if (response.status === 401 || response.status === 403) {
+            this.showError("Please log in to see AI suggestions.")
+            return
+          }
+          if (response.status === 404) {
+            this.showError("Outfit not found.")
+            return
+          }
+          // Try to parse error response
+          try {
+            const errorData = await response.json()
+            const errorMessage = errorData.error?.message || `Server error (${response.status})`
+            this.showError(errorMessage)
+            return
+          } catch {
+            this.showError(`Failed to load suggestions (${response.status}).`)
+            return
+          }
+        }
+
         const data = await response.json()
-        if (data.success && data.data.items) {
-          this.renderSuggestions(data.data.items)
+        if (data.success && data.data && data.data.items) {
+          const items = Array.isArray(data.data.items) ? data.data.items : []
+          if (items.length > 0) {
+            this.renderSuggestions(items)
+          } else {
+            this.showEmptyState()
+          }
+          return
+        } else {
+          // Response format unexpected
+          console.warn("Unexpected response format:", data)
+          this.showError("Received unexpected response format.")
           return
         }
       }
@@ -112,18 +148,32 @@ export default class extends Controller {
         credentials: "include"
       })
 
+      // Check response status
+      if (!response.ok) {
+        if (response.status === 401 || response.status === 403) {
+          this.showError("Please log in to see AI suggestions.")
+          return
+        }
+        // Fallback to similar items on error
+        await this.fetchSimilarItemsFallback(selectedItems)
+        return
+      }
+
       const data = await response.json()
-      if (data.success && data.data.inventory_items) {
+      if (data.success && data.data && data.data.inventory_items) {
         // Filter out items already selected
         const selectedIds = selectedItems.map(item => parseInt(item.id)).filter(id => !isNaN(id))
-        const suggestions = data.data.inventory_items
-          .filter(item => !selectedIds.includes(item.id))
-          .slice(0, 6) // Limit to 6 suggestions
+        const suggestions = Array.isArray(data.data.inventory_items) 
+          ? data.data.inventory_items
+              .filter(item => !selectedIds.includes(item.id))
+              .slice(0, 6) // Limit to 6 suggestions
+          : []
         
         if (suggestions.length > 0) {
           this.renderSuggestions(suggestions)
         } else {
-          this.showEmptyState()
+          // Fallback: Get similar items for the first selected item
+          await this.fetchSimilarItemsFallback(selectedItems)
         }
       } else {
         // Fallback: Get similar items for the first selected item
@@ -144,11 +194,15 @@ export default class extends Controller {
     }
 
     try {
-      const allSuggestions = []
       const selectedIds = selectedItems.map(item => parseInt(item.id)).filter(id => !isNaN(id))
 
       // Get similar items for the first selected item
       const primaryItem = selectedItems[0]
+      if (!primaryItem || !primaryItem.id) {
+        this.showEmptyState()
+        return
+      }
+
       const response = await fetch(`/api/v1/inventory_items/${primaryItem.id}/similar?limit=6`, {
         method: "GET",
         headers: {
@@ -159,11 +213,27 @@ export default class extends Controller {
         credentials: "include"
       })
 
+      // Check response status
+      if (!response.ok) {
+        if (response.status === 401 || response.status === 403) {
+          this.showError("Please log in to see AI suggestions.")
+          return
+        }
+        if (response.status === 404) {
+          this.showEmptyState()
+          return
+        }
+        this.showError("Unable to load suggestions.")
+        return
+      }
+
       const data = await response.json()
-      if (data.success && data.data.similar_items) {
-        const suggestions = data.data.similar_items
-          .filter(item => !selectedIds.includes(item.id))
-          .slice(0, 6)
+      if (data.success && data.data && data.data.similar_items) {
+        const suggestions = Array.isArray(data.data.similar_items)
+          ? data.data.similar_items
+              .filter(item => !selectedIds.includes(item.id))
+              .slice(0, 6)
+          : []
         
         if (suggestions.length > 0) {
           this.renderSuggestions(suggestions)
@@ -181,12 +251,17 @@ export default class extends Controller {
 
 
   renderSuggestions(items) {
-    if (!this.hasListTarget) return
+    if (!this.hasListTarget) {
+      console.warn("AI Suggestions: list target not found")
+      return
+    }
 
     if (items.length === 0) {
       this.showEmptyState()
       return
     }
+
+    console.log("AI Suggestions: Rendering", items.length, "suggestions")
 
     // SVG placeholder as data URI (clothing icon)
     const placeholderImage = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200' viewBox='0 0 200 200'%3E%3Crect width='200' height='200' fill='%23e5e7eb'/%3E%3Cg fill='%239ca3af'%3E%3Cpath d='M60 70h80v80H60z'/%3E%3Ccircle cx='100' cy='95' r='12'/%3E%3Cpath d='M70 135l30-25 20 15 20-20 30 30H70z'/%3E%3C/g%3E%3C/svg%3E"
@@ -216,13 +291,20 @@ export default class extends Controller {
     this.listTarget.innerHTML = `
       <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
         ${items.map(item => {
-          const imageUrl = item.images?.primary?.urls?.thumb || item.images?.primary?.urls?.medium || item.images?.primary?.urls?.original || placeholderImage
-          const categoryName = item.category?.name || 'Item'
+          // Handle both API response format (item.images.primary.urls) and frontend format (item.image_url)
+          const imageUrl = item.images?.primary?.urls?.thumb 
+            || item.images?.primary?.urls?.medium 
+            || item.images?.primary?.urls?.original 
+            || item.image_url
+            || placeholderImage
+          
+          // Handle both API response format (item.category.name) and frontend format (item.category as string)
+          const categoryName = item.category?.name || item.category || 'Item'
           
           const escapedImageUrl = escapeHtml(imageUrl)
           const escapedPlaceholder = escapeHtml(placeholderImage)
           const jsEscapedPlaceholder = escapeJs(placeholderImage)
-          const escapedItemName = escapeHtml(item.name)
+          const escapedItemName = escapeHtml(item.name || 'Unnamed Item')
           const escapedCategoryName = escapeHtml(categoryName)
           
           return `

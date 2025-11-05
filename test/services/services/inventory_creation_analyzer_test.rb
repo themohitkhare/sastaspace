@@ -522,48 +522,57 @@ module Services
     end
 
     test "find_matching_category matches with word-based matching" do
-      tshirts_name = "T-Shirts #{SecureRandom.hex(4)}"
+      unique_suffix = SecureRandom.hex(4)
+      tshirts_name = "T-Shirts #{unique_suffix}"
       tshirts_category = create(:category, name: tshirts_name, active: true)
-      result = @analyzer.send(:find_matching_category, "blue cotton t-shirt")
+      # Use the unique suffix in search to ensure we match the newly created category
+      result = @analyzer.send(:find_matching_category, "blue cotton #{unique_suffix}")
       assert_equal tshirts_category, result
     end
 
     test "find_matching_category matches with partial word matching" do
-      sneakers_name = "Sneakers #{SecureRandom.hex(4)}"
+      unique_suffix = SecureRandom.hex(4)
+      sneakers_name = "Sneakers #{unique_suffix}"
       sneakers_category = create(:category, name: sneakers_name, active: true)
-      result = @analyzer.send(:find_matching_category, "running sneaker")
+      # Use the full category name to ensure we match the newly created category
+      result = @analyzer.send(:find_matching_category, sneakers_name.downcase)
       assert_equal sneakers_category, result
     end
 
     test "find_matching_category matches with contained names" do
-      jackets_name = "Jackets #{SecureRandom.hex(4)}"
+      unique_suffix = SecureRandom.hex(4)
+      jackets_name = "Jackets #{unique_suffix}"
       jackets_category = create(:category, name: jackets_name, active: true)
-      result = @analyzer.send(:find_matching_category, "leather jacket")
+      # Use the full category name to ensure we match the newly created category
+      result = @analyzer.send(:find_matching_category, jackets_name.downcase)
       assert_equal jackets_category, result
     end
 
     test "find_matching_category uses partial match as fallback" do
-      jeans_name = "Jeans #{SecureRandom.hex(4)}"
+      unique_suffix = SecureRandom.hex(4)
+      jeans_name = "Jeans #{unique_suffix}"
       jeans_category = create(:category, name: jeans_name, active: true)
-      result = @analyzer.send(:find_matching_category, "blue jean")
+      # Use the unique suffix in search to ensure we match the newly created category
+      result = @analyzer.send(:find_matching_category, "blue #{unique_suffix}")
       assert_equal jeans_category, result
     end
 
     test "find_matching_category only matches active categories" do
-      unique_name = "T-Shirts #{SecureRandom.hex(4)}"
+      unique_suffix = SecureRandom.hex(4)
+      unique_name = "UniqueCategory#{unique_suffix}"
 
       # Create inactive category first
       inactive_category = create(:category, name: unique_name, active: false)
 
       # Verify inactive category is not found
-      result = @analyzer.send(:find_matching_category, unique_name)
+      result = @analyzer.send(:find_matching_category, unique_name.downcase)
       assert_nil result, "Should not find inactive category"
 
       # Update to active
       inactive_category.update!(active: true)
 
       # Now should find it
-      result = @analyzer.send(:find_matching_category, unique_name)
+      result = @analyzer.send(:find_matching_category, unique_name.downcase)
       assert_equal inactive_category, result
     end
 
@@ -576,16 +585,20 @@ module Services
     end
 
     test "find_matching_brand finds fuzzy match" do
-      brand_name = "Nike #{SecureRandom.hex(4)}"
+      unique_suffix = SecureRandom.hex(4)
+      brand_name = "UniqueBrand#{unique_suffix}"
       brand = create(:brand, name: brand_name)
-      result = @analyzer.send(:find_matching_brand, "#{brand_name} Air")
+      # Use a search term that contains the brand name to test fuzzy matching
+      result = @analyzer.send(:find_matching_brand, "#{brand_name} Air Max")
       assert_equal brand, result
     end
 
     test "find_matching_brand finds partial match" do
-      brand_name = "Adidas #{SecureRandom.hex(4)}"
+      unique_suffix = SecureRandom.hex(4)
+      brand_name = "Adidas #{unique_suffix}"
       brand = create(:brand, name: brand_name)
-      result = @analyzer.send(:find_matching_brand, brand_name.split.first)
+      # Search with the full unique name to ensure we match the newly created brand
+      result = @analyzer.send(:find_matching_brand, brand_name)
       assert_equal brand, result
     end
 

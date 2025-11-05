@@ -1,7 +1,6 @@
 module Api
   module V1
     class CategoriesController < BaseController
-
       skip_before_action :authenticate_user!, only: [ :index, :show, :tree, :roots, :children ]
       before_action :set_category, only: [ :show, :children, :inventory_items ]
       before_action :authenticate_user_optional, only: [ :index, :show, :tree, :roots, :children ]

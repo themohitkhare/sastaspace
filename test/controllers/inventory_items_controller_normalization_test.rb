@@ -3,8 +3,9 @@ require "test_helper"
 class InventoryItemsControllerNormalizationTest < ActionDispatch::IntegrationTest
   setup do
     @user = create(:user)
-    @parent = create(:category, name: "Tops Root")
-    @child = Category.create!(name: "T-Shirts", parent_category: @parent, slug: "t-shirts")
+    unique_suffix = SecureRandom.hex(4)
+    @parent = create(:category, name: "Tops Root #{unique_suffix}")
+    @child = Category.create!(name: "T-Shirts #{unique_suffix}", parent_category: @parent, slug: "t-shirts-#{unique_suffix}")
     InventoryItemsController.any_instance.stubs(:authenticate_user!).returns(true)
     InventoryItemsController.any_instance.stubs(:current_user).returns(@user)
   end

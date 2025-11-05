@@ -78,7 +78,7 @@ class OutfitsController < ApplicationController
 
     if @outfit.save
       Rails.logger.info "Outfit saved with ID: #{@outfit.id}"
-      
+
       # Create outfit items if inventory_item_ids provided
       if inventory_item_ids.any?
         Rails.logger.info "Creating #{inventory_item_ids.count} outfit items"
