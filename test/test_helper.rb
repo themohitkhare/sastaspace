@@ -51,90 +51,11 @@ Mocha.configure do |config|
 end
 
 # Configure minitest reporters
-# By default, only show failures and summary. Use VERBOSE=true for full output.
-if ENV["VERBOSE"] == "true" || ENV["V"] == "1"
-  # Verbose mode: show all tests with SpecReporter
-  Minitest::Reporters.use!(
-    Minitest::Reporters::SpecReporter.new,
-    ENV,
-    Minitest.backtrace_filter
-  )
-else
-  # Default mode: only show failures and summary (quiet mode)
-  # Use a minimal reporter that only shows failures and final summary
-  class QuietReporter < Minitest::Reporters::BaseReporter
-    def initialize(options = {})
-      super
-      @failures = []
-      @errors = []
-      @skips = []
-      @counts = { total: 0, assertions: 0, failures: 0, errors: 0, skips: 0 }
-    end
-
-    def start
-      super # Track start_time in parent
-      # Suppress "Started with run options" message by not printing anything
-    end
-
-    def record(result)
-      @counts[:total] += 1
-      @counts[:assertions] += result.assertions
-
-      if result.failure
-        if result.failure.is_a?(Minitest::UnexpectedError)
-          @counts[:errors] += 1
-          @errors << result
-        else
-          @counts[:failures] += 1
-          @failures << result
-        end
-        # Print failure details immediately
-        print_failure(result)
-      elsif result.skipped?
-        @counts[:skips] += 1
-        @skips << result
-        # Print skip details
-        print_skip(result)
-      end
-      # Don't print anything for passing tests
-    end
-
-    def report
-      super # Let parent handle timing
-      # Print summary at the end
-      print_summary
-    end
-
-    private
-
-    def print_failure(result)
-      puts "\n#{result.class}##{result.name}"
-      puts result.failure.message
-      puts result.failure.backtrace.first(5).join("\n")
-      puts
-    end
-
-    def print_skip(result)
-      puts "\n#{result.class}##{result.name} SKIPPED"
-      puts result.failure.message if result.failure
-      puts
-    end
-
-    def print_summary
-      time = total_time rescue "N/A"
-      puts "\n" + "=" * 70
-      puts "Finished in #{time}s"
-      puts "#{@counts[:total]} tests, #{@counts[:assertions]} assertions, " \
-           "#{@counts[:failures]} failures, #{@counts[:errors]} errors, #{@counts[:skips]} skips"
-    end
-  end
-
-  Minitest::Reporters.use!(
-    QuietReporter.new,
-    ENV,
-    Minitest.backtrace_filter
-  )
-end
+Minitest::Reporters.use!(
+  Minitest::Reporters::SpecReporter.new,
+  ENV,
+  Minitest.backtrace_filter
+)
 
 module ActiveSupport
   class TestCase
