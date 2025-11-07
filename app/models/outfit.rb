@@ -5,7 +5,9 @@ class Outfit < ApplicationRecord
   has_many :inventory_items, through: :outfit_items
 
   validates :name, presence: true
-  validate :must_have_at_least_one_item
+  # Note: Outfits can exist without items initially (e.g., draft outfits)
+  # Items can be added later through outfit_items
+  # validate :must_have_at_least_one_item
 
   # Outfit metadata
   # Note: occasion and season are stored as direct columns, not in metadata
@@ -15,7 +17,7 @@ class Outfit < ApplicationRecord
   enum :status, { draft: 0, active: 1, archived: 2, favorite: 3 }
 
   # Scopes
-  scope :favorites, -> { 
+  scope :favorites, -> {
     base = all
     base.where(is_favorite: true).or(base.where(status: :favorite))
   }
@@ -44,15 +46,7 @@ class Outfit < ApplicationRecord
     outfit_items.maximum(:last_worn_at)
   end
 
-  private
-
-  def must_have_at_least_one_item
-    # Only validate if outfit is persisted (not new) and has no items
-    if persisted? && inventory_items.empty? && outfit_items.empty?
-      errors.add(:inventory_items, "must have at least one item")
-    end
-  end
-
+  # Public methods used by controllers for completeness analysis
   def has_clothing_item?
     inventory_items.any? { |item| item.item_type == "clothing" }
   end
@@ -66,7 +60,27 @@ class Outfit < ApplicationRecord
   end
 
   def has_coordinated_colors?
-    colors = inventory_items.map { |item| item.metadata&.dig("color") || item.color }.compact
+    colors = inventory_items.map do |item|
+      # Try store_accessor first (preferred), then dig from metadata hash, then metadata string
+      if item.respond_to?(:color) && item.color.present?
+        item.color
+      elsif item.metadata.is_a?(Hash)
+        item.metadata.dig("color")
+      elsif item.metadata.is_a?(String)
+        parsed = JSON.parse(item.metadata) rescue {}
+        parsed.dig("color")
+      end
+    end.compact
     colors.length >= 2 && colors.uniq.length <= 3 # Basic color coordination check
+  end
+
+  private
+
+  def must_have_at_least_one_item
+    # Only validate on create - allow updates without items (e.g., updating name, favorite status)
+    # This allows outfits to be created/updated without items initially, but items should be added eventually
+    if new_record? && inventory_items.empty? && outfit_items.empty?
+      errors.add(:inventory_items, "must have at least one item")
+    end
   end
 end

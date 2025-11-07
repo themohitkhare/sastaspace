@@ -3,6 +3,7 @@ module Api
     class OutfitsController < BaseController
       skip_before_action :authenticate_user!, only: [ :index, :show ]
       before_action :authenticate_user_optional, only: [ :index, :show ]
+      before_action :parse_json_params, only: [ :create, :update ]
       before_action :set_outfit, only: [ :show, :update, :destroy, :wear, :favorite, :suggestions, :duplicate, :completeness ]
 
       def index
@@ -17,7 +18,14 @@ module Api
 
       def create
         # Extract inventory_item_ids before building (not a direct model attribute)
-        inventory_item_ids = params[:outfit]&.dig(:inventory_item_ids) || params[:outfit]&.dig("inventory_item_ids") || []
+        # Handle both Hash and String params (from JSON requests)
+        outfit_data = params[:outfit]
+        if outfit_data.is_a?(String)
+          outfit_data = JSON.parse(outfit_data) rescue {}
+        end
+        outfit_data = outfit_data.with_indifferent_access if outfit_data.is_a?(Hash)
+
+        inventory_item_ids = outfit_data[:inventory_item_ids] || outfit_data["inventory_item_ids"] || []
         inventory_item_ids = Array(inventory_item_ids).map(&:to_i).reject(&:zero?)
 
         outfit = current_user.outfits.new(outfit_params.except(:inventory_item_ids))
@@ -376,6 +384,36 @@ module Api
 
       private
 
+      def parse_json_params
+        if request.content_type == "application/json"
+          request.body.rewind
+          body_content = request.body.read
+
+          # Parse JSON body if it exists
+          if body_content.present?
+            begin
+              json_params = JSON.parse(body_content)
+              params.merge!(json_params)
+            rescue JSON::ParserError
+              # If JSON parsing fails, continue with existing params
+            end
+          end
+
+          # Also handle case where params[:outfit] might be a JSON string
+          if params[:outfit].is_a?(String)
+            begin
+              parsed_outfit = JSON.parse(params[:outfit])
+              params[:outfit] = parsed_outfit
+            rescue JSON::ParserError
+              # If parsing fails, leave as is
+            end
+          end
+        end
+      rescue StandardError => e
+        # If anything goes wrong, continue with existing params
+        Rails.logger.warn "Error parsing JSON params: #{e.message}"
+      end
+
       def set_outfit
         @outfit = Outfit.find(params[:id])
       end
@@ -385,6 +423,13 @@ module Api
       end
 
       def outfit_params
+        # Ensure params[:outfit] is a Hash (parse_json_params should handle this, but be defensive)
+        outfit_param = params[:outfit]
+        if outfit_param.is_a?(String)
+          outfit_param = JSON.parse(outfit_param) rescue {}
+          params[:outfit] = outfit_param
+        end
+
         params.require(:outfit).permit(
           :name, :description, :is_favorite, :formality, :season, :occasion, :status,
           inventory_item_ids: [],

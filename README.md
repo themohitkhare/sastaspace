@@ -191,7 +191,377 @@ All API endpoints are namespaced under `/api/v1/`:
 - **Outfits** - `/api/v1/outfits`
 - **AI Analysis** - `/api/v1/ai/*`
 
-## Observability & Monitoring
+### API Endpoints
+
+All API endpoints are namespaced under `/api/v1/`:
+
+- **Authentication** - `/api/v1/auth/*`
+- **Health Check** - `/api/v1/health`
+- **Inventory Items** - `/api/v1/inventory_items`
+- **Outfits** - `/api/v1/outfits`
+- **Outfit Items** - `/api/v1/outfit_items`
+- **Categories** - `/api/v1/categories`
+- **AI Analysis** - `/api/v1/ai/analyses`
+
+## API Documentation
+
+### Base URL
+
+All API endpoints are prefixed with `/api/v1`:
+
+```
+http://localhost:3000/api/v1
+```
+
+### Authentication
+
+Most API endpoints require authentication via JWT tokens. Include the token in the `Authorization` header:
+
+```bash
+Authorization: Bearer <access_token>
+```
+
+#### Register a New User
+
+```bash
+curl -X POST http://localhost:3000/api/v1/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "user@example.com",
+    "password": "SecurePassword123!",
+    "password_confirmation": "SecurePassword123!",
+    "first_name": "John",
+    "last_name": "Doe"
+  }'
+```
+
+**Response (201 Created):**
+```json
+{
+  "success": true,
+  "data": {
+    "user": {
+      "id": 1,
+      "email": "user@example.com",
+      "first_name": "John",
+      "last_name": "Doe",
+      "created_at": "2025-01-25T10:00:00Z"
+    },
+    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+    "refresh_token": "abc123def456..."
+  },
+  "message": "User created successfully",
+  "timestamp": "2025-01-25T10:00:00Z"
+}
+```
+
+#### Login
+
+```bash
+curl -X POST http://localhost:3000/api/v1/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "user@example.com",
+    "password": "SecurePassword123!"
+  }'
+```
+
+**Response (200 OK):**
+```json
+{
+  "success": true,
+  "data": {
+    "user": {
+      "id": 1,
+      "email": "user@example.com",
+      "first_name": "John",
+      "last_name": "Doe",
+      "created_at": "2025-01-25T10:00:00Z"
+    },
+    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+    "refresh_token": "abc123def456..."
+  },
+  "message": "Login successful",
+  "timestamp": "2025-01-25T10:00:00Z"
+}
+```
+
+#### Refresh Access Token
+
+```bash
+curl -X POST http://localhost:3000/api/v1/auth/refresh \
+  -H "Content-Type: application/json" \
+  -d '{
+    "refresh_token": "abc123def456..."
+  }'
+```
+
+**Response (200 OK):**
+```json
+{
+  "success": true,
+  "data": {
+    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+    "refresh_token": "xyz789ghi012..."
+  },
+  "timestamp": "2025-01-25T10:00:00Z"
+}
+```
+
+#### Get Current User
+
+```bash
+curl -X GET http://localhost:3000/api/v1/auth/me \
+  -H "Authorization: Bearer <access_token>"
+```
+
+**Response (200 OK):**
+```json
+{
+  "success": true,
+  "data": {
+    "user": {
+      "id": 1,
+      "email": "user@example.com",
+      "first_name": "John",
+      "last_name": "Doe",
+      "created_at": "2025-01-25T10:00:00Z"
+    }
+  },
+  "timestamp": "2025-01-25T10:00:00Z"
+}
+```
+
+#### Logout
+
+```bash
+curl -X POST http://localhost:3000/api/v1/auth/logout \
+  -H "Authorization: Bearer <access_token>"
+```
+
+**Response (200 OK):**
+```json
+{
+  "success": true,
+  "data": {
+    "message": "Logout successful"
+  },
+  "timestamp": "2025-01-25T10:00:00Z"
+}
+```
+
+### Health Check Endpoint
+
+#### GET /api/v1/health
+
+Check API health status (no authentication required):
+
+```bash
+curl -X GET http://localhost:3000/api/v1/health
+```
+
+**Response (200 OK):**
+```json
+{
+  "status": "ok",
+  "checks": {
+    "database": "ok"
+  },
+  "timestamp": "2025-01-25T10:00:00Z"
+}
+```
+
+### Error Response Format
+
+All API errors follow a standardized format:
+
+```json
+{
+  "success": false,
+  "error": {
+    "code": "ERROR_CODE",
+    "message": "Human-readable error message",
+    "details": {
+      "field_name": ["Error message for this field"]
+    },
+    "timestamp": "2025-01-25T10:00:00Z",
+    "request_id": "abc123-def456-ghi789"
+  }
+}
+```
+
+#### Common Error Codes
+
+- `VALIDATION_ERROR` (422) - Request validation failed
+- `AUTHENTICATION_ERROR` (401) - Authentication required or failed
+- `NOT_FOUND` (404) - Resource not found
+- `BAD_REQUEST` (400) - Invalid request format
+- `RATE_LIMIT_EXCEEDED` (429) - Too many requests
+- `INTERNAL_ERROR` (500) - Server error
+
+#### Example Error Responses
+
+**Validation Error (422):**
+```json
+{
+  "success": false,
+  "error": {
+    "code": "VALIDATION_ERROR",
+    "message": "Validation failed",
+    "details": {
+      "email": ["can't be blank"],
+      "password": ["is too short (minimum is 8 characters)"]
+    },
+    "timestamp": "2025-01-25T10:00:00Z",
+    "request_id": "abc123-def456-ghi789"
+  }
+}
+```
+
+**Authentication Error (401):**
+```json
+{
+  "success": false,
+  "error": {
+    "code": "AUTHENTICATION_ERROR",
+    "message": "Invalid token",
+    "details": "Token has expired",
+    "timestamp": "2025-01-25T10:00:00Z",
+    "request_id": "abc123-def456-ghi789"
+  }
+}
+```
+
+**Not Found Error (404):**
+```json
+{
+  "success": false,
+  "error": {
+    "code": "NOT_FOUND",
+    "message": "Resource not found",
+    "details": {
+      "model": "InventoryItem",
+      "id": "999"
+    },
+    "timestamp": "2025-01-25T10:00:00Z",
+    "request_id": "abc123-def456-ghi789"
+  }
+}
+```
+
+### Request Headers
+
+All API requests should include:
+
+- `Content-Type: application/json` - For POST/PUT/PATCH requests
+- `Authorization: Bearer <token>` - For authenticated endpoints
+- `X-Request-ID: <uuid>` - Optional, for request correlation
+
+### Response Headers
+
+All API responses include:
+
+- `X-Request-ID` - Unique request identifier for correlation
+- `Content-Type: application/json` - Response content type
+
+### Pagination
+
+List endpoints support pagination via query parameters:
+
+- `page` - Page number (default: 1)
+- `per_page` - Items per page (default: 20, max: 100)
+
+**Example:**
+```bash
+curl -X GET "http://localhost:3000/api/v1/inventory_items?page=2&per_page=10" \
+  -H "Authorization: Bearer <access_token>"
+```
+
+**Paginated Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "items": [...],
+    "pagination": {
+      "current_page": 2,
+      "total_pages": 5,
+      "total_count": 50,
+      "per_page": 10,
+      "has_next_page": true,
+      "has_prev_page": true
+    }
+  },
+  "timestamp": "2025-01-25T10:00:00Z"
+}
+```
+
+### Rate Limiting
+
+API endpoints are rate-limited to prevent abuse:
+
+- **Default**: 100 requests per 60 seconds per user/IP
+- **Rate Limit Header**: `X-RateLimit-Limit`, `X-RateLimit-Remaining`, `X-RateLimit-Reset`
+- **Rate Limit Exceeded**: Returns `429 Too Many Requests` with retry information
+
+**Rate Limit Response (429):**
+```json
+{
+  "success": false,
+  "error": {
+    "code": "RATE_LIMIT_EXCEEDED",
+    "message": "Rate limit exceeded. Please try again later.",
+    "details": {
+      "limit": 100,
+      "period": 60,
+      "retry_after": 60
+    },
+    "timestamp": "2025-01-25T10:00:00Z",
+    "request_id": "abc123-def456-ghi789"
+  }
+}
+```
+
+### Request/Response Logging
+
+All API requests and responses are logged in structured JSON format:
+
+```json
+{
+  "timestamp": "2025-01-25T10:00:00Z",
+  "level": "INFO",
+  "message": "API request completed",
+  "request_id": "abc123-def456-ghi789",
+  "user_id": 1,
+  "controller": "Api::V1::InventoryItemsController",
+  "action": "index",
+  "method": "GET",
+  "path": "/api/v1/inventory_items",
+  "status": 200,
+  "duration_ms": 45.2
+}
+```
+
+View logs:
+```bash
+# View all API logs
+bin/dev-log "API request"
+
+# Filter by request ID
+bin/dev-log "request_id:abc123"
+```
+
+### Testing API Endpoints
+
+Integration tests serve as living documentation. See `test/integration/api/v1/` for request/response examples:
+
+```bash
+# Run API integration tests
+bin/rails test test/integration/api/v1/
+
+# Run specific endpoint tests
+bin/rails test test/integration/api/v1/auth_test.rb
+```
 
 This application includes comprehensive observability features for local development and production monitoring.
 

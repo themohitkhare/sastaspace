@@ -8,6 +8,7 @@ class RequestIdMiddleware
     request_id = (env && env["HTTP_X_REQUEST_ID"]) || SecureRandom.uuid
     if env && env.respond_to?(:[]=)
       env["REQUEST_ID"] = request_id
+      env["REQUEST_START_TIME"] = Time.current
     end
 
     # Set response header
