@@ -35,10 +35,18 @@ class ImageProcessingJob < ApplicationJob
   def strip_exif_data(image)
     return if image.nil? || (image.respond_to?(:attached?) && !image.attached?)
 
-    # For now, we'll rely on Active Storage's built-in processing
-    # In production, you might want to use ImageMagick or similar
-    # to strip EXIF data for privacy protection
+    begin
+      # Use image_processing gem to strip EXIF data
+      # This creates a new variant without EXIF metadata for privacy protection
+      image.variant(
+        loader: { strip: true }, # Strip EXIF and other metadata
+        saver: { strip: true }   # Ensure no metadata in output
+      ).processed
 
-    Rails.logger.info "ImageProcessingJob: Processed EXIF data for image #{image.id}"
+      Rails.logger.info "ImageProcessingJob: Stripped EXIF data for image #{image.id}"
+    rescue StandardError => e
+      # Log error but don't fail the job - image processing can continue
+      Rails.logger.warn "ImageProcessingJob: Failed to strip EXIF data for image #{image.id}: #{e.message}"
+    end
   end
 end

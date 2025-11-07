@@ -16,6 +16,9 @@ module Sastaspace
     # Common ones are `templates`, `generators`, or `middleware`, for example.
     config.autoload_lib(ignore: %w[assets tasks])
 
+    # Add app/middleware to autoload paths
+    config.autoload_paths << Rails.root.join("app", "middleware")
+
     # Configuration for the application, engines, and railties goes here.
     #
     # These settings can be overridden in specific environments using the files
@@ -26,5 +29,10 @@ module Sastaspace
 
     # Use Rails' built-in request ID middleware (ActionDispatch::RequestId)
     # Custom RequestIdMiddleware is kept for unit tests but not inserted into the stack
+
+    # Add security headers middleware
+    # Middleware needs to be required at boot time (before autoloading)
+    require Rails.root.join("app", "middleware", "security_headers_middleware")
+    config.middleware.use SecurityHeadersMiddleware
   end
 end

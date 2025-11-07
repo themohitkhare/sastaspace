@@ -2,10 +2,25 @@
 # Instead of making HTTP calls or instantiating controllers, we reuse the logic
 module Auth
   class SessionService
-    def self.login(email, password, _original_request = nil, remember_me: false)
+    def self.login(email, password, _original_request = nil, remember_me: false, ip_address: nil)
       user = User.find_by(email: email)
 
+      # Check if account is locked due to too many failed attempts
+      if FailedLoginAttempt.account_locked?(email, ip_address)
+        return {
+          success: false,
+          error: {
+            code: "ACCOUNT_LOCKED",
+            message: "Account temporarily locked due to too many failed login attempts. Please try again in 15 minutes."
+          },
+          timestamp: Time.current.iso8601
+        }
+      end
+
       if user&.authenticate(password)
+        # Clear failed attempts on successful login
+        FailedLoginAttempt.clear_for_user(user) if user
+        FailedLoginAttempt.clear_for_ip(ip_address) if ip_address
         access_token = Auth::JsonWebToken.encode_access_token(user_id: user.id)
         # Set refresh token expiration based on remember_me
         refresh_token_expires_in = remember_me ? 30.days : 7.days
@@ -28,11 +43,18 @@ module Auth
           timestamp: Time.current.iso8601
         }
       else
+        # Record failed login attempt
+        FailedLoginAttempt.record_failure(email, ip_address)
+
+        # Check if account is now locked
+        locked = FailedLoginAttempt.account_locked?(email, ip_address)
+        message = locked ? "Account locked due to too many failed attempts. Please try again in 15 minutes." : "Invalid email or password"
+
         {
           success: false,
           error: {
-            code: "AUTHENTICATION_ERROR",
-            message: "Invalid email or password"
+            code: locked ? "ACCOUNT_LOCKED" : "AUTHENTICATION_ERROR",
+            message: message
           },
           timestamp: Time.current.iso8601
         }

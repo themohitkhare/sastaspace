@@ -556,6 +556,18 @@ module Api
           }, status: :bad_request
         end
 
+        # Validate file signature (magic bytes) to prevent malicious file uploads
+        unless FileSignatureValidator.valid?(image, image.content_type)
+          return render json: {
+            success: false,
+            error: {
+              code: "INVALID_FILE_SIGNATURE",
+              message: "File signature does not match declared type. File may be corrupted or malicious."
+            },
+            timestamp: Time.current.iso8601
+          }, status: :bad_request
+        end
+
         max_size = 5.megabytes
         if image.size > max_size
           return render json: {

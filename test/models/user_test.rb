@@ -24,7 +24,30 @@ class UserTest < ActiveSupport::TestCase
   test "validates password length" do
     user = build(:user, password: "short")
     assert_not user.valid?
-    assert_includes user.errors[:password], "is too short (minimum is 6 characters)"
+    assert_includes user.errors[:password], "is too short (minimum is 8 characters)"
+  end
+
+  test "validates password strength - requires uppercase letter" do
+    user = build(:user, password: "lowercase123")
+    assert_not user.valid?
+    assert user.errors[:password].any? { |e| e.include?("uppercase") || e.include?("format") }
+  end
+
+  test "validates password strength - requires lowercase letter" do
+    user = build(:user, password: "UPPERCASE123")
+    assert_not user.valid?
+    assert user.errors[:password].any? { |e| e.include?("lowercase") || e.include?("format") }
+  end
+
+  test "validates password strength - requires number" do
+    user = build(:user, password: "NoNumbers")
+    assert_not user.valid?
+    assert user.errors[:password].any? { |e| e.include?("number") || e.include?("format") }
+  end
+
+  test "accepts password with uppercase, lowercase, and number" do
+    user = build(:user, password: "ValidPass123", password_confirmation: "ValidPass123")
+    assert user.valid?, "Password should be valid with uppercase, lowercase, and number"
   end
 
   # Password hashing

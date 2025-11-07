@@ -2,11 +2,11 @@ require "test_helper"
 
 class Auth::SessionServiceTest < ActiveSupport::TestCase
   setup do
-    @user = create(:user, email: "test@example.com", password: "password123", password_confirmation: "password123")
+    @user = create(:user, email: "test@example.com", password: "Password123", password_confirmation: "Password123")
   end
 
   test "login with remember_me creates refresh token with 30 day expiration" do
-    response = Auth::SessionService.login(@user.email, "password123", nil, remember_me: true)
+    response = Auth::SessionService.login(@user.email, "Password123", nil, remember_me: true)
 
     assert response[:success], "Login should succeed"
     assert response[:data][:token].present?, "Should return access token"
@@ -23,7 +23,7 @@ class Auth::SessionServiceTest < ActiveSupport::TestCase
   end
 
   test "login without remember_me creates refresh token with 7 day expiration" do
-    response = Auth::SessionService.login(@user.email, "password123", nil, remember_me: false)
+    response = Auth::SessionService.login(@user.email, "Password123", nil, remember_me: false)
 
     assert response[:success], "Login should succeed"
     assert response[:data][:token].present?, "Should return access token"
@@ -48,7 +48,7 @@ class Auth::SessionServiceTest < ActiveSupport::TestCase
   end
 
   test "login with non-existent email returns error" do
-    response = Auth::SessionService.login("nonexistent@example.com", "password123", nil, remember_me: false)
+    response = Auth::SessionService.login("nonexistent@example.com", "Password123", nil, remember_me: false)
 
     assert_not response[:success], "Login should fail"
     assert response[:error].present?, "Should return error"
@@ -58,7 +58,7 @@ class Auth::SessionServiceTest < ActiveSupport::TestCase
   test "login handles exceptions gracefully" do
     User.stubs(:find_by).raises(StandardError.new("Database error"))
 
-    response = Auth::SessionService.login(@user.email, "password123", nil, remember_me: false)
+    response = Auth::SessionService.login(@user.email, "Password123", nil, remember_me: false)
 
     assert_not response[:success], "Login should fail on exception"
     assert response[:error].present?
@@ -71,8 +71,8 @@ class Auth::SessionServiceTest < ActiveSupport::TestCase
       email: "newuser@example.com",
       first_name: "New",
       last_name: "User",
-      password: "password123",
-      password_confirmation: "password123"
+      password: "Password123",
+      password_confirmation: "Password123"
     }
 
     response = Auth::SessionService.register(user_params, nil)
@@ -109,8 +109,8 @@ class Auth::SessionServiceTest < ActiveSupport::TestCase
       email: @user.email,  # Already exists
       first_name: "Test",
       last_name: "User",
-      password: "password123",
-      password_confirmation: "password123"
+      password: "Password123",
+      password_confirmation: "Password123"
     }
 
     response = Auth::SessionService.register(user_params, nil)
@@ -127,8 +127,8 @@ class Auth::SessionServiceTest < ActiveSupport::TestCase
       email: "test@example.com",
       first_name: "Test",
       last_name: "User",
-      password: "password123",
-      password_confirmation: "password123"
+      password: "Password123",
+      password_confirmation: "Password123"
     }
 
     response = Auth::SessionService.register(user_params, nil)
@@ -144,8 +144,8 @@ class Auth::SessionServiceTest < ActiveSupport::TestCase
       "email" => "stringkeys@example.com",
       "first_name" => "String",
       "last_name" => "Keys",
-      "password" => "password123",
-      "password_confirmation" => "password123"
+      "password" => "Password123",
+      "password_confirmation" => "Password123"
     }
 
     response = Auth::SessionService.register(user_params, nil)

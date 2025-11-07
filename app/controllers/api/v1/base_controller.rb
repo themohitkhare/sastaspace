@@ -7,6 +7,7 @@ module Api
       # Include concerns
       include Authenticable  # Authentication required by default (secure by default)
       include StructuredLogging
+      include AuditLogging   # Security audit logging
       include ErrorHandling  # Comprehensive error handling (must come before ExceptionHandler)
       include ExceptionHandler  # Authentication-specific error handling (checked after ErrorHandling)
       include ApiResponse    # Standardized response formatting
@@ -14,6 +15,7 @@ module Api
       # Add request ID to all responses
       before_action :set_request_id_header
       before_action :log_request_start
+      before_action :validate_request_size
       after_action :log_request_complete
 
       private
@@ -42,6 +44,18 @@ module Api
       def calculate_request_duration
         return nil unless request.env["REQUEST_START_TIME"]
         ((Time.current - request.env["REQUEST_START_TIME"]) * 1000).round(2)
+      end
+
+      # Validate request size to prevent DoS attacks
+      def validate_request_size
+        max_size = 10.megabytes # 10MB max request size
+        if request.content_length && request.content_length > max_size
+          render_error_response(
+            code: "REQUEST_TOO_LARGE",
+            message: "Request body is too large. Maximum size is 10MB.",
+            status: :payload_too_large
+          )
+        end
       end
     end
   end
