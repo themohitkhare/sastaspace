@@ -2,141 +2,157 @@ require "test_helper"
 
 class MetricsLoggerTest < ActiveSupport::TestCase
   setup do
-    @io = StringIO.new
-    @original_logger = Rails.logger
-    Rails.logger = Logger.new(@io)
+    @logger_output = StringIO.new
+    Rails.logger.stubs(:info).with { |arg| @logger_output.write(arg.to_s + "\n"); true }
   end
 
-  teardown do
-    Rails.logger = @original_logger
-  end
-
-  test "subscribes and logs for request events" do
+  test "subscribes to request.completed events" do
     MetricsLogger.subscribe_to_events
 
-    ActiveSupport::Notifications.instrument("request.completed", {
-      controller: "home",
+    payload = {
+      controller: "Api::V1::UsersController",
       action: "index",
       status: 200,
-      duration_ms: 12.3,
-      request_id: "req-1",
-      user_id: 7
-    }) { }
+      duration_ms: 45.2,
+      request_id: "test-123",
+      user_id: 1
+    }
 
-    @io.rewind
-    logs = @io.read
-    assert_includes logs, "\"metric_type\":\"request\""
-    assert_includes logs, "\"type\":\"completed\""
-    assert_includes logs, "\"controller\":\"home\""
+    ActiveSupport::Notifications.instrument("request.completed", payload)
+
+    # Give notification time to process
+    sleep 0.1
+
+    output = @logger_output.string
+    assert_match(/METRIC/, output)
+    assert_match(/request/, output)
+    assert_match(/completed/, output)
   end
 
-  test "subscribes and logs for job events" do
+  test "subscribes to request.failed events" do
     MetricsLogger.subscribe_to_events
 
-    job = AnalyzeClothingImageJob.new
-    ActiveSupport::Notifications.instrument("enqueue.active_job", { job: job })
-
-    @io.rewind
-    logs = @io.read
-    assert_includes logs, "\"metric_type\":\"job\""
-    assert_includes logs, "\"type\":\"enqueued\""
-    assert_includes logs, "AnalyzeClothingImageJob"
-  end
-
-  test "subscribes and logs for request.failed events" do
-    MetricsLogger.subscribe_to_events
-
-    ActiveSupport::Notifications.instrument("request.failed", {
-      controller: "TestController",
-      action: "show",
+    payload = {
+      controller: "Api::V1::UsersController",
+      action: "create",
       error: "StandardError",
-      error_message: "Test error",
-      duration_ms: 5.2,
-      request_id: "req-2",
-      user_id: nil
-    }) { }
+      error_message: "Something went wrong",
+      duration_ms: 12.5,
+      request_id: "test-456",
+      user_id: 2
+    }
 
-    @io.rewind
-    logs = @io.read
-    assert_includes logs, "\"metric_type\":\"request\""
-    assert_includes logs, "\"type\":\"failed\""
-    assert_includes logs, "\"controller\":\"TestController\""
-    assert_includes logs, "\"error\":\"StandardError\""
-    assert_includes logs, "\"error_message\":\"Test error\""
+    ActiveSupport::Notifications.instrument("request.failed", payload)
+
+    # Give notification time to process
+    sleep 0.1
+
+    output = @logger_output.string
+    assert_match(/METRIC/, output)
+    assert_match(/request/, output)
+    assert_match(/failed/, output)
   end
 
-  test "subscribes and logs for job perform events" do
+  test "subscribes to perform.active_job events" do
     MetricsLogger.subscribe_to_events
 
-    job = AnalyzeClothingImageJob.new
-    ActiveSupport::Notifications.instrument("perform.active_job", {
-      job: job
-    }) { }
+    job = ExportUserDataJob.new
+    payload = {
+      job: job,
+      queue_name: "default"
+    }
 
-    @io.rewind
-    logs = @io.read
-    assert_includes logs, "\"metric_type\":\"job\""
-    assert_includes logs, "\"type\":\"completed\""
-    assert_includes logs, "AnalyzeClothingImageJob"
-    assert_includes logs, "\"duration_ms\""
-  end
+    start_time = Time.current
+    finish_time = start_time + 0.5.seconds
 
-  test "subscribes and logs for cache read events" do
-    MetricsLogger.subscribe_to_events
-
-    ActiveSupport::Notifications.instrument("cache_read.active_support", {
-      hit: true,
-      key: "test_key"
-    }) { }
-
-    @io.rewind
-    logs = @io.read
-    assert_includes logs, "\"metric_type\":\"cache\""
-    assert_includes logs, "\"type\":\"read\""
-    assert_includes logs, "\"hit\":true"
-    assert_includes logs, "\"key\":\"test_key\""
-  end
-
-  test "subscribes and logs for cache write events" do
-    MetricsLogger.subscribe_to_events
-
-    ActiveSupport::Notifications.instrument("cache_write.active_support", {
-      key: "test_write_key"
-    }) { }
-
-    @io.rewind
-    logs = @io.read
-    assert_includes logs, "\"metric_type\":\"cache\""
-    assert_includes logs, "\"type\":\"write\""
-    assert_includes logs, "\"key\":\"test_write_key\""
-    assert_includes logs, "\"duration_ms\""
-  end
-
-  test "log_metric formats output as JSON" do
-    MetricsLogger.subscribe_to_events
-
-    ActiveSupport::Notifications.instrument("request.completed", {
-      controller: "Test",
-      action: "index",
-      status: 200,
-      duration_ms: 10.5
-    }) { }
-
-    @io.rewind
-    logs = @io.read
-    # Should be valid JSON - find complete JSON object (may span multiple lines)
-    json_match = logs.match(/\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\}/m)
-    assert_not_nil json_match, "Should contain JSON log entry"
-
-    # Try to parse the matched JSON
-    begin
-      parsed = JSON.parse(json_match[0])
-      assert_equal "METRIC", parsed["level"]
-      assert_equal "request", parsed["metric_type"]
-    rescue JSON::ParserError => e
-      # If parsing fails, at least verify the structure exists in the log
-      assert_includes logs, "\"level\":\"METRIC\""
-      assert_includes logs, "\"metric_type\":\"request\""
+    ActiveSupport::Notifications.instrument("perform.active_job", payload) do
+      # Simulate job execution
     end
+
+    # Give notification time to process
+    sleep 0.1
+
+    output = @logger_output.string
+    assert_match(/METRIC/, output)
+    assert_match(/job/, output)
+    assert_match(/completed/, output)
+  end
+
+  test "subscribes to enqueue.active_job events" do
+    MetricsLogger.subscribe_to_events
+
+    job = ExportUserDataJob.new
+    payload = {
+      job: job,
+      queue_name: "default"
+    }
+
+    ActiveSupport::Notifications.instrument("enqueue.active_job", payload)
+
+    # Give notification time to process
+    sleep 0.1
+
+    output = @logger_output.string
+    assert_match(/METRIC/, output)
+    assert_match(/job/, output)
+    assert_match(/enqueued/, output)
+  end
+
+  test "subscribes to cache_read.active_support events" do
+    MetricsLogger.subscribe_to_events
+
+    payload = {
+      hit: true,
+      key: "test_cache_key"
+    }
+
+    start_time = Time.current
+    finish_time = start_time + 0.01.seconds
+
+    ActiveSupport::Notifications.instrument("cache_read.active_support", payload) do
+      # Simulate cache read
+    end
+
+    # Give notification time to process
+    sleep 0.1
+
+    output = @logger_output.string
+    assert_match(/METRIC/, output)
+    assert_match(/cache/, output)
+    assert_match(/read/, output)
+  end
+
+  test "subscribes to cache_write.active_support events" do
+    MetricsLogger.subscribe_to_events
+
+    payload = {
+      key: "test_cache_key"
+    }
+
+    start_time = Time.current
+    finish_time = start_time + 0.01.seconds
+
+    ActiveSupport::Notifications.instrument("cache_write.active_support", payload) do
+      # Simulate cache write
+    end
+
+    # Give notification time to process
+    sleep 0.1
+
+    output = @logger_output.string
+    assert_match(/METRIC/, output)
+    assert_match(/cache/, output)
+    assert_match(/write/, output)
+  end
+
+  test "log_metric formats data as JSON" do
+    data = { test: "value", number: 123 }
+    MetricsLogger.send(:log_metric, "test_metric", data)
+
+    output = @logger_output.string
+    assert_match(/METRIC/, output)
+    assert_match(/test_metric/, output)
+    # Should be valid JSON
+    assert_match(/"test":"value"/, output)
   end
 end

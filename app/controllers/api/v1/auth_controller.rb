@@ -41,37 +41,19 @@ module Api
       end
 
       def login
-        user = User.find_by(email: params[:email])
+        result = Auth::SessionService.login(
+          params[:email],
+          params[:password],
+          request,
+          remember_me: params[:remember_me] == true || params[:remember_me] == "true",
+          ip_address: request.remote_ip
+        )
 
-        if user&.authenticate(params[:password])
-          access_token = Auth::JsonWebToken.encode_access_token(user_id: user.id)
-          refresh_token_record = RefreshToken.create_for_user!(user)
-
-          render json: {
-            success: true,
-            data: {
-              user: {
-                id: user.id,
-                email: user.email,
-                first_name: user.first_name,
-                last_name: user.last_name,
-                created_at: user.created_at
-              },
-              token: access_token,
-              refresh_token: refresh_token_record.token
-            },
-            message: "Login successful",
-            timestamp: Time.current.iso8601
-          }, status: :ok
+        if result[:success]
+          render json: result, status: :ok
         else
-          render json: {
-            success: false,
-            error: {
-              code: "AUTHENTICATION_ERROR",
-              message: "Invalid email or password"
-            },
-            timestamp: Time.current.iso8601
-          }, status: :unauthorized
+          status = result[:error][:code] == "ACCOUNT_LOCKED" ? :too_many_requests : :unauthorized
+          render json: result, status: status
         end
       end
 

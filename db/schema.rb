@@ -116,6 +116,17 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_01_143613) do
     t.index ["user_id"], name: "index_export_jobs_on_user_id"
   end
 
+  create_table "failed_login_attempts", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.datetime "failed_at", null: false
+    t.string "ip_address"
+    t.datetime "updated_at", null: false
+    t.bigint "user_id"
+    t.index ["failed_at"], name: "index_failed_login_attempts_on_failed_at"
+    t.index ["ip_address"], name: "index_failed_login_attempts_on_ip_address"
+    t.index ["user_id"], name: "index_failed_login_attempts_on_user_id"
+  end
+
   create_table "inventory_items", force: :cascade do |t|
     t.integer "brand_id"
     t.integer "category_id", null: false
@@ -305,6 +316,7 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_01_143613) do
   add_foreign_key "chats", "models"
   add_foreign_key "chats", "users"
   add_foreign_key "export_jobs", "users"
+  add_foreign_key "failed_login_attempts", "users"
   add_foreign_key "inventory_items", "brands"
   add_foreign_key "inventory_items", "categories"
   add_foreign_key "inventory_items", "categories", column: "subcategory_id"

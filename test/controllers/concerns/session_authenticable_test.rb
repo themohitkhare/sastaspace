@@ -3,13 +3,13 @@ require "test_helper"
 class SessionAuthenticableTest < ActionDispatch::IntegrationTest
   # Test SessionAuthenticable through integration tests using SessionsController
   setup do
-    @user = create(:user, password: "password123", password_confirmation: "password123")
+    @user = create(:user, password: "Password123", password_confirmation: "Password123")
   end
 
   test "get_current_user_from_session returns user when session exists" do
     post login_path, params: {
       email: @user.email,
-      password: "password123"
+      password: "Password123"
     }, headers: { "Accept" => "text/html" }
 
     # Stub authentication to succeed
@@ -31,7 +31,7 @@ class SessionAuthenticableTest < ActionDispatch::IntegrationTest
     # Test through actual controller flow
     post login_path, params: {
       email: @user.email,
-      password: "password123"
+      password: "Password123"
     }, headers: { "Accept" => "text/html" }
 
     Auth::SessionService.stubs(:login).returns({
