@@ -95,23 +95,57 @@ class OutfitsPhotoAnalysisTest < ApplicationSystemTestCase
   test "user can cancel photo analysis" do
     visit "/outfits/new_from_photo"
 
+    if page.current_path == "/login"
+      fill_in "Email", with: @user.email
+      fill_in "Password", with: "Password123!"
+      click_button "Sign In"
+      visit "/outfits/new_from_photo"
+    end
+
+    assert_selector "[data-outfit-photo-analyzer-target]", wait: 5
+
     # Look for cancel button (might be in review step)
     cancel_button = find("button", text: /Cancel/i, wait: 2) rescue nil
     if cancel_button
       cancel_button.click
       sleep 1
+      # Assert we're no longer on the photo analysis page or page changed
+      assert(page.current_path != "/outfits/new_from_photo" || page.has_no_selector?("[data-outfit-photo-analyzer-target]", wait: 2))
+    else
+      # If cancel button doesn't exist, that's also valid - just assert page loaded
+      assert_selector "[data-outfit-photo-analyzer-target]", wait: 5
     end
   end
 
   test "user can navigate away from photo analysis page" do
     visit "/outfits/new_from_photo"
 
-    # Look for back/skip links
+    if page.current_path == "/login"
+      fill_in "Email", with: @user.email
+      fill_in "Password", with: "Password123!"
+      click_button "Sign In"
+      visit "/outfits/new_from_photo"
+    end
+
+    assert_selector "[data-outfit-photo-analyzer-target]", wait: 5
+
+    # Look for back/skip links or navigation
     skip_link = find("a", text: /Skip/i, wait: 2) rescue nil
     if skip_link
       skip_link.click
       sleep 1
-      assert_current_path(/outfits/)
+      assert_current_path(/outfits/, wait: 5)
+    else
+      # If skip link doesn't exist, try navigation link
+      outfits_link = find_link("Outfits", wait: 2) rescue nil
+      if outfits_link
+        outfits_link.click
+        sleep 1
+        assert(page.current_path.include?("outfits"), "Should navigate to outfits page")
+      else
+        # At minimum, assert page loaded successfully
+        assert_selector "[data-outfit-photo-analyzer-target]", wait: 5
+      end
     end
   end
 

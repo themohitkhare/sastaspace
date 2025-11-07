@@ -195,11 +195,15 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_01_143613) do
   create_table "outfit_items", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.integer "inventory_item_id", null: false
+    t.datetime "last_worn_at"
     t.text "notes"
     t.integer "outfit_id", null: false
     t.integer "position"
+    t.text "styling_notes"
     t.datetime "updated_at", null: false
+    t.integer "worn_count", default: 0
     t.index ["inventory_item_id"], name: "index_outfit_items_on_inventory_item_id"
+    t.index ["outfit_id", "inventory_item_id"], name: "index_outfit_items_unique", unique: true
     t.index ["outfit_id"], name: "index_outfit_items_on_outfit_id"
   end
 
@@ -208,13 +212,20 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_01_143613) do
     t.text "description"
     t.boolean "is_favorite"
     t.boolean "is_public"
+    t.datetime "last_worn_at"
+    t.jsonb "metadata", default: {}
     t.string "name"
     t.string "occasion"
     t.string "season"
+    t.integer "status", default: 0
     t.string "temperature_range"
     t.datetime "updated_at", null: false
     t.integer "user_id", null: false
     t.string "weather_condition"
+    t.integer "worn_count", default: 0
+    t.index "((metadata ->> 'occasion'::text))", name: "index_outfits_on_occasion_metadata"
+    t.index "((metadata ->> 'season'::text))", name: "index_outfits_on_season_metadata"
+    t.index ["user_id", "status"], name: "index_outfits_on_user_id_and_status"
     t.index ["user_id"], name: "index_outfits_on_user_id"
   end
 
