@@ -57,12 +57,23 @@ class OutfitsNavigationTest < ApplicationSystemTestCase
   test "user can access outfit photo analysis from navigation" do
     visit "/outfits/new"
 
+    if page.current_path == "/login"
+      fill_in "Email", with: @user.email
+      fill_in "Password", with: "Password123!"
+      click_button "Sign In"
+      visit "/outfits/new"
+    end
+
     # Look for link to photo analysis (might be in the UI)
     photo_link = find("a[href*='new_from_photo']", wait: 2) rescue nil
     if photo_link
       photo_link.click
       sleep 1
-      assert_current_path new_from_photo_outfits_path
+      assert_current_path new_from_photo_outfits_path, wait: 5
+    else
+      # If link doesn't exist in UI, at least verify we can access the route directly
+      visit "/outfits/new_from_photo"
+      assert_selector "h1", text: /Create Outfit from Photo/i, wait: 5
     end
   end
 

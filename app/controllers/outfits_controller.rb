@@ -46,10 +46,10 @@ class OutfitsController < ApplicationController
     # Get unique occasions for filter dropdown
     @available_occasions = current_user.outfits.where.not(occasion: nil).distinct.pluck(:occasion).compact.sort
 
-    # Paginate if requested
-    if params[:per_page].present?
-      @outfits = @outfits.page(params[:page]).per(params[:per_page])
-    end
+    # Paginate results (always paginate for consistency with other controllers)
+    per_page = params[:per_page].present? ? params[:per_page].to_i : 24
+    per_page = 24 if per_page <= 0 || per_page > 100 # Sanitize: reasonable limits
+    @outfits = @outfits.page(params[:page]).per(per_page)
   end
 
   def show

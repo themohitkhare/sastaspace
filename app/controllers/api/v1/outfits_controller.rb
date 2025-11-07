@@ -3,7 +3,7 @@ module Api
     class OutfitsController < BaseController
       skip_before_action :authenticate_user!, only: [ :index, :show ]
       before_action :authenticate_user_optional, only: [ :index, :show ]
-      before_action :set_outfit, only: [ :show, :update, :destroy, :wear, :favorite, :suggestions, :duplicate ]
+      before_action :set_outfit, only: [ :show, :update, :destroy, :wear, :favorite, :suggestions, :duplicate, :completeness ]
 
       def index
         outfits = current_user ? current_user.outfits : Outfit.none
@@ -63,9 +63,27 @@ module Api
 
       def wear
         authorize_owner!
-        @outfit.update!(last_worn_at: Time.current) if @outfit.respond_to?(:last_worn_at)
-        @outfit.increment!(:wear_count) if @outfit.respond_to?(:wear_count)
-        render json: { success: true, data: { outfit: serialize(@outfit) }, message: "Wear recorded", timestamp: Time.current }
+        # Track outfit wearing across all items
+        @outfit.outfit_items.each do |outfit_item|
+          outfit_item.increment!(:worn_count)
+          outfit_item.update!(last_worn_at: Time.current)
+
+          # Also update individual inventory item wear count
+          if outfit_item.inventory_item.respond_to?(:wear_count)
+            outfit_item.inventory_item.increment!(:wear_count)
+            outfit_item.inventory_item.update!(last_worn_at: Time.current) if outfit_item.inventory_item.respond_to?(:last_worn_at=)
+          end
+        end
+
+        render json: {
+          success: true,
+          data: {
+            outfit: serialize(@outfit),
+            worn_count: @outfit.worn_count
+          },
+          message: "Outfit wear tracked",
+          timestamp: Time.current
+        }
       end
 
       def favorite
@@ -194,6 +212,18 @@ module Api
           },
           timestamp: Time.current.iso8601
         }, status: :internal_server_error
+      end
+
+      def completeness
+        authorize_owner!
+        analysis = {
+          score: @outfit.completeness_score,
+          complete: @outfit.complete?,
+          missing_categories: missing_categories,
+          suggestions: outfit_suggestions
+        }
+
+        render json: { success: true, data: analysis, message: "Completeness analysis", timestamp: Time.current }
       end
 
       def duplicate
@@ -355,7 +385,11 @@ module Api
       end
 
       def outfit_params
-        params.require(:outfit).permit(:name, :description, :is_favorite, :formality, :season, :occasion, inventory_item_ids: [])
+        params.require(:outfit).permit(
+          :name, :description, :is_favorite, :formality, :season, :occasion, :status,
+          inventory_item_ids: [],
+          metadata: [ :weather, :formality_level, :color_scheme, :style_notes, :created_for_date ]
+        )
       end
 
       def serialize(outfit_or_collection)
@@ -377,8 +411,12 @@ module Api
           is_favorite: o.is_favorite,
           season: (o.respond_to?(:season) ? o.season : nil),
           occasion: o.occasion,
-          wear_count: (o.respond_to?(:wear_count) ? o.wear_count : nil),
-          last_worn_at: (o.respond_to?(:last_worn_at) ? o.last_worn_at : nil),
+          status: (o.respond_to?(:status) ? o.status : nil),
+          metadata: (o.respond_to?(:metadata) ? o.metadata : nil),
+          wear_count: o.worn_count,
+          last_worn_at: o.last_worn_at,
+          completeness_score: (o.respond_to?(:completeness_score) ? o.completeness_score : nil),
+          complete: (o.respond_to?(:complete?) ? o.complete? : nil),
           items: items.map { |item|
             {
               id: item.id,
@@ -389,6 +427,19 @@ module Api
           }
         }
         data
+      end
+
+      def missing_categories
+        missing = []
+        missing << "clothing" unless @outfit.has_clothing_item?
+        missing << "shoes" unless @outfit.has_shoes?
+        missing << "accessories" unless @outfit.has_accessories?
+        missing
+      end
+
+      def outfit_suggestions
+        # Future: AI-powered suggestions based on existing items
+        []
       end
     end
   end

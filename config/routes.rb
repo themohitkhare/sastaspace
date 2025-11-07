@@ -103,10 +103,19 @@ Rails.application.routes.draw do
           get "analyze_photo_status/:job_id", action: :analyze_photo_status
         end
         member do
+          patch :wear
+          patch :favorite
+          get :suggestions
+          get :completeness
           post :duplicate
           put :toggle_favorite
           post :inventory_items
           delete "inventory_items/:inventory_item_id" => :remove_inventory_item
+        end
+        resources :outfit_items, only: [ :create, :destroy ] do
+          member do
+            patch :update_styling_notes
+          end
         end
       end
 
@@ -121,14 +130,6 @@ Rails.application.routes.draw do
       # API Documentation
       get "docs" => "docs#show"
       get "docs/openapi" => "docs#openapi"
-      resources :outfits do
-        member do
-          patch :wear
-          patch :favorite
-          get :suggestions
-          post :duplicate
-        end
-      end
     end
   end
 

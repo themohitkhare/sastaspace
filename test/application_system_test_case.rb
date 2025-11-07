@@ -2,6 +2,8 @@ require "test_helper"
 require "capybara/cuprite"
 
 class ApplicationSystemTestCase < ActionDispatch::SystemTestCase
+  include FactoryBot::Syntax::Methods
+
   # Ensure DB changes are visible to the app server (no transactional tests)
   self.use_transactional_tests = false
 

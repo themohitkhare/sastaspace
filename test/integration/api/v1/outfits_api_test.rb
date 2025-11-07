@@ -168,6 +168,85 @@ class Api::V1::OutfitsApiTest < ActionDispatch::IntegrationTest
     assert_equal item.id, body["data"]["outfit"]["items"].first["id"]
   end
 
+  test "GET /api/v1/outfits/:id/completeness returns completeness analysis" do
+    category = create(:category, name: "T-Shirts #{SecureRandom.hex(4)}")
+    outfit = @user.outfits.create!(name: "Test Outfit")
+    item = create(:inventory_item, user: @user, category: category, name: "Test Item")
+    outfit.outfit_items.create!(inventory_item: item, position: 0)
+
+    get "/api/v1/outfits/#{outfit.id}/completeness", headers: api_headers
+
+    assert_response :success
+    body = JSON.parse(@response.body)
+    assert body["success"]
+    assert body["data"]["score"].present?
+    assert body["data"]["complete"].is_a?(TrueClass) || body["data"]["complete"].is_a?(FalseClass)
+    assert body["data"]["missing_categories"].is_a?(Array)
+  end
+
+  test "PATCH /api/v1/outfits/:id/wear updates outfit_items worn_count" do
+    category = create(:category, name: "T-Shirts #{SecureRandom.hex(4)}")
+    outfit = @user.outfits.create!(name: "Test Outfit")
+    item = create(:inventory_item, user: @user, category: category, name: "Test Item")
+    outfit_item = outfit.outfit_items.create!(inventory_item: item, position: 0, worn_count: 0)
+
+    patch "/api/v1/outfits/#{outfit.id}/wear", headers: api_headers
+
+    assert_response :success
+    body = JSON.parse(@response.body)
+    assert body["success"]
+    outfit_item.reload
+    assert_equal 1, outfit_item.worn_count
+    assert outfit_item.last_worn_at.present?
+  end
+
+  test "POST /api/v1/outfits/:outfit_id/outfit_items creates outfit item" do
+    category = create(:category, name: "T-Shirts #{SecureRandom.hex(4)}")
+    outfit = @user.outfits.create!(name: "Test Outfit")
+    item = create(:inventory_item, user: @user, category: category, name: "Test Item")
+
+    post "/api/v1/outfits/#{outfit.id}/outfit_items",
+         params: { inventory_item_id: item.id, position: 0 }.to_json,
+         headers: api_headers
+
+    assert_response :created
+    body = JSON.parse(@response.body)
+    assert body["success"]
+    assert_equal outfit.id, body["data"]["outfit_item"]["outfit_id"]
+    assert_equal item.id, body["data"]["outfit_item"]["inventory_item_id"]
+  end
+
+  test "DELETE /api/v1/outfits/:outfit_id/outfit_items/:id removes outfit item" do
+    category = create(:category, name: "T-Shirts #{SecureRandom.hex(4)}")
+    outfit = @user.outfits.create!(name: "Test Outfit")
+    item = create(:inventory_item, user: @user, category: category, name: "Test Item")
+    outfit_item = outfit.outfit_items.create!(inventory_item: item, position: 0)
+
+    delete "/api/v1/outfits/#{outfit.id}/outfit_items/#{outfit_item.id}", headers: api_headers
+
+    assert_response :success
+    body = JSON.parse(@response.body)
+    assert body["success"]
+    assert_nil OutfitItem.find_by(id: outfit_item.id)
+  end
+
+  test "PATCH /api/v1/outfits/:outfit_id/outfit_items/:id/update_styling_notes updates styling notes" do
+    category = create(:category, name: "T-Shirts #{SecureRandom.hex(4)}")
+    outfit = @user.outfits.create!(name: "Test Outfit")
+    item = create(:inventory_item, user: @user, category: category, name: "Test Item")
+    outfit_item = outfit.outfit_items.create!(inventory_item: item, position: 0)
+
+    patch "/api/v1/outfits/#{outfit.id}/outfit_items/#{outfit_item.id}/update_styling_notes",
+          params: { styling_notes: "Great for summer" }.to_json,
+          headers: api_headers
+
+    assert_response :success
+    body = JSON.parse(@response.body)
+    assert body["success"]
+    outfit_item.reload
+    assert_equal "Great for summer", outfit_item.styling_notes
+  end
+
   private
 
   def api_headers

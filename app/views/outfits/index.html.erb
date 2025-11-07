@@ -110,7 +110,7 @@
   <!-- Pagination -->
   <% if @outfits.respond_to?(:current_page) %>
     <div class="mt-6 flex justify-center">
-      <%= paginate @outfits, theme: 'twitter-bootstrap-4' if defined?(Kaminari) %>
+      <%= paginate @outfits if defined?(Kaminari) %>
     </div>
   <% end %>
 </div>
