@@ -118,11 +118,15 @@ class OutfitsGalleryTest < ApplicationSystemTestCase
 
       # Submit form
       page.execute_script("document.querySelector('form').submit()") rescue nil
-      sleep 2
 
-      assert_text @formal_outfit.name
-      assert_no_text @casual_outfit.name
-      assert_no_text @weekend_outfit.name
+      # Wait for page to stabilize after form submission
+      # Wait for either the filtered content or the page to reload
+      assert_selector "h1", text: /My Outfits/i, wait: 5
+
+      # Now wait for the expected content with explicit wait times
+      assert_text @formal_outfit.name, wait: 5
+      assert_no_text @casual_outfit.name, wait: 2
+      assert_no_text @weekend_outfit.name, wait: 2
     end
   end
 
