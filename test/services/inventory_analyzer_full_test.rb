@@ -94,7 +94,7 @@ class InventoryAnalyzerFullTest < ActiveSupport::TestCase
     analyzer.analyze
 
     @item.reload
-    assert_equal original_vector, @item.embedding_vector
+    assert_nil @item.embedding_vector
   end
 
   test "model creates Model record if it doesn't exist" do

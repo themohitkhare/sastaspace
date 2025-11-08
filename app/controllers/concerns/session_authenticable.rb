@@ -5,6 +5,13 @@ module SessionAuthenticable
 
   included do
     helper_method :current_user, :user_signed_in?
+
+    # Override ExceptionHandler's handlers for HTML requests
+    # These handlers take precedence because they're defined after ExceptionHandler is included
+    # We check inside the handler if it's an HTML request
+    rescue_from ExceptionHandler::InvalidToken, with: :handle_token_error
+    rescue_from ExceptionHandler::ExpiredToken, with: :handle_token_error
+    rescue_from ExceptionHandler::MissingToken, with: :handle_token_error
   end
 
   private
@@ -79,7 +86,7 @@ module SessionAuthenticable
     # Verify token with JWT service
     decoded_token = Auth::JsonWebToken.decode(token)
     User.find_by(id: decoded_token[:user_id])
-  rescue JWT::ExpiredSignature, JWT::DecodeError
+  rescue ExceptionHandler::ExpiredToken, ExceptionHandler::InvalidToken, JWT::ExpiredSignature, JWT::DecodeError
     # Try to refresh token if expired
     refreshed_user = refresh_access_token
     if refreshed_user.nil?
@@ -160,5 +167,30 @@ module SessionAuthenticable
     JSON.parse(response.body, symbolize_names: true)
   rescue StandardError
     { success: false }
+  end
+
+  def handle_token_error(e)
+    # Only handle for HTML requests
+    # For JSON requests, let ExceptionHandler handle it (but ExceptionHandler won't catch it since we're handling it first)
+    # So we need to check and either handle or let it propagate
+    if request.format.html?
+      # Clear cookies and session
+      cookies.delete(:access_token)
+      cookies.delete(:refresh_token)
+      session.delete(:user_id)
+      # Redirect to login
+      redirect_to login_path, alert: "Your session has expired. Please sign in again."
+    else
+      # For JSON requests, render JSON error (ExceptionHandler won't catch it since we're handling it)
+      render json: {
+        success: false,
+        error: {
+          code: "AUTHENTICATION_ERROR",
+          message: "Invalid token",
+          details: e.message
+        },
+        timestamp: Time.current.iso8601
+      }, status: :unauthorized
+    end
   end
 end

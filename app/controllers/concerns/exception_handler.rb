@@ -11,6 +11,8 @@ module ExceptionHandler
   private
 
   def invalid_token(e)
+    # Only handle for API requests (JSON)
+    # HTML requests are handled by SessionAuthenticable's rescue_from handlers
     render json: {
       success: false,
       error: {
@@ -23,6 +25,8 @@ module ExceptionHandler
   end
 
   def missing_token(e)
+    # Only handle for API requests (JSON)
+    # HTML requests are handled by SessionAuthenticable's rescue_from handlers
     render json: {
       success: false,
       error: {
@@ -35,6 +39,8 @@ module ExceptionHandler
   end
 
   def expired_token(e)
+    # Only handle for API requests (JSON)
+    # HTML requests are handled by SessionAuthenticable's rescue_from handlers
     render json: {
       success: false,
       error: {

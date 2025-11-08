@@ -41,7 +41,7 @@ module Authenticable
 
     decoded_token = Auth::JsonWebToken.decode(token)
     @current_user = User.find(decoded_token[:user_id])
-  rescue JWT::ExpiredSignature, JWT::DecodeError => e
+  rescue ExceptionHandler::ExpiredToken, JWT::ExpiredSignature, JWT::DecodeError => e
     # If token is expired and we're using cookies, try to refresh
     if cookies.signed[:refresh_token].present? && refresh_access_token_from_cookies
       retry
