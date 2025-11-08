@@ -34,5 +34,9 @@ module Sastaspace
     # Middleware needs to be required at boot time (before autoloading)
     require Rails.root.join("app", "middleware", "security_headers_middleware")
     config.middleware.use SecurityHeadersMiddleware
+
+    # Add rate limiting middleware (before security headers to catch rate limits early)
+    require Rails.root.join("app", "middleware", "rate_limiting_middleware")
+    config.middleware.insert_before SecurityHeadersMiddleware, RateLimitingMiddleware
   end
 end
