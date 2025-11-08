@@ -2,15 +2,20 @@ class VectorSearchService
   def self.find_similar_items(user, query_vector, limit: 10)
     return [] unless query_vector.present?
 
-    # Use Rails scopes with Arel.sql for proper SQL escaping
-    vector_str = "[#{query_vector.join(',')}]"
+    # Validate and sanitize vector input
+    validated_vector = validate_and_sanitize_vector(query_vector)
+    return [] unless validated_vector
+
+    # Use parameterized query to prevent SQL injection
+    vector_str = format_vector_string(validated_vector)
+    escaped_vector = ActiveRecord::Base.connection.quote(vector_str)
 
     user.inventory_items
         .includes(:category, :brand, :tags,
                   primary_image_attachment: :blob,
                   additional_images_attachments: :blob)
         .where.not(embedding_vector: nil)
-        .order(Arel.sql("embedding_vector <-> '#{vector_str}'::vector"))
+        .order(Arel.sql("embedding_vector <-> #{escaped_vector}::vector"))
         .limit(limit)
   end
 
@@ -26,15 +31,20 @@ class VectorSearchService
   def self.find_items_by_image_similarity(user, image_vector, limit: 10)
     return [] unless image_vector.present?
 
-    # Use Rails scopes with Arel.sql for proper SQL escaping
-    vector_str = "[#{image_vector.join(',')}]"
+    # Validate and sanitize vector input
+    validated_vector = validate_and_sanitize_vector(image_vector)
+    return [] unless validated_vector
+
+    # Use parameterized query to prevent SQL injection
+    vector_str = format_vector_string(validated_vector)
+    escaped_vector = ActiveRecord::Base.connection.quote(vector_str)
 
     user.inventory_items
         .includes(:category, :brand, :tags,
                   primary_image_attachment: :blob,
                   additional_images_attachments: :blob)
         .where.not(embedding_vector: nil)
-        .order(Arel.sql("embedding_vector <-> '#{vector_str}'::vector"))
+        .order(Arel.sql("embedding_vector <-> #{escaped_vector}::vector"))
         .limit(limit)
   end
 
@@ -220,5 +230,33 @@ class VectorSearchService
     else
       "Complements your outfit"
     end
+  end
+
+  # Validate and sanitize vector input to prevent SQL injection
+  # Returns validated array of numbers or nil if invalid
+  def self.validate_and_sanitize_vector(vector)
+    return nil unless vector.is_a?(Array)
+    return nil if vector.empty?
+
+    # Convert all elements to floats and validate they're numeric
+    validated = vector.map do |v|
+      # Convert to float, raise error if not numeric
+      Float(v)
+    rescue ArgumentError, TypeError
+      return nil # Invalid non-numeric value
+    end
+
+    # Ensure reasonable bounds to prevent extremely large values
+    validated.each do |val|
+      return nil if val.infinite? || val.nan?
+      return nil if val.abs > 1_000_000 # Reasonable bound for vector components
+    end
+
+    validated
+  end
+
+  # Format vector array as PostgreSQL vector string format: [1.0,2.0,3.0]
+  def self.format_vector_string(vector)
+    "[#{vector.join(',')}]"
   end
 end
