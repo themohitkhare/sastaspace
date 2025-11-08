@@ -11,6 +11,7 @@ module Api
       include ErrorHandling  # Comprehensive error handling (must come before ExceptionHandler)
       include ExceptionHandler  # Authentication-specific error handling (checked after ErrorHandling)
       include ApiResponse    # Standardized response formatting
+      include HttpCaching   # HTTP caching support (ETag, Last-Modified)
 
       # Add request ID to all responses
       before_action :set_request_id_header
