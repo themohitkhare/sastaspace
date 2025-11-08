@@ -111,6 +111,7 @@ module Api
         export_dir = ExportUserDataJob::EXPORT_DIR.to_s
 
         # Validate file_path is a string and starts with export directory
+        # Accept both .json (legacy) and .zip (new format) files
         unless file_path.is_a?(String) && file_path.start_with?(export_dir) && file_path.include?("user_#{current_user.id}_")
           return render_error_response(
             code: "EXPORT_NOT_FOUND",
@@ -152,10 +153,10 @@ module Api
 
         # Security: Use sanitized filename (constructed from validated current_user.id, not user input)
         # File path is validated above to be within export directory and normalized
-        safe_filename = "sastaspace_export_#{current_user.id}_#{Time.current.to_i}.json"
+        safe_filename = "sastaspace_export_#{current_user.id}_#{Time.current.to_i}.zip"
         send_file normalized_path,
                   filename: safe_filename,
-                  type: "application/json",
+                  type: "application/zip",
                   disposition: "attachment"
       end
 
