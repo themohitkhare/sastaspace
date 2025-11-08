@@ -34,9 +34,9 @@ SimpleCov.start "rails" do
   add_group "Mailers", "app/mailers"
   add_group "Helpers", "app/helpers"
 
-  # Only enforce minimum coverage on CI or when COVERAGE env var is explicitly set
-  if ENV["CI"] || ENV["COVERAGE"]
-    minimum_coverage 80
+  # Only enforce minimum coverage on CI or when SIMPLECOV/COVERAGE env var is explicitly set
+  if ENV["CI"] || ENV["COVERAGE"] || ENV["SIMPLECOV"] == "1"
+    minimum_coverage 85
   end
 end
 

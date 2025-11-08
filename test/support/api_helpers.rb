@@ -56,6 +56,33 @@ module ApiHelpers
     payload = { user_id: user.id, exp: 1.hour.ago.to_i }
     JWT.encode(payload, Rails.application.secret_key_base)
   end
+
+  # Helper to set signed cookies in integration tests
+  # In Rails integration tests, we need to make a request first to initialize the cookie jar
+  # Then we can use cookies.signed, but if that's not available, we manually sign
+  def set_signed_cookie(name, value)
+    # Make a dummy request to initialize the cookie jar properly
+    get root_path rescue get "/up" rescue nil
+
+    # Now try to use cookies.signed if available
+    if cookies.respond_to?(:signed)
+      cookies.signed[name] = value
+    else
+      # For Rack::Test::CookieJar, we need to manually sign using Rails' mechanism
+      # Rails uses ActionDispatch::Cookies::SignedKeyRotatingCookieJar
+      # The signing uses secret_key_base with a specific salt and serializer
+      key_generator = ActiveSupport::KeyGenerator.new(
+        Rails.application.secret_key_base,
+        iterations: 1000
+      )
+      # Rails uses "signed cookie" as the salt for signed cookies
+      secret = key_generator.generate_key("signed cookie")
+      # Rails uses Marshal serializer for signed cookies, not JSON
+      verifier = ActiveSupport::MessageVerifier.new(secret, serializer: Marshal, digest: "SHA1")
+      signed_value = verifier.generate(value)
+      cookies[name] = signed_value
+    end
+  end
 end
 
 # Include in integration tests

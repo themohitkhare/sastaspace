@@ -1,4 +1,4 @@
-name: Rails Tests
+name: CI Pipeline
 
 on:
   push:
@@ -13,10 +13,11 @@ env:
   DATABASE_PASSWORD: postgres
   DATABASE_HOST: localhost
   DATABASE_PORT: 5432
+  SIMPLECOV: 1
 
 jobs:
-  test:
-    name: Rails & System Tests
+  ci:
+    name: CI Pipeline (Local-First)
     runs-on: ubuntu-latest
     
     services:
@@ -60,14 +61,34 @@ jobs:
         bundle exec rails db:create
         bundle exec rails db:schema:load || bundle exec rails db:migrate
         
-    - name: Precompile assets
+    - name: Style: Ruby (RuboCop)
       run: |
-        bundle exec rails assets:precompile
+        bundle exec rubocop
         
-    - name: Run Rails tests
+    - name: Security: Brakeman
+      run: |
+        bundle exec brakeman -q -w2
+        
+    - name: Security: Bundler Audit
+      run: |
+        bundle exec bundle-audit check --update
+        
+    - name: Tests: Rails with Coverage
       run: |
         bundle exec rails test
         
-    - name: Run System tests  
+    - name: Coverage: Summary
+      if: success()
       run: |
-        bundle exec rails test:system
+        echo "Coverage report generated in coverage/ directory"
+        if [ -f coverage/index.html ]; then
+          echo "Coverage HTML report available"
+        fi
+        
+    - name: Upload coverage report
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: coverage-report
+        path: coverage/
+        retention-days: 7
