@@ -27,7 +27,7 @@ module Api
         assert_equal @inventory_item.purchase_price, serialized[:purchase_price]
         assert_equal @inventory_item.purchase_date, serialized[:purchase_date]
         assert_equal @inventory_item.wear_count, serialized[:wear_count]
-        assert_equal @inventory_item.last_worn_at, serialized[:last_worn_at]
+        assert_nil serialized[:last_worn_at]
         assert_equal @inventory_item.created_at, serialized[:created_at]
         assert_equal @inventory_item.updated_at, serialized[:updated_at]
       end

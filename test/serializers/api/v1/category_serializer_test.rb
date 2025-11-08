@@ -23,7 +23,7 @@ class Api::V1::CategorySerializerTest < ActiveSupport::TestCase
     assert_equal @parent.sort_order, result[:sort_order]
     assert_equal @parent.active, result[:active]
     assert_equal @parent.metadata, result[:metadata]
-    assert_equal @parent.parent_id, result[:parent_id]
+    assert_nil result[:parent_id]
     assert_equal "Parent Category", result[:full_path]
     assert result[:is_root]
     assert_not result[:is_leaf]

@@ -56,4 +56,27 @@ class TagTest < ActiveSupport::TestCase
     # Inventory item should still exist
     assert item.reload.persisted?
   end
+
+  test "popular scope orders by inventory tag count" do
+    user = create(:user)
+    category = create(:category, :clothing)
+    tag1 = create(:tag, name: "Tag 1 #{SecureRandom.hex(4)}")
+    tag2 = create(:tag, name: "Tag 2 #{SecureRandom.hex(4)}")
+    tag3 = create(:tag, name: "Tag 3 #{SecureRandom.hex(4)}")
+
+    item1 = create(:inventory_item, user: user, category: category)
+    item2 = create(:inventory_item, user: user, category: category)
+    item3 = create(:inventory_item, user: user, category: category)
+
+    # Tag1 has 3 items, Tag2 has 2 items, Tag3 has 1 item
+    InventoryTag.create!(inventory_item: item1, tag: tag1)
+    InventoryTag.create!(inventory_item: item2, tag: tag1)
+    InventoryTag.create!(inventory_item: item3, tag: tag1)
+    InventoryTag.create!(inventory_item: item1, tag: tag2)
+    InventoryTag.create!(inventory_item: item2, tag: tag2)
+    InventoryTag.create!(inventory_item: item1, tag: tag3)
+
+    popular_tags = Tag.popular
+    assert_equal [ tag1.id, tag2.id, tag3.id ], popular_tags.pluck(:id)
+  end
 end

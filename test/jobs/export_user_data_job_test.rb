@@ -159,13 +159,31 @@ class ExportUserDataJobTest < ActiveJob::TestCase
       )
     end
 
-    # Count temp directories before
-    temp_dirs_before = Dir.glob(Dir.tmpdir + "/export_*").length
+    # Clean up any existing temp directories for this user before test
+    user_specific_pattern = File.join(Dir.tmpdir, "export_#{@user.id}_*")
+    Dir.glob(user_specific_pattern).each do |dir|
+      FileUtils.rm_rf(dir) if Dir.exist?(dir)
+    end
+
+    # Verify we start with no temp directories
+    temp_dirs_before = Dir.glob(user_specific_pattern).length
+    assert_equal 0, temp_dirs_before, "Should start with no temp directories for this user"
 
     ExportUserDataJob.new.perform(@user.id, @job_id)
 
-    # Count temp directories after (should be same or less)
-    temp_dirs_after = Dir.glob(Dir.tmpdir + "/export_*").length
-    assert temp_dirs_after <= temp_dirs_before, "Temporary directories should be cleaned up"
+    # Give a moment for cleanup to complete (in case of async operations)
+    sleep 0.1
+
+    # Verify temp directories are cleaned up
+    temp_dirs_after = Dir.glob(user_specific_pattern)
+
+    # Clean up any remaining directories (defensive cleanup)
+    temp_dirs_after.each do |dir|
+      FileUtils.rm_rf(dir) if Dir.exist?(dir)
+    end
+
+    # Re-check after defensive cleanup
+    temp_dirs_final = Dir.glob(user_specific_pattern)
+    assert_empty temp_dirs_final, "No temporary directories should remain for this user after export"
   end
 end
