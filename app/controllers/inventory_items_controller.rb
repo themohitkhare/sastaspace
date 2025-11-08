@@ -64,113 +64,27 @@ class InventoryItemsController < ApplicationController
   end
 
   def create
-    # Extract blob_id before building - it's not a model attribute
-    blob_id = params[:inventory_item]&.dig(:blob_id) || params.dig(:inventory_item, :blob_id)
-
-    # Build item without blob_id (it's not a model attribute)
-    item_params = inventory_item_params.except(:blob_id)
-    @inventory_item = current_user.inventory_items.build(item_params)
     @categories = Category.active.order(:name)
 
-    # Normalize category/subcategory: if a selected category has a parent, treat it as subcategory
-    if @inventory_item.category_id.present?
-      selected = Category.find_by(id: @inventory_item.category_id)
-      if selected&.parent_id.present?
-        @inventory_item.subcategory_id = selected.id
-        # set category to top-level ancestor
-        node = selected
-        node = node.respond_to?(:parent_category) ? node.parent_category : node.parent while node&.parent_id.present?
-        @inventory_item.category_id = node&.id || selected.id
-      end
-    end
+    begin
+      result = Services::InventoryItemCreationService.new(
+        user: current_user,
+        params: params,
+        session: session
+      ).create
 
-    if @inventory_item.save
-      # Handle blob_id from AI upload (attach existing blob)
-      Rails.logger.info "Checking for blob_id in params. Present: #{blob_id.present?}, Value: #{blob_id}"
+      @inventory_item = result[:inventory_item]
 
-      # Also check for blob_id in session if not in params (fallback for AI uploads)
-      blob_id ||= session[:pending_blob_id] if session[:pending_blob_id].present?
-
-      if blob_id.present?
-        begin
-          # Convert to integer to ensure proper lookup
-          blob_id_int = blob_id.to_i
-          blob = ActiveStorage::Blob.find_by(id: blob_id_int)
-
-          unless blob
-            Rails.logger.error "Blob #{blob_id_int} not found in database"
-          end
-
-          if blob
-            # Explicitly create attachment with correct name to ensure it's "primary_image" not "attachments"
-            @inventory_item.primary_image_attachment&.purge # Remove existing if any
-            @inventory_item.primary_image.attach(blob)
-
-            # Note: ActiveStorage attachments are persisted automatically when attach() is called
-            # No need to explicitly save as attach() creates the attachment record directly
-
-            Rails.logger.info "Successfully attached blob #{blob.id} as primary image for inventory item #{@inventory_item.id}"
-
-            # Reload and verify attachment was created correctly
-            @inventory_item.reload
-            attachment = @inventory_item.primary_image_attachment
-            if attachment && attachment.persisted?
-              Rails.logger.info "Attachment verified: name=#{attachment.name}, blob_id=#{attachment.blob_id}, record=#{attachment.record_type}##{attachment.record_id}"
-              # Clear session blob_id if it was used
-              session.delete(:pending_blob_id) if session[:pending_blob_id].to_s == blob_id_int.to_s
-            else
-              Rails.logger.error "Attachment not found or not persisted after attach! Item ID: #{@inventory_item.id}, Blob ID: #{blob.id}"
-              # Try attaching again as fallback
-              @inventory_item.primary_image.attach(blob)
-              @inventory_item.reload
-
-              # Final verification
-              if @inventory_item.primary_image_attachment&.persisted?
-                Rails.logger.info "Attachment succeeded on retry"
-              else
-                Rails.logger.error "Attachment FAILED even after retry!"
-              end
-            end
-          else
-            Rails.logger.error "Could not find blob with ID #{blob_id_int} for inventory item #{@inventory_item.id}"
-          end
-        rescue ActiveRecord::RecordNotFound => e
-          Rails.logger.error "Blob #{blob_id_int} not found for inventory item: #{e.message}"
-        rescue StandardError => e
-          Rails.logger.error "Error attaching blob to inventory item: #{e.message}"
-          Rails.logger.error e.backtrace.first(5).join("\n")
-        end
+      if result[:success]
+        redirect_to inventory_items_path, notice: "Item created successfully"
       else
-        Rails.logger.warn "No blob_id found in params or session for inventory item #{@inventory_item.id}"
+        render :new, status: :unprocessable_entity
       end
-
-      # Handle image uploads (fallback if blob_id not present) - with deduplication
-      if params[:inventory_item] && params[:inventory_item][:primary_image].present?
-        blob = Services::BlobDeduplicationService.find_or_create_blob(
-          io: params[:inventory_item][:primary_image].open,
-          filename: params[:inventory_item][:primary_image].original_filename,
-          content_type: params[:inventory_item][:primary_image].content_type
-        )
-        @inventory_item.primary_image_attachment&.purge # Remove existing if any
-        @inventory_item.primary_image.attach(blob)
-      end
-
-      if params[:inventory_item] && params[:inventory_item][:additional_images].present?
-        Array(params[:inventory_item][:additional_images]).reject(&:blank?).each do |image|
-          # Skip if not an uploaded file (could be empty string)
-          next unless image.is_a?(ActionDispatch::Http::UploadedFile)
-
-          blob = Services::BlobDeduplicationService.find_or_create_blob(
-            io: image.open,
-            filename: image.original_filename,
-            content_type: image.content_type
-          )
-          @inventory_item.additional_images.attach(blob)
-        end
-      end
-
-      redirect_to inventory_items_path, notice: "Item created successfully"
-    else
+    rescue StandardError => e
+      Rails.logger.error "Error in create action: #{e.message}"
+      Rails.logger.error e.backtrace.first(10).join("\n")
+      @inventory_item = current_user.inventory_items.build(inventory_item_params.except(:blob_id))
+      @inventory_item.errors.add(:base, "An error occurred: #{e.message}")
       render :new, status: :unprocessable_entity
     end
   end
@@ -180,73 +94,12 @@ class InventoryItemsController < ApplicationController
   end
 
   def update
-    if @inventory_item.update(inventory_item_params)
-      # Normalize category/subcategory after update
-      if @inventory_item.category_id.present?
-        selected = Category.find_by(id: @inventory_item.category_id)
-        if selected&.parent_id.present?
-          @inventory_item.update_column(:subcategory_id, selected.id)
-          node = selected
-          node = node.respond_to?(:parent_category) ? node.parent_category : node.parent while node&.parent_id.present?
-          @inventory_item.update_column(:category_id, node&.id || selected.id)
-        end
-      end
+    result = Services::InventoryItemUpdateService.new(
+      inventory_item: @inventory_item,
+      params: params
+    ).update
 
-      # Handle blob_id from AI upload (only attach if not already attached)
-      blob_id_param = params[:inventory_item]&.dig(:blob_id)
-      if blob_id_param.present? && !@inventory_item.primary_image.attached?
-        begin
-          # Convert to integer to ensure proper lookup
-          blob_id_int = blob_id_param.to_i
-          blob = ActiveStorage::Blob.find_by(id: blob_id_int)
-
-          if blob
-            # Explicitly create attachment with correct name
-            @inventory_item.primary_image.attach(blob)
-            # Note: ActiveStorage attachments are persisted automatically when attach() is called
-            @inventory_item.reload
-
-            # Verify attachment was created correctly
-            attachment = @inventory_item.primary_image_attachment
-            if attachment && attachment.persisted?
-              Rails.logger.info "Attachment verified on update: name=#{attachment.name}, blob_id=#{attachment.blob_id}"
-            else
-              Rails.logger.error "Attachment not found or not persisted after attach on update! Item ID: #{@inventory_item.id}, Blob ID: #{blob.id}"
-            end
-          else
-            Rails.logger.warn "Blob #{blob_id_int} not found in database"
-          end
-        rescue StandardError => e
-          Rails.logger.error "Error attaching blob on update: #{e.message}"
-          Rails.logger.error e.backtrace.first(5).join("\n")
-        end
-      end
-
-      # Handle image uploads (fallback if blob_id not present) - with deduplication
-      if params[:inventory_item] && params[:inventory_item][:primary_image].present?
-        blob = Services::BlobDeduplicationService.find_or_create_blob(
-          io: params[:inventory_item][:primary_image].open,
-          filename: params[:inventory_item][:primary_image].original_filename,
-          content_type: params[:inventory_item][:primary_image].content_type
-        )
-        @inventory_item.primary_image_attachment&.purge # Remove existing if any
-        @inventory_item.primary_image.attach(blob)
-      end
-
-      if params[:inventory_item] && params[:inventory_item][:additional_images].present?
-        Array(params[:inventory_item][:additional_images]).reject(&:blank?).each do |image|
-          # Skip if not an uploaded file (could be empty string)
-          next unless image.is_a?(ActionDispatch::Http::UploadedFile)
-
-          blob = Services::BlobDeduplicationService.find_or_create_blob(
-            io: image.open,
-            filename: image.original_filename,
-            content_type: image.content_type
-          )
-          @inventory_item.additional_images.attach(blob)
-        end
-      end
-
+    if result[:success]
       redirect_to inventory_items_path, notice: "Item updated successfully"
     else
       @categories = Category.active.order(:name)
