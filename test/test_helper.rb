@@ -45,6 +45,22 @@ require "rails/test_help"
 require "minitest/reporters"
 require "mocha/minitest"
 
+# Suppress frozen string literal warnings from gems (Rack, Marcel, etc.)
+# These warnings come from third-party gems and will be fixed in future gem versions
+# We filter them out to keep test output clean
+module WarningFilter
+  def warn(message, category: nil)
+    # Skip warnings about frozen string literals from gem directories
+    return if message.include?("literal string will be frozen") &&
+              (message.include?("/gems/") || message.include?("mise/installs/") || message.include?(".gem"))
+
+    # Call original warn method for all other warnings
+    super
+  end
+end
+
+Warning.extend(WarningFilter)
+
 # Configure Mocha for Minitest
 Mocha.configure do |config|
   config.strict_keyword_argument_matching = false
@@ -59,9 +75,14 @@ Minitest::Reporters.use!(
 
 module ActiveSupport
   class TestCase
-    # DISABLE parallel testing to ensure SimpleCov works properly
-    # Run tests sequentially to get accurate coverage
-    # parallelize(workers: :number_of_processors)
+    # Enable parallel testing - SimpleCov collation handles merging coverage
+    # Control worker count via PARALLEL_WORKERS env var, or use :number_of_processors
+    worker_count = if ENV["PARALLEL_WORKERS"]
+                     ENV["PARALLEL_WORKERS"].to_i
+    else
+                     :number_of_processors
+    end
+    parallelize(workers: worker_count, with: :processes)
 
     # Setup all fixtures in test/fixtures/*.yml for all tests in alphabetical order.
     fixtures :all

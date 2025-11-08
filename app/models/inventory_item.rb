@@ -1,4 +1,8 @@
 class InventoryItem < ApplicationRecord
+  include Searchable
+  include ImageProcessable
+  include TypeDerivable
+
   belongs_to :user
   belongs_to :category
   belongs_to :subcategory, class_name: "Category", optional: true
@@ -10,64 +14,6 @@ class InventoryItem < ApplicationRecord
   has_many :ai_analyses, dependent: :destroy, class_name: "AiAnalysis"
   has_many :inventory_tags, dependent: :destroy
   has_many :tags, through: :inventory_tags
-
-  # Vector search capabilities - using parameterized queries to prevent SQL injection
-  def similar_items(limit: 5)
-    return [] unless embedding_vector.present?
-
-    # Validate and sanitize vector input
-    validated_vector = VectorSearchService.validate_and_sanitize_vector(embedding_vector)
-    return [] unless validated_vector
-
-    # Use parameterized query to prevent SQL injection
-    vector_str = VectorSearchService.format_vector_string(validated_vector)
-    escaped_vector = ActiveRecord::Base.connection.quote(vector_str)
-
-    user.inventory_items
-        .includes(:category, :brand, :tags,
-                  primary_image_attachment: :blob,
-                  additional_images_attachments: :blob)
-        .where.not(id: id)
-        .where.not(embedding_vector: nil)
-        .order(Arel.sql("embedding_vector <-> #{escaped_vector}::vector"))
-        .limit(limit)
-  end
-
-  def find_similar_items(limit: 10)
-    return [] unless embedding_vector.present?
-
-    # Validate and sanitize vector input
-    validated_vector = VectorSearchService.validate_and_sanitize_vector(embedding_vector)
-    return [] unless validated_vector
-
-    # Use parameterized query to prevent SQL injection
-    vector_str = VectorSearchService.format_vector_string(validated_vector)
-    escaped_vector = ActiveRecord::Base.connection.quote(vector_str)
-
-    user.inventory_items
-        .includes(:category, :brand, :tags,
-                  primary_image_attachment: :blob,
-                  additional_images_attachments: :blob)
-        .where.not(id: id)
-        .where.not(embedding_vector: nil)
-        .order(Arel.sql("embedding_vector <-> #{escaped_vector}::vector"))
-        .limit(limit)
-  end
-
-  # Scope-based approach for direct vector search - using parameterized queries
-  scope :similar_to, ->(vector, limit: 10) {
-    # Validate and sanitize vector input
-    validated_vector = VectorSearchService.validate_and_sanitize_vector(vector)
-    next where("1=0") unless validated_vector # Return empty result if invalid
-
-    # Use parameterized query to prevent SQL injection
-    vector_str = VectorSearchService.format_vector_string(validated_vector)
-    escaped_vector = ActiveRecord::Base.connection.quote(vector_str)
-
-    where.not(embedding_vector: nil)
-         .order(Arel.sql("embedding_vector <-> #{escaped_vector}::vector"))
-         .limit(limit)
-  }
 
   # Core validations
   validates :name, presence: true
@@ -93,7 +39,11 @@ class InventoryItem < ApplicationRecord
       "jewelry" => %w[necklaces rings earrings bracelets watches]
     }
     like_clauses = (patterns[t] || []).map { |p| "LOWER(categories.name) LIKE '#{p}%'" }
-    joins(:category).where(like_clauses.join(" OR "))
+    if like_clauses.empty?
+      where("1=0") # Return empty result for unknown types
+    else
+      joins(:category).where(like_clauses.join(" OR "))
+    end
   }
   scope :by_category, ->(category) { joins(:category).where(categories: { name: category }) }
   scope :by_season, ->(season) { where("metadata->>'season' = ?", season) }
@@ -106,12 +56,6 @@ class InventoryItem < ApplicationRecord
   # Type-specific validations
   validate :validate_type_specific_fields
   validate :validate_item_type_presence
-
-  # Image validations
-  validate :validate_primary_image_content_type
-  validate :validate_primary_image_size
-  validate :validate_additional_images_content_type
-  validate :validate_additional_images_size
 
   def increment_wear_count!
     increment!(:wear_count)
@@ -128,171 +72,13 @@ class InventoryItem < ApplicationRecord
     }.compact
   end
 
-  # Image variants for different use cases
-  def primary_image_variants
-    return {} unless primary_image.attached?
-
-    {
-      thumb: primary_image.variant(resize_to_limit: [ 150, 150 ]),
-      medium: primary_image.variant(resize_to_limit: [ 400, 400 ]),
-      large: primary_image.variant(resize_to_limit: [ 800, 800 ])
-    }
-  end
-
-  def additional_image_variants(image)
-    return {} if image.nil? || (image.respond_to?(:attached?) && !image.attached?)
-
-    {
-      thumb: image.variant(resize_to_limit: [ 150, 150 ]),
-      medium: image.variant(resize_to_limit: [ 400, 400 ]),
-      large: image.variant(resize_to_limit: [ 800, 800 ])
-    }
-  end
-
-  # Security: Strip EXIF data and process images
-  after_create_commit :process_images
-  after_update_commit :process_images
-
-  # Backward-compatibility for legacy tests/serializers expecting `item_type`
-  def item_type
-    # If explicitly overridden to nil, honor that (used by tests)
-    if defined?(@item_type_overridden) && @item_type_overridden && @virtual_item_type.nil?
-      return nil
-    end
-    return @virtual_item_type if @virtual_item_type.present?
-    top_level_category
-  end
-
-  # Writer is a no-op retained for compatibility to avoid NoMethodError in tests
-  def item_type=(value)
-    @item_type_overridden = true
-    @virtual_item_type = value.presence
-  end
-
   private
 
-  def process_images
-    if primary_image.attached?
-      ImageProcessingJob.perform_later(self)
-    end
-    additional_images.each do |image|
-      if image.present?
-        ImageProcessingJob.perform_later(self, image.id)
-      end
-    end
-  end
-
   def validate_type_specific_fields
-    case item_type
-    when "clothing"
-      validate_clothing_fields
-    when "shoes"
-      validate_shoes_fields
-    when "accessories"
-      validate_accessories_fields
-    when "jewelry"
-      validate_jewelry_fields
-    end
+    ItemValidationService.validate_type_specific_fields(self)
   end
 
-  # Ensure virtual `item_type` (derived or overridden) is present
   def validate_item_type_presence
-    errors.add(:item_type, "can't be blank") if item_type.blank?
-  end
-
-  def validate_clothing_fields
-    # Clothing-specific validations
-    if size.present? && !valid_clothing_size?
-      errors.add(:size, "is not a valid clothing size")
-    end
-  end
-
-  def validate_shoes_fields
-    # Shoes-specific validations
-    if size.present? && !valid_shoe_size?
-      errors.add(:size, "is not a valid shoe size")
-    end
-  end
-
-  def validate_accessories_fields
-    # Accessories-specific validations
-  end
-
-  def validate_jewelry_fields
-    # Jewelry-specific validations
-  end
-
-  def valid_clothing_size?
-    # Basic clothing size validation
-    %w[XS S M L XL XXL].include?(size) || size.match?(/\d+/)
-  end
-
-  def valid_shoe_size?
-    # Basic shoe size validation
-    size.match?(/\d+(\.\d+)?/) && size.to_f.between?(3, 15)
-  end
-
-  def top_level_category
-    node = category
-    return nil unless node
-    if node.respond_to?(:parent_id) && node.parent_id.present?
-      while node.parent_id.present?
-        node = node.respond_to?(:parent_category) ? node.parent_category : node.parent
-      end
-      return node.name.to_s.downcase
-    end
-    category_type_from_name(node.name)
-  end
-
-
-  def validate_primary_image_content_type
-    return unless primary_image.attached?
-
-    allowed_types = %w[image/jpeg image/jpg image/png image/webp]
-    unless allowed_types.include?(primary_image.content_type)
-      errors.add(:primary_image, "is not a valid content type")
-    end
-  end
-
-  def validate_primary_image_size
-    return unless primary_image.attached?
-
-    max_size = 5.megabytes
-    if primary_image.byte_size > max_size
-      errors.add(:primary_image, "is too large")
-    end
-  end
-
-  def validate_additional_images_content_type
-    return unless additional_images.attached?
-
-    allowed_types = %w[image/jpeg image/jpg image/png image/webp]
-    additional_images.each do |image|
-      unless allowed_types.include?(image.content_type)
-        errors.add(:additional_images, "is not a valid content type")
-        break
-      end
-    end
-  end
-
-  def validate_additional_images_size
-    return unless additional_images.attached?
-
-    max_size = 5.megabytes
-    additional_images.each do |image|
-      if image.byte_size > max_size
-        errors.add(:additional_images, "is too large")
-        break
-      end
-    end
-  end
-
-  def category_type_from_name(name)
-    down = name.to_s.downcase
-    return "clothing" if %w[tops bottoms dresses outerwear undergarments shirts pants t-shirts sweaters jackets coats jeans skirts].any? { |p| down.start_with?(p) }
-    return "shoes" if %w[athletic dress shoes casual boots sneakers loafers sandals running training oxfords heels].any? { |p| down.start_with?(p) }
-    return "accessories" if %w[bags belts hats scarves sunglasses clutches totes backpacks beanies fedoras].any? { |p| down.start_with?(p) }
-    return "jewelry" if %w[necklaces rings earrings bracelets watches].any? { |p| down.start_with?(p) }
-    "clothing"
+    ItemValidationService.validate_item_type_presence(self)
   end
 end

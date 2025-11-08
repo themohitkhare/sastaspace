@@ -62,8 +62,13 @@ class ExportUserDataJob < ApplicationJob
       end
 
       # Create ZIP file
-      zip_filename = "user_#{user_id}_export_#{Time.current.to_i}.zip"
+      # Use microseconds for uniqueness to avoid collisions in parallel tests
+      zip_filename = "user_#{user_id}_export_#{Time.current.to_f.to_s.gsub('.', '_')}.zip"
       zip_path = EXPORT_DIR.join(zip_filename)
+
+      # Delete existing ZIP file if it exists (from previous test runs or collisions)
+      # This ensures we always create a fresh ZIP file
+      File.delete(zip_path) if File.exist?(zip_path)
 
       Zip::File.open(zip_path, Zip::File::CREATE) do |zip_file|
         # Add JSON file
@@ -93,7 +98,17 @@ class ExportUserDataJob < ApplicationJob
       cleanup_old_exports(user_id)
     ensure
       # Clean up temporary directory
-      FileUtils.rm_rf(temp_dir) if Dir.exist?(temp_dir)
+      # Use force option to ensure cleanup even if files are locked
+      if Dir.exist?(temp_dir)
+        begin
+          FileUtils.rm_rf(temp_dir, secure: true)
+        rescue StandardError => e
+          Rails.logger.warn "Failed to clean up temp directory #{temp_dir}: #{e.message}"
+          # Try again with a delay in case files are still in use
+          sleep 0.1
+          FileUtils.rm_rf(temp_dir, secure: true) rescue nil
+        end
+      end
     end
   rescue StandardError => e
     Rails.logger.error "GDPR export failed for user #{user_id}, job #{job_id}: #{e.message}"

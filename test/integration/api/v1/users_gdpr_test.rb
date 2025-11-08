@@ -304,6 +304,8 @@ class Api::V1::UsersGdprTest < ActionDispatch::IntegrationTest
     # Create item with images
     item = create(:inventory_item, user: user)
     test_image_path = Rails.root.join("test", "fixtures", "files", "test_image.jpg")
+    primary_blob_id = nil
+
     if File.exist?(test_image_path)
       item.primary_image.attach(
         io: File.open(test_image_path),
@@ -321,9 +323,15 @@ class Api::V1::UsersGdprTest < ActionDispatch::IntegrationTest
 
     perform_enqueued_jobs
 
-    # Verify blob is purged
-    if File.exist?(test_image_path)
+    # Verify user is deleted
+    assert_nil User.find_by(id: user_id), "User should be deleted"
+
+    # Verify blob is purged if image was attached
+    if primary_blob_id
       assert_nil ActiveStorage::Blob.find_by(id: primary_blob_id), "Image blob should be purged"
+    else
+      # If no image was attached, at least verify the test ran
+      assert true, "Test completed (no image to verify)"
     end
   end
 

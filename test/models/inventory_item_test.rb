@@ -106,6 +106,33 @@ class InventoryItemTest < ActiveSupport::TestCase
     assert_not_includes inventory_items, shoes_item
   end
 
+  test "by_type scope handles shoes type" do
+    shoes_item = create(:inventory_item, :shoes)
+    clothing_item = create(:inventory_item, :clothing)
+
+    shoes_items = InventoryItem.by_type("shoes")
+    assert_includes shoes_items, shoes_item
+    assert_not_includes shoes_items, clothing_item
+  end
+
+  test "by_type scope handles accessories type" do
+    accessories_item = create(:inventory_item, :accessories)
+    clothing_item = create(:inventory_item, :clothing)
+
+    accessories_items = InventoryItem.by_type("accessories")
+    assert_includes accessories_items, accessories_item
+    assert_not_includes accessories_items, clothing_item
+  end
+
+  test "by_type scope handles jewelry type" do
+    jewelry_item = create(:inventory_item, :jewelry)
+    clothing_item = create(:inventory_item, :clothing)
+
+    jewelry_items = InventoryItem.by_type("jewelry")
+    assert_includes jewelry_items, jewelry_item
+    assert_not_includes jewelry_items, clothing_item
+  end
+
   test "by_category scope should filter by category name" do
     tops_category = create(:category, name: "tops #{SecureRandom.hex(3)}")
     bottoms_category = create(:category, name: "bottoms #{SecureRandom.hex(3)}")
@@ -134,6 +161,42 @@ class InventoryItemTest < ActiveSupport::TestCase
     blue_items = InventoryItem.by_color("blue")
     assert_includes blue_items, blue_item
     assert_not_includes blue_items, red_item
+  end
+
+  test "by_brand scope should filter by brand name" do
+    brand1 = create(:brand, name: "Brand #{SecureRandom.hex(4)}")
+    brand2 = create(:brand, name: "Brand #{SecureRandom.hex(4)}")
+
+    item1 = create(:inventory_item, :clothing, name: "Item 1", brand: brand1)
+    item2 = create(:inventory_item, :clothing, name: "Item 2", brand: brand2)
+
+    brand1_items = InventoryItem.by_brand(brand1.name)
+    assert_includes brand1_items, item1
+    assert_not_includes brand1_items, item2
+  end
+
+  test "metadata_summary should handle nil values" do
+    item = create(:inventory_item, :clothing, metadata: {
+      color: "blue",
+      size: nil,
+      material: "cotton",
+      season: nil,
+      occasion: "casual"
+    })
+
+    summary = item.metadata_summary
+    assert_equal "blue", summary[:color]
+    assert_equal "cotton", summary[:material]
+    assert_equal "casual", summary[:occasion]
+    assert_nil summary[:size]
+    assert_nil summary[:season]
+  end
+
+  test "by_type scope handles unknown type" do
+    item = create(:inventory_item, :clothing)
+    unknown_items = InventoryItem.by_type("unknown_type")
+    # Should return empty or filtered results
+    assert_not_includes unknown_items, item
   end
 
   test "recently_worn scope should return items worn recently" do

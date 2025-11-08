@@ -8,6 +8,7 @@ CI.run do
   step "Security: Brakeman", "bundle exec brakeman -q -w2"
   step "Security: Bundler Audit", "bundle exec bundle-audit check --update"
   step "Tests: Rails with Coverage", "SIMPLECOV=1 rails test"
+  step "Tests: System", "rails test:system"
 
   if success?
     step "Coverage: Summary", "echo 'Coverage report generated in coverage/ directory' && if [ -f coverage/.last_run.json ]; then echo 'Coverage data available. View coverage/index.html for details.'; fi"

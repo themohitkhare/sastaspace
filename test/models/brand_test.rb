@@ -30,4 +30,13 @@ class BrandTest < ActiveSupport::TestCase
       brand.destroy
     end
   end
+
+  test "popular scope orders by name" do
+    brand1 = create(:brand, name: "Brand B #{SecureRandom.hex(4)}")
+    brand2 = create(:brand, name: "Brand A #{SecureRandom.hex(4)}")
+    brand3 = create(:brand, name: "Brand C #{SecureRandom.hex(4)}")
+
+    popular_brands = Brand.where(id: [ brand1.id, brand2.id, brand3.id ]).popular
+    assert_equal [ brand2.id, brand1.id, brand3.id ], popular_brands.pluck(:id)
+  end
 end
