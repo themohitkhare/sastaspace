@@ -35,3 +35,10 @@
 /ollama_data
 /app/assets/builds/*
 !/app/assets/builds/.keep
+
+# Test coverage and artifacts
+/coverage/
+/test/tmp/
+/test/screenshots/
+/test/fixtures/files/*
+!/test/fixtures/files/.keep
