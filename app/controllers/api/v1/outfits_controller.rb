@@ -8,11 +8,16 @@ module Api
 
       def index
         outfits = current_user ? current_user.outfits : Outfit.none
+        # Check if request is fresh (304 Not Modified)
+        base_relation = current_user ? current_user.outfits : Outfit.none
+        return if set_cache_headers(base_relation)
         render json: { success: true, data: { outfits: serialize(outfits) }, message: "OK", timestamp: Time.current }
       end
 
       def show
         authorize_owner!
+        # Check if request is fresh (304 Not Modified)
+        return if set_cache_headers(@outfit)
         render json: { success: true, data: { outfit: serialize(@outfit) }, message: "OK", timestamp: Time.current }
       end
 

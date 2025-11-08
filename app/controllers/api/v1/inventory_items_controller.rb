@@ -18,6 +18,11 @@ module Api
         # Apply filters
         @inventory_items = apply_filters(@inventory_items)
 
+        # Check if request is fresh (304 Not Modified)
+        # Note: For paginated collections, we cache based on the relation before pagination
+        base_relation = current_user.inventory_items
+        return if set_cache_headers(base_relation)
+
         render json: {
           success: true,
           data: {
@@ -36,6 +41,9 @@ module Api
 
       # GET /api/v1/inventory_items/:id
       def show
+        # Check if request is fresh (304 Not Modified)
+        return if set_cache_headers(@inventory_item)
+
         render json: {
           success: true,
           data: {

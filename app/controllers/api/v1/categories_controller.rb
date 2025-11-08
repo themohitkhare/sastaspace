@@ -10,6 +10,11 @@ module Api
         @categories = Category.active.ordered.includes(:parent_category, :subcategories)
         @categories = @categories.root_categories if params[:roots_only] == "true"
 
+        # Check if request is fresh (304 Not Modified)
+        # Categories are public and can be cached by public caches
+        base_relation = Category.active.ordered
+        return if set_cache_headers(base_relation, public: true)
+
         render json: {
           success: true,
           data: {
@@ -22,6 +27,8 @@ module Api
 
       # GET /api/v1/categories/:id
       def show
+        # Check if request is fresh (304 Not Modified)
+        return if set_cache_headers(@category, public: true)
         render json: {
           success: true,
           data: {

@@ -105,15 +105,14 @@ class PlatformOpsTest < ActionDispatch::IntegrationTest
 
     assert_response :success
     last_modified = @response.headers["Last-Modified"]
-    # Last-Modified may or may not be present depending on controller implementation
-    if last_modified.present?
-      # Second request with If-Modified-Since
-      get "/api/v1/inventory_items/#{inventory_item.id}",
-          headers: api_v1_headers(token).merge("If-Modified-Since" => last_modified)
+    # Last-Modified should be present with HTTP caching implementation
+    assert last_modified.present?, "Last-Modified header should be present"
+    # Second request with If-Modified-Since
+    get "/api/v1/inventory_items/#{inventory_item.id}",
+        headers: api_v1_headers(token).merge("If-Modified-Since" => last_modified)
 
-      # May return 200 or 304 depending on implementation
-      assert [ :success, :not_modified ].include?(@response.status)
-    end
+    # Should return 304 when resource is unchanged
+    assert_response :not_modified
   end
 
   test "ETag changes when resource is updated" do
