@@ -75,43 +75,11 @@ module Api
         end
 
         if @inventory_item.save
-          # Handle blob_id from AI upload if present
+          # Handle blob_id from AI upload if present using BlobAttachmentService
           if blob_id_param.present?
-            begin
-              # Convert to integer to ensure proper lookup
-              blob_id = blob_id_param.to_i
-              blob = ActiveStorage::Blob.find_by(id: blob_id)
-
-              if blob
-                # Explicitly create attachment with correct name to ensure it's "primary_image" not "attachments"
-                @inventory_item.primary_image_attachment&.purge # Remove existing if any
-                @inventory_item.primary_image.attach(blob)
-
-                # Note: ActiveStorage attachments are persisted automatically when attach() is called
-                # No need to explicitly save as attach() creates the attachment record directly
-
-                Rails.logger.info "Successfully attached blob #{blob.id} as primary image for inventory item #{@inventory_item.id}"
-
-                # Reload to ensure attachment is available for serialization
-                @inventory_item.reload
-
-                # Verify attachment was created correctly
-                attachment = @inventory_item.primary_image_attachment
-                if attachment && attachment.persisted?
-                  Rails.logger.info "Attachment verified: name=#{attachment.name}, blob_id=#{attachment.blob_id}, record=#{attachment.record_type}##{attachment.record_id}"
-                else
-                  Rails.logger.error "Attachment not found or not persisted after attach! Item ID: #{@inventory_item.id}, Blob ID: #{blob.id}"
-                end
-              else
-                Rails.logger.warn "Blob #{blob_id} not found in database"
-              end
-            rescue ActiveRecord::RecordNotFound => e
-              Rails.logger.warn "Blob #{blob_id} not found: #{e.message}"
-            rescue StandardError => e
-              Rails.logger.error "Error attaching blob to inventory item: #{e.message}"
-              Rails.logger.error e.backtrace.first(5).join("\n")
-              # Continue anyway - item creation succeeded, just image attachment failed
-            end
+            attachment_service = Services::BlobAttachmentService.new(inventory_item: @inventory_item)
+            attachment_service.attach_primary_image_from_blob_id(blob_id_param)
+            @inventory_item.reload # Reload to ensure attachment is available for serialization
           end
 
           begin
@@ -212,19 +180,11 @@ module Api
               end
 
               if item.save
-                # Handle blob attachment if provided
+                # Handle blob attachment if provided using BlobAttachmentService
                 if blob_id.present?
-                  begin
-                    blob = ActiveStorage::Blob.find_by(id: blob_id.to_i)
-                    if blob
-                      item.primary_image.attach(blob)
-                      item.reload
-                      Rails.logger.info "Attached blob #{blob.id} to batch-created item #{item.id}"
-                    end
-                  rescue StandardError => e
-                    Rails.logger.warn "Failed to attach blob to item at index #{index}: #{e.message}"
-                    # Continue - item created, just image attachment failed
-                  end
+                  attachment_service = Services::BlobAttachmentService.new(inventory_item: item)
+                  attachment_service.attach_primary_image_from_blob_id(blob_id)
+                  item.reload
                 end
 
                 created_items << item
@@ -399,64 +359,49 @@ module Api
 
       # POST /api/v1/inventory_items/:id/primary_image
       def attach_primary_image
+        attachment_service = Services::BlobAttachmentService.new(inventory_item: @inventory_item)
+
         # Support both file upload and blob_id
         if params[:image].present?
-          # Use deduplication for new image uploads
-          blob = Services::BlobDeduplicationService.find_or_create_blob(
-            io: params[:image].open,
-            filename: params[:image].original_filename,
-            content_type: params[:image].content_type
-          )
-          @inventory_item.primary_image_attachment&.purge # Remove existing if any
-          @inventory_item.primary_image.attach(blob)
-          render json: {
-            success: true,
-            data: {
-              image_url: url_for(@inventory_item.primary_image)
-            },
-            message: "Primary image attached successfully",
-            timestamp: Time.current.iso8601
-          }
+          success = attachment_service.attach_primary_image_from_file(params[:image])
+          if success
+            @inventory_item.reload
+            render json: {
+              success: true,
+              data: {
+                image_url: url_for(@inventory_item.primary_image)
+              },
+              message: "Primary image attached successfully",
+              timestamp: Time.current.iso8601
+            }
+          else
+            render json: {
+              success: false,
+              error: {
+                code: "ATTACHMENT_ERROR",
+                message: "Failed to attach primary image"
+              },
+              timestamp: Time.current.iso8601
+            }, status: :unprocessable_entity
+          end
         elsif params[:blob_id].present?
-          begin
-            blob = ActiveStorage::Blob.find_by(id: params[:blob_id])
-
-            if blob
-              # Explicitly create attachment with correct name
-              @inventory_item.primary_image_attachment&.purge # Remove existing if any
-              @inventory_item.primary_image.attach(blob)
-              @inventory_item.reload
-
-              # Verify attachment was created correctly
-              attachment = @inventory_item.primary_image_attachment
-              unless attachment && attachment.name == "primary_image"
-                Rails.logger.error "Attachment created with wrong name! Expected 'primary_image', got '#{attachment&.name}'"
-              end
-
-              render json: {
-                success: true,
-                data: {
-                  image_url: url_for(@inventory_item.primary_image)
-                },
-                message: "Primary image attached successfully",
-                timestamp: Time.current.iso8601
-              }
-            else
-              render json: {
-                success: false,
-                error: {
-                  code: "BLOB_NOT_FOUND",
-                  message: "Blob not found"
-                },
-                timestamp: Time.current.iso8601
-              }, status: :not_found
-            end
-          rescue ActiveRecord::RecordNotFound
+          success = attachment_service.attach_primary_image_from_blob_id(params[:blob_id])
+          if success
+            @inventory_item.reload
+            render json: {
+              success: true,
+              data: {
+                image_url: url_for(@inventory_item.primary_image)
+              },
+              message: "Primary image attached successfully",
+              timestamp: Time.current.iso8601
+            }
+          else
             render json: {
               success: false,
               error: {
                 code: "BLOB_NOT_FOUND",
-                message: "Blob not found"
+                message: "Blob not found or attachment failed"
               },
               timestamp: Time.current.iso8601
             }, status: :not_found
@@ -476,23 +421,30 @@ module Api
       # POST /api/v1/inventory_items/:id/additional_images
       def attach_additional_images
         if params[:images].present?
-          # Use deduplication for additional image uploads
-          Array(params[:images]).each do |image|
-            blob = Services::BlobDeduplicationService.find_or_create_blob(
-              io: image.open,
-              filename: image.original_filename,
-              content_type: image.content_type
-            )
-            @inventory_item.additional_images.attach(blob)
+          attachment_service = Services::BlobAttachmentService.new(inventory_item: @inventory_item)
+          count = attachment_service.attach_additional_images_from_files(params[:images])
+
+          if count > 0
+            @inventory_item.reload
+            render json: {
+              success: true,
+              data: {
+                image_urls: @inventory_item.additional_images.map { |img| url_for(img) },
+                attached_count: count
+              },
+              message: "Additional images attached successfully",
+              timestamp: Time.current.iso8601
+            }
+          else
+            render json: {
+              success: false,
+              error: {
+                code: "ATTACHMENT_ERROR",
+                message: "Failed to attach additional images"
+              },
+              timestamp: Time.current.iso8601
+            }, status: :unprocessable_entity
           end
-          render json: {
-            success: true,
-            data: {
-              image_urls: @inventory_item.additional_images.map { |img| url_for(img) }
-            },
-            message: "Additional images attached successfully",
-            timestamp: Time.current.iso8601
-          }
         else
           render json: {
             success: false,
