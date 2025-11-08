@@ -59,6 +59,9 @@ gem "image_processing", "~> 1.2"
 # Pinned to v3 - v4 requires migration (see https://github.com/rails/tailwindcss-rails/blob/main/README.md#upgrading-your-application-from-tailwind-v3-to-v4)
 gem "tailwindcss-rails", "~> 3.3.1"
 
+# ZIP file handling for GDPR data export
+gem "rubyzip", "~> 2.3"
+
 group :development, :test do
   # See https://guides.rubyonrails.org/debugging_rails_applications.html#debugging-with-the-debug-gem
   gem "debug", "~> 1.11", platforms: %i[ mri windows ], require: "debug/prelude"
