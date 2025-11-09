@@ -34,13 +34,12 @@ module Sastaspace
     # Use Rails' built-in request ID middleware (ActionDispatch::RequestId)
     # Custom RequestIdMiddleware is kept for unit tests but not inserted into the stack
 
+    # Add rate limiting middleware (rack-attack) - before security headers to catch rate limits early
+    config.middleware.use Rack::Attack
+
     # Add security headers middleware
     # Middleware needs to be required at boot time (before autoloading)
     require Rails.root.join("app", "middleware", "security_headers_middleware")
     config.middleware.use SecurityHeadersMiddleware
-
-    # Add rate limiting middleware (before security headers to catch rate limits early)
-    require Rails.root.join("app", "middleware", "rate_limiting_middleware")
-    config.middleware.insert_before SecurityHeadersMiddleware, RateLimitingMiddleware
   end
 end

@@ -4,6 +4,18 @@ class Api::V1::AccountLockoutTest < ActionDispatch::IntegrationTest
   setup do
     @user = create(:user, password: "Password123!")
     @ip_address = "192.168.1.1"
+
+    # Disable rate limiting for account lockout tests
+    # These tests need to make multiple login attempts to test lockout behavior
+    ENV["DISABLE_RATE_LIMITING"] = "true"
+    # Reload rack-attack to pick up the change
+    load Rails.root.join("config/initializers/rack_attack.rb") if defined?(Rack::Attack)
+  end
+
+  teardown do
+    ENV.delete("DISABLE_RATE_LIMITING")
+    # Reload rack-attack to restore normal behavior
+    load Rails.root.join("config/initializers/rack_attack.rb") if defined?(Rack::Attack)
   end
 
   test "account locks after max failed login attempts" do

@@ -4,6 +4,18 @@ class ApiV1AuthTest < ActionDispatch::IntegrationTest
   def setup
     # Clear token blacklist between tests
     Authenticable.instance_variable_set(:@test_blacklisted_tokens, [])
+
+    # Disable rate limiting for auth tests
+    # These tests need to make multiple login requests to test authentication behavior
+    ENV["DISABLE_RATE_LIMITING"] = "true"
+    # Reload rack-attack to pick up the change
+    load Rails.root.join("config/initializers/rack_attack.rb") if defined?(Rack::Attack)
+  end
+
+  def teardown
+    ENV.delete("DISABLE_RATE_LIMITING")
+    # Reload rack-attack to restore normal behavior
+    load Rails.root.join("config/initializers/rack_attack.rb") if defined?(Rack::Attack)
   end
   test "POST /api/v1/auth/register with valid data creates user and returns JWT" do
     user_data = {
