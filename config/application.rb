@@ -11,6 +11,10 @@ module Sastaspace
     # Initialize configuration defaults for originally generated Rails version.
     config.load_defaults 8.1
 
+    # Suppress frozen string literal warnings from gems like marcel
+    # This warning comes from Ruby 3.4+ about future frozen string behavior
+    # We'll handle this in an initializer to avoid affecting other Ruby processes
+
     # Please, add to the `ignore` list any other `lib` subdirectories that do
     # not contain `.rb` files, or that should not be reloaded or eager loaded.
     # Common ones are `templates`, `generators`, or `middleware`, for example.

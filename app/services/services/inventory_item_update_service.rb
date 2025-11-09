@@ -15,6 +15,12 @@ module Services
       # Extract blob_id before updating - it's not a model attribute
       item_params = inventory_item_params.except(:blob_id)
 
+      # Handle metadata merging - merge incoming metadata with existing instead of replacing
+      if item_params[:metadata].present?
+        existing_metadata = @inventory_item.metadata || {}
+        item_params[:metadata] = existing_metadata.merge(item_params[:metadata])
+      end
+
       if @inventory_item.update(item_params)
         # Normalize category/subcategory after update
         normalize_category_subcategory
@@ -40,12 +46,11 @@ module Services
     private
 
     def inventory_item_params
-      # Permit metadata fields directly (store_accessor allows direct assignment)
-      # Also permit metadata hash for nested structure
+      # Permit both individual metadata fields (for store_accessor) and nested metadata hash
       @params.require(:inventory_item).permit(
         :name, :description, :category_id, :subcategory_id, :purchase_price, :purchase_date, :blob_id,
         :color, :size, :material, :season, :occasion, :care_instructions, :fit_notes, :style_notes,
-        metadata: [ :color, :size, :material, :season, :occasion, :care_instructions, :fit_notes, :style_notes ]
+        metadata: {}
       )
     end
 

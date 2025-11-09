@@ -234,7 +234,15 @@ module Api
 
       # PATCH /api/v1/inventory_items/:id
       def update
-        if @inventory_item.update(inventory_item_params)
+        item_params = inventory_item_params
+
+        # Handle metadata merging - merge incoming metadata with existing instead of replacing
+        if item_params[:metadata].present?
+          existing_metadata = @inventory_item.metadata || {}
+          item_params[:metadata] = existing_metadata.merge(item_params[:metadata])
+        end
+
+        if @inventory_item.update(item_params)
           render json: {
             success: true,
             data: {
@@ -261,6 +269,7 @@ module Api
         if @inventory_item.destroy
           render json: {
             success: true,
+            data: { deleted: true },
             message: "Inventory item deleted successfully",
             timestamp: Time.current.iso8601
           }
@@ -462,6 +471,7 @@ module Api
         @inventory_item.primary_image.purge
         render json: {
           success: true,
+          data: { detached: true },
           message: "Primary image removed successfully",
           timestamp: Time.current.iso8601
         }
@@ -473,6 +483,7 @@ module Api
         image.purge
         render json: {
           success: true,
+          data: { detached: true },
           message: "Additional image removed successfully",
           timestamp: Time.current.iso8601
         }
