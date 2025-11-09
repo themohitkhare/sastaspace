@@ -107,10 +107,12 @@ class InventoryItemTest < ActiveSupport::TestCase
   end
 
   test "by_type scope handles shoes type" do
-    shoes_item = create(:inventory_item, :shoes)
-    clothing_item = create(:inventory_item, :clothing)
+    user = create(:user)
+    shoes_item = create(:inventory_item, :shoes, user: user)
+    clothing_item = create(:inventory_item, :clothing, user: user)
 
-    shoes_items = InventoryItem.by_type("shoes")
+    # Scope to user's items to avoid test isolation issues
+    shoes_items = user.inventory_items.by_type("shoes")
     assert_includes shoes_items, shoes_item
     assert_not_includes shoes_items, clothing_item
   end
