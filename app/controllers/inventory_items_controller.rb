@@ -6,7 +6,9 @@ class InventoryItemsController < ApplicationController
 
   def index
     @inventory_items = current_user.inventory_items
-                                   .includes(:category, :brand, primary_image_attachment: :blob)
+                                   .includes(:category, :subcategory, :brand, :tags,
+                                             primary_image_attachment: :blob,
+                                             additional_images_attachments: :blob)
                                    .order(created_at: :desc)
 
     # Apply filters
@@ -128,7 +130,11 @@ class InventoryItemsController < ApplicationController
   private
 
   def set_inventory_item
-    @inventory_item = current_user.inventory_items.find(params[:id])
+    @inventory_item = current_user.inventory_items
+                                  .includes(:category, :subcategory, :brand, :tags, :ai_analyses,
+                                            primary_image_attachment: :blob,
+                                            additional_images_attachments: :blob)
+                                  .find(params[:id])
   end
 
   def inventory_item_params

@@ -108,8 +108,13 @@ class InventoryItemTest < ActiveSupport::TestCase
 
   test "by_type scope handles shoes type" do
     user = create(:user)
-    shoes_item = create(:inventory_item, :shoes, user: user)
-    clothing_item = create(:inventory_item, :clothing, user: user)
+
+    # Create categories with explicit names that won't overlap
+    shoes_category = create(:category, name: "Sneakers #{SecureRandom.hex(4)}")
+    clothing_category = create(:category, name: "Tops #{SecureRandom.hex(4)}")
+
+    shoes_item = create(:inventory_item, user: user, category: shoes_category)
+    clothing_item = create(:inventory_item, user: user, category: clothing_category)
 
     # Scope to user's items to avoid test isolation issues
     shoes_items = user.inventory_items.by_type("shoes")
