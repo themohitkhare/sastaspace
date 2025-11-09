@@ -57,6 +57,12 @@ class AnalyzeImageForCreationJob < ApplicationJob
     Rails.cache.write(self.class.status_key(@job_id), status_data, expires_in: 1.hour)
   end
 
+  def self.set_status(job_id, status_data)
+    key = status_key(job_id)
+    status_data["updated_at"] = Time.current.iso8601
+    Rails.cache.write(key, status_data.stringify_keys, expires_in: 1.hour)
+  end
+
   def self.get_status(job_id)
     key = status_key(job_id)
 

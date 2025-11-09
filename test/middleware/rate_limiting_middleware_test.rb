@@ -16,89 +16,153 @@ class RateLimitingMiddlewareTest < ActiveSupport::TestCase
   end
 
   def teardown
+    Rails.cache.clear if Rails.cache.respond_to?(:clear)
     ENV.delete("ENABLE_RATE_LIMITING")
     Rails.cache = @original_cache_store if @original_cache_store
   end
 
   test "allows requests under rate limit" do
-    status, headers, _body = @middleware.call(@env)
+    # Ensure rate limiting is enabled for this test
+    original_value = ENV["ENABLE_RATE_LIMITING"]
+    ENV["ENABLE_RATE_LIMITING"] = "true"
+    Rails.cache.clear
 
-    assert_equal 200, status
-    assert_not_nil headers["X-RateLimit-Limit"]
-    assert_not_nil headers["X-RateLimit-Remaining"]
+    begin
+      status, headers, _body = @middleware.call(@env)
+
+      assert_equal 200, status
+      assert_not_nil headers["X-RateLimit-Limit"]
+      assert_not_nil headers["X-RateLimit-Remaining"]
+    ensure
+      ENV["ENABLE_RATE_LIMITING"] = original_value if original_value
+    end
   end
 
   test "blocks requests exceeding authentication rate limit" do
-    # Set up authentication endpoint
-    env = Rack::MockRequest.env_for("/api/v1/auth/login", method: "POST")
-    request = ActionDispatch::Request.new(env)
+    # Ensure rate limiting is enabled and cache is clean for this test
+    original_value = ENV["ENABLE_RATE_LIMITING"]
+    ENV["ENABLE_RATE_LIMITING"] = "true"
+    Rails.cache.clear
 
-    # Get the actual identifier that will be used
-    identifier = @middleware.send(:get_identifier, request)
-    config = RateLimitingMiddleware::RATE_LIMITS[:authentication]
+    begin
+      # Set up authentication endpoint
+      env = Rack::MockRequest.env_for("/api/v1/auth/login", method: "POST")
+      request = ActionDispatch::Request.new(env)
 
-    # Set count to exactly the limit (5 requests per minute)
-    # Next request should be blocked
-    cache_key = "rate_limit:authentication:#{identifier}:#{config[:period]}"
-    Rails.cache.write(cache_key, config[:limit], expires_in: config[:period].seconds)
+      # Get the actual identifier that will be used
+      identifier = @middleware.send(:get_identifier, request)
+      config = RateLimitingMiddleware::RATE_LIMITS[:authentication]
 
-    status, headers, body = @middleware.call(env)
+      # Set count to exactly the limit (5 requests per minute)
+      # Next request should be blocked
+      cache_key = "rate_limit:authentication:#{identifier}:#{config[:period]}"
+      Rails.cache.write(cache_key, config[:limit], expires_in: config[:period].seconds)
 
-    assert_equal 429, status
-    assert_equal "0", headers["X-RateLimit-Remaining"]
-    assert_equal config[:limit].to_s, headers["X-RateLimit-Limit"]
-    assert_not_nil headers["Retry-After"]
+      status, headers, body = @middleware.call(env)
 
-    response_body = JSON.parse(body.first)
-    assert_equal "RATE_LIMIT_EXCEEDED", response_body["error"]["code"]
+      assert_equal 429, status
+      assert_equal "0", headers["X-RateLimit-Remaining"]
+      assert_equal config[:limit].to_s, headers["X-RateLimit-Limit"]
+      assert_not_nil headers["Retry-After"]
+
+      response_body = JSON.parse(body.first)
+      assert_equal "RATE_LIMIT_EXCEEDED", response_body["error"]["code"]
+    ensure
+      ENV["ENABLE_RATE_LIMITING"] = original_value if original_value
+    end
   end
 
   test "blocks requests exceeding AI processing rate limit" do
-    env = Rack::MockRequest.env_for("/api/v1/inventory_items/analyze_image_for_creation", method: "POST")
-    request = ActionDispatch::Request.new(env)
-    identifier = @middleware.send(:get_identifier, request)
-    config = RateLimitingMiddleware::RATE_LIMITS[:ai_processing]
+    # Ensure rate limiting is enabled and cache is clean for this test
+    original_value = ENV["ENABLE_RATE_LIMITING"]
+    ENV["ENABLE_RATE_LIMITING"] = "true"
+    Rails.cache.clear
 
-    # Set count to exactly the limit (10 requests per hour)
-    cache_key = "rate_limit:ai_processing:#{identifier}:#{config[:period]}"
-    Rails.cache.write(cache_key, config[:limit], expires_in: config[:period].seconds)
+    begin
+      env = Rack::MockRequest.env_for("/api/v1/inventory_items/analyze_image_for_creation", method: "POST")
+      request = ActionDispatch::Request.new(env)
+      identifier = @middleware.send(:get_identifier, request)
+      config = RateLimitingMiddleware::RATE_LIMITS[:ai_processing]
 
-    status, _headers, _body = @middleware.call(env)
+      # Set count to exactly the limit (10 requests per hour)
+      cache_key = "rate_limit:ai_processing:#{identifier}:#{config[:period]}"
+      Rails.cache.write(cache_key, config[:limit], expires_in: config[:period].seconds)
 
-    assert_equal 429, status
+      status, _headers, _body = @middleware.call(env)
+
+      assert_equal 429, status
+    ensure
+      ENV["ENABLE_RATE_LIMITING"] = original_value if original_value
+    end
   end
 
   test "blocks requests exceeding file upload rate limit" do
-    env = Rack::MockRequest.env_for("/api/v1/inventory_items/1/primary_image", method: "POST",
-                                    "CONTENT_TYPE" => "multipart/form-data")
-    request = ActionDispatch::Request.new(env)
-    identifier = @middleware.send(:get_identifier, request)
-    endpoint_type = @middleware.send(:determine_endpoint_type, request)
-    config = RateLimitingMiddleware::RATE_LIMITS[:file_upload]
+    # Ensure rate limiting is enabled and cache is clean for this test
+    original_value = ENV["ENABLE_RATE_LIMITING"]
+    ENV["ENABLE_RATE_LIMITING"] = "true"
+    Rails.cache.clear
 
-    # Verify endpoint type is correctly determined
-    assert_equal :file_upload, endpoint_type, "Endpoint should be identified as file_upload"
+    begin
+      env = Rack::MockRequest.env_for("/api/v1/inventory_items/1/primary_image", method: "POST",
+                                      "CONTENT_TYPE" => "multipart/form-data")
 
-    # Set count to exactly the limit (20 requests per hour)
-    # Use the same cache key format as the middleware
-    cache_key = "rate_limit:#{endpoint_type}:#{identifier}:#{config[:period]}"
-    Rails.cache.write(cache_key, config[:limit], expires_in: config[:period].seconds)
+      # Create request object to get identifier and endpoint type
+      request = ActionDispatch::Request.new(env)
+      identifier = @middleware.send(:get_identifier, request)
+      endpoint_type = @middleware.send(:determine_endpoint_type, request)
+      config = RateLimitingMiddleware::RATE_LIMITS[:file_upload]
 
-    # Verify cache was set correctly
-    cached_value = Rails.cache.read(cache_key)
-    assert_equal config[:limit], cached_value, "Cache should contain the limit value"
+      # Verify endpoint type is correctly determined
+      assert_equal :file_upload, endpoint_type, "Endpoint should be identified as file_upload"
 
-    status, _headers, _body = @middleware.call(env)
+      # Set count to exactly the limit (20 requests per hour)
+      # The middleware checks: current_count >= config[:limit]
+      # So setting it to the limit means the next request (which would make it 21) should be blocked
+      cache_key = "rate_limit:#{endpoint_type}:#{identifier}:#{config[:period]}"
+      Rails.cache.write(cache_key, config[:limit], expires_in: config[:period].seconds)
 
-    assert_equal 429, status, "Should return 429 when rate limit is exceeded"
+      # Verify cache was set correctly
+      cached_value = Rails.cache.read(cache_key)
+      assert_equal config[:limit], cached_value, "Cache should contain the limit value"
+
+      # Double-check: verify the middleware will use the same identifier
+      # by creating a new request from the same env
+      middleware_request = ActionDispatch::Request.new(env)
+      middleware_identifier = @middleware.send(:get_identifier, middleware_request)
+      middleware_endpoint_type = @middleware.send(:determine_endpoint_type, middleware_request)
+      middleware_cache_key = "rate_limit:#{middleware_endpoint_type}:#{middleware_identifier}:#{config[:period]}"
+
+      assert_equal identifier, middleware_identifier, "Identifiers should match"
+      assert_equal endpoint_type, middleware_endpoint_type, "Endpoint types should match"
+      assert_equal cache_key, middleware_cache_key, "Cache keys should match"
+
+      # Verify the cache value is still there
+      assert_equal config[:limit], Rails.cache.read(cache_key), "Cache should still contain the limit value"
+
+      status, _headers, _body = @middleware.call(env)
+
+      assert_equal 429, status, "Should return 429 when rate limit is exceeded"
+    ensure
+      ENV["ENABLE_RATE_LIMITING"] = original_value if original_value
+      Rails.cache.clear
+    end
   end
 
   test "uses standard rate limit for CRUD endpoints" do
-    env = Rack::MockRequest.env_for("/api/v1/inventory_items", method: "GET")
-    status, headers, _body = @middleware.call(env)
+    # Ensure rate limiting is enabled for this test
+    original_value = ENV["ENABLE_RATE_LIMITING"]
+    ENV["ENABLE_RATE_LIMITING"] = "true"
+    Rails.cache.clear
 
-    assert_equal 200, status
-    assert_equal "100", headers["X-RateLimit-Limit"] # Standard limit
+    begin
+      env = Rack::MockRequest.env_for("/api/v1/inventory_items", method: "GET")
+      status, headers, _body = @middleware.call(env)
+
+      assert_equal 200, status
+      assert_equal "100", headers["X-RateLimit-Limit"] # Standard limit
+    ensure
+      ENV["ENABLE_RATE_LIMITING"] = original_value if original_value
+    end
   end
 
   test "identifies user by JWT token when available" do
@@ -146,13 +210,21 @@ class RateLimitingMiddlewareTest < ActiveSupport::TestCase
   end
 
   test "adds rate limit headers to successful responses" do
-    env = Rack::MockRequest.env_for("/api/v1/inventory_items", method: "GET")
-    status, headers, _body = @middleware.call(env)
+    # Ensure rate limiting is enabled for this test
+    original_value = ENV["ENABLE_RATE_LIMITING"]
+    ENV["ENABLE_RATE_LIMITING"] = "true"
 
-    assert_equal 200, status
-    assert_not_nil headers["X-RateLimit-Limit"]
-    assert_not_nil headers["X-RateLimit-Remaining"]
-    assert_not_nil headers["X-RateLimit-Reset"]
+    begin
+      env = Rack::MockRequest.env_for("/api/v1/inventory_items", method: "GET")
+      status, headers, _body = @middleware.call(env)
+
+      assert_equal 200, status
+      assert_not_nil headers["X-RateLimit-Limit"]
+      assert_not_nil headers["X-RateLimit-Remaining"]
+      assert_not_nil headers["X-RateLimit-Reset"]
+    ensure
+      ENV["ENABLE_RATE_LIMITING"] = original_value if original_value
+    end
   end
 
   test "determines endpoint type correctly for authentication" do
@@ -331,17 +403,26 @@ class RateLimitingMiddlewareTest < ActiveSupport::TestCase
   end
 
   test "increments rate limit counter on successful request" do
-    env = Rack::MockRequest.env_for("/api/v1/inventory_items", method: "GET")
-    request = ActionDispatch::Request.new(env)
-    identifier = @middleware.send(:get_identifier, request)
-    config = RateLimitingMiddleware::RATE_LIMITS[:standard]
+    # Ensure rate limiting is enabled for this test
+    original_value = ENV["ENABLE_RATE_LIMITING"]
+    ENV["ENABLE_RATE_LIMITING"] = "true"
+    Rails.cache.clear
 
-    cache_key = "rate_limit:standard:#{identifier}:#{config[:period]}"
-    initial_count = Rails.cache.read(cache_key) || 0
+    begin
+      env = Rack::MockRequest.env_for("/api/v1/inventory_items", method: "GET")
+      request = ActionDispatch::Request.new(env)
+      identifier = @middleware.send(:get_identifier, request)
+      config = RateLimitingMiddleware::RATE_LIMITS[:standard]
 
-    @middleware.call(env)
+      cache_key = "rate_limit:standard:#{identifier}:#{config[:period]}"
+      initial_count = Rails.cache.read(cache_key) || 0
 
-    new_count = Rails.cache.read(cache_key)
-    assert_equal initial_count + 1, new_count
+      @middleware.call(env)
+
+      new_count = Rails.cache.read(cache_key)
+      assert_equal initial_count + 1, new_count
+    ensure
+      ENV["ENABLE_RATE_LIMITING"] = original_value if original_value
+    end
   end
 end
