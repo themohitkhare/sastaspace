@@ -9,7 +9,7 @@ module Api
       # GET /api/v1/inventory_items
       def index
         @inventory_items = current_user.inventory_items
-                                      .includes(:category, :brand, :tags,
+                                      .includes(:category, :subcategory, :brand, :tags, :ai_analyses,
                                                 primary_image_attachment: :blob,
                                                 additional_images_attachments: :blob)
                                       .page(params[:page])
@@ -657,7 +657,7 @@ module Api
 
       def set_inventory_item
         @inventory_item = current_user.inventory_items
-                                      .includes(:category, :brand, :tags,
+                                      .includes(:category, :subcategory, :brand, :tags, :ai_analyses,
                                                 primary_image_attachment: :blob,
                                                 additional_images_attachments: :blob)
                                       .find(params[:id])

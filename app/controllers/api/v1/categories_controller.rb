@@ -92,7 +92,7 @@ module Api
 
         @items = current_user.inventory_items
                             .where(category: categories)
-                            .includes(:category, :brand, :tags,
+                            .includes(:category, :subcategory, :brand, :tags, :ai_analyses,
                                       primary_image_attachment: :blob,
                                       additional_images_attachments: :blob)
                             .page(params[:page])

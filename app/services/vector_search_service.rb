@@ -11,7 +11,7 @@ class VectorSearchService
     escaped_vector = ActiveRecord::Base.connection.quote(vector_str)
 
     user.inventory_items
-        .includes(:category, :brand, :tags,
+        .includes(:category, :subcategory, :brand, :tags, :ai_analyses,
                   primary_image_attachment: :blob,
                   additional_images_attachments: :blob)
         .where.not(embedding_vector: nil)
@@ -40,7 +40,7 @@ class VectorSearchService
     escaped_vector = ActiveRecord::Base.connection.quote(vector_str)
 
     user.inventory_items
-        .includes(:category, :brand, :tags,
+        .includes(:category, :subcategory, :brand, :tags, :ai_analyses,
                   primary_image_attachment: :blob,
                   additional_images_attachments: :blob)
         .where.not(embedding_vector: nil)
@@ -120,7 +120,9 @@ class VectorSearchService
         next unless category
 
         category_items = user.inventory_items
-                           .includes(:category, :brand, :tags, primary_image_attachment: :blob)
+                           .includes(:category, :subcategory, :brand, :tags, :ai_analyses,
+                                     primary_image_attachment: :blob,
+                                     additional_images_attachments: :blob)
                            .where(category: category)
                            .where.not(id: excluded_item_ids)
                            .where.not(embedding_vector: nil)

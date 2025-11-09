@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2025_11_01_143613) do
+ActiveRecord::Schema[8.1].define(version: 2025_11_09_163756) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "vector"
@@ -143,6 +143,10 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_01_143613) do
     t.datetime "updated_at", null: false
     t.integer "user_id", null: false
     t.integer "wear_count", default: 0
+    t.index "((metadata ->> 'color'::text))", name: "index_inventory_items_on_metadata_color", where: "((metadata ->> 'color'::text) IS NOT NULL)"
+    t.index "((metadata ->> 'season'::text))", name: "index_inventory_items_on_metadata_season", where: "((metadata ->> 'season'::text) IS NOT NULL)"
+    t.index "user_id, ((metadata ->> 'color'::text))", name: "index_inventory_items_on_user_metadata_color", where: "((metadata ->> 'color'::text) IS NOT NULL)"
+    t.index "user_id, ((metadata ->> 'season'::text))", name: "index_inventory_items_on_user_metadata_season", where: "((metadata ->> 'season'::text) IS NOT NULL)"
     t.index ["brand_id"], name: "index_inventory_items_on_brand_id"
     t.index ["category_id"], name: "index_inventory_items_on_category_id"
     t.index ["created_at"], name: "index_inventory_items_on_created_at"
@@ -150,9 +154,14 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_01_143613) do
     t.index ["last_worn_at"], name: "index_inventory_items_on_last_worn_at"
     t.index ["status"], name: "index_inventory_items_on_status"
     t.index ["subcategory_id"], name: "index_inventory_items_on_subcategory_id"
+    t.index ["user_id", "category_id", "status"], name: "index_inventory_items_on_user_category_status"
     t.index ["user_id", "category_id"], name: "index_inventory_items_on_user_id_and_category_id"
     t.index ["user_id", "created_at"], name: "index_inventory_items_on_user_id_and_created_at"
+    t.index ["user_id", "last_worn_at"], name: "index_inventory_items_on_user_last_worn_at"
+    t.index ["user_id", "status"], name: "index_inventory_items_on_user_status"
+    t.index ["user_id", "wear_count"], name: "index_inventory_items_on_user_wear_count"
     t.index ["user_id"], name: "index_inventory_items_on_user_id"
+    t.index ["wear_count"], name: "index_inventory_items_on_wear_count"
   end
 
   create_table "inventory_tags", force: :cascade do |t|
