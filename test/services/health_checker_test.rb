@@ -28,18 +28,24 @@ class HealthCheckerTest < ActiveSupport::TestCase
     assert_equal "unhealthy", status[:status]
   end
 
-  test "jobs_status healthy when jobs can be enqueued" do
-    job = mock()
-    job.expects(:job_id).returns("test-123")
-    HealthChecker::TestHealthJob.stubs(:perform_later).returns(job)
+  test "jobs_status healthy when job monitoring is available" do
+    JobMonitoringService.stubs(:queue_health).returns({
+      status: "healthy",
+      queues: { "default" => { depth: 0 } },
+      workers: { active: 1 },
+      alerts: []
+    })
 
     status = HealthChecker.jobs_status
     assert_equal "healthy", status[:status]
-    assert_equal "test-123", status[:job_id]
+    assert_equal "Job queue operational", status[:message]
+    assert status[:queue_depth].is_a?(Integer)
+    assert status[:workers].is_a?(Integer)
+    assert status[:alerts].is_a?(Integer)
   end
 
-  test "jobs_status unhealthy when job enqueueing fails" do
-    HealthChecker::TestHealthJob.stubs(:perform_later).raises(StandardError.new("queue down"))
+  test "jobs_status unhealthy when job monitoring fails" do
+    JobMonitoringService.stubs(:queue_health).raises(StandardError.new("queue down"))
 
     status = HealthChecker.jobs_status
     assert_equal "unhealthy", status[:status]

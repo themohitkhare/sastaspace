@@ -41,6 +41,17 @@ Rails.application.routes.draw do
     end
   end
 
+  # Admin routes (restricted to admin users)
+  namespace :admin do
+    get "dashboard", to: "admin#dashboard", as: :dashboard
+    get "jobs", to: "admin#job_monitoring", as: :job_monitoring
+    get "jobs/:job_class", to: "admin#job_class_metrics", as: :job_class_metrics
+  end
+
+  # Mount Mission Control - Jobs dashboard (admin only)
+  # Access is controlled via MissionControl::Jobs initializer
+  mount MissionControl::Jobs::Engine, at: "/admin/jobs/monitor"
+
   # API routes
   namespace :api do
     namespace :v1 do

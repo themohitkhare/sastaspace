@@ -227,6 +227,16 @@ GEM
       builder
       minitest (>= 5.0)
       ruby-progressbar
+    mission_control-jobs (1.1.0)
+      actioncable (>= 7.1)
+      actionpack (>= 7.1)
+      activejob (>= 7.1)
+      activerecord (>= 7.1)
+      importmap-rails (>= 1.2.1)
+      irb (~> 1.13)
+      railties (>= 7.1)
+      stimulus-rails
+      turbo-rails
     mocha (2.7.1)
       ruby2_keywords (>= 0.0.5)
     msgpack (1.8.0)
@@ -489,6 +499,7 @@ DEPENDENCIES
   kamal (~> 2.8.2)
   kaminari (~> 1.2)
   minitest-reporters (~> 1.7)
+  mission_control-jobs
   mocha (~> 2.7)
   neighbor (~> 0.6)
   pg (~> 1.6)

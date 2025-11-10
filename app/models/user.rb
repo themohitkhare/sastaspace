@@ -1,6 +1,10 @@
 class User < ApplicationRecord
   has_secure_password
 
+  # Security: admin field is read-only and can only be changed via database migrations
+  # This prevents any application-level code from modifying admin privileges
+  attr_readonly :admin
+
   validates :email, presence: true, uniqueness: true, format: { with: URI::MailTo::EMAIL_REGEXP }
   validates :password, presence: true,
                       length: { minimum: 8 },
@@ -29,6 +33,10 @@ class User < ApplicationRecord
 
   def full_name
     [ first_name, last_name ].compact.join(" ").presence || email
+  end
+
+  def admin?
+    admin == true
   end
 
   private
