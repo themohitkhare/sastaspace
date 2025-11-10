@@ -16,10 +16,12 @@ class User < ApplicationRecord
   validates :password_confirmation, presence: true, on: :create
   validates :first_name, presence: true
   validates :last_name, presence: true
+  validates :gender_preference, inclusion: { in: %w[men women unisex] }, allow_nil: true
 
   has_many :inventory_items, dependent: :destroy
   has_many :outfits, dependent: :destroy
   has_many :ai_analyses, dependent: :destroy
+  has_many :clothing_analyses, dependent: :destroy
   has_many :refresh_tokens, dependent: :destroy
   has_many :failed_login_attempts, dependent: :destroy
 

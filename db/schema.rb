@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2025_11_10_150000) do
+ActiveRecord::Schema[8.1].define(version: 2025_11_10_192525) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "vector"
@@ -105,6 +105,21 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_10_150000) do
     t.index ["user_id"], name: "index_chats_on_user_id"
   end
 
+  create_table "clothing_analyses", force: :cascade do |t|
+    t.decimal "confidence", precision: 3, scale: 2
+    t.datetime "created_at", null: false
+    t.bigint "image_blob_id", null: false
+    t.integer "items_detected", default: 0
+    t.jsonb "parsed_data", default: {}
+    t.string "status", default: "completed", null: false
+    t.datetime "updated_at", null: false
+    t.bigint "user_id", null: false
+    t.index ["created_at"], name: "index_clothing_analyses_on_created_at"
+    t.index ["image_blob_id"], name: "index_clothing_analyses_on_image_blob_id"
+    t.index ["status"], name: "index_clothing_analyses_on_status"
+    t.index ["user_id"], name: "index_clothing_analyses_on_user_id"
+  end
+
   create_table "export_jobs", force: :cascade do |t|
     t.datetime "completed_at"
     t.datetime "created_at", null: false
@@ -130,6 +145,7 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_10_150000) do
   create_table "inventory_items", force: :cascade do |t|
     t.integer "brand_id"
     t.integer "category_id", null: false
+    t.bigint "clothing_analysis_id"
     t.datetime "created_at", null: false
     t.text "description"
     t.vector "embedding_vector", limit: 1536
@@ -149,6 +165,7 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_10_150000) do
     t.index "user_id, ((metadata ->> 'season'::text))", name: "index_inventory_items_on_user_metadata_season", where: "((metadata ->> 'season'::text) IS NOT NULL)"
     t.index ["brand_id"], name: "index_inventory_items_on_brand_id"
     t.index ["category_id"], name: "index_inventory_items_on_category_id"
+    t.index ["clothing_analysis_id"], name: "index_inventory_items_on_clothing_analysis_id"
     t.index ["created_at"], name: "index_inventory_items_on_created_at"
     t.index ["embedding_vector"], name: "index_inventory_items_on_embedding_vector", opclass: :vector_cosine_ops, using: :hnsw
     t.index ["last_worn_at"], name: "index_inventory_items_on_last_worn_at"
@@ -310,12 +327,14 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_10_150000) do
     t.datetime "created_at", null: false
     t.string "email"
     t.string "first_name"
+    t.string "gender_preference", default: "unisex"
     t.string "last_name"
     t.string "password_digest"
     t.datetime "updated_at", null: false
     t.index ["admin"], name: "index_users_on_admin"
     t.index ["created_at"], name: "index_users_on_created_at"
     t.index ["email"], name: "index_users_on_email", unique: true
+    t.index ["gender_preference"], name: "index_users_on_gender_preference"
   end
 
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
@@ -326,11 +345,13 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_10_150000) do
   add_foreign_key "categories", "categories", column: "parent_id"
   add_foreign_key "chats", "models"
   add_foreign_key "chats", "users"
+  add_foreign_key "clothing_analyses", "users"
   add_foreign_key "export_jobs", "users"
   add_foreign_key "failed_login_attempts", "users"
   add_foreign_key "inventory_items", "brands"
   add_foreign_key "inventory_items", "categories"
   add_foreign_key "inventory_items", "categories", column: "subcategory_id"
+  add_foreign_key "inventory_items", "clothing_analyses"
   add_foreign_key "inventory_items", "users"
   add_foreign_key "inventory_tags", "inventory_items"
   add_foreign_key "inventory_tags", "tags"
