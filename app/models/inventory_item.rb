@@ -2,6 +2,7 @@ class InventoryItem < ApplicationRecord
   include Searchable
   include ImageProcessable
   include TypeDerivable
+  include Cacheable
 
   belongs_to :user
   belongs_to :category

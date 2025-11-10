@@ -37,4 +37,11 @@ FactoryBot.define do
       end
     end
   end
+
+  factory :outfit_item do
+    outfit
+    inventory_item
+    position { 0 }
+    worn_count { 0 }
+  end
 end

@@ -1,37 +1,45 @@
 class EmbeddingService
   # Generate embedding for an inventory item
+  # Results are cached based on item properties to avoid regeneration
   def self.generate_for_item(inventory_item)
     return nil unless inventory_item.present?
 
-    description = build_item_description(inventory_item)
-    generate_text_embedding(description)
+    # Use caching for item embeddings (longer TTL since items change less frequently)
+    Caching::EmbeddingCacheService.cache_item_embedding(inventory_item) do
+      description = build_item_description(inventory_item)
+      generate_text_embedding(description)
+    end
   end
 
   # Generate embedding from text directly using RubyLLM with Ollama
+  # Results are cached to avoid expensive API calls
   def self.generate_text_embedding(text)
     return nil if text.blank?
 
-    begin
-      Rails.logger.info "Generating embedding for text: #{text.truncate(100)}"
+    # Use caching to avoid expensive Ollama API calls
+    Caching::EmbeddingCacheService.cache_text_embedding(text) do
+      begin
+        Rails.logger.info "Generating embedding for text: #{text.truncate(100)}"
 
-      embedding = RubyLLM.embed(
-        text,
-        model: "mxbai-embed-large:latest",
-        provider: :ollama,
-        assume_model_exists: true
-      )
+        embedding = RubyLLM.embed(
+          text,
+          model: "mxbai-embed-large:latest",
+          provider: :ollama,
+          assume_model_exists: true
+        )
 
-      if embedding&.vectors
-        Rails.logger.info "✓ Generated embedding with #{embedding.vectors.length} dimensions"
-        embedding.vectors
-      else
-        Rails.logger.warn "Failed to generate embedding, falling back to placeholder"
+        if embedding&.vectors
+          Rails.logger.info "✓ Generated embedding with #{embedding.vectors.length} dimensions"
+          embedding.vectors
+        else
+          Rails.logger.warn "Failed to generate embedding, falling back to placeholder"
+          Array.new(1024) { rand(-1.0..1.0) }
+        end
+      rescue StandardError => e
+        Rails.logger.error "Error generating embedding: #{e.message}"
+        Rails.logger.error e.backtrace.first(5).join("\n") if e.backtrace
         Array.new(1024) { rand(-1.0..1.0) }
       end
-    rescue StandardError => e
-      Rails.logger.error "Error generating embedding: #{e.message}"
-      Rails.logger.error e.backtrace.first(5).join("\n") if e.backtrace
-      Array.new(1024) { rand(-1.0..1.0) }
     end
   end
 
