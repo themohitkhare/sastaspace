@@ -10,9 +10,19 @@ class OutfitItem < ApplicationRecord
 
   after_initialize :set_defaults, if: :new_record?
 
+  # Invalidate caches when outfit items are added/removed (affects recommendations)
+  after_create :invalidate_outfit_caches
+  after_destroy :invalidate_outfit_caches
+
   private
 
   def set_defaults
     self.worn_count ||= 0
+  end
+
+  def invalidate_outfit_caches
+    return unless outfit&.user.present?
+
+    Caching::VectorCacheService.invalidate_user_cache(outfit.user)
   end
 end

@@ -1,4 +1,6 @@
 class Outfit < ApplicationRecord
+  include Cacheable
+
   belongs_to :user
 
   has_many :outfit_items, dependent: :destroy

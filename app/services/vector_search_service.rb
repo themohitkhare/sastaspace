@@ -6,26 +6,35 @@ class VectorSearchService
     validated_vector = validate_and_sanitize_vector(query_vector)
     return [] unless validated_vector
 
-    # Use parameterized query to prevent SQL injection
-    vector_str = format_vector_string(validated_vector)
-    escaped_vector = ActiveRecord::Base.connection.quote(vector_str)
+    # Use caching to avoid expensive vector calculations
+    Caching::VectorCacheService.cache_similar_items(user, validated_vector, limit: limit) do
+      # Use parameterized query to prevent SQL injection
+      vector_str = format_vector_string(validated_vector)
+      escaped_vector = ActiveRecord::Base.connection.quote(vector_str)
 
-    user.inventory_items
-        .includes(:category, :subcategory, :brand, :tags, :ai_analyses,
-                  primary_image_attachment: :blob,
-                  additional_images_attachments: :blob)
-        .where.not(embedding_vector: nil)
-        .order(Arel.sql("embedding_vector <-> #{escaped_vector}::vector"))
-        .limit(limit)
+      user.inventory_items
+          .includes(:category, :subcategory, :brand, :tags, :ai_analyses,
+                    primary_image_attachment: :blob,
+                    additional_images_attachments: :blob)
+          .where.not(embedding_vector: nil)
+          .order(Arel.sql("embedding_vector <-> #{escaped_vector}::vector"))
+          .limit(limit)
+          .to_a
+    end
   end
 
   def self.semantic_search(user, query_text, limit: 10)
-    # Generate embedding from text using the embedding service
-    query_vector = EmbeddingService.generate_text_embedding(query_text)
+    return [] if query_text.blank?
 
-    return [] unless query_vector.present?
+    # Use caching for semantic search (text -> embedding -> search)
+    Caching::VectorCacheService.cache_semantic_search(user, query_text, limit: limit) do
+      # Generate embedding from text using the embedding service (also cached)
+      query_vector = EmbeddingService.generate_text_embedding(query_text)
 
-    find_similar_items(user, query_vector, limit: limit)
+      return [] unless query_vector.present?
+
+      find_similar_items(user, query_vector, limit: limit)
+    end
   end
 
   def self.find_items_by_image_similarity(user, image_vector, limit: 10)
@@ -35,31 +44,38 @@ class VectorSearchService
     validated_vector = validate_and_sanitize_vector(image_vector)
     return [] unless validated_vector
 
-    # Use parameterized query to prevent SQL injection
-    vector_str = format_vector_string(validated_vector)
-    escaped_vector = ActiveRecord::Base.connection.quote(vector_str)
+    # Use caching for image similarity searches
+    Caching::VectorCacheService.cache_similar_items(user, validated_vector, limit: limit) do
+      # Use parameterized query to prevent SQL injection
+      vector_str = format_vector_string(validated_vector)
+      escaped_vector = ActiveRecord::Base.connection.quote(vector_str)
 
-    user.inventory_items
-        .includes(:category, :subcategory, :brand, :tags, :ai_analyses,
-                  primary_image_attachment: :blob,
-                  additional_images_attachments: :blob)
-        .where.not(embedding_vector: nil)
-        .order(Arel.sql("embedding_vector <-> #{escaped_vector}::vector"))
-        .limit(limit)
+      user.inventory_items
+          .includes(:category, :subcategory, :brand, :tags, :ai_analyses,
+                    primary_image_attachment: :blob,
+                    additional_images_attachments: :blob)
+          .where.not(embedding_vector: nil)
+          .order(Arel.sql("embedding_vector <-> #{escaped_vector}::vector"))
+          .limit(limit)
+          .to_a
+    end
   end
 
   def self.recommend_outfit_items(user, base_item, limit: 5)
     return [] unless base_item.embedding_vector.present?
 
-    # Find similar items that could work in an outfit
-    similar_items = find_similar_items(user, base_item.embedding_vector, limit: limit * 2)
+    # Use caching for outfit recommendations
+    Caching::VectorCacheService.cache_outfit_recommendations(user, base_item, limit: limit) do
+      # Find similar items that could work in an outfit
+      similar_items = find_similar_items(user, base_item.embedding_vector, limit: limit * 2)
 
-    # Filter by complementary categories (e.g., if base is top, find bottoms)
-    complementary_items = similar_items.select do |item|
-      complementary_category?(base_item.category.name, item.category.name)
+      # Filter by complementary categories (e.g., if base is top, find bottoms)
+      complementary_items = similar_items.select do |item|
+        complementary_category?(base_item.category.name, item.category.name)
+      end
+
+      complementary_items.first(limit)
     end
-
-    complementary_items.first(limit)
   end
 
   # Suggest items to complete or enhance an outfit
@@ -74,82 +90,85 @@ class VectorSearchService
     # Get item IDs to exclude (items already in outfit)
     excluded_item_ids = (exclude_ids + items.map(&:id)).uniq
 
-    # Analyze existing outfit to determine what's missing
-    existing_categories = items.map { |item| item.category&.name&.downcase }.compact
-    existing_category_names = items.map { |item| item.category&.name }.compact
+    # Use caching for outfit suggestions
+    Caching::VectorCacheService.cache_outfit_suggestions(user, outfit_items, limit: limit, exclude_ids: excluded_item_ids) do
+      # Analyze existing outfit to determine what's missing
+      existing_categories = items.map { |item| item.category&.name&.downcase }.compact
+      existing_category_names = items.map { |item| item.category&.name }.compact
 
-    suggestions = []
+      suggestions = []
 
-    # Strategy 1: Find complementary items for each existing item
-    items.each do |item|
-      next unless item.embedding_vector.present?
+      # Strategy 1: Find complementary items for each existing item
+      items.each do |item|
+        next unless item.embedding_vector.present?
 
-      # Find similar items using vector search
-      similar = find_similar_items(user, item.embedding_vector, limit: limit * 2)
-        .reject { |s| excluded_item_ids.include?(s.id) }
+        # Find similar items using vector search (already cached)
+        similar = find_similar_items(user, item.embedding_vector, limit: limit * 2)
+          .reject { |s| excluded_item_ids.include?(s.id) }
 
-      # Score and filter by complementary categories
-      similar.each do |candidate|
-        category_name = candidate.category&.name&.downcase || ""
+        # Score and filter by complementary categories
+        similar.each do |candidate|
+          category_name = candidate.category&.name&.downcase || ""
 
-        # Skip if same category (already have this type)
-        next if existing_categories.include?(category_name)
+          # Skip if same category (already have this type)
+          next if existing_categories.include?(category_name)
 
-        # Boost score if complementary category
-        score = complementary_category?(item.category&.name, candidate.category&.name) ? 2.0 : 1.0
+          # Boost score if complementary category
+          score = complementary_category?(item.category&.name, candidate.category&.name) ? 2.0 : 1.0
 
-        # Add to suggestions with score (deduplicate by item id)
-        existing = suggestions.find { |s| s[:item].id == candidate.id }
-        if existing
-          existing[:score] += score
-        else
-          suggestions << {
-            item: candidate,
-            score: score,
-            reason: get_suggestion_reason(item, candidate, existing_category_names)
-          }
-        end
-      end
-    end
-
-    # Strategy 2: Find items that are commonly needed but missing
-    missing_categories = identify_missing_categories(existing_category_names)
-    if missing_categories.any?
-      missing_categories.each do |category_name|
-        category = Category.find_by("LOWER(name) = ?", category_name.downcase)
-        next unless category
-
-        category_items = user.inventory_items
-                           .includes(:category, :subcategory, :brand, :tags, :ai_analyses,
-                                     primary_image_attachment: :blob,
-                                     additional_images_attachments: :blob)
-                           .where(category: category)
-                           .where.not(id: excluded_item_ids)
-                           .where.not(embedding_vector: nil)
-                           .limit(limit)
-
-        category_items.each do |candidate|
-          # Calculate similarity to outfit's style (average of existing item vectors)
-          style_score = calculate_style_similarity(items, candidate)
-
+          # Add to suggestions with score (deduplicate by item id)
           existing = suggestions.find { |s| s[:item].id == candidate.id }
           if existing
-            existing[:score] += style_score + 1.5 # Boost for missing category
+            existing[:score] += score
           else
             suggestions << {
               item: candidate,
-              score: style_score + 1.5,
-              reason: "Completes your outfit - #{category_name}"
+              score: score,
+              reason: get_suggestion_reason(item, candidate, existing_category_names)
             }
           end
         end
       end
-    end
 
-    # Sort by score (highest first) and return top items
-    suggestions.sort_by { |s| -s[:score] }
-               .first(limit)
-               .map { |s| s[:item] }
+      # Strategy 2: Find items that are commonly needed but missing
+      missing_categories = identify_missing_categories(existing_category_names)
+      if missing_categories.any?
+        missing_categories.each do |category_name|
+          category = Category.find_by("LOWER(name) = ?", category_name.downcase)
+          next unless category
+
+          category_items = user.inventory_items
+                             .includes(:category, :subcategory, :brand, :tags, :ai_analyses,
+                                       primary_image_attachment: :blob,
+                                       additional_images_attachments: :blob)
+                             .where(category: category)
+                             .where.not(id: excluded_item_ids)
+                             .where.not(embedding_vector: nil)
+                             .limit(limit)
+
+          category_items.each do |candidate|
+            # Calculate similarity to outfit's style (average of existing item vectors)
+            style_score = calculate_style_similarity(items, candidate)
+
+            existing = suggestions.find { |s| s[:item].id == candidate.id }
+            if existing
+              existing[:score] += style_score + 1.5 # Boost for missing category
+            else
+              suggestions << {
+                item: candidate,
+                score: style_score + 1.5,
+                reason: "Completes your outfit - #{category_name}"
+              }
+            end
+          end
+        end
+      end
+
+      # Sort by score (highest first) and return top items
+      suggestions.sort_by { |s| -s[:score] }
+                 .first(limit)
+                 .map { |s| s[:item] }
+    end
   end
 
   private
@@ -211,6 +230,7 @@ class VectorSearchService
     avg_vector = vectors_with_embeddings.map(&:embedding_vector).transpose.map { |x| x.reduce(:+) / x.size.to_f }
 
     # Calculate cosine similarity (simplified - just use VectorSearchService)
+    # This will use caching via find_similar_items
     similar = find_similar_items(vectors_with_embeddings.first.user, avg_vector, limit: 20)
 
     # Find rank of candidate in similar items
