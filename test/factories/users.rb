@@ -6,6 +6,7 @@ FactoryBot.define do
     password_confirmation { "Password123!" }
     first_name { Faker::Name.first_name }
     last_name { Faker::Name.last_name }
+    gender_preference { "unisex" } # Default to unisex to show all items
 
     trait :confirmed do
       confirmed_at { Time.current }

@@ -16,7 +16,14 @@ VCR.configure do |config|
 end
 
 # Configure WebMock
-WebMock.disable_net_connect!(allow_localhost: true)
+# Allow real Ollama connections when ENABLE_OLLAMA_TESTS is set
+if ENV["ENABLE_OLLAMA_TESTS"] == "true"
+  # Allow all localhost connections for Ollama testing
+  WebMock.allow_net_connect!(net_http_connect_on_start: true)
+else
+  # Block external connections in normal tests
+  WebMock.disable_net_connect!(allow_localhost: true)
+end
 
 # Ollama API stubs for testing
 class OllamaStubs
