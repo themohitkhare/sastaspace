@@ -106,6 +106,11 @@ Rails.application.routes.draw do
       get "inventory_items/:id/analysis" => "ai_analysis#get_analysis"
       delete "inventory_items/:id/analysis" => "ai_analysis#destroy"
 
+      # Clothing Detection
+      post "clothing_detection/analyze" => "clothing_detection#analyze"
+      get "clothing_detection/analysis/:id" => "clothing_detection#show"
+      get "clothing_detection/analyses" => "clothing_detection#index"
+
       # Outfits
       resources :outfits do
         collection do

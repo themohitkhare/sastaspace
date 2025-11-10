@@ -1,24 +1,13 @@
-<div data-controller="inventory-creation-analyzer form-wizard" data-form-wizard-total-steps-value="3" class="max-w-4xl mx-auto">
+<div data-controller="inventory-creation-analyzer" class="max-w-6xl mx-auto">
   <div class="card">
     <div class="card-header">
-      <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Add New Item with AI</h1>
-      <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">Upload an image and let AI fill in the details for you</p>
+      <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Add Items with AI</h1>
+      <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">Upload an image and let AI detect all clothing items for you</p>
     </div>
 
-    <%= form_with model: @inventory_item, local: true, multipart: true, data: { turbo: false }, class: "card-body space-y-6" do |form| %>
-      <% if @inventory_item.errors.any? %>
-        <div class="p-4 bg-red-50 border border-red-200 text-red-800 rounded dark:bg-red-900 dark:border-red-700 dark:text-red-200">
-          <h3 class="font-semibold mb-2"><%= pluralize(@inventory_item.errors.count, "error") %> prohibited this item from being saved:</h3>
-          <ul class="list-disc list-inside space-y-1">
-            <% @inventory_item.errors.full_messages.each do |message| %>
-              <li><%= message %></li>
-            <% end %>
-          </ul>
-        </div>
-      <% end %>
-
-      <!-- Step 0: Image Upload (AI Analysis) -->
-      <div data-inventory-creation-analyzer-target="uploadStep" data-form-wizard-target="step" class="space-y-4">
+    <div class="card-body space-y-6">
+      <!-- Step 1: Image Upload (AI Analysis) -->
+      <div data-inventory-creation-analyzer-target="uploadStep" class="space-y-4">
         <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">Step 1: Upload Image</h2>
         
         <!-- Image Upload Area -->
@@ -42,7 +31,7 @@
             <p class="mt-2 text-sm text-gray-600 dark:text-gray-400">
               <span class="font-semibold">Click to upload</span> or drag and drop
             </p>
-            <p class="text-xs text-gray-500 dark:text-gray-500 mt-1">PNG, JPG, WebP up to 5MB</p>
+            <p class="text-xs text-gray-500 dark:text-gray-500 mt-1">PNG, JPG, WebP up to 10MB</p>
           </div>
 
           <!-- Image Preview -->
@@ -57,7 +46,7 @@
           <div class="flex items-center justify-center p-8">
             <div class="text-center">
               <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
-              <p class="mt-4 text-gray-700 dark:text-gray-300">Analyzing your item...</p>
+              <p class="mt-4 text-gray-700 dark:text-gray-300">Detecting clothing items...</p>
               <p class="mt-2 text-sm text-gray-500 dark:text-gray-500">This may take a few moments</p>
             </div>
           </div>
@@ -68,152 +57,59 @@
           <p data-inventory-creation-analyzer-target="errorMessage"></p>
           <button
             type="button"
-            data-action="click->inventory-creation-analyzer#retryAnalysis"
+            data-action="click->inventory-creation-analyzer#cancelReview"
             class="mt-2 text-sm underline"
           >
             Try again
           </button>
         </div>
 
-        <!-- Success Message -->
-        <div data-inventory-creation-analyzer-target="successMessage" class="hidden p-4 bg-green-50 border border-green-200 text-green-800 rounded dark:bg-green-900 dark:border-green-700 dark:text-green-200">
-          <p>✓ Analysis complete! Review and edit the details below.</p>
-        </div>
       </div>
 
-      <!-- Step 1: Category Selection (Auto-filled by AI) -->
-      <div data-form-wizard-target="step" class="hidden space-y-4">
-        <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">Step 2: Category</h2>
-        
-        <div>
-          <%= form.label :category_id, "Category", class: "form-label" %>
-          <div data-controller="category-picker">
-            <%= form.hidden_field :category_id, required: true,
-                data: { 
-                  category_picker_target: "hiddenInput",
-                  inventory_creation_analyzer_target: "categoryField"
-                } %>
+      <!-- Step 2: Review Detected Items -->
+      <div data-inventory-creation-analyzer-target="reviewStep" class="hidden space-y-4">
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <h2 class="text-xl font-semibold text-gray-900 dark:text-white">Review Detected Items</h2>
+            <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
+              Select the items you want to add to your inventory
+            </p>
+          </div>
+          <div class="text-sm text-gray-600 dark:text-gray-400">
+            <span data-inventory-creation-analyzer-target="selectedItemsCount">0 items selected</span>
+          </div>
+        </div>
+
+        <!-- Detected Items Grid -->
+        <div data-inventory-creation-analyzer-target="itemsGrid" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <!-- Items will be rendered here by JavaScript -->
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="flex justify-between pt-6 border-t border-gray-200 dark:border-gray-700">
+          <button
+            type="button"
+            data-action="click->inventory-creation-analyzer#cancelReview"
+            class="btn-secondary"
+          >
+            Upload Different Image
+          </button>
+
+          <div class="flex gap-3">
+            <%= link_to "Cancel", inventory_items_path, class: "btn-secondary" %>
             <button
               type="button"
-              data-action="click->category-picker#open"
-              data-category-picker-target="selectedCategory"
-              class="form-input text-left w-full bg-white dark:bg-gray-700"
+              data-action="click->inventory-creation-analyzer#createItems"
+              data-inventory-creation-analyzer-target="createButton"
+              class="btn-primary"
+              disabled
             >
-              <%= @inventory_item.category&.name || "Select a category" %>
+              Create Selected Items
             </button>
-            
-            <!-- Category Picker Modal -->
-            <div
-              data-category-picker-target="modal"
-              class="hidden fixed inset-0 z-50 overflow-y-auto"
-              aria-labelledby="modal-title"
-              role="dialog"
-              aria-modal="true"
-            >
-              <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
-                <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" data-action="click->category-picker#close"></div>
-
-                <div class="inline-block align-bottom bg-white dark:bg-gray-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full" data-action="click->category-picker#preventClose">
-                  <div class="bg-white dark:bg-gray-800 px-4 pt-5 pb-4 sm:p-6">
-                    <div class="flex items-center justify-between mb-4">
-                      <h3 class="text-lg font-medium text-gray-900 dark:text-white">Select Category</h3>
-                      <button type="button" data-action="click->category-picker#close" class="text-gray-400 hover:text-gray-500">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                        </svg>
-                      </button>
-                    </div>
-                    
-                    <!-- Search input -->
-                    <div class="mb-4">
-                      <input
-                        type="text"
-                        data-category-picker-target="searchInput"
-                        data-action="input->category-picker#searchCategories"
-                        placeholder="Search categories..."
-                        class="form-input w-full"
-                      />
-                    </div>
-                    
-                    <div data-category-picker-target="breadcrumbs" class="mb-4 text-sm text-gray-600 dark:text-gray-400 hidden"></div>
-                    
-                    <ul data-category-picker-target="categoryList" class="max-h-96 overflow-y-auto border border-gray-200 dark:border-gray-700 rounded-lg"></ul>
-                  </div>
-                </div>
-              </div>
-            </div>
           </div>
         </div>
       </div>
-
-      <!-- Step 2: Item Details (Auto-filled by AI) -->
-      <div data-form-wizard-target="step" class="hidden space-y-4">
-        <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">Step 3: Item Details</h2>
-        
-        <div>
-          <%= form.label :name, "Name", class: "form-label" %>
-          <%= form.text_field :name, required: true, class: "form-input",
-              data: { 
-                inventory_creation_analyzer_target: "nameField",
-                action: "blur->form-wizard#validateCurrentStep" 
-              } %>
-        </div>
-
-        <div>
-          <%= form.label :description, "Description", class: "form-label" %>
-          <%= form.text_area :description, rows: 4, class: "form-input",
-              data: { inventory_creation_analyzer_target: "descriptionField" } %>
-        </div>
-      </div>
-
-      <!-- Step 3: Images -->
-      <div data-form-wizard-target="step" class="hidden space-y-4">
-        <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">Step 3: Additional Images (Optional)</h2>
-
-        <div class="mb-4 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
-          <p class="text-sm text-green-800 dark:text-green-200">
-            ✓ Your primary image has already been uploaded and analyzed.
-          </p>
-        </div>
-
-        <div>
-          <%= form.label :additional_images, "Additional Images (Optional)", class: "form-label" %>
-          <p class="text-sm text-gray-600 dark:text-gray-400 mb-2">Add more images of this item from different angles</p>
-          <%= form.file_field :additional_images, multiple: true, accept: "image/*", direct_upload: true, class: "form-input" %>
-        </div>
-      </div>
-
-
-      <!-- Navigation Buttons -->
-      <div class="flex justify-between pt-6 border-t border-gray-200 dark:border-gray-700">
-        <button
-          type="button"
-          data-form-wizard-target="previousButton"
-          data-action="click->form-wizard#previous"
-          class="btn-secondary hidden"
-        >
-          Previous
-        </button>
-
-        <div class="flex gap-3 ml-auto">
-          <%= link_to "Cancel", inventory_items_path, class: "btn-secondary" %>
-          
-          <button
-            type="button"
-            data-form-wizard-target="nextButton"
-            data-action="click->form-wizard#next"
-            class="btn-primary hidden"
-            data-inventory-creation-analyzer-target="nextButton"
-          >
-            Next
-          </button>
-
-          <%= form.submit "Create Item",
-              data: { form_wizard_target: "submitButton" },
-              class: "btn-primary hidden" %>
-        </div>
-      </div>
-    <% end %>
+    </div>
   </div>
 </div>
 

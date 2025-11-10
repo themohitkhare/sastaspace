@@ -8,6 +8,7 @@ class InventoryItem < ApplicationRecord
   belongs_to :category
   belongs_to :subcategory, class_name: "Category", optional: true
   belongs_to :brand, optional: true
+  belongs_to :clothing_analysis, optional: true
 
   has_one_attached :primary_image
   has_many_attached :additional_images
@@ -22,7 +23,8 @@ class InventoryItem < ApplicationRecord
 
   # Flexible metadata as JSON
   store_accessor :metadata, :color, :size, :material, :season, :occasion,
-                 :care_instructions, :fit_notes, :style_notes
+                 :care_instructions, :fit_notes, :style_notes, :gender_styling,
+                 :pattern_type, :pattern_details, :style_category
 
   # Derive coarse type from category hierarchy instead of storing item_type column
 
