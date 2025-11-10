@@ -1,0 +1,97 @@
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+  <div class="mb-8">
+    <h1 class="text-3xl font-bold text-gray-900">Job Monitoring</h1>
+    <p class="mt-2 text-sm text-gray-600">Detailed job performance and failure metrics</p>
+  </div>
+
+  <!-- Navigation -->
+  <div class="mb-6">
+    <nav class="flex space-x-4">
+      <%= link_to "Dashboard", admin_dashboard_path, class: "px-4 py-2 rounded-md bg-gray-200 text-gray-700 font-medium hover:bg-gray-300" %>
+      <%= link_to "Job Monitoring", admin_job_monitoring_path, class: "px-4 py-2 rounded-md bg-blue-600 text-white font-medium hover:bg-blue-700" %>
+      <%= link_to "Mission Control", "/admin/jobs/monitor", class: "px-4 py-2 rounded-md bg-gray-200 text-gray-700 font-medium hover:bg-gray-300" %>
+    </nav>
+  </div>
+
+  <!-- Job Health Overview -->
+  <div class="bg-white shadow rounded-lg p-6 mb-6">
+    <h2 class="text-xl font-semibold mb-4">Queue Health</h2>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <% @job_health[:queues].each do |queue_name, metrics| %>
+        <div class="border rounded-lg p-4">
+          <h3 class="font-semibold mb-2"><%= queue_name %></h3>
+          <div class="space-y-1 text-sm">
+            <p>Depth: <span class="font-medium"><%= metrics[:depth] %></span></p>
+            <p>Ready: <span class="font-medium"><%= metrics[:ready] %></span></p>
+            <p>Claimed: <span class="font-medium"><%= metrics[:claimed] %></span></p>
+            <p>Scheduled: <span class="font-medium"><%= metrics[:scheduled] %></span></p>
+            <% if metrics[:paused] %>
+              <p class="text-yellow-600 font-medium">⚠️ Paused</p>
+            <% end %>
+          </div>
+        </div>
+      <% end %>
+    </div>
+  </div>
+
+  <!-- Job Performance Metrics -->
+  <% if @job_metrics.any? %>
+    <div class="bg-white shadow rounded-lg p-6 mb-6">
+      <h2 class="text-xl font-semibold mb-4">Performance Metrics (Last Hour)</h2>
+      <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+        <div>
+          <p class="text-sm text-gray-600">Completed</p>
+          <p class="text-2xl font-bold"><%= @job_metrics[:completed] %></p>
+        </div>
+        <div>
+          <p class="text-sm text-gray-600">Avg Time</p>
+          <p class="text-2xl font-bold"><%= @job_metrics[:average_processing_time_ms] %>ms</p>
+        </div>
+        <div>
+          <p class="text-sm text-gray-600">Median</p>
+          <p class="text-2xl font-bold"><%= @job_metrics[:median_processing_time_ms] %>ms</p>
+        </div>
+        <div>
+          <p class="text-sm text-gray-600">P95</p>
+          <p class="text-2xl font-bold"><%= @job_metrics[:p95_processing_time_ms] %>ms</p>
+        </div>
+        <div>
+          <p class="text-sm text-gray-600">P99</p>
+          <p class="text-2xl font-bold"><%= @job_metrics[:p99_processing_time_ms] %>ms</p>
+        </div>
+      </div>
+    </div>
+  <% end %>
+
+  <!-- Failure Metrics -->
+  <% if @failure_metrics %>
+    <div class="bg-white shadow rounded-lg p-6">
+      <h2 class="text-xl font-semibold mb-4">Failure Metrics (Last Hour)</h2>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+        <div>
+          <p class="text-sm text-gray-600">Total Failures</p>
+          <p class="text-2xl font-bold text-red-600"><%= @failure_metrics[:total] %></p>
+        </div>
+        <div>
+          <p class="text-sm text-gray-600">Failure Rate</p>
+          <p class="text-2xl font-bold text-red-600"><%= @failure_metrics[:failure_rate_percent] %>%</p>
+        </div>
+      </div>
+      
+      <% if @failure_metrics[:by_job_class].any? %>
+        <div>
+          <h3 class="text-lg font-semibold mb-2">Failures by Job Class</h3>
+          <ul class="space-y-2">
+            <% @failure_metrics[:by_job_class].each do |job_class, count| %>
+              <li class="flex justify-between items-center border rounded p-2">
+                <span class="font-medium"><%= job_class %></span>
+                <span class="text-red-600 font-bold"><%= count %></span>
+              </li>
+            <% end %>
+          </ul>
+        </div>
+      <% end %>
+    </div>
+  <% end %>
+</div>
+

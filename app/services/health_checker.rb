@@ -39,9 +39,16 @@ class HealthChecker
   end
 
   def self.jobs_status
-    # Test if we can enqueue a simple job (using async adapter)
-    test_job = TestHealthJob.perform_later("health_check")
-    { status: "healthy", message: "Job queue operational", job_id: test_job.job_id }
+    # Get comprehensive job queue health from monitoring service
+    health = JobMonitoringService.queue_health
+
+    {
+      status: health[:status] == "healthy" ? "healthy" : "unhealthy",
+      message: "Job queue operational",
+      queue_depth: health[:queues].values.sum { |q| q[:depth] },
+      workers: health[:workers][:active],
+      alerts: health[:alerts].count
+    }
   rescue StandardError => e
     { status: "unhealthy", error: e.message }
   end

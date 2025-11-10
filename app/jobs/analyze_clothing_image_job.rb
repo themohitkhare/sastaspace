@@ -1,4 +1,6 @@
 class AnalyzeClothingImageJob < ApplicationJob
+  include Monitorable
+
   queue_as :default
 
   def perform(inventory_item_id, model_name: "gpt-4o-mini")

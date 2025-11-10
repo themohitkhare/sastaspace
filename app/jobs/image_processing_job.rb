@@ -1,4 +1,6 @@
 class ImageProcessingJob < ApplicationJob
+  include Monitorable
+
   queue_as :default
 
   def perform(inventory_item, additional_image_id = nil)
