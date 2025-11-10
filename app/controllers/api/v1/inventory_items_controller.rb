@@ -163,6 +163,15 @@ module Api
                 metadata: {}, tag_ids: []
               )
 
+              # Allow metadata fields to be set directly (store_accessor)
+              if item_params_hash[:metadata].present?
+                item_params[:metadata] = item_params_hash[:metadata].permit(
+                  :color, :size, :material, :season, :occasion,
+                  :care_instructions, :fit_notes, :style_notes,
+                  :gender_styling, :pattern_type, :pattern_details, :style_category
+                )
+              end
+
               # Ensure category_id is set as integer (permit might convert to string or lose it)
               item_params[:category_id] = category_id if category_id.present?
 

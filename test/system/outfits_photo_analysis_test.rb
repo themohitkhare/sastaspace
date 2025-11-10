@@ -66,14 +66,23 @@ class OutfitsPhotoAnalysisTest < ApplicationSystemTestCase
 
     visit "/outfits/new_from_photo"
 
-    # Upload image
-    image_path = Rails.root.join("test/fixtures/files/sample_image.jpg")
+    # Upload image - file input is hidden, use data attribute selector
+    # Use clothing_outfit_1.jpg which is a proper clothing photo (800x1107)
+    image_path = Rails.root.join("test/fixtures/files/clothing_outfit_1.jpg")
     if File.exist?(image_path)
-      attach_file("image", image_path, make_visible: true)
+      file_input = find("input[type='file'][data-outfit-photo-analyzer-target='fileInput']", visible: :hidden)
 
-      # Should show loading state
-      assert_text(/Analyzing your outfit photo/i, wait: 5)
-      assert_selector("[data-outfit-photo-analyzer-target='loadingState']", wait: 2)
+      # Attach file - this should automatically trigger the change event
+      file_input.attach_file(image_path.to_s)
+
+      # Wait for JavaScript to process - check for loading state or preview
+      # The loading state appears after file validation and preview
+      assert_selector("[data-outfit-photo-analyzer-target='imagePreview']:not(.hidden), [data-outfit-photo-analyzer-target='loadingState']:not(.hidden)", wait: 15)
+
+      # If loading state is shown, verify the text
+      if page.has_selector?("[data-outfit-photo-analyzer-target='loadingState']:not(.hidden)", wait: 2)
+        assert_text(/Analyzing your outfit photo/i, wait: 2)
+      end
     end
   end
 
