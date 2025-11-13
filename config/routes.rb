@@ -111,6 +111,12 @@ Rails.application.routes.draw do
       get "clothing_detection/analysis/:id" => "clothing_detection#show"
       get "clothing_detection/analyses" => "clothing_detection#index"
 
+      # Stock Photo Extraction
+      resource :stock_extraction, only: [], controller: "stock_extraction" do
+        post :extract
+        get "status/:job_id", to: "stock_extraction#status", as: :status
+      end
+
       # Outfits
       resources :outfits do
         collection do

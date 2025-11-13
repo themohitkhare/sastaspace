@@ -207,9 +207,13 @@ module Services
     def analysis_prompt
       # Get available categories to help the AI choose correctly
       available_categories = Category.active.order(:name).pluck(:name).join(", ")
+      gender_context = user.gender_preference || "unisex"
 
       <<~PROMPT
         You are a fashion analysis AI. Analyze this image of a clothing/fashion item and extract all relevant information for creating an inventory item.
+
+        USER GENDER PREFERENCE: #{gender_context.upcase}
+        IMPORTANT: This item should be appropriate for #{gender_context} fashion. If the item is clearly for a different gender, note this in your confidence score and set gender_appropriate to false.
 
         IMPORTANT: You MUST choose a category_name from the following list of available categories in the database:
         #{available_categories}
@@ -226,7 +230,17 @@ module Services
           "name": "Descriptive name for this item (e.g., 'Blue Cotton T-Shirt', 'Nike Running Sneakers')",
           "description": "Rich, detailed description for vector search. Include: colors, materials, size if visible, style characteristics, fit details, seasonality, occasions suitable for, and any notable features. Be comprehensive and descriptive - this will be used for semantic search. Example: 'A vibrant mint green structured leather satchel with a clean, minimalist aesthetic. Features include a top handle, detachable shoulder strap, secure closure, and visible stitching. The structured design maintains its shape and provides a polished, professional look. Suitable for everyday use, work, and casual occasions. Made from high-quality leather with silver hardware accents. This versatile bag transitions well across seasons.'",
           "brand_name": "Brand name if visible, or null if not visible",
+          "colors": ["primary_color", "secondary_color", ...],
+          "style": "Style descriptor (e.g., 'athletic streetwear', 'business casual')",
+          "material": "Material/fabric type (e.g., 'cotton blend fleece')",
+          "season": "Appropriate season (Spring/Summer/Fall/Winter/All-season)",
+          "occasion": "Suitable occasions (casual/athletic/formal/business/etc.)",
+          "fit_notes": "Fit characteristics (e.g., 'relaxed fit', 'slim cut')",
+          "care_instructions": "Care recommendations (e.g., 'machine wash cold')",
+          "brand_suggestion": "Suggested brand if not visible",
+          "category_suggestion": "Suggested category if yours seems wrong",
           "style_notes": "Any additional style notes or observations about the item's aesthetic or design",
+          "gender_appropriate": true/false (is this item appropriate for user's gender preference?),
           "confidence": 0.0 to 1.0
         }
 
@@ -234,6 +248,7 @@ module Services
         - Return ONLY valid JSON, no markdown formatting or additional text
         - category_name MUST be from the available categories list above - this is critical for successful matching
         - description should be RICH and COMPREHENSIVE - include colors, materials, style, fit, season, occasion, and features. This is used for vector search.
+        - gender_appropriate should be true if the item matches the user's gender preference, false otherwise
         - If information is not visible or unclear, use null for that field (except description - always provide a description)
         - confidence should reflect how certain you are about the overall analysis
       PROMPT
@@ -248,6 +263,8 @@ module Services
         # Ensure required fields exist
         parsed["confidence"] ||= 0.5
         parsed["description"] ||= "No description available"
+        # Default gender_appropriate to true if not present (backwards compatibility)
+        parsed["gender_appropriate"] = true if parsed["gender_appropriate"].nil?
         parsed
       else
         Rails.logger.warn "Could not parse JSON from AI response: #{content.truncate(200)}"
@@ -257,6 +274,7 @@ module Services
           "description" => content.truncate(500),
           "brand_name" => nil,
           "style_notes" => nil,
+          "gender_appropriate" => true,
           "confidence" => 0.2,
           "parse_error" => true
         }
@@ -269,6 +287,7 @@ module Services
         "description" => "Could not parse analysis results",
         "brand_name" => nil,
         "style_notes" => nil,
+        "gender_appropriate" => true,
         "confidence" => 0.0,
         "parse_error" => true,
         "error" => e.message
