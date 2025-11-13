@@ -197,7 +197,11 @@ module Api
         assert_equal 3, serialized[:position]
         assert_equal "Test notes", serialized[:styling_notes]
         assert_equal outfit_item.worn_count, serialized[:worn_count]
-        assert_equal outfit_item.last_worn_at, serialized[:last_worn_at]
+        if outfit_item.last_worn_at.nil?
+          assert_nil serialized[:last_worn_at]
+        else
+          assert_equal outfit_item.last_worn_at, serialized[:last_worn_at]
+        end
         assert_equal @inventory_item.id, serialized[:inventory_item][:id]
         assert_equal @inventory_item.name, serialized[:inventory_item][:name]
       end
