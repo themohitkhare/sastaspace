@@ -305,4 +305,388 @@ class ClothingDetectionServiceTest < ActiveSupport::TestCase
     assert_includes prompt, "unisex"
     assert_includes prompt, "GENDER STYLING GUIDELINES"
   end
+
+  test "filter_by_user_preference returns all items when preference is unisex" do
+    @user.update(gender_preference: "unisex")
+    items = [
+      { "gender_styling" => "men" },
+      { "gender_styling" => "women" },
+      { "gender_styling" => "unisex" }
+    ]
+
+    filtered = @service.send(:filter_by_user_preference, items)
+
+    assert_equal 3, filtered.length
+  end
+
+  test "filter_by_user_preference filters to men and unisex when preference is men" do
+    @user.update(gender_preference: "men")
+    items = [
+      { "gender_styling" => "men" },
+      { "gender_styling" => "women" },
+      { "gender_styling" => "unisex" }
+    ]
+
+    filtered = @service.send(:filter_by_user_preference, items)
+
+    assert_equal 2, filtered.length
+    assert_includes filtered.map { |i| i["gender_styling"] }, "men"
+    assert_includes filtered.map { |i| i["gender_styling"] }, "unisex"
+    assert_not_includes filtered.map { |i| i["gender_styling"] }, "women"
+  end
+
+  test "filter_by_user_preference filters to women and unisex when preference is women" do
+    @user.update(gender_preference: "women")
+    items = [
+      { "gender_styling" => "men" },
+      { "gender_styling" => "women" },
+      { "gender_styling" => "unisex" }
+    ]
+
+    filtered = @service.send(:filter_by_user_preference, items)
+
+    assert_equal 2, filtered.length
+    assert_includes filtered.map { |i| i["gender_styling"] }, "women"
+    assert_includes filtered.map { |i| i["gender_styling"] }, "unisex"
+    assert_not_includes filtered.map { |i| i["gender_styling"] }, "men"
+  end
+
+  test "filter_by_user_preference returns all items when no preference set" do
+    @user.update(gender_preference: nil)
+    items = [
+      { "gender_styling" => "men" },
+      { "gender_styling" => "women" },
+      { "gender_styling" => "unisex" }
+    ]
+
+    filtered = @service.send(:filter_by_user_preference, items)
+
+    assert_equal 3, filtered.length
+  end
+
+  test "filter_by_user_preference handles items without gender_styling" do
+    @user.update(gender_preference: "men")
+    items = [
+      { "gender_styling" => "men" },
+      {} # No gender_styling
+    ]
+
+    filtered = @service.send(:filter_by_user_preference, items)
+
+    assert_equal 2, filtered.length # Both should pass (no gender_styling defaults to unisex)
+  end
+
+  test "enhance_item_with_matching adds category_id when category matches" do
+    category = create(:category, name: "Tops")
+    item_data = { "category" => "tops" }
+
+    enhanced = @service.send(:enhance_item_with_matching, item_data)
+
+    assert_equal category.id, enhanced["category_id"]
+    assert_equal category.name, enhanced["category_matched"]
+    assert_equal "tops", enhanced["category_name"]
+  end
+
+  test "enhance_item_with_matching handles nil category" do
+    item_data = { "category" => nil }
+
+    enhanced = @service.send(:enhance_item_with_matching, item_data)
+
+    assert_nil enhanced["category_id"]
+    assert_nil enhanced["category_matched"]
+  end
+
+  test "enhance_item_with_matching handles blank category" do
+    item_data = { "category" => "" }
+
+    enhanced = @service.send(:enhance_item_with_matching, item_data)
+
+    assert_nil enhanced["category_id"]
+  end
+
+  test "find_matching_category finds exact match" do
+    category = create(:category, name: "T-Shirts")
+
+    result = @service.send(:find_matching_category, "t-shirts")
+
+    assert_equal category, result
+  end
+
+  test "find_matching_category finds synonym match" do
+    category = create(:category, name: "T-Shirts")
+
+    result = @service.send(:find_matching_category, "t-shirt")
+
+    assert_equal category, result
+  end
+
+  test "find_matching_category finds word-based match" do
+    category = create(:category, name: "Running Shoes")
+
+    result = @service.send(:find_matching_category, "running")
+
+    assert_equal category, result
+  end
+
+  test "find_matching_category finds partial match" do
+    category = create(:category, name: "Denim Jeans")
+
+    result = @service.send(:find_matching_category, "denim")
+
+    assert_equal category, result
+  end
+
+  test "find_matching_category returns nil when no match" do
+    result = @service.send(:find_matching_category, "nonexistent_category_xyz")
+
+    assert_nil result
+  end
+
+  test "find_matching_category handles blank input" do
+    result = @service.send(:find_matching_category, "")
+
+    assert_nil result
+  end
+
+  test "find_matching_category handles nil input" do
+    result = @service.send(:find_matching_category, nil)
+
+    assert_nil result
+  end
+
+  test "check_ollama_availability! raises error when connection refused" do
+    Net::HTTP.stubs(:new).raises(Errno::ECONNREFUSED.new("Connection refused"))
+    Rails.logger.stubs(:error)
+
+    assert_raises(StandardError) do
+      @service.send(:check_ollama_availability!)
+    end
+  end
+
+  test "check_ollama_availability! raises error when timeout" do
+    http_mock = mock
+    http_mock.stubs(:open_timeout=)
+    http_mock.stubs(:read_timeout=)
+    http_mock.stubs(:get).raises(Net::ReadTimeout.new("Timeout"))
+    Net::HTTP.stubs(:new).returns(http_mock)
+    Rails.logger.stubs(:error)
+
+    assert_raises(StandardError) do
+      @service.send(:check_ollama_availability!)
+    end
+  end
+
+  test "check_ollama_availability! raises error when model not found" do
+    http_mock = mock
+    http_mock.stubs(:open_timeout=)
+    http_mock.stubs(:read_timeout=)
+    response_mock = mock
+    response_mock.stubs(:code).returns("200")
+    response_mock.stubs(:body).returns({ "models" => [] }.to_json)
+    http_mock.stubs(:get).returns(response_mock)
+    Net::HTTP.stubs(:new).returns(http_mock)
+    Rails.logger.stubs(:warn)
+
+    assert_raises(StandardError) do
+      @service.send(:check_ollama_availability!)
+    end
+  end
+
+  test "check_ollama_availability! raises error when API returns non-200" do
+    http_mock = mock
+    http_mock.stubs(:open_timeout=)
+    http_mock.stubs(:read_timeout=)
+    response_mock = mock
+    response_mock.stubs(:code).returns("500")
+    http_mock.stubs(:get).returns(response_mock)
+    Net::HTTP.stubs(:new).returns(http_mock)
+    Rails.logger.stubs(:error)
+
+    assert_raises(StandardError) do
+      @service.send(:check_ollama_availability!)
+    end
+  end
+
+  test "check_ollama_availability! handles JSON parse error" do
+    http_mock = mock
+    http_mock.stubs(:open_timeout=)
+    http_mock.stubs(:read_timeout=)
+    response_mock = mock
+    response_mock.stubs(:code).returns("200")
+    response_mock.stubs(:body).returns("invalid json")
+    http_mock.stubs(:get).returns(response_mock)
+    Net::HTTP.stubs(:new).returns(http_mock)
+    Rails.logger.stubs(:error)
+
+    assert_raises(StandardError) do
+      @service.send(:check_ollama_availability!)
+    end
+  end
+
+  test "validate_and_enhance_results handles non-array items" do
+    results = { "items" => "not an array" }
+
+    validated = @service.send(:validate_and_enhance_results, results)
+
+    assert_equal "not an array", validated["items"]
+  end
+
+  test "validate_and_enhance_results handles nil items" do
+    results = { "items" => nil }
+
+    validated = @service.send(:validate_and_enhance_results, results)
+
+    assert_nil validated["items"]
+  end
+
+  test "validate_and_enhance_results handles confidence as string" do
+    results = {
+      "items" => [
+        { "confidence" => "0.8" }
+      ]
+    }
+
+    validated = @service.send(:validate_and_enhance_results, results)
+
+    assert_equal 0.8, validated["items"][0]["confidence"]
+  end
+
+  test "create_analysis_record calculates average confidence correctly" do
+    results = {
+      "items" => [
+        { "confidence" => 0.9 },
+        { "confidence" => 0.7 },
+        { "confidence" => 0.8 }
+      ]
+    }
+
+    analysis = @service.send(:create_analysis_record, results)
+
+    assert_equal 0.8, analysis.confidence # (0.9 + 0.7 + 0.8) / 3 = 0.8
+  end
+
+  test "create_analysis_record handles items with nil confidence" do
+    results = {
+      "items" => [
+        { "confidence" => 0.9 },
+        { "confidence" => nil },
+        { "confidence" => 0.8 }
+      ]
+    }
+
+    analysis = @service.send(:create_analysis_record, results)
+
+    assert_equal 0.85, analysis.confidence # (0.9 + 0.0 + 0.8) / 3 = 0.566..., but we use compact so (0.9 + 0.8) / 2 = 0.85
+  end
+
+  test "analyze filters items by user preference" do
+    @user.update(gender_preference: "men")
+    @service.stubs(:check_ollama_availability!)
+    @service.stubs(:perform_analysis).returns({
+      "total_items_detected" => 3,
+      "items" => [
+        { "id" => "item_001", "gender_styling" => "men", "confidence" => 0.9 },
+        { "id" => "item_002", "gender_styling" => "women", "confidence" => 0.8 },
+        { "id" => "item_003", "gender_styling" => "unisex", "confidence" => 0.85 }
+      ]
+    })
+
+    results = @service.analyze
+
+    assert_equal 2, results["total_items_detected"]
+    assert_equal 2, results["items"].length
+    assert_includes results["items"].map { |i| i["gender_styling"] }, "men"
+    assert_includes results["items"].map { |i| i["gender_styling"] }, "unisex"
+    assert_not_includes results["items"].map { |i| i["gender_styling"] }, "women"
+  end
+
+  test "analyze enhances items with category matching" do
+    category = create(:category, name: "Tops")
+    @service.stubs(:check_ollama_availability!)
+    @service.stubs(:perform_analysis).returns({
+      "total_items_detected" => 1,
+      "items" => [
+        { "id" => "item_001", "category" => "tops", "confidence" => 0.9 }
+      ]
+    })
+
+    results = @service.analyze
+
+    assert_equal category.id, results["items"].first["category_id"]
+    assert_equal category.name, results["items"].first["category_matched"]
+  end
+
+  test "analyze handles StandardError and returns error response" do
+    @service.stubs(:check_ollama_availability!).raises(StandardError.new("Test error"))
+    Rails.logger.stubs(:error)
+
+    results = @service.analyze
+
+    assert results["error"].present?
+    assert_equal 0, results["total_items_detected"]
+    assert_equal [], results["items"]
+  end
+
+  test "analyze handles ArgumentError and returns error response" do
+    @service.stubs(:check_ollama_availability!).raises(ArgumentError.new("Invalid argument"))
+    Rails.logger.stubs(:error)
+
+    results = @service.analyze
+
+    assert results["error"].present?
+    assert results["error"].include?("Invalid request")
+    assert_equal 0, results["total_items_detected"]
+  end
+
+  test "parse_analysis_response handles JSON::ParserError" do
+    invalid_json = '{"invalid": json}'
+    Rails.logger.stubs(:error)
+
+    result = @service.send(:parse_analysis_response, invalid_json)
+
+    assert_equal 0, result["total_items_detected"]
+    assert_equal [], result["items"]
+    assert result["parse_error"]
+    assert result["error"].present?
+  end
+
+  test "parse_analysis_response logs warning when no JSON found" do
+    text = "Plain text without JSON"
+    log_messages = []
+    Rails.logger.stubs(:warn).with { |msg| log_messages << msg; true }
+
+    result = @service.send(:parse_analysis_response, text)
+
+    assert_equal 0, result["total_items_detected"]
+    warn_log = log_messages.find { |msg| msg.include?("Could not parse JSON") }
+    assert warn_log.present?, "Should log warning"
+  end
+
+  test "parse_analysis_response generates unique IDs for items without IDs" do
+    json_content = {
+      "items" => [
+        { "item_name" => "Item 1" },
+        { "item_name" => "Item 2" }
+      ]
+    }.to_json
+
+    result = @service.send(:parse_analysis_response, json_content)
+
+    assert result["items"][0]["id"].present?
+    assert result["items"][1]["id"].present?
+    assert_not_equal result["items"][0]["id"], result["items"][1]["id"]
+  end
+
+  test "create_analysis_record handles items without confidence" do
+    results = {
+      "items" => [
+        { "item_name" => "Item 1" },
+        { "item_name" => "Item 2", "confidence" => 0.8 }
+      ]
+    }
+
+    analysis = @service.send(:create_analysis_record, results)
+
+    assert_equal 0.4, analysis.confidence # (0.0 + 0.8) / 2 = 0.4
+  end
 end

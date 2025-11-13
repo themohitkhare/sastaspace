@@ -4,19 +4,22 @@ module ErrorHandling
   extend ActiveSupport::Concern
 
   included do
-    # Handle ActiveRecord validation errors
+    # Order matters: Rails evaluates rescue_from in reverse order (bottom to top)
+    # So we define StandardError FIRST, then more specific handlers override it
+
+    # Handle general application errors (catch-all for unexpected errors)
+    rescue_from StandardError, with: :handle_standard_error
+
+    # Handle ActiveRecord validation errors (more specific, overrides StandardError)
     rescue_from ActiveRecord::RecordInvalid, with: :handle_record_invalid
     rescue_from ActiveRecord::RecordNotFound, with: :handle_record_not_found
 
-    # Handle parameter parsing errors
+    # Handle parameter parsing errors (more specific, overrides StandardError)
     rescue_from ActionController::ParameterMissing, with: :handle_parameter_missing
     rescue_from ActionDispatch::Http::Parameters::ParseError, with: :handle_parse_error
 
     # Note: Authentication errors are handled by ExceptionHandler concern
     # We don't duplicate them here to avoid conflicts
-
-    # Handle general application errors (but exclude authentication exceptions)
-    rescue_from StandardError, with: :handle_standard_error
   end
 
   private
@@ -37,10 +40,15 @@ module ErrorHandling
     # ActiveRecord::RecordNotFound can be raised manually or from find
     # When raised manually, model and id may not be available
     details = {}
+    model_name = nil
+
     begin
       if exception.respond_to?(:model)
         model = exception.model
-        details[:model] = model if model.present?
+        if model.present?
+          details[:model] = model
+          model_name = model
+        end
       end
     rescue NoMethodError
       # model method might not work for manually raised exceptions
@@ -55,14 +63,25 @@ module ErrorHandling
       # id method might not work for manually raised exceptions
     end
 
+    # Always ensure we have a message in details
     if details.empty?
       details[:message] = exception.message.presence || "Resource not found"
+    end
+
+    # Create a user-friendly message
+    # Convert model name to readable format (e.g., "InventoryItem" -> "Inventory item")
+    if model_name.present?
+      friendly_model = model_name.to_s.underscore.humanize.downcase
+      message = "#{friendly_model.capitalize} not found"
+    else
+      # Use exception message if no model, otherwise use default
+      message = exception.message.presence || "Resource not found"
     end
 
     log_error("Record not found", details)
     render_error(
       code: "NOT_FOUND",
-      message: "Resource not found",
+      message: message,
       details: details,
       status: :not_found
     )
@@ -95,13 +114,11 @@ module ErrorHandling
   def handle_standard_error(exception)
     # Skip exceptions that are handled by specific handlers
     # Re-raise them so the specific handlers can catch them
+    # Note: ActiveRecord exceptions are already handled by their own rescue_from,
+    # so they won't reach this handler unless explicitly re-raised
     if exception.is_a?(ExceptionHandler::InvalidToken) ||
        exception.is_a?(ExceptionHandler::MissingToken) ||
-       exception.is_a?(ExceptionHandler::ExpiredToken) ||
-       exception.is_a?(ActiveRecord::RecordNotFound) ||
-       exception.is_a?(ActiveRecord::RecordInvalid) ||
-       exception.is_a?(ActionController::ParameterMissing) ||
-       exception.is_a?(ActionDispatch::Http::Parameters::ParseError)
+       exception.is_a?(ExceptionHandler::ExpiredToken)
       raise exception
     end
 
@@ -129,14 +146,14 @@ module ErrorHandling
       success: false,
       error: {
         code: code,
-        message: message,
-        timestamp: Time.current.iso8601,
-        request_id: current_request_id
-      }
+        message: message
+      },
+      timestamp: Time.current.iso8601,
+      request_id: current_request_id
     }
 
-    # Add details if provided
-    response_data[:error][:details] = details if details.present?
+    # Add details if provided (include even if empty hash to maintain consistent structure)
+    response_data[:error][:details] = details unless details.nil?
 
     render json: response_data, status: status
   end

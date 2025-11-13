@@ -297,32 +297,130 @@ class AuthenticableTest < ActionDispatch::IntegrationTest
   end
 
   test "authenticate_user_optional sets user when valid token provided" do
-    # Test through a controller that uses optional auth
-    # Since we don't have one, we'll test the logic indirectly
-    # by checking that the method exists and can be called
-    assert Api::V1::BaseController.instance_methods.include?(:authenticate_user_optional) ||
-           Api::V1::BaseController.private_instance_methods.include?(:authenticate_user_optional)
+    # Create a controller instance to test the method
+    controller = Api::V1::BaseController.new
+    controller.stubs(:request).returns(mock(headers: { "Authorization" => "Bearer #{@token}" }))
+
+    controller.send(:authenticate_user_optional)
+
+    assert controller.instance_variable_get(:@current_user).present?
+    assert_equal @user, controller.instance_variable_get(:@current_user)
   end
 
-  test "authenticate_user_optional ignores blacklisted tokens" do
+  test "authenticate_user_optional returns nil when no token provided" do
+    controller = Api::V1::BaseController.new
+    controller.stubs(:request).returns(mock(headers: {}))
+
+    controller.send(:authenticate_user_optional)
+
+    assert_nil controller.instance_variable_get(:@current_user)
+  end
+
+  test "authenticate_user_optional ignores blacklisted tokens in test mode" do
     # Add token to blacklist
     blacklisted_tokens = Authenticable.instance_variable_get(:@test_blacklisted_tokens) || []
     blacklisted_tokens << @token
     Authenticable.instance_variable_set(:@test_blacklisted_tokens, blacklisted_tokens)
 
-    # authenticate_user_optional should not set @current_user for blacklisted tokens
-    # This is tested indirectly through the method's behavior
-    assert Authenticable.instance_variable_get(:@test_blacklisted_tokens).include?(@token)
+    controller = Api::V1::BaseController.new
+    controller.stubs(:request).returns(mock(headers: { "Authorization" => "Bearer #{@token}" }))
+
+    controller.send(:authenticate_user_optional)
+
+    # Should not set user for blacklisted token
+    assert_nil controller.instance_variable_get(:@current_user)
+  end
+
+  test "authenticate_user_optional ignores blacklisted tokens in production mode" do
+    # Use a memory store for this test to ensure cache works
+    original_cache = Rails.cache
+    Rails.cache = ActiveSupport::Cache::MemoryStore.new
+
+    begin
+      Rails.cache.write("blacklisted_token_#{@token}", true)
+
+      controller = Api::V1::BaseController.new
+      controller.stubs(:request).returns(mock(headers: { "Authorization" => "Bearer #{@token}" }))
+
+      # Stub Rails.env.test? to return false to simulate production mode
+      # But we need to stub it on the controller's view of Rails.env
+      # Actually, the code checks Rails.env.test? directly, so we need to stub it globally
+      Rails.env.stubs(:test?).returns(false)
+
+      controller.send(:authenticate_user_optional)
+
+      # Should not set user for blacklisted token (should return early)
+      assert_nil controller.instance_variable_get(:@current_user)
+    ensure
+      Rails.cache = original_cache
+    end
   end
 
   test "authenticate_user_optional ignores invalid tokens silently" do
-    # authenticate_user_optional should not raise errors for invalid tokens
-    # This is tested by the method's rescue block behavior
     invalid_token = "invalid_token_string"
 
-    # The method should silently ignore invalid tokens
-    # This is verified by the rescue block in the method
-    assert true # Placeholder - actual behavior verified by method implementation
+    controller = Api::V1::BaseController.new
+    controller.stubs(:request).returns(mock(headers: { "Authorization" => "Bearer #{invalid_token}" }))
+
+    # Should not raise error
+    assert_nothing_raised do
+      controller.send(:authenticate_user_optional)
+    end
+
+    # Should not set user
+    assert_nil controller.instance_variable_get(:@current_user)
+  end
+
+  test "authenticate_user_optional ignores expired tokens silently" do
+    # Create a properly expired token using encode with explicit exp
+    expired_token = Auth::JsonWebToken.encode({ user_id: @user.id }, exp: 1.hour.ago)
+
+    controller = Api::V1::BaseController.new
+    controller.stubs(:request).returns(mock(headers: { "Authorization" => "Bearer #{expired_token}" }))
+
+    # Should not raise error (exception is caught in rescue block)
+    assert_nothing_raised do
+      controller.send(:authenticate_user_optional)
+    end
+
+    # Should not set user (expired token should raise ExceptionHandler::ExpiredToken
+    # which is caught in rescue block and sets @current_user = nil)
+    current_user = controller.instance_variable_get(:@current_user)
+    assert_nil current_user, "Should not set user for expired token, got: #{current_user.inspect}"
+  end
+
+  test "authenticate_user_optional ignores RecordNotFound errors silently" do
+    invalid_user_token = Auth::JsonWebToken.encode_access_token(user_id: 999999)
+
+    controller = Api::V1::BaseController.new
+    controller.stubs(:request).returns(mock(headers: { "Authorization" => "Bearer #{invalid_user_token}" }))
+
+    # Should not raise error
+    assert_nothing_raised do
+      controller.send(:authenticate_user_optional)
+    end
+
+    # Should not set user
+    assert_nil controller.instance_variable_get(:@current_user)
+  end
+
+  test "authenticate_user_optional handles token with nil blacklist array" do
+    # Set blacklist to nil to test the safe navigation
+    Authenticable.instance_variable_set(:@test_blacklisted_tokens, nil)
+
+    controller = Api::V1::BaseController.new
+    controller.stubs(:request).returns(mock(headers: { "Authorization" => "Bearer #{@token}" }))
+
+    # Should not raise error
+    assert_nothing_raised do
+      controller.send(:authenticate_user_optional)
+    end
+
+    # Should set user since token is not blacklisted
+    assert controller.instance_variable_get(:@current_user).present?
+
+    # Reset blacklist
+    Authenticable.instance_variable_set(:@test_blacklisted_tokens, [])
   end
 
   test "authenticate_user! handles blacklisted tokens in production mode" do
@@ -330,5 +428,72 @@ class AuthenticableTest < ActionDispatch::IntegrationTest
     # This test verifies the structure exists
     assert defined?(Authenticable)
     assert Authenticable.instance_variable_get(:@test_blacklisted_tokens).is_a?(Array)
+  end
+
+  test "refresh_access_token_from_cookies handles refresh response without refresh_token" do
+    new_access_token = Auth::JsonWebToken.encode_access_token(user_id: @user.id)
+
+    mock_cookies = mock
+    mock_signed = mock
+    mock_signed.stubs(:[]).with(:refresh_token).returns(@refresh_token.token)
+    mock_signed.stubs(:[]=).with(:access_token, anything)
+    mock_cookies.stubs(:signed).returns(mock_signed)
+    mock_cookies.stubs(:delete)
+
+    controller = Api::V1::BaseController.new
+    controller.stubs(:cookies).returns(mock_cookies)
+    controller.stubs(:request).returns(mock(base_url: "http://test.local"))
+
+    WebMock.stub_request(:post, /.*\/api\/v1\/auth\/refresh/)
+      .to_return(
+        status: 200,
+        body: {
+          success: true,
+          data: {
+            token: new_access_token
+            # No refresh_token in response
+          }
+        }.to_json,
+        headers: { "Content-Type" => "application/json" }
+      )
+
+    result = controller.send(:refresh_access_token_from_cookies)
+
+    assert result, "Should return true when refresh succeeds even without new refresh_token"
+  end
+
+  test "refresh_access_token_from_cookies sets secure cookies in production" do
+    Rails.env.stubs(:production?).returns(true)
+
+    new_access_token = Auth::JsonWebToken.encode_access_token(user_id: @user.id)
+    new_refresh_token = RefreshToken.create_for_user!(@user)
+
+    mock_cookies = mock
+    mock_signed = mock
+    mock_signed.stubs(:[]).with(:refresh_token).returns(@refresh_token.token)
+    # Verify secure flag is set
+    mock_signed.expects(:[]=).with(:access_token, has_entry(secure: true))
+    mock_signed.expects(:[]=).with(:refresh_token, has_entry(secure: true))
+    mock_cookies.stubs(:signed).returns(mock_signed)
+    mock_cookies.stubs(:delete)
+
+    controller = Api::V1::BaseController.new
+    controller.stubs(:cookies).returns(mock_cookies)
+    controller.stubs(:request).returns(mock(base_url: "http://test.local"))
+
+    WebMock.stub_request(:post, /.*\/api\/v1\/auth\/refresh/)
+      .to_return(
+        status: 200,
+        body: {
+          success: true,
+          data: {
+            token: new_access_token,
+            refresh_token: new_refresh_token.token
+          }
+        }.to_json,
+        headers: { "Content-Type" => "application/json" }
+      )
+
+    controller.send(:refresh_access_token_from_cookies)
   end
 end

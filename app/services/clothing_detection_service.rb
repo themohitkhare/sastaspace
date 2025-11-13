@@ -17,6 +17,7 @@ class ClothingDetectionService
           "item_name": "specific name",
           "category": "tops/bottoms/outerwear/shoes/accessories",
           "subcategory": "shirt/jeans/jacket/sneakers",
+          "description": "Rich, detailed description for vector search. Include: colors, materials, size if visible, style characteristics, fit details, seasonality, occasions suitable for, and any notable features. Be comprehensive and descriptive. Example: 'A vibrant mint green structured leather satchel with a clean, minimalist aesthetic. Features include a top handle, detachable shoulder strap, secure closure, and visible stitching. The structured design maintains its shape and provides a polished, professional look. Suitable for everyday use, work, and casual occasions.'",
           "color_primary": "dominant color",
           "color_secondary": "secondary color if visible",
           "pattern_type": "solid/striped/geometric",
@@ -40,6 +41,7 @@ class ClothingDetectionService
     IMPORTANT:
     - Return ONLY valid JSON, no markdown formatting or additional text
     - Detect ALL visible items: clothing (tops, bottoms, outerwear), shoes, bags, accessories, jewelry, etc.
+    - description should be RICH and COMPREHENSIVE for each item - include colors, materials, style, fit, season, occasion, and features. This is used for vector search and inventory management.
     - gender_styling MUST be one of: "men", "women", or "unisex" for each item
     - extraction_priority should reflect how important/visible each item is
     - confidence should reflect how certain you are about each item's analysis
@@ -468,8 +470,16 @@ class ClothingDetectionService
 
   def create_analysis_record(results)
     # Calculate average confidence
+    # - Missing confidence key: treat as 0.0 (item was detected but no confidence provided)
+    # - Explicit nil: exclude from calculation (confidence measurement failed/unavailable)
     items = results["items"] || []
-    confidences = items.map { |item| item["confidence"] || 0.0 }.compact
+    confidences = items.map do |item|
+      if item.key?("confidence")
+        item["confidence"] # Could be a number or nil
+      else
+        0.0 # Missing key means no confidence provided, treat as 0.0
+      end
+    end.compact # Remove explicit nils
     avg_confidence = confidences.any? ? (confidences.sum.to_f / confidences.length).round(2) : nil
 
     ClothingAnalysis.create!(

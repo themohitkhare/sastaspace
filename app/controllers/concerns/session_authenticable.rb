@@ -81,6 +81,13 @@ module SessionAuthenticable
 
   def get_current_user_from_jwt
     token = cookies.signed[:access_token]
+    refresh_token = cookies.signed[:refresh_token]
+
+    # If no access token but refresh token exists, try to refresh
+    if token.nil? && refresh_token.present?
+      return refresh_access_token
+    end
+
     return nil unless token
 
     # Verify token with JWT service
@@ -124,13 +131,16 @@ module SessionAuthenticable
         same_site: :lax,
         expires: 15.minutes.from_now
       }
-      cookies.signed[:refresh_token] = {
-        value: response[:data][:refresh_token],
-        httponly: true,
-        secure: Rails.env.production?,
-        same_site: :lax,
-        expires: 7.days.from_now
-      }
+      # Only set refresh_token if it's present in the response
+      if response[:data][:refresh_token].present?
+        cookies.signed[:refresh_token] = {
+          value: response[:data][:refresh_token],
+          httponly: true,
+          secure: Rails.env.production?,
+          same_site: :lax,
+          expires: 7.days.from_now
+        }
+      end
 
       # Get user from new token
       decoded_token = Auth::JsonWebToken.decode(response[:data][:token])

@@ -1,7 +1,8 @@
 import { Controller } from "@hotwired/stimulus"
+import { createConsumer } from "@rails/actioncable"
 
 // Connects to data-controller="inventory"
-// Handles inventory list filtering, search, view toggle, and bulk actions
+// Handles inventory list filtering, search, view toggle, bulk actions, and processing notifications
 export default class extends Controller {
   static targets = [
     "gridView",
@@ -18,11 +19,14 @@ export default class extends Controller {
     "bulkCheckbox",
     "selectAllCheckbox",
     "bulkActionsBar",
-    "itemCount"
+    "itemCount",
+    "processingIndicator",
+    "processingMessage"
   ]
 
   static values = {
-    viewMode: { type: String, default: "grid" }
+    viewMode: { type: String, default: "grid" },
+    userId: String
   }
 
   connect() {
@@ -38,10 +42,188 @@ export default class extends Controller {
         this.applyFilters()
       }, 300).bind(this))
     }
+
+    // Check for pending detection job and set up WebSocket
+    this.checkPendingDetection()
   }
 
   disconnect() {
-    // Clean up event listeners if needed
+    this.unsubscribe()
+  }
+
+  unsubscribe() {
+    if (this.detectionSubscription) {
+      this.detectionSubscription.unsubscribe()
+      this.detectionSubscription = null
+    }
+
+    if (this.cable) {
+      this.cable.disconnect()
+      this.cable = null
+    }
+  }
+
+  checkPendingDetection() {
+    // Check sessionStorage for pending detection job
+    const pendingJob = sessionStorage.getItem('pending_detection_job')
+    if (pendingJob) {
+      try {
+        const jobData = JSON.parse(pendingJob)
+        this.userId = jobData.user_id || this.userIdValue
+        this.jobId = jobData.job_id
+        this.blobId = jobData.blob_id
+
+        // Show processing indicator
+        this.showProcessingIndicator()
+
+        // Set up WebSocket subscription
+        if (this.userId) {
+          this.setupWebSocketSubscription()
+        }
+      } catch (e) {
+        console.error("Error parsing pending job data:", e)
+        sessionStorage.removeItem('pending_detection_job')
+      }
+    }
+  }
+
+  setupWebSocketSubscription() {
+    if (!this.userId) {
+      console.error("Cannot set up WebSocket: user_id is missing")
+      return
+    }
+
+    // Create ActionCable consumer
+    this.cable = createConsumer()
+
+    // Subscribe to detection updates
+    this.detectionSubscription = this.cable.subscriptions.create(
+      {
+        channel: "AiProcessingChannel",
+        user_id: this.userId.toString()
+      },
+      {
+        received: (data) => this.handleDetectionUpdate(data),
+        connected: () => {
+          console.log("Connected to detection channel for user", this.userId)
+        },
+        disconnected: () => {
+          console.log("Disconnected from detection channel")
+        }
+      }
+    )
+  }
+
+  handleDetectionUpdate(data) {
+    console.log("Detection update received:", data)
+
+    switch (data.type) {
+      case "progress_update":
+        this.updateProcessingMessage(data.message)
+        break
+
+      case "detection_complete":
+        this.handleDetectionComplete(data)
+        break
+
+      case "detection_error":
+        this.handleDetectionError(data.error)
+        break
+
+      default:
+        console.warn("Unknown detection update type:", data.type)
+    }
+  }
+
+  handleDetectionComplete(data) {
+    console.log("Detection completed:", data.items_detected, "items found,", data.created_items_count || 0, "items created")
+
+    // Clear pending job from sessionStorage
+    sessionStorage.removeItem('pending_detection_job')
+
+    // Hide processing indicator
+    this.hideProcessingIndicator()
+
+    // Show success notification with created items count
+    const createdCount = data.created_items_count || data.items_detected || 0
+    this.showSuccessNotification(createdCount)
+
+    // Unsubscribe from WebSocket
+    this.unsubscribe()
+
+    // Reload the page to show new items (with a slight delay to show notification)
+    setTimeout(() => {
+      window.location.reload()
+    }, 1500) // Reload after 1.5 seconds to show notification
+  }
+
+  handleDetectionError(error) {
+    console.error("Detection error:", error)
+
+    // Clear pending job from sessionStorage
+    sessionStorage.removeItem('pending_detection_job')
+
+    // Hide processing indicator
+    this.hideProcessingIndicator()
+
+    // Show error notification
+    this.showErrorNotification(error || "Failed to detect clothing items")
+
+    // Unsubscribe from WebSocket
+    this.unsubscribe()
+  }
+
+  showProcessingIndicator() {
+    if (this.hasProcessingIndicatorTarget) {
+      this.processingIndicatorTarget.classList.remove("hidden")
+    }
+    this.updateProcessingMessage("Analyzing image for clothing items...")
+  }
+
+  hideProcessingIndicator() {
+    if (this.hasProcessingIndicatorTarget) {
+      this.processingIndicatorTarget.classList.add("hidden")
+    }
+  }
+
+  updateProcessingMessage(message) {
+    if (this.hasProcessingMessageTarget) {
+      this.processingMessageTarget.textContent = message
+    }
+  }
+
+  showSuccessNotification(itemsCount) {
+    // Create a temporary success notification
+    const notification = document.createElement("div")
+    notification.className = "fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 flex items-center gap-2"
+    notification.innerHTML = `
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+      </svg>
+      <span>Successfully detected ${itemsCount} item${itemsCount !== 1 ? 's' : ''}!</span>
+    `
+    document.body.appendChild(notification)
+
+    setTimeout(() => {
+      notification.remove()
+    }, 5000)
+  }
+
+  showErrorNotification(message) {
+    // Create a temporary error notification
+    const notification = document.createElement("div")
+    notification.className = "fixed top-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 flex items-center gap-2"
+    notification.innerHTML = `
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+      </svg>
+      <span>${message}</span>
+    `
+    document.body.appendChild(notification)
+
+    setTimeout(() => {
+      notification.remove()
+    }, 5000)
   }
 
   switchToGridView() {

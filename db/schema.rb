@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2025_11_10_192525) do
+ActiveRecord::Schema[8.1].define(version: 2025_11_12_000000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "vector"
@@ -131,6 +131,20 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_10_192525) do
     t.index ["user_id"], name: "index_export_jobs_on_user_id"
   end
 
+  create_table "extraction_results", force: :cascade do |t|
+    t.bigint "clothing_analysis_id", null: false
+    t.datetime "created_at", null: false
+    t.bigint "extracted_image_blob_id"
+    t.decimal "extraction_quality", precision: 3, scale: 2
+    t.jsonb "item_data", default: {}
+    t.string "status", default: "pending", null: false
+    t.datetime "updated_at", null: false
+    t.index ["clothing_analysis_id"], name: "index_extraction_results_on_clothing_analysis_id"
+    t.index ["created_at"], name: "index_extraction_results_on_created_at"
+    t.index ["extracted_image_blob_id"], name: "index_extraction_results_on_extracted_image_blob_id"
+    t.index ["status"], name: "index_extraction_results_on_status"
+  end
+
   create_table "failed_login_attempts", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.datetime "failed_at", null: false
@@ -146,8 +160,11 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_10_192525) do
     t.integer "brand_id"
     t.integer "category_id", null: false
     t.bigint "clothing_analysis_id"
+    t.string "comfyui_prompt_id"
+    t.string "comfyui_status", default: "pending"
     t.datetime "created_at", null: false
     t.text "description"
+    t.text "edit_prompt"
     t.vector "embedding_vector", limit: 1536
     t.datetime "last_worn_at"
     t.json "metadata", default: {}
@@ -166,6 +183,7 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_10_192525) do
     t.index ["brand_id"], name: "index_inventory_items_on_brand_id"
     t.index ["category_id"], name: "index_inventory_items_on_category_id"
     t.index ["clothing_analysis_id"], name: "index_inventory_items_on_clothing_analysis_id"
+    t.index ["comfyui_prompt_id"], name: "index_inventory_items_on_comfyui_prompt_id"
     t.index ["created_at"], name: "index_inventory_items_on_created_at"
     t.index ["embedding_vector"], name: "index_inventory_items_on_embedding_vector", opclass: :vector_cosine_ops, using: :hnsw
     t.index ["last_worn_at"], name: "index_inventory_items_on_last_worn_at"
@@ -347,6 +365,7 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_10_192525) do
   add_foreign_key "chats", "users"
   add_foreign_key "clothing_analyses", "users"
   add_foreign_key "export_jobs", "users"
+  add_foreign_key "extraction_results", "clothing_analyses"
   add_foreign_key "failed_login_attempts", "users"
   add_foreign_key "inventory_items", "brands"
   add_foreign_key "inventory_items", "categories"

@@ -2,6 +2,7 @@ class ClothingAnalysis < ApplicationRecord
   # Associations
   belongs_to :user
   has_many :inventory_items, dependent: :nullify
+  has_many :extraction_results, dependent: :destroy
 
   # Validations
   validates :image_blob_id, presence: true

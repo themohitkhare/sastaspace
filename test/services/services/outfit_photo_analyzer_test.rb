@@ -314,6 +314,243 @@ module Services
       assert_equal 2, result["items"].length
     end
 
+    test "parse_analysis_response handles JSON::ParserError" do
+      invalid_json = '{"invalid": json}'
+      Rails.logger.stubs(:error)
+
+      result = @analyzer.send(:parse_analysis_response, invalid_json)
+
+      assert_equal 0, result["total_items"]
+      assert_equal [], result["items"]
+      assert result["parse_error"]
+      assert result["error"].present?
+    end
+
+    test "parse_analysis_response logs warning when no JSON found" do
+      text = "Plain text without JSON"
+      log_messages = []
+      Rails.logger.stubs(:warn).with { |msg| log_messages << msg; true }
+
+      result = @analyzer.send(:parse_analysis_response, text)
+
+      assert_equal 0, result["total_items"]
+      warn_log = log_messages.find { |msg| msg.include?("Could not parse JSON") }
+      assert warn_log.present?, "Should log warning"
+    end
+
+    test "check_ollama_availability! raises error when connection refused" do
+      Net::HTTP.stubs(:new).raises(Errno::ECONNREFUSED.new("Connection refused"))
+      Rails.logger.stubs(:error)
+
+      assert_raises(StandardError) do
+        @analyzer.send(:check_ollama_availability!)
+      end
+    end
+
+    test "check_ollama_availability! raises error when timeout" do
+      http_mock = mock
+      http_mock.stubs(:open_timeout=)
+      http_mock.stubs(:read_timeout=)
+      http_mock.stubs(:get).raises(Net::ReadTimeout.new("Timeout"))
+      Net::HTTP.stubs(:new).returns(http_mock)
+      Rails.logger.stubs(:error)
+
+      assert_raises(StandardError) do
+        @analyzer.send(:check_ollama_availability!)
+      end
+    end
+
+    test "check_ollama_availability! raises error when model not found" do
+      http_mock = mock
+      http_mock.stubs(:open_timeout=)
+      http_mock.stubs(:read_timeout=)
+      response_mock = mock
+      response_mock.stubs(:code).returns("200")
+      response_mock.stubs(:body).returns({ "models" => [] }.to_json)
+      http_mock.stubs(:get).returns(response_mock)
+      Net::HTTP.stubs(:new).returns(http_mock)
+      Rails.logger.stubs(:warn)
+
+      assert_raises(StandardError) do
+        @analyzer.send(:check_ollama_availability!)
+      end
+    end
+
+    test "check_ollama_availability! raises error when API returns non-200" do
+      http_mock = mock
+      http_mock.stubs(:open_timeout=)
+      http_mock.stubs(:read_timeout=)
+      response_mock = mock
+      response_mock.stubs(:code).returns("500")
+      http_mock.stubs(:get).returns(response_mock)
+      Net::HTTP.stubs(:new).returns(http_mock)
+      Rails.logger.stubs(:error)
+
+      assert_raises(StandardError) do
+        @analyzer.send(:check_ollama_availability!)
+      end
+    end
+
+    test "check_ollama_availability! handles JSON parse error" do
+      http_mock = mock
+      http_mock.stubs(:open_timeout=)
+      http_mock.stubs(:read_timeout=)
+      response_mock = mock
+      response_mock.stubs(:code).returns("200")
+      response_mock.stubs(:body).returns("invalid json")
+      http_mock.stubs(:get).returns(response_mock)
+      Net::HTTP.stubs(:new).returns(http_mock)
+      Rails.logger.stubs(:error)
+
+      assert_raises(StandardError) do
+        @analyzer.send(:check_ollama_availability!)
+      end
+    end
+
+    test "find_matching_brand returns nil when no match" do
+      result = @analyzer.send(:find_matching_brand, "nonexistent_brand_xyz")
+
+      assert_nil result
+    end
+
+    test "find_matching_brand handles blank input" do
+      result = @analyzer.send(:find_matching_brand, "")
+
+      assert_nil result
+    end
+
+    test "find_matching_brand handles nil input" do
+      result = @analyzer.send(:find_matching_brand, nil)
+
+      assert_nil result
+    end
+
+    test "find_matching_brand finds fuzzy match" do
+      brand = create(:brand, name: "Nike")
+      result = @analyzer.send(:find_matching_brand, "nike sportswear")
+
+      assert_equal brand, result
+    end
+
+    test "find_matching_brand finds partial match" do
+      brand = create(:brand, name: "Nike")
+      result = @analyzer.send(:find_matching_brand, "nik")
+
+      assert_equal brand, result
+    end
+
+    test "enhance_item_with_matching sets brand_suggested when brand not found" do
+      item_data = {
+        "category_name" => "T-Shirt",
+        "brand_name" => "Unknown Brand",
+        "description" => "Test",
+        "name" => "Test Item"
+      }
+
+      enhanced = @analyzer.send(:enhance_item_with_matching, item_data)
+
+      assert_nil enhanced["brand_id"]
+      assert_equal "Unknown Brand", enhanced["brand_suggested"]
+    end
+
+    test "analyze handles parse_error in results" do
+      @analyzer.stubs(:check_ollama_availability!)
+      @analyzer.stubs(:perform_analysis).returns({
+        "parse_error" => true,
+        "total_items" => 0,
+        "items" => []
+      })
+      Rails.logger.stubs(:warn)
+
+      results = @analyzer.analyze
+
+      assert_equal 0, results["total_items"]
+      assert_equal [], results["items"]
+    end
+
+    test "analyze handles zero total_items" do
+      @analyzer.stubs(:check_ollama_availability!)
+      @analyzer.stubs(:perform_analysis).returns({
+        "total_items" => 0,
+        "items" => []
+      })
+      Rails.logger.stubs(:warn)
+
+      results = @analyzer.analyze
+
+      assert_equal 0, results["total_items"]
+    end
+
+    test "perform_analysis handles empty response from AI" do
+      mock_chat = stub
+      mock_message = stub(content: nil)
+      mock_chat.stubs(:ask).returns(mock_message)
+      mock_chat.stubs(:id).returns(1)
+      Chat.stubs(:create!).returns(mock_chat)
+      stub_ollama_available
+
+      @image_blob.stubs(:download).returns("fake image data")
+      @image_blob.stubs(:content_type).returns("image/jpeg")
+      @image_blob.stubs(:filename).returns(stub(extension_with_delimiter: ".jpg"))
+      mock_service = stub
+      mock_service.stubs(:respond_to?).with(:path_for).returns(false)
+      @image_blob.stubs(:service).returns(mock_service)
+      Rails.logger.stubs(:error)
+
+      assert_raises(StandardError) do
+        @analyzer.send(:perform_analysis)
+      end
+    end
+
+    test "perform_analysis handles connection errors" do
+      mock_chat = stub
+      mock_chat.stubs(:ask).raises(StandardError.new("Connection refused"))
+      mock_chat.stubs(:id).returns(1)
+      Chat.stubs(:create!).returns(mock_chat)
+      stub_ollama_available
+
+      @image_blob.stubs(:download).returns("fake image data")
+      @image_blob.stubs(:content_type).returns("image/jpeg")
+      @image_blob.stubs(:filename).returns(stub(extension_with_delimiter: ".jpg"))
+      mock_service = stub
+      mock_service.stubs(:respond_to?).with(:path_for).returns(false)
+      @image_blob.stubs(:service).returns(mock_service)
+      Rails.logger.stubs(:error)
+
+      assert_raises(StandardError) do
+        @analyzer.send(:perform_analysis)
+      end
+    end
+
+    test "find_matching_category returns nil when no match" do
+      result = @analyzer.send(:find_matching_category, "nonexistent_category_xyz")
+
+      assert_nil result
+    end
+
+    test "find_matching_category handles blank input" do
+      result = @analyzer.send(:find_matching_category, "")
+
+      assert_nil result
+    end
+
+    test "find_matching_category handles nil input" do
+      result = @analyzer.send(:find_matching_category, nil)
+
+      assert_nil result
+    end
+
+    test "analyze handles ArgumentError and returns error response" do
+      @analyzer.stubs(:check_ollama_availability!).raises(ArgumentError.new("Invalid argument"))
+      Rails.logger.stubs(:error)
+
+      results = @analyzer.analyze
+
+      assert results["error"].present?
+      assert results["error"].include?("Invalid request")
+      assert_equal 0, results["total_items"]
+    end
+
     private
 
     def stub_ollama_available

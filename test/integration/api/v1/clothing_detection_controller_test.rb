@@ -1,6 +1,7 @@
 require "test_helper"
 
 class Api::V1::ClothingDetectionControllerTest < ActionDispatch::IntegrationTest
+  include ActiveJob::TestHelper
   # Helper to check if Ollama is available
   def ollama_available?
     return false unless ENV["ENABLE_OLLAMA_TESTS"] == "true"
@@ -31,42 +32,21 @@ class Api::V1::ClothingDetectionControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "POST /api/v1/clothing_detection/analyze accepts image upload" do
-    # Stub the service to avoid Ollama call
-    ClothingDetectionService.any_instance.stubs(:check_ollama_availability!)
-    ClothingDetectionService.any_instance.stubs(:perform_analysis).returns({
-      "total_items_detected" => 2,
-      "people_count" => 1,
-      "items" => [
-        {
-          "id" => "item_001",
-          "item_name" => "Blue Shirt",
-          "gender_styling" => "men",
-          "confidence" => 0.9
-        },
-        {
-          "id" => "item_002",
-          "item_name" => "Black Jeans",
-          "gender_styling" => "unisex",
-          "confidence" => 0.85
-        }
-      ]
-    })
+    # The controller now queues a background job instead of processing synchronously
+    assert_enqueued_with(job: ClothingDetectionJob) do
+      post "/api/v1/clothing_detection/analyze",
+           params: { image: @image_file },
+           headers: auth_headers(@token)
+    end
 
-    ClothingAnalysis.any_instance.stubs(:id).returns(123)
-
-    post "/api/v1/clothing_detection/analyze",
-         params: { image: @image_file },
-         headers: auth_headers(@token)
-
-    assert_response :ok
+    assert_response :accepted
     body = json_response
     assert body["success"]
-    assert_equal 2, body["data"]["total_items_detected"]
-    assert_equal 1, body["data"]["people_count"]
-    assert_equal 2, body["data"]["items"].length
-    assert body["data"]["analysis_id"].present?
+    assert body["data"]["job_id"].present?
     assert body["data"]["blob_id"].present?
-    assert body["data"]["confidence"].present?
+    assert body["data"]["user_id"].present?
+    assert_equal "processing", body["data"]["status"]
+    assert_equal "Clothing detection job queued successfully", body["data"]["message"]
   end
 
   test "POST /api/v1/clothing_detection/analyze rejects missing image" do
@@ -101,21 +81,23 @@ class Api::V1::ClothingDetectionControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "POST /api/v1/clothing_detection/analyze handles service errors gracefully" do
-    ClothingDetectionService.any_instance.stubs(:check_ollama_availability!)
-    ClothingDetectionService.any_instance.stubs(:perform_analysis).returns({
-      "error" => "Test error",
-      "items" => [],
-      "total_items_detected" => 0
-    })
+    # Since processing is now asynchronous, service errors occur in the background job
+    # The controller should successfully queue the job even if the service will fail later
+    # Service errors are handled in ClothingDetectionJob and broadcast via WebSocket
+    # This test verifies that errors during blob creation (which happens in the controller) are handled
+    Services::BlobDeduplicationService.stubs(:find_or_create_blob).raises(StandardError.new("Blob creation failed"))
 
-    post "/api/v1/clothing_detection/analyze",
-         params: { image: @image_file },
-         headers: auth_headers(@token)
+    assert_no_enqueued_jobs(only: ClothingDetectionJob) do
+      post "/api/v1/clothing_detection/analyze",
+           params: { image: @image_file },
+           headers: auth_headers(@token)
+    end
 
-    assert_response :unprocessable_entity
+    assert_response :internal_server_error
     body = json_response
     assert_not body["success"]
     assert_equal "DETECTION_ERROR", body["error"]["code"]
+    assert body["error"]["message"].include?("Failed to analyze image")
   end
 
   test "POST /api/v1/clothing_detection/analyze with real Ollama" do

@@ -7,9 +7,10 @@ class AnalyzeImageForCreationJob < ApplicationJob
   end
 
   def perform(image_blob_id, user_id, job_id)
+    # Set job_id FIRST so rescue block can update status
+    @job_id = job_id
     @image_blob = ActiveStorage::Blob.find(image_blob_id)
     @user = User.find(user_id)
-    @job_id = job_id
 
     Rails.logger.info "Starting image analysis for inventory creation (job: #{job_id})"
 

@@ -149,7 +149,7 @@ module Authenticable
     begin
       decoded_token = Auth::JsonWebToken.decode(token)
       @current_user = User.find(decoded_token[:user_id])
-    rescue ActiveRecord::RecordNotFound, JWT::DecodeError, JWT::ExpiredSignature
+    rescue ActiveRecord::RecordNotFound, JWT::DecodeError, JWT::ExpiredSignature, ExceptionHandler::InvalidToken, ExceptionHandler::ExpiredToken
       # Silently ignore authentication errors for optional auth
       @current_user = nil
     end

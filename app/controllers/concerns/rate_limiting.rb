@@ -5,7 +5,9 @@ module RateLimiting
 
   included do
     # Rate limit by default (can be overridden per controller)
-    before_action :check_rate_limit, if: :rate_limiting_enabled?
+    if respond_to?(:before_action)
+      before_action :check_rate_limit, if: :rate_limiting_enabled?
+    end
   end
 
   class_methods do
