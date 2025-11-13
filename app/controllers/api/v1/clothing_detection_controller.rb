@@ -64,40 +64,25 @@ module Api
             content_type: image.content_type
           )
 
-          # Perform clothing detection analysis
-          detection_service = ClothingDetectionService.new(
-            image_blob: blob,
-            user: current_user
+          # Queue background job for clothing detection
+          job = ClothingDetectionJob.perform_later(
+            blob.id,
+            current_user.id,
+            model_name: params[:model_name] || "qwen3-vl:8b"
           )
 
-          results = detection_service.analyze
-
-          # Check if analysis failed
-          if results["error"].present?
-            return render json: {
-              success: false,
-              error: {
-                code: "DETECTION_ERROR",
-                message: results["error"]
-              },
-              timestamp: Time.current.iso8601
-            }, status: :unprocessable_entity
-          end
-
-          # Success - return detection results
+          # Return immediately with job ID for tracking
           render json: {
             success: true,
             data: {
-              analysis_id: results["analysis_id"],
+              job_id: job.job_id,
               blob_id: blob.id,
-              total_items_detected: results["total_items_detected"] || 0,
-              people_count: results["people_count"] || 0,
-              items: results["items"] || [],
-              confidence: results["items"]&.map { |item| item["confidence"] || 0.0 }&.then { |confidences| confidences.any? ? (confidences.sum.to_f / confidences.length).round(2) : nil }
+              user_id: current_user.id,
+              status: "processing",
+              message: "Clothing detection job queued successfully"
             },
-            message: "Clothing detection completed successfully",
             timestamp: Time.current.iso8601
-          }, status: :ok
+          }, status: :accepted
         rescue ArgumentError => e
           Rails.logger.error "Invalid arguments for clothing detection: #{e.message}"
           render json: {

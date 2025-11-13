@@ -44,20 +44,20 @@ class ExportUserDataJob < ApplicationJob
       FileUtils.mkdir_p(images_dir)
 
       # Collect and download all images
+      # Eager load attachments to avoid N+1 queries
       image_index = 0
-      user.inventory_items.each do |item|
+      user.inventory_items.with_attached_primary_image.with_attached_additional_images.each do |item|
         # Primary image
         if item.primary_image.attached?
           image_index += 1
           download_image(item.primary_image, images_dir, "item_#{item.id}_primary_#{image_index}")
         end
 
-        # Additional images
-        if item.additional_images.attached?
-          item.additional_images.each_with_index do |image, idx|
-            image_index += 1
-            download_image(image, images_dir, "item_#{item.id}_additional_#{idx + 1}_#{image_index}")
-          end
+        # Additional images - directly iterate over the collection
+        # with_attached_additional_images ensures they're loaded
+        item.additional_images.each_with_index do |image, idx|
+          image_index += 1
+          download_image(image, images_dir, "item_#{item.id}_additional_#{idx + 1}_#{image_index}")
         end
       end
 
@@ -221,11 +221,20 @@ class ExportUserDataJob < ApplicationJob
   end
 
   def download_image(attachment, target_dir, base_name)
-    return unless attachment.attached?
+    # attachment can be either ActiveStorage::Attached::One or ActiveStorage::Attachment
+    # Check if it's already an Attachment record or if it needs .attached? check
+    if attachment.is_a?(ActiveStorage::Attachment)
+      # It's already an attachment record, just use it
+      actual_attachment = attachment
+    else
+      # It's an Attached::One, check if attached
+      return unless attachment.attached?
+      actual_attachment = attachment
+    end
 
     # Get file extension from content type or filename
-    extension = if attachment.content_type
-                  case attachment.content_type
+    extension = if actual_attachment.content_type
+                  case actual_attachment.content_type
                   when "image/jpeg", "image/jpg"
                     ".jpg"
                   when "image/png"
@@ -235,17 +244,17 @@ class ExportUserDataJob < ApplicationJob
                   when "image/gif"
                     ".gif"
                   else
-                    File.extname(attachment.filename.to_s) || ".jpg"
+                    File.extname(actual_attachment.filename.to_s) || ".jpg"
                   end
     else
-                  File.extname(attachment.filename.to_s) || ".jpg"
+                  File.extname(actual_attachment.filename.to_s) || ".jpg"
     end
 
     filename = "#{base_name}#{extension}"
     file_path = File.join(target_dir, filename)
 
     # Download the blob content and write to file
-    image_data = attachment.blob.download
+    image_data = actual_attachment.blob.download
     File.binwrite(file_path, image_data)
 
     Rails.logger.debug "Downloaded image for export: #{filename}"

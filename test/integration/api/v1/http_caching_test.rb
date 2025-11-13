@@ -207,6 +207,198 @@ module Api
         assert_match(/must-revalidate/, @response.headers["Cache-Control"])
       end
 
+      test "set_cache_headers with public option sets public Cache-Control" do
+        # This would need to be tested through a controller that uses HttpCaching
+        # For now, test the method directly
+        controller = Api::V1::InventoryItemsController.new
+        controller.instance_variable_set(:@inventory_item, @inventory_item)
+        controller.instance_variable_set(:@_request, ActionDispatch::TestRequest.create)
+        controller.instance_variable_set(:@_response, ActionDispatch::TestResponse.new)
+
+        result = controller.send(:set_cache_headers, @inventory_item, public: true)
+
+        assert_match(/public/, controller.response.headers["Cache-Control"])
+      end
+
+      test "set_cache_headers with must_revalidate false" do
+        controller = Api::V1::InventoryItemsController.new
+        controller.instance_variable_set(:@inventory_item, @inventory_item)
+        controller.instance_variable_set(:@_request, ActionDispatch::TestRequest.create)
+        controller.instance_variable_set(:@_response, ActionDispatch::TestResponse.new)
+
+        controller.send(:set_cache_headers, @inventory_item, must_revalidate: false)
+
+        cache_control = controller.response.headers["Cache-Control"]
+        refute_match(/must-revalidate/, cache_control)
+      end
+
+      test "generate_etag for single resource includes checksum" do
+        controller = Api::V1::InventoryItemsController.new
+        controller.instance_variable_set(:@inventory_item, @inventory_item)
+
+        etag = controller.send(:generate_etag, @inventory_item)
+
+        assert etag.present?
+        assert_includes etag, "inventoryitem"
+        assert_includes etag, @inventory_item.id.to_s
+      end
+
+      test "generate_etag for relation uses max updated_at" do
+        controller = Api::V1::InventoryItemsController.new
+        relation = InventoryItem.where(user: @user)
+
+        etag = controller.send(:generate_etag, relation)
+
+        assert etag.present?
+        assert_includes etag, "inventoryitem"
+        assert_includes etag, "collection"
+      end
+
+      test "generate_etag for array combines ETags" do
+        controller = Api::V1::InventoryItemsController.new
+        items = [ @inventory_item, create(:inventory_item, user: @user) ]
+
+        etag = controller.send(:generate_etag, items)
+
+        assert etag.present?
+        assert_equal 16, etag.length # MD5 hex digest truncated to 16 chars
+      end
+
+      test "generate_etag returns nil for unsupported type" do
+        controller = Api::V1::InventoryItemsController.new
+
+        etag = controller.send(:generate_etag, "string")
+
+        assert_nil etag
+      end
+
+      test "generate_etag for relation returns nil when no records" do
+        controller = Api::V1::InventoryItemsController.new
+        relation = InventoryItem.where(user: create(:user))
+
+        etag = controller.send(:generate_etag, relation)
+
+        assert_nil etag
+      end
+
+      test "generate_etag for empty array returns nil" do
+        controller = Api::V1::InventoryItemsController.new
+
+        etag = controller.send(:generate_etag, [])
+
+        assert_nil etag
+      end
+
+      test "get_last_modified for single resource" do
+        controller = Api::V1::InventoryItemsController.new
+
+        last_modified = controller.send(:get_last_modified, @inventory_item)
+
+        assert_equal @inventory_item.updated_at, last_modified
+      end
+
+      test "get_last_modified for relation" do
+        controller = Api::V1::InventoryItemsController.new
+        relation = InventoryItem.where(user: @user)
+
+        last_modified = controller.send(:get_last_modified, relation)
+
+        assert_equal relation.maximum(:updated_at), last_modified
+      end
+
+      test "get_last_modified for array" do
+        controller = Api::V1::InventoryItemsController.new
+        item2 = create(:inventory_item, user: @user)
+        items = [ @inventory_item, item2 ]
+
+        last_modified = controller.send(:get_last_modified, items)
+
+        expected = [ @inventory_item.updated_at, item2.updated_at ].max
+        assert_equal expected, last_modified
+      end
+
+      test "get_last_modified for array with items without updated_at" do
+        controller = Api::V1::InventoryItemsController.new
+        items = [ @inventory_item, "string" ]
+
+        last_modified = controller.send(:get_last_modified, items)
+
+        assert_equal @inventory_item.updated_at, last_modified
+      end
+
+      test "get_last_modified returns nil for unsupported type" do
+        controller = Api::V1::InventoryItemsController.new
+
+        last_modified = controller.send(:get_last_modified, "string")
+
+        assert_nil last_modified
+      end
+
+      test "get_last_modified returns nil for empty array" do
+        controller = Api::V1::InventoryItemsController.new
+
+        last_modified = controller.send(:get_last_modified, [])
+
+        assert_nil last_modified
+      end
+
+      test "fresh_request? sets headers and checks freshness" do
+        controller = Api::V1::InventoryItemsController.new
+        controller.instance_variable_set(:@inventory_item, @inventory_item)
+        request = ActionDispatch::TestRequest.create
+        controller.instance_variable_set(:@_request, request)
+        controller.instance_variable_set(:@_response, ActionDispatch::TestResponse.new)
+
+        fresh = controller.send(:fresh_request?, @inventory_item)
+
+        assert fresh.is_a?(TrueClass) || fresh.is_a?(FalseClass)
+        assert controller.response.headers["ETag"].present?
+      end
+
+      test "set_cache_headers returns true when request is fresh" do
+        controller = Api::V1::InventoryItemsController.new
+        controller.instance_variable_set(:@inventory_item, @inventory_item)
+        request = ActionDispatch::TestRequest.create
+        controller.instance_variable_set(:@_request, request)
+        controller.instance_variable_set(:@_response, ActionDispatch::TestResponse.new)
+
+        # Set ETag first
+        etag = controller.send(:generate_etag, @inventory_item)
+        request.headers["If-None-Match"] = %("#{etag}")
+
+        result = controller.send(:set_cache_headers, @inventory_item)
+
+        assert_equal true, result
+        assert_equal 304, controller.response.status
+      end
+
+      test "set_cache_headers returns false when request is not fresh" do
+        controller = Api::V1::InventoryItemsController.new
+        controller.instance_variable_set(:@inventory_item, @inventory_item)
+        request = ActionDispatch::TestRequest.create
+        controller.instance_variable_set(:@_request, request)
+        controller.instance_variable_set(:@_response, ActionDispatch::TestResponse.new)
+
+        result = controller.send(:set_cache_headers, @inventory_item)
+
+        assert_equal false, result
+        assert controller.response.headers["ETag"].present?
+      end
+
+      test "generate_etag changes when resource attributes change" do
+        controller = Api::V1::InventoryItemsController.new
+        controller.instance_variable_set(:@inventory_item, @inventory_item)
+
+        etag1 = controller.send(:generate_etag, @inventory_item)
+
+        @inventory_item.update(name: "New Name #{SecureRandom.hex(4)}")
+        @inventory_item.reload
+
+        etag2 = controller.send(:generate_etag, @inventory_item)
+
+        assert_not_equal etag1, etag2, "ETag should change when resource is updated"
+      end
+
       private
 
       def api_v1_headers(token = nil)

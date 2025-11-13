@@ -50,7 +50,12 @@ module HttpCaching
       key_attrs = resource.attributes.slice("name", "title", "description").to_json
       checksum = Digest::MD5.hexdigest("#{resource.class.name}-#{resource.id}-#{timestamp}-#{key_attrs}")
       "#{resource.class.name.downcase}-#{resource.id}-#{checksum[0..7]}"
-    elsif resource.respond_to?(:maximum)
+    elsif resource.is_a?(Array)
+      # Array of resources: combine ETags (check Array before Relation to avoid conflicts)
+      etags = resource.map { |r| generate_etag(r) }.compact
+      return nil if etags.empty?
+      Digest::MD5.hexdigest(etags.join("-"))[0..15]
+    elsif resource.respond_to?(:maximum) && resource.respond_to?(:klass)
       # ActiveRecord::Relation: use max updated_at
       max_updated = resource.maximum(:updated_at)
       return nil unless max_updated
@@ -58,11 +63,6 @@ module HttpCaching
       count = resource.count
       checksum = Digest::MD5.hexdigest("#{resource.klass.name}-#{count}-#{timestamp}")
       "#{resource.klass.name.downcase}-collection-#{checksum[0..7]}"
-    elsif resource.is_a?(Array)
-      # Array of resources: combine ETags
-      etags = resource.map { |r| generate_etag(r) }.compact
-      return nil if etags.empty?
-      Digest::MD5.hexdigest(etags.join("-"))[0..15]
     else
       nil
     end
@@ -72,10 +72,12 @@ module HttpCaching
   def get_last_modified(resource)
     if resource.is_a?(ActiveRecord::Base)
       resource.updated_at
-    elsif resource.respond_to?(:maximum)
-      resource.maximum(:updated_at)
     elsif resource.is_a?(Array) && resource.any?
+      # Array of resources: get max updated_at (check Array before Relation to avoid conflicts)
       resource.map { |r| r.respond_to?(:updated_at) ? r.updated_at : nil }.compact.max
+    elsif resource.respond_to?(:maximum) && resource.respond_to?(:klass)
+      # ActiveRecord::Relation: use max updated_at
+      resource.maximum(:updated_at)
     else
       nil
     end

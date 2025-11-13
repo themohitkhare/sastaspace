@@ -248,6 +248,230 @@ module Api
 
         assert_nil primary_image, "Primary image should be nil when not attached"
       end
+
+      test "serialize_category returns nil for nil category" do
+        result = @serializer.send(:serialize_category, nil)
+
+        assert_nil result
+      end
+
+      test "serialize_brand handles brand with nil description" do
+        brand = create(:brand, description: nil)
+        item = create(:inventory_item, brand: brand)
+        serializer = InventoryItemSerializer.new(item)
+
+        result = serializer.send(:serialize_brand, brand)
+
+        assert_equal brand.id, result[:id]
+        assert_equal brand.name, result[:name]
+        assert_nil result[:description]
+      end
+
+      test "serialize_tag handles tag with nil color" do
+        tag = create(:tag, color: nil)
+        @inventory_item.tags << tag
+
+        result = @serializer.send(:serialize_tag, tag)
+
+        assert_equal tag.id, result[:id]
+        assert_equal tag.name, result[:name]
+        assert_nil result[:color]
+      end
+
+      test "serialize_image_with_variants handles image serialization errors gracefully" do
+        @inventory_item.primary_image.attach(
+          io: File.open(Rails.root.join("test", "fixtures", "files", "sample_image.jpg")),
+          filename: "test.jpg",
+          content_type: "image/jpeg"
+        )
+
+        # Mock image methods to raise errors
+        @inventory_item.primary_image.stubs(:id).raises(StandardError.new("ID error"))
+        Rails.logger.stubs(:warn)
+
+        result = @serializer.send(:serialize_image_with_variants, @inventory_item.primary_image)
+
+        assert_not_nil result
+        assert_nil result[:id]
+        assert_nil result[:filename]
+        assert_not_nil result[:urls]
+      end
+
+      test "serialize_image_with_variants handles nil image" do
+        result = @serializer.send(:serialize_image_with_variants, nil)
+
+        assert_nil result
+      end
+
+      test "url_for returns nil when attachment not attached" do
+        unattached = @inventory_item.primary_image
+        result = @serializer.send(:url_for, unattached)
+
+        assert_nil result
+      end
+
+      test "url_for handles rails_blob_url errors" do
+        @inventory_item.primary_image.attach(
+          io: File.open(Rails.root.join("test", "fixtures", "files", "sample_image.jpg")),
+          filename: "test.jpg",
+          content_type: "image/jpeg"
+        )
+
+        Rails.application.routes.url_helpers.stubs(:rails_blob_url).raises(StandardError.new("URL error"))
+        Rails.logger.stubs(:warn)
+
+        result = @serializer.send(:url_for, @inventory_item.primary_image)
+
+        # Should try fallback url_for
+        assert result.nil? || result.is_a?(String)
+      end
+
+      test "url_for handles url_for fallback errors" do
+        @inventory_item.primary_image.attach(
+          io: File.open(Rails.root.join("test", "fixtures", "files", "sample_image.jpg")),
+          filename: "test.jpg",
+          content_type: "image/jpeg"
+        )
+
+        Rails.application.routes.url_helpers.stubs(:rails_blob_url).raises(StandardError.new("URL error"))
+        Rails.application.routes.url_helpers.stubs(:url_for).raises(StandardError.new("Fallback error"))
+        Rails.logger.stubs(:warn)
+
+        result = @serializer.send(:url_for, @inventory_item.primary_image)
+
+        assert_nil result
+      end
+
+      test "safe_variant_url returns nil when image not attached" do
+        unattached = @inventory_item.primary_image
+        result = @serializer.send(:safe_variant_url, unattached, [ 150, 150 ])
+
+        assert_nil result
+      end
+
+      test "safe_variant_url handles variant creation errors" do
+        @inventory_item.primary_image.attach(
+          io: File.open(Rails.root.join("test", "fixtures", "files", "sample_image.jpg")),
+          filename: "test.jpg",
+          content_type: "image/jpeg"
+        )
+
+        @inventory_item.primary_image.stubs(:variant).raises(LoadError.new("VIPS not available"))
+        Rails.logger.stubs(:debug)
+
+        result = @serializer.send(:safe_variant_url, @inventory_item.primary_image, [ 150, 150 ])
+
+        assert_nil result
+      end
+
+      test "safe_variant_url handles variant URL generation errors" do
+        @inventory_item.primary_image.attach(
+          io: File.open(Rails.root.join("test", "fixtures", "files", "sample_image.jpg")),
+          filename: "test.jpg",
+          content_type: "image/jpeg"
+        )
+
+        variant_mock = mock
+        variant_mock.stubs(:processed).returns(true)
+        @inventory_item.primary_image.stubs(:variant).returns(variant_mock)
+        Rails.application.routes.url_helpers.stubs(:rails_representation_url).raises(StandardError.new("URL error"))
+        Rails.logger.stubs(:debug)
+
+        result = @serializer.send(:safe_variant_url, @inventory_item.primary_image, [ 150, 150 ])
+
+        assert_nil result
+      end
+
+      test "as_json handles StandardError and re-raises" do
+        @serializer.stubs(:serialize_category).raises(StandardError.new("Serialization error"))
+        Rails.logger.stubs(:error)
+
+        assert_raises(StandardError) do
+          @serializer.as_json
+        end
+      end
+
+      test "as_json logs error with backtrace" do
+        @serializer.stubs(:serialize_category).raises(StandardError.new("Serialization error"))
+        log_messages = []
+        Rails.logger.stubs(:error).with { |msg| log_messages << msg; true }
+
+        assert_raises(StandardError) do
+          @serializer.as_json
+        end
+
+        error_log = log_messages.find { |msg| msg.include?("Error in InventoryItemSerializer#as_json") }
+        assert error_log.present?, "Should log error"
+      end
+
+      test "default_host returns localhost when no config" do
+        original_host = Rails.application.config.action_controller.default_url_options[:host]
+        Rails.application.config.action_controller.default_url_options.delete(:host)
+        Rails.application.routes.default_url_options.delete(:host)
+
+        result = @serializer.send(:default_host)
+
+        assert_equal "localhost", result
+      ensure
+        Rails.application.config.action_controller.default_url_options[:host] = original_host if original_host
+      end
+
+      test "default_port returns 3000 in development" do
+        Rails.env.stubs(:development?).returns(true)
+        original_port = Rails.application.config.action_controller.default_url_options[:port]
+        Rails.application.config.action_controller.default_url_options.delete(:port)
+        Rails.application.routes.default_url_options.delete(:port)
+
+        result = @serializer.send(:default_port)
+
+        assert_equal 3000, result
+      ensure
+        Rails.application.config.action_controller.default_url_options[:port] = original_port if original_port
+        Rails.env.unstub(:development?)
+      end
+
+      test "default_protocol returns https in production" do
+        Rails.env.stubs(:production?).returns(true)
+
+        result = @serializer.send(:default_protocol)
+
+        assert_equal "https", result
+      ensure
+        Rails.env.unstub(:production?)
+      end
+
+      test "default_protocol returns http in non-production" do
+        Rails.env.stubs(:production?).returns(false)
+
+        result = @serializer.send(:default_protocol)
+
+        assert_equal "http", result
+      ensure
+        Rails.env.unstub(:production?)
+      end
+
+      test "should serialize item with nil category" do
+        # Create item with category, then stub category to return nil to test serializer behavior
+        item_with_category = create(:inventory_item, :clothing)
+
+        # Stub the category association to return nil (database constraint prevents actual nil)
+        item_with_category.stubs(:category).returns(nil)
+
+        serializer = InventoryItemSerializer.new(item_with_category)
+
+        serialized = serializer.as_json
+
+        assert_nil serialized[:category]
+      end
+
+      test "should serialize item with empty tags" do
+        item_without_tags = create(:inventory_item, :clothing, user: @user)
+        serializer = InventoryItemSerializer.new(item_without_tags)
+
+        serialized = serializer.as_json
+
+        assert_equal [], serialized[:tags]
+      end
     end
   end
 end

@@ -148,4 +148,128 @@ class ErrorHandlingTest < ActionDispatch::IntegrationTest
     # Request ID should be in response headers
     assert response.headers["X-Request-ID"].present?
   end
+
+  test "handle_record_not_found handles exception without model method" do
+    # Create a RecordNotFound exception that doesn't respond to model
+    # ActiveRecord::RecordNotFound doesn't have model/id methods by default
+    # The controller's set_inventory_item has its own rescue block
+    # So we need to test through index action instead
+    # But we need to ensure the request format is JSON so rescue_from catches it
+    exception = ActiveRecord::RecordNotFound.new("Custom message")
+
+    Api::V1::InventoryItemsController.any_instance.stubs(:index).raises(exception)
+
+    get "/api/v1/inventory_items", headers: api_v1_headers(@token).merge("Accept" => "application/json")
+
+    assert_response :not_found, "Should return 404, got #{response.status}: #{response.body[0..200]}"
+    # Ensure response is JSON, not HTML error page
+    assert_match(/application\/json/, response.content_type)
+    body = JSON.parse(response.body)
+    assert_equal "NOT_FOUND", body["error"]["code"]
+    assert body["error"]["details"].present?, "Details should be present"
+  end
+
+  test "handle_record_not_found handles exception without id method" do
+    exception = ActiveRecord::RecordNotFound.new("Custom message")
+    exception.stubs(:respond_to?).with(:model).returns(true)
+    exception.stubs(:respond_to?).with(:id).returns(false)
+    exception.stubs(:model).returns("User")
+
+    Api::V1::InventoryItemsController.any_instance.stubs(:show).raises(exception)
+
+    get "/api/v1/inventory_items/1", headers: api_v1_headers(@token)
+
+    assert_response :not_found
+    body = JSON.parse(response.body)
+    assert_equal "NOT_FOUND", body["error"]["code"]
+  end
+
+  test "handle_record_not_found uses message when details are empty" do
+    exception = ActiveRecord::RecordNotFound.new("Custom not found message")
+    # The controller's set_inventory_item has its own rescue block
+    # So we need to test through index action instead
+    # Ensure request format is JSON
+
+    Api::V1::InventoryItemsController.any_instance.stubs(:index).raises(exception)
+
+    get "/api/v1/inventory_items", headers: api_v1_headers(@token).merge("Accept" => "application/json")
+
+    assert_response :not_found, "Should return 404, got #{response.status}: #{response.body[0..200]}"
+    # Ensure response is JSON
+    assert_match(/application\/json/, response.content_type)
+    body = JSON.parse(response.body)
+    assert_equal "NOT_FOUND", body["error"]["code"]
+    assert body["error"]["details"].present?, "Details should be present in error response"
+    assert body["error"]["details"]["message"].present?, "Message should be present in details"
+    assert_equal "Custom not found message", body["error"]["details"]["message"]
+  end
+
+  test "handle_record_not_found uses default message when exception message is blank" do
+    # The controller's set_inventory_item has its own rescue block
+    # So we need to test through index action instead
+    # Ensure request format is JSON
+    exception = ActiveRecord::RecordNotFound.new("")
+    # Override message method to return blank string
+    exception.define_singleton_method(:message) { "" }
+
+    Api::V1::InventoryItemsController.any_instance.stubs(:index).raises(exception)
+
+    get "/api/v1/inventory_items", headers: api_v1_headers(@token).merge("Accept" => "application/json")
+
+    assert_response :not_found, "Should return 404, got #{response.status}: #{response.body[0..200]}"
+    # Ensure response is JSON
+    assert_match(/application\/json/, response.content_type)
+    body = JSON.parse(response.body)
+    assert_equal "NOT_FOUND", body["error"]["code"]
+    # When message is blank, should use default "Resource not found"
+    assert_equal "Resource not found", body["error"]["message"]
+  end
+
+  test "handle_standard_error excludes development backtrace in production" do
+    Rails.env.stubs(:production?).returns(true)
+    Rails.env.stubs(:development?).returns(false)
+    Api::V1::InventoryItemsController.any_instance.stubs(:index).raises(StandardError.new("Test"))
+
+    get "/api/v1/inventory_items", headers: api_v1_headers(@token)
+
+    assert_response :internal_server_error
+    body = JSON.parse(response.body)
+    assert_nil body["error"]["details"]
+  end
+
+  test "render_error includes details when provided" do
+    # Test through a controller that uses render_error
+    # The controller's set_inventory_item has its own rescue block that renders JSON
+    # So we need to test through a different action or stub differently
+    # Let's test by accessing a non-existent item - this will trigger the error handler
+    get "/api/v1/inventory_items/999999", headers: api_v1_headers(@token)
+
+    assert_response :not_found
+    # The response should be JSON (not HTML error page)
+    assert_match(/application\/json/, response.content_type)
+    body = JSON.parse(response.body)
+    assert body["error"]["details"].present?, "Details should be present in error response"
+  end
+
+  test "render_error excludes details when nil" do
+    # Test through standard error in production
+    Rails.env.stubs(:production?).returns(true)
+    Rails.env.stubs(:development?).returns(false)
+    Api::V1::InventoryItemsController.any_instance.stubs(:index).raises(StandardError.new("Test"))
+
+    get "/api/v1/inventory_items", headers: api_v1_headers(@token)
+
+    assert_response :internal_server_error
+    body = JSON.parse(response.body)
+    assert_nil body["error"]["details"]
+  end
+
+  test "current_request_id returns nil when request not available" do
+    # Test the method directly through a controller instance
+    controller = Api::V1::BaseController.new
+    controller.stubs(:respond_to?).with(:request).returns(false)
+
+    request_id = controller.send(:current_request_id)
+    assert_nil request_id
+  end
 end

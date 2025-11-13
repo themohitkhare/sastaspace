@@ -1,11 +1,35 @@
-<div data-controller="inventory" class="space-y-6">
+<div
+  data-controller="inventory"
+  <% if current_user %>
+    data-inventory-user-id-value="<%= current_user.id %>"
+  <% end %>
+  class="space-y-6"
+>
   <!-- Header with Actions -->
   <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-    <div>
-      <h1 class="text-3xl font-bold text-gray-900 dark:text-white">My Inventory</h1>
-      <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-        <%= @inventory_items.respond_to?(:total_count) ? pluralize(@inventory_items.total_count, 'item') : pluralize(@inventory_items.count, 'item') %>
-      </p>
+    <div class="flex items-center gap-3">
+      <div>
+        <h1 class="text-3xl font-bold text-gray-900 dark:text-white">My Inventory</h1>
+        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+          <%= @inventory_items.respond_to?(:total_count) ? pluralize(@inventory_items.total_count, 'item') : pluralize(@inventory_items.count, 'item') %>
+        </p>
+      </div>
+      <!-- Processing Indicator -->
+      <div
+        data-inventory-target="processingIndicator"
+        class="hidden flex items-center gap-2 px-3 py-1.5 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded-full"
+      >
+        <div class="relative">
+          <div class="animate-spin rounded-full h-3 w-3 border-2 border-blue-600 border-t-transparent"></div>
+          <div class="absolute inset-0 animate-ping rounded-full h-3 w-3 border border-blue-400 opacity-75"></div>
+        </div>
+        <span
+          data-inventory-target="processingMessage"
+          class="text-xs font-medium text-blue-700 dark:text-blue-300"
+        >
+          Processing items...
+        </span>
+      </div>
     </div>
     <div class="flex items-center gap-3">
       <!-- View Toggle -->

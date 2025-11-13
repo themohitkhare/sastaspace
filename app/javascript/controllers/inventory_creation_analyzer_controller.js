@@ -1,7 +1,8 @@
 import { Controller } from "@hotwired/stimulus"
+import { createConsumer } from "@rails/actioncable"
 
 // Connects to data-controller="inventory-creation-analyzer"
-// Updated to use clothing detection for multi-item detection
+// Updated to use clothing detection for multi-item detection with WebSocket updates
 export default class extends Controller {
   static targets = [
     "uploadArea",
@@ -17,7 +18,9 @@ export default class extends Controller {
     "reviewStep",
     "itemsGrid",
     "createButton",
-    "selectedItemsCount"
+    "selectedItemsCount",
+    "successStep",
+    "successMessage"
   ]
 
   connect() {
@@ -25,6 +28,26 @@ export default class extends Controller {
     this.analysisId = null
     this.detectedItems = []
     this.selectedItems = []
+    this.cable = null
+    this.detectionSubscription = null
+    this.jobId = null
+    this.userId = null
+  }
+
+  disconnect() {
+    this.unsubscribe()
+  }
+
+  unsubscribe() {
+    if (this.detectionSubscription) {
+      this.detectionSubscription.unsubscribe()
+      this.detectionSubscription = null
+    }
+
+    if (this.cable) {
+      this.cable.disconnect()
+      this.cable = null
+    }
   }
 
   triggerFileInput() {
@@ -76,17 +99,20 @@ export default class extends Controller {
     this.uploadPromptTarget.classList.add("hidden")
     this.hideError()
 
-    // Show loading state
-    this.showLoading()
-
-    // Upload and analyze
+    // Upload and queue job (no loading state - show queued immediately)
     try {
       await this.uploadAndAnalyze(file)
     } catch (error) {
       console.error("Error uploading file:", error)
-      const errorMessage = error.message || "Failed to analyze image. Please try again."
+      const errorMessage = error.message || "Failed to queue image processing. Please try again."
       this.showError(errorMessage)
-      this.hideLoading()
+      // Reset preview on error
+      if (this.hasImagePreviewTarget) {
+        this.imagePreviewTarget.classList.add("hidden")
+      }
+      if (this.hasUploadPromptTarget) {
+        this.uploadPromptTarget.classList.remove("hidden")
+      }
     }
   }
 
@@ -114,22 +140,199 @@ export default class extends Controller {
       throw new Error(data.error?.message || data.error?.code || "Failed to analyze image")
     }
 
-    // Store analysis data
+    // Store job and user info
     this.blobId = data.data.blob_id
-    this.analysisId = data.data.analysis_id
-    this.detectedItems = data.data.items || []
-    
-    console.log("Clothing detection completed. Detected items:", this.detectedItems.length)
+    this.jobId = data.data.job_id
+    this.userId = data.data.user_id
+
+    console.log("Clothing detection job queued. Job ID:", this.jobId)
     console.log("Full API response:", JSON.stringify(data, null, 2))
-    
-    // If no items detected, log for debugging
-    if (this.detectedItems.length === 0) {
-      console.warn("No items detected in image. API response:", data)
+
+    // Store job info in sessionStorage for inventory page (if user navigates there)
+    if (this.jobId && this.userId) {
+      sessionStorage.setItem('pending_detection_job', JSON.stringify({
+        job_id: this.jobId,
+        user_id: this.userId,
+        blob_id: this.blobId,
+        timestamp: Date.now()
+      }))
     }
-    
+
+    // Hide loading state immediately - don't make user wait
     this.hideLoading()
-    this.showReviewStep()
+
+    // Show success state immediately with "queued" message
+    this.showQueuedState()
+
+    // Set up WebSocket subscription to update message when complete (optional, non-blocking)
+    if (this.userId) {
+      this.setupWebSocketSubscription()
+    }
   }
+
+  setupWebSocketSubscription() {
+    if (!this.userId) {
+      console.error("Cannot set up WebSocket: user_id is missing")
+      return
+    }
+
+    // Create ActionCable consumer
+    this.cable = createConsumer()
+
+    // Subscribe to detection updates
+    this.detectionSubscription = this.cable.subscriptions.create(
+      {
+        channel: "AiProcessingChannel",
+        user_id: this.userId.toString()
+      },
+      {
+        received: (data) => this.handleDetectionUpdate(data),
+        connected: () => {
+          console.log("Connected to detection channel for user", this.userId)
+        },
+        disconnected: () => {
+          console.log("Disconnected from detection channel")
+        }
+      }
+    )
+  }
+
+  handleDetectionUpdate(data) {
+    console.log("Detection update received:", data)
+
+    switch (data.type) {
+      case "progress_update":
+        this.updateProgressMessage(data.message)
+        break
+
+      case "detection_complete":
+        this.handleDetectionComplete(data)
+        break
+
+      case "detection_error":
+        this.handleDetectionError(data.error)
+        break
+
+      default:
+        console.warn("Unknown detection update type:", data.type)
+    }
+  }
+
+  updateProgressMessage(message) {
+    // Update loading message if we have a progress target
+    if (this.hasLoadingStateTarget) {
+      const loadingText = this.loadingStateTarget.querySelector('p')
+      if (loadingText) {
+        loadingText.textContent = message
+      }
+    }
+  }
+
+  handleDetectionComplete(data) {
+    console.log("Detection completed:", data.items_detected, "items found,", data.created_items_count || 0, "items created")
+
+    // Unsubscribe from WebSocket
+    this.unsubscribe()
+
+    // Hide loading state
+    this.hideLoading()
+
+    // Show success state
+    this.showSuccessState(data.created_items_count || data.items_detected || 0)
+  }
+
+  handleDetectionError(error) {
+    console.error("Detection error:", error)
+
+    // Unsubscribe from WebSocket
+    this.unsubscribe()
+
+    // Hide loading and show error
+    this.hideLoading()
+    this.showError(error || "Failed to detect clothing items. Please try again.")
+  }
+
+  showQueuedState() {
+    // Hide upload step
+    if (this.hasUploadStepTarget) {
+      this.uploadStepTarget.classList.add("hidden")
+    }
+
+    // Hide review step if visible
+    if (this.hasReviewStepTarget) {
+      this.reviewStepTarget.classList.add("hidden")
+    }
+
+    // Show success step
+    if (this.hasSuccessStepTarget) {
+      this.successStepTarget.classList.remove("hidden")
+    }
+
+    // Show queued message
+    if (this.hasSuccessMessageTarget) {
+      this.successMessageTarget.textContent = "Your image has been queued for processing. Items will be added to your inventory automatically when detection completes."
+    }
+  }
+
+  showSuccessState(itemsCount) {
+    // Hide upload step
+    if (this.hasUploadStepTarget) {
+      this.uploadStepTarget.classList.add("hidden")
+    }
+
+    // Hide review step if visible
+    if (this.hasReviewStepTarget) {
+      this.reviewStepTarget.classList.add("hidden")
+    }
+
+    // Show success step
+    if (this.hasSuccessStepTarget) {
+      this.successStepTarget.classList.remove("hidden")
+    }
+
+    // Update success message with actual count
+    if (this.hasSuccessMessageTarget) {
+      const itemText = itemsCount === 1 ? "item" : "items"
+      this.successMessageTarget.textContent = `Successfully created ${itemsCount} ${itemText} in your inventory!`
+    }
+  }
+
+  addMore() {
+    // Reset form and show upload step again
+    if (this.hasSuccessStepTarget) {
+      this.successStepTarget.classList.add("hidden")
+    }
+
+    if (this.hasUploadStepTarget) {
+      this.uploadStepTarget.classList.remove("hidden")
+    }
+
+    // Reset state
+    this.blobId = null
+    this.analysisId = null
+    this.detectedItems = []
+    this.selectedItems = []
+    this.jobId = null
+    this.userId = null
+
+    // Reset file input
+    if (this.hasFileInputTarget) {
+      this.fileInputTarget.value = ""
+    }
+
+    // Reset preview
+    if (this.hasImagePreviewTarget) {
+      this.imagePreviewTarget.classList.add("hidden")
+    }
+
+    if (this.hasUploadPromptTarget) {
+      this.uploadPromptTarget.classList.remove("hidden")
+    }
+
+    // Hide any error states
+    this.hideError()
+  }
+
 
   showReviewStep() {
     // Hide upload step

@@ -66,7 +66,34 @@
 
       </div>
 
-      <!-- Step 2: Review Detected Items -->
+      <!-- Step 2: Success State (Items Created) -->
+      <div data-inventory-creation-analyzer-target="successStep" class="hidden space-y-4">
+        <div class="text-center py-8">
+          <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-100 dark:bg-green-900 mb-4">
+            <svg class="w-8 h-8 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+            </svg>
+          </div>
+          <h2 class="text-2xl font-semibold text-gray-900 dark:text-white mb-2">Image Uploaded Successfully!</h2>
+          <p data-inventory-creation-analyzer-target="successMessage" class="text-gray-600 dark:text-gray-400 mb-6">
+            Your image has been queued for processing.
+          </p>
+          
+          <!-- Action Buttons -->
+          <div class="flex justify-center gap-4">
+            <button
+              type="button"
+              data-action="click->inventory-creation-analyzer#addMore"
+              class="btn-primary"
+            >
+              Add More Items
+            </button>
+            <%= link_to "View My Inventory", inventory_items_path, class: "btn-secondary" %>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 3: Review Detected Items (Legacy - kept for backward compatibility) -->
       <div data-inventory-creation-analyzer-target="reviewStep" class="hidden space-y-4">
         <div class="flex items-center justify-between mb-4">
           <div>

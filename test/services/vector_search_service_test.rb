@@ -131,4 +131,184 @@ class VectorSearchServiceTest < ActiveSupport::TestCase
     results = VectorSearchService.recommend_outfit_items(@user, @item3, limit: 3)
     assert_equal 0, results.count
   end
+
+  test "validate_and_sanitize_vector returns nil for non-array" do
+    result = VectorSearchService.send(:validate_and_sanitize_vector, "string")
+    assert_nil result
+  end
+
+  test "validate_and_sanitize_vector returns nil for empty array" do
+    result = VectorSearchService.send(:validate_and_sanitize_vector, [])
+    assert_nil result
+  end
+
+  test "validate_and_sanitize_vector returns nil for non-numeric values" do
+    result = VectorSearchService.send(:validate_and_sanitize_vector, [ 1.0, "invalid", 2.0 ])
+    assert_nil result
+  end
+
+  test "validate_and_sanitize_vector returns nil for infinite values" do
+    result = VectorSearchService.send(:validate_and_sanitize_vector, [ 1.0, Float::INFINITY, 2.0 ])
+    assert_nil result
+  end
+
+  test "validate_and_sanitize_vector returns nil for NaN values" do
+    result = VectorSearchService.send(:validate_and_sanitize_vector, [ 1.0, Float::NAN, 2.0 ])
+    assert_nil result
+  end
+
+  test "validate_and_sanitize_vector returns nil for values exceeding bounds" do
+    result = VectorSearchService.send(:validate_and_sanitize_vector, [ 1.0, 2_000_000.0, 2.0 ])
+    assert_nil result
+  end
+
+  test "validate_and_sanitize_vector converts string numbers to floats" do
+    result = VectorSearchService.send(:validate_and_sanitize_vector, [ "1.0", "2.5", "3.0" ])
+    assert_equal [ 1.0, 2.5, 3.0 ], result
+  end
+
+  test "validate_and_sanitize_vector returns validated array" do
+    input = [ 1.0, 2.5, 3.0, -1.5 ]
+    result = VectorSearchService.send(:validate_and_sanitize_vector, input)
+    assert_equal input, result
+  end
+
+  test "format_vector_string formats correctly" do
+    vector = [ 1.0, 2.5, 3.0 ]
+    result = VectorSearchService.send(:format_vector_string, vector)
+    assert_equal "[1.0,2.5,3.0]", result
+  end
+
+  test "complementary_category? returns false for nil categories" do
+    assert_not VectorSearchService.send(:complementary_category?, nil, "bottoms")
+    assert_not VectorSearchService.send(:complementary_category?, "tops", nil)
+    assert_not VectorSearchService.send(:complementary_category?, nil, nil)
+  end
+
+  test "complementary_category? handles all complement pairs" do
+    complements = {
+      "tops" => [ "bottoms", "jeans", "pants", "skirts", "shorts" ],
+      "t-shirts" => [ "jeans", "pants", "skirts", "shorts" ],
+      "shirts" => [ "jeans", "pants", "skirts" ],
+      "bottoms" => [ "tops", "t-shirts", "shirts", "blouses" ],
+      "jeans" => [ "tops", "t-shirts", "shirts" ],
+      "dresses" => [ "shoes", "boots", "sneakers", "accessories", "bags", "jewelry" ],
+      "shoes" => [ "dresses", "bottoms", "jeans", "pants", "skirts" ]
+    }
+
+    complements.each do |base, candidates|
+      candidates.each do |candidate|
+        assert VectorSearchService.send(:complementary_category?, base, candidate),
+               "#{base} should complement #{candidate}"
+      end
+    end
+  end
+
+  test "identify_missing_categories identifies missing top" do
+    existing = [ "jeans", "shoes" ]
+    missing = VectorSearchService.send(:identify_missing_categories, existing)
+    assert_includes missing, "top"
+  end
+
+  test "identify_missing_categories identifies missing bottom" do
+    existing = [ "t-shirts", "shoes" ]
+    missing = VectorSearchService.send(:identify_missing_categories, existing)
+    assert_includes missing, "bottom"
+  end
+
+  test "identify_missing_categories identifies missing shoe" do
+    existing = [ "t-shirts", "jeans" ]
+    missing = VectorSearchService.send(:identify_missing_categories, existing)
+    assert_includes missing, "shoe"
+  end
+
+  test "identify_missing_categories returns empty when all present" do
+    existing = [ "t-shirts", "jeans", "sneakers" ]
+    missing = VectorSearchService.send(:identify_missing_categories, existing)
+    assert_empty missing
+  end
+
+  test "calculate_style_similarity returns 0.0 when candidate has no vector" do
+    item_without_vector = create(:inventory_item, user: @user, embedding_vector: nil)
+    result = VectorSearchService.send(:calculate_style_similarity, [ @item1 ], item_without_vector)
+    assert_equal 0.0, result
+  end
+
+  test "calculate_style_similarity returns 0.0 when no items have vectors" do
+    item_without_vector = create(:inventory_item, user: @user, embedding_vector: nil)
+    result = VectorSearchService.send(:calculate_style_similarity, [ item_without_vector ], @item1)
+    assert_equal 0.0, result
+  end
+
+  test "get_suggestion_reason returns complementary reason" do
+    bottoms_category = create(:category, name: "bottoms")
+    bottom_item = create(:inventory_item, user: @user, category: bottoms_category)
+    existing = [ "tops" ]
+
+    result = VectorSearchService.send(:get_suggestion_reason, @item1, bottom_item, existing)
+    assert_includes result, "Pairs well"
+  end
+
+  test "get_suggestion_reason returns similar style reason" do
+    existing = [ "tops" ]
+    result = VectorSearchService.send(:get_suggestion_reason, @item1, @item2, existing)
+    assert_includes result, "Similar style"
+  end
+
+  test "get_suggestion_reason returns generic complement reason" do
+    other_category = create(:category, name: "accessories")
+    other_item = create(:inventory_item, user: @user, category: other_category)
+    existing = [ "tops" ]
+
+    result = VectorSearchService.send(:get_suggestion_reason, @item1, other_item, existing)
+    assert_includes result, "Complements"
+  end
+
+  test "suggest_outfit_items returns empty for blank outfit_items" do
+    result = VectorSearchService.suggest_outfit_items(@user, [], limit: 5)
+    assert_equal [], result
+  end
+
+  test "suggest_outfit_items returns empty for nil outfit_items" do
+    result = VectorSearchService.suggest_outfit_items(@user, nil, limit: 5)
+    assert_equal [], result
+  end
+
+  test "suggest_outfit_items handles Outfit object" do
+    outfit = create(:outfit, user: @user)
+    outfit.inventory_items << @item1
+
+    result = VectorSearchService.suggest_outfit_items(@user, outfit, limit: 5)
+    assert result.is_a?(Array)
+  end
+
+  test "suggest_outfit_items excludes specified item IDs" do
+    outfit = create(:outfit, user: @user)
+    outfit.inventory_items << @item1
+
+    result = VectorSearchService.suggest_outfit_items(@user, outfit, limit: 5, exclude_ids: [ @item2.id ])
+    assert_not_includes result.map(&:id), @item2.id
+  end
+
+  test "semantic_search returns empty for blank query" do
+    result = VectorSearchService.semantic_search(@user, "", limit: 10)
+    assert_equal [], result
+  end
+
+  test "semantic_search returns empty for nil query" do
+    result = VectorSearchService.semantic_search(@user, nil, limit: 10)
+    assert_equal [], result
+  end
+
+  test "find_similar_items returns empty for invalid vector" do
+    invalid_vector = [ Float::INFINITY, 1.0 ]
+    result = VectorSearchService.find_similar_items(@user, invalid_vector, limit: 5)
+    assert_equal [], result
+  end
+
+  test "find_items_by_image_similarity returns empty for invalid vector" do
+    invalid_vector = [ Float::NAN, 1.0 ]
+    result = VectorSearchService.find_items_by_image_similarity(@user, invalid_vector, limit: 5)
+    assert_equal [], result
+  end
 end

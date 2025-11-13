@@ -670,15 +670,7 @@ module Api
                                                 primary_image_attachment: :blob,
                                                 additional_images_attachments: :blob)
                                       .find(params[:id])
-      rescue ActiveRecord::RecordNotFound
-        render json: {
-          success: false,
-          error: {
-            code: "NOT_FOUND",
-            message: "Inventory item not found"
-          },
-          timestamp: Time.current.iso8601
-        }, status: :not_found
+        # Don't rescue here - let ErrorHandling concern handle RecordNotFound
       end
 
       def inventory_item_params

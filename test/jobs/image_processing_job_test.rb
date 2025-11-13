@@ -43,10 +43,238 @@ class ImageProcessingJobTest < ActiveJob::TestCase
   end
 
   test "should handle missing image gracefully" do
+    Rails.logger.stubs(:error)
     assert_nothing_raised do
       ImageProcessingJob.perform_now(@inventory_item, 99999)
     end
   end
 
-  # Test removed: ActiveStorage::Variant stubbing not working properly with current setup
+  test "process_image_variants handles nil image" do
+    job = ImageProcessingJob.new
+    assert_nothing_raised do
+      job.send(:process_image_variants, nil)
+    end
+  end
+
+  test "process_image_variants handles unattached image" do
+    job = ImageProcessingJob.new
+    unattached_image = mock
+    unattached_image.stubs(:respond_to?).with(:attached?).returns(true)
+    unattached_image.stubs(:attached?).returns(false)
+
+    assert_nothing_raised do
+      job.send(:process_image_variants, unattached_image)
+    end
+  end
+
+  test "process_image_variants generates variants for attached image" do
+    @inventory_item.primary_image.attach(
+      io: File.open(Rails.root.join("test", "fixtures", "files", "sample_image.jpg")),
+      filename: "test.jpg",
+      content_type: "image/jpeg"
+    )
+
+    job = ImageProcessingJob.new
+    image = @inventory_item.primary_image
+
+    # Stub variant calls to avoid actual processing
+    image.stubs(:variant).returns(mock)
+    Rails.logger.stubs(:info)
+
+    assert_nothing_raised do
+      job.send(:process_image_variants, image)
+    end
+  end
+
+  test "process_image_variants logs success message" do
+    @inventory_item.primary_image.attach(
+      io: File.open(Rails.root.join("test", "fixtures", "files", "sample_image.jpg")),
+      filename: "test.jpg",
+      content_type: "image/jpeg"
+    )
+
+    job = ImageProcessingJob.new
+    image = @inventory_item.primary_image
+    image.stubs(:variant).returns(mock)
+    image.stubs(:id).returns(123)
+
+    log_messages = []
+    Rails.logger.stubs(:info).with { |msg| log_messages << msg; true }
+
+    job.send(:process_image_variants, image)
+
+    log_message = log_messages.find { |msg| msg.include?("Generated variants") }
+    assert log_message.present?, "Should log variant generation"
+  end
+
+  test "strip_exif_data handles nil image" do
+    job = ImageProcessingJob.new
+    assert_nothing_raised do
+      job.send(:strip_exif_data, nil)
+    end
+  end
+
+  test "strip_exif_data handles unattached image" do
+    job = ImageProcessingJob.new
+    unattached_image = mock
+    unattached_image.stubs(:respond_to?).with(:attached?).returns(true)
+    unattached_image.stubs(:attached?).returns(false)
+
+    assert_nothing_raised do
+      job.send(:strip_exif_data, unattached_image)
+    end
+  end
+
+  test "strip_exif_data handles errors gracefully" do
+    @inventory_item.primary_image.attach(
+      io: File.open(Rails.root.join("test", "fixtures", "files", "sample_image.jpg")),
+      filename: "test.jpg",
+      content_type: "image/jpeg"
+    )
+
+    job = ImageProcessingJob.new
+    image = @inventory_item.primary_image
+    image.stubs(:id).returns(123)
+
+    # Stub variant to raise error
+    mock_variant = mock
+    mock_variant.stubs(:processed).raises(StandardError.new("Processing error"))
+    image.stubs(:variant).returns(mock_variant)
+
+    Rails.logger.stubs(:warn)
+
+    # Should not raise, just log warning
+    assert_nothing_raised do
+      job.send(:strip_exif_data, image)
+    end
+  end
+
+  test "strip_exif_data logs success message" do
+    @inventory_item.primary_image.attach(
+      io: File.open(Rails.root.join("test", "fixtures", "files", "sample_image.jpg")),
+      filename: "test.jpg",
+      content_type: "image/jpeg"
+    )
+
+    job = ImageProcessingJob.new
+    image = @inventory_item.primary_image
+    image.stubs(:id).returns(123)
+
+    mock_variant = mock
+    mock_variant.stubs(:processed).returns(true)
+    image.stubs(:variant).returns(mock_variant)
+
+    log_messages = []
+    Rails.logger.stubs(:info).with { |msg| log_messages << msg; true }
+
+    job.send(:strip_exif_data, image)
+
+    log_message = log_messages.find { |msg| msg.include?("Stripped EXIF data") }
+    assert log_message.present?, "Should log EXIF stripping"
+  end
+
+  test "strip_exif_data logs warning on error" do
+    @inventory_item.primary_image.attach(
+      io: File.open(Rails.root.join("test", "fixtures", "files", "sample_image.jpg")),
+      filename: "test.jpg",
+      content_type: "image/jpeg"
+    )
+
+    job = ImageProcessingJob.new
+    image = @inventory_item.primary_image
+    image.stubs(:id).returns(123)
+
+    mock_variant = mock
+    mock_variant.stubs(:processed).raises(StandardError.new("Error"))
+    image.stubs(:variant).returns(mock_variant)
+
+    log_messages = []
+    Rails.logger.stubs(:warn).with { |msg| log_messages << msg; true }
+
+    job.send(:strip_exif_data, image)
+
+    log_message = log_messages.find { |msg| msg.include?("Failed to strip EXIF") }
+    assert log_message.present?, "Should log warning on error"
+  end
+
+  test "perform handles StandardError and re-raises" do
+    @inventory_item.primary_image.attach(
+      io: File.open(Rails.root.join("test", "fixtures", "files", "sample_image.jpg")),
+      filename: "test.jpg",
+      content_type: "image/jpeg"
+    )
+
+    # Stub process_image_variants to raise error
+    ImageProcessingJob.any_instance.stubs(:process_image_variants).raises(StandardError.new("Processing error"))
+    Rails.logger.stubs(:error)
+
+    assert_raises(StandardError) do
+      ImageProcessingJob.perform_now(@inventory_item)
+    end
+  end
+
+  test "perform processes primary image when additional_image_id is nil" do
+    @inventory_item.primary_image.attach(
+      io: File.open(Rails.root.join("test", "fixtures", "files", "sample_image.jpg")),
+      filename: "test.jpg",
+      content_type: "image/jpeg"
+    )
+
+    job = ImageProcessingJob.new
+    job.stubs(:process_image_variants)
+    job.stubs(:strip_exif_data)
+
+    job.expects(:process_image_variants).with(@inventory_item.primary_image)
+    job.expects(:strip_exif_data).with(@inventory_item.primary_image)
+
+    job.perform(@inventory_item, nil)
+  end
+
+  test "perform processes additional image when additional_image_id is provided" do
+    @inventory_item.additional_images.attach(
+      io: File.open(Rails.root.join("test", "fixtures", "files", "sample_image.jpg")),
+      filename: "test.jpg",
+      content_type: "image/jpeg"
+    )
+
+    additional_image = @inventory_item.additional_images.first
+
+    job = ImageProcessingJob.new
+    job.stubs(:process_image_variants)
+    job.stubs(:strip_exif_data)
+
+    job.expects(:process_image_variants).with(additional_image)
+    job.expects(:strip_exif_data).with(additional_image)
+
+    job.perform(@inventory_item, additional_image.id)
+  end
+
+  test "perform logs error for RecordNotFound" do
+    log_messages = []
+    Rails.logger.stubs(:error).with { |msg| log_messages << msg; true }
+
+    ImageProcessingJob.perform_now(@inventory_item, 99999)
+
+    error_log = log_messages.find { |msg| msg.include?("Image not found") }
+    assert error_log.present?, "Should log error for RecordNotFound"
+  end
+
+  test "perform logs error for StandardError" do
+    @inventory_item.primary_image.attach(
+      io: File.open(Rails.root.join("test", "fixtures", "files", "sample_image.jpg")),
+      filename: "test.jpg",
+      content_type: "image/jpeg"
+    )
+
+    ImageProcessingJob.any_instance.stubs(:process_image_variants).raises(StandardError.new("Test error"))
+    log_messages = []
+    Rails.logger.stubs(:error).with { |msg| log_messages << msg; true }
+
+    assert_raises(StandardError) do
+      ImageProcessingJob.perform_now(@inventory_item)
+    end
+
+    error_log = log_messages.find { |msg| msg.include?("Error processing image") }
+    assert error_log.present?, "Should log error for StandardError"
+  end
 end
