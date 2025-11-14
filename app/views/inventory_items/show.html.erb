@@ -48,6 +48,9 @@
         <div 
           data-controller="stock-photo-extraction"
           data-stock-photo-extraction-blob-id-value="<%= @inventory_item.primary_image.blob.id %>"
+          <% if current_user %>
+            data-stock-photo-extraction-user-id-value="<%= current_user.id %>"
+          <% end %>
           data-stock-photo-extraction-analysis-results-value="<%= j({
             name: @inventory_item.name,
             category_name: @inventory_item.category&.name,

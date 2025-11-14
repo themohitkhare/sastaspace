@@ -31,10 +31,10 @@ module Api
         begin
           # Debug logging
           Rails.logger.info "Stock photo extraction request - Blob ID: #{params[:blob_id]}, User: #{current_user.id}, Item ID from analysis: #{params[:analysis_results][:name] rescue 'unknown'}"
-          
+
           # Find image blob
           image_blob = ActiveStorage::Blob.find(params[:blob_id])
-          
+
           Rails.logger.info "Found blob: #{image_blob.id}, filename: #{image_blob.filename}"
 
           # Parse analysis results - convert ActionController::Parameters to Hash if needed
@@ -88,7 +88,7 @@ module Api
 
           # Get inventory_item_id if provided (for precise item lookup when multiple items share the same blob)
           inventory_item_id = params[:inventory_item_id].present? ? params[:inventory_item_id].to_i : nil
-          
+
           # Validate inventory_item_id belongs to current_user if provided
           if inventory_item_id.present?
             item = current_user.inventory_items.find_by(id: inventory_item_id)

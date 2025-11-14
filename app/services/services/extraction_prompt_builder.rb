@@ -119,38 +119,38 @@ module Services
 
       # Extract key details from description that might inform extraction
       requirements = []
-      
+
       # Check for specific features mentioned in description
       desc_lower = description.downcase
-      
+
       if desc_lower.include?("pocket") || desc_lower.include?("pockets")
         requirements << "8. ENSURE all pockets are clearly visible and properly positioned"
       end
-      
+
       if desc_lower.include?("zipper") || desc_lower.include?("zippers")
         requirements << "9. SHOW zipper details clearly, including pull tab and teeth"
       end
-      
+
       if desc_lower.include?("button") || desc_lower.include?("buttons")
         requirements << "10. DISPLAY all buttons clearly, showing their style and placement"
       end
-      
+
       if desc_lower.include?("hood") || desc_lower.include?("hoodie")
         requirements << "11. SHOW hood details if applicable, including drawstrings"
       end
-      
+
       if desc_lower.include?("collar") || desc_lower.include?("neckline")
         requirements << "12. PRESERVE collar/neckline style and structure"
       end
-      
+
       if desc_lower.include?("sleeve") || desc_lower.include?("sleeves")
         requirements << "13. MAINTAIN sleeve length and style as described"
       end
-      
+
       if desc_lower.include?("fit") || desc_lower.include?("cut")
         requirements << "14. PRESERVE the described fit and cut characteristics"
       end
-      
+
       requirements.join("\n        ")
     end
   end

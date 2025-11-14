@@ -105,6 +105,9 @@
             data-controller="stock-photo-extraction"
             data-stock-photo-extraction-blob-id-value="<%= @inventory_item.primary_image.blob.id %>"
             data-stock-photo-extraction-inventory-item-id-value="<%= @inventory_item.id %>"
+            <% if current_user %>
+              data-stock-photo-extraction-user-id-value="<%= current_user.id %>"
+            <% end %>
             data-debug-item-id="<%= @inventory_item.id %>"
             data-debug-blob-id="<%= @inventory_item.primary_image.blob.id %>"
             <% 

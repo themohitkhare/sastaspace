@@ -1,4 +1,5 @@
 import { Controller } from "@hotwired/stimulus"
+import { createConsumer } from "@rails/actioncable"
 
 // Connects to data-controller="stock-photo-extraction"
 export default class extends Controller {
@@ -13,7 +14,8 @@ export default class extends Controller {
   static values = {
     blobId: Number,  // Changed from String to Number to ensure correct type
     inventoryItemId: Number,  // Add inventory_item_id to ensure we update the correct item
-    analysisResults: Object
+    analysisResults: Object,
+    userId: String  // Add userId for WebSocket subscription
   }
 
   connect() {
@@ -21,10 +23,17 @@ export default class extends Controller {
     this.pollingInterval = null
     this.maxPollAttempts = 60 // 2 minutes max (60 * 2 seconds)
     this.pollAttempts = 0
+    this.cable = null
+    this.subscription = null
+    this.userId = null
+
+    // Check for pending extraction job from sessionStorage
+    this.checkPendingExtraction()
   }
 
   disconnect() {
     this.stopPolling()
+    this.unsubscribe()
   }
 
   async extractStockPhoto(event) {
@@ -144,10 +153,31 @@ export default class extends Controller {
         throw new Error(data.error?.message || data.error?.code || "Failed to start extraction")
       }
 
-      // Store job ID and start polling
+      // Store job ID and user ID
       this.jobId = data.data.job_id
-      this.showStatus("Extraction in progress...")
-      this.startPolling()
+      this.userId = this.userIdValue || this.getUserIdFromPage()
+      
+      // Store job info in sessionStorage for cross-page notifications
+      if (this.jobId && this.userId) {
+        sessionStorage.setItem('pending_stock_extraction', JSON.stringify({
+          job_id: this.jobId,
+          user_id: this.userId,
+          blob_id: blobIdNum,
+          inventory_item_id: inventoryItemId,
+          timestamp: Date.now()
+        }))
+      }
+
+      // Show queued state immediately - user can navigate away
+      this.showStatus("Extraction queued... You can navigate away and we'll notify you when it's done.")
+      
+      // Set up WebSocket subscription for real-time updates
+      if (this.userId) {
+        this.setupWebSocketSubscription()
+      } else {
+        // Fallback to polling if WebSocket not available
+        this.startPolling()
+      }
 
     } catch (error) {
       console.error("Error starting extraction:", error)
@@ -157,6 +187,124 @@ export default class extends Controller {
         this.buttonTarget.textContent = "Extract Stock Photo"
       }
     }
+  }
+
+  setupWebSocketSubscription() {
+    if (!this.userId) {
+      console.warn("Cannot setup WebSocket: userId not available")
+      return
+    }
+
+    // Create ActionCable consumer
+    this.cable = createConsumer()
+
+    // Subscribe to stock extraction updates for this user
+    this.subscription = this.cable.subscriptions.create(
+      {
+        channel: "AiProcessingChannel",
+        user_id: this.userId
+      },
+      {
+        connected: () => {
+          console.log("Connected to stock extraction WebSocket")
+        },
+        disconnected: () => {
+          console.log("Disconnected from stock extraction WebSocket")
+        },
+        received: (data) => {
+          this.handleWebSocketMessage(data)
+        }
+      }
+    )
+  }
+
+  unsubscribe() {
+    if (this.subscription) {
+      this.subscription.unsubscribe()
+      this.subscription = null
+    }
+    if (this.cable) {
+      this.cable.disconnect()
+      this.cable = null
+    }
+  }
+
+  handleWebSocketMessage(data) {
+    // Only handle messages for our job
+    if (data.job_id && data.job_id !== this.jobId) {
+      return
+    }
+
+    switch (data.type) {
+      case "extraction_progress":
+        this.showStatus(data.message || "Processing...")
+        break
+
+      case "extraction_complete":
+        this.stopPolling()
+        this.showSuccess(data.data)
+        // Clear pending job from sessionStorage
+        sessionStorage.removeItem('pending_stock_extraction')
+        this.unsubscribe()
+        break
+
+      case "extraction_failed":
+        this.stopPolling()
+        this.showError(data.error || "Extraction failed")
+        // Clear pending job from sessionStorage
+        sessionStorage.removeItem('pending_stock_extraction')
+        this.unsubscribe()
+        break
+
+      default:
+        console.log("Unknown WebSocket message type:", data.type)
+    }
+  }
+
+  checkPendingExtraction() {
+    const pending = sessionStorage.getItem('pending_stock_extraction')
+    if (pending) {
+      try {
+        const jobInfo = JSON.parse(pending)
+        // Check if job is recent (within last hour)
+        const oneHourAgo = Date.now() - (60 * 60 * 1000)
+        if (jobInfo.timestamp && jobInfo.timestamp > oneHourAgo) {
+          this.jobId = jobInfo.job_id
+          this.userId = jobInfo.user_id || this.userIdValue || this.getUserIdFromPage()
+          
+          // Set up WebSocket to listen for completion
+          if (this.userId) {
+            this.setupWebSocketSubscription()
+            this.showStatus("Waiting for extraction to complete...")
+          } else {
+            // Fallback to polling
+            this.startPolling()
+          }
+        } else {
+          // Job is too old, remove it
+          sessionStorage.removeItem('pending_stock_extraction')
+        }
+      } catch (e) {
+        console.error("Error parsing pending extraction:", e)
+        sessionStorage.removeItem('pending_stock_extraction')
+      }
+    }
+  }
+
+  getUserIdFromPage() {
+    // Try to get userId from meta tag or data attribute
+    const metaTag = document.querySelector('meta[name="user-id"]')
+    if (metaTag) {
+      return metaTag.content
+    }
+    
+    // Try to get from data attribute on the element
+    const userIdAttr = this.element.dataset.userId
+    if (userIdAttr) {
+      return userIdAttr
+    }
+    
+    return null
   }
 
   startPolling() {
@@ -216,12 +364,16 @@ export default class extends Controller {
         case "completed":
           this.stopPolling()
           this.showSuccess(statusData.data)
+          // Clear pending job from sessionStorage
+          sessionStorage.removeItem('pending_stock_extraction')
           break
 
         case "failed":
           this.stopPolling()
           const errorMsg = statusData.error?.message || statusData.error || "Extraction failed"
           this.showError(errorMsg)
+          // Clear pending job from sessionStorage
+          sessionStorage.removeItem('pending_stock_extraction')
           if (this.hasButtonTarget) {
             this.buttonTarget.disabled = false
             this.buttonTarget.textContent = "Extract Stock Photo"
@@ -295,9 +447,12 @@ export default class extends Controller {
 
     // Reload the page after a short delay to show the updated primary image
     // This ensures the user sees the new extracted image as the primary
-    setTimeout(() => {
-      window.location.reload()
-    }, 2000) // 2 second delay to show success message
+    // Only reload if we're still on the same page (not if user navigated away)
+    if (window.location.pathname.includes('/inventory_items/')) {
+      setTimeout(() => {
+        window.location.reload()
+      }, 2000) // 2 second delay to show success message
+    }
   }
 
   showError(message) {

@@ -45,6 +45,9 @@ export default class extends Controller {
 
     // Check for pending detection job and set up WebSocket
     this.checkPendingDetection()
+    
+    // Check for pending stock extraction job
+    this.checkPendingStockExtraction()
   }
 
   disconnect() {
@@ -115,7 +118,15 @@ export default class extends Controller {
   }
 
   handleDetectionUpdate(data) {
-    console.log("Detection update received:", data)
+    console.log("AI processing update received:", data)
+    
+    // Handle stock extraction messages
+    if (data.type === "extraction_complete" || data.type === "extraction_failed" || data.type === "extraction_progress") {
+      this.handleStockExtractionUpdate(data)
+      return
+    }
+    
+    // Handle detection messages (existing logic)
 
     switch (data.type) {
       case "progress_update":
@@ -155,6 +166,97 @@ export default class extends Controller {
     setTimeout(() => {
       window.location.reload()
     }, 1500) // Reload after 1.5 seconds to show notification
+  }
+
+  checkPendingStockExtraction() {
+    const pending = sessionStorage.getItem('pending_stock_extraction')
+    if (pending) {
+      try {
+        const jobInfo = JSON.parse(pending)
+        // Check if job is recent (within last hour)
+        const oneHourAgo = Date.now() - (60 * 60 * 1000)
+        if (jobInfo.timestamp && jobInfo.timestamp > oneHourAgo && this.userIdValue) {
+          // Set up WebSocket to listen for stock extraction completion
+          this.setupStockExtractionSubscription(jobInfo.job_id)
+        } else {
+          // Job is too old, remove it
+          sessionStorage.removeItem('pending_stock_extraction')
+        }
+      } catch (e) {
+        console.error("Error parsing pending stock extraction:", e)
+        sessionStorage.removeItem('pending_stock_extraction')
+      }
+    }
+  }
+
+  setupStockExtractionSubscription(jobId) {
+    // Set up WebSocket if not already set up
+    if (!this.cable && this.userIdValue) {
+      this.userId = this.userIdValue
+      this.setupWebSocketSubscription()
+    }
+    // The subscription is already set up in setupWebSocketSubscription
+    // We just need to handle stock extraction messages
+    // The received callback will handle both detection and extraction messages
+  }
+
+  handleStockExtractionUpdate(data) {
+    switch (data.type) {
+      case "extraction_progress":
+        // Just log progress, don't show notification
+        console.log("Stock extraction progress:", data.message)
+        break
+
+      case "extraction_complete":
+        this.handleStockExtractionComplete(data.data)
+        break
+
+      case "extraction_failed":
+        this.handleStockExtractionError(data.error)
+        break
+    }
+  }
+
+  handleStockExtractionComplete(data) {
+    console.log("Stock extraction completed:", data)
+    
+    // Clear pending job from sessionStorage
+    sessionStorage.removeItem('pending_stock_extraction')
+    
+    // Show success notification
+    this.showStockExtractionSuccess(data)
+  }
+
+  handleStockExtractionError(error) {
+    console.error("Stock extraction error:", error)
+    
+    // Clear pending job from sessionStorage
+    sessionStorage.removeItem('pending_stock_extraction')
+    
+    // Show error notification
+    this.showErrorNotification(error || "Stock photo extraction failed")
+  }
+
+  showStockExtractionSuccess(data) {
+    const message = data.primary_image_replaced
+      ? "Stock photo extracted successfully! Primary image has been updated."
+      : "Stock photo extracted successfully!"
+    
+    // Create a temporary success notification
+    const notification = document.createElement("div")
+    notification.className = "fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 flex items-center gap-2"
+    notification.innerHTML = `
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+      </svg>
+      <span>${message}</span>
+    `
+    document.body.appendChild(notification)
+    
+    // Remove after 5 seconds
+    setTimeout(() => {
+      notification.remove()
+    }, 5000)
   }
 
   handleDetectionError(error) {
