@@ -29,36 +29,41 @@ module Api
         end
 
         begin
+          # Debug logging
+          Rails.logger.info "Stock photo extraction request - Blob ID: #{params[:blob_id]}, User: #{current_user.id}, Item ID from analysis: #{params[:analysis_results][:name] rescue 'unknown'}"
+          
           # Find image blob
           image_blob = ActiveStorage::Blob.find(params[:blob_id])
+          
+          Rails.logger.info "Found blob: #{image_blob.id}, filename: #{image_blob.filename}"
 
           # Parse analysis results - convert ActionController::Parameters to Hash if needed
           # Permit only the fields used by ExtractionPromptBuilder and validation
           analysis_results = if params[:analysis_results].is_a?(ActionController::Parameters)
             params[:analysis_results].permit(
-              :name, :category_name, :category_matched, :subcategory,
+              :name, :description, :category_name, :category_matched, :subcategory,
               :material, :style, :style_notes,
               :brand_matched, :brand_name, :brand_suggestion,
-              :gender_appropriate, :confidence,
+              :gender_appropriate, :confidence, :extraction_prompt,
               colors: [] # Array of strings
             ).to_h
           elsif params[:analysis_results].is_a?(Hash)
             # Filter to only allowed keys for security
             permitted_keys = %w[
-              name category_name category_matched subcategory
+              name description category_name category_matched subcategory
               material style style_notes
               brand_matched brand_name brand_suggestion
-              gender_appropriate confidence colors
+              gender_appropriate confidence extraction_prompt colors
             ]
             params[:analysis_results].slice(*permitted_keys)
           else
             parsed = JSON.parse(params[:analysis_results])
             if parsed.is_a?(Hash)
               permitted_keys = %w[
-                name category_name category_matched subcategory
+                name description category_name category_matched subcategory
                 material style style_notes
                 brand_matched brand_name brand_suggestion
-                gender_appropriate confidence colors
+                gender_appropriate confidence extraction_prompt colors
               ]
               parsed.slice(*permitted_keys)
             else
@@ -81,15 +86,35 @@ module Api
           # Generate unique job ID
           job_id = SecureRandom.uuid
 
+          # Get inventory_item_id if provided (for precise item lookup when multiple items share the same blob)
+          inventory_item_id = params[:inventory_item_id].present? ? params[:inventory_item_id].to_i : nil
+          
+          # Validate inventory_item_id belongs to current_user if provided
+          if inventory_item_id.present?
+            item = current_user.inventory_items.find_by(id: inventory_item_id)
+            unless item
+              return render json: {
+                success: false,
+                error: {
+                  code: "INVALID_INVENTORY_ITEM",
+                  message: "Inventory item not found or does not belong to you"
+                },
+                timestamp: Time.current.iso8601
+              }, status: :not_found
+            end
+            Rails.logger.info "Using provided inventory_item_id: #{inventory_item_id} for blob #{image_blob.id}"
+          end
+
           # Queue extraction job
           ExtractStockPhotoJob.perform_later(
             image_blob.id,
             analysis_results,
             current_user.id,
-            job_id
+            job_id,
+            inventory_item_id  # Pass inventory_item_id to job for precise lookup
           )
 
-          Rails.logger.info "Stock photo extraction job queued. Blob ID: #{image_blob.id}, Job ID: #{job_id}, User: #{current_user.id}"
+          Rails.logger.info "Stock photo extraction job queued. Blob ID: #{image_blob.id}, Inventory Item ID: #{inventory_item_id || 'auto-detect'}, Job ID: #{job_id}, User: #{current_user.id}"
 
           render json: {
             success: true,

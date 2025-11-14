@@ -101,4 +101,50 @@ class StockExtractionTest < ApplicationSystemTestCase
       assert_no_text(/"success":true/i, wait: 0.5)
     end
   end
+
+  test "edit page displays primary image correctly" do
+    # Stub job to prevent hanging on image processing
+    ImageProcessingJob.stubs(:perform_later)
+
+    # Create inventory item with primary image
+    item = create(:inventory_item, :clothing, user: @user, category: @category)
+    item.primary_image.attach(@image_blob)
+
+    # Navigate to edit page
+    visit edit_inventory_item_path(item)
+
+    # Verify the image is displayed
+    assert_selector "img[alt='Current primary image']", wait: 2
+    # Verify blob ID is shown in the text
+    assert_text(/blob ID: #{@image_blob.id}/, wait: 2)
+  end
+
+  test "edit page shows extracted image after extraction" do
+    # Stub job to prevent hanging on image processing
+    ImageProcessingJob.stubs(:perform_later)
+
+    # Create inventory item with primary image
+    item = create(:inventory_item, :clothing, user: @user, category: @category)
+    item.primary_image.attach(@image_blob)
+
+    # Create an extracted image blob
+    extracted_blob = ActiveStorage::Blob.create_and_upload!(
+      io: File.open(Rails.root.join("test/fixtures/files/sample_image.jpg")),
+      filename: "extracted_image.jpg",
+      content_type: "image/jpeg"
+    )
+
+    # Simulate extraction: replace primary image with extracted image
+    item.primary_image.detach
+    item.primary_image.attach(extracted_blob)
+    item.reload
+
+    # Navigate to edit page
+    visit edit_inventory_item_path(item)
+
+    # Verify the extracted image is displayed
+    assert_selector "img[alt='Current primary image']", wait: 2
+    # Verify the blob ID matches the extracted blob
+    assert_text(/blob ID: #{extracted_blob.id}/, wait: 2)
+  end
 end

@@ -9,9 +9,7 @@ module Api
       # GET /api/v1/inventory_items
       def index
         @inventory_items = current_user.inventory_items
-                                      .includes(:category, :subcategory, :brand, :tags, :ai_analyses,
-                                                primary_image_attachment: :blob,
-                                                additional_images_attachments: :blob)
+                                      .includes(:category, :subcategory, :brand)
                                       .page(params[:page])
                                       .per(params[:per_page] || 20)
 
@@ -666,9 +664,7 @@ module Api
 
       def set_inventory_item
         @inventory_item = current_user.inventory_items
-                                      .includes(:category, :subcategory, :brand, :tags, :ai_analyses,
-                                                primary_image_attachment: :blob,
-                                                additional_images_attachments: :blob)
+                                      .includes(:category, :subcategory, :brand)
                                       .find(params[:id])
         # Don't rescue here - let ErrorHandling concern handle RecordNotFound
       end

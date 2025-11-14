@@ -496,6 +496,7 @@ export default class extends Controller {
           category_id: item.category_id, // Already matched by ClothingDetectionService
           blob_id: this.blobId,
           status: "active",
+          extraction_prompt: item.extraction_prompt || null, // Include extraction_prompt if available
           metadata: {
             color: item.color_primary,
             material: item.material_type,

@@ -16,6 +16,9 @@ module Services
         Gender Context: #{gender_context}
         Category: #{category_info}
 
+        Item Description:
+        #{description_section}
+
         Item Specifications:
         #{color_specifications}
         #{material_specifications}
@@ -30,6 +33,7 @@ module Services
         5. PRESERVE brand elements (logos, tags, details)
         6. MAINTAIN natural garment shape and drape
         7. SHOW all functional details (zippers, buttons, pockets, drawstrings)
+        #{description_based_requirements}
 
         Technical Output:
         - Background: Pure white, no gradients or shadows
@@ -97,6 +101,57 @@ module Services
       return "" unless brand.present?
 
       "- Brand: #{brand} - keep logo visible if present"
+    end
+
+    def description_section
+      description = item_data["description"]
+      return "No description provided." unless description.present?
+
+      # Clean and format the description
+      cleaned = description.strip
+      # If description is long, keep it but ensure it's readable
+      cleaned
+    end
+
+    def description_based_requirements
+      description = item_data["description"]
+      return "" unless description.present?
+
+      # Extract key details from description that might inform extraction
+      requirements = []
+      
+      # Check for specific features mentioned in description
+      desc_lower = description.downcase
+      
+      if desc_lower.include?("pocket") || desc_lower.include?("pockets")
+        requirements << "8. ENSURE all pockets are clearly visible and properly positioned"
+      end
+      
+      if desc_lower.include?("zipper") || desc_lower.include?("zippers")
+        requirements << "9. SHOW zipper details clearly, including pull tab and teeth"
+      end
+      
+      if desc_lower.include?("button") || desc_lower.include?("buttons")
+        requirements << "10. DISPLAY all buttons clearly, showing their style and placement"
+      end
+      
+      if desc_lower.include?("hood") || desc_lower.include?("hoodie")
+        requirements << "11. SHOW hood details if applicable, including drawstrings"
+      end
+      
+      if desc_lower.include?("collar") || desc_lower.include?("neckline")
+        requirements << "12. PRESERVE collar/neckline style and structure"
+      end
+      
+      if desc_lower.include?("sleeve") || desc_lower.include?("sleeves")
+        requirements << "13. MAINTAIN sleeve length and style as described"
+      end
+      
+      if desc_lower.include?("fit") || desc_lower.include?("cut")
+        requirements << "14. PRESERVE the described fit and cut characteristics"
+      end
+      
+      requirements.join("\n        ")
     end
   end
 end
