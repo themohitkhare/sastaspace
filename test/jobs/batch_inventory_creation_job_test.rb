@@ -64,6 +64,30 @@ class BatchInventoryCreationJobTest < ActiveJob::TestCase
     assert_equal @user, item2.user
   end
 
+  test "job stores extraction_prompt when creating items" do
+    extraction_prompt = "PROFESSIONAL STOCK PHOTO EXTRACTION - TEST ITEM"
+    result = ExtractionResult.create!(
+      clothing_analysis: @analysis,
+      item_data: {
+        "id" => "item_001",
+        "item_name" => "Test Shirt",
+        "category" => "Tops",
+        "description" => "A test shirt",
+        "extraction_prompt" => extraction_prompt
+      },
+      status: "completed",
+      extracted_image_blob_id: @image_blob.id
+    )
+
+    ActionCable.server.stubs(:broadcast)
+
+    BatchInventoryCreationJob.perform_now([ result.id ], @user.id)
+
+    item = InventoryItem.find_by(name: "Test Shirt")
+    assert_not_nil item
+    assert_equal extraction_prompt, item.extraction_prompt
+  end
+
   test "job creates categories when they don't exist" do
     result = ExtractionResult.create!(
       clothing_analysis: @analysis,

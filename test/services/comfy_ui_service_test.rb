@@ -226,6 +226,11 @@ class ComfyUiServiceTest < ActiveSupport::TestCase
       )
       .times(60) # Stub all polling attempts
 
+    # Stub sleep to prevent actual 2-second delays between polls
+    # This makes the test run instantly while still testing timeout logic
+    # sleep is a private Kernel method available to all objects
+    Object.any_instance.stubs(:sleep)
+
     result = ComfyUiService.extract_stock_photo(
       original_image_blob: @image_blob,
       extraction_prompt: @extraction_prompt
@@ -233,6 +238,9 @@ class ComfyUiServiceTest < ActiveSupport::TestCase
 
     assert_equal false, result["success"]
     assert_includes result["error"], "timed out"
+  ensure
+    # Clean up stub
+    Object.any_instance.unstub(:sleep) if Object.any_instance.respond_to?(:unstub)
   end
 
   test "extract_stock_photo handles job error status" do

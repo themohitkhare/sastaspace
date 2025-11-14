@@ -2,6 +2,11 @@ require "test_helper"
 
 class VectorSearchServiceTest < ActiveSupport::TestCase
   def setup
+    # Clear cache to prevent state leakage between tests
+    Rails.cache.clear
+    # Reset cache stats to ensure clean state
+    Caching::VectorCacheService.reset_stats
+    
     @user = create(:user)
     @category = create(:category, name: "tops")
     @brand = create(:brand)
@@ -30,6 +35,13 @@ class VectorSearchServiceTest < ActiveSupport::TestCase
                    name: "Green T-Shirt",
                    item_type: "clothing",
                    embedding_vector: nil) # No vector
+  end
+
+  def teardown
+    # Clean up stubs to prevent interference with other tests
+    EmbeddingService.unstub_all if EmbeddingService.respond_to?(:unstub_all)
+    # Clear cache after each test to prevent state leakage
+    Rails.cache.clear
   end
 
   test "find_similar_items returns items with vectors" do

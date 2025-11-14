@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2025_11_12_000000) do
+ActiveRecord::Schema[8.1].define(version: 2025_11_13_000000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "vector"
@@ -166,6 +166,7 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_12_000000) do
     t.text "description"
     t.text "edit_prompt"
     t.vector "embedding_vector", limit: 1536
+    t.text "extraction_prompt"
     t.datetime "last_worn_at"
     t.json "metadata", default: {}
     t.string "name", null: false

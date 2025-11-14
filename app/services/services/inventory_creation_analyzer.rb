@@ -34,6 +34,9 @@ module Services
       # Enhance results with category and brand matching
       enhance_with_matching(results)
 
+      # Generate extraction prompt for ComfyUI stock photo extraction
+      generate_extraction_prompt(results)
+
       results
     rescue ArgumentError => e
       Rails.logger.error "Invalid arguments for analysis: #{e.message}"
@@ -441,6 +444,25 @@ module Services
 
       # Try partial match
       Brand.where("LOWER(name) LIKE ?", "%#{normalized_name}%").first
+    end
+
+    def generate_extraction_prompt(results)
+      # Only generate prompt if we have valid analysis results
+      return if results["error"].present? || results["parse_error"]
+
+      begin
+        prompt_builder = Services::ExtractionPromptBuilder.new(
+          item_data: results,
+          user: user
+        )
+
+        results["extraction_prompt"] = prompt_builder.build_prompt
+        Rails.logger.info "Generated extraction prompt for inventory creation analysis"
+      rescue StandardError => e
+        Rails.logger.warn "Failed to generate extraction prompt: #{e.message}"
+        # Don't fail the entire analysis if prompt generation fails
+        results["extraction_prompt"] = nil
+      end
     end
   end
 end

@@ -128,6 +128,40 @@ module Services
       assert_equal brand_name, enhanced["brand_matched"]
     end
 
+    test "generate_extraction_prompt creates extraction_prompt in results" do
+      category_name = "Hoodies #{SecureRandom.hex(4)}"
+      category = create(:category, name: category_name)
+      @user.update(gender_preference: "men")
+
+      results = {
+        "category_name" => category_name,
+        "category_matched" => category_name,
+        "name" => "Grey Zip-Up Hoodie",
+        "description" => "A grey hoodie",
+        "colors" => [ "grey", "black" ],
+        "material" => "cotton blend fleece",
+        "style" => "athletic streetwear",
+        "brand_matched" => "Gym King"
+      }
+
+      @analyzer.send(:generate_extraction_prompt, results)
+
+      assert results["extraction_prompt"].present?
+      assert_includes results["extraction_prompt"], "GREY ZIP-UP HOODIE"
+      assert_includes results["extraction_prompt"], "Gender Context: Men"
+      assert_includes results["extraction_prompt"], "Category: #{category_name}"
+    end
+
+    test "generate_extraction_prompt handles errors gracefully" do
+      results = {
+        "error" => "Some error"
+      }
+
+      @analyzer.send(:generate_extraction_prompt, results)
+
+      assert_nil results["extraction_prompt"]
+    end
+
     test "prepare_image_data converts blob to base64 data URI" do
       image_data = @analyzer.send(:prepare_image_data)
 

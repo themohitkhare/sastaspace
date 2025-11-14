@@ -11,6 +11,7 @@ module Api
           name: @inventory_item.name,
           item_type: @inventory_item.item_type,
           description: @inventory_item.description,
+          extraction_prompt: @inventory_item.extraction_prompt,
           status: @inventory_item.status,
           category: @inventory_item.category ? serialize_category(@inventory_item.category) : nil,
           brand: @inventory_item.brand ? serialize_brand(@inventory_item.brand) : nil,

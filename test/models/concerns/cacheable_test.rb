@@ -19,11 +19,18 @@ class CacheableTest < ActiveSupport::TestCase
 
     @outfit = create(:outfit, user: @user, name: "Test Outfit")
 
-    # Clear cache
+    # Clear cache and reset stats to prevent state leakage
     Rails.cache.clear
+    Caching::VectorCacheService.reset_stats if Caching::VectorCacheService.respond_to?(:reset_stats)
+    Caching::EmbeddingCacheService.reset_stats if Caching::EmbeddingCacheService.respond_to?(:reset_stats)
   end
 
   def teardown
+    # Clear cache before restoring to prevent state leakage
+    Rails.cache.clear if Rails.cache.respond_to?(:clear)
+    # Reset cache stats to prevent accumulation
+    Caching::VectorCacheService.reset_stats if Caching::VectorCacheService.respond_to?(:reset_stats)
+    Caching::EmbeddingCacheService.reset_stats if Caching::EmbeddingCacheService.respond_to?(:reset_stats)
     # Restore original cache store
     Rails.cache = @original_cache_store if @original_cache_store
   end

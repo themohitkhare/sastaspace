@@ -63,12 +63,14 @@ class BatchInventoryCreationJob < ApplicationJob
     description = item_data["description"] || item_data[:description] || ""
     category_name = item_data["category"] || item_data[:category]
     brand_name = item_data["brand_name"] || item_data[:brand_name]
+    extraction_prompt = item_data["extraction_prompt"] || item_data[:extraction_prompt]
 
     # Create inventory item with extracted data
     inventory_item = InventoryItem.create!(
       user: @user,
       name: item_name,
       description: description,
+      extraction_prompt: extraction_prompt,
       category: find_or_create_category(category_name),
       brand: find_or_create_brand(brand_name),
       clothing_analysis: analysis

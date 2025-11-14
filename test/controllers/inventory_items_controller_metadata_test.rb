@@ -9,6 +9,11 @@ class InventoryItemsControllerMetadataTest < ActionDispatch::IntegrationTest
     InventoryItemsController.any_instance.stubs(:current_user).returns(@user)
   end
 
+  teardown do
+    # Clean up stubs to prevent interference with other tests
+    InventoryItemsController.any_instance.unstub_all if InventoryItemsController.any_instance.respond_to?(:unstub_all)
+  end
+
   test "update updates item and redirects" do
     patch inventory_item_path(@item), params: {
       inventory_item: { name: "Updated", description: "New description" }
