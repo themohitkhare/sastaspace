@@ -61,23 +61,23 @@ jobs:
         bundle exec rails db:create
         bundle exec rails db:schema:load || bundle exec rails db:migrate
         
-    - name: Style: Ruby (RuboCop)
+    - name: "Style: Ruby (RuboCop)"
       run: |
         bundle exec rubocop
         
-    - name: Security: Brakeman
+    - name: "Security: Brakeman"
       run: |
         bundle exec brakeman -q -w2
         
-    - name: Security: Bundler Audit
+    - name: "Security: Bundler Audit"
       run: |
         bundle exec bundle-audit check --update
         
-    - name: Tests: Rails with Coverage
+    - name: "Tests: Rails with Coverage"
       run: |
         bundle exec rails test
         
-    - name: Coverage: Summary
+    - name: "Coverage: Summary"
       if: success()
       run: |
         echo "Coverage report generated in coverage/ directory"
