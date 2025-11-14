@@ -6,7 +6,7 @@ class VectorSearchServiceTest < ActiveSupport::TestCase
     Rails.cache.clear
     # Reset cache stats to ensure clean state
     Caching::VectorCacheService.reset_stats
-    
+
     @user = create(:user)
     @category = create(:category, name: "tops")
     @brand = create(:brand)

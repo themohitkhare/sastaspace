@@ -6,7 +6,7 @@ module Api
       setup do
         # Clear cache to prevent state leakage between tests
         Rails.cache.clear
-        
+
         @user = create(:user, password: "Password123!")
         @token = Auth::JsonWebToken.encode_access_token(user_id: @user.id)
         @category = create(:category, :clothing, name: "Tops #{SecureRandom.hex(4)}")

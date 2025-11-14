@@ -3,4 +3,3 @@ class AddExtractionPromptToInventoryItems < ActiveRecord::Migration[8.1]
     add_column :inventory_items, :extraction_prompt, :text
   end
 end
-
