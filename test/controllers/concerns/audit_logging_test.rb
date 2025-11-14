@@ -29,7 +29,9 @@ class AuditLoggingTest < ActionDispatch::IntegrationTest
   setup do
     @user = create(:user)
     @token = Auth::JsonWebToken.encode_access_token(user_id: @user.id)
+    # Create fresh StringIO for each test to prevent state leakage
     @logger_output = StringIO.new
+    # Stub logger to capture output (replaces any previous stub)
     Rails.logger.stubs(:info).with { |arg| @logger_output.write(arg.to_s + "\n"); true }
 
     Rails.application.routes.draw do
@@ -41,6 +43,12 @@ class AuditLoggingTest < ActionDispatch::IntegrationTest
   end
 
   teardown do
+    # Clean up logger stub to prevent interference with other tests
+    Rails.logger.unstub_all if Rails.logger.respond_to?(:unstub_all)
+    # Close and clear logger output to prevent state leakage
+    @logger_output&.close
+    @logger_output = nil
+    # Reload routes to clean up test routes
     Rails.application.routes_reloader.reload!
   end
 

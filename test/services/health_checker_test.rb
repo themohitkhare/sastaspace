@@ -1,6 +1,14 @@
 require "test_helper"
 
 class HealthCheckerTest < ActiveSupport::TestCase
+  teardown do
+    # Clean up all stubs to prevent interference with other tests
+    ActiveRecord::Base.connection.unstub_all if ActiveRecord::Base.connection.respond_to?(:unstub_all)
+    Rails.cache.unstub_all if Rails.cache.respond_to?(:unstub_all)
+    JobMonitoringService.unstub_all if JobMonitoringService.respond_to?(:unstub_all)
+    HealthChecker.unstub_all if HealthChecker.respond_to?(:unstub_all)
+  end
+
   test "database_status healthy" do
     ActiveRecord::Base.connection.stubs(:execute).with("SELECT 1").returns([ [ 1 ] ])
     status = HealthChecker.database_status

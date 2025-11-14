@@ -10,6 +10,9 @@ class ImageProcessableTest < ActiveSupport::TestCase
   end
 
   test "primary_image_variants returns variants when image attached" do
+    # Stub job to prevent hanging on image processing
+    ImageProcessingJob.stubs(:perform_later)
+    
     tempfile = Tempfile.new([ "test", ".jpg" ])
     tempfile.write("fake image data")
     tempfile.rewind
@@ -42,6 +45,9 @@ class ImageProcessableTest < ActiveSupport::TestCase
   end
 
   test "additional_image_variants returns variants when image provided" do
+    # Stub job to prevent hanging on image processing
+    ImageProcessingJob.stubs(:perform_later)
+    
     tempfile = Tempfile.new([ "test", ".jpg" ])
     tempfile.write("fake image data")
     tempfile.rewind
@@ -86,6 +92,9 @@ class ImageProcessableTest < ActiveSupport::TestCase
   end
 
   test "validates primary image content type" do
+    # Stub job to prevent hanging on image processing
+    ImageProcessingJob.stubs(:perform_later)
+    
     tempfile = Tempfile.new([ "test", ".txt" ])
     tempfile.write("not an image")
     tempfile.rewind
@@ -110,6 +119,9 @@ class ImageProcessableTest < ActiveSupport::TestCase
   end
 
   test "validates primary image size" do
+    # Stub job to prevent hanging on image processing
+    ImageProcessingJob.stubs(:perform_later)
+    
     # Create a large file (simulated)
     large_data = "x" * (6.megabytes)
     tempfile = Tempfile.new([ "large", ".jpg" ])
@@ -138,6 +150,9 @@ class ImageProcessableTest < ActiveSupport::TestCase
   end
 
   test "process_images handles additional images" do
+    # Stub job to prevent hanging on image processing
+    ImageProcessingJob.stubs(:perform_later)
+    
     tempfile1 = Tempfile.new([ "test1", ".jpg" ])
     tempfile1.write("fake image data 1")
     tempfile1.rewind
@@ -173,6 +188,9 @@ class ImageProcessableTest < ActiveSupport::TestCase
   end
 
   test "validates additional images content type" do
+    # Stub job to prevent hanging on image processing
+    ImageProcessingJob.stubs(:perform_later)
+    
     tempfile = Tempfile.new([ "test", ".txt" ])
     tempfile.write("not an image")
     tempfile.rewind
@@ -197,6 +215,9 @@ class ImageProcessableTest < ActiveSupport::TestCase
   end
 
   test "validates additional images size" do
+    # Stub job to prevent hanging on image processing
+    ImageProcessingJob.stubs(:perform_later)
+    
     large_data = "x" * (6.megabytes)
     tempfile = Tempfile.new([ "large", ".jpg" ])
     tempfile.write(large_data)

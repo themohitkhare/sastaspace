@@ -18,15 +18,20 @@ class ExtractStockPhotoJob < ApplicationJob
     # Update status to processing
     update_status("processing", nil, nil)
 
-    # Build extraction prompt from analysis results
-    prompt_builder = Services::ExtractionPromptBuilder.new(
-      item_data: @analysis_results,
-      user: @user
-    )
-
-    extraction_prompt = prompt_builder.build_prompt
-
-    Rails.logger.info "Generated extraction prompt for job #{job_id}"
+    # Use stored extraction_prompt if available, otherwise generate it
+    extraction_prompt = if @analysis_results["extraction_prompt"].present?
+      Rails.logger.info "Using stored extraction_prompt for job #{job_id}"
+      @analysis_results["extraction_prompt"]
+    else
+      # Build extraction prompt from analysis results
+      prompt_builder = Services::ExtractionPromptBuilder.new(
+        item_data: @analysis_results,
+        user: @user
+      )
+      generated_prompt = prompt_builder.build_prompt
+      Rails.logger.info "Generated extraction prompt for job #{job_id}"
+      generated_prompt
+    end
 
     # Call ComfyUI for extraction
     extraction_result = ComfyUiService.extract_stock_photo(

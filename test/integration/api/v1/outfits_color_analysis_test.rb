@@ -2,9 +2,17 @@ require "test_helper"
 
 class Api::V1::OutfitsColorAnalysisTest < ActionDispatch::IntegrationTest
   def setup
+    # Clear cache to prevent state leakage between tests
+    Rails.cache.clear
+    
     @user = create(:user)
     @token = Auth::JsonWebToken.encode_access_token(user_id: @user.id)
     @category = create(:category, name: "Test Category #{SecureRandom.hex(4)}")
+  end
+
+  def teardown
+    # Clear cache after each test to prevent state leakage
+    Rails.cache.clear
   end
 
   test "GET /api/v1/outfits/color_analysis requires authentication" do

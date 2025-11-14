@@ -4,11 +4,19 @@ module Api
   module V1
     class HttpCachingTest < ActionDispatch::IntegrationTest
       setup do
+        # Clear cache to prevent state leakage between tests
+        Rails.cache.clear
+        
         @user = create(:user, password: "Password123!")
         @token = Auth::JsonWebToken.encode_access_token(user_id: @user.id)
         @category = create(:category, :clothing, name: "Tops #{SecureRandom.hex(4)}")
         @inventory_item = create(:inventory_item, user: @user, category: @category, name: "Test Item #{SecureRandom.hex(4)}")
         @outfit = create(:outfit, user: @user, name: "Test Outfit #{SecureRandom.hex(4)}")
+      end
+
+      teardown do
+        # Clear cache after each test to prevent state leakage
+        Rails.cache.clear
       end
 
       # Inventory Items Tests

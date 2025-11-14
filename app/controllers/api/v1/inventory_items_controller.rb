@@ -159,7 +159,7 @@ module Api
 
               # Build item params - permit nested structure
               item_params = item_params_hash.permit(
-                :name, :description, :category_id, :brand_id, :status,
+                :name, :description, :category_id, :brand_id, :status, :extraction_prompt,
                 metadata: {}, tag_ids: []
               )
 
@@ -677,7 +677,8 @@ module Api
         begin
           permitted = params.require(:inventory_item).permit(
             :name, :item_type, :description, :status, :category_id, :brand_id,
-            :purchase_price, :purchase_date, :primary_image, :blob_id, additional_images: [],
+            :purchase_price, :purchase_date, :primary_image, :blob_id, :extraction_prompt,
+            additional_images: [],
             metadata: {}, # Allow any metadata hash structure
             tag_ids: []
           )

@@ -123,6 +123,44 @@ class Api::V1::InventoryItemsControllerTest < ActionDispatch::IntegrationTest
     assert item.primary_image.attached?, "Primary image should be attached"
   end
 
+  test "POST /api/v1/inventory_items stores extraction_prompt" do
+    extraction_prompt = "PROFESSIONAL STOCK PHOTO EXTRACTION - TEST ITEM\n\nGender Context: Men\nCategory: T-Shirts"
+    
+    post "/api/v1/inventory_items",
+         params: {
+           inventory_item: {
+             name: "Test Item",
+             description: "Test Description",
+             category_id: @category.id,
+             extraction_prompt: extraction_prompt
+           }
+         }.to_json,
+         headers: api_v1_headers(@token)
+
+    assert_response :created
+    item = @user.inventory_items.order(created_at: :desc).first
+    assert_equal extraction_prompt, item.extraction_prompt
+  end
+
+  test "POST /api/v1/inventory_items includes extraction_prompt in response" do
+    extraction_prompt = "PROFESSIONAL STOCK PHOTO EXTRACTION - TEST ITEM"
+    
+    post "/api/v1/inventory_items",
+         params: {
+           inventory_item: {
+             name: "Test Item",
+             description: "Test Description",
+             category_id: @category.id,
+             extraction_prompt: extraction_prompt
+           }
+         }.to_json,
+         headers: api_v1_headers(@token)
+
+    assert_response :created
+    body = json_response
+    assert_equal extraction_prompt, body["data"]["inventory_item"]["extraction_prompt"]
+  end
+
   test "POST /api/v1/inventory_items with invalid data returns validation errors" do
     post "/api/v1/inventory_items",
          params: {
@@ -157,6 +195,27 @@ class Api::V1::InventoryItemsControllerTest < ActionDispatch::IntegrationTest
   end
 
   # Batch Create Tests
+  test "POST /api/v1/inventory_items/batch_create stores extraction_prompt for items" do
+    extraction_prompt = "PROFESSIONAL STOCK PHOTO EXTRACTION - BATCH ITEM"
+    
+    post "/api/v1/inventory_items/batch_create",
+         params: {
+           items: [
+             {
+               name: "Batch Item 1",
+               description: "Description 1",
+               category_id: @category.id,
+               extraction_prompt: extraction_prompt
+             }
+           ]
+         }.to_json,
+         headers: api_v1_headers(@token)
+
+    assert_response :created
+    item = @user.inventory_items.order(created_at: :desc).first
+    assert_equal extraction_prompt, item.extraction_prompt
+  end
+
   test "POST /api/v1/inventory_items/batch_create creates multiple items" do
     items_data = [
       { name: "Item 1", category_id: @category.id },

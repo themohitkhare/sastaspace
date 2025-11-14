@@ -7,6 +7,14 @@ class ImageProcessingJobTest < ActiveJob::TestCase
     @inventory_item = create(:inventory_item, :clothing, user: @user, category: @category)
   end
 
+  teardown do
+    # Clean up all stubs to prevent interference with other tests
+    Rails.logger.unstub_all if Rails.logger.respond_to?(:unstub_all)
+    ImageProcessingJob.unstub_all if ImageProcessingJob.respond_to?(:unstub_all)
+    # Clean up any_instance stubs
+    ImageProcessingJob.any_instance.unstub_all if ImageProcessingJob.any_instance.respond_to?(:unstub_all)
+  end
+
   test "should process primary image variants" do
     # Attach a test image
     @inventory_item.primary_image.attach(

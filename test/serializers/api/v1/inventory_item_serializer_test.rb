@@ -32,6 +32,23 @@ module Api
         assert_equal @inventory_item.updated_at, serialized[:updated_at]
       end
 
+      test "should serialize extraction_prompt when present" do
+        extraction_prompt = "PROFESSIONAL STOCK PHOTO EXTRACTION - TEST ITEM"
+        @inventory_item.update(extraction_prompt: extraction_prompt)
+
+        serialized = @serializer.as_json
+
+        assert_equal extraction_prompt, serialized[:extraction_prompt]
+      end
+
+      test "should serialize nil extraction_prompt when not present" do
+        @inventory_item.update(extraction_prompt: nil)
+
+        serialized = @serializer.as_json
+
+        assert_nil serialized[:extraction_prompt]
+      end
+
       test "should serialize category information" do
         serialized = @serializer.as_json
         category = serialized[:category]
