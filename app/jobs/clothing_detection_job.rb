@@ -163,11 +163,15 @@ class ClothingDetectionJob < ApplicationJob
         description = (item_data["description"] || item_data[:description]).presence || build_item_description(item_data)
 
         # Handle both string and symbol keys
+        # Extract extraction_prompt if available
+        extraction_prompt = item_data["extraction_prompt"] || item_data[:extraction_prompt]
+
         item_params = {
           name: item_data["item_name"] || item_data[:item_name] || "Detected Item",
           description: description,
           category_id: item_data["category_id"] || item_data[:category_id],
           status: "active",
+          extraction_prompt: extraction_prompt, # Store extraction_prompt for stock photo extraction
           clothing_analysis: analysis,
           metadata: {
             color: item_data["color_primary"] || item_data[:color_primary],

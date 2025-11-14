@@ -1,35 +1,22 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
-# This script runs the ActiveJob worker locally for development
-# It processes jobs from the Redis queue
+# This script runs the Solid Queue worker locally for development
+# Only needed if using :solid_queue adapter (set RAILS_QUEUE_ADAPTER=solid_queue)
+# With :async adapter (default), jobs run automatically - no worker needed
 
 require_relative "../config/environment"
 
-puts "Starting ActiveJob worker..."
+puts "Starting Solid Queue worker..."
 puts "Environment: #{Rails.env}"
-puts "Redis URL: #{ENV.fetch('REDIS_URL', 'redis://127.0.0.1:6379/0')}"
+puts "Queue adapter: #{Rails.application.config.active_job.queue_adapter}"
 puts "Press Ctrl+C to stop"
 
-# Start the worker
-Rails.application.config.active_job.queue_adapter = :redis
+# Ensure Solid Queue is configured
+Rails.application.config.active_job.queue_adapter ||= :solid_queue
 
-# Simple worker loop
-loop do
-  begin
-    # Process jobs
-    Rails.application.config.active_job.queue_adapter.enqueued_jobs.each do |job|
-      puts "Processing job: #{job.class.name}"
-      job.perform_now
-    end
-    
-    # Sleep briefly to avoid busy waiting
-    sleep 0.1
-  rescue Interrupt
-    puts "\nShutting down worker..."
-    break
-  rescue StandardError => e
-    puts "Error processing job: #{e.message}"
-    sleep 1
-  end
-end
+# Start Solid Queue supervisor
+require "solid_queue"
+
+# Load Solid Queue configuration
+SolidQueue::Supervisor.start

@@ -31,11 +31,162 @@
     <div style="margin-bottom: 15px;">
       <%= form.label :primary_image, "Primary Image", style: "display: block; margin-bottom: 5px; font-weight: bold;" %>
       <%= form.file_field :primary_image, accept: "image/*", direct_upload: true, style: "width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;" %>
-      <% if @inventory_item.primary_image.attached? %>
+      <% 
+        # Check if primary image is attached and log for debugging
+        has_image = @inventory_item.primary_image.attached?
+        Rails.logger.info "Edit view - Item #{@inventory_item.id}: primary_image.attached? = #{has_image}"
+      %>
+      <% if has_image %>
+        <% 
+          begin
+            # Get blob info for display
+            blob_id = @inventory_item.primary_image.blob.id
+            filename = @inventory_item.primary_image.blob.filename.to_s
+            Rails.logger.info "Edit view - Item #{@inventory_item.id}: primary_image attached, blob_id: #{blob_id}, filename: #{filename}"
+          rescue => e
+            Rails.logger.error "Edit view - Item #{@inventory_item.id}: Error accessing blob info: #{e.message}"
+            blob_id = nil
+            filename = nil
+          end
+        %>
         <div style="margin-top: 10px;">
-          <%= image_tag @inventory_item.primary_image, alt: "Current image", style: "max-width: 300px; max-height: 300px; border: 1px solid #ddd; border-radius: 4px;" %>
+          <%= image_tag @inventory_item.primary_image, alt: "Current primary image", style: "max-width: 300px; max-height: 300px; border: 1px solid #ddd; border-radius: 4px; display: block;" %>
+          <p style="margin-top: 5px; font-size: 12px; color: #666;">
+            Current primary image (blob ID: <%= blob_id || 'unknown' %>, filename: <%= filename || 'unknown' %>)
+          </p>
+        </div>
+      <% else %>
+        <div style="margin-top: 10px; padding: 10px; background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 4px; color: #6c757d; font-size: 14px;">
+          No primary image attached
         </div>
       <% end %>
+      
+      <!-- Stock Photo Extraction Section -->
+      <% if has_image && @inventory_item.primary_image.blob.present? %>
+          <% 
+            # Debug: Log the blob_id being used
+            # Ensure we have the latest blob_id by accessing it directly
+            current_blob_id = @inventory_item.primary_image.blob.id
+            Rails.logger.info "Edit page - Item ID: #{@inventory_item.id}, Blob ID: #{current_blob_id}, Filename: #{@inventory_item.primary_image.blob.filename}"
+            
+            # Validate blob_id is present and valid
+            if current_blob_id.blank? || current_blob_id.to_i <= 0
+              Rails.logger.error "Invalid blob_id for item #{@inventory_item.id}: #{current_blob_id.inspect}"
+            end
+            
+            # Generate extraction_prompt if missing
+            extraction_prompt = @inventory_item.extraction_prompt
+            if extraction_prompt.blank?
+              begin
+                prompt_builder = Services::ExtractionPromptBuilder.new(
+                  item_data: {
+                    name: @inventory_item.name,
+                    description: @inventory_item.description,
+                    category_name: @inventory_item.category&.name,
+                    category_matched: @inventory_item.category&.name,
+                    subcategory: @inventory_item.subcategory&.name,
+                    material: @inventory_item.material,
+                    style_notes: @inventory_item.style_notes,
+                    brand_matched: @inventory_item.brand&.name,
+                    colors: [@inventory_item.color].compact
+                  },
+                  user: current_user
+                )
+                extraction_prompt = prompt_builder.build_prompt
+                # Optionally save it to the item
+                @inventory_item.update_column(:extraction_prompt, extraction_prompt) if extraction_prompt.present?
+              rescue => e
+                Rails.logger.warn "Failed to generate extraction prompt: #{e.message}"
+                extraction_prompt = nil
+              end
+            end
+          %>
+          <div 
+            data-controller="stock-photo-extraction"
+            data-stock-photo-extraction-blob-id-value="<%= @inventory_item.primary_image.blob.id %>"
+            data-stock-photo-extraction-inventory-item-id-value="<%= @inventory_item.id %>"
+            data-debug-item-id="<%= @inventory_item.id %>"
+            data-debug-blob-id="<%= @inventory_item.primary_image.blob.id %>"
+            <% 
+              # Build analysis data hash - to_json will handle all escaping
+              analysis_data = {
+                name: @inventory_item.name.to_s,
+                description: (@inventory_item.description || "").to_s,
+                category_name: (@inventory_item.category&.name || "").to_s,
+                category_matched: (@inventory_item.category&.name || "").to_s,
+                subcategory: (@inventory_item.subcategory&.name || "").to_s,
+                material: (@inventory_item.material || "").to_s,
+                style: (@inventory_item.style_notes || "").to_s,
+                style_notes: (@inventory_item.style_notes || "").to_s,
+                brand_matched: (@inventory_item.brand&.name || "").to_s,
+                colors: [@inventory_item.color].compact.map(&:to_s),
+                extraction_prompt: (extraction_prompt || "").to_s,
+                gender_appropriate: true,
+                confidence: 0.9
+              }
+              # Convert to JSON - to_json handles all JSON escaping (quotes, newlines, etc.)
+              # Use single quotes for HTML attribute to avoid conflicts with JSON's double quotes
+              analysis_json = analysis_data.to_json
+            %>
+            data-stock-photo-extraction-analysis-results-value='<%= analysis_json %>'
+            style="margin-top: 15px; padding: 15px; background: #f8f9fa; border-radius: 8px; border: 1px solid #dee2e6;"
+          >
+            <h3 style="margin-top: 0; margin-bottom: 10px; font-size: 16px; font-weight: 600;">Stock Photo Extraction</h3>
+            <p style="margin-bottom: 15px; color: #6c757d; font-size: 14px;">
+              Generate a professional stock photo with white background using AI.
+            </p>
+            
+            <% if extraction_prompt.present? %>
+              <div style="margin-bottom: 15px; padding: 12px; background: #fff; border: 1px solid #dee2e6; border-radius: 6px;">
+                <details style="cursor: pointer;">
+                  <summary style="font-weight: 600; color: #495057; font-size: 14px; margin-bottom: 8px; user-select: none;">
+                    View Extraction Prompt
+                  </summary>
+                  <div style="margin-top: 10px; padding: 10px; background: #f8f9fa; border-radius: 4px; font-family: 'Monaco', 'Menlo', 'Courier New', monospace; font-size: 12px; line-height: 1.6; color: #212529; white-space: pre-wrap; word-wrap: break-word; max-height: 300px; overflow-y: auto;">
+                    <%= extraction_prompt %>
+                  </div>
+                </details>
+              </div>
+            <% else %>
+              <div style="margin-bottom: 15px; padding: 10px; background: #fff3cd; border: 1px solid #ffc107; border-radius: 6px; color: #856404; font-size: 13px;">
+                ⚠️ Extraction prompt not available. It will be generated when you click "Extract Stock Photo".
+              </div>
+            <% end %>
+            
+            <button
+              type="button"
+              data-stock-photo-extraction-target="button"
+              data-action="click->stock-photo-extraction#extractStockPhoto"
+              class="btn-primary"
+              style="padding: 8px 15px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px;"
+            >
+              Extract Stock Photo
+            </button>
+
+            <div 
+              data-stock-photo-extraction-target="status"
+              class="hidden"
+              style="margin-top: 10px; padding: 10px; background: #e7f3ff; border-radius: 4px; color: #004085; font-size: 14px;"
+            >
+              <span data-stock-photo-extraction-target="progress">⏳ </span>
+              <span>Processing...</span>
+            </div>
+
+            <div 
+              data-stock-photo-extraction-target="errorMessage"
+              class="hidden"
+              style="margin-top: 10px; padding: 10px; background: #f8d7da; border-radius: 4px; color: #721c24; font-size: 14px;"
+            >
+            </div>
+
+            <div 
+              data-stock-photo-extraction-target="extractedImage"
+              class="hidden"
+              style="margin-top: 10px;"
+            >
+            </div>
+          </div>
+        <% end %>
     </div>
 
     <div style="margin-bottom: 15px;">

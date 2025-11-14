@@ -6,9 +6,7 @@ class InventoryItemsController < ApplicationController
 
   def index
     @inventory_items = current_user.inventory_items
-                                   .includes(:category, :subcategory, :brand, :tags,
-                                             primary_image_attachment: :blob,
-                                             additional_images_attachments: :blob)
+                                   .includes(:category, :subcategory, :brand)
                                    .order(created_at: :desc)
 
     # Apply filters
@@ -131,10 +129,12 @@ class InventoryItemsController < ApplicationController
 
   def set_inventory_item
     @inventory_item = current_user.inventory_items
-                                  .includes(:category, :subcategory, :brand, :tags, :ai_analyses,
-                                            primary_image_attachment: :blob,
-                                            additional_images_attachments: :blob)
+                                  .includes(:category, :subcategory, :brand)
                                   .find(params[:id])
+    # Reload to ensure we have the latest state (especially after extraction)
+    @inventory_item.reload
+    # Ensure primary_image is loaded if attached (this will trigger the association load)
+    @inventory_item.primary_image if @inventory_item.primary_image.attached?
   end
 
   def inventory_item_params

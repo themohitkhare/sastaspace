@@ -73,6 +73,38 @@ class InventoryItemsControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
   end
 
+  test "edit displays primary image when attached" do
+    # Stub job to prevent hanging on image processing
+    ImageProcessingJob.stubs(:perform_later)
+
+    item = create(:inventory_item, :clothing, user: @user, category: @category)
+    
+    # Attach a primary image
+    item.primary_image.attach(
+      io: File.open(Rails.root.join("test", "fixtures", "files", "sample_image.jpg")),
+      filename: "test.jpg",
+      content_type: "image/jpeg"
+    )
+
+    get edit_inventory_item_path(item)
+    assert_response :success
+    
+    # Verify the image is displayed in the HTML
+    assert_select "img[alt='Current primary image']", count: 1
+    # Verify blob ID is shown
+    assert_match(/blob ID: \d+/, response.body)
+  end
+
+  test "edit shows message when no primary image attached" do
+    item = create(:inventory_item, :clothing, user: @user, category: @category)
+    
+    get edit_inventory_item_path(item)
+    assert_response :success
+    
+    # Verify the "No primary image attached" message is shown
+    assert_match(/No primary image attached/i, response.body)
+  end
+
   test "update updates item and redirects on success" do
     item = create(:inventory_item, :clothing, user: @user, category: @category, name: "Old")
     patch inventory_item_path(item), params: {

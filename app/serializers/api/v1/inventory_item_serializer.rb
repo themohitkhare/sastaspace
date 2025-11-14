@@ -74,6 +74,7 @@ module Api
           # So we can call these methods directly on the image object
           {
             id: image.id,
+            blob_id: image.blob.id, # Include blob_id for stock photo extraction
             filename: image.filename.to_s,
             content_type: image.content_type,
             byte_size: image.byte_size,

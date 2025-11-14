@@ -362,7 +362,29 @@ class ClothingDetectionService
     # Note: Brand matching would go here if we had brand_name in detection results
     # For now, clothing detection doesn't extract brands
 
+    # Generate extraction_prompt for ComfyUI stock photo extraction
+    generate_extraction_prompt_for_item(item_data)
+
     item_data
+  end
+
+  def generate_extraction_prompt_for_item(item_data)
+    # Only generate prompt if we have valid item data
+    return if item_data["error"].present? || item_data["parse_error"]
+
+    begin
+      prompt_builder = Services::ExtractionPromptBuilder.new(
+        item_data: item_data,
+        user: user
+      )
+
+      item_data["extraction_prompt"] = prompt_builder.build_prompt
+      Rails.logger.info "Generated extraction prompt for detected item: #{item_data['item_name']}"
+    rescue StandardError => e
+      Rails.logger.warn "Failed to generate extraction prompt for item: #{e.message}"
+      # Don't fail the entire detection if prompt generation fails
+      item_data["extraction_prompt"] = nil
+    end
   end
 
   def find_matching_category(category_name)
