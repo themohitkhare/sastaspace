@@ -190,7 +190,7 @@ class ExtractStockPhotoJobTest < ActiveJob::TestCase
   test "job uses stored extraction_prompt when available" do
     stored_prompt = "STORED EXTRACTION PROMPT - DO NOT GENERATE"
     analysis_with_prompt = @analysis_results.merge("extraction_prompt" => stored_prompt)
-    
+
     image_data = Base64.encode64("fake png image data")
     mock_result = {
       "success" => true,
@@ -199,7 +199,7 @@ class ExtractStockPhotoJobTest < ActiveJob::TestCase
       "image_data" => image_data
     }
     ComfyUiService.stubs(:extract_stock_photo).returns(mock_result)
-    
+
     # Verify ExtractionPromptBuilder is NOT called
     Services::ExtractionPromptBuilder.expects(:new).never
 
@@ -214,7 +214,7 @@ class ExtractStockPhotoJobTest < ActiveJob::TestCase
   test "job generates extraction_prompt when not stored" do
     # Ensure no extraction_prompt in analysis results
     analysis_without_prompt = @analysis_results.except("extraction_prompt")
-    
+
     image_data = Base64.encode64("fake png image data")
     mock_result = {
       "success" => true,
@@ -223,7 +223,7 @@ class ExtractStockPhotoJobTest < ActiveJob::TestCase
       "image_data" => image_data
     }
     ComfyUiService.stubs(:extract_stock_photo).returns(mock_result)
-    
+
     # Verify ExtractionPromptBuilder IS called
     mock_builder = stub(build_prompt: "GENERATED PROMPT")
     Services::ExtractionPromptBuilder.expects(:new).returns(mock_builder)

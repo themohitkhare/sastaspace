@@ -16,7 +16,7 @@ class MetricsLoggerCacheTest < ActiveSupport::TestCase
     ActiveSupport::Notifications.unsubscribe("enqueue.active_job")
     ActiveSupport::Notifications.unsubscribe("cache_read.active_support")
     ActiveSupport::Notifications.unsubscribe("cache_write.active_support")
-    
+
     # Restore original cache store
     Rails.cache = @original_cache if @original_cache
     # Clear cache after test

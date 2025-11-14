@@ -12,7 +12,7 @@ class RateLimiterCountNamespaceTest < ActiveSupport::TestCase
   teardown do
     # Clean up memory store after each test to prevent state leakage
     # Keep _initialized to prevent bypass check
-    keys_to_keep = ["_initialized"]
+    keys_to_keep = [ "_initialized" ]
     keys_to_delete = RateLimiter.memory_store.keys - keys_to_keep
     keys_to_delete.each { |key| RateLimiter.memory_store.delete(key) }
   end

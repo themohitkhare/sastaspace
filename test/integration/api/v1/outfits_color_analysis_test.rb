@@ -4,7 +4,7 @@ class Api::V1::OutfitsColorAnalysisTest < ActionDispatch::IntegrationTest
   def setup
     # Clear cache to prevent state leakage between tests
     Rails.cache.clear
-    
+
     @user = create(:user)
     @token = Auth::JsonWebToken.encode_access_token(user_id: @user.id)
     @category = create(:category, name: "Test Category #{SecureRandom.hex(4)}")

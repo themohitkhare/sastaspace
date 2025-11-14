@@ -125,7 +125,7 @@ class Api::V1::InventoryItemsControllerTest < ActionDispatch::IntegrationTest
 
   test "POST /api/v1/inventory_items stores extraction_prompt" do
     extraction_prompt = "PROFESSIONAL STOCK PHOTO EXTRACTION - TEST ITEM\n\nGender Context: Men\nCategory: T-Shirts"
-    
+
     post "/api/v1/inventory_items",
          params: {
            inventory_item: {
@@ -144,7 +144,7 @@ class Api::V1::InventoryItemsControllerTest < ActionDispatch::IntegrationTest
 
   test "POST /api/v1/inventory_items includes extraction_prompt in response" do
     extraction_prompt = "PROFESSIONAL STOCK PHOTO EXTRACTION - TEST ITEM"
-    
+
     post "/api/v1/inventory_items",
          params: {
            inventory_item: {
@@ -197,7 +197,7 @@ class Api::V1::InventoryItemsControllerTest < ActionDispatch::IntegrationTest
   # Batch Create Tests
   test "POST /api/v1/inventory_items/batch_create stores extraction_prompt for items" do
     extraction_prompt = "PROFESSIONAL STOCK PHOTO EXTRACTION - BATCH ITEM"
-    
+
     post "/api/v1/inventory_items/batch_create",
          params: {
            items: [
