@@ -6,6 +6,12 @@ class AiProcessingChannel < ApplicationCable::Channel
       Rails.logger.info "Subscribed to detection updates for user #{params[:user_id]}"
     end
 
+    # Subscribe to stock photo extraction updates for the user
+    if params[:user_id].present?
+      stream_from "stock_extraction_#{params[:user_id]}"
+      Rails.logger.info "Subscribed to stock extraction updates for user #{params[:user_id]}"
+    end
+
     # Subscribe to extraction updates for a specific analysis
     if params[:analysis_id].present?
       stream_from "extraction_#{params[:analysis_id]}"

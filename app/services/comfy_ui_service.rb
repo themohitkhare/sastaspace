@@ -91,7 +91,7 @@ class ComfyUiService
       # Force binary encoding to ensure image data is handled correctly
       image_data.force_encoding("BINARY") if image_data.respond_to?(:force_encoding)
       Rails.logger.info "Uploading image to ComfyUI: blob_id=#{blob.id}, size=#{image_data.bytesize} bytes, content_type=#{blob.content_type}"
-      
+
       extension = blob.filename.extension.presence || "jpg"
       filename = "#{SecureRandom.hex(8)}.#{extension}"
 
@@ -420,12 +420,12 @@ class ComfyUiService
               Rails.logger.info "ComfyUI outputs: #{outputs.inspect}"
 
               image_data = extract_image_from_outputs(outputs, http, base_uri)
-              
+
               if image_data.nil?
                 Rails.logger.error "ComfyUI returned no image data for job #{job_id}"
                 raise StandardError, "ComfyUI did not return image data"
               end
-              
+
               image_size = image_data.respond_to?(:bytesize) ? image_data.bytesize : image_data.size
               Rails.logger.info "ComfyUI returned image data: #{image_size} bytes (#{(image_size / 1024.0).round(2)} KB)"
               Rails.logger.info "Image data type: #{image_data.class}, encoding: #{image_data.respond_to?(:encoding) ? image_data.encoding : 'N/A'}"
@@ -468,9 +468,9 @@ class ComfyUiService
       # Node "60" is the SaveImage node in our workflow
 
       Rails.logger.info "Extracting image from ComfyUI outputs: #{outputs.inspect}"
-      
+
       return nil unless outputs.is_a?(Hash)
-      
+
       if outputs.empty?
         Rails.logger.warn "ComfyUI outputs is empty hash"
         return nil
@@ -494,16 +494,16 @@ class ComfyUiService
         image_http = Net::HTTP.new(base_uri.host, base_uri.port)
         image_http.open_timeout = 10
         image_http.read_timeout = 60  # Longer timeout for large images
-        
+
         request = Net::HTTP::Get.new(view_path)
         response = image_http.request(request)
 
         if response.code == "200"
           Rails.logger.info "Downloaded extracted image from ComfyUI: #{filename}"
-          
+
           # Read response body carefully - ensure we get the full body
           image_data = response.body
-          
+
           # Check Content-Length header if available
           if response["Content-Length"]
             expected_size = response["Content-Length"].to_i
@@ -512,29 +512,29 @@ class ComfyUiService
               Rails.logger.error "⚠️  WARNING: Content-Length mismatch! Expected: #{expected_size} bytes, Got: #{actual_size} bytes"
             end
           end
-          
+
           # Validate we got actual data
           if image_data.nil? || image_data.empty?
             Rails.logger.error "ComfyUI returned empty response body for #{filename}"
             return nil
           end
-          
+
           # Force binary encoding to ensure image data is handled correctly
           image_data.force_encoding("BINARY") if image_data.respond_to?(:force_encoding)
-          
+
           image_size = image_data.respond_to?(:bytesize) ? image_data.bytesize : image_data.size
           Rails.logger.info "Downloaded image size: #{image_size} bytes (#{(image_size / 1024.0).round(2)} KB)"
-          
+
           # Validate minimum size
           if image_size < 10_000
             Rails.logger.error "⚠️  WARNING: Downloaded image is suspiciously small (#{image_size} bytes). Expected at least 50KB."
             return nil
           end
-          
+
           # Validate PNG header
           if image_size >= 8
             png_header = image_data[0..7].bytes
-            is_png = png_header == [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]
+            is_png = png_header == [ 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A ]
             if is_png
               Rails.logger.info "✓ Valid PNG header confirmed"
             else
@@ -542,7 +542,7 @@ class ComfyUiService
               return nil
             end
           end
-          
+
           return image_data
         else
           Rails.logger.error "Failed to download image from ComfyUI: HTTP #{response.code}"
@@ -573,16 +573,16 @@ class ComfyUiService
           image_http = Net::HTTP.new(base_uri.host, base_uri.port)
           image_http.open_timeout = 10
           image_http.read_timeout = 60  # Longer timeout for large images
-          
+
           request = Net::HTTP::Get.new(view_path)
           response = image_http.request(request)
 
           if response.code == "200"
             Rails.logger.info "Downloaded extracted image from ComfyUI: #{filename}"
-            
+
             # Read response body carefully - ensure we get the full body
             image_data = response.body
-            
+
             # Check Content-Length header if available
             if response["Content-Length"]
               expected_size = response["Content-Length"].to_i
@@ -591,29 +591,29 @@ class ComfyUiService
                 Rails.logger.error "⚠️  WARNING: Content-Length mismatch! Expected: #{expected_size} bytes, Got: #{actual_size} bytes"
               end
             end
-            
+
             # Validate we got actual data
             if image_data.nil? || image_data.empty?
               Rails.logger.error "ComfyUI returned empty response body for #{filename}"
               next
             end
-            
+
             # Force binary encoding to ensure image data is handled correctly
             image_data.force_encoding("BINARY") if image_data.respond_to?(:force_encoding)
-            
+
             image_size = image_data.respond_to?(:bytesize) ? image_data.bytesize : image_data.size
             Rails.logger.info "Downloaded image size: #{image_size} bytes (#{(image_size / 1024.0).round(2)} KB)"
-            
+
             # Validate minimum size
             if image_size < 10_000
               Rails.logger.error "⚠️  WARNING: Downloaded image is suspiciously small (#{image_size} bytes). Expected at least 50KB."
               next
             end
-            
+
             # Validate PNG header
             if image_size >= 8
               png_header = image_data[0..7].bytes
-              is_png = png_header == [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]
+              is_png = png_header == [ 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A ]
               if is_png
                 Rails.logger.info "✓ Valid PNG header confirmed"
               else
@@ -621,7 +621,7 @@ class ComfyUiService
                 next
               end
             end
-            
+
             return image_data
           end
         end
