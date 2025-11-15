@@ -49,6 +49,19 @@ class AdminAdminControllerTest < ActionDispatch::IntegrationTest
     assert_select "h1", text: "Admin Dashboard"
   end
 
+  test "dashboard responds to HTML format" do
+    Admin::AdminController.any_instance.stubs(:authenticate_user!).returns(true)
+    Admin::AdminController.any_instance.stubs(:current_user).returns(@admin_user)
+    Admin::AdminController.any_instance.stubs(:user_signed_in?).returns(true)
+
+    JobMonitoringService.stubs(:queue_health).returns({ status: "healthy", queues: {}, workers: { active: 1 }, alerts: [] })
+    JobMonitoringService.stubs(:capacity_metrics).returns({ queue_depths: {}, worker_capacity: { total_workers: 1, active_workers: 1 }, processing_rate: { jobs_per_minute: 10, estimated_time_to_clear_minutes: 5 } })
+
+    get admin_dashboard_path, headers: { "Accept" => "text/html" }
+
+    assert_response :success
+  end
+
   test "job_monitoring redirects non-admin users" do
     # Stub authentication - bypass authenticate_user! and set current_user
     Admin::AdminController.any_instance.stubs(:authenticate_user!).returns(true)
@@ -95,6 +108,20 @@ class AdminAdminControllerTest < ActionDispatch::IntegrationTest
     assert_select "h1", text: "Job Monitoring"
   end
 
+  test "job_monitoring responds to HTML format" do
+    Admin::AdminController.any_instance.stubs(:authenticate_user!).returns(true)
+    Admin::AdminController.any_instance.stubs(:current_user).returns(@admin_user)
+    Admin::AdminController.any_instance.stubs(:user_signed_in?).returns(true)
+
+    JobMonitoringService.stubs(:queue_health).returns({ status: "healthy", queues: {}, workers: { active: 1 }, alerts: [] })
+    JobMonitoringService.stubs(:job_metrics).returns({ completed: 10, average_processing_time_ms: 100.0, median_processing_time_ms: 95.0, p95_processing_time_ms: 150.0, p99_processing_time_ms: 200.0, time_window_seconds: 3600 })
+    JobMonitoringService.stubs(:failure_metrics).returns({ total: 0, failure_rate: 0.0, failure_rate_percent: 0.0, by_job_class: {}, time_window_seconds: 3600 })
+
+    get admin_job_monitoring_path, headers: { "Accept" => "text/html" }
+
+    assert_response :success
+  end
+
   test "job_class_metrics redirects non-admin users" do
     # Stub authentication - bypass authenticate_user! and set current_user
     Admin::AdminController.any_instance.stubs(:authenticate_user!).returns(true)
@@ -121,6 +148,18 @@ class AdminAdminControllerTest < ActionDispatch::IntegrationTest
       average_processing_time_ms: 120.0,
       time_window_seconds: 3600
     })
+
+    get admin_job_class_metrics_path(job_class: "TestJob"), headers: { "Accept" => "text/html" }
+
+    assert_response :success
+  end
+
+  test "job_class_metrics responds to HTML format" do
+    Admin::AdminController.any_instance.stubs(:authenticate_user!).returns(true)
+    Admin::AdminController.any_instance.stubs(:current_user).returns(@admin_user)
+    Admin::AdminController.any_instance.stubs(:user_signed_in?).returns(true)
+
+    JobMonitoringService.stubs(:job_class_metrics).returns({ total: 5, completed: 4, failed: 1, success_rate: 75.0, average_processing_time_ms: 120.0, time_window_seconds: 3600 })
 
     get admin_job_class_metrics_path(job_class: "TestJob"), headers: { "Accept" => "text/html" }
 

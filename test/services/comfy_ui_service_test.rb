@@ -10,6 +10,44 @@ class ComfyUiServiceTest < ActiveSupport::TestCase
     @extraction_prompt = "Extract this item with white background"
   end
 
+  # Helper method to generate valid PNG data that passes service validation
+  # Service requires: valid PNG header + minimum 10,000 bytes
+  def valid_png_image_data(size: 15_000)
+    # PNG signature (8 bytes) - this is what the service validates
+    png_header = [ 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A ].pack("C*")
+
+    # Create a minimal valid PNG structure with enough padding to meet size requirement
+    # The service only validates: PNG header (first 8 bytes) and minimum size (10,000 bytes)
+    # So we create a simple structure: header + padding + minimal chunks
+
+    # Minimal IHDR chunk: 4 bytes length + 4 bytes type + 13 bytes data + 4 bytes CRC
+    ihdr_length = [ 13 ].pack("N")
+    ihdr_type = "IHDR"
+    # IHDR data: width (4), height (4), bit_depth (1), color_type (1), compression (1), filter (1), interlace (1)
+    ihdr_data = [ 100, 100, 8, 6, 0, 0, 0 ].pack("NNCCCCC")
+    ihdr_crc = [ 0 ].pack("N") # Simplified CRC for testing
+    ihdr_chunk = ihdr_length + ihdr_type + ihdr_data + ihdr_crc
+
+    # Calculate padding needed to reach desired size
+    # Structure: header (8) + IHDR (25) + IDAT (4 length + 4 type + data + 4 CRC) + IEND (12)
+    # IDAT structure: 4 (length) + 4 (type) + data + 4 (CRC) = 12 + data_size
+    fixed_size = png_header.bytesize + ihdr_chunk.bytesize + 12 + 12 # header + IHDR + IDAT overhead + IEND
+    padding_size = [ size - fixed_size, 0 ].max
+
+    # IDAT chunk with padding
+    idat_length = [ padding_size ].pack("N")
+    idat_type = "IDAT"
+    idat_data = "x" * padding_size
+    idat_crc = [ 0 ].pack("N") # Simplified CRC for testing
+    idat_chunk = idat_length + idat_type + idat_data + idat_crc
+
+    # IEND chunk (standard PNG ending)
+    iend_chunk = [ 0 ].pack("N") + "IEND" + [ 0xAE426082 ].pack("N")
+
+    result = png_header + ihdr_chunk + idat_chunk + iend_chunk
+    result.force_encoding("BINARY")
+  end
+
   test "extract_stock_photo raises error when image_blob is missing" do
     assert_raises(ArgumentError) do
       ComfyUiService.extract_stock_photo(
@@ -127,11 +165,12 @@ class ComfyUiServiceTest < ActiveSupport::TestCase
         headers: { "Content-Type" => "application/json" }
       )
 
-    # Stub image download
+    # Stub image download with valid PNG data
+    valid_png_data = valid_png_image_data
     WebMock.stub_request(:get, /http:\/\/localhost:8188\/view/)
       .to_return(
         status: 200,
-        body: "fake_image_data",
+        body: valid_png_data,
         headers: { "Content-Type" => "image/png" }
       )
 
@@ -343,11 +382,12 @@ class ComfyUiServiceTest < ActiveSupport::TestCase
         headers: { "Content-Type" => "application/json" }
       )
 
-    # Stub image download
+    # Stub image download with valid PNG data
+    valid_png_data = valid_png_image_data
     WebMock.stub_request(:get, /http:\/\/custom-host:9999\/view/)
       .to_return(
         status: 200,
-        body: "fake_image_data",
+        body: valid_png_data,
         headers: { "Content-Type" => "image/png" }
       )
 

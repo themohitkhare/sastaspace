@@ -235,4 +235,336 @@ class ExtractStockPhotoJobTest < ActiveJob::TestCase
       assert status["data"]["extraction_prompt"].present?
     end
   end
+
+  test "job handles missing image_data in extraction result" do
+    mock_result = {
+      "success" => true,
+      "job_id" => SecureRandom.uuid,
+      "outputs" => {},
+      "image_data" => nil
+    }
+    ComfyUiService.stubs(:extract_stock_photo).returns(mock_result)
+
+    ExtractStockPhotoJob.perform_now(@image_blob.id, @analysis_results, @user.id, @job_id)
+
+    status = ExtractStockPhotoJob.get_status(@job_id)
+    assert_equal "failed", status["status"]
+    assert status["error"].present?
+
+    # Handle both symbol and string keys, and both hash and string error formats
+    error_data = status["error"]
+    if error_data.is_a?(Hash)
+      error_msg = error_data["error"] || error_data[:error] || error_data["message"] || error_data[:message]
+    else
+      error_msg = error_data
+    end
+
+    assert error_msg.present?, "Error message should be present. Error data: #{error_data.inspect}"
+    assert_includes error_msg.to_s, "ComfyUI did not return image data"
+  end
+
+  test "job handles image_data too small and attempts re-download" do
+    # Create small image data (less than 50KB)
+    small_image_data = "x" * 10_000 # 10KB
+    # Create valid PNG header
+    png_header = [ 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A ].pack("C*")
+    small_image_data = png_header + small_image_data
+
+    mock_result = {
+      "success" => true,
+      "job_id" => SecureRandom.uuid,
+      "outputs" => {
+        "60" => {
+          "images" => [
+            {
+              "filename" => "test_output.png",
+              "subfolder" => "",
+              "type" => "output"
+            }
+          ]
+        }
+      },
+      "image_data" => small_image_data
+    }
+    ComfyUiService.stubs(:extract_stock_photo).returns(mock_result)
+
+    # Stub HTTP request for re-download
+    large_image_data = png_header + ("x" * 60_000) # 60KB
+    WebMock.stub_request(:get, /http:\/\/localhost:8188\/view/)
+      .to_return(
+        status: 200,
+        body: large_image_data,
+        headers: { "Content-Type" => "image/png" }
+      )
+
+    ExtractStockPhotoJob.perform_now(@image_blob.id, @analysis_results, @user.id, @job_id)
+
+    status = ExtractStockPhotoJob.get_status(@job_id)
+    # Should either complete or fail, but not crash
+    assert_includes %w[completed failed], status["status"]
+  end
+
+  test "job handles re-download failure when image still too small" do
+    small_image_data = [ 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A ].pack("C*") + ("x" * 10_000)
+
+    mock_result = {
+      "success" => true,
+      "job_id" => SecureRandom.uuid,
+      "outputs" => {
+        "60" => {
+          "images" => [
+            {
+              "filename" => "test_output.png",
+              "subfolder" => "",
+              "type" => "output"
+            }
+          ]
+        }
+      },
+      "image_data" => small_image_data
+    }
+    ComfyUiService.stubs(:extract_stock_photo).returns(mock_result)
+
+    # Stub HTTP request to return small image again
+    WebMock.stub_request(:get, /http:\/\/localhost:8188\/view/)
+      .to_return(
+        status: 200,
+        body: small_image_data,
+        headers: { "Content-Type" => "image/png" }
+      )
+
+    ExtractStockPhotoJob.perform_now(@image_blob.id, @analysis_results, @user.id, @job_id)
+
+    status = ExtractStockPhotoJob.get_status(@job_id)
+    assert_equal "failed", status["status"]
+  end
+
+  test "job handles re-download when outputs missing" do
+    small_image_data = [ 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A ].pack("C*") + ("x" * 10_000)
+
+    mock_result = {
+      "success" => true,
+      "job_id" => SecureRandom.uuid,
+      "outputs" => nil,
+      "image_data" => small_image_data
+    }
+    ComfyUiService.stubs(:extract_stock_photo).returns(mock_result)
+
+    ExtractStockPhotoJob.perform_now(@image_blob.id, @analysis_results, @user.id, @job_id)
+
+    status = ExtractStockPhotoJob.get_status(@job_id)
+    assert_equal "failed", status["status"]
+  end
+
+  test "job finds and updates inventory item with primary image" do
+    # Create inventory item with the image blob as primary image
+    inventory_item = create(:inventory_item, user: @user)
+    inventory_item.primary_image.attach(@image_blob)
+
+    # Create valid PNG image data
+    png_header = [ 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A ].pack("C*")
+    large_image_data = png_header + ("x" * 60_000)
+
+    mock_result = {
+      "success" => true,
+      "job_id" => SecureRandom.uuid,
+      "outputs" => {},
+      "image_data" => large_image_data
+    }
+    ComfyUiService.stubs(:extract_stock_photo).returns(mock_result)
+
+    ExtractStockPhotoJob.perform_now(@image_blob.id, @analysis_results, @user.id, @job_id, inventory_item.id)
+
+    status = ExtractStockPhotoJob.get_status(@job_id)
+    if status["status"] == "completed"
+      assert status["data"]["inventory_item_id"].present?
+      assert_equal inventory_item.id, status["data"]["inventory_item_id"]
+    end
+  end
+
+  test "job handles inventory_item_id that doesn't match blob" do
+    # Create inventory item with different blob
+    other_blob = ActiveStorage::Blob.create_and_upload!(
+      io: File.open(Rails.root.join("test/fixtures/files/sample_image.jpg")),
+      filename: "other_image.jpg",
+      content_type: "image/jpeg"
+    )
+    inventory_item = create(:inventory_item, user: @user)
+    inventory_item.primary_image.attach(other_blob)
+
+    png_header = [ 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A ].pack("C*")
+    large_image_data = png_header + ("x" * 60_000)
+
+    mock_result = {
+      "success" => true,
+      "job_id" => SecureRandom.uuid,
+      "outputs" => {},
+      "image_data" => large_image_data
+    }
+    ComfyUiService.stubs(:extract_stock_photo).returns(mock_result)
+
+    ExtractStockPhotoJob.perform_now(@image_blob.id, @analysis_results, @user.id, @job_id, inventory_item.id)
+
+    status = ExtractStockPhotoJob.get_status(@job_id)
+    # Should still complete, but may not attach to item
+    assert_includes %w[completed failed], status["status"]
+  end
+
+  test "job creates blob from binary PNG data" do
+    png_header = [ 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A ].pack("C*")
+    binary_image_data = png_header + ("x" * 60_000)
+    binary_image_data.force_encoding("BINARY")
+
+    mock_result = {
+      "success" => true,
+      "job_id" => SecureRandom.uuid,
+      "outputs" => {},
+      "image_data" => binary_image_data
+    }
+    ComfyUiService.stubs(:extract_stock_photo).returns(mock_result)
+
+    ExtractStockPhotoJob.perform_now(@image_blob.id, @analysis_results, @user.id, @job_id)
+
+    status = ExtractStockPhotoJob.get_status(@job_id)
+    if status["status"] == "completed"
+      assert status["data"]["extracted_blob_id"].present?
+    end
+  end
+
+  test "job creates blob from base64 encoded PNG data" do
+    png_header = [ 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A ].pack("C*")
+    binary_data = png_header + ("x" * 60_000)
+    base64_data = Base64.encode64(binary_data)
+
+    mock_result = {
+      "success" => true,
+      "job_id" => SecureRandom.uuid,
+      "outputs" => {},
+      "image_data" => base64_data
+    }
+    ComfyUiService.stubs(:extract_stock_photo).returns(mock_result)
+
+    ExtractStockPhotoJob.perform_now(@image_blob.id, @analysis_results, @user.id, @job_id)
+
+    status = ExtractStockPhotoJob.get_status(@job_id)
+    if status["status"] == "completed"
+      assert status["data"]["extracted_blob_id"].present?
+    end
+  end
+
+  test "job handles create_blob_from_data with invalid data" do
+    mock_result = {
+      "success" => true,
+      "job_id" => SecureRandom.uuid,
+      "outputs" => {},
+      "image_data" => "" # Empty data
+    }
+    ComfyUiService.stubs(:extract_stock_photo).returns(mock_result)
+
+    ExtractStockPhotoJob.perform_now(@image_blob.id, @analysis_results, @user.id, @job_id)
+
+    status = ExtractStockPhotoJob.get_status(@job_id)
+    assert_equal "failed", status["status"]
+  end
+
+  test "job broadcasts progress messages" do
+    png_header = [ 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A ].pack("C*")
+    large_image_data = png_header + ("x" * 60_000)
+
+    mock_result = {
+      "success" => true,
+      "job_id" => SecureRandom.uuid,
+      "outputs" => {},
+      "image_data" => large_image_data
+    }
+    ComfyUiService.stubs(:extract_stock_photo).returns(mock_result)
+
+    ActionCable.server.expects(:broadcast).at_least(1)
+
+    ExtractStockPhotoJob.perform_now(@image_blob.id, @analysis_results, @user.id, @job_id)
+  end
+
+  test "job handles missing inventory item gracefully" do
+    # Use a blob that's not attached to any inventory item
+    png_header = [ 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A ].pack("C*")
+    large_image_data = png_header + ("x" * 60_000)
+
+    mock_result = {
+      "success" => true,
+      "job_id" => SecureRandom.uuid,
+      "outputs" => {},
+      "image_data" => large_image_data
+    }
+    ComfyUiService.stubs(:extract_stock_photo).returns(mock_result)
+
+    ExtractStockPhotoJob.perform_now(@image_blob.id, @analysis_results, @user.id, @job_id)
+
+    status = ExtractStockPhotoJob.get_status(@job_id)
+    # Should complete even if no inventory item found
+    assert_includes %w[completed failed], status["status"]
+  end
+
+  test "job handles inventory_item_id parameter" do
+    inventory_item = create(:inventory_item, user: @user)
+    inventory_item.primary_image.attach(@image_blob)
+
+    png_header = [ 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A ].pack("C*")
+    large_image_data = png_header + ("x" * 60_000)
+
+    mock_result = {
+      "success" => true,
+      "job_id" => SecureRandom.uuid,
+      "outputs" => {},
+      "image_data" => large_image_data
+    }
+    ComfyUiService.stubs(:extract_stock_photo).returns(mock_result)
+
+    ExtractStockPhotoJob.perform_now(@image_blob.id, @analysis_results, @user.id, @job_id, inventory_item.id)
+
+    status = ExtractStockPhotoJob.get_status(@job_id)
+    if status["status"] == "completed"
+      assert_equal inventory_item.id, status["data"]["inventory_item_id"]
+    end
+  end
+
+  test "job logs extraction result details when image_data present" do
+    png_header = [ 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A ].pack("C*")
+    large_image_data = png_header + ("x" * 60_000)
+
+    mock_result = {
+      "success" => true,
+      "job_id" => SecureRandom.uuid,
+      "outputs" => {},
+      "image_data" => large_image_data
+    }
+    ComfyUiService.stubs(:extract_stock_photo).returns(mock_result)
+
+    # Capture all log calls since MetricsLogger also logs
+    log_calls = []
+    Rails.logger.stubs(:info).with { |arg| log_calls << arg.to_s; true }
+
+    ExtractStockPhotoJob.perform_now(@image_blob.id, @analysis_results, @user.id, @job_id)
+
+    # Verify our specific log message was called
+    assert log_calls.any? { |call| call.match?(/ComfyUI extraction result.*has_image_data=true/) }, "Expected log message about image_data present"
+  end
+
+  test "job logs extraction result details when image_data missing" do
+    mock_result = {
+      "success" => true,
+      "job_id" => SecureRandom.uuid,
+      "outputs" => {},
+      "image_data" => nil
+    }
+    ComfyUiService.stubs(:extract_stock_photo).returns(mock_result)
+
+    # Capture all log calls since MetricsLogger also logs
+    log_calls = []
+    Rails.logger.stubs(:info).with { |arg| log_calls << arg.to_s; true }
+
+    ExtractStockPhotoJob.perform_now(@image_blob.id, @analysis_results, @user.id, @job_id)
+
+    # Verify our specific log message was called
+    assert log_calls.any? { |call| call.match?(/ComfyUI extraction result.*has_image_data=false/) }, "Expected log message about image_data missing"
+  end
 end

@@ -267,9 +267,18 @@ class ExportUserDataJob < ApplicationJob
     # Remove exports older than expiry time (both JSON and ZIP)
     cutoff_time = Time.current - EXPORT_EXPIRY
     Dir.glob(EXPORT_DIR.join("user_#{user_id}_export_*.*")).each do |file|
-      if File.mtime(file) < cutoff_time
-        File.delete(file)
-        Rails.logger.info "Cleaned up old export: #{file}"
+      # Check if file exists before accessing it (handles race conditions where file
+      # might be deleted between Dir.glob and File.mtime)
+      next unless File.exist?(file)
+
+      begin
+        if File.mtime(file) < cutoff_time
+          File.delete(file)
+          Rails.logger.info "Cleaned up old export: #{file}"
+        end
+      rescue Errno::ENOENT => e
+        # File was deleted between existence check and mtime call
+        Rails.logger.debug "File #{file} was deleted during cleanup: #{e.message}"
       end
     end
   end
