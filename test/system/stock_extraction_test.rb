@@ -109,6 +109,8 @@ class StockExtractionTest < ApplicationSystemTestCase
     # Create inventory item with primary image
     item = create(:inventory_item, :clothing, user: @user, category: @category)
     item.primary_image.attach(@image_blob)
+    # Reload to ensure attachment is persisted
+    item.reload
 
     # Navigate to edit page
     visit edit_inventory_item_path(item)

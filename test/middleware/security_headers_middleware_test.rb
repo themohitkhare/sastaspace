@@ -101,4 +101,23 @@ class SecurityHeadersMiddlewareTest < ActiveSupport::TestCase
     # Should not have double semicolons
     refute_match(/;;/, csp)
   end
+
+  test "initialize stores app" do
+    app = ->(env) { [ 200, {}, [ "OK" ] ] }
+    middleware = SecurityHeadersMiddleware.new(app)
+    # Verify the middleware was initialized correctly by calling it
+    status, _headers, _body = middleware.call({})
+    assert_equal 200, status
+  end
+
+  test "HSTS header includes all required directives" do
+    Rails.env.stubs(:production?).returns(true)
+    env = { "rack.url_scheme" => "https" }
+    status, headers, _body = @middleware.call(env)
+    hsts = headers["Strict-Transport-Security"]
+    assert hsts.present?
+    assert_includes hsts, "max-age=31536000"
+    assert_includes hsts, "includeSubDomains"
+    assert_includes hsts, "preload"
+  end
 end
