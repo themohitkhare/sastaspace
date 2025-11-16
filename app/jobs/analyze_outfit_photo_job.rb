@@ -1,9 +1,16 @@
 class AnalyzeOutfitPhotoJob < ApplicationJob
+  include TrackableJob
+
   queue_as :default
 
-  # Store job status and results in Rails cache
-  def self.status_key(job_id)
-    "outfit_photo_analysis:#{job_id}"
+  # Override concern methods for job-specific configuration
+  def self.status_key_prefix
+    "outfit_photo_analysis"
+  end
+
+  # job_id is the 3rd argument (0-indexed: 2)
+  def self.job_id_argument_index
+    2
   end
 
   def perform(image_blob_id, user_id, job_id)
@@ -46,36 +53,4 @@ class AnalyzeOutfitPhotoJob < ApplicationJob
   end
 
   private
-
-  def update_status(status, data, error)
-    status_data = {
-      "status" => status,
-      "data" => data,
-      "error" => error,
-      "updated_at" => Time.current.iso8601
-    }
-
-    # Store in Rails cache
-    Rails.cache.write(self.class.status_key(@job_id), status_data, expires_in: 1.hour)
-  end
-
-  def self.get_status(job_id)
-    key = status_key(job_id)
-
-    status_data = Rails.cache.read(key)
-
-    if status_data
-      # Ensure string keys for consistency
-      if status_data.is_a?(Hash)
-        status_data.stringify_keys
-      else
-        status_data
-      end
-    else
-      { "status" => "not_found", "error" => "Job not found or expired" }
-    end
-  rescue StandardError => e
-    Rails.logger.error "Error reading job status: #{e.message}"
-    { "status" => "error", "error" => "Could not retrieve job status" }
-  end
 end

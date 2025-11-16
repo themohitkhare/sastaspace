@@ -7,11 +7,10 @@ CI.run do
   step "Style: Ruby", "bundle exec rubocop -A"
   step "Security: Brakeman", "bundle exec brakeman -q -w2"
   step "Security: Bundler Audit", "bundle exec bundle-audit check --update"
+  # Run all tests including system tests with coverage
+  # System tests use Cuprite (headless Chrome) which should be available
   step "Tests: Rails with Coverage", "SIMPLECOV=1 rails test:full"
-
-  # System tests are optional - they require browser drivers (Selenium/Chrome)
-  # Skip them if not configured to avoid CI failures
-  step "Tests: System", "rails test:system || echo 'System tests skipped (no browser driver configured)'"
+  step "Tests: System", "SIMPLECOV=1 rails test:system:full"
 
   if success?
     step "Coverage: Summary", "echo 'Coverage report generated in coverage/ directory' && if [ -f coverage/.last_run.json ]; then echo 'Coverage data available. View coverage/index.html for details.'; fi"

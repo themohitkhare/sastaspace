@@ -101,7 +101,9 @@ class ExtractStockPhotoJobTest < ActiveJob::TestCase
   end
 
   test "job creates blob from base64 image data" do
-    image_data = Base64.encode64("fake png image data")
+    # Create fake image data that's at least 50KB (job requirement)
+    fake_image_data = "x" * 60_000 # 60KB of fake data
+    image_data = Base64.encode64(fake_image_data)
     mock_result = {
       "success" => true,
       "job_id" => SecureRandom.uuid,
@@ -113,13 +115,14 @@ class ExtractStockPhotoJobTest < ActiveJob::TestCase
     ExtractStockPhotoJob.perform_now(@image_blob.id, @analysis_results, @user.id, @job_id)
 
     status = ExtractStockPhotoJob.get_status(@job_id)
-    if status["status"] == "completed"
-      assert status["data"]["extracted_blob_id"].present?
-    end
+    assert_equal "completed", status["status"], "Job should complete successfully"
+    assert status["data"]["extracted_blob_id"].present?, "Extracted blob ID should be present in status data"
   end
 
   test "job includes extraction prompt in completed status" do
-    image_data = Base64.encode64("fake png image data")
+    # Create fake image data that's at least 50KB (job requirement)
+    fake_image_data = "x" * 60_000 # 60KB of fake data
+    image_data = Base64.encode64(fake_image_data)
     mock_result = {
       "success" => true,
       "job_id" => SecureRandom.uuid,
@@ -131,9 +134,8 @@ class ExtractStockPhotoJobTest < ActiveJob::TestCase
     ExtractStockPhotoJob.perform_now(@image_blob.id, @analysis_results, @user.id, @job_id)
 
     status = ExtractStockPhotoJob.get_status(@job_id)
-    if status["status"] == "completed"
-      assert status["data"]["extraction_prompt"].present?
-    end
+    assert_equal "completed", status["status"], "Job should complete successfully"
+    assert status["data"]["extraction_prompt"].present?, "Extraction prompt should be present in status data"
   end
 
   test "job handles missing image blob" do
@@ -185,6 +187,44 @@ class ExtractStockPhotoJobTest < ActiveJob::TestCase
     key = ExtractStockPhotoJob.status_key(job_id)
 
     assert_equal "stock_photo_extraction:test-job-123", key
+  end
+
+  test "get_status recovers from queue when cache is empty" do
+    skip "SolidQueue not available" unless defined?(SolidQueue::Job)
+
+    # Enqueue a job
+    job = ExtractStockPhotoJob.perform_later(@image_blob.id, @analysis_results, @user.id, @job_id)
+    active_job_id = job.job_id
+
+    # Wait for after_enqueue callback to store mapping
+    sleep 0.2
+
+    # Check that mapping was stored
+    stored_active_job_id = Rails.cache.read(ExtractStockPhotoJob.active_job_id_key(@job_id))
+    if stored_active_job_id.present?
+      assert_equal active_job_id, stored_active_job_id, "ActiveJob ID should be stored"
+
+      # Clear status cache to force recovery
+      Rails.cache.delete(ExtractStockPhotoJob.status_key(@job_id))
+
+      # Wait for job to be persisted in SolidQueue
+      sleep 0.3
+
+      # Get status (should recover from queue)
+      status = ExtractStockPhotoJob.get_status(@job_id)
+
+      # Should not be "not_found" if recovery worked
+      if status["status"] != "not_found"
+        assert_includes %w[queued processing completed], status["status"]
+      end
+    end
+  end
+
+  test "active_job_id_key generates correct key format" do
+    job_id = "test-job-123"
+    key = ExtractStockPhotoJob.active_job_id_key(job_id)
+
+    assert_equal "stock_photo_extraction:active_job_id:test-job-123", key
   end
 
   test "job uses stored extraction_prompt when available" do

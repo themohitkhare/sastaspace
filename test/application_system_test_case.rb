@@ -18,21 +18,39 @@ class ApplicationSystemTestCase < ActionDispatch::SystemTestCase
   parallelize(workers: worker_count, with: :processes)
 
   setup do
-    tables = %w[
-      ai_analyses
-      inventory_tags
-      tags
-      inventory_items
-      refresh_tokens
-      brands
-      categories
-      users
-      outfit_items
-      outfits
-    ]
-    ActiveRecord::Base.connection.execute(
-      "TRUNCATE TABLE #{tables.join(', ')} RESTART IDENTITY CASCADE"
-    )
+    # Use session-level advisory lock to serialize TRUNCATE operations
+    # This prevents deadlocks when multiple parallel workers try to TRUNCATE simultaneously
+    # The lock is automatically released when the connection closes
+    connection = ActiveRecord::Base.connection
+    lock_id = 123456789 # Unique lock ID for system test cleanup
+
+    # Acquire session-level advisory lock (blocks until available)
+    connection.execute("SELECT pg_advisory_lock(#{lock_id})")
+
+    begin
+      # Truncate tables to ensure clean state for each test
+      # CASCADE handles foreign key dependencies automatically
+      # Truncate all tables in one statement for atomicity
+      tables = %w[
+        ai_analyses
+        inventory_tags
+        outfit_items
+        inventory_items
+        outfits
+        tags
+        refresh_tokens
+        users
+        brands
+        categories
+      ]
+      connection.execute(
+        "TRUNCATE TABLE #{tables.join(', ')} RESTART IDENTITY CASCADE"
+      )
+    ensure
+      # Release the lock immediately after TRUNCATE
+      # This allows other workers to proceed
+      connection.execute("SELECT pg_advisory_unlock(#{lock_id})")
+    end
   end
 
   # Increase waits/timeouts to reduce Ferrum timeouts on slower CI or parallel runs

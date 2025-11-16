@@ -165,6 +165,7 @@ class BatchInventoryCreationJobTest < ActiveJob::TestCase
   test "job handles errors gracefully when creating items" do
     # Create a result that will cause an error during item creation
     # Force an error by stubbing Category.find_or_create_by! to raise
+    initial_count = @user.inventory_items.count
     result = ExtractionResult.create!(
       clothing_analysis: @analysis,
       item_data: {
@@ -192,7 +193,7 @@ class BatchInventoryCreationJobTest < ActiveJob::TestCase
     end
 
     # No items should be created due to error
-    assert_equal 0, InventoryItem.count
+    assert_equal initial_count, @user.inventory_items.count
   end
 
   test "job broadcasts completion" do
@@ -227,6 +228,7 @@ class BatchInventoryCreationJobTest < ActiveJob::TestCase
     # Job uses .where which doesn't raise RecordNotFound
     # It will just return empty results and skip processing
     # Should still broadcast completion (with 0 items)
+    initial_count = @user.inventory_items.count
     ActionCable.server.expects(:broadcast).with(
       "batch_creation_#{@user.id}",
       has_entries(
@@ -241,7 +243,7 @@ class BatchInventoryCreationJobTest < ActiveJob::TestCase
     end
 
     # Should not create any items
-    assert_equal 0, InventoryItem.count
+    assert_equal initial_count, @user.inventory_items.count
   end
 
   test "job only processes extraction results for the specified user" do

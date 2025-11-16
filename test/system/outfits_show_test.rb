@@ -132,9 +132,14 @@ class OutfitsShowTest < ApplicationSystemTestCase
     if back_link
       back_link.click
       sleep 1
+    else
+      # Fallback: navigate via menu
       visit_outfits
-      assert(page.current_path == "/outfits" || page.current_path.include?("outfits"))
     end
+
+    # Assert we navigated back to outfits list
+    assert_current_path "/outfits", wait: 5
+    assert_selector "h1", text: /My Outfits/i, wait: 5
   end
 
   test "user sees empty state when outfit has no items" do

@@ -423,6 +423,7 @@ class ClothingDetectionJobTest < ActiveJob::TestCase
 
   test "job handles errors when creating inventory items" do
     category = create(:category, name: "Tops")
+    initial_count = @user.inventory_items.count
     mock_result = {
       "total_items_detected" => 2,
       "items" => [
@@ -457,11 +458,12 @@ class ClothingDetectionJobTest < ActiveJob::TestCase
     ClothingDetectionJob.perform_now(@image_blob.id, @user.id)
 
     # Should create only the valid item (name nil will use default "Extracted Item")
-    assert_equal 2, InventoryItem.count
+    assert_equal initial_count + 2, @user.inventory_items.count
   end
 
   test "job handles attachment service errors gracefully" do
     category = create(:category, name: "Tops")
+    initial_count = @user.inventory_items.count
     mock_result = {
       "total_items_detected" => 1,
       "items" => [
@@ -491,7 +493,7 @@ class ClothingDetectionJobTest < ActiveJob::TestCase
     end
 
     # Item should still be created
-    assert_equal 1, InventoryItem.count
+    assert_equal initial_count + 1, @user.inventory_items.count
   end
 
   test "job builds description when item_name includes subcategory" do
