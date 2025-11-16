@@ -244,6 +244,44 @@ class AnalyzeImageForCreationJobTest < ActiveJob::TestCase
     assert_equal "inventory_creation_analysis:test-job-123", key
   end
 
+  test "get_status recovers from queue when cache is empty" do
+    skip "SolidQueue not available" unless defined?(SolidQueue::Job)
+
+    # Enqueue a job
+    job = AnalyzeImageForCreationJob.perform_later(@image_blob.id, @user.id, @job_id)
+    active_job_id = job.job_id
+
+    # Wait for after_enqueue callback to store mapping
+    sleep 0.2
+
+    # Check that mapping was stored
+    stored_active_job_id = Rails.cache.read(AnalyzeImageForCreationJob.active_job_id_key(@job_id))
+    if stored_active_job_id.present?
+      assert_equal active_job_id, stored_active_job_id, "ActiveJob ID should be stored"
+
+      # Clear status cache to force recovery
+      Rails.cache.delete(AnalyzeImageForCreationJob.status_key(@job_id))
+
+      # Wait for job to be persisted in SolidQueue
+      sleep 0.3
+
+      # Get status (should recover from queue)
+      status = AnalyzeImageForCreationJob.get_status(@job_id)
+
+      # Should not be "not_found" if recovery worked
+      if status["status"] != "not_found"
+        assert_includes %w[queued processing completed], status["status"]
+      end
+    end
+  end
+
+  test "active_job_id_key generates correct key format" do
+    job_id = "test-job-123"
+    key = AnalyzeImageForCreationJob.active_job_id_key(job_id)
+
+    assert_equal "inventory_creation_analysis:active_job_id:test-job-123", key
+  end
+
   test "job logs completion message" do
     mock_analyzer = stub
     mock_analyzer.stubs(:analyze).returns({

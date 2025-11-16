@@ -1,9 +1,16 @@
 class ExtractStockPhotoJob < ApplicationJob
+  include TrackableJob
+
   queue_as :default
 
-  # Store job status and results in Rails cache
-  def self.status_key(job_id)
-    "stock_photo_extraction:#{job_id}"
+  # Override concern methods for job-specific configuration
+  def self.status_key_prefix
+    "stock_photo_extraction"
+  end
+
+  # job_id is the 4th argument (0-indexed: 3)
+  def self.job_id_argument_index
+    3
   end
 
   def perform(image_blob_id, analysis_results, user_id, job_id, inventory_item_id = nil)
@@ -274,18 +281,6 @@ class ExtractStockPhotoJob < ApplicationJob
 
   private
 
-  def update_status(status, data, error)
-    status_data = {
-      "status" => status,
-      "data" => data,
-      "error" => error,
-      "updated_at" => Time.current.iso8601
-    }
-
-    # Store in Rails cache
-    Rails.cache.write(self.class.status_key(@job_id), status_data, expires_in: 1.hour)
-  end
-
   def create_blob_from_data(image_data)
     # Convert ComfyUI output to ActiveStorage blob
     # image_data can be:
@@ -472,16 +467,6 @@ class ExtractStockPhotoJob < ApplicationJob
 
     Rails.logger.error "Could not find inventory item for blob #{blob_id} using any method (user #{@user.id})"
     nil
-  end
-
-  def self.get_status(job_id)
-    key = status_key(job_id)
-    Rails.cache.read(key) || {
-      "status" => "not_found",
-      "data" => nil,
-      "error" => { "message" => "Job not found" },
-      "updated_at" => Time.current.iso8601
-    }
   end
 
   private

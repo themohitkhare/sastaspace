@@ -39,6 +39,11 @@ class ExportUserDataJob < ApplicationJob
       json_path = File.join(temp_dir, "data.json")
       File.write(json_path, JSON.pretty_generate(export_data))
 
+      # Verify file was written successfully
+      unless File.exist?(json_path)
+        raise "Failed to write data.json to #{json_path}"
+      end
+
       # Create images directory
       images_dir = File.join(temp_dir, "images")
       FileUtils.mkdir_p(images_dir)
@@ -71,12 +76,18 @@ class ExportUserDataJob < ApplicationJob
       File.delete(zip_path) if File.exist?(zip_path)
 
       Zip::File.open(zip_path, Zip::File::CREATE) do |zip_file|
-        # Add JSON file
-        zip_file.add("data.json", json_path)
+        # Add JSON file (verify it exists first)
+        if File.exist?(json_path)
+          zip_file.add("data.json", json_path)
+        else
+          raise "data.json file not found at #{json_path}"
+        end
 
-        # Add all images
+        # Add all images (only if they exist)
         Dir.glob(File.join(images_dir, "*")).each do |image_file|
-          zip_file.add(File.join("images", File.basename(image_file)), image_file)
+          if File.exist?(image_file)
+            zip_file.add(File.join("images", File.basename(image_file)), image_file)
+          end
         end
       end
 
