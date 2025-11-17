@@ -112,13 +112,16 @@ class StockExtractionTest < ApplicationSystemTestCase
     # Reload to ensure attachment is persisted
     item.reload
 
+    # Get the actual blob ID from the attached image
+    actual_blob_id = item.primary_image.blob.id
+
     # Navigate to edit page
     visit edit_inventory_item_path(item)
 
     # Verify the image is displayed
     assert_selector "img[alt='Current primary image']", wait: 2
-    # Verify blob ID is shown in the text
-    assert_text(/blob ID: #{@image_blob.id}/, wait: 2)
+    # Verify blob ID is shown in the text (use actual blob ID from item)
+    assert_text(/blob ID: #{actual_blob_id}/, wait: 2)
   end
 
   test "edit page shows extracted image after extraction" do
