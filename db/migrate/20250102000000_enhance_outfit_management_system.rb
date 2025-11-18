@@ -1,29 +1,44 @@
 class EnhanceOutfitManagementSystem < ActiveRecord::Migration[8.1]
   def change
-    # Add metadata JSON field to outfits
-    add_column :outfits, :metadata, :jsonb, default: {}
+    # NOTE: This migration is now mostly consolidated into create_outfits and create_outfit_items
+    # Keeping this migration for backwards compatibility, but most fields are now in the create migrations
+    # Only adding fields that might not exist if migrations are run out of order
+    
+    # These fields are now in create_outfits, but adding conditionally for safety
+    unless column_exists?(:outfits, :metadata)
+      add_column :outfits, :metadata, :jsonb, default: {}
+    end
+    unless column_exists?(:outfits, :status)
+      add_column :outfits, :status, :integer, default: 0
+    end
+    unless column_exists?(:outfits, :worn_count)
+      add_column :outfits, :worn_count, :integer, default: 0
+    end
+    unless column_exists?(:outfits, :last_worn_at)
+      add_column :outfits, :last_worn_at, :datetime
+    end
 
-    # Add status enum to outfits (will use integer)
-    add_column :outfits, :status, :integer, default: 0
+    # These fields are now in create_outfit_items, but adding conditionally for safety
+    unless column_exists?(:outfit_items, :worn_count)
+      add_column :outfit_items, :worn_count, :integer, default: 0
+    end
+    unless column_exists?(:outfit_items, :last_worn_at)
+      add_column :outfit_items, :last_worn_at, :datetime
+    end
+    unless column_exists?(:outfit_items, :styling_notes)
+      add_column :outfit_items, :styling_notes, :text
+    end
 
-    # Add wear tracking to outfits
-    add_column :outfits, :worn_count, :integer, default: 0
-    add_column :outfits, :last_worn_at, :datetime
-
-    # Add wear tracking and styling notes to outfit_items
-    add_column :outfit_items, :worn_count, :integer, default: 0
-    add_column :outfit_items, :last_worn_at, :datetime
-    add_column :outfit_items, :styling_notes, :text
-
-    # Add indexes for better query performance
-    add_index :outfits, [ :user_id, :status ]
-    # Add unique index if it doesn't already exist (may have been added in a previous migration)
+    # Add indexes for better query performance (now in create migrations, but adding conditionally)
+    add_index :outfits, [ :user_id, :status ] unless index_exists?(:outfits, [ :user_id, :status ])
     unless index_exists?(:outfit_items, [ :outfit_id, :inventory_item_id ], unique: true)
       add_index :outfit_items, [ :outfit_id, :inventory_item_id ], unique: true, name: "index_outfit_items_unique"
     end
-
-    # Add index on metadata for occasion and season queries
-    add_index :outfits, "(metadata->>'occasion')", name: "index_outfits_on_occasion_metadata"
-    add_index :outfits, "(metadata->>'season')", name: "index_outfits_on_season_metadata"
+    unless index_exists?(:outfits, "(metadata->>'occasion')")
+      add_index :outfits, "(metadata->>'occasion')", name: "index_outfits_on_occasion_metadata"
+    end
+    unless index_exists?(:outfits, "(metadata->>'season')")
+      add_index :outfits, "(metadata->>'season')", name: "index_outfits_on_season_metadata"
+    end
   end
 end
