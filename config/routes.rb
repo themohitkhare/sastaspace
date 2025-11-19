@@ -17,8 +17,8 @@ Rails.application.routes.draw do
   get "health" => "health#show"
   get "ready" => "ready#show"
 
-  # Root route
-  root "inventory_items#index"
+  # Root route - Landing page for public, inventory for logged-in users
+  root "pages#home"
 
   # Authentication routes
   get "login", to: "sessions#new"

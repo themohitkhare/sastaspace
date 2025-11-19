@@ -1,0 +1,40 @@
+<% content_for :title, "SastaSpace - Your AI-Powered Digital Wardrobe" %>
+
+<% content_for :head do %>
+  <meta name="description" content="Save 40% on duplicate purchases. Get outfit suggestions in 5 minutes. Privacy-first AI wardrobe management that stays on your device.">
+  <meta name="keywords" content="wardrobe management, AI fashion, digital closet, outfit suggestions, sustainable fashion">
+  
+  <!-- Open Graph / Facebook -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="<%= request.original_url %>">
+  <meta property="og:title" content="SastaSpace - Your AI-Powered Digital Wardrobe">
+  <meta property="og:description" content="Save money, save time, and look better with AI-powered wardrobe management.">
+  <meta property="og:image" content="<%= asset_url('icon.png') %>">
+
+  <!-- Twitter -->
+  <meta property="twitter:card" content="summary_large_image">
+  <meta property="twitter:url" content="<%= request.original_url %>">
+  <meta property="twitter:title" content="SastaSpace - Your AI-Powered Digital Wardrobe">
+  <meta property="twitter:description" content="Save money, save time, and look better with AI-powered wardrobe management.">
+  <meta property="twitter:image" content="<%= asset_url('icon.png') %>">
+<% end %>
+
+<div class="landing-page -mt-8" data-controller="landing-page">
+  <!-- Hero Section -->
+  <%= render "pages/sections/hero" %>
+
+  <!-- Value Proposition Section -->
+  <%= render "pages/sections/value_props" %>
+
+  <!-- Feature Showcase -->
+  <%= render "pages/sections/features" %>
+
+  <!-- How It Works -->
+  <%= render "pages/sections/how_it_works" %>
+
+  <!-- Social Proof -->
+  <%= render "pages/sections/social_proof" %>
+
+  <!-- Final CTA -->
+  <%= render "pages/sections/final_cta" %>
+</div>
