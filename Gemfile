@@ -33,7 +33,7 @@ gem "jwt", "~> 3.1"
 gem "neighbor", "~> 0.6"
 
 # RubyLLM for AI chat functionality
-gem "ruby_llm", "~> 1.8"
+gem "ruby_llm", "~> 1.9"
 
 # Pagination
 gem "kaminari", "~> 1.2"
