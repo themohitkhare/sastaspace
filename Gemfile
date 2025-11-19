@@ -46,8 +46,8 @@ gem "redis", "~> 5.0"
 gem "sidekiq", "~> 8.0"
 gem "solid_cable", "~> 3.0"
 
-# Admin panel for job monitoring
-gem "mission_control-jobs"
+# Admin panel for job monitoring (optional - we use Sidekiq::Web instead)
+# gem "mission_control-jobs"
 
 # Maintenance Tasks - production-grade data migration and backfill tool
 gem "maintenance_tasks"
@@ -70,6 +70,10 @@ gem "tailwindcss-rails", "~> 3.3.1"
 
 # ZIP file handling for GDPR data export
 gem "rubyzip", "~> 2.3"
+
+# WebSocket client for ComfyUI real-time integration
+# Latest version 0.9.0 (Dec 2024) - actively maintained, simple API
+gem "websocket-client-simple", "~> 0.9"
 
 group :development, :test do
   # See https://guides.rubyonrails.org/debugging_rails_applications.html#debugging-with-the-debug-gem

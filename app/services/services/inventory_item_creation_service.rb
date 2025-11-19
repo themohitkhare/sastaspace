@@ -16,8 +16,10 @@ module Services
       # Extract blob_id before building - it's not a model attribute
       blob_id = @params[:inventory_item]&.dig(:blob_id) || @params.dig(:inventory_item, :blob_id)
 
-      # Build item without blob_id (it's not a model attribute)
-      item_params = inventory_item_params.except(:blob_id)
+      # Build item without blob_id and images (handled by service with deduplication)
+      # We exclude primary_image and additional_images to prevent ActiveStorage from
+      # automatically attaching them without deduplication.
+      item_params = inventory_item_params.except(:blob_id, :primary_image, :additional_images)
       inventory_item = @user.inventory_items.build(item_params)
 
       # Normalize category/subcategory
@@ -27,6 +29,9 @@ module Services
         # Handle image attachments
         attachment_service = Services::BlobAttachmentService.new(inventory_item: inventory_item, session: @session)
         handle_image_attachments(attachment_service, blob_id)
+
+        # Reload to ensure attachments are available
+        inventory_item.reload
 
         {
           success: true,
@@ -47,9 +52,11 @@ module Services
     def inventory_item_params
       # Permit metadata fields directly (store_accessor allows direct assignment)
       # Also permit metadata hash for nested structure
+      # Permit image uploads (primary_image and additional_images array)
       @params.require(:inventory_item).permit(
         :name, :description, :category_id, :subcategory_id, :purchase_price, :purchase_date, :blob_id,
-        :color, :size, :material, :season, :occasion, :care_instructions, :fit_notes, :style_notes,
+        :primary_image, :color, :size, :material, :season, :occasion, :care_instructions, :fit_notes, :style_notes,
+        additional_images: [],
         metadata: [ :color, :size, :material, :season, :occasion, :care_instructions, :fit_notes, :style_notes ]
       )
     end

@@ -211,7 +211,8 @@ class ExportUserDataJobTest < ActiveJob::TestCase
     item.primary_image.attach(blob)
 
     # Stub blob download to raise error (this will be caught by download_image's rescue)
-    item.primary_image.blob.stubs(:download).raises(StandardError.new("Download failed"))
+    # Stub at the class level to ensure it applies even after reload
+    ActiveStorage::Blob.any_instance.stubs(:download).raises(StandardError.new("Download failed"))
     Rails.logger.stubs(:warn)
 
     # Should not raise, just log warning (download_image catches the error)
@@ -221,6 +222,15 @@ class ExportUserDataJobTest < ActiveJob::TestCase
 
     status = ExportUserDataJob.get_status(@job_id, @user.id)
     assert_equal "completed", status["status"]
+
+    # Verify ZIP was created with data.json even though image download failed
+    assert File.exist?(status["file_path"])
+    Zip::File.open(status["file_path"]) do |zip_file|
+      assert zip_file.find_entry("data.json"), "Should have data.json even if image download fails"
+    end
+  ensure
+    # Clean up stubs
+    ActiveStorage::Blob.any_instance.unstub(:download) if ActiveStorage::Blob.any_instance.respond_to?(:unstub)
   end
 
   test "export handles additional images" do
@@ -455,12 +465,19 @@ class ExportUserDataJobTest < ActiveJob::TestCase
   test "export logs completion message" do
     item = create(:inventory_item, user: @user)
     log_messages = []
-    Rails.logger.stubs(:info).with { |msg| log_messages << msg; true }
+
+    # Stub logger to capture messages but still call the original method
+    original_info = Rails.logger.method(:info)
+    Rails.logger.stubs(:info).with { |msg|
+      log_messages << msg
+      original_info.call(msg) if original_info
+      true
+    }
 
     ExportUserDataJob.new.perform(@user.id, @job_id)
 
     log_message = log_messages.find { |msg| msg.include?("GDPR export completed") }
-    assert log_message.present?, "Should log completion"
+    assert log_message.present?, "Should log completion. Logged messages: #{log_messages.inspect}"
     assert log_message.include?(@user.id.to_s)
     assert log_message.include?(@job_id)
   end

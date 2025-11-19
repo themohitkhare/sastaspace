@@ -1,11 +1,12 @@
 # Job monitoring configuration
-# Sidekiq monitoring is available via Mission Control Jobs at /admin/jobs/monitor
+# Sidekiq monitoring is available via Sidekiq::Web at /admin/jobs
 
 Rails.application.config.after_initialize do
   # Verify Sidekiq is available
   if defined?(Sidekiq)
-    Rails.logger.info "[Sidekiq] ✓ Sidekiq detected and configured"
-    Rails.logger.info "[Sidekiq] Monitor jobs at /admin/jobs/monitor (Mission Control Jobs)"
+    # Only log at startup if log level allows (use debug to avoid noise)
+    Rails.logger.debug "[Sidekiq] ✓ Sidekiq detected and configured"
+    Rails.logger.debug "[Sidekiq] Monitor jobs at /admin/jobs (Sidekiq::Web - admin only)"
   else
     Rails.logger.warn "[Sidekiq] ⚠ Sidekiq not detected - background jobs may not work"
   end

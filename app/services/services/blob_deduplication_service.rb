@@ -8,10 +8,11 @@ module Services
     # @param content_type [String] The content type
     # @return [ActiveStorage::Blob] The existing or newly created blob
     def self.find_or_create_blob(io:, filename:, content_type:)
-      # Calculate checksum using ActiveStorage's built-in method
+      # Calculate checksum using MD5 (same algorithm ActiveStorage uses internally)
       # We need to reset the IO position after reading
+      require "digest"
       io.rewind if io.respond_to?(:rewind)
-      checksum = ActiveStorage::Blob.compute_checksum(io)
+      checksum = Digest::MD5.base64digest(io.read)
       io.rewind if io.respond_to?(:rewind)
 
       # Try to find an existing blob with the same checksum

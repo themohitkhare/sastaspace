@@ -69,14 +69,29 @@ module Services
       return false unless uploaded_file.present?
 
       begin
+        # Read file content into StringIO to avoid IO issues with Rack::Test::UploadedFile
+        # find_or_create_blob needs to read the IO twice (checksum + upload)
+        # StringIO can be read multiple times safely
+        uploaded_file.rewind if uploaded_file.respond_to?(:rewind)
+        content = uploaded_file.read
+        uploaded_file.rewind if uploaded_file.respond_to?(:rewind)
+
+        io = StringIO.new(content)
+
         blob = Services::BlobDeduplicationService.find_or_create_blob(
-          io: uploaded_file.open,
+          io: io,
           filename: uploaded_file.original_filename,
           content_type: uploaded_file.content_type
         )
-        @inventory_item.primary_image_attachment&.purge
+
         @inventory_item.primary_image.attach(blob)
-        true
+
+        if @inventory_item.primary_image.attached?
+          true
+        else
+          Rails.logger.error "Failed to attach primary image. Item Errors: #{@inventory_item.errors.full_messages.join(', ')}"
+          false
+        end
       rescue StandardError => e
         Rails.logger.error "Error attaching primary image from file: #{e.message}"
         Rails.logger.error e.backtrace.first(5).join("\n")
@@ -96,18 +111,32 @@ module Services
         next unless image.is_a?(ActionDispatch::Http::UploadedFile)
 
         begin
-          blob = Services::BlobDeduplicationService.find_or_create_blob(
-            io: image.open,
+          # For additional images, always create new blobs even for identical files
+          # This allows users to attach the same file multiple times if desired.
+          # ActiveStorage has a unique constraint on [record_type, record_id, name, blob_id]
+          # so we can't attach the same blob twice to the same record.
+
+          # Use image directly as IO. Ensure we rewind in case it was read before.
+          image.rewind if image.respond_to?(:rewind)
+
+          blob = ActiveStorage::Blob.create_and_upload!(
+            io: image,
             filename: image.original_filename,
             content_type: image.content_type
           )
+
           @inventory_item.additional_images.attach(blob)
-          count += 1
+
+          if @inventory_item.additional_images.attached?
+             count += 1
+          end
         rescue StandardError => e
           Rails.logger.error "Error attaching additional image: #{e.message}"
           Rails.logger.error e.backtrace.first(5).join("\n")
         end
       end
+      # Reload to ensure attachments are persisted and accessible
+      @inventory_item.reload if count > 0
       count
     end
 

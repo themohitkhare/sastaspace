@@ -11,44 +11,44 @@ module Services
 
     def build_prompt
       <<~PROMPT
-        PROFESSIONAL STOCK PHOTO EXTRACTION - #{item_name.upcase}
+        *** PROFESSIONAL E-COMMERCE PRODUCT PHOTOGRAPHY GENERATION ***
+        Target Subject: #{item_name.upcase}
 
-        Gender Context: #{gender_context}
+        CONTEXT:
+        Transform the source image into a premium e-commerce product photograph suitable for high-end fashion retail websites like Zara, H&M, Uniqlo, or luxury brands.
+        Create a professional product photo that customers would see on an online shopping website.
+
+        ITEM DETAILS:
         Category: #{category_info}
+        Gender: #{gender_context}
+        Description: #{description_section}
 
-        Item Description:
-        #{description_section}
-
-        Item Specifications:
+        VISUAL SPECIFICATIONS:
         #{color_specifications}
         #{material_specifications}
         #{pattern_specifications}
         #{brand_specifications}
 
-        Extraction Requirements:
-        1. REMOVE all background elements → Pure white (#FFFFFF)
-        2. REMOVE person/model → Garment only
-        3. PRESERVE exact colors and color relationships
-        4. PRESERVE all fabric texture, material detail, and construction
-        5. PRESERVE brand elements (logos, tags, details)
-        6. MAINTAIN natural garment shape and drape
-        7. SHOW all functional details (zippers, buttons, pockets, drawstrings)
+        PRESENTATION STYLE (Category-Specific):
+        #{presentation_style_for_category}
+
+        GENERATION DIRECTIVES:
+        1. SUBJECT FOCUS: Completely isolate the #{item_name}. Remove ALL human elements: person, model, body parts, hands, arms, legs, face, hair, skin.
+        2. PRESENTATION: #{presentation_instruction}
+        3. COMPOSITION: Centered, professional product photography composition. Item should fill 75-85% of frame. Maintain natural proportions.
+        4. LIGHTING: Professional e-commerce studio lighting - soft, even, diffused. No harsh shadows. Neutral white balance (5500K). Subtle rim lighting to show texture and depth.
+        5. BACKGROUND: Pure solid white background (#FFFFFF, RGB 255,255,255). Completely seamless, no gradients, no shadows, no texture. Professional product photography standard.
+        6. FIDELITY: PRESERVE exact colors, textures, patterns, logos, and material details from source. Do NOT invent new features, colors, or details.
+        7. RESTORATION: If parts were obscured (by body, arms, hair, or other objects), intelligently reconstruct them to show the complete garment naturally and accurately.
+        8. QUALITY: High-resolution, sharp focus throughout. Professional product photography quality suitable for zoom-in detail views.
+        9. ORIENTATION: Front-facing view showing the item as it would appear on a product page. For tops/jackets: show front with collar/opening visible. For bottoms: show front with waistband and leg opening visible.
+
+        SPECIFIC REQUIREMENTS:
         #{description_based_requirements}
+        #{category_specific_requirements}
 
-        Technical Output:
-        - Background: Pure white, no gradients or shadows
-        - Resolution: Minimum 800x800 pixels
-        - Placement: Centered, front-facing
-        - Lighting: Even, professional e-commerce style
-        - Quality: High-resolution, sharp details
-        - Format: Clean PNG with transparency where appropriate
-
-        DO NOT:
-        - Add artificial shadows or backgrounds
-        - Alter colors from original
-        - Remove functional garment details
-        - Distort proportions or fit
-        - Add watermarks or overlays
+        NEGATIVE PROMPT (STRICTLY AVOID):
+        human, person, model, body parts, skin, hands, arms, legs, face, hair, mannequin stand, visible mannequin, plastic mannequin, tied around waist, draped, worn, styled, messy background, noise, blur, distortion, low resolution, watermarks, text, overlay, filters, strong vignette, high contrast, dark shadows, colored background, gradient background, texture background, shadows on background, product tags visible, price tags, hangers visible, wrinkles, creases, folds that obscure details, casual styling, street style, lifestyle photography.
       PROMPT
     end
 
@@ -113,6 +113,69 @@ module Services
       cleaned
     end
 
+    def presentation_style_for_category
+      category = category_info.downcase
+
+      if category.include?("sweater") || category.include?("hoodie") || category.include?("cardigan") || category.include?("pullover")
+        "For sweaters/knitwear: Present as a clean, flat lay on white background OR on invisible/ghost mannequin showing natural drape. Show full garment shape, sleeves extended naturally, front and back visible. DO NOT show it tied, draped, or casually styled."
+      elsif category.include?("jacket") || category.include?("coat") || category.include?("blazer")
+        "For outerwear: Present on invisible/ghost mannequin style showing 3D shape and fit. Front view with collar/lapels clearly visible. Zippers/buttons should be visible and properly aligned. Show natural drape and structure."
+      elsif category.include?("shirt") || category.include?("blouse") || category.include?("top") || category.include?("t-shirt")
+        "For tops/shirts: Present on invisible/ghost mannequin OR flat lay. If ghost mannequin, show natural fit. If flat lay, show front fully spread with collar, buttons, and sleeves visible. Professional product photography style."
+      elsif category.include?("pant") || category.include?("trouser") || category.include?("jean") || category.include?("bottom")
+        "For bottoms: Present on invisible/ghost mannequin showing natural fit and drape. Front view with waistband, fly, and leg opening clearly visible. Show proper length and fit."
+      elsif category.include?("dress")
+        "For dresses: Present on invisible/ghost mannequin showing full silhouette. Front view with neckline, waist, and hem clearly visible. Show natural drape and fit."
+      elsif category.include?("shoe") || category.include?("boot") || category.include?("sneaker")
+        "For footwear: Present as professional product photography - side view and front view. Show sole, laces, and all details clearly. Clean, centered composition."
+      elsif category.include?("accessor") || category.include?("bag") || category.include?("belt")
+        "For accessories: Present as clean flat lay or product photography. Show all details, hardware, and features clearly. Professional e-commerce style."
+      else
+        "Present in professional e-commerce product photography style: either invisible/ghost mannequin for garments showing fit, or clean flat lay for items. Show item in its natural, unworn state suitable for online retail."
+      end
+    end
+
+    def presentation_instruction
+      category = category_info.downcase
+
+      if category.include?("sweater") || category.include?("hoodie") || category.include?("cardigan")
+        "Present as a clean, professional flat lay OR on invisible mannequin. Show the complete garment in its natural, unworn state. DO NOT show it tied around waist, draped, or casually styled. It should look like a new product ready for sale."
+      elsif category.include?("jacket") || category.include?("coat") || category.include?("blazer")
+        "Present on invisible/ghost mannequin showing 3D shape. Front view with all details visible. Professional fashion retail photography style."
+      elsif category.include?("shirt") || category.include?("blouse") || category.include?("top")
+        "Present on invisible mannequin OR as professional flat lay. Show complete garment front with all details visible. E-commerce product page style."
+      elsif category.include?("pant") || category.include?("trouser") || category.include?("jean")
+        "Present on invisible mannequin showing natural fit. Front view with waistband and leg details visible. Professional retail photography."
+      else
+        "Present in professional e-commerce product photography style: invisible/ghost mannequin for garments showing fit, or clean flat lay. Show item in its natural, unworn, ready-for-sale state."
+      end
+    end
+
+    def category_specific_requirements
+      category = category_info.downcase
+      requirements = []
+
+      if category.include?("sweater") || category.include?("hoodie") || category.include?("cardigan")
+        requirements << "- Show complete sweater shape: front, back, sleeves, collar/neckline"
+        requirements << "- Display knit texture and pattern clearly"
+        requirements << "- Show ribbed cuffs and hem if present"
+        requirements << "- DO NOT show it tied, wrapped, or casually draped"
+        requirements << "- Present as a new, unworn product ready for sale"
+      elsif category.include?("jacket") || category.include?("coat")
+        requirements << "- Show front closure (zipper/buttons) clearly"
+        requirements << "- Display collar/lapels properly"
+        requirements << "- Show pockets and all functional details"
+        requirements << "- Maintain structured silhouette"
+      elsif category.include?("shirt") || category.include?("blouse")
+        requirements << "- Show collar style and placket clearly"
+        requirements << "- Display all buttons and buttonholes"
+        requirements << "- Show sleeve cuffs and length"
+        requirements << "- Present front view with all details visible"
+      end
+
+      requirements.join("\n        ")
+    end
+
     def description_based_requirements
       description = item_data["description"]
       return "" unless description.present?
@@ -123,32 +186,45 @@ module Services
       # Check for specific features mentioned in description
       desc_lower = description.downcase
 
+      # Remove confusing styling references
+      if desc_lower.include?("draped") || desc_lower.include?("tied") || desc_lower.include?("wrapped")
+        requirements << "IMPORTANT: Remove any styling where item is draped, tied, or wrapped. Show item in its natural, unworn state."
+      end
+
       if desc_lower.include?("pocket") || desc_lower.include?("pockets")
-        requirements << "8. ENSURE all pockets are clearly visible and properly positioned"
+        requirements << "ENSURE all pockets are clearly visible and properly positioned"
       end
 
       if desc_lower.include?("zipper") || desc_lower.include?("zippers")
-        requirements << "9. SHOW zipper details clearly, including pull tab and teeth"
+        requirements << "SHOW zipper details clearly, including pull tab and teeth"
       end
 
       if desc_lower.include?("button") || desc_lower.include?("buttons")
-        requirements << "10. DISPLAY all buttons clearly, showing their style and placement"
+        requirements << "DISPLAY all buttons clearly, showing their style and placement"
       end
 
       if desc_lower.include?("hood") || desc_lower.include?("hoodie")
-        requirements << "11. SHOW hood details if applicable, including drawstrings"
+        requirements << "SHOW hood details if applicable, including drawstrings"
       end
 
       if desc_lower.include?("collar") || desc_lower.include?("neckline")
-        requirements << "12. PRESERVE collar/neckline style and structure"
+        requirements << "PRESERVE collar/neckline style and structure"
       end
 
       if desc_lower.include?("sleeve") || desc_lower.include?("sleeves")
-        requirements << "13. MAINTAIN sleeve length and style as described"
+        requirements << "MAINTAIN sleeve length and style as described"
       end
 
       if desc_lower.include?("fit") || desc_lower.include?("cut")
-        requirements << "14. PRESERVE the described fit and cut characteristics"
+        requirements << "PRESERVE the described fit and cut characteristics"
+      end
+
+      if desc_lower.include?("ribbed") || desc_lower.include?("ribbing")
+        requirements << "SHOW ribbed texture clearly (cuffs, hem, waistband)"
+      end
+
+      if desc_lower.include?("knit") || desc_lower.include?("knitting")
+        requirements << "DISPLAY knit pattern and texture clearly"
       end
 
       requirements.join("\n        ")

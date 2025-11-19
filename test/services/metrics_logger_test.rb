@@ -20,7 +20,7 @@ class MetricsLoggerTest < ActiveSupport::TestCase
   end
 
   test "logs request failed event" do
-    Rails.logger.expects(:info).with do |json|
+    Rails.logger.expects(:info).times(1).with do |json|
       data = JSON.parse(json)
       data["metric_type"] == "request" &&
       data["data"]["type"] == "failed" &&
@@ -40,15 +40,18 @@ class MetricsLoggerTest < ActiveSupport::TestCase
 
   test "logs job completed event" do
     job = mock
-    job.stubs(:class).returns(mock(name: "TestJob"))
+    job_class = mock
+    job_class.stubs(:name).returns("TestJob")
+    job.stubs(:class).returns(job_class)
     job.stubs(:queue_name).returns("default")
 
+    # Use times(1) to ensure it's only called once (MetricsLogger might be subscribed in initializer)
     Rails.logger.expects(:info).with do |json|
       data = JSON.parse(json)
       data["metric_type"] == "job" &&
       data["data"]["type"] == "completed" &&
       data["data"]["job_class"] == "TestJob"
-    end
+    end.times(1)
 
     ActiveSupport::Notifications.instrument("perform.active_job", { job: job }) do
       # simulate duration
@@ -57,11 +60,13 @@ class MetricsLoggerTest < ActiveSupport::TestCase
 
   test "logs job enqueued event" do
     job = mock
-    job.stubs(:class).returns(mock(name: "TestJob"))
+    job_class = mock
+    job_class.stubs(:name).returns("TestJob")
+    job.stubs(:class).returns(job_class)
     job.stubs(:queue_name).returns("default")
     job.stubs(:enqueue_error)
 
-    Rails.logger.expects(:info).with do |json|
+    Rails.logger.expects(:info).times(1).with do |json|
       data = JSON.parse(json)
       data["metric_type"] == "job" &&
       data["data"]["type"] == "enqueued" &&

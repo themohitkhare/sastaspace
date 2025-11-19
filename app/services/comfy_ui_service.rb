@@ -31,14 +31,24 @@ class ComfyUiService
       # Build workflow payload using actual workflow template
       workflow_data = build_workflow(image_filename, extraction_prompt)
 
-      # Submit to ComfyUI
-      job_id = submit_workflow(workflow_data)
+      # Generate client_id for WebSocket tracking (must match between submission and WebSocket)
+      client_id = SecureRandom.uuid
 
-      # Poll for completion
-      result = poll_for_completion(job_id)
+      # Submit to ComfyUI with client_id for WebSocket tracking
+      job_id = submit_workflow(workflow_data, client_id: client_id)
 
-      Rails.logger.info "ComfyUI extraction completed successfully (job: #{job_id})"
-      result
+      # Try WebSocket first for real-time completion, fallback to polling
+      begin
+        result = wait_for_completion_via_websocket(job_id, client_id: client_id)
+        Rails.logger.info "ComfyUI extraction completed via WebSocket (job: #{job_id})"
+        result
+      rescue StandardError => ws_error
+        Rails.logger.warn "WebSocket completion failed: #{ws_error.message}. Falling back to polling..."
+        # Fallback to polling
+        result = poll_for_completion(job_id)
+        Rails.logger.info "ComfyUI extraction completed via polling (job: #{job_id})"
+        result
+      end
     rescue ArgumentError => e
       # Re-raise ArgumentError - these are validation errors that callers should handle
       raise
@@ -48,7 +58,96 @@ class ComfyUiService
       { "error" => e.message, "success" => false }
     end
 
-    private
+    # Handle WebSocket messages from ComfyUI
+    # Public method so it can be called from WebSocket callback blocks
+    def handle_websocket_message(message, job_id)
+      return unless message.is_a?(Hash)
+
+      case message["type"]
+      when "executing"
+        data = message["data"]
+        if data && data["node"].nil? && data["prompt_id"] == job_id
+          # Execution complete - fetch results
+          Rails.logger.info "ComfyUI job completed via WebSocket (prompt_id: #{job_id})"
+          result = fetch_job_results_after_completion(job_id)
+          yield(result) if result && block_given?
+        end
+      when "progress"
+        # Progress updates - log for debugging
+        progress_data = message["data"]
+        Rails.logger.debug "ComfyUI progress: #{progress_data.inspect}"
+      when "execution_error"
+        error_data = message["data"]
+        error_msg = error_data["error_message"] || error_data["message"] || "Unknown error"
+        Rails.logger.error "ComfyUI execution error: #{error_msg}"
+        raise StandardError, "ComfyUI execution error: #{error_msg}"
+      when "execution_start"
+        # Job started executing
+        Rails.logger.debug "ComfyUI job started executing"
+      when "execution_cached"
+      # Node output was cached
+      Rails.logger.debug "ComfyUI node output cached"
+      end
+  end
+
+  # Fetch job results after WebSocket completion notification
+  # Public method so it can be called from WebSocket callback blocks
+  def fetch_job_results_after_completion(job_id)
+    base_uri = URI(base_url)
+    http = Net::HTTP.new(base_uri.host, base_uri.port)
+    http.open_timeout = 10
+    http.read_timeout = 30
+
+    # Get history
+    request = Net::HTTP::Get.new("/history/#{job_id}")
+    response = http.request(request)
+
+    unless response.code == "200"
+      raise StandardError, "Failed to fetch ComfyUI history: HTTP #{response.code}"
+    end
+
+    result = JSON.parse(response.body)
+    job_data = result[job_id]
+
+    unless job_data && job_data.is_a?(Hash)
+      raise StandardError, "ComfyUI history does not contain job data for #{job_id}"
+    end
+
+    outputs = job_data["outputs"] || {}
+    status = job_data["status"]
+
+    # Check if job failed
+    if status && status["status_str"] == "error"
+      error_msg = if status["messages"] && status["messages"].any?
+        status["messages"].join("; ")
+      else
+        "Unknown error"
+      end
+      raise StandardError, "ComfyUI job failed: #{error_msg}"
+    end
+
+    # Extract image data
+    image_data = extract_image_from_outputs(outputs, http, base_uri)
+
+    unless image_data
+      raise StandardError, "ComfyUI did not return image data"
+    end
+
+    image_size = image_data.respond_to?(:bytesize) ? image_data.bytesize : image_data.size
+    Rails.logger.info "ComfyUI returned image data: #{image_size} bytes (#{(image_size / 1024.0).round(2)} KB)"
+
+    {
+      "success" => true,
+      "job_id" => job_id,
+      "outputs" => outputs,
+      "image_data" => image_data
+    }
+  rescue JSON::ParserError => e
+    Rails.logger.error "Failed to parse ComfyUI history response: #{e.message}"
+    raise StandardError, "Invalid JSON from ComfyUI history endpoint"
+  end
+
+  private
 
     def check_comfyui_availability!
       base_uri = URI(base_url)
@@ -359,17 +458,20 @@ class ComfyUiService
       workflow
     end
 
-    def submit_workflow(workflow_data)
+    def submit_workflow(workflow_data, client_id: nil)
       base_uri = URI(base_url)
       http = Net::HTTP.new(base_uri.host, base_uri.port)
       http.open_timeout = 10
       http.read_timeout = 10
 
+      # Use provided client_id for WebSocket tracking, or generate new one
+      client_id ||= SecureRandom.uuid
+
       request = Net::HTTP::Post.new("/prompt")
       request["Content-Type"] = "application/json"
       request.body = {
         prompt: workflow_data,
-        client_id: SecureRandom.uuid
+        client_id: client_id
       }.to_json
 
       response = http.request(request)
@@ -457,6 +559,197 @@ class ComfyUiService
       end
 
       raise StandardError, "ComfyUI job timed out after #{max_attempts * interval} seconds"
+    rescue JSON::ParserError => e
+      Rails.logger.error "Failed to parse ComfyUI history response: #{e.message}"
+      raise StandardError, "Invalid response from ComfyUI API"
+    end
+
+    # Wait for job completion via WebSocket (real-time, more efficient than polling)
+    # Falls back to polling if WebSocket fails
+    # @param job_id [String] The ComfyUI prompt_id (job identifier)
+    # @param client_id [String] The client_id used when submitting the workflow (must match)
+    # @param timeout [Integer] Maximum time to wait in seconds (default: 300)
+    def wait_for_completion_via_websocket(job_id, client_id: nil, timeout: 300)
+      require "websocket-client-simple"
+      require "timeout"
+
+      # Capture service instance BEFORE any blocks to ensure correct context
+      # This ensures we have a reference to the service instance, not the WebSocket client
+      service_instance = self
+
+      # Use provided client_id or generate new one (should match workflow submission)
+      client_id ||= SecureRandom.uuid
+
+      ws_base_url = base_url.gsub(/^http/, "ws")
+      ws_url = "#{ws_base_url}/ws?clientId=#{client_id}"
+
+      Rails.logger.info "Connecting to ComfyUI WebSocket: #{ws_url}"
+
+      result = nil
+      error_occurred = false
+      error_message = nil
+      connection_closed = false
+
+      # Use timeout to prevent hanging
+      Timeout.timeout(timeout) do
+        ws = WebSocket::Client::Simple.connect(ws_url)
+
+        ws.on :open do
+          Rails.logger.info "WebSocket connected to ComfyUI (waiting for job #{job_id})"
+        end
+
+        ws.on :message do |msg|
+          begin
+            # Handle both text and binary messages
+            message_data = if msg.data.is_a?(String)
+              JSON.parse(msg.data)
+            else
+              # Binary data (preview images) - ignore
+              next
+            end
+
+            # Inline message handling to avoid method resolution issues in WebSocket callbacks
+            # Check message type and handle accordingly
+            next unless message_data.is_a?(Hash)
+
+            case message_data["type"]
+            when "executing"
+              data = message_data["data"]
+              if data && data["node"].nil? && data["prompt_id"] == job_id
+                # Execution complete - fetch results
+                Rails.logger.info "ComfyUI job completed via WebSocket (prompt_id: #{job_id})"
+                extraction_result = service_instance.fetch_job_results_after_completion(job_id)
+                if extraction_result
+                  result = extraction_result
+                  ws.close
+                end
+              end
+            when "progress"
+              # Progress updates - log for debugging
+              progress_data = message_data["data"]
+              Rails.logger.debug "ComfyUI progress: #{progress_data.inspect}"
+            when "execution_error"
+              error_data = message_data["data"]
+              error_msg = error_data["error_message"] || error_data["message"] || "Unknown error"
+              Rails.logger.error "ComfyUI execution error: #{error_msg}"
+              error_occurred = true
+              error_message = "ComfyUI execution error: #{error_msg}"
+              ws.close
+            when "execution_start"
+              # Job started executing
+              Rails.logger.debug "ComfyUI job started executing"
+            when "execution_cached"
+              # Node output was cached
+              Rails.logger.debug "ComfyUI node output cached"
+            end
+          rescue JSON::ParserError
+            # Binary data - ignore
+            Rails.logger.debug "Received binary WebSocket message (preview image)"
+          rescue StandardError => e
+            Rails.logger.error "Error handling WebSocket message: #{e.message}"
+            Rails.logger.error e.backtrace.first(5).join("\n")
+            error_occurred = true
+            error_message = e.message
+            ws.close
+          end
+        end
+
+        ws.on :error do |e|
+          Rails.logger.error "WebSocket error: #{e.message}"
+          error_occurred = true
+          error_message = e.message
+          connection_closed = true
+        end
+
+        ws.on :close do |e|
+          Rails.logger.info "WebSocket connection closed"
+          connection_closed = true
+        end
+
+        # Wait for result, error, or timeout
+        start_time = Time.current
+        loop do
+          break if result || error_occurred || connection_closed
+          break if (Time.current - start_time) > timeout
+
+          sleep 0.1
+        end
+
+        ws.close unless connection_closed
+      end
+
+      if error_occurred
+        raise StandardError, "WebSocket error: #{error_message}"
+      end
+
+      unless result
+        raise StandardError, "WebSocket connection closed without result (job may still be processing)"
+      end
+
+      result
+    rescue Timeout::Error
+      Rails.logger.error "WebSocket extraction timed out after #{timeout} seconds"
+      raise StandardError, "ComfyUI job timed out after #{timeout} seconds"
+    rescue LoadError => e
+      # Gem not installed - fallback to polling
+      Rails.logger.warn "websocket-client-simple gem not available: #{e.message}"
+      raise StandardError, "WebSocket client not available"
+    rescue StandardError => e
+      Rails.logger.error "WebSocket extraction failed: #{e.message}"
+      raise
+    end
+
+    # Fetch job results after WebSocket completion notification
+    def fetch_job_results_after_completion(job_id)
+      base_uri = URI(base_url)
+      http = Net::HTTP.new(base_uri.host, base_uri.port)
+      http.open_timeout = 10
+      http.read_timeout = 30
+
+      # Get history
+      request = Net::HTTP::Get.new("/history/#{job_id}")
+      response = http.request(request)
+
+      unless response.code == "200"
+        raise StandardError, "Failed to fetch ComfyUI history: HTTP #{response.code}"
+      end
+
+      result = JSON.parse(response.body)
+      job_data = result[job_id]
+
+      unless job_data && job_data.is_a?(Hash)
+        raise StandardError, "ComfyUI history does not contain job data for #{job_id}"
+      end
+
+      outputs = job_data["outputs"] || {}
+      status = job_data["status"]
+
+      # Check if job failed
+      if status && status["status_str"] == "error"
+        error_msg = if status["messages"] && status["messages"].any?
+          status["messages"].join("; ")
+        else
+          "Unknown error"
+        end
+        raise StandardError, "ComfyUI job failed: #{error_msg}"
+      end
+
+      # Extract image data
+      image_data = extract_image_from_outputs(outputs, http, base_uri)
+
+      unless image_data
+        raise StandardError, "ComfyUI did not return image data"
+      end
+
+      image_size = image_data.respond_to?(:bytesize) ? image_data.bytesize : image_data.size
+      Rails.logger.info "ComfyUI returned image data: #{image_size} bytes (#{(image_size / 1024.0).round(2)} KB)"
+
+      {
+        "success" => true,
+        "job_id" => job_id,
+        "outputs" => outputs,
+        "image_data" => image_data
+      }
     rescue JSON::ParserError => e
       Rails.logger.error "Failed to parse ComfyUI history response: #{e.message}"
       raise StandardError, "Invalid response from ComfyUI API"

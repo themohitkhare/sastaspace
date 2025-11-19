@@ -36,7 +36,20 @@ class StockPhotoExtractionService
   def validate!
     raise ArgumentError, "Image blob is required" unless image_blob.present?
     raise ArgumentError, "User is required" unless user.present?
-    raise ArgumentError, "Analysis results are required" unless @analysis_results.present?
+
+    # Validate analysis_results is present and has at least one non-nil value
+    unless @analysis_results.present?
+      raise ArgumentError, "Analysis results are required"
+    end
+
+    # Check if analysis_results is a hash with at least one meaningful value
+    if @analysis_results.is_a?(Hash)
+      # Remove nil and empty string values to check if there's any meaningful data
+      meaningful_values = @analysis_results.reject { |_k, v| v.nil? || (v.is_a?(String) && v.strip.empty?) || (v.is_a?(Array) && v.empty?) }
+      if meaningful_values.empty?
+        raise ArgumentError, "Analysis results are required (at least one field must have a value)"
+      end
+    end
 
     # Validate blob exists
     unless image_blob.is_a?(ActiveStorage::Blob)
@@ -70,13 +83,16 @@ class StockPhotoExtractionService
       ).to_h
     when Hash
       # Filter to only allowed keys for security
+      # Handle both symbol and string keys
       permitted_keys = %w[
         name description category_name category_matched subcategory
         material style style_notes
         brand_matched brand_name brand_suggestion
         gender_appropriate confidence extraction_prompt colors
       ]
-      results.slice(*permitted_keys)
+      # Convert to string keys first, then slice
+      stringified = results.stringify_keys
+      stringified.slice(*permitted_keys)
     when String
       parsed = JSON.parse(results)
       if parsed.is_a?(Hash)
@@ -86,7 +102,7 @@ class StockPhotoExtractionService
           brand_matched brand_name brand_suggestion
           gender_appropriate confidence extraction_prompt colors
         ]
-        parsed.slice(*permitted_keys)
+        parsed.stringify_keys.slice(*permitted_keys)
       else
         parsed
       end
@@ -94,10 +110,8 @@ class StockPhotoExtractionService
       results
     end
 
-    # Convert symbol keys to string keys for consistency
-    if sanitized.is_a?(Hash)
-      sanitized = sanitized.stringify_keys
-    end
+    # Ensure we return a Hash (even if empty) for consistency
+    sanitized = {} unless sanitized.is_a?(Hash)
     sanitized
   end
 end

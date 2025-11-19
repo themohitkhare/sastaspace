@@ -148,7 +148,7 @@ module Services
 
       assert results["extraction_prompt"].present?
       assert_includes results["extraction_prompt"], "GREY ZIP-UP HOODIE"
-      assert_includes results["extraction_prompt"], "Gender Context: Men"
+      assert_includes results["extraction_prompt"], "Gender: Men"
       assert_includes results["extraction_prompt"], "Category: #{category_name}"
     end
 

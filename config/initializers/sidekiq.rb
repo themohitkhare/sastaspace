@@ -11,6 +11,11 @@ Sidekiq.configure_server do |config|
     size: ENV.fetch("SIDEKIQ_CONCURRENCY", 25).to_i + 5 # Connection pool size
   }
 
+  # Reduce log verbosity in development (only show WARN and ERROR)
+  if Rails.env.development?
+    config.logger.level = Logger::WARN
+  end
+
   # Note: Queue processing order is configured when starting Sidekiq
   # Default queues: ai_critical, default (ai_critical processed first)
   # To specify queues when starting Sidekiq:
@@ -28,5 +33,7 @@ Sidekiq.configure_client do |config|
   }
 end
 
-# Sidekiq Web UI routes are handled by Mission Control Jobs
-# Access via /admin/jobs/monitor (requires admin authentication)
+# Sidekiq Web UI is mounted at /admin/jobs (requires admin authentication)
+# Access is controlled via AdminConstraint in config/routes.rb
+# When mounted within Rails routes, Sidekiq::Web automatically shares the Rails session
+# No additional session configuration needed
