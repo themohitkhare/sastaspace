@@ -253,23 +253,37 @@ class Services::BlobDeduplicationServiceTest < ActiveSupport::TestCase
     error = StandardError.new("Test error")
     error.set_backtrace([ "line1", "line2", "line3", "line4", "line5", "line6" ])
 
-    ActiveStorage::Blob.stubs(:compute_checksum).raises(error)
+    # Create a fresh IO for this test
+    test_io = StringIO.new("test image data for error logging")
+
+    # Mock create_and_upload! to raise first, then return a mock blob
+    mock_blob = mock("blob")
+
+    # Use a sequence to define ordered expectations
+    seq = sequence("create_and_upload_sequence")
+
+    ActiveStorage::Blob.expects(:create_and_upload!).in_sequence(seq).raises(error)
+    ActiveStorage::Blob.expects(:create_and_upload!).in_sequence(seq).returns(mock_blob)
 
     log_messages = []
     Rails.logger.stubs(:error).with { |msg| log_messages << msg; true }
 
-    Services::BlobDeduplicationService.find_or_create_blob(
-      io: @io,
+    # This should catch the error and log it, then create a blob in the fallback
+    blob = Services::BlobDeduplicationService.find_or_create_blob(
+      io: test_io,
       filename: @filename,
       content_type: @content_type
     )
 
     # Should log error message
     error_log = log_messages.find { |msg| msg.include?("Error in blob deduplication") }
-    assert error_log.present?, "Should log error message"
+    assert error_log.present?, "Should log error message. Log messages: #{log_messages.inspect}"
 
     # Should log backtrace (first 5 lines)
     backtrace_log = log_messages.find { |msg| msg.include?("line1") }
-    assert backtrace_log.present?, "Should log backtrace"
+    assert backtrace_log.present?, "Should log backtrace. Log messages: #{log_messages.inspect}"
+
+    # Should return the fallback blob
+    assert_equal mock_blob, blob
   end
 end

@@ -61,23 +61,21 @@ Rails.application.configure do
   # Raise an error on page load if there are pending migrations.
   config.active_record.migration_error = :page_load
 
-  # Highlight code that triggered database queries in logs.
-  config.active_record.verbose_query_logs = true
-
-  # Append comments with runtime information tags to SQL queries in logs.
-  config.active_record.query_log_tags_enabled = true
-
-  # Highlight code that enqueued background job in logs.
-  config.active_job.verbose_enqueue_logs = true
+  # Disable verbose logging to reduce noise (only show WARN and ERROR)
+  config.active_record.verbose_query_logs = false
+  config.active_record.query_log_tags_enabled = false
+  config.active_job.verbose_enqueue_logs = false
+  config.action_dispatch.verbose_redirect_logs = false
 
   # Use Sidekiq for background jobs in development
   config.active_job.queue_adapter = :sidekiq
 
-  # Highlight code that triggered redirect in logs.
-  config.action_dispatch.verbose_redirect_logs = true
-
   # Suppress logger output for asset requests.
   config.assets.quiet = true
+
+  # Set log level to WARN to reduce noise (only show WARN and ERROR)
+  # Override with RAILS_LOG_LEVEL environment variable if needed (e.g., RAILS_LOG_LEVEL=debug)
+  config.log_level = ENV.fetch("RAILS_LOG_LEVEL", "warn").to_sym
 
   # Raises error for missing translations.
   # config.i18n.raise_on_missing_translations = true
@@ -95,11 +93,12 @@ Rails.application.configure do
   # config.generators.apply_rubocop_autocorrect_after_generate!
 
   # Configure Bullet for N+1 query detection
+  # Only show warnings/errors to reduce log noise
   config.after_initialize do
     Bullet.enable = true
-    Bullet.bullet_logger = true
-    Bullet.console = true
-    Bullet.rails_logger = true
+    Bullet.bullet_logger = false # Disable file logging to reduce noise
+    Bullet.console = false # Disable console output to reduce noise
+    Bullet.rails_logger = true # Keep Rails logger (respects log_level)
     Bullet.add_footer = true
     Bullet.skip_html_injection = false
   end

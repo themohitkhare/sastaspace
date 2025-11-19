@@ -28,7 +28,7 @@ module Services
     test "build_prompt includes gender context" do
       prompt = @builder.build_prompt
 
-      assert_includes prompt, "Gender Context: Men"
+      assert_includes prompt, "Gender: Men"
     end
 
     test "build_prompt uses unisex when gender_preference is nil" do
@@ -40,7 +40,7 @@ module Services
 
       prompt = builder.build_prompt
 
-      assert_includes prompt, "Gender Context: Unisex"
+      assert_includes prompt, "Gender: Unisex"
     end
 
     test "build_prompt includes category information" do
@@ -162,31 +162,30 @@ module Services
     test "build_prompt includes all extraction requirements" do
       prompt = @builder.build_prompt
 
-      assert_includes prompt, "REMOVE all background elements"
-      assert_includes prompt, "REMOVE person/model"
+      assert_includes prompt, "Remove ALL human elements"
       assert_includes prompt, "PRESERVE exact colors"
-      assert_includes prompt, "PRESERVE all fabric texture"
-      assert_includes prompt, "PRESERVE brand elements"
-      assert_includes prompt, "MAINTAIN natural garment shape"
-      assert_includes prompt, "SHOW all functional details"
+      assert_includes prompt, "show fabric texture clearly"
+      assert_includes prompt, "keep logo visible if present"
+      assert_includes prompt, "Maintain natural proportions"
+      assert_includes prompt, "Show complete sweater shape"
     end
 
     test "build_prompt includes technical output specifications" do
       prompt = @builder.build_prompt
 
-      assert_includes prompt, "Background: Pure white"
-      assert_includes prompt, "Resolution: Minimum 800x800 pixels"
-      assert_includes prompt, "Placement: Centered, front-facing"
-      assert_includes prompt, "Lighting: Even, professional e-commerce style"
+      assert_includes prompt, "Pure solid white background"
+      assert_includes prompt, "High-resolution, sharp focus"
+      assert_includes prompt, "Centered, professional product photography"
+      assert_includes prompt, "Professional e-commerce studio lighting"
     end
 
     test "build_prompt includes DO NOT section" do
       prompt = @builder.build_prompt
 
-      assert_includes prompt, "DO NOT:"
-      assert_includes prompt, "Add artificial shadows"
-      assert_includes prompt, "Alter colors from original"
-      assert_includes prompt, "Remove functional garment details"
+      assert_includes prompt, "NEGATIVE PROMPT (STRICTLY AVOID):"
+      assert_includes prompt, "human, person, model"
+      assert_includes prompt, "colored background"
+      assert_includes prompt, "casual styling"
     end
 
     test "build_prompt handles missing name gracefully" do
@@ -210,7 +209,7 @@ module Services
 
       prompt = builder.build_prompt
 
-      assert_includes prompt, "Gender Context: Women"
+      assert_includes prompt, "Gender: Women"
     end
 
     test "build_prompt handles unisex gender preference" do
@@ -222,7 +221,7 @@ module Services
 
       prompt = builder.build_prompt
 
-      assert_includes prompt, "Gender Context: Unisex"
+      assert_includes prompt, "Gender: Unisex"
     end
 
     test "build_prompt uses category_matched over category_name" do

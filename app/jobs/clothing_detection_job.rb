@@ -403,21 +403,40 @@ class ClothingDetectionJob < ApplicationJob
 
     begin
       # Build analysis_results hash from item_data for extraction
-      analysis_results = {
-        name: inventory_item.name,
-        description: inventory_item.description,
-        category_name: inventory_item.category&.name,
-        category_matched: inventory_item.category&.name,
-        subcategory: inventory_item.subcategory&.name,
-        material: item_data["material_type"] || item_data[:material_type] || inventory_item.material,
-        style: item_data["style_category"] || item_data[:style_category] || inventory_item.style_notes,
-        style_notes: item_data["style_category"] || item_data[:style_category] || inventory_item.style_notes,
-        brand_matched: inventory_item.brand&.name,
-        colors: [ item_data["color_primary"] || item_data[:color_primary] || inventory_item.color ].compact,
-        extraction_prompt: item_data["extraction_prompt"] || item_data[:extraction_prompt] || inventory_item.extraction_prompt,
-        gender_appropriate: true,
-        confidence: item_data["confidence"] || item_data[:confidence] || 0.9
-      }
+      # Only include fields that have values to avoid empty hash validation errors
+      analysis_results = {}
+
+      # Add fields that have values (skip nil/empty values)
+      analysis_results[:name] = inventory_item.name if inventory_item.name.present?
+      analysis_results[:description] = inventory_item.description if inventory_item.description.present?
+      analysis_results[:category_name] = inventory_item.category&.name if inventory_item.category&.name.present?
+      analysis_results[:category_matched] = inventory_item.category&.name if inventory_item.category&.name.present?
+      analysis_results[:subcategory] = inventory_item.subcategory&.name if inventory_item.subcategory&.name.present?
+
+      material = item_data["material_type"] || item_data[:material_type] || inventory_item.material
+      analysis_results[:material] = material if material.present?
+
+      style = item_data["style_category"] || item_data[:style_category] || inventory_item.style_notes
+      analysis_results[:style] = style if style.present?
+      analysis_results[:style_notes] = style if style.present?
+
+      analysis_results[:brand_matched] = inventory_item.brand&.name if inventory_item.brand&.name.present?
+
+      color = item_data["color_primary"] || item_data[:color_primary] || inventory_item.color
+      analysis_results[:colors] = [ color ].compact if color.present?
+
+      extraction_prompt = item_data["extraction_prompt"] || item_data[:extraction_prompt] || inventory_item.extraction_prompt
+      analysis_results[:extraction_prompt] = extraction_prompt if extraction_prompt.present?
+
+      # Always include these (required for validation)
+      analysis_results[:gender_appropriate] = true
+      analysis_results[:confidence] = item_data["confidence"] || item_data[:confidence] || 0.9
+
+      # Skip extraction if we don't have enough data (at least name or category)
+      unless analysis_results[:name].present? || analysis_results[:category_name].present?
+        Rails.logger.warn "Skipping stock photo extraction for item #{inventory_item.id}: insufficient data (no name or category)"
+        return
+      end
 
       # Use service object to queue extraction (reuses validation and sanitization)
       service = StockPhotoExtractionService.new(

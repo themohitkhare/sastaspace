@@ -42,10 +42,11 @@ Rails.application.routes.draw do
     end
   end
 
-  # Mount Mission Control - Jobs dashboard (admin only)
-  # This provides full Sidekiq monitoring UI
-  # Access is controlled via MissionControl::Jobs initializer
-  mount MissionControl::Jobs::Engine, at: "/admin/jobs/monitor"
+  # Sidekiq Web UI (admin only)
+  # See https://github.com/sidekiq/sidekiq/wiki/Monitoring for documentation
+  require "sidekiq/web"
+  require "admin_constraint"
+  mount Sidekiq::Web => "/admin/jobs", constraints: AdminConstraint.new
 
   # API routes
   namespace :api do
