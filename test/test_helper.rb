@@ -79,7 +79,12 @@ end
 class FilteredSpecReporter < Minitest::Reporters::SpecReporter
   def record(result)
     # Show all tests if SHOW_ALL_TESTS is set, or if test failed/errored
-    show_all = ENV["SHOW_ALL_TESTS"] == "1" || ENV["TEST_FULL"] == "1"
+    # Also show all tests in CI mode or when coverage is enabled
+    show_all = ENV["SHOW_ALL_TESTS"] == "1" ||
+               ENV["TEST_FULL"] == "1" ||
+               ENV["CI"] == "true" ||
+               ENV["COVERAGE"] == "1" ||
+               ENV["SIMPLECOV"] == "1"
     should_show = show_all || result.failure || result.error?
 
     if should_show

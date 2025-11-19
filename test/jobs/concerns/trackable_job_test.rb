@@ -148,6 +148,8 @@ class TrackableJobTest < ActiveSupport::TestCase
     # May be nil if job hasn't been persisted yet, or may return a status
     if status
       assert_includes %w[queued processing completed], status["status"]
+    else
+      assert_nil status, "Status should be nil if job not found in queue"
     end
   end
 
@@ -208,6 +210,9 @@ class TrackableJobTest < ActiveSupport::TestCase
       if status["recovered"]
         assert_equal true, status["recovered"]
       end
+    else
+      # If not recovered, verify it's the expected not_found status
+      assert_equal "not_found", status["status"]
     end
   end
 
