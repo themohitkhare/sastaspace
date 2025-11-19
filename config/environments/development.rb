@@ -62,10 +62,10 @@ Rails.application.configure do
   config.active_record.migration_error = :page_load
 
   # Disable verbose logging to reduce noise (only show WARN and ERROR)
-  config.active_record.verbose_query_logs = false
-  config.active_record.query_log_tags_enabled = false
-  config.active_job.verbose_enqueue_logs = false
-  config.action_dispatch.verbose_redirect_logs = false
+  # config.active_record.verbose_query_logs = false
+  # config.active_record.query_log_tags_enabled = false
+  # config.active_job.verbose_enqueue_logs = false
+  # config.action_dispatch.verbose_redirect_logs = false
 
   # Use Sidekiq for background jobs in development
   config.active_job.queue_adapter = :sidekiq
