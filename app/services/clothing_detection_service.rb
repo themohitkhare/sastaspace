@@ -129,8 +129,8 @@ class ClothingDetectionService
 
     begin
       http = Net::HTTP.new(base_uri.host, base_uri.port)
-      http.open_timeout = 3
-      http.read_timeout = 3
+      http.open_timeout = 10  # Increased from 3s - allow time for Ollama to start processing
+      http.read_timeout = 120  # Increased from 3s - AI vision models need time to analyze images
 
       tags_response = http.get("/api/tags")
       unless tags_response.code == "200"

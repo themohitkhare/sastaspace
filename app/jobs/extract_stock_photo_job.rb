@@ -157,8 +157,7 @@ class ExtractStockPhotoJob < ApplicationJob
         else
           # Verify the item actually has this blob as primary_image
           unless inventory_item.primary_image.attached? && inventory_item.primary_image.blob.id == @image_blob.id
-            Rails.logger.warn "Inventory item #{@inventory_item_id} does not have blob #{@image_blob.id} as primary_image, falling back to search"
-            inventory_item = find_inventory_item_for_blob(@image_blob.id)
+            Rails.logger.warn "Inventory item #{@inventory_item_id} does not have blob #{@image_blob.id} as primary_image. Will attach result to additional_images."
           else
             Rails.logger.info "Verified inventory item #{@inventory_item_id} has blob #{@image_blob.id} as primary_image"
           end
@@ -175,80 +174,99 @@ class ExtractStockPhotoJob < ApplicationJob
         # Reload to ensure we have the latest state
         inventory_item.reload
 
-        # Move current primary image to additional_images if it exists
-        if inventory_item.primary_image.attached?
-          original_primary_blob = inventory_item.primary_image.blob
-          Rails.logger.info "Moving original primary image (blob #{original_primary_blob.id}) to additional_images for item #{inventory_item.id}"
+        # Check if primary image is still the expected one
+        primary_image_matches = inventory_item.primary_image.attached? && inventory_item.primary_image.blob.id == @image_blob.id
 
-          # Detach the primary image (but don't purge the blob - we want to reuse it)
-          # Use detach instead of delete to properly remove the association
-          inventory_item.primary_image.detach
-
-          # Reload to ensure the attachment is removed
-          inventory_item.reload
-
-          # Verify it's detached
+        if primary_image_matches
+          # Move current primary image to additional_images if it exists
           if inventory_item.primary_image.attached?
-            Rails.logger.error "Failed to detach primary image from item #{inventory_item.id}"
-            raise "Failed to detach primary image"
+            original_primary_blob = inventory_item.primary_image.blob
+            Rails.logger.info "Moving original primary image (blob #{original_primary_blob.id}) to additional_images for item #{inventory_item.id}"
+
+            # Detach the primary image (but don't purge the blob - we want to reuse it)
+            # Use detach instead of delete to properly remove the association
+            inventory_item.primary_image.detach
+
+            # Reload to ensure the attachment is removed
+            inventory_item.reload
+
+            # Verify it's detached
+            if inventory_item.primary_image.attached?
+              Rails.logger.error "Failed to detach primary image from item #{inventory_item.id}"
+              raise "Failed to detach primary image"
+            end
+
+            # Now attach the original primary image blob to additional_images
+            inventory_item.additional_images.attach(original_primary_blob)
+            inventory_item.reload
+
+            # Verify it was added to additional_images
+            if inventory_item.additional_images.attached? && inventory_item.additional_images.any? { |img| img.blob.id == original_primary_blob.id }
+              Rails.logger.info "Moved original primary image to additional_images (blob #{original_primary_blob.id})"
+            else
+              Rails.logger.warn "Original primary image may not have been added to additional_images"
+            end
           end
 
-          # Now attach the original primary image blob to additional_images
-          inventory_item.additional_images.attach(original_primary_blob)
-          inventory_item.reload
+          # Replace primary image with extracted image
+          Rails.logger.info "Replacing primary image with extracted image (blob #{extracted_blob.id}) for item #{inventory_item.id}"
 
-          # Verify it was added to additional_images
-          if inventory_item.additional_images.attached? && inventory_item.additional_images.any? { |img| img.blob.id == original_primary_blob.id }
-            Rails.logger.info "Moved original primary image to additional_images (blob #{original_primary_blob.id})"
-          else
-            Rails.logger.warn "Original primary image may not have been added to additional_images"
+          # Ensure primary_image is not attached (should already be detached if we moved it above)
+          if inventory_item.primary_image.attached?
+            Rails.logger.warn "Primary image still attached after move operation, detaching now"
+            inventory_item.primary_image.detach
+            inventory_item.reload
           end
+
+          # Attach the new extracted blob
+          inventory_item.primary_image.attach(extracted_blob)
+          Rails.logger.info "Called attach for blob #{extracted_blob.id} on inventory item #{inventory_item.id}"
+        else
+          # Primary image changed - attach to additional_images instead
+          Rails.logger.warn "Primary image changed since job started (expected blob #{@image_blob.id}). Attaching extracted image to additional_images instead."
+          inventory_item.additional_images.attach(extracted_blob)
+          Rails.logger.info "Attached extracted image (blob #{extracted_blob.id}) to additional_images for item #{inventory_item.id}"
         end
-
-        # Replace primary image with extracted image
-        Rails.logger.info "Replacing primary image with extracted image (blob #{extracted_blob.id}) for item #{inventory_item.id}"
-
-        # Ensure primary_image is not attached (should already be detached if we moved it above)
-        if inventory_item.primary_image.attached?
-          Rails.logger.warn "Primary image still attached after move operation, detaching now"
-          inventory_item.primary_image.detach
-          inventory_item.reload
-        end
-
-        # Attach the new extracted blob
-        inventory_item.primary_image.attach(extracted_blob)
-        Rails.logger.info "Called attach for blob #{extracted_blob.id} on inventory item #{inventory_item.id}"
 
         # Force save and reload to ensure attachment is persisted
         inventory_item.save! if inventory_item.changed?
         inventory_item.reload
 
-        # Double-check the attachment was created
-        attachment = ActiveStorage::Attachment.find_by(
-          record_type: "InventoryItem",
-          record_id: inventory_item.id,
-          name: "primary_image",
-          blob_id: extracted_blob.id
-        )
+        if primary_image_matches
+          # Double-check the attachment was created
+          attachment = ActiveStorage::Attachment.find_by(
+            record_type: "InventoryItem",
+            record_id: inventory_item.id,
+            name: "primary_image",
+            blob_id: extracted_blob.id
+          )
 
-        if attachment
-          Rails.logger.info "Attachment record confirmed: attachment #{attachment.id} links blob #{extracted_blob.id} to item #{inventory_item.id}"
-        else
-          Rails.logger.error "Attachment record NOT found in database after attach call!"
-        end
-
-        # Verify the attachment succeeded
-        if inventory_item.primary_image.attached?
-          attached_blob_id = inventory_item.primary_image.blob.id
-          if attached_blob_id == extracted_blob.id
-            Rails.logger.info "Successfully replaced primary image with extracted image (blob #{extracted_blob.id}) for inventory item #{inventory_item.id}"
+          if attachment
+            Rails.logger.info "Attachment record confirmed: attachment #{attachment.id} links blob #{extracted_blob.id} to item #{inventory_item.id}"
           else
-            Rails.logger.error "Primary image attachment verification failed: expected blob #{extracted_blob.id}, got #{attached_blob_id} for item #{inventory_item.id}"
-            raise "Primary image attachment verification failed: expected blob #{extracted_blob.id}, got #{attached_blob_id}"
+            Rails.logger.error "Attachment record NOT found in database after attach call!"
+          end
+
+          # Verify the attachment succeeded
+          if inventory_item.primary_image.attached?
+            attached_blob_id = inventory_item.primary_image.blob.id
+            if attached_blob_id == extracted_blob.id
+              Rails.logger.info "Successfully replaced primary image with extracted image (blob #{extracted_blob.id}) for inventory item #{inventory_item.id}"
+            else
+              Rails.logger.error "Primary image attachment verification failed: expected blob #{extracted_blob.id}, got #{attached_blob_id} for item #{inventory_item.id}"
+              raise "Primary image attachment verification failed: expected blob #{extracted_blob.id}, got #{attached_blob_id}"
+            end
+          else
+            Rails.logger.error "Primary image attachment verification failed: no attachment found for item #{inventory_item.id}"
+            raise "Primary image attachment verification failed: no attachment found"
           end
         else
-          Rails.logger.error "Primary image attachment verification failed: no attachment found for item #{inventory_item.id}"
-          raise "Primary image attachment verification failed: no attachment found"
+           # Verify attached to additional
+           if inventory_item.additional_images.attached? && inventory_item.additional_images.any? { |img| img.blob.id == extracted_blob.id }
+             Rails.logger.info "Successfully attached extracted image (blob #{extracted_blob.id}) to additional_images"
+           else
+             Rails.logger.error "Failed to attach extracted image to additional_images"
+           end
         end
       rescue StandardError => e
         Rails.logger.error "Failed to replace primary image with extracted image: #{e.message}"
