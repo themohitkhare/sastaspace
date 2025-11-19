@@ -66,7 +66,7 @@ gem "image_processing", "~> 1.2"
 
 # Tailwind CSS for styling
 # Pinned to v3 - v4 requires migration (see https://github.com/rails/tailwindcss-rails/blob/main/README.md#upgrading-your-application-from-tailwind-v3-to-v4)
-gem "tailwindcss-rails", "~> 3.3.1"
+gem "tailwindcss-rails", "~> 4.4.0"
 
 # ZIP file handling for GDPR data export
 gem "rubyzip", "~> 2.3"
