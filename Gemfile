@@ -69,7 +69,7 @@ gem "image_processing", "~> 1.2"
 gem "tailwindcss-rails", "~> 3.3.1"
 
 # ZIP file handling for GDPR data export
-gem "rubyzip", "~> 2.3"
+gem "rubyzip", "~> 3.2"
 
 # WebSocket client for ComfyUI real-time integration
 # Latest version 0.9.0 (Dec 2024) - actively maintained, simple API
