@@ -14,7 +14,7 @@
         <div 
           data-inventory-creation-analyzer-target="uploadArea"
           class="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-8 text-center hover:border-primary-500 dark:hover:border-primary-400 transition-colors cursor-pointer"
-          data-action="click->inventory-creation-analyzer#triggerFileInput dragover->inventory-creation-analyzer#handleDragOver drop->inventory-creation-analyzer#handleDrop"
+          data-action="click->inventory-creation-analyzer#triggerFileInput dragenter->inventory-creation-analyzer#handleDragEnter dragover->inventory-creation-analyzer#handleDragOver dragleave->inventory-creation-analyzer#handleDragLeave drop->inventory-creation-analyzer#handleDrop"
         >
           <input
             type="file"

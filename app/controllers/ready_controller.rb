@@ -44,9 +44,18 @@ class ReadyController < ApplicationController
           end
 
   def check_queues
-    # Check if job queues are accessible
+    # Check if Sidekiq/Redis is accessible
     start_time = Time.current
-    SolidQueue::Job.count
+    if defined?(Sidekiq)
+      # Check Redis connection via Sidekiq
+      Sidekiq.redis { |conn| conn.ping }
+    else
+      # Fallback: try to connect to Redis directly
+      require "redis"
+      redis = Redis.new(url: ENV.fetch("REDIS_URL", "redis://127.0.0.1:6379/0"))
+      redis.ping
+      redis.close
+    end
     duration = ((Time.current - start_time) * 1000).round(2)
 
     { status: "ok", duration_ms: duration }

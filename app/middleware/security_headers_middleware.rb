@@ -21,13 +21,14 @@ class SecurityHeadersMiddleware
 
     # Content Security Policy
     # Allow self, data URIs for images, and inline styles/scripts for Rails UJS
+    # Allow Cloudflare Insights for analytics (if using Cloudflare proxy)
     csp_policy = [
       "default-src 'self'",
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval'", # unsafe-eval needed for some JS frameworks
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://static.cloudflareinsights.com", # unsafe-eval needed for some JS frameworks
       "style-src 'self' 'unsafe-inline'",
       "img-src 'self' data: https:",
       "font-src 'self' data:",
-      "connect-src 'self'",
+      "connect-src 'self' https://cloudflareinsights.com", # Allow Cloudflare Insights beacon
       "frame-ancestors 'none'",
       "base-uri 'self'",
       "form-action 'self'"

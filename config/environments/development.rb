@@ -15,6 +15,9 @@ Rails.application.configure do
   # Enable server timing.
   config.server_timing = true
 
+  # Allow requests from development hostname
+  config.hosts << "dev.sastaspace.com"
+
   # Enable/disable Action Controller caching. By default Action Controller caching is disabled.
   # Run rails dev:cache to toggle Action Controller caching.
   if Rails.root.join("tmp/caching-dev.txt").exist?
@@ -25,8 +28,8 @@ Rails.application.configure do
     config.action_controller.perform_caching = false
   end
 
-  # Use Solid Cache with PostgreSQL backend
-  config.cache_store = :solid_cache_store
+  # Use Redis for caching
+  config.cache_store = :redis_cache_store, { url: ENV.fetch("REDIS_URL", "redis://127.0.0.1:6379/1"), namespace: "sastaspace:cache:#{Rails.env}" }
 
   # Store uploaded files on the local file system (see config/storage.yml for options).
   config.active_storage.service = :local
@@ -37,15 +40,20 @@ Rails.application.configure do
   # Make template changes take effect immediately.
   config.action_mailer.perform_caching = false
 
-  # Set localhost to be used by links generated in mailer templates and url_for helpers.
-  config.action_mailer.default_url_options = { host: "localhost", port: 3000 }
-  config.action_controller.default_url_options = { host: "localhost", port: 3000 }
+  # Use dev.sastaspace.com for all URLs in development
+  # All URLs will use HTTPS protocol to match the Cloudflare proxy
+  config.action_controller.default_url_options = { host: "dev.sastaspace.com", protocol: "https" }
+  config.action_mailer.default_url_options = { host: "dev.sastaspace.com", protocol: "https" }
 
-  # Ensure routes default_url_options is set for url_for helpers
+  # Configure routes to use dev.sastaspace.com
   config.after_initialize do
-    Rails.application.routes.default_url_options[:host] = "localhost"
-    Rails.application.routes.default_url_options[:port] = 3000
+    Rails.application.routes.default_url_options[:host] = "dev.sastaspace.com"
+    Rails.application.routes.default_url_options[:protocol] = "https"
   end
+
+  # Configure Active Storage to use dev.sastaspace.com with HTTPS
+  # This ensures all image URLs use HTTPS and match the page protocol
+  config.active_storage.resolve_model_to_route = :rails_storage_proxy
 
   # Print deprecation notices to the Rails logger.
   config.active_support.deprecation = :log
@@ -62,10 +70,8 @@ Rails.application.configure do
   # Highlight code that enqueued background job in logs.
   config.active_job.verbose_enqueue_logs = true
 
-  # Rails default in development is :async (runs jobs in background threads automatically)
-  # No need to set explicitly - it's the default
-  # Uncomment below if you want to test with :solid_queue adapter:
-  # config.active_job.queue_adapter = :solid_queue
+  # Use Sidekiq for background jobs in development
+  config.active_job.queue_adapter = :sidekiq
 
   # Highlight code that triggered redirect in logs.
   config.action_dispatch.verbose_redirect_logs = true

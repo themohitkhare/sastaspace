@@ -1,7 +1,9 @@
 class ExtractStockPhotoJob < ApplicationJob
   include TrackableJob
 
-  queue_as :default
+  # Use separate queue for AI-critical jobs to control concurrency
+  # This prevents overwhelming ComfyUI with too many simultaneous requests
+  queue_as :ai_critical
 
   # Override concern methods for job-specific configuration
   def self.status_key_prefix
@@ -257,6 +259,9 @@ class ExtractStockPhotoJob < ApplicationJob
       Rails.logger.warn "Could not find inventory item for blob #{@image_blob.id} - extracted image not attached"
     end
 
+    # Check if image was actually replaced
+    primary_image_replaced = inventory_item&.primary_image&.attached? && inventory_item.primary_image.blob.id == extracted_blob.id
+
     # Update status with success
     completion_data = {
       "original_blob_id" => @image_blob.id,
@@ -264,11 +269,19 @@ class ExtractStockPhotoJob < ApplicationJob
       "extraction_prompt" => extraction_prompt,
       "comfyui_job_id" => extraction_result["job_id"],
       "inventory_item_id" => inventory_item&.id,
-      "primary_image_replaced" => inventory_item&.primary_image&.attached? && inventory_item.primary_image.blob.id == extracted_blob.id,
+      "primary_image_replaced" => primary_image_replaced,
       "original_moved_to_additional" => original_primary_blob.present?
     }
     update_status("completed", completion_data, nil)
     broadcast_extraction_complete(completion_data)
+
+    # Only mark that extraction has completed successfully if the image was actually replaced
+    if inventory_item && primary_image_replaced
+      inventory_item.update_column(:stock_photo_extraction_completed_at, Time.current)
+      Rails.logger.info "Marked inventory item #{inventory_item.id} as having completed stock photo extraction"
+    elsif inventory_item
+      Rails.logger.warn "Extraction completed but image was not replaced for inventory item #{inventory_item.id} - not marking as completed"
+    end
 
     Rails.logger.info "Extraction completed successfully (job: #{job_id})"
   rescue StandardError => e

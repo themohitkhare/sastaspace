@@ -11,10 +11,15 @@ class ReadyControllerUnitTest < ActionDispatch::IntegrationTest
 
   test "check_queues returns error on exception" do
     controller = ReadyController.new
-    SolidQueue::Job.stubs(:count).raises(StandardError.new("queue down"))
+    # Stub Sidekiq.redis to raise an error
+    if defined?(Sidekiq)
+      Sidekiq.stubs(:redis).raises(StandardError.new("redis down"))
+    else
+      Redis.stubs(:new).raises(StandardError.new("redis down"))
+    end
     result = controller.send(:check_queues)
     assert_equal "error", result[:status]
-    assert_match /queue down/, result[:error]
+    assert_match /redis down|down/, result[:error]
   end
 
   test "check_storage returns ok with duration" do

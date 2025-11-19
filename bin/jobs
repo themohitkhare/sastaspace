@@ -1,22 +1,48 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
-# This script runs the Solid Queue worker locally for development
-# Only needed if using :solid_queue adapter (set RAILS_QUEUE_ADAPTER=solid_queue)
-# With :async adapter (default), jobs run automatically - no worker needed
+# This script runs the Sidekiq worker locally for development
+# Sidekiq processes background jobs from Redis queues
 
+# Load Rails environment first
 require_relative "../config/environment"
 
-puts "Starting Solid Queue worker..."
+puts "Starting Sidekiq worker..."
 puts "Environment: #{Rails.env}"
 puts "Queue adapter: #{Rails.application.config.active_job.queue_adapter}"
+puts "Redis URL: #{ENV.fetch('REDIS_URL', 'redis://127.0.0.1:6379/0')}"
 puts "Press Ctrl+C to stop"
 
-# Ensure Solid Queue is configured
-Rails.application.config.active_job.queue_adapter ||= :solid_queue
+# Start Sidekiq using the Launcher API
+# This is the programmatic way to start Sidekiq in a Rails context
+require "sidekiq/launcher"
 
-# Start Solid Queue supervisor
-require "solid_queue"
+# Get Sidekiq options from configuration
+# Use queues from config or default to ai_critical and default
+queues = Sidekiq.options[:queues] || ["ai_critical", "default"]
+options = {
+  queues: queues,
+  concurrency: ENV.fetch("SIDEKIQ_CONCURRENCY", 25).to_i,
+  environment: Rails.env
+}
 
-# Load Solid Queue configuration
-SolidQueue::Supervisor.start
+puts "Processing queues: #{queues.join(', ')}"
+puts "Concurrency: #{options[:concurrency]}"
+
+launcher = Sidekiq::Launcher.new(options)
+
+# Handle shutdown gracefully
+trap("SIGTERM") do
+  puts "\nShutting down Sidekiq..."
+  launcher.stop
+  exit
+end
+
+trap("SIGINT") do
+  puts "\nShutting down Sidekiq..."
+  launcher.stop
+  exit
+end
+
+# Run the launcher (blocks until stopped)
+launcher.run

@@ -3,7 +3,7 @@ class EnhanceOutfitManagementSystem < ActiveRecord::Migration[8.1]
     # NOTE: This migration is now mostly consolidated into create_outfits and create_outfit_items
     # Keeping this migration for backwards compatibility, but most fields are now in the create migrations
     # Only adding fields that might not exist if migrations are run out of order
-    
+
     # These fields are now in create_outfits, but adding conditionally for safety
     unless column_exists?(:outfits, :metadata)
       add_column :outfits, :metadata, :jsonb, default: {}

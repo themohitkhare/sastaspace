@@ -23,6 +23,10 @@ module Sastaspace
     # Add app/middleware to autoload paths
     config.autoload_paths << Rails.root.join("app", "middleware")
 
+    # Add app/services to autoload paths
+    # This ensures service classes are autoloaded throughout the application
+    config.autoload_paths << Rails.root.join("app", "services")
+
     # Configuration for the application, engines, and railties goes here.
     #
     # These settings can be overridden in specific environments using the files

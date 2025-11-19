@@ -46,11 +46,11 @@ Rails.application.configure do
   # Don't log any deprecations.
   config.active_support.report_deprecations = false
 
-  # Use Solid Cache with PostgreSQL backend
-  config.cache_store = :solid_cache_store
+  # Use Redis for caching
+  config.cache_store = :redis_cache_store, { url: ENV.fetch("REDIS_URL", "redis://127.0.0.1:6379/1"), namespace: "sastaspace:cache:#{Rails.env}" }
 
-  # Use Solid Queue with PostgreSQL backend
-  config.active_job.queue_adapter = :solid_queue
+  # Use Sidekiq for background jobs
+  config.active_job.queue_adapter = :sidekiq
 
   # Ignore bad email addresses and do not raise email delivery errors.
   # Set this to true and configure the email server for immediate delivery to raise delivery errors.

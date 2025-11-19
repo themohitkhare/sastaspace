@@ -55,6 +55,7 @@ class InventoryItem < ApplicationRecord
   scope :recently_worn, -> { where.not(last_worn_at: nil).order(last_worn_at: :desc) }
   scope :never_worn, -> { where(last_worn_at: nil) }
   scope :most_worn, -> { reorder(wear_count: :desc, created_at: :desc) }
+  scope :without_stock_photo_extraction, -> { where(stock_photo_extraction_completed_at: nil) }
 
   # Type-specific validations
   validate :validate_type_specific_fields

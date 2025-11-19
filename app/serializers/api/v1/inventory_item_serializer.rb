@@ -172,16 +172,21 @@ module Api
       def default_host
         Rails.application.config.action_controller.default_url_options[:host] ||
           Rails.application.routes.default_url_options[:host] ||
-          "localhost"
+          (Rails.env.development? ? "dev.sastaspace.com" : "localhost")
       end
 
       def default_port
+        # No port needed for dev.sastaspace.com (uses standard HTTPS port 443)
+        return nil if Rails.env.development? && default_host == "dev.sastaspace.com"
+
         Rails.application.config.action_controller.default_url_options[:port] ||
           Rails.application.routes.default_url_options[:port] ||
           (Rails.env.development? ? 3000 : nil)
       end
 
       def default_protocol
+        # Use HTTPS for dev.sastaspace.com, otherwise follow environment defaults
+        return "https" if Rails.env.development? && default_host == "dev.sastaspace.com"
         Rails.env.production? ? "https" : "http"
       end
     end

@@ -39,16 +39,18 @@ class HealthChecker
   end
 
   def self.jobs_status
-    # Get comprehensive job queue health from monitoring service
-    health = JobMonitoringService.queue_health
-
-    {
-      status: health[:status] == "healthy" ? "healthy" : "unhealthy",
-      message: "Job queue operational",
-      queue_depth: health[:queues].values.sum { |q| q[:depth] },
-      workers: health[:workers][:active],
-      alerts: health[:alerts].count
-    }
+    # Check if Sidekiq/Redis is accessible
+    if defined?(Sidekiq)
+      Sidekiq.redis { |conn| conn.ping }
+      { status: "healthy", message: "Sidekiq/Redis operational" }
+    else
+      # Fallback: check Redis directly
+      require "redis"
+      redis = Redis.new(url: ENV.fetch("REDIS_URL", "redis://127.0.0.1:6379/0"))
+      redis.ping
+      redis.close
+      { status: "healthy", message: "Redis operational" }
+    end
   rescue StandardError => e
     { status: "unhealthy", error: e.message }
   end
