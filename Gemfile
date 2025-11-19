@@ -21,7 +21,7 @@ gem "jbuilder", "~> 2.14"
 gem "bcrypt", "~> 3.1.7"
 
 # CORS support for API
-gem "rack-cors", "~> 2.0"
+gem "rack-cors", "~> 3.0"
 
 # Rate limiting and blocking
 gem "rack-attack", "~> 6.7"
