@@ -1,6 +1,7 @@
 # Mission Control - Jobs configuration
 # Restricts access to admin users only
 # This lambda is called for each request to the Mission Control dashboard
+# Returns true to allow access, false or raises exception to deny
 MissionControl::Jobs::Engine.config.authentication = lambda do |request|
   # Get current user from session/cookies (using existing authentication)
   user = nil
@@ -22,11 +23,12 @@ MissionControl::Jobs::Engine.config.authentication = lambda do |request|
     user = User.find_by(id: request.session[:user_id])
   end
 
-  # Only allow admin users - return false to deny access
-  unless user&.admin?
-    Rails.logger.warn "Mission Control access denied for user: #{user&.id || 'anonymous'}"
-    false
-  else
+  # Only allow admin users
+  if user&.admin?
     true
+  else
+    Rails.logger.warn "Mission Control access denied for user: #{user&.id || 'anonymous'}"
+    # Return false to deny access - Mission Control will handle the response
+    false
   end
 end

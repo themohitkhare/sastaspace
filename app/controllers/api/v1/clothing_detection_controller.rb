@@ -143,6 +143,79 @@ module Api
         }, status: :ok
       end
 
+      # GET /api/v1/clothing_detection/status/:job_id
+      # Check the status of a clothing detection job
+      def status
+        job_id = params[:job_id]
+
+        unless job_id.present?
+          return render json: {
+            success: false,
+            error: {
+              code: "MISSING_JOB_ID",
+              message: "Job ID is required"
+            },
+            timestamp: Time.current.iso8601
+          }, status: :bad_request
+        end
+
+        begin
+          status_data = ClothingDetectionJob.get_status(job_id)
+
+          case status_data["status"]
+          when "completed"
+            render json: {
+              success: true,
+              data: {
+                job_id: job_id,
+                status: "completed",
+                analysis: status_data["data"]
+              },
+              timestamp: Time.current.iso8601
+            }
+          when "processing", "scheduled", "retrying"
+            render json: {
+              success: true,
+              data: {
+                job_id: job_id,
+                status: status_data["status"],
+                message: status_data["data"] || "Job is processing"
+              },
+              timestamp: Time.current.iso8601
+            }
+          when "failed"
+            render json: {
+              success: false,
+              data: {
+                job_id: job_id,
+                status: "failed",
+                error: status_data["error"]
+              },
+              timestamp: Time.current.iso8601
+            }, status: :unprocessable_entity
+          else
+            render json: {
+              success: false,
+              error: {
+                code: "JOB_NOT_FOUND",
+                message: status_data["error"]&.dig("message") || "Job not found or expired"
+              },
+              timestamp: Time.current.iso8601
+            }, status: :not_found
+          end
+        rescue StandardError => e
+          Rails.logger.error "Error retrieving detection status: #{e.message}"
+          render json: {
+            success: false,
+            error: {
+              code: "STATUS_ERROR",
+              message: "Failed to retrieve job status: #{e.message}"
+            },
+            timestamp: Time.current.iso8601
+          }, status: :internal_server_error
+        end
+      end
+
       # GET /api/v1/clothing_detection/analyses
       # List all clothing analyses for the current user
       def index

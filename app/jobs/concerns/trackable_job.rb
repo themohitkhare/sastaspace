@@ -1,5 +1,5 @@
 # Concern for jobs that need status tracking and recovery
-# Provides methods for tracking job status in cache and recovering from Solid Queue
+# Provides methods for tracking job status in cache and recovering from Sidekiq
 # after server restarts or cache expiry.
 #
 # Usage:
@@ -86,107 +86,82 @@ module TrackableJob
       { "status" => "error", "error" => "Could not retrieve job status" }
     end
 
-    # Recover job status from Solid Queue when cache is missing
+    # Recover job status from Sidekiq when cache is missing
     # This handles cases where:
     # - Server restarted and cache was cleared
     # - Cache expired but job is still in queue
     # - Job is processing but status wasn't updated yet
     def recover_status_from_queue(job_id)
-      return nil unless defined?(SolidQueue::Job)
-
-      # Check if SolidQueue tables exist before attempting to query
-      begin
-        return nil unless SolidQueue::Job.connection.table_exists?(:solid_queue_jobs)
-      rescue StandardError
-        return nil
-      end
+      return nil unless defined?(Sidekiq)
 
       begin
         active_job_id = Rails.cache.read(active_job_id_key(job_id))
+        return nil unless active_job_id.present?
 
-        job = if active_job_id.present?
-          # Direct lookup by ActiveJob ID (fastest)
-          SolidQueue::Job.find_by(active_job_id: active_job_id)
-        else
-          # Fallback: search by arguments (job_id in arguments)
-          matching_jobs = SolidQueue::Job
-            .where(class_name: name)
-            .where("arguments::text LIKE ?", "%#{job_id}%")
-            .order(created_at: :desc)
-            .limit(1)
-          matching_jobs.first
-        end
-
-        return nil unless job
-
-        status = determine_job_status_from_queue(job)
+        # Use Sidekiq API to find job status
+        # Sidekiq stores jobs in Redis, so we need to check different queues
+        status = recover_from_sidekiq(active_job_id)
         return nil unless status
 
         # Re-cache the recovered status (with shorter expiry since it's incomplete)
         Rails.cache.write(status_key(job_id), status, expires_in: 15.minutes)
         status
       rescue StandardError => e
-        Rails.logger.warn "Failed to recover job status from queue for #{name} job_id #{job_id}: #{e.message}"
+        Rails.logger.warn "Failed to recover job status from Sidekiq for #{name} job_id #{job_id}: #{e.message}"
         nil
       end
     end
 
-    private
-
-    # Determine job status from Solid Queue job record
-    def determine_job_status_from_queue(job)
-      if job.finished_at.present?
-        # Job completed - check if it failed
-        failed_execution = SolidQueue::FailedExecution.find_by(job_id: job.id)
-        if failed_execution
-          {
-            "status" => "failed",
-            "data" => nil,
-            "error" => { "error" => failed_execution.error || "Job failed" },
-            "updated_at" => job.finished_at.iso8601
-          }
-        else
-          {
-            "status" => "completed",
-            "data" => nil, # Can't recover full data from queue
-            "error" => nil,
-            "updated_at" => job.finished_at.iso8601,
-            "recovered" => true,
-            "note" => "Status recovered from queue. Full completion data may be missing."
-          }
-        end
-      elsif SolidQueue::ClaimedExecution.exists?(job_id: job.id)
-        # Job is currently being processed
-        {
-          "status" => "processing",
+    # Recover job status from Sidekiq using Sidekiq API
+    def recover_from_sidekiq(active_job_id)
+      # Check if job is in scheduled queue
+      scheduled = Sidekiq::ScheduledSet.new
+      job = scheduled.find { |j| j.jid == active_job_id }
+      if job
+        return {
+          "status" => "scheduled",
           "data" => nil,
           "error" => nil,
-          "updated_at" => job.updated_at.iso8601,
+          "updated_at" => Time.at(job.score).iso8601,
           "recovered" => true,
-          "note" => "Job is currently processing"
-        }
-      elsif SolidQueue::ReadyExecution.exists?(job_id: job.id) || SolidQueue::ScheduledExecution.exists?(job_id: job.id)
-        # Job is queued but not started
-        {
-          "status" => "queued",
-          "data" => nil,
-          "error" => nil,
-          "updated_at" => job.created_at.iso8601,
-          "recovered" => true,
-          "note" => "Job is queued and waiting to be processed"
-        }
-      else
-        # Job exists but state is unclear
-        {
-          "status" => "unknown",
-          "data" => nil,
-          "error" => nil,
-          "updated_at" => job.updated_at.iso8601,
-          "recovered" => true,
-          "note" => "Job found in queue but state is unclear"
+          "note" => "Job is scheduled to run"
         }
       end
+
+      # Check if job is in retry queue
+      retries = Sidekiq::RetrySet.new
+      job = retries.find { |j| j.jid == active_job_id }
+      if job
+        return {
+          "status" => "retrying",
+          "data" => nil,
+          "error" => { "message" => job.item["error_message"] || "Job is retrying" },
+          "updated_at" => Time.at(job.score).iso8601,
+          "recovered" => true,
+          "note" => "Job is retrying after failure"
+        }
+      end
+
+      # Check if job is in dead queue
+      dead = Sidekiq::DeadSet.new
+      job = dead.find { |j| j.jid == active_job_id }
+      if job
+        return {
+          "status" => "failed",
+          "data" => nil,
+          "error" => { "message" => job.item["error_message"] || "Job failed" },
+          "updated_at" => Time.at(job.score).iso8601,
+          "recovered" => true,
+          "note" => "Job has failed and is in dead queue"
+        }
+      end
+
+      # Job might be processing or completed (not in any queue)
+      # We can't determine exact status without additional tracking
+      nil
     end
+
+    private
   end
 
   # Instance methods
@@ -204,7 +179,7 @@ module TrackableJob
 
     # After enqueue, job_id should be available on self
     # Note: In test mode with inline adapter, job_id might not be set yet
-    # In production with SolidQueue, job_id will be available
+    # In production with Sidekiq, job_id will be available
     active_job_id = if respond_to?(:job_id) && job_id.present?
       job_id
     elsif respond_to?(:provider_job_id) && provider_job_id.present?

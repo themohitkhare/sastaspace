@@ -5,7 +5,6 @@ class HealthCheckerTest < ActiveSupport::TestCase
     # Clean up all stubs to prevent interference with other tests
     ActiveRecord::Base.connection.unstub_all if ActiveRecord::Base.connection.respond_to?(:unstub_all)
     Rails.cache.unstub_all if Rails.cache.respond_to?(:unstub_all)
-    JobMonitoringService.unstub_all if JobMonitoringService.respond_to?(:unstub_all)
     HealthChecker.unstub_all if HealthChecker.respond_to?(:unstub_all)
   end
 
@@ -36,28 +35,36 @@ class HealthCheckerTest < ActiveSupport::TestCase
     assert_equal "unhealthy", status[:status]
   end
 
-  test "jobs_status healthy when job monitoring is available" do
-    JobMonitoringService.stubs(:queue_health).returns({
-      status: "healthy",
-      queues: { "default" => { depth: 0 } },
-      workers: { active: 1 },
-      alerts: []
-    })
+  test "jobs_status healthy when Sidekiq is available" do
+    # Stub Sidekiq.redis to simulate successful connection
+    if defined?(Sidekiq)
+      mock_redis = mock
+      mock_redis.stubs(:ping).returns("PONG")
+      Sidekiq.stubs(:redis).yields(mock_redis)
+    else
+      # Fallback: stub Redis directly
+      mock_redis = mock
+      mock_redis.stubs(:ping).returns("PONG")
+      mock_redis.stubs(:close)
+      Redis.stubs(:new).returns(mock_redis)
+    end
 
     status = HealthChecker.jobs_status
     assert_equal "healthy", status[:status]
-    assert_equal "Job queue operational", status[:message]
-    assert status[:queue_depth].is_a?(Integer)
-    assert status[:workers].is_a?(Integer)
-    assert status[:alerts].is_a?(Integer)
+    assert_includes status[:message], "operational"
   end
 
-  test "jobs_status unhealthy when job monitoring fails" do
-    JobMonitoringService.stubs(:queue_health).raises(StandardError.new("queue down"))
+  test "jobs_status unhealthy when Sidekiq/Redis fails" do
+    # Stub Sidekiq.redis to raise an error
+    if defined?(Sidekiq)
+      Sidekiq.stubs(:redis).raises(StandardError.new("redis connection failed"))
+    else
+      Redis.stubs(:new).raises(StandardError.new("redis connection failed"))
+    end
 
     status = HealthChecker.jobs_status
     assert_equal "unhealthy", status[:status]
-    assert_includes status[:error], "queue down"
+    assert_includes status[:error], "redis connection failed"
   end
 
   test "overall_status is healthy when all services are healthy" do

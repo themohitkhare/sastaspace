@@ -41,13 +41,16 @@ gem "kaminari", "~> 1.2"
 # Windows does not include zoneinfo files, so bundle the tzinfo-data gem
 gem "tzinfo-data", platforms: %i[ windows jruby ]
 
-# Use the database-backed adapters for Rails.cache, Active Job, and Action Cable
-gem "solid_cache", "~> 1.0"
-gem "solid_queue", "~> 1.2.4"
+# Use Redis for caching and Sidekiq for background jobs
+gem "redis", "~> 5.0"
+gem "sidekiq", "~> 8.0"
 gem "solid_cable", "~> 3.0"
 
 # Admin panel for job monitoring
 gem "mission_control-jobs"
+
+# Maintenance Tasks - production-grade data migration and backfill tool
+gem "maintenance_tasks"
 
 # Reduces boot times through caching; required in config/boot.rb
 gem "bootsnap", "~> 1.18", require: false

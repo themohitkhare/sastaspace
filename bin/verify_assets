@@ -1,0 +1,80 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# Script to verify Sprockets assets are properly configured
+# Run: bin/verify_assets
+
+require_relative "../config/environment"
+
+puts "🔍 Verifying Sprockets Asset Configuration..."
+puts "=" * 60
+
+# Check if Sprockets is configured
+if defined?(Sprockets)
+  puts "✅ Sprockets is loaded"
+else
+  puts "❌ Sprockets is not loaded"
+  exit 1
+end
+
+# Check asset paths
+puts "\n📁 Asset Paths:"
+Rails.application.config.assets.paths.each do |path|
+  exists = File.directory?(path) ? "✅" : "❌"
+  puts "  #{exists} #{path}"
+end
+
+# Check if app/javascript is excluded (should be for importmap)
+javascript_path = Rails.root.join("app/javascript").to_s
+if Rails.application.config.assets.paths.include?(javascript_path)
+  puts "\n⚠️  WARNING: app/javascript is in Sprockets paths (should be excluded for importmap)"
+else
+  puts "\n✅ app/javascript is correctly excluded from Sprockets (handled by importmap)"
+end
+
+# Verify required assets exist
+puts "\n📦 Checking Required Assets:"
+required_assets = %w[
+  tailwind.css
+  application.css
+  inter-font.css
+]
+
+required_assets.each do |asset|
+  begin
+    found = Rails.application.assets.find_asset(asset)
+    if found
+      puts "  ✅ #{asset}"
+    else
+      puts "  ❌ #{asset} (not found)"
+    end
+  rescue => e
+    puts "  ⚠️  #{asset} (error: #{e.message})"
+  end
+end
+
+# Check manifest file
+manifest_path = Rails.root.join("app/assets/config/manifest.js")
+if File.exist?(manifest_path)
+  puts "\n✅ Manifest file exists: #{manifest_path}"
+  puts "   Content:"
+  File.readlines(manifest_path).each do |line|
+    puts "     #{line.chomp}" unless line.strip.empty?
+  end
+else
+  puts "\n❌ Manifest file not found: #{manifest_path}"
+end
+
+# Check precompile list
+puts "\n📋 Assets to Precompile:"
+Rails.application.config.assets.precompile.each do |asset|
+  puts "  • #{asset}"
+end
+
+puts "\n" + "=" * 60
+puts "✅ Asset verification complete!"
+puts "\n💡 Tip: If assets are missing, check:"
+puts "   1. app/assets/config/manifest.js"
+puts "   2. config/initializers/assets.rb"
+puts "   3. Run: rails assets:precompile"
+

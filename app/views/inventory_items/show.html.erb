@@ -43,68 +43,6 @@
         </div>
       <% end %>
 
-      <!-- Stock Photo Extraction Section -->
-      <% if @inventory_item.primary_image.attached? && @inventory_item.primary_image.blob.present? %>
-        <div 
-          data-controller="stock-photo-extraction"
-          data-stock-photo-extraction-blob-id-value="<%= @inventory_item.primary_image.blob.id %>"
-          <% if current_user %>
-            data-stock-photo-extraction-user-id-value="<%= current_user.id %>"
-          <% end %>
-          data-stock-photo-extraction-analysis-results-value="<%= j({
-            name: @inventory_item.name,
-            category_name: @inventory_item.category&.name,
-            category_matched: @inventory_item.category&.name,
-            subcategory: @inventory_item.subcategory&.name,
-            material: @inventory_item.material,
-            style: @inventory_item.style_notes,
-            style_notes: @inventory_item.style_notes,
-            brand_matched: @inventory_item.brand&.name,
-            colors: [@inventory_item.color].compact,
-            extraction_prompt: @inventory_item.extraction_prompt,
-            gender_appropriate: true,
-            confidence: 0.9
-          }.to_json) %>"
-          style="margin-top: 20px; padding: 15px; background: #f8f9fa; border-radius: 8px; border: 1px solid #dee2e6;"
-        >
-          <h3 style="margin-top: 0; margin-bottom: 10px; font-size: 16px; font-weight: 600;">Stock Photo Extraction</h3>
-          <p style="margin-bottom: 15px; color: #6c757d; font-size: 14px;">
-            Generate a professional stock photo with white background using AI.
-          </p>
-          
-          <button
-            data-stock-photo-extraction-target="button"
-            data-action="click->stock-photo-extraction#extractStockPhoto"
-            class="btn-primary"
-            style="padding: 8px 15px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px;"
-          >
-            Extract Stock Photo
-          </button>
-
-          <div 
-            data-stock-photo-extraction-target="status"
-            class="hidden"
-            style="margin-top: 10px; padding: 10px; background: #e7f3ff; border-radius: 4px; color: #004085; font-size: 14px;"
-          >
-            <span data-stock-photo-extraction-target="progress">⏳ </span>
-            <span>Processing...</span>
-          </div>
-
-          <div 
-            data-stock-photo-extraction-target="errorMessage"
-            class="hidden"
-            style="margin-top: 10px; padding: 10px; background: #f8d7da; border-radius: 4px; color: #721c24; font-size: 14px;"
-          >
-          </div>
-
-          <div 
-            data-stock-photo-extraction-target="extractedImage"
-            class="hidden"
-            style="margin-top: 10px;"
-          >
-          </div>
-        </div>
-      <% end %>
 
       <div style="margin-top: 30px;">
         <%= link_to "Edit", edit_inventory_item_path(@inventory_item), style: "padding: 8px 15px; background: #ffc107; color: #000; text-decoration: none; border-radius: 4px; margin-right: 10px;" %>

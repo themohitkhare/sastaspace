@@ -66,15 +66,32 @@ export default class extends Controller {
     }
   }
 
-  checkPendingDetection() {
+  async checkPendingDetection() {
     // Check sessionStorage for pending detection job
     const pendingJob = sessionStorage.getItem('pending_detection_job')
     if (pendingJob) {
       try {
         const jobData = JSON.parse(pendingJob)
+        
+        // Check if job is too old (more than 1 hour)
+        const oneHourAgo = Date.now() - (60 * 60 * 1000)
+        if (jobData.timestamp && jobData.timestamp < oneHourAgo) {
+          console.log("Pending job is too old, removing from sessionStorage")
+          sessionStorage.removeItem('pending_detection_job')
+          return
+        }
+
         this.userId = jobData.user_id || this.userIdValue
         this.jobId = jobData.job_id
         this.blobId = jobData.blob_id
+
+        // Verify job status before showing indicator
+        const jobExists = await this.verifyJobStatus(this.jobId)
+        if (!jobExists) {
+          console.log("Job not found or expired, removing from sessionStorage")
+          sessionStorage.removeItem('pending_detection_job')
+          return
+        }
 
         // Show processing indicator
         this.showProcessingIndicator()
@@ -87,6 +104,46 @@ export default class extends Controller {
         console.error("Error parsing pending job data:", e)
         sessionStorage.removeItem('pending_detection_job')
       }
+    }
+  }
+
+  async verifyJobStatus(jobId) {
+    if (!jobId) return false
+
+    try {
+      const response = await fetch(`/api/v1/clothing_detection/status/${jobId}`, {
+        method: "GET",
+        headers: {
+          "X-CSRF-Token": document.querySelector('meta[name="csrf-token"]').content
+        },
+        credentials: "include"
+      })
+
+      const data = await response.json()
+
+      if (!response.ok || !data.success) {
+        // Job not found or expired
+        return false
+      }
+
+      const status = data.data?.status
+
+      // If job is completed or failed, remove from sessionStorage
+      if (status === "completed" || status === "failed") {
+        sessionStorage.removeItem('pending_detection_job')
+        if (status === "completed") {
+          // Reload page to show new items
+          setTimeout(() => window.location.reload(), 500)
+        }
+        return false
+      }
+
+      // Job is still processing, scheduled, or retrying
+      return status === "processing" || status === "scheduled" || status === "retrying"
+    } catch (error) {
+      console.error("Error verifying job status:", error)
+      // On error, assume job doesn't exist to avoid showing stale indicator
+      return false
     }
   }
 

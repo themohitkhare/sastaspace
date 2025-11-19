@@ -6,7 +6,7 @@ class InventoryItemsController < ApplicationController
 
   def index
     @inventory_items = current_user.inventory_items
-                                   .includes(:category, :subcategory, :brand)
+                                   .includes(:category, :subcategory, :brand, :primary_image_attachment)
                                    .order(created_at: :desc)
 
     # Apply filters
@@ -129,7 +129,7 @@ class InventoryItemsController < ApplicationController
 
   def set_inventory_item
     @inventory_item = current_user.inventory_items
-                                  .includes(:category, :subcategory, :brand)
+                                  .includes(:category, :subcategory, :brand, :primary_image_attachment)
                                   .find(params[:id])
     # Reload to ensure we have the latest state (especially after extraction)
     @inventory_item.reload

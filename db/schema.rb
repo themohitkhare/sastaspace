@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2025_11_13_000000) do
+ActiveRecord::Schema[8.1].define(version: 2025_11_18_181549) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "vector"
@@ -173,6 +173,7 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_13_000000) do
     t.date "purchase_date"
     t.decimal "purchase_price", precision: 8, scale: 2
     t.integer "status", default: 0
+    t.datetime "stock_photo_extraction_completed_at"
     t.bigint "subcategory_id"
     t.datetime "updated_at", null: false
     t.integer "user_id", null: false
@@ -189,6 +190,7 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_13_000000) do
     t.index ["embedding_vector"], name: "index_inventory_items_on_embedding_vector", opclass: :vector_cosine_ops, using: :hnsw
     t.index ["last_worn_at"], name: "index_inventory_items_on_last_worn_at"
     t.index ["status"], name: "index_inventory_items_on_status"
+    t.index ["stock_photo_extraction_completed_at"], name: "index_inventory_items_on_stock_photo_extraction_completed_at"
     t.index ["subcategory_id"], name: "index_inventory_items_on_subcategory_id"
     t.index ["user_id", "category_id", "status"], name: "index_inventory_items_on_user_category_status"
     t.index ["user_id", "category_id"], name: "index_inventory_items_on_user_id_and_category_id"
@@ -208,6 +210,27 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_13_000000) do
     t.index ["inventory_item_id", "tag_id"], name: "index_inventory_tags_on_inventory_item_id_and_tag_id", unique: true
     t.index ["inventory_item_id"], name: "index_inventory_tags_on_inventory_item_id"
     t.index ["tag_id"], name: "index_inventory_tags_on_tag_id"
+  end
+
+  create_table "maintenance_tasks_runs", force: :cascade do |t|
+    t.text "arguments"
+    t.text "backtrace"
+    t.datetime "created_at", null: false
+    t.string "cursor"
+    t.datetime "ended_at"
+    t.string "error_class"
+    t.string "error_message"
+    t.string "job_id"
+    t.integer "lock_version", default: 0, null: false
+    t.text "metadata"
+    t.datetime "started_at"
+    t.string "status", default: "enqueued", null: false
+    t.string "task_name", null: false
+    t.bigint "tick_count", default: 0, null: false
+    t.bigint "tick_total"
+    t.float "time_running", default: 0.0, null: false
+    t.datetime "updated_at", null: false
+    t.index ["task_name", "status", "created_at"], name: "index_maintenance_tasks_runs", order: { created_at: :desc }
   end
 
   create_table "messages", force: :cascade do |t|

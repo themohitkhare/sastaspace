@@ -83,10 +83,12 @@ class SecurityHeadersMiddlewareTest < ActiveSupport::TestCase
 
     assert_includes csp, "default-src 'self'"
     assert_includes csp, "script-src 'self' 'unsafe-inline' 'unsafe-eval'"
+    assert_includes csp, "https://static.cloudflareinsights.com"
     assert_includes csp, "style-src 'self' 'unsafe-inline'"
     assert_includes csp, "img-src 'self' data: https:"
     assert_includes csp, "font-src 'self' data:"
     assert_includes csp, "connect-src 'self'"
+    assert_includes csp, "https://cloudflareinsights.com"
     assert_includes csp, "frame-ancestors 'none'"
     assert_includes csp, "base-uri 'self'"
     assert_includes csp, "form-action 'self'"

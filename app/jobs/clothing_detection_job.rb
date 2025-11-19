@@ -1,8 +1,77 @@
 class ClothingDetectionJob < ApplicationJob
-  # Highest priority queue for user-facing detection operations
-  queue_as :ai_critical
+  # User-facing detection operations
+  queue_as :default
 
   # No discard_on or retry_on for this critical job - all failures should be visible
+
+  # Class method to get job status
+  def self.get_status(job_id)
+    key = "clothing_detection_job:#{job_id}"
+    cached_status = Rails.cache.read(key)
+
+    if cached_status.present?
+      return cached_status.is_a?(Hash) ? cached_status.stringify_keys : cached_status
+    end
+
+    # Try to recover from Sidekiq
+    recovered_status = recover_from_sidekiq(job_id)
+    return recovered_status if recovered_status.present?
+
+    # Job not found
+    {
+      "status" => "not_found",
+      "error" => { "message" => "Job not found or expired. If the job was recently queued, it may still be processing." },
+      "updated_at" => Time.current.iso8601
+    }
+  rescue StandardError => e
+    Rails.logger.error "Error reading job status for ClothingDetectionJob: #{e.message}"
+    { "status" => "error", "error" => "Could not retrieve job status" }
+  end
+
+  # Recover job status from Sidekiq
+  def self.recover_from_sidekiq(job_id)
+    return nil unless defined?(Sidekiq)
+
+    # Check scheduled queue
+    scheduled = Sidekiq::ScheduledSet.new
+    job = scheduled.find { |j| j.jid == job_id }
+    if job
+      return {
+        "status" => "scheduled",
+        "updated_at" => Time.at(job.score).iso8601,
+        "recovered" => true
+      }
+    end
+
+    # Check retry queue
+    retries = Sidekiq::RetrySet.new
+    job = retries.find { |j| j.jid == job_id }
+    if job
+      return {
+        "status" => "retrying",
+        "error" => { "message" => job.item["error_message"] || "Job is retrying" },
+        "updated_at" => Time.at(job.score).iso8601,
+        "recovered" => true
+      }
+    end
+
+    # Check dead queue
+    dead = Sidekiq::DeadSet.new
+    job = dead.find { |j| j.jid == job_id }
+    if job
+      return {
+        "status" => "failed",
+        "error" => { "message" => job.item["error_message"] || "Job failed" },
+        "updated_at" => Time.at(job.score).iso8601,
+        "recovered" => true
+      }
+    end
+
+    nil
+  rescue StandardError => e
+    Rails.logger.warn "Failed to recover job status from Sidekiq: #{e.message}"
+    nil
+  end
 
   def perform(image_blob_id, user_id, options = {})
     @image_blob = ActiveStorage::Blob.find(image_blob_id)
@@ -10,6 +79,9 @@ class ClothingDetectionJob < ApplicationJob
     @options = options.with_indifferent_access
 
     Rails.logger.info "Starting clothing detection job for user #{user_id}, blob #{image_blob_id}"
+
+    # Update job status in cache
+    update_job_status("processing", { message: "Starting clothing detection analysis..." })
 
     # Update job status
     update_progress("Starting clothing detection analysis...")
@@ -21,11 +93,13 @@ class ClothingDetectionJob < ApplicationJob
       model_name: @options[:model_name] || "qwen3-vl:8b"
     )
 
+    update_job_status("processing", { message: "Analyzing image for clothing items..." })
     update_progress("Analyzing image for clothing items...")
     analysis_result = detection_service.analyze
 
     # Check if analysis failed
     if analysis_result["error"].present?
+      update_job_status("failed", nil, analysis_result["error"])
       handle_detection_error(analysis_result["error"])
       return
     end
@@ -50,6 +124,14 @@ class ClothingDetectionJob < ApplicationJob
     # Automatically create inventory items from detected items
     created_items = create_inventory_items_from_detection(analysis, analysis_result)
 
+    # Update job status to completed
+    update_job_status("completed", {
+      analysis_id: analysis.id,
+      items_detected: analysis_result["total_items_detected"] || 0,
+      items: analysis_result["items"] || [],
+      created_items_count: created_items.count
+    })
+
     # Notify frontend of completion
     broadcast_detection_complete(
       analysis_id: analysis.id,
@@ -61,14 +143,30 @@ class ClothingDetectionJob < ApplicationJob
     Rails.logger.info "Detection completed: #{analysis_result['total_items_detected']} items found, #{created_items.count} items created for user #{user_id}"
   rescue ActiveRecord::RecordNotFound => e
     Rails.logger.error "Record not found in ClothingDetectionJob: #{e.message}"
+    update_job_status("failed", nil, "Image or user not found")
     broadcast_detection_error("Image or user not found")
     raise
   rescue StandardError => e
+    update_job_status("failed", nil, e.message)
     handle_general_error(e)
     raise
   end
 
   private
+
+  def update_job_status(status, data = nil, error = nil)
+    return unless job_id.present?
+
+    status_data = {
+      "status" => status,
+      "data" => data,
+      "error" => error,
+      "updated_at" => Time.current.iso8601
+    }
+
+    key = "clothing_detection_job:#{job_id}"
+    Rails.cache.write(key, status_data, expires_in: 1.hour)
+  end
 
   def update_progress(message)
     broadcast_progress(message)
@@ -207,6 +305,9 @@ class ClothingDetectionJob < ApplicationJob
 
           created_items << inventory_item
           Rails.logger.info "Created inventory item #{inventory_item.id} from detection"
+
+          # Automatically trigger stock photo extraction for this item
+          trigger_stock_photo_extraction(inventory_item, item_data)
         else
           Rails.logger.error "Failed to create inventory item: #{inventory_item.errors.full_messages.join(', ')}"
         end
@@ -295,5 +396,46 @@ class ClothingDetectionJob < ApplicationJob
     description = description[0].upcase + description[1..-1] if description.present?
 
     description.presence || "Detected clothing item from image analysis."
+  end
+
+  def trigger_stock_photo_extraction(inventory_item, item_data)
+    return unless @image_blob.present? && inventory_item.primary_image.attached?
+
+    begin
+      # Build analysis_results hash from item_data for extraction
+      analysis_results = {
+        name: inventory_item.name,
+        description: inventory_item.description,
+        category_name: inventory_item.category&.name,
+        category_matched: inventory_item.category&.name,
+        subcategory: inventory_item.subcategory&.name,
+        material: item_data["material_type"] || item_data[:material_type] || inventory_item.material,
+        style: item_data["style_category"] || item_data[:style_category] || inventory_item.style_notes,
+        style_notes: item_data["style_category"] || item_data[:style_category] || inventory_item.style_notes,
+        brand_matched: inventory_item.brand&.name,
+        colors: [ item_data["color_primary"] || item_data[:color_primary] || inventory_item.color ].compact,
+        extraction_prompt: item_data["extraction_prompt"] || item_data[:extraction_prompt] || inventory_item.extraction_prompt,
+        gender_appropriate: true,
+        confidence: item_data["confidence"] || item_data[:confidence] || 0.9
+      }
+
+      # Use service object to queue extraction (reuses validation and sanitization)
+      service = StockPhotoExtractionService.new(
+        image_blob: @image_blob,
+        user: @user,
+        analysis_results: analysis_results,
+        inventory_item_id: inventory_item.id
+      )
+
+      job_id = service.queue_extraction
+      Rails.logger.info "Queued stock photo extraction for inventory item #{inventory_item.id} (job: #{job_id})"
+    rescue ArgumentError => e
+      Rails.logger.warn "Validation failed for stock photo extraction (item #{inventory_item.id}): #{e.message}"
+      # Don't fail the main job if extraction validation fails
+    rescue StandardError => e
+      Rails.logger.error "Failed to queue stock photo extraction for inventory item #{inventory_item.id}: #{e.message}"
+      Rails.logger.error e.backtrace.first(5).join("\n")
+      # Don't fail the main job if extraction queuing fails
+    end
   end
 end
