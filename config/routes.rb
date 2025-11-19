@@ -93,13 +93,6 @@ Rails.application.routes.draw do
         end
       end
 
-      # AI Analysis
-      post "ai/analyze" => "ai_analysis#analyze_image"
-      get "ai/analysis/:id" => "ai_analysis#get_analysis"
-      get "ai/analyses" => "ai_analysis#index"
-      post "inventory_items/:id/analyze" => "ai_analysis#analyze_image"
-      get "inventory_items/:id/analysis" => "ai_analysis#get_analysis"
-      delete "inventory_items/:id/analysis" => "ai_analysis#destroy"
 
       # Clothing Detection
       post "clothing_detection/analyze" => "clothing_detection#analyze"
