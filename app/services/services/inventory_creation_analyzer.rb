@@ -65,8 +65,8 @@ module Services
       # Check if Ollama service is reachable (like: curl http://localhost:11434/api/tags)
       begin
         http = Net::HTTP.new(base_uri.host, base_uri.port)
-        http.open_timeout = 3
-        http.read_timeout = 3
+        http.open_timeout = 10  # Increased from 3s - allow time for Ollama to start
+        http.read_timeout = 120  # Increased from 3s - AI vision models need time to process
 
         # Check if Ollama is up
         tags_response = http.get("/api/tags")
