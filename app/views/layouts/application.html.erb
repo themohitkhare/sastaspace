@@ -21,6 +21,7 @@
 
     <%# Tailwind CSS %>
     <%= stylesheet_link_tag "tailwind", "inter-font", "data-turbo-track": "reload" %>
+    <%= stylesheet_link_tag "landing_page", "data-turbo-track": "reload" if content_for?(:use_landing_footer) %>
     <%= javascript_importmap_tags %>
   </head>
 
@@ -39,19 +40,27 @@
 
       <%# Main content %>
       <main class="flex-1">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <% if content_for?(:skip_container) %>
           <%= yield %>
-        </div>
+        <% else %>
+          <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <%= yield %>
+          </div>
+        <% end %>
       </main>
 
-      <%# Footer %>
-      <footer class="bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 mt-auto">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <p class="text-center text-sm text-gray-500 dark:text-gray-400">
-            &copy; <%= Date.current.year %> Sastaspace. All rights reserved.
-          </p>
-        </div>
-      </footer>
+      <%# Footer - Use dedicated footer partial for landing page or simple footer for other pages %>
+      <% if content_for?(:use_landing_footer) %>
+        <%= render "layouts/footer" %>
+      <% else %>
+        <footer class="bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 mt-auto">
+          <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <p class="text-center text-sm text-gray-500 dark:text-gray-400">
+              &copy; <%= Date.current.year %> Sastaspace. All rights reserved.
+            </p>
+          </div>
+        </footer>
+      <% end %>
     </div>
   </body>
 </html>

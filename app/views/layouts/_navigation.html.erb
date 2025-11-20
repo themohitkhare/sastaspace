@@ -20,8 +20,10 @@
           <span class="text-sm text-gray-600 dark:text-gray-400">Hello, <%= current_user.first_name %>!</span>
           <%= link_to "Logout", logout_path, data: { turbo_method: :delete }, class: "px-3 py-2 rounded-md text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800" %>
         <% else %>
+          <a href="#features" class="px-3 py-2 rounded-md text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800">Features</a>
+          <a href="#how-it-works" class="px-3 py-2 rounded-md text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800">How It Works</a>
           <%= link_to "Login", login_path, class: "px-3 py-2 rounded-md text-sm font-medium text-primary-600 dark:text-primary-400 hover:bg-gray-100 dark:hover:bg-gray-800" %>
-          <%= link_to "Register", register_path, class: "px-3 py-2 rounded-md text-sm font-medium bg-primary-600 text-white hover:bg-primary-700" %>
+          <%= link_to "Get Started", register_path, class: "px-4 py-2 rounded-lg text-sm font-medium bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-700 hover:to-purple-700 shadow-lg" %>
         <% end %>
         
         <!-- Dark Mode Toggle -->
@@ -68,8 +70,10 @@
         <div class="px-3 py-2 text-sm text-gray-600 dark:text-gray-400">Hello, <%= current_user.first_name %>!</div>
         <%= link_to "Logout", logout_path, data: { turbo_method: :delete }, class: "block px-3 py-2 rounded-md text-base font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800" %>
       <% else %>
+        <a href="#features" class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800">Features</a>
+        <a href="#how-it-works" class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800">How It Works</a>
         <%= link_to "Login", login_path, class: "block px-3 py-2 rounded-md text-base font-medium text-primary-600 dark:text-primary-400 hover:bg-gray-100 dark:hover:bg-gray-800" %>
-        <%= link_to "Register", register_path, class: "block px-3 py-2 rounded-md text-base font-medium bg-primary-600 text-white hover:bg-primary-700" %>
+        <%= link_to "Get Started", register_path, class: "block px-3 py-2 rounded-md text-base font-medium bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-700 hover:to-purple-700" %>
       <% end %>
     </div>
   </div>

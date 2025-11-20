@@ -2,6 +2,9 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Landing page animations and custom styles */
+@import 'landing_page.css';
+
 @layer components {
   /* Button Components */
   .btn {
