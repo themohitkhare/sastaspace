@@ -94,7 +94,9 @@ class SecurityTest < ActionDispatch::IntegrationTest
   test "XSS attempts are sanitized" do
     malicious_name = "<script>alert('xss')</script>"
 
-    category = create(:category, :clothing)
+    # Use a unique category name to avoid collisions in parallel tests
+    unique_category_name = "Clothing #{SecureRandom.hex(4)}"
+    category = create(:category, name: unique_category_name)
 
     post "/api/v1/inventory_items",
          params: { inventory_item: { name: malicious_name, category_id: category.id } }.to_json,

@@ -627,4 +627,59 @@ class SessionAuthenticableTest < ActionDispatch::IntegrationTest
     user = controller.send(:get_current_user_from_jwt)
     assert_nil user
   end
+
+  test "refresh_access_token handles response without refresh_token gracefully" do
+    new_access_token = Auth::JsonWebToken.encode_access_token(user_id: @user.id)
+
+    mock_cookies = mock
+    mock_signed = mock
+    access_token_sequence = sequence("access_token")
+    mock_signed.stubs(:[]).with(:access_token).returns(nil).in_sequence(access_token_sequence)
+    mock_signed.stubs(:[]).with(:access_token).returns(new_access_token).in_sequence(access_token_sequence)
+    mock_signed.stubs(:[]).with(:refresh_token).returns(@refresh_token.token)
+    mock_signed.stubs(:present?).returns(true)
+    mock_signed.stubs(:[]=).with(:access_token, anything)
+    # refresh_token might not be set if not in response
+    mock_signed.stubs(:[]=).with(:refresh_token, anything)
+    mock_cookies.stubs(:signed).returns(mock_signed)
+    mock_cookies.stubs(:delete)
+    InventoryItemsController.any_instance.stubs(:cookies).returns(mock_cookies)
+
+    WebMock.stub_request(:post, /.*\/api\/v1\/auth\/refresh/)
+      .to_return(
+        status: 200,
+        body: {
+          success: true,
+          data: {
+            token: new_access_token
+            # No refresh_token in response
+          }
+        }.to_json,
+        headers: { "Content-Type" => "application/json" }
+      )
+
+    get inventory_items_path, headers: { "Accept" => "text/html" }
+
+    # Should succeed even without refresh_token in response
+    assert_response :success
+  end
+
+  test "refresh_token_via_api handles network errors gracefully" do
+    mock_cookies = mock
+    mock_signed = mock
+    mock_signed.stubs(:[]).with(:access_token).returns(nil)
+    mock_signed.stubs(:[]).with(:refresh_token).returns(@refresh_token.token)
+    mock_signed.stubs(:present?).returns(true)
+    mock_cookies.stubs(:signed).returns(mock_signed)
+    mock_cookies.stubs(:delete)
+    InventoryItemsController.any_instance.stubs(:cookies).returns(mock_cookies)
+
+    # Stub refresh_token_via_api to raise an error
+    InventoryItemsController.any_instance.stubs(:refresh_token_via_api).raises(StandardError.new("Network error"))
+
+    get inventory_items_path, headers: { "Accept" => "text/html" }
+
+    # Should redirect to login on error
+    assert_redirected_to login_path
+  end
 end

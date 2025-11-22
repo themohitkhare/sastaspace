@@ -496,4 +496,43 @@ class AuthenticableTest < ActionDispatch::IntegrationTest
 
     controller.send(:refresh_access_token_from_cookies)
   end
+
+  test "authenticate_user! retries after successful token refresh" do
+    # Create expired token
+    expired_token = Auth::JsonWebToken.encode_access_token(user_id: @user.id, exp: 1.hour.ago.to_i)
+    new_access_token = Auth::JsonWebToken.encode_access_token(user_id: @user.id)
+    new_refresh_token = RefreshToken.create_for_user!(@user)
+
+    # Stub cookies - expired token first, then new token after refresh
+    mock_cookies = mock
+    mock_signed = mock
+    access_token_sequence = sequence("access_token")
+    mock_signed.stubs(:[]).with(:access_token).returns(expired_token).in_sequence(access_token_sequence)
+    mock_signed.stubs(:[]).with(:access_token).returns(new_access_token).in_sequence(access_token_sequence)
+    mock_signed.stubs(:[]).with(:refresh_token).returns(@refresh_token.token)
+    mock_signed.stubs(:present?).returns(true)
+    mock_signed.stubs(:[]=).with(:access_token, anything)
+    mock_signed.stubs(:[]=).with(:refresh_token, anything)
+    mock_cookies.stubs(:signed).returns(mock_signed)
+    mock_cookies.stubs(:delete)
+    Api::V1::InventoryItemsController.any_instance.stubs(:cookies).returns(mock_cookies)
+
+    WebMock.stub_request(:post, /.*\/api\/v1\/auth\/refresh/)
+      .to_return(
+        status: 200,
+        body: {
+          success: true,
+          data: {
+            token: new_access_token,
+            refresh_token: new_refresh_token.token
+          }
+        }.to_json,
+        headers: { "Content-Type" => "application/json" }
+      )
+
+    get "/api/v1/inventory_items", headers: { "Content-Type" => "application/json" }
+
+    # Should succeed after retry
+    assert_response :success
+  end
 end
