@@ -134,6 +134,72 @@ module Api
         assert_equal "INVALID_ANALYSIS_RESULTS", json["error"]["code"]
       end
 
+      test "extract handles ArgumentError for invalid inventory item" do
+        item = create(:inventory_item, user: create(:user)) # Different user's item
+
+        post "/api/v1/stock_extraction/extract",
+          params: {
+            blob_id: @image_blob.id,
+            analysis_results: @analysis_results,
+            inventory_item_id: item.id
+          },
+          headers: { "Authorization" => "Bearer #{@token}" },
+          as: :json
+
+        assert_response :not_found # Controller returns :not_found for INVALID_INVENTORY_ITEM
+        json = JSON.parse(response.body)
+        assert_equal "INVALID_INVENTORY_ITEM", json["error"]["code"]
+      end
+
+      test "extract handles ArgumentError for empty analysis results" do
+        # Empty hash {} is considered "present" in Rails, so we need to stub the service
+        # to raise the error when it validates
+        StockPhotoExtractionService.any_instance.stubs(:queue_extraction).raises(
+          ArgumentError.new("Analysis results are required (at least one field must have a value)")
+        )
+
+        post "/api/v1/stock_extraction/extract",
+          params: {
+            blob_id: @image_blob.id,
+            analysis_results: { "name" => "", "category_name" => nil } # Empty values that will fail validation
+          },
+          headers: { "Authorization" => "Bearer #{@token}" },
+          as: :json
+
+        assert_response :bad_request # Controller returns :bad_request for INVALID_ANALYSIS_RESULTS
+        json = JSON.parse(response.body)
+        assert_equal "INVALID_ANALYSIS_RESULTS", json["error"]["code"]
+      end
+
+      test "extract handles StandardError gracefully" do
+        StockPhotoExtractionService.any_instance.stubs(:queue_extraction).raises(StandardError.new("Unexpected error"))
+
+        post "/api/v1/stock_extraction/extract",
+          params: {
+            blob_id: @image_blob.id,
+            analysis_results: @analysis_results
+          },
+          headers: { "Authorization" => "Bearer #{@token}" },
+          as: :json
+
+        assert_response :internal_server_error
+        json = JSON.parse(response.body)
+        assert_equal false, json["success"]
+        assert_equal "EXTRACTION_ERROR", json["error"]["code"]
+      end
+
+      test "status handles StandardError gracefully" do
+        ExtractStockPhotoJob.stubs(:get_status).raises(StandardError.new("Cache error"))
+
+        get "/api/v1/stock_extraction/status/test-job-id",
+          headers: { "Authorization" => "Bearer #{@token}" }
+
+        assert_response :internal_server_error
+        json = JSON.parse(response.body)
+        assert_equal false, json["success"]
+        assert_equal "STATUS_ERROR", json["error"]["code"]
+      end
+
       test "status requires authentication" do
         job_id = SecureRandom.uuid
         get "/api/v1/stock_extraction/status/#{job_id}"

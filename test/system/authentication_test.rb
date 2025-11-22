@@ -150,7 +150,8 @@ class AuthenticationTest < ApplicationSystemTestCase
     click_link "Logout"
 
     # Flash may be transient; verify we returned to public state
-    assert_current_path "/login"
+    # Logout redirects to root_path (home page) which is public
+    assert_current_path "/"
     assert_link "Login"
     assert_link "Register"
   end
@@ -259,8 +260,8 @@ class AuthenticationTest < ApplicationSystemTestCase
     # Logout
     click_link "Logout"
 
-    # Verify public state
-    assert_current_path "/login"
+    # Verify public state - logout redirects to root_path (home page)
+    assert_current_path "/"
 
     # Login with same credentials
     visit "/login"

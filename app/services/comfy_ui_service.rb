@@ -147,8 +147,6 @@ class ComfyUiService
     raise StandardError, "Invalid JSON from ComfyUI history endpoint"
   end
 
-  private
-
     def check_comfyui_availability!
       base_uri = URI(base_url)
 

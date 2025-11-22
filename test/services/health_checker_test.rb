@@ -33,6 +33,14 @@ class HealthCheckerTest < ActiveSupport::TestCase
     Rails.cache.stubs(:read).returns(nil)
     status = HealthChecker.cache_status
     assert_equal "unhealthy", status[:status]
+    assert_includes status[:error], "Cache read/write failed"
+  end
+
+  test "cache_status unhealthy on exception" do
+    Rails.cache.stubs(:write).raises(StandardError.new("Cache error"))
+    status = HealthChecker.cache_status
+    assert_equal "unhealthy", status[:status]
+    assert_includes status[:error], "Cache error"
   end
 
   test "jobs_status healthy when Sidekiq is available" do
@@ -65,6 +73,26 @@ class HealthCheckerTest < ActiveSupport::TestCase
     status = HealthChecker.jobs_status
     assert_equal "unhealthy", status[:status]
     assert_includes status[:error], "redis connection failed"
+  end
+
+  test "jobs_status uses Redis directly when Sidekiq not defined" do
+    # Temporarily hide Sidekiq if it exists
+    original_sidekiq = Object.const_get(:Sidekiq) if defined?(Sidekiq)
+    Object.send(:remove_const, :Sidekiq) if defined?(Sidekiq)
+
+    begin
+      mock_redis = mock
+      mock_redis.stubs(:ping).returns("PONG")
+      mock_redis.stubs(:close)
+      Redis.stubs(:new).returns(mock_redis)
+
+      status = HealthChecker.jobs_status
+      assert_equal "healthy", status[:status]
+      assert_includes status[:message], "Redis operational"
+    ensure
+      # Restore Sidekiq if it was defined
+      Object.const_set(:Sidekiq, original_sidekiq) if original_sidekiq
+    end
   end
 
   test "overall_status is healthy when all services are healthy" do
