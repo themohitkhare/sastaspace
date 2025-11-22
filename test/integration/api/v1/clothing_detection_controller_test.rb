@@ -80,6 +80,48 @@ class Api::V1::ClothingDetectionControllerTest < ActionDispatch::IntegrationTest
     skip "File size validation is tested in controller code - creating 10MB+ test files is impractical"
   end
 
+  test "POST /api/v1/clothing_detection/analyze rejects invalid file signature" do
+    # Create a fake image file with wrong signature
+    fake_image = fixture_file_upload("sample_text.txt", "image/jpeg") # Wrong content type
+
+    FileSignatureValidator.stubs(:valid?).returns(false)
+
+    post "/api/v1/clothing_detection/analyze",
+         params: { image: fake_image },
+         headers: auth_headers(@token)
+
+    assert_response :bad_request
+    body = json_response
+    assert_not body["success"]
+    assert_equal "INVALID_FILE_SIGNATURE", body["error"]["code"]
+  end
+
+  test "POST /api/v1/clothing_detection/analyze handles ArgumentError from service" do
+    Services::BlobDeduplicationService.stubs(:find_or_create_blob).raises(ArgumentError.new("Invalid blob arguments"))
+
+    post "/api/v1/clothing_detection/analyze",
+         params: { image: @image_file },
+         headers: auth_headers(@token)
+
+    assert_response :bad_request
+    body = json_response
+    assert_not body["success"]
+    assert_equal "INVALID_REQUEST", body["error"]["code"]
+    assert_includes body["error"]["message"], "Invalid blob arguments"
+  end
+
+  test "POST /api/v1/clothing_detection/analyze accepts model_name parameter" do
+    assert_enqueued_with(job: ClothingDetectionJob) do
+      post "/api/v1/clothing_detection/analyze",
+           params: { image: @image_file, model_name: "custom-model:8b" },
+           headers: auth_headers(@token)
+    end
+
+    assert_response :accepted
+    body = json_response
+    assert body["success"]
+  end
+
   test "POST /api/v1/clothing_detection/analyze handles service errors gracefully" do
     # Since processing is now asynchronous, service errors occur in the background job
     # The controller should successfully queue the job even if the service will fail later

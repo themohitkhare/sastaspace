@@ -11,14 +11,14 @@
   <meta property="og:url" content="<%= request.original_url %>">
   <meta property="og:title" content="SastaSpace - Your AI-Powered Digital Wardrobe">
   <meta property="og:description" content="Save money, save time, and look better with AI-powered wardrobe management.">
-  <meta property="og:image" content="<%= asset_url('icon.png') %>">
+  <meta property="og:image" content="<%= request.base_url %>/icon.png">
 
   <!-- Twitter -->
   <meta property="twitter:card" content="summary_large_image">
   <meta property="twitter:url" content="<%= request.original_url %>">
   <meta property="twitter:title" content="SastaSpace - Your AI-Powered Digital Wardrobe">
   <meta property="twitter:description" content="Save money, save time, and look better with AI-powered wardrobe management.">
-  <meta property="twitter:image" content="<%= asset_url('icon.png') %>">
+  <meta property="twitter:image" content="<%= request.base_url %>/icon.png">
 <% end %>
 
 <div class="landing-page -mt-8" data-controller="landing-page">

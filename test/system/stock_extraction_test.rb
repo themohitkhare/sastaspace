@@ -140,9 +140,13 @@ class StockExtractionTest < ApplicationSystemTestCase
     )
 
     # Simulate extraction: replace primary image with extracted image
-    item.primary_image.detach
+    item.primary_image.purge # Use purge instead of detach to fully remove
     item.primary_image.attach(extracted_blob)
     item.reload
+
+    # Verify attachment succeeded
+    assert item.primary_image.attached?, "Primary image should be attached"
+    assert_equal extracted_blob.id, item.primary_image.blob.id, "Blob ID should match extracted blob"
 
     # Navigate to edit page
     visit edit_inventory_item_path(item)

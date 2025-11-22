@@ -239,5 +239,73 @@ module Services
       assert_includes prompt, "Category: Sweatshirts"
       assert_not_includes prompt, "Category: Hoodies"
     end
+
+    test "description_section returns default when description is missing" do
+      item_data = @item_data.except("description")
+      builder = ExtractionPromptBuilder.new(
+        item_data: item_data,
+        user: @user
+      )
+
+      prompt = builder.build_prompt
+      assert_includes prompt, "No description provided"
+    end
+
+    test "build_prompt handles dress category presentation" do
+      item_data = @item_data.merge("category_matched" => "Dress")
+      builder = ExtractionPromptBuilder.new(
+        item_data: item_data,
+        user: @user
+      )
+
+      prompt = builder.build_prompt
+      assert_includes prompt, "For dresses"
+      assert_includes prompt, "full silhouette"
+    end
+
+    test "build_prompt handles shoe category presentation" do
+      item_data = @item_data.merge("category_matched" => "Sneakers")
+      builder = ExtractionPromptBuilder.new(
+        item_data: item_data,
+        user: @user
+      )
+
+      prompt = builder.build_prompt
+      assert_includes prompt, "For footwear"
+      assert_includes prompt, "side view and front view"
+    end
+
+    test "build_prompt handles accessory category presentation" do
+      item_data = @item_data.merge("category_matched" => "Accessories")
+      builder = ExtractionPromptBuilder.new(
+        item_data: item_data,
+        user: @user
+      )
+
+      prompt = builder.build_prompt
+      assert_includes prompt, "For accessories"
+    end
+
+    test "build_prompt handles description with pockets" do
+      item_data = @item_data.merge("description" => "Jacket with side pockets")
+      builder = ExtractionPromptBuilder.new(
+        item_data: item_data,
+        user: @user
+      )
+
+      prompt = builder.build_prompt
+      assert_includes prompt, "pockets are clearly visible"
+    end
+
+    test "build_prompt handles description with zipper" do
+      item_data = @item_data.merge("description" => "Hoodie with front zipper")
+      builder = ExtractionPromptBuilder.new(
+        item_data: item_data,
+        user: @user
+      )
+
+      prompt = builder.build_prompt
+      assert_includes prompt, "zipper details clearly"
+    end
   end
 end

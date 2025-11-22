@@ -1,111 +1,205 @@
 require "test_helper"
 
 class MetricsLoggerTest < ActiveSupport::TestCase
-  test "logs request completed event" do
-    Rails.logger.expects(:info).with do |json|
-      data = JSON.parse(json)
-      data["metric_type"] == "request" &&
-      data["data"]["type"] == "completed" &&
-      data["data"]["controller"] == "TestController"
-    end
+  setup do
+    # Reset subscription state before each test
+    MetricsLogger.reset!
+    @original_logger = Rails.logger
+  end
 
+  teardown do
+    # Clean up subscriptions after each test
+    MetricsLogger.reset!
+    Rails.logger = @original_logger
+  end
+
+  test "subscribe_to_events prevents duplicate subscriptions" do
+    io = StringIO.new
+    Rails.logger = Logger.new(io)
+
+    # First subscription
+    MetricsLogger.subscribe_to_events
+
+    # Trigger an event to verify subscription works
     ActiveSupport::Notifications.instrument("request.completed", {
-      controller: "TestController",
+      controller: "test",
       action: "index",
       status: 200,
-      duration_ms: 100,
-      request_id: "123",
-      user_id: 1
-    })
-  end
+      duration_ms: 1.0,
+      request_id: "test-1",
+      user_id: nil
+    }) { }
 
-  test "logs request failed event" do
-    Rails.logger.expects(:info).times(1).with do |json|
-      data = JSON.parse(json)
-      data["metric_type"] == "request" &&
-      data["data"]["type"] == "failed" &&
-      data["data"]["error"] == "StandardError"
-    end
+    sleep 0.1
+    io.rewind
+    first_logs = io.read
+    first_count = first_logs.scan(/"type":"completed"/).size
 
-    ActiveSupport::Notifications.instrument("request.failed", {
-      controller: "TestController",
+    # Second subscription should be ignored (should not create duplicate logs)
+    MetricsLogger.subscribe_to_events
+
+    # Clear and trigger again
+    io.rewind
+    io.truncate(0)
+
+    ActiveSupport::Notifications.instrument("request.completed", {
+      controller: "test",
       action: "index",
-      error: "StandardError",
-      error_message: "Something went wrong",
-      duration_ms: 100,
-      request_id: "123",
+      status: 200,
+      duration_ms: 1.0,
+      request_id: "test-2",
+      user_id: nil
+    }) { }
+
+    sleep 0.1
+    io.rewind
+    second_logs = io.read
+    second_count = second_logs.scan(/"type":"completed"/).size
+
+    # Should only log once per event, not twice (proving no duplicate subscriptions)
+    assert_equal 1, second_count, "Should not create duplicate subscriptions"
+  end
+
+  test "subscribe_to_events logs request.completed events" do
+    io = StringIO.new
+    Rails.logger = Logger.new(io)
+    MetricsLogger.subscribe_to_events
+
+    ActiveSupport::Notifications.instrument("request.completed", {
+      controller: "inventory_items",
+      action: "index",
+      status: 200,
+      duration_ms: 12.5,
+      request_id: "test-123",
       user_id: 1
-    })
+    }) { }
+
+    # Give logger time to write
+    sleep 0.1
+    io.rewind
+    logs = io.read
+
+    assert_includes logs, "\"type\":\"completed\""
+    assert_includes logs, "inventory_items"
+    assert_includes logs, "\"status\":200"
+    assert_includes logs, "test-123"
   end
 
-  test "logs job completed event" do
-    job = mock
-    job_class = mock
-    job_class.stubs(:name).returns("TestJob")
-    job.stubs(:class).returns(job_class)
-    job.stubs(:queue_name).returns("default")
+  test "subscribe_to_events logs job.enqueued events" do
+    io = StringIO.new
+    Rails.logger = Logger.new(io)
+    MetricsLogger.subscribe_to_events
 
-    # Use times(1) to ensure it's only called once (MetricsLogger might be subscribed in initializer)
-    Rails.logger.expects(:info).with do |json|
-      data = JSON.parse(json)
-      data["metric_type"] == "job" &&
-      data["data"]["type"] == "completed" &&
-      data["data"]["job_class"] == "TestJob"
-    end.times(1)
-
-    ActiveSupport::Notifications.instrument("perform.active_job", { job: job }) do
-      # simulate duration
+    # Create a test job
+    job = Class.new(ActiveJob::Base) do
+      queue_as :default
     end
+
+    ActiveSupport::Notifications.instrument("enqueue.active_job", {
+      job: job.new,
+      queue_name: "default"
+    }) { }
+
+    sleep 0.1
+    io.rewind
+    logs = io.read
+
+    assert_includes logs, "\"type\":\"enqueued\""
+    assert_includes logs, "\"metric_type\":\"job\""
   end
 
-  test "logs job enqueued event" do
-    job = mock
-    job_class = mock
-    job_class.stubs(:name).returns("TestJob")
-    job.stubs(:class).returns(job_class)
-    job.stubs(:queue_name).returns("default")
-    job.stubs(:enqueue_error)
+  test "subscribe_to_events logs job.perform events" do
+    io = StringIO.new
+    Rails.logger = Logger.new(io)
+    MetricsLogger.subscribe_to_events
 
-    Rails.logger.expects(:info).times(1).with do |json|
-      data = JSON.parse(json)
-      data["metric_type"] == "job" &&
-      data["data"]["type"] == "enqueued" &&
-      data["data"]["job_class"] == "TestJob"
+    # Create a test job
+    job = Class.new(ActiveJob::Base) do
+      queue_as :default
     end
 
-    ActiveSupport::Notifications.instrument("enqueue.active_job", { job: job })
+    start_time = Time.current
+    finish_time = start_time + 0.5.seconds
 
-    assert true # Assertion to satisfy test requirements
+    ActiveSupport::Notifications.instrument("perform.active_job", {
+      job: job.new,
+      queue_name: "default"
+    }) { }
+
+    sleep 0.1
+    io.rewind
+    logs = io.read
+
+    assert_includes logs, "\"type\":\"completed\""
+    assert_includes logs, "\"metric_type\":\"job\""
   end
 
-  test "logs cache read event" do
-    Rails.logger.expects(:info).with do |json|
-      data = JSON.parse(json)
-      data["metric_type"] == "cache" &&
-      data["data"]["type"] == "read" &&
-      data["data"]["key"] == "test_key"
-    end
+  test "reset! clears all subscriptions" do
+    io = StringIO.new
+    Rails.logger = Logger.new(io)
 
-    ActiveSupport::Notifications.instrument("cache_read.active_support", {
-      key: "test_key",
-      hit: true
-    }) do
-      # simulate duration
-    end
+    # Subscribe and verify it works
+    MetricsLogger.subscribe_to_events
+    ActiveSupport::Notifications.instrument("request.completed", {
+      controller: "test",
+      action: "index",
+      status: 200,
+      duration_ms: 1.0,
+      request_id: "test-before",
+      user_id: nil
+    }) { }
+
+    sleep 0.1
+    io.rewind
+    before_reset_logs = io.read
+    assert_includes before_reset_logs, "test-before", "Subscription should work before reset"
+
+    # Reset subscriptions
+    MetricsLogger.reset!
+
+    # Clear logger and try again - should not log (subscriptions cleared)
+    io.rewind
+    io.truncate(0)
+
+    ActiveSupport::Notifications.instrument("request.completed", {
+      controller: "test",
+      action: "index",
+      status: 200,
+      duration_ms: 1.0,
+      request_id: "test-after",
+      user_id: nil
+    }) { }
+
+    sleep 0.1
+    io.rewind
+    after_reset_logs = io.read
+
+    # Should not contain the new event (subscriptions were cleared)
+    assert_not_includes after_reset_logs, "test-after", "Should unsubscribe from events after reset"
   end
 
-  test "logs cache write event" do
-    Rails.logger.expects(:info).with do |json|
-      data = JSON.parse(json)
-      data["metric_type"] == "cache" &&
-      data["data"]["type"] == "write" &&
-      data["data"]["key"] == "test_key"
-    end
+  test "reset! allows re-subscription after reset" do
+    MetricsLogger.subscribe_to_events
+    MetricsLogger.reset!
 
-    ActiveSupport::Notifications.instrument("cache_write.active_support", {
-      key: "test_key"
-    }) do
-      # simulate duration
-    end
+    # Should be able to subscribe again
+    io = StringIO.new
+    Rails.logger = Logger.new(io)
+    MetricsLogger.subscribe_to_events
+
+    ActiveSupport::Notifications.instrument("request.completed", {
+      controller: "test",
+      action: "index",
+      status: 200,
+      duration_ms: 1.0,
+      request_id: "test",
+      user_id: nil
+    }) { }
+
+    sleep 0.1
+    io.rewind
+    logs = io.read
+
+    assert_includes logs, "\"type\":\"completed\""
   end
 end

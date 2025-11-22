@@ -1,8 +1,15 @@
 # Metrics logger for ActiveSupport::Notifications
 class MetricsLogger
+  @subscribed = false
+  @subscriptions = []
+
   def self.subscribe_to_events
-    # Subscribe to request events
-    ActiveSupport::Notifications.subscribe("request.completed") do |name, start, finish, id, payload|
+    # Prevent duplicate subscriptions (especially important in tests)
+    return if @subscribed
+    @subscribed = true
+
+    # Subscribe to request events and store subscription handles
+    @subscriptions << ActiveSupport::Notifications.subscribe("request.completed") do |name, start, finish, id, payload|
       log_metric("request", {
         type: "completed",
         controller: payload[:controller],
@@ -14,7 +21,7 @@ class MetricsLogger
       })
     end
 
-    ActiveSupport::Notifications.subscribe("request.failed") do |name, start, finish, id, payload|
+    @subscriptions << ActiveSupport::Notifications.subscribe("request.failed") do |name, start, finish, id, payload|
       log_metric("request", {
         type: "failed",
         controller: payload[:controller],
@@ -28,7 +35,7 @@ class MetricsLogger
     end
 
     # Subscribe to job events
-    ActiveSupport::Notifications.subscribe("perform.active_job") do |name, start, finish, id, payload|
+    @subscriptions << ActiveSupport::Notifications.subscribe("perform.active_job") do |name, start, finish, id, payload|
       duration = ((finish - start) * 1000).round(2)
 
       log_metric("job", {
@@ -39,7 +46,7 @@ class MetricsLogger
       })
     end
 
-    ActiveSupport::Notifications.subscribe("enqueue.active_job") do |name, start, finish, id, payload|
+    @subscriptions << ActiveSupport::Notifications.subscribe("enqueue.active_job") do |name, start, finish, id, payload|
       log_metric("job", {
         type: "enqueued",
         job_class: payload[:job].class.name,
@@ -48,7 +55,7 @@ class MetricsLogger
     end
 
     # Subscribe to cache events
-    ActiveSupport::Notifications.subscribe("cache_read.active_support") do |name, start, finish, id, payload|
+    @subscriptions << ActiveSupport::Notifications.subscribe("cache_read.active_support") do |name, start, finish, id, payload|
       duration = ((finish - start) * 1000).round(2)
 
       log_metric("cache", {
@@ -59,7 +66,7 @@ class MetricsLogger
       })
     end
 
-    ActiveSupport::Notifications.subscribe("cache_write.active_support") do |name, start, finish, id, payload|
+    @subscriptions << ActiveSupport::Notifications.subscribe("cache_write.active_support") do |name, start, finish, id, payload|
       duration = ((finish - start) * 1000).round(2)
 
       log_metric("cache", {
@@ -68,6 +75,16 @@ class MetricsLogger
         key: payload[:key]
       })
     end
+  end
+
+  # Reset subscription state (for testing)
+  def self.reset!
+    # Unsubscribe all existing subscriptions
+    @subscriptions&.each do |subscription|
+      ActiveSupport::Notifications.unsubscribe(subscription)
+    end
+    @subscriptions = []
+    @subscribed = false
   end
 
   private

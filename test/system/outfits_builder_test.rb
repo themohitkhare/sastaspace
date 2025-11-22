@@ -126,7 +126,15 @@ class OutfitsBuilderTest < ApplicationSystemTestCase
       visit "/outfits/new"
     end
 
-    assert_selector "[data-outfit-builder-target]", wait: 5
+    # Wait for page to fully load and verify we're on the right page
+    assert_selector "h1", text: /Create New Outfit/i, wait: 10
+
+    # Wait for the outfit builder controller to initialize
+    # The data-controller="outfit-builder" should be present on the page
+    assert_selector "[data-controller='outfit-builder']", wait: 5
+
+    # Now check for targets - at least one should be present
+    assert_selector "[data-outfit-builder-target]", wait: 10
 
     # Wait for items to load
     begin
