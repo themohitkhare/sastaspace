@@ -272,4 +272,25 @@ class TrackableJobTest < ActiveSupport::TestCase
     end
     assert_match(/@job_id must be set/, error.message)
   end
+
+  test "get_status handles non-hash cached status for backward compatibility" do
+    # Store a string status (old format) instead of hash
+    Rails.cache.write(TestTrackableJob.status_key(@job_id), "processing", expires_in: 1.hour)
+
+    status = TestTrackableJob.get_status(@job_id)
+
+    # Should return the string as-is for backward compatibility
+    assert_equal "processing", status
+  end
+
+  test "get_status handles errors gracefully" do
+    # Stub Rails.cache.read to raise an error
+    Rails.cache.stubs(:read).raises(StandardError.new("Cache error"))
+
+    status = TestTrackableJob.get_status(@job_id)
+
+    # Should return error status instead of crashing
+    assert_equal "error", status["status"]
+    assert_equal "Could not retrieve job status", status["error"]
+  end
 end

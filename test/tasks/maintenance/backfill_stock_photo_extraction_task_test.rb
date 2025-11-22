@@ -167,12 +167,19 @@ module Maintenance
       task.instance_variable_set(:@enqueue_count, 2) # Set count to trigger delay (delay_seconds = 2 * 5 = 10)
 
       # When enqueue_count > 0, job is scheduled with delay using .set(wait: delay_seconds.seconds).perform_later
-      # This still enqueues a job, just with a scheduled time
-      # We need to check that a job was enqueued (even if scheduled)
-      perform_enqueued_jobs = false
-      assert_enqueued_jobs(1, only: ExtractStockPhotoJob) do
-        task.process(item)
-      end
+      # We verify the job was scheduled by expecting .set to be called with the delay
+      # .set returns the job class, which then has .perform_later called on it
+      mock_job_class = mock("JobClass")
+      ExtractStockPhotoJob.expects(:set).with(wait: 10.seconds).returns(mock_job_class)
+      mock_job_class.expects(:perform_later).with(
+        item.primary_image.blob.id,
+        anything,
+        user.id,
+        anything,
+        item.id
+      ).returns(true)
+
+      task.process(item)
 
       assert_equal 3, task.instance_variable_get(:@enqueue_count)
       assert_equal 1, task.job_results[:queued].count
