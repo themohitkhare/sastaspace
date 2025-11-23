@@ -212,6 +212,7 @@ class ExportUserDataJobTest < ActiveJob::TestCase
 
     # Stub blob download to raise error (this will be caught by download_image's rescue)
     # Stub at the class level to ensure it applies even after reload
+    # The job will reload items from the database, so we need to stub any_instance
     ActiveStorage::Blob.any_instance.stubs(:download).raises(StandardError.new("Download failed"))
     Rails.logger.stubs(:warn)
 

@@ -8,6 +8,12 @@ class ComfyUiServiceTest < ActiveSupport::TestCase
       content_type: "image/jpeg"
     )
     @extraction_prompt = "Extract this item with white background"
+    @original_comfy_url = ENV["COMFY_UI_API_URL"]
+  end
+
+  def teardown
+    # Reset ENV variable to prevent test pollution
+    ENV["COMFY_UI_API_URL"] = @original_comfy_url
   end
 
   # Helper method to generate valid PNG data that passes service validation
@@ -67,461 +73,480 @@ class ComfyUiServiceTest < ActiveSupport::TestCase
   end
 
   test "extract_stock_photo raises error when ComfyUI is unreachable" do
-    # Temporarily disable net connect to ensure WebMock intercepts
-    WebMock.disable_net_connect!(allow_localhost: false)
+    VCR.turned_off do
+      # Temporarily disable net connect to ensure WebMock intercepts
+      WebMock.disable_net_connect!(allow_localhost: false)
 
-    # Stub the exact endpoint that check_comfyui_availability! calls
-    WebMock.stub_request(:get, "http://localhost:8188/")
-      .to_raise(Errno::ECONNREFUSED)
+      # Stub the exact endpoint that check_comfyui_availability! calls
+      WebMock.stub_request(:get, "http://localhost:8188/")
+        .to_raise(Errno::ECONNREFUSED)
 
-    # Mock WebSocket connection to fail (though it shouldn't reach here)
-    WebSocket::Client::Simple.stubs(:connect).raises(StandardError.new("WebSocket connection failed"))
+      # Mock WebSocket connection to fail (though it shouldn't reach here)
+      WebSocket::Client::Simple.stubs(:connect).raises(StandardError.new("WebSocket connection failed"))
 
-    result = ComfyUiService.extract_stock_photo(
-      original_image_blob: @image_blob,
-      extraction_prompt: @extraction_prompt
-    )
+      result = ComfyUiService.extract_stock_photo(
+        original_image_blob: @image_blob,
+        extraction_prompt: @extraction_prompt
+      )
 
-    assert_equal false, result["success"]
-    assert result["error"].present?
-    assert_includes result["error"], "ComfyUI service is not available"
-  ensure
-    # Restore WebMock configuration
-    WebMock.disable_net_connect!(allow_localhost: true)
-    WebSocket::Client::Simple.unstub(:connect) if WebSocket::Client::Simple.respond_to?(:unstub)
+      assert_equal false, result["success"]
+      assert result["error"].present?
+      assert_includes result["error"], "ComfyUI service is not available"
+    ensure
+      # Restore WebMock configuration
+      WebMock.disable_net_connect!(allow_localhost: true)
+      WebSocket::Client::Simple.unstub(:connect) if WebSocket::Client::Simple.respond_to?(:unstub)
+    end
   end
 
   test "extract_stock_photo handles timeout errors" do
-    # Temporarily disable net connect to ensure WebMock intercepts
-    WebMock.disable_net_connect!(allow_localhost: false)
+    VCR.turned_off do
+      # Temporarily disable net connect to ensure WebMock intercepts
+      WebMock.disable_net_connect!(allow_localhost: false)
 
-    WebMock.stub_request(:get, "http://localhost:8188/")
-      .to_raise(Net::ReadTimeout)
+      WebMock.stub_request(:get, "http://localhost:8188/")
+        .to_raise(Net::ReadTimeout)
 
-    # Mock WebSocket connection to fail immediately (service tries WebSocket first)
-    WebSocket::Client::Simple.stubs(:connect).raises(StandardError.new("WebSocket connection failed"))
+      # Mock WebSocket connection to fail immediately (service tries WebSocket first)
+      WebSocket::Client::Simple.stubs(:connect).raises(StandardError.new("WebSocket connection failed"))
 
-    result = ComfyUiService.extract_stock_photo(
-      original_image_blob: @image_blob,
-      extraction_prompt: @extraction_prompt
-    )
+      result = ComfyUiService.extract_stock_photo(
+        original_image_blob: @image_blob,
+        extraction_prompt: @extraction_prompt
+      )
 
-    assert_equal false, result["success"]
-    assert result["error"].present?
-    assert_includes result["error"], "Timeout connecting to ComfyUI"
-  ensure
-    # Restore WebMock configuration
-    WebMock.disable_net_connect!(allow_localhost: true)
-    WebSocket::Client::Simple.unstub(:connect) if WebSocket::Client::Simple.respond_to?(:unstub)
+      assert_equal false, result["success"]
+      assert result["error"].present?
+      assert_includes result["error"], "Timeout connecting to ComfyUI"
+    ensure
+      # Restore WebMock configuration
+      WebMock.disable_net_connect!(allow_localhost: true)
+      WebSocket::Client::Simple.unstub(:connect) if WebSocket::Client::Simple.respond_to?(:unstub)
+    end
   end
 
   test "extract_stock_photo handles ComfyUI returning non-200 status" do
-    WebMock.stub_request(:get, /http:\/\/localhost:8188\//).to_return(status: 500)
+    VCR.turned_off do
+      WebMock.stub_request(:get, /http:\/\/localhost:8188\//).to_return(status: 500)
 
-    # Mock WebSocket connection to fail immediately (service tries WebSocket first)
-    WebSocket::Client::Simple.stubs(:connect).raises(StandardError.new("WebSocket connection failed"))
+      # Mock WebSocket connection to fail immediately (service tries WebSocket first)
+      WebSocket::Client::Simple.stubs(:connect).raises(StandardError.new("WebSocket connection failed"))
 
-    result = ComfyUiService.extract_stock_photo(
-      original_image_blob: @image_blob,
-      extraction_prompt: @extraction_prompt
-    )
+      result = ComfyUiService.extract_stock_photo(
+        original_image_blob: @image_blob,
+        extraction_prompt: @extraction_prompt
+      )
 
-    assert_equal false, result["success"]
-    assert result["error"].present?
-  ensure
-    WebSocket::Client::Simple.unstub(:connect) if WebSocket::Client::Simple.respond_to?(:unstub)
+      assert_equal false, result["success"]
+      assert result["error"].present?
+    ensure
+      WebSocket::Client::Simple.unstub(:connect) if WebSocket::Client::Simple.respond_to?(:unstub)
+    end
   end
 
   test "extract_stock_photo submits workflow successfully" do
-    job_id = SecureRandom.uuid
+    VCR.turned_off do
+      job_id = SecureRandom.uuid
 
-    # Stub availability check
-    WebMock.stub_request(:get, "http://localhost:8188/")
-      .to_return(status: 200, body: "OK")
+      # Stub availability check
+      WebMock.stub_request(:get, "http://localhost:8188/")
+        .to_return(status: 200, body: "OK")
 
-    # Stub image upload
-    WebMock.stub_request(:post, "http://localhost:8188/upload/image")
-      .to_return(
-        status: 200,
-        body: { "name" => "test_image.jpg" }.to_json,
-        headers: { "Content-Type" => "application/json" }
-      )
+      # Stub image upload
+      WebMock.stub_request(:post, "http://localhost:8188/upload/image")
+        .to_return(
+          status: 200,
+          body: { "name" => "test_image.jpg" }.to_json,
+          headers: { "Content-Type" => "application/json" }
+        )
 
-    # Stub workflow submission
-    WebMock.stub_request(:post, "http://localhost:8188/prompt")
-      .to_return(
-        status: 200,
-        body: { "prompt_id" => job_id }.to_json,
-        headers: { "Content-Type" => "application/json" }
-      )
+      # Stub workflow submission
+      WebMock.stub_request(:post, "http://localhost:8188/prompt")
+        .to_return(
+          status: 200,
+          body: { "prompt_id" => job_id }.to_json,
+          headers: { "Content-Type" => "application/json" }
+        )
 
-    # Stub polling (completed immediately for test - fallback after WebSocket fails)
-    WebMock.stub_request(:get, "http://localhost:8188/history/#{job_id}")
-      .to_return(
-        status: 200,
-        body: {
-          job_id => {
-            "status" => { "completed" => true },
-            "outputs" => {
-              "60" => {
-                "images" => [
-                  {
-                    "filename" => "test_output.png",
-                    "subfolder" => "",
-                    "type" => "output"
-                  }
-                ]
+      # Stub polling (completed immediately for test - fallback after WebSocket fails)
+      WebMock.stub_request(:get, "http://localhost:8188/history/#{job_id}")
+        .to_return(
+          status: 200,
+          body: {
+            job_id => {
+              "status" => { "completed" => true },
+              "outputs" => {
+                "60" => {
+                  "images" => [
+                    {
+                      "filename" => "test_output.png",
+                      "subfolder" => "",
+                      "type" => "output"
+                    }
+                  ]
+                }
               }
             }
-          }
-        }.to_json,
-        headers: { "Content-Type" => "application/json" }
+          }.to_json,
+          headers: { "Content-Type" => "application/json" }
+        )
+
+      # Stub image download with valid PNG data
+      valid_png_data = valid_png_image_data
+      WebMock.stub_request(:get, /http:\/\/localhost:8188\/view/)
+        .to_return(
+          status: 200,
+          body: valid_png_data,
+          headers: { "Content-Type" => "image/png" }
+        )
+
+      # Mock WebSocket connection to fail so it falls back to polling
+      WebSocket::Client::Simple.stubs(:connect).raises(StandardError.new("WebSocket connection failed"))
+
+      result = ComfyUiService.extract_stock_photo(
+        original_image_blob: @image_blob,
+        extraction_prompt: @extraction_prompt
       )
 
-    # Stub image download with valid PNG data
-    valid_png_data = valid_png_image_data
-    WebMock.stub_request(:get, /http:\/\/localhost:8188\/view/)
-      .to_return(
-        status: 200,
-        body: valid_png_data,
-        headers: { "Content-Type" => "image/png" }
-      )
-
-    # Mock WebSocket connection to fail so it falls back to polling
-    WebSocket::Client::Simple.stubs(:connect).raises(StandardError.new("WebSocket connection failed"))
-
-    result = ComfyUiService.extract_stock_photo(
-      original_image_blob: @image_blob,
-      extraction_prompt: @extraction_prompt
-    )
-
-    assert_equal true, result["success"]
-    assert_equal job_id, result["job_id"]
-    assert result["outputs"].present?
-  ensure
-    WebSocket::Client::Simple.unstub(:connect) if WebSocket::Client::Simple.respond_to?(:unstub)
+      assert_equal true, result["success"]
+      assert_equal job_id, result["job_id"]
+      assert result["outputs"].present?
+    ensure
+      WebSocket::Client::Simple.unstub(:connect) if WebSocket::Client::Simple.respond_to?(:unstub)
+    end
   end
 
   test "extract_stock_photo handles workflow submission failure" do
-    # Stub availability check
-    WebMock.stub_request(:get, "http://localhost:8188/")
-      .to_return(status: 200, body: "OK")
+    VCR.turned_off do
+      # Stub availability check
+      WebMock.stub_request(:get, "http://localhost:8188/")
+        .to_return(status: 200, body: "OK")
 
-    # Stub image upload
-    WebMock.stub_request(:post, "http://localhost:8188/upload/image")
-      .to_return(
-        status: 200,
-        body: { "name" => "test_image.jpg" }.to_json,
-        headers: { "Content-Type" => "application/json" }
+      # Stub image upload
+      WebMock.stub_request(:post, "http://localhost:8188/upload/image")
+        .to_return(
+          status: 200,
+          body: { "name" => "test_image.jpg" }.to_json,
+          headers: { "Content-Type" => "application/json" }
+        )
+
+      # Stub workflow submission failure
+      WebMock.stub_request(:post, "http://localhost:8188/prompt")
+        .to_return(status: 500, body: "Internal Server Error")
+
+      # Mock WebSocket connection to fail (though it shouldn't reach here due to submission failure)
+      WebSocket::Client::Simple.stubs(:connect).raises(StandardError.new("WebSocket connection failed"))
+
+      result = ComfyUiService.extract_stock_photo(
+        original_image_blob: @image_blob,
+        extraction_prompt: @extraction_prompt
       )
 
-    # Stub workflow submission failure
-    WebMock.stub_request(:post, "http://localhost:8188/prompt")
-      .to_return(status: 500, body: "Internal Server Error")
-
-    # Mock WebSocket connection to fail (though it shouldn't reach here due to submission failure)
-    WebSocket::Client::Simple.stubs(:connect).raises(StandardError.new("WebSocket connection failed"))
-
-    result = ComfyUiService.extract_stock_photo(
-      original_image_blob: @image_blob,
-      extraction_prompt: @extraction_prompt
-    )
-
-    assert_equal false, result["success"]
-    assert result["error"].present?
-  ensure
-    WebSocket::Client::Simple.unstub(:connect) if WebSocket::Client::Simple.respond_to?(:unstub)
+      assert_equal false, result["success"]
+      assert result["error"].present?
+    ensure
+      WebSocket::Client::Simple.unstub(:connect) if WebSocket::Client::Simple.respond_to?(:unstub)
+    end
   end
 
   test "extract_stock_photo handles missing prompt_id in response" do
-    # Stub availability check
-    WebMock.stub_request(:get, "http://localhost:8188/")
-      .to_return(status: 200, body: "OK")
+    VCR.turned_off do
+      # Stub availability check
+      WebMock.stub_request(:get, "http://localhost:8188/")
+        .to_return(status: 200, body: "OK")
 
-    # Stub image upload
-    WebMock.stub_request(:post, "http://localhost:8188/upload/image")
-      .to_return(
-        status: 200,
-        body: { "name" => "test_image.jpg" }.to_json,
-        headers: { "Content-Type" => "application/json" }
+      # Stub image upload
+      WebMock.stub_request(:post, "http://localhost:8188/upload/image")
+        .to_return(
+          status: 200,
+          body: { "name" => "test_image.jpg" }.to_json,
+          headers: { "Content-Type" => "application/json" }
+        )
+
+      # Stub workflow submission with missing prompt_id
+      WebMock.stub_request(:post, "http://localhost:8188/prompt")
+        .to_return(
+          status: 200,
+          body: {}.to_json,
+          headers: { "Content-Type" => "application/json" }
+        )
+
+      # Mock WebSocket connection to fail (though it shouldn't reach here due to missing prompt_id)
+      WebSocket::Client::Simple.stubs(:connect).raises(StandardError.new("WebSocket connection failed"))
+
+      result = ComfyUiService.extract_stock_photo(
+        original_image_blob: @image_blob,
+        extraction_prompt: @extraction_prompt
       )
 
-    # Stub workflow submission with missing prompt_id
-    WebMock.stub_request(:post, "http://localhost:8188/prompt")
-      .to_return(
-        status: 200,
-        body: {}.to_json,
-        headers: { "Content-Type" => "application/json" }
-      )
-
-    # Mock WebSocket connection to fail (though it shouldn't reach here due to missing prompt_id)
-    WebSocket::Client::Simple.stubs(:connect).raises(StandardError.new("WebSocket connection failed"))
-
-    result = ComfyUiService.extract_stock_photo(
-      original_image_blob: @image_blob,
-      extraction_prompt: @extraction_prompt
-    )
-
-    assert_equal false, result["success"]
-    assert result["error"].present?
-  ensure
-    WebSocket::Client::Simple.unstub(:connect) if WebSocket::Client::Simple.respond_to?(:unstub)
+      assert_equal false, result["success"]
+      assert result["error"].present?
+    ensure
+      WebSocket::Client::Simple.unstub(:connect) if WebSocket::Client::Simple.respond_to?(:unstub)
+    end
   end
 
   test "extract_stock_photo handles job timeout" do
-    job_id = SecureRandom.uuid
+    VCR.turned_off do
+      job_id = SecureRandom.uuid
 
-    # Stub availability check
-    WebMock.stub_request(:get, "http://localhost:8188/")
-      .to_return(status: 200, body: "OK")
+      # Stub availability check
+      WebMock.stub_request(:get, "http://localhost:8188/")
+        .to_return(status: 200, body: "OK")
 
-    # Stub image upload
-    WebMock.stub_request(:post, "http://localhost:8188/upload/image")
-      .to_return(
-        status: 200,
-        body: { "name" => "test_image.jpg" }.to_json,
-        headers: { "Content-Type" => "application/json" }
+      # Stub image upload
+      WebMock.stub_request(:post, "http://localhost:8188/upload/image")
+        .to_return(
+          status: 200,
+          body: { "name" => "test_image.jpg" }.to_json,
+          headers: { "Content-Type" => "application/json" }
+        )
+
+      # Stub workflow submission
+      WebMock.stub_request(:post, "http://localhost:8188/prompt")
+        .to_return(
+          status: 200,
+          body: { "prompt_id" => job_id }.to_json,
+          headers: { "Content-Type" => "application/json" }
+        )
+
+      # Stub polling to never complete (simulate timeout - fallback after WebSocket fails)
+      # Service polls up to 60 times, so stub all requests
+      WebMock.stub_request(:get, "http://localhost:8188/history/#{job_id}")
+        .to_return(
+          status: 200,
+          body: { job_id => { "status" => { "completed" => false } } }.to_json,
+          headers: { "Content-Type" => "application/json" }
+        )
+        .times(60) # Stub all polling attempts
+
+      # Stub sleep to prevent actual 2-second delays between polls
+      # This makes the test run instantly while still testing timeout logic
+      # sleep is a private Kernel method available to all objects
+      Object.any_instance.stubs(:sleep)
+
+      # Mock WebSocket connection to fail so it falls back to polling
+      WebSocket::Client::Simple.stubs(:connect).raises(StandardError.new("WebSocket connection failed"))
+
+      result = ComfyUiService.extract_stock_photo(
+        original_image_blob: @image_blob,
+        extraction_prompt: @extraction_prompt
       )
 
-    # Stub workflow submission
-    WebMock.stub_request(:post, "http://localhost:8188/prompt")
-      .to_return(
-        status: 200,
-        body: { "prompt_id" => job_id }.to_json,
-        headers: { "Content-Type" => "application/json" }
-      )
-
-    # Stub polling to never complete (simulate timeout - fallback after WebSocket fails)
-    # Service polls up to 60 times, so stub all requests
-    WebMock.stub_request(:get, "http://localhost:8188/history/#{job_id}")
-      .to_return(
-        status: 200,
-        body: { job_id => { "status" => { "completed" => false } } }.to_json,
-        headers: { "Content-Type" => "application/json" }
-      )
-      .times(60) # Stub all polling attempts
-
-    # Stub sleep to prevent actual 2-second delays between polls
-    # This makes the test run instantly while still testing timeout logic
-    # sleep is a private Kernel method available to all objects
-    Object.any_instance.stubs(:sleep)
-
-    # Mock WebSocket connection to fail so it falls back to polling
-    WebSocket::Client::Simple.stubs(:connect).raises(StandardError.new("WebSocket connection failed"))
-
-    result = ComfyUiService.extract_stock_photo(
-      original_image_blob: @image_blob,
-      extraction_prompt: @extraction_prompt
-    )
-
-    assert_equal false, result["success"]
-    assert_includes result["error"], "timed out"
-  ensure
-    # Clean up stubs
-    Object.any_instance.unstub(:sleep) if Object.any_instance.respond_to?(:unstub)
-    WebSocket::Client::Simple.unstub(:connect) if WebSocket::Client::Simple.respond_to?(:unstub)
+      assert_equal false, result["success"]
+      assert_includes result["error"], "timed out"
+    ensure
+      # Clean up stubs
+      Object.any_instance.unstub(:sleep) if Object.any_instance.respond_to?(:unstub)
+      WebSocket::Client::Simple.unstub(:connect) if WebSocket::Client::Simple.respond_to?(:unstub)
+    end
   end
 
   test "extract_stock_photo handles job error status" do
-    job_id = SecureRandom.uuid
+    VCR.turned_off do
+      job_id = SecureRandom.uuid
 
-    # Stub availability check
-    WebMock.stub_request(:get, "http://localhost:8188/")
-      .to_return(status: 200, body: "OK")
+      # Stub availability check
+      WebMock.stub_request(:get, "http://localhost:8188/")
+        .to_return(status: 200, body: "OK")
 
-    # Stub image upload
-    WebMock.stub_request(:post, "http://localhost:8188/upload/image")
-      .to_return(
-        status: 200,
-        body: { "name" => "test_image.jpg" }.to_json,
-        headers: { "Content-Type" => "application/json" }
+      # Stub image upload
+      WebMock.stub_request(:post, "http://localhost:8188/upload/image")
+        .to_return(
+          status: 200,
+          body: { "name" => "test_image.jpg" }.to_json,
+          headers: { "Content-Type" => "application/json" }
+        )
+
+      # Stub workflow submission
+      WebMock.stub_request(:post, "http://localhost:8188/prompt")
+        .to_return(
+          status: 200,
+          body: { "prompt_id" => job_id }.to_json,
+          headers: { "Content-Type" => "application/json" }
+        )
+
+      # Stub polling with error status (fallback after WebSocket fails)
+      # ComfyUI returns status with status_str: "error" and messages array
+      WebMock.stub_request(:get, "http://localhost:8188/history/#{job_id}")
+        .to_return(
+          status: 200,
+          body: {
+            job_id => {
+              "status" => {
+                "status_str" => "error",
+                "completed" => false,
+                "messages" => [ "Processing failed" ]
+              },
+              "outputs" => {}
+            }
+          }.to_json,
+          headers: { "Content-Type" => "application/json" }
+        )
+
+      # Mock WebSocket connection to fail so it falls back to polling
+      WebSocket::Client::Simple.stubs(:connect).raises(StandardError.new("WebSocket connection failed"))
+
+      # Service catches StandardError and returns hash, so check for error response
+      result = ComfyUiService.extract_stock_photo(
+        original_image_blob: @image_blob,
+        extraction_prompt: @extraction_prompt
       )
 
-    # Stub workflow submission
-    WebMock.stub_request(:post, "http://localhost:8188/prompt")
-      .to_return(
-        status: 200,
-        body: { "prompt_id" => job_id }.to_json,
-        headers: { "Content-Type" => "application/json" }
-      )
-
-    # Stub polling with error status (fallback after WebSocket fails)
-    # ComfyUI returns status with status_str: "error" and messages array
-    WebMock.stub_request(:get, "http://localhost:8188/history/#{job_id}")
-      .to_return(
-        status: 200,
-        body: {
-          job_id => {
-            "status" => {
-              "status_str" => "error",
-              "completed" => false,
-              "messages" => [ "Processing failed" ]
-            },
-            "outputs" => {}
-          }
-        }.to_json,
-        headers: { "Content-Type" => "application/json" }
-      )
-
-    # Mock WebSocket connection to fail so it falls back to polling
-    WebSocket::Client::Simple.stubs(:connect).raises(StandardError.new("WebSocket connection failed"))
-
-    # Service catches StandardError and returns hash, so check for error response
-    result = ComfyUiService.extract_stock_photo(
-      original_image_blob: @image_blob,
-      extraction_prompt: @extraction_prompt
-    )
-
-    assert_equal false, result["success"]
-    assert_includes result["error"], "ComfyUI job failed"
-  ensure
-    WebSocket::Client::Simple.unstub(:connect) if WebSocket::Client::Simple.respond_to?(:unstub)
+      assert_equal false, result["success"]
+      assert_includes result["error"], "ComfyUI job failed"
+    ensure
+      WebSocket::Client::Simple.unstub(:connect) if WebSocket::Client::Simple.respond_to?(:unstub)
+    end
   end
 
   test "extract_stock_photo uses custom COMFY_UI_API_URL from environment" do
-    original_url = ENV["COMFY_UI_API_URL"]
-    ENV["COMFY_UI_API_URL"] = "http://custom-host:9999"
+    VCR.turned_off do
+      original_url = ENV["COMFY_UI_API_URL"]
+      ENV["COMFY_UI_API_URL"] = "http://custom-host:9999"
 
-    # Stub availability check on custom URL
-    WebMock.stub_request(:get, "http://custom-host:9999/")
-      .to_return(status: 200, body: "OK")
+      # Stub availability check on custom URL
+      WebMock.stub_request(:get, "http://custom-host:9999/")
+        .to_return(status: 200, body: "OK")
 
-    # Stub image upload
-    WebMock.stub_request(:post, "http://custom-host:9999/upload/image")
-      .to_return(
-        status: 200,
-        body: { "name" => "test_image.jpg" }.to_json,
-        headers: { "Content-Type" => "application/json" }
-      )
+      # Stub image upload
+      WebMock.stub_request(:post, "http://custom-host:9999/upload/image")
+        .to_return(
+          status: 200,
+          body: { "name" => "test_image.jpg" }.to_json,
+          headers: { "Content-Type" => "application/json" }
+        )
 
-    job_id = SecureRandom.uuid
+      job_id = SecureRandom.uuid
 
-    # Stub workflow submission
-    WebMock.stub_request(:post, "http://custom-host:9999/prompt")
-      .to_return(
-        status: 200,
-        body: { "prompt_id" => job_id }.to_json,
-        headers: { "Content-Type" => "application/json" }
-      )
+      # Stub workflow submission
+      WebMock.stub_request(:post, "http://custom-host:9999/prompt")
+        .to_return(
+          status: 200,
+          body: { "prompt_id" => job_id }.to_json,
+          headers: { "Content-Type" => "application/json" }
+        )
 
-    # Stub polling (fallback after WebSocket fails)
-    WebMock.stub_request(:get, "http://custom-host:9999/history/#{job_id}")
-      .to_return(
-        status: 200,
-        body: {
-          job_id => {
-            "status" => { "completed" => true },
-            "outputs" => {
-              "60" => {
-                "images" => [
-                  {
-                    "filename" => "test_output.png",
-                    "subfolder" => "",
-                    "type" => "output"
-                  }
-                ]
+      # Stub polling (fallback after WebSocket fails)
+      WebMock.stub_request(:get, "http://custom-host:9999/history/#{job_id}")
+        .to_return(
+          status: 200,
+          body: {
+            job_id => {
+              "status" => { "completed" => true },
+              "outputs" => {
+                "60" => {
+                  "images" => [
+                    {
+                      "filename" => "test_output.png",
+                      "subfolder" => "",
+                      "type" => "output"
+                    }
+                  ]
+                }
               }
             }
-          }
-        }.to_json,
-        headers: { "Content-Type" => "application/json" }
+          }.to_json,
+          headers: { "Content-Type" => "application/json" }
+        )
+
+      # Stub image download with valid PNG data
+      valid_png_data = valid_png_image_data
+      WebMock.stub_request(:get, /http:\/\/custom-host:9999\/view/)
+        .to_return(
+          status: 200,
+          body: valid_png_data,
+          headers: { "Content-Type" => "image/png" }
+        )
+
+      # Mock WebSocket connection to fail so it falls back to polling
+      WebSocket::Client::Simple.stubs(:connect).raises(StandardError.new("WebSocket connection failed"))
+
+      result = ComfyUiService.extract_stock_photo(
+        original_image_blob: @image_blob,
+        extraction_prompt: @extraction_prompt
       )
 
-    # Stub image download with valid PNG data
-    valid_png_data = valid_png_image_data
-    WebMock.stub_request(:get, /http:\/\/custom-host:9999\/view/)
-      .to_return(
-        status: 200,
-        body: valid_png_data,
-        headers: { "Content-Type" => "image/png" }
-      )
-
-    # Mock WebSocket connection to fail so it falls back to polling
-    WebSocket::Client::Simple.stubs(:connect).raises(StandardError.new("WebSocket connection failed"))
-
-    result = ComfyUiService.extract_stock_photo(
-      original_image_blob: @image_blob,
-      extraction_prompt: @extraction_prompt
-    )
-
-    assert_equal true, result["success"]
-
-    # Restore original URL
-    ENV["COMFY_UI_API_URL"] = original_url
-  ensure
-    WebSocket::Client::Simple.unstub(:connect) if WebSocket::Client::Simple.respond_to?(:unstub)
+      assert_equal true, result["success"]
+    ensure
+      # Restore original URL
+      ENV["COMFY_UI_API_URL"] = original_url if original_url
+      WebSocket::Client::Simple.unstub(:connect) if WebSocket::Client::Simple.respond_to?(:unstub)
+    end
   end
 
   # WebSocket Integration Tests
   test "extract_stock_photo falls back to polling when WebSocket fails" do
-    job_id = SecureRandom.uuid
+    VCR.turned_off do
+      job_id = SecureRandom.uuid
 
-    # Stub availability check
-    WebMock.stub_request(:get, "http://localhost:8188/")
-      .to_return(status: 200, body: "OK")
+      # Stub availability check
+      WebMock.stub_request(:get, "http://localhost:8188/")
+        .to_return(status: 200, body: "OK")
 
-    # Stub image upload
-    WebMock.stub_request(:post, "http://localhost:8188/upload/image")
-      .to_return(
-        status: 200,
-        body: { "name" => "test_image.jpg" }.to_json,
-        headers: { "Content-Type" => "application/json" }
-      )
+      # Stub image upload
+      WebMock.stub_request(:post, "http://localhost:8188/upload/image")
+        .to_return(
+          status: 200,
+          body: { "name" => "test_image.jpg" }.to_json,
+          headers: { "Content-Type" => "application/json" }
+        )
 
-    # Stub workflow submission
-    WebMock.stub_request(:post, "http://localhost:8188/prompt")
-      .to_return(
-        status: 200,
-        body: { "prompt_id" => job_id }.to_json,
-        headers: { "Content-Type" => "application/json" }
-      )
+      # Stub workflow submission
+      WebMock.stub_request(:post, "http://localhost:8188/prompt")
+        .to_return(
+          status: 200,
+          body: { "prompt_id" => job_id }.to_json,
+          headers: { "Content-Type" => "application/json" }
+        )
 
-    # Stub polling (fallback after WebSocket fails)
-    WebMock.stub_request(:get, "http://localhost:8188/history/#{job_id}")
-      .to_return(
-        status: 200,
-        body: {
-          job_id => {
-            "status" => { "completed" => true },
-            "outputs" => {
-              "60" => {
-                "images" => [
-                  {
-                    "filename" => "test_output.png",
-                    "subfolder" => "",
-                    "type" => "output"
-                  }
-                ]
+      # Stub polling (fallback after WebSocket fails)
+      WebMock.stub_request(:get, "http://localhost:8188/history/#{job_id}")
+        .to_return(
+          status: 200,
+          body: {
+            job_id => {
+              "status" => { "completed" => true },
+              "outputs" => {
+                "60" => {
+                  "images" => [
+                    {
+                      "filename" => "test_output.png",
+                      "subfolder" => "",
+                      "type" => "output"
+                    }
+                  ]
+                }
               }
             }
-          }
-        }.to_json,
-        headers: { "Content-Type" => "application/json" }
+          }.to_json,
+          headers: { "Content-Type" => "application/json" }
+        )
+
+      # Stub image download with valid PNG data
+      valid_png_data = valid_png_image_data
+      WebMock.stub_request(:get, /http:\/\/localhost:8188\/view/)
+        .to_return(
+          status: 200,
+          body: valid_png_data,
+          headers: { "Content-Type" => "image/png" }
+        )
+
+      # Mock WebSocket connection failure to trigger fallback
+      # Stub the WebSocket::Client::Simple.connect to raise an error
+      WebSocket::Client::Simple.stubs(:connect).raises(StandardError.new("WebSocket connection failed"))
+
+      result = ComfyUiService.extract_stock_photo(
+        original_image_blob: @image_blob,
+        extraction_prompt: @extraction_prompt
       )
 
-    # Stub image download with valid PNG data
-    valid_png_data = valid_png_image_data
-    WebMock.stub_request(:get, /http:\/\/localhost:8188\/view/)
-      .to_return(
-        status: 200,
-        body: valid_png_data,
-        headers: { "Content-Type" => "image/png" }
-      )
-
-    # Mock WebSocket connection failure to trigger fallback
-    # Stub the WebSocket::Client::Simple.connect to raise an error
-    WebSocket::Client::Simple.stubs(:connect).raises(StandardError.new("WebSocket connection failed"))
-
-    result = ComfyUiService.extract_stock_photo(
-      original_image_blob: @image_blob,
-      extraction_prompt: @extraction_prompt
-    )
-
-    assert_equal true, result["success"]
-    assert_equal job_id, result["job_id"]
-    assert result["outputs"].present?
-  ensure
-    WebSocket::Client::Simple.unstub(:connect) if WebSocket::Client::Simple.respond_to?(:unstub)
+      assert_equal true, result["success"]
+      assert_equal job_id, result["job_id"]
+      assert result["outputs"].present?
+    ensure
+      WebSocket::Client::Simple.unstub(:connect) if WebSocket::Client::Simple.respond_to?(:unstub)
+    end
   end
 
   test "wait_for_completion_via_websocket handles WebSocket connection errors" do
@@ -750,5 +775,752 @@ class ComfyUiServiceTest < ActiveSupport::TestCase
     assert_equal true, result["success"]
   ensure
     WebSocket::Client::Simple.unstub(:connect) if WebSocket::Client::Simple.respond_to?(:unstub)
+  end
+
+  test "base_url returns default when COMFY_UI_API_URL not set" do
+    original_url = ENV["COMFY_UI_API_URL"]
+    ENV.delete("COMFY_UI_API_URL")
+
+    assert_equal "http://localhost:8188", ComfyUiService.base_url
+  ensure
+    ENV["COMFY_UI_API_URL"] = original_url if original_url
+  end
+
+  test "base_url returns custom URL from environment" do
+    original_url = ENV["COMFY_UI_API_URL"]
+    ENV["COMFY_UI_API_URL"] = "http://custom:9999"
+
+    assert_equal "http://custom:9999", ComfyUiService.base_url
+  ensure
+    ENV["COMFY_UI_API_URL"] = original_url if original_url
+  end
+
+  test "check_comfyui_availability! raises error on connection refused" do
+    VCR.turned_off do
+      WebMock.disable_net_connect!(allow_localhost: false)
+      WebMock.stub_request(:get, "http://localhost:8188/")
+        .to_raise(Errno::ECONNREFUSED)
+
+      assert_raises(StandardError) do
+        ComfyUiService.send(:check_comfyui_availability!)
+      end
+    ensure
+      WebMock.disable_net_connect!(allow_localhost: true)
+    end
+  end
+
+  test "check_comfyui_availability! raises error on host unreachable" do
+    VCR.turned_off do
+      WebMock.disable_net_connect!(allow_localhost: false)
+      WebMock.stub_request(:get, "http://localhost:8188/")
+        .to_raise(Errno::EHOSTUNREACH)
+
+      assert_raises(StandardError) do
+        ComfyUiService.send(:check_comfyui_availability!)
+      end
+    ensure
+      WebMock.disable_net_connect!(allow_localhost: true)
+    end
+  end
+
+  test "check_comfyui_availability! raises error on socket error" do
+    VCR.turned_off do
+      WebMock.disable_net_connect!(allow_localhost: false)
+      WebMock.stub_request(:get, "http://localhost:8188/")
+        .to_raise(SocketError.new("Socket error"))
+
+      assert_raises(StandardError) do
+        ComfyUiService.send(:check_comfyui_availability!)
+      end
+    ensure
+      WebMock.disable_net_connect!(allow_localhost: true)
+    end
+  end
+
+  test "check_comfyui_availability! raises error on timeout" do
+    VCR.turned_off do
+      WebMock.disable_net_connect!(allow_localhost: false)
+      WebMock.stub_request(:get, "http://localhost:8188/")
+        .to_raise(Net::ReadTimeout)
+
+      assert_raises(StandardError) do
+        ComfyUiService.send(:check_comfyui_availability!)
+      end
+    ensure
+      WebMock.disable_net_connect!(allow_localhost: true)
+    end
+  end
+
+  test "check_comfyui_availability! raises error on open timeout" do
+    VCR.turned_off do
+      WebMock.disable_net_connect!(allow_localhost: false)
+      WebMock.stub_request(:get, "http://localhost:8188/")
+        .to_raise(Net::OpenTimeout)
+
+      assert_raises(StandardError) do
+        ComfyUiService.send(:check_comfyui_availability!)
+      end
+    ensure
+      WebMock.disable_net_connect!(allow_localhost: true)
+    end
+  end
+
+  test "check_comfyui_availability! raises error on 500 status" do
+    VCR.turned_off do
+      WebMock.disable_net_connect!(allow_localhost: false)
+      WebMock.stub_request(:get, "http://localhost:8188/")
+        .to_return(status: 500)
+
+      assert_raises(StandardError) do
+        ComfyUiService.send(:check_comfyui_availability!)
+      end
+    ensure
+      WebMock.disable_net_connect!(allow_localhost: true)
+    end
+  end
+
+  test "check_comfyui_availability! succeeds on 200 status" do
+    VCR.turned_off do
+      WebMock.disable_net_connect!(allow_localhost: false)
+      WebMock.stub_request(:get, "http://localhost:8188/")
+        .to_return(status: 200, body: "OK")
+
+      assert_nothing_raised do
+        ComfyUiService.send(:check_comfyui_availability!)
+      end
+    ensure
+      WebMock.disable_net_connect!(allow_localhost: true)
+    end
+  end
+
+  test "check_comfyui_availability! succeeds on 404 status" do
+    # 404 is still < 500, so it passes
+    VCR.turned_off do
+      WebMock.disable_net_connect!(allow_localhost: false)
+      WebMock.stub_request(:get, "http://localhost:8188/")
+        .to_return(status: 404)
+
+      assert_nothing_raised do
+        ComfyUiService.send(:check_comfyui_availability!)
+      end
+    ensure
+      WebMock.disable_net_connect!(allow_localhost: true)
+    end
+  end
+
+  test "upload_image uploads image successfully" do
+    VCR.turned_off do
+      WebMock.stub_request(:post, "http://localhost:8188/upload/image")
+        .to_return(
+          status: 200,
+          body: { "name" => "uploaded_image.jpg" }.to_json,
+          headers: { "Content-Type" => "application/json" }
+        )
+
+      filename = ComfyUiService.send(:upload_image, @image_blob)
+
+      assert_equal "uploaded_image.jpg", filename
+    end
+  end
+
+  test "upload_image raises error on non-200 status" do
+    VCR.turned_off do
+      WebMock.stub_request(:post, "http://localhost:8188/upload/image")
+        .to_return(status: 500, body: "Internal Server Error")
+
+      assert_raises(StandardError) do
+        ComfyUiService.send(:upload_image, @image_blob)
+      end
+    end
+  end
+
+  test "upload_image raises error on invalid JSON response" do
+    VCR.turned_off do
+      WebMock.stub_request(:post, "http://localhost:8188/upload/image")
+        .to_return(
+          status: 200,
+          body: "invalid json",
+          headers: { "Content-Type" => "application/json" }
+        )
+
+      assert_raises(StandardError) do
+        ComfyUiService.send(:upload_image, @image_blob)
+      end
+    end
+  end
+
+  test "upload_image uses filename from response" do
+    VCR.turned_off do
+      WebMock.stub_request(:post, "http://localhost:8188/upload/image")
+        .to_return(
+          status: 200,
+          body: { "name" => "custom_name.png" }.to_json,
+          headers: { "Content-Type" => "application/json" }
+        )
+
+      filename = ComfyUiService.send(:upload_image, @image_blob)
+
+      assert_equal "custom_name.png", filename
+    end
+  end
+
+  test "build_workflow returns workflow hash with extraction prompt" do
+    workflow = ComfyUiService.send(:build_workflow, "test_image.jpg", "Extract this item")
+
+    assert_kind_of Hash, workflow
+    assert workflow["115:111"].present?
+    assert_equal "Extract this item", workflow["115:111"]["inputs"]["prompt"]
+    assert_equal "test_image.jpg", workflow["78"]["inputs"]["image"]
+  end
+
+  test "submit_workflow submits workflow with client_id" do
+    VCR.turned_off do
+      job_id = SecureRandom.uuid
+      client_id = SecureRandom.uuid
+
+      WebMock.stub_request(:post, "http://localhost:8188/prompt")
+        .with { |request|
+          body = JSON.parse(request.body)
+          body["client_id"] == client_id && body["prompt"].present?
+        }
+        .to_return(
+          status: 200,
+          body: { "prompt_id" => job_id }.to_json,
+          headers: { "Content-Type" => "application/json" }
+        )
+
+      workflow = ComfyUiService.send(:build_workflow, "test.jpg", "prompt")
+      result = ComfyUiService.send(:submit_workflow, workflow, client_id: client_id)
+
+      assert_equal job_id, result
+    end
+  end
+
+  test "submit_workflow generates client_id if not provided" do
+    VCR.turned_off do
+      job_id = SecureRandom.uuid
+
+      WebMock.stub_request(:post, "http://localhost:8188/prompt")
+        .with { |request|
+          body = JSON.parse(request.body)
+          body["client_id"].present?
+        }
+        .to_return(
+          status: 200,
+          body: { "prompt_id" => job_id }.to_json,
+          headers: { "Content-Type" => "application/json" }
+        )
+
+      workflow = ComfyUiService.send(:build_workflow, "test.jpg", "prompt")
+      result = ComfyUiService.send(:submit_workflow, workflow)
+
+      assert_equal job_id, result
+    end
+  end
+
+  test "submit_workflow raises error on non-200 status" do
+    VCR.turned_off do
+      WebMock.stub_request(:post, "http://localhost:8188/prompt")
+        .to_return(status: 500, body: "Internal Server Error")
+
+      workflow = ComfyUiService.send(:build_workflow, "test.jpg", "prompt")
+
+      assert_raises(StandardError) do
+        ComfyUiService.send(:submit_workflow, workflow)
+      end
+    end
+  end
+
+  test "submit_workflow raises error on missing prompt_id" do
+    VCR.turned_off do
+      WebMock.stub_request(:post, "http://localhost:8188/prompt")
+        .to_return(
+          status: 200,
+          body: {}.to_json,
+          headers: { "Content-Type" => "application/json" }
+        )
+
+      workflow = ComfyUiService.send(:build_workflow, "test.jpg", "prompt")
+
+      assert_raises(StandardError) do
+        ComfyUiService.send(:submit_workflow, workflow)
+      end
+    end
+  end
+
+  test "submit_workflow raises error on invalid JSON" do
+    VCR.turned_off do
+      WebMock.stub_request(:post, "http://localhost:8188/prompt")
+        .to_return(
+          status: 200,
+          body: "invalid json",
+          headers: { "Content-Type" => "application/json" }
+        )
+
+      workflow = ComfyUiService.send(:build_workflow, "test.jpg", "prompt")
+
+      assert_raises(StandardError) do
+        ComfyUiService.send(:submit_workflow, workflow)
+      end
+    end
+  end
+
+  test "poll_for_completion handles job with status_str success" do
+    VCR.turned_off do
+      job_id = SecureRandom.uuid
+
+      WebMock.disable_net_connect!(allow_localhost: false)
+      WebMock.stub_request(:get, "http://localhost:8188/history/#{job_id}")
+        .to_return(
+          status: 200,
+          body: {
+            job_id => {
+              "status" => { "status_str" => "success", "completed" => false },
+              "outputs" => {
+                "60" => {
+                  "images" => [
+                    {
+                      "filename" => "test_output.png",
+                      "subfolder" => "",
+                      "type" => "output"
+                    }
+                  ]
+                }
+              }
+            }
+          }.to_json,
+          headers: { "Content-Type" => "application/json" }
+        )
+
+      valid_png_data = valid_png_image_data
+      WebMock.stub_request(:get, /http:\/\/localhost:8188\/view/)
+        .to_return(
+          status: 200,
+          body: valid_png_data,
+          headers: { "Content-Type" => "image/png" }
+        )
+
+      Object.any_instance.stubs(:sleep)
+
+      result = ComfyUiService.send(:poll_for_completion, job_id, max_attempts: 1)
+
+      assert_equal true, result["success"]
+      assert_equal job_id, result["job_id"]
+    ensure
+      Object.any_instance.unstub(:sleep) if Object.any_instance.respond_to?(:unstub)
+      WebMock.disable_net_connect!(allow_localhost: true)
+    end
+  end
+
+  test "poll_for_completion handles non-200 history response" do
+    VCR.turned_off do
+      job_id = SecureRandom.uuid
+
+      WebMock.stub_request(:get, "http://localhost:8188/history/#{job_id}")
+        .to_return(status: 500)
+        .times(1)
+
+      Object.any_instance.stubs(:sleep)
+
+      # Should continue polling (non-200 doesn't raise, just continues)
+      # After max attempts, it times out
+      assert_raises(StandardError) do
+        ComfyUiService.send(:poll_for_completion, job_id, max_attempts: 1, interval: 0)
+      end
+    ensure
+      Object.any_instance.unstub(:sleep) if Object.any_instance.respond_to?(:unstub)
+    end
+  end
+
+  test "poll_for_completion handles empty history response" do
+    VCR.turned_off do
+      job_id = SecureRandom.uuid
+
+      WebMock.stub_request(:get, "http://localhost:8188/history/#{job_id}")
+        .to_return(
+          status: 200,
+          body: {}.to_json,
+          headers: { "Content-Type" => "application/json" }
+        )
+        .times(1)
+
+      Object.any_instance.stubs(:sleep)
+
+      # Empty history means job still processing, should timeout
+      assert_raises(StandardError) do
+        ComfyUiService.send(:poll_for_completion, job_id, max_attempts: 1, interval: 0)
+      end
+    ensure
+      Object.any_instance.unstub(:sleep) if Object.any_instance.respond_to?(:unstub)
+    end
+  end
+
+  test "poll_for_completion raises error on invalid JSON" do
+    VCR.turned_off do
+      job_id = SecureRandom.uuid
+
+      WebMock.stub_request(:get, "http://localhost:8188/history/#{job_id}")
+        .to_return(
+          status: 200,
+          body: "invalid json",
+          headers: { "Content-Type" => "application/json" }
+        )
+
+      Object.any_instance.stubs(:sleep)
+
+      assert_raises(StandardError) do
+        ComfyUiService.send(:poll_for_completion, job_id, max_attempts: 1)
+      end
+    ensure
+      Object.any_instance.unstub(:sleep) if Object.any_instance.respond_to?(:unstub)
+    end
+  end
+
+  test "fetch_job_results_after_completion raises error on non-200 status" do
+    VCR.turned_off do
+      job_id = SecureRandom.uuid
+
+      WebMock.stub_request(:get, "http://localhost:8188/history/#{job_id}")
+        .to_return(status: 500)
+
+      assert_raises(StandardError) do
+        ComfyUiService.send(:fetch_job_results_after_completion, job_id)
+      end
+    end
+  end
+
+  test "fetch_job_results_after_completion raises error on missing job data" do
+    VCR.turned_off do
+      job_id = SecureRandom.uuid
+
+      WebMock.stub_request(:get, "http://localhost:8188/history/#{job_id}")
+        .to_return(
+          status: 200,
+          body: {}.to_json,
+          headers: { "Content-Type" => "application/json" }
+        )
+
+      assert_raises(StandardError) do
+        ComfyUiService.send(:fetch_job_results_after_completion, job_id)
+      end
+    end
+  end
+
+  test "fetch_job_results_after_completion raises error on job failure" do
+    VCR.turned_off do
+      job_id = SecureRandom.uuid
+
+      WebMock.stub_request(:get, "http://localhost:8188/history/#{job_id}")
+        .to_return(
+          status: 200,
+          body: {
+            job_id => {
+              "status" => {
+                "status_str" => "error",
+                "messages" => [ "Processing failed" ]
+              },
+              "outputs" => {}
+            }
+          }.to_json,
+          headers: { "Content-Type" => "application/json" }
+        )
+
+      assert_raises(StandardError) do
+        ComfyUiService.send(:fetch_job_results_after_completion, job_id)
+      end
+    end
+  end
+
+  test "fetch_job_results_after_completion raises error on missing image data" do
+    VCR.turned_off do
+      job_id = SecureRandom.uuid
+
+      WebMock.stub_request(:get, "http://localhost:8188/history/#{job_id}")
+        .to_return(
+          status: 200,
+          body: {
+            job_id => {
+              "status" => { "completed" => true },
+              "outputs" => {}
+            }
+          }.to_json,
+          headers: { "Content-Type" => "application/json" }
+        )
+
+      assert_raises(StandardError) do
+        ComfyUiService.send(:fetch_job_results_after_completion, job_id)
+      end
+    end
+  end
+
+  test "extract_image_from_outputs returns nil for empty outputs" do
+    VCR.turned_off do
+      base_uri = URI("http://localhost:8188")
+      http = Net::HTTP.new(base_uri.host, base_uri.port)
+
+      result = ComfyUiService.send(:extract_image_from_outputs, {}, http, base_uri)
+
+      assert_nil result
+    end
+  end
+
+  test "extract_image_from_outputs returns nil for non-hash outputs" do
+    VCR.turned_off do
+      base_uri = URI("http://localhost:8188")
+      http = Net::HTTP.new(base_uri.host, base_uri.port)
+
+      result = ComfyUiService.send(:extract_image_from_outputs, [], http, base_uri)
+
+      assert_nil result
+    end
+  end
+
+  test "extract_image_from_outputs downloads image from node 60" do
+    VCR.turned_off do
+      base_uri = URI("http://localhost:8188")
+      valid_png_data = valid_png_image_data
+
+      outputs = {
+        "60" => {
+          "images" => [
+            {
+              "filename" => "test_output.png",
+              "subfolder" => "",
+              "type" => "output"
+            }
+          ]
+        }
+      }
+
+      WebMock.stub_request(:get, /http:\/\/localhost:8188\/view/)
+        .to_return(
+          status: 200,
+          body: valid_png_data,
+          headers: { "Content-Type" => "image/png" }
+        )
+
+      http = Net::HTTP.new(base_uri.host, base_uri.port)
+      result = ComfyUiService.send(:extract_image_from_outputs, outputs, http, base_uri)
+
+      assert_not_nil result
+      assert_equal valid_png_data, result
+    end
+  end
+
+  test "extract_image_from_outputs returns nil on download failure" do
+    VCR.turned_off do
+      base_uri = URI("http://localhost:8188")
+
+      outputs = {
+        "60" => {
+          "images" => [
+            {
+              "filename" => "test_output.png",
+              "subfolder" => "",
+              "type" => "output"
+            }
+          ]
+        }
+      }
+
+      WebMock.stub_request(:get, /http:\/\/localhost:8188\/view/)
+        .to_return(status: 500)
+
+      http = Net::HTTP.new(base_uri.host, base_uri.port)
+      result = ComfyUiService.send(:extract_image_from_outputs, outputs, http, base_uri)
+
+      assert_nil result
+    end
+  end
+
+  test "extract_image_from_outputs returns nil for image too small" do
+    VCR.turned_off do
+      base_uri = URI("http://localhost:8188")
+      # Create PNG data smaller than 10,000 bytes
+      small_png_data = valid_png_image_data(size: 5_000)
+
+      outputs = {
+        "60" => {
+          "images" => [
+            {
+              "filename" => "test_output.png",
+              "subfolder" => "",
+              "type" => "output"
+            }
+          ]
+        }
+      }
+
+      WebMock.stub_request(:get, /http:\/\/localhost:8188\/view/)
+        .to_return(
+          status: 200,
+          body: small_png_data,
+          headers: { "Content-Type" => "image/png" }
+        )
+
+      http = Net::HTTP.new(base_uri.host, base_uri.port)
+      result = ComfyUiService.send(:extract_image_from_outputs, outputs, http, base_uri)
+
+      assert_nil result
+    end
+  end
+
+  test "extract_image_from_outputs returns nil for invalid PNG header" do
+    VCR.turned_off do
+      base_uri = URI("http://localhost:8188")
+      # Create data with invalid PNG header
+      invalid_png = "INVALID" + ("x" * 10_000)
+
+      outputs = {
+        "60" => {
+          "images" => [
+            {
+              "filename" => "test_output.png",
+              "subfolder" => "",
+              "type" => "output"
+            }
+          ]
+        }
+      }
+
+      WebMock.stub_request(:get, /http:\/\/localhost:8188\/view/)
+        .to_return(
+          status: 200,
+          body: invalid_png,
+          headers: { "Content-Type" => "image/png" }
+        )
+
+      http = Net::HTTP.new(base_uri.host, base_uri.port)
+      result = ComfyUiService.send(:extract_image_from_outputs, outputs, http, base_uri)
+
+      assert_nil result
+    end
+  end
+
+  test "extract_image_from_outputs uses fallback when node 60 not found" do
+    VCR.turned_off do
+      base_uri = URI("http://localhost:8188")
+      valid_png_data = valid_png_image_data
+
+      outputs = {
+        "99" => {
+          "images" => [
+            {
+              "filename" => "fallback_output.png",
+              "subfolder" => "outputs",
+              "type" => "output"
+            }
+          ]
+        }
+      }
+
+      WebMock.stub_request(:get, /http:\/\/localhost:8188\/view/)
+        .to_return(
+          status: 200,
+          body: valid_png_data,
+          headers: { "Content-Type" => "image/png" }
+        )
+
+      http = Net::HTTP.new(base_uri.host, base_uri.port)
+      result = ComfyUiService.send(:extract_image_from_outputs, outputs, http, base_uri)
+
+      assert_not_nil result
+      assert_equal valid_png_data, result
+    end
+  end
+
+  test "extract_image_from_outputs handles subfolder in image path" do
+    VCR.turned_off do
+      base_uri = URI("http://localhost:8188")
+      valid_png_data = valid_png_image_data
+
+      outputs = {
+        "60" => {
+          "images" => [
+            {
+              "filename" => "test_output.png",
+              "subfolder" => "outputs",
+              "type" => "output"
+            }
+          ]
+        }
+      }
+
+      WebMock.stub_request(:get, /http:\/\/localhost:8188\/view/)
+        .with { |request| request.uri.query.include?("subfolder=outputs") }
+        .to_return(
+          status: 200,
+          body: valid_png_data,
+          headers: { "Content-Type" => "image/png" }
+        )
+
+      http = Net::HTTP.new(base_uri.host, base_uri.port)
+      result = ComfyUiService.send(:extract_image_from_outputs, outputs, http, base_uri)
+
+      assert_not_nil result
+    end
+  end
+
+  test "handle_websocket_message handles executing message with node present" do
+    job_id = SecureRandom.uuid
+
+    message = {
+      "type" => "executing",
+      "data" => {
+        "node" => "123",
+        "prompt_id" => job_id
+      }
+    }
+
+    # Should not call fetch_job_results_after_completion when node is present
+    ComfyUiService.expects(:fetch_job_results_after_completion).never
+
+    ComfyUiService.handle_websocket_message(message, job_id)
+  end
+
+  test "handle_websocket_message handles executing message with different prompt_id" do
+    job_id = SecureRandom.uuid
+    other_job_id = SecureRandom.uuid
+
+    message = {
+      "type" => "executing",
+      "data" => {
+        "node" => nil,
+        "prompt_id" => other_job_id
+      }
+    }
+
+    # Should not call fetch_job_results_after_completion for different job
+    ComfyUiService.expects(:fetch_job_results_after_completion).never
+
+    ComfyUiService.handle_websocket_message(message, job_id)
+  end
+
+  test "handle_websocket_message handles execution_error with message field" do
+    job_id = SecureRandom.uuid
+
+    message = {
+      "type" => "execution_error",
+      "data" => {
+        "message" => "Error from message field"
+      }
+    }
+
+    assert_raises(StandardError) do
+      ComfyUiService.handle_websocket_message(message, job_id)
+    end
+  end
+
+  test "handle_websocket_message handles execution_error with unknown error" do
+    job_id = SecureRandom.uuid
+
+    message = {
+      "type" => "execution_error",
+      "data" => {}
+    }
+
+    assert_raises(StandardError) do
+      ComfyUiService.handle_websocket_message(message, job_id)
+    end
   end
 end
