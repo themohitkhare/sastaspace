@@ -142,4 +142,51 @@ class SecurityHeadersMiddlewareTest < ActiveSupport::TestCase
       Rails.env = original_env
     end
   end
+
+  test "CSP includes Cloudflare Insights domains" do
+    env = Rack::MockRequest.env_for("http://example.com")
+    _, headers, _ = @middleware.call(env)
+
+    csp = headers["Content-Security-Policy"]
+    assert_includes csp, "https://static.cloudflareinsights.com"
+    assert_includes csp, "https://cloudflareinsights.com"
+  end
+
+  test "CSP includes frame-ancestors and base-uri directives" do
+    env = Rack::MockRequest.env_for("http://example.com")
+    _, headers, _ = @middleware.call(env)
+
+    csp = headers["Content-Security-Policy"]
+    assert_includes csp, "frame-ancestors 'none'"
+    assert_includes csp, "base-uri 'self'"
+    assert_includes csp, "form-action 'self'"
+  end
+
+  test "Permissions Policy includes microphone" do
+    env = Rack::MockRequest.env_for("http://example.com")
+    _, headers, _ = @middleware.call(env)
+
+    assert_includes headers["Permissions-Policy"], "microphone=()"
+  end
+
+  test "initializes with app" do
+    app = ->(env) { [ 200, {}, [ "OK" ] ] }
+    middleware = SecurityHeadersMiddleware.new(app)
+
+    assert_not_nil middleware
+    env = Rack::MockRequest.env_for("http://example.com")
+    status, _, _ = middleware.call(env)
+    assert_equal 200, status
+  end
+
+  test "returns status headers and response tuple" do
+    env = Rack::MockRequest.env_for("http://example.com")
+    result = @middleware.call(env)
+
+    assert_kind_of Array, result
+    assert_equal 3, result.size
+    assert_equal 200, result[0]
+    assert_kind_of Hash, result[1]
+    assert_kind_of Array, result[2]
+  end
 end
