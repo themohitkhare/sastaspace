@@ -47,9 +47,15 @@ class ExtractStockPhotoJob < ApplicationJob
     # Call ComfyUI for extraction
     Rails.logger.info "Calling ComfyUI for extraction (job: #{job_id})"
     broadcast_progress("Generating stock photo with AI...")
+
+    # Use a longer timeout for extraction (10 minutes) to handle complex generations or queueing
+    extraction_timeout = ENV.fetch("COMFY_UI_TIMEOUT", 600).to_i
+
     extraction_result = ComfyUiService.extract_stock_photo(
       original_image_blob: @image_blob,
-      extraction_prompt: extraction_prompt
+      extraction_prompt: extraction_prompt,
+      timeout: extraction_timeout,
+      inventory_item_id: @inventory_item_id
     )
 
     # Log detailed information about the extraction result
