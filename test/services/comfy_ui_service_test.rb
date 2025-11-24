@@ -311,14 +311,14 @@ class ComfyUiServiceTest < ActiveSupport::TestCase
         )
 
       # Stub polling to never complete (simulate timeout - fallback after WebSocket fails)
-      # Service polls up to 60 times, so stub all requests
+      # Service polls every 2 seconds. With timeout 2, it should try 1 time.
       WebMock.stub_request(:get, "http://localhost:8188/history/#{job_id}")
         .to_return(
           status: 200,
           body: { job_id => { "status" => { "completed" => false } } }.to_json,
           headers: { "Content-Type" => "application/json" }
         )
-        .times(60) # Stub all polling attempts
+        .times(1) # Stub 1 polling attempt
 
       # Stub sleep to prevent actual 2-second delays between polls
       # This makes the test run instantly while still testing timeout logic
@@ -330,7 +330,8 @@ class ComfyUiServiceTest < ActiveSupport::TestCase
 
       result = ComfyUiService.extract_stock_photo(
         original_image_blob: @image_blob,
-        extraction_prompt: @extraction_prompt
+        extraction_prompt: @extraction_prompt,
+        timeout: 2 # Short timeout for test
       )
 
       assert_equal false, result["success"]
@@ -1102,7 +1103,8 @@ class ComfyUiServiceTest < ActiveSupport::TestCase
 
       Object.any_instance.stubs(:sleep)
 
-      result = ComfyUiService.send(:poll_for_completion, job_id, max_attempts: 1)
+      # Use timeout: 2 which means 1 attempt (interval 2)
+      result = ComfyUiService.send(:poll_for_completion, job_id, timeout: 2)
 
       assert_equal true, result["success"]
       assert_equal job_id, result["job_id"]
@@ -1123,9 +1125,9 @@ class ComfyUiServiceTest < ActiveSupport::TestCase
       Object.any_instance.stubs(:sleep)
 
       # Should continue polling (non-200 doesn't raise, just continues)
-      # After max attempts, it times out
+      # After max attempts, it times out. timeout: 2 => 1 attempt
       assert_raises(StandardError) do
-        ComfyUiService.send(:poll_for_completion, job_id, max_attempts: 1, interval: 0)
+        ComfyUiService.send(:poll_for_completion, job_id, timeout: 2, interval: 2)
       end
     ensure
       Object.any_instance.unstub(:sleep) if Object.any_instance.respond_to?(:unstub)
@@ -1147,8 +1149,9 @@ class ComfyUiServiceTest < ActiveSupport::TestCase
       Object.any_instance.stubs(:sleep)
 
       # Empty history means job still processing, should timeout
+      # timeout: 2 => 1 attempt
       assert_raises(StandardError) do
-        ComfyUiService.send(:poll_for_completion, job_id, max_attempts: 1, interval: 0)
+        ComfyUiService.send(:poll_for_completion, job_id, timeout: 2, interval: 2)
       end
     ensure
       Object.any_instance.unstub(:sleep) if Object.any_instance.respond_to?(:unstub)
@@ -1169,7 +1172,7 @@ class ComfyUiServiceTest < ActiveSupport::TestCase
       Object.any_instance.stubs(:sleep)
 
       assert_raises(StandardError) do
-        ComfyUiService.send(:poll_for_completion, job_id, max_attempts: 1)
+        ComfyUiService.send(:poll_for_completion, job_id, timeout: 2)
       end
     ensure
       Object.any_instance.unstub(:sleep) if Object.any_instance.respond_to?(:unstub)
