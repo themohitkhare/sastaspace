@@ -110,5 +110,5 @@ group :test do
   gem "vcr", "~> 6.3"
   gem "minitest-reporters", "~> 1.7"
   gem "shoulda-matchers", "~> 7.0.1"
-  gem "mocha", "~> 2.7"
+  gem "mocha", "~> 2.8"
 end
