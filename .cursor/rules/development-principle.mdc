@@ -168,8 +168,54 @@ app/
 ### AI Integration
 - **Isolate Ollama integration** in service objects
 - **Cache AI results** aggressively - expensive to regenerate
-- **Handle AI timeouts** gracefully
+- **Handle AI timeouts** gracefully with retry logic and exponential backoff
 - **Version AI prompts** for reproducibility
+
+### AI Response Parsing (Critical!)
+- **NEVER assume AI models return perfect JSON** - they often include explanatory text, "thinking out loud", or markdown formatting
+- **Implement multi-strategy JSON extraction**:
+  1. Extract between first `{` and last `}`
+  2. Look for JSON in markdown code fences (` ```json ... ``` `)
+  3. Use line-by-line brace counting for complex cases
+- **Test with real-world AI responses** - not just perfect `.to_json` output
+- **Add production error cases to test suite immediately** when discovered
+- **Implement graceful fallbacks** when JSON extraction fails
+- **Log enough context** (first 300-500 chars) to debug parsing issues
+
+### Testing AI Integrations
+When testing systems that interact with AI/ML models:
+
+```ruby
+# ❌ BAD: Only test perfect cases
+test "parses response" do
+  json = { items: [] }.to_json
+  result = parse(json)
+  assert_equal 0, result["items"].length
+end
+
+# ✅ GOOD: Test messy real-world cases
+test "handles AI thinking out loud before JSON" do
+  response = "Let me analyze... wait, I should output JSON: {\"items\": []}"
+  result = parse(response)
+  assert_equal 0, result["items"].length
+end
+```
+
+**Key Testing Principles for AI:**
+1. **Test with actual model responses** when possible (use VCR cassettes)
+2. **Include "weird" test cases**: AI commentary, markdown, multiple JSON objects
+3. **Test malformed/incomplete responses** - AI can hallucinate or timeout mid-response
+4. **Never stub with perfect JSON** - use real examples from logs/production
+5. **Create dedicated test files** for AI parsing edge cases (e.g., `*_ai_parsing_test.rb`)
+6. **Production errors → Tests**: When you see a JSON parse error in production, add that exact response as a test case
+
+**Real-World AI Behaviors to Test:**
+- "Wait, let me correct that..." before JSON
+- JSON wrapped in ` ```json ... ``` ` code fences
+- Multiple JSON-like structures in one response
+- Incomplete JSON due to token limits
+- AI explaining its reasoning alongside JSON
+- JSON with trailing commentary
 
 ***
 
