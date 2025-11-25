@@ -185,4 +185,161 @@ class InventoryItemUpdateServiceTest < ActiveSupport::TestCase
     assert result[:success]
     assert_equal 2, @inventory_item.reload.additional_images.count
   end
+
+  test "update retriggers stock photo extraction when description changes" do
+    # Attach primary image (required for extraction)
+    primary_blob = ActiveStorage::Blob.create_and_upload!(
+      io: StringIO.new("primary image data"),
+      filename: "primary.jpg",
+      content_type: "image/jpeg"
+    )
+    @inventory_item.primary_image.attach(primary_blob)
+    @inventory_item.update_column(:stock_photo_extraction_completed_at, Time.current)
+
+    # Stub the extraction service
+    mock_service = mock("StockPhotoExtractionService")
+    mock_service.expects(:queue_extraction).returns("job-123")
+    StockPhotoExtractionService.expects(:new).returns(mock_service)
+
+    params = ActionController::Parameters.new({
+      inventory_item: {
+        description: "Updated description"
+      }
+    })
+
+    result = Services::InventoryItemUpdateService.new(
+      inventory_item: @inventory_item,
+      params: params
+    ).update
+
+    assert result[:success]
+    assert_nil @inventory_item.reload.stock_photo_extraction_completed_at
+  end
+
+  test "update retriggers stock photo extraction when category changes" do
+    # Attach primary image (required for extraction)
+    primary_blob = ActiveStorage::Blob.create_and_upload!(
+      io: StringIO.new("primary image data"),
+      filename: "primary.jpg",
+      content_type: "image/jpeg"
+    )
+    @inventory_item.primary_image.attach(primary_blob)
+    @inventory_item.update_column(:stock_photo_extraction_completed_at, Time.current)
+
+    new_category = create(:category, :clothing)
+
+    # Stub the extraction service
+    mock_service = mock("StockPhotoExtractionService")
+    mock_service.expects(:queue_extraction).returns("job-123")
+    StockPhotoExtractionService.expects(:new).returns(mock_service)
+
+    params = ActionController::Parameters.new({
+      inventory_item: {
+        category_id: new_category.id
+      }
+    })
+
+    result = Services::InventoryItemUpdateService.new(
+      inventory_item: @inventory_item,
+      params: params
+    ).update
+
+    assert result[:success]
+    assert_nil @inventory_item.reload.stock_photo_extraction_completed_at
+  end
+
+  test "update retriggers stock photo extraction when metadata changes" do
+    # Attach primary image (required for extraction)
+    primary_blob = ActiveStorage::Blob.create_and_upload!(
+      io: StringIO.new("primary image data"),
+      filename: "primary.jpg",
+      content_type: "image/jpeg"
+    )
+    @inventory_item.primary_image.attach(primary_blob)
+    @inventory_item.update_column(:stock_photo_extraction_completed_at, Time.current)
+
+    # Stub the extraction service
+    mock_service = mock("StockPhotoExtractionService")
+    mock_service.expects(:queue_extraction).returns("job-123")
+    StockPhotoExtractionService.expects(:new).returns(mock_service)
+
+    params = ActionController::Parameters.new({
+      inventory_item: {
+        metadata: { color: "blue", material: "cotton" }
+      }
+    })
+
+    result = Services::InventoryItemUpdateService.new(
+      inventory_item: @inventory_item,
+      params: params
+    ).update
+
+    assert result[:success]
+    assert_nil @inventory_item.reload.stock_photo_extraction_completed_at
+  end
+
+  test "update does not retrigger extraction when only purchase_price changes" do
+    # Set up item with known values
+    @inventory_item.update!(
+      description: "Original description",
+      category_id: @category.id
+    )
+
+    # Attach primary image
+    primary_blob = ActiveStorage::Blob.create_and_upload!(
+      io: StringIO.new("primary image data"),
+      filename: "primary.jpg",
+      content_type: "image/jpeg"
+    )
+    @inventory_item.primary_image.attach(primary_blob)
+    original_timestamp = Time.current
+    @inventory_item.update_column(:stock_photo_extraction_completed_at, original_timestamp)
+    @inventory_item.reload
+
+    # Capture original description to verify it doesn't change
+    original_description = @inventory_item.description
+
+    # Should NOT call extraction service when only purchase_price changes
+    StockPhotoExtractionService.expects(:new).never
+
+    params = ActionController::Parameters.new({
+      inventory_item: {
+        purchase_price: 99.99
+        # Only changing purchase_price, which is NOT in EXTRACTION_RELEVANT_FIELDS
+      }
+    })
+
+    result = Services::InventoryItemUpdateService.new(
+      inventory_item: @inventory_item,
+      params: params
+    ).update
+
+    assert result[:success]
+    @inventory_item.reload
+    # Description should remain the same (proving we didn't change extraction-relevant fields)
+    assert_equal original_description, @inventory_item.description
+    # Extraction timestamp should remain unchanged
+    assert_not_nil @inventory_item.stock_photo_extraction_completed_at
+  end
+
+  test "update does not retrigger extraction when item has no primary image" do
+    # No primary image attached
+    @inventory_item.update_column(:stock_photo_extraction_completed_at, Time.current)
+
+    # Should NOT call extraction service
+    StockPhotoExtractionService.expects(:new).never
+
+    params = ActionController::Parameters.new({
+      inventory_item: {
+        description: "Updated description"
+      }
+    })
+
+    result = Services::InventoryItemUpdateService.new(
+      inventory_item: @inventory_item,
+      params: params
+    ).update
+
+    assert result[:success]
+  end
 end

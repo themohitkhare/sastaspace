@@ -2,7 +2,11 @@ class ClothingDetectionJob < ApplicationJob
   # User-facing detection operations
   queue_as :default
 
-  # No discard_on or retry_on for this critical job - all failures should be visible
+  # Retry on network timeouts with exponential backoff
+  # These are transient errors that often succeed on retry
+  retry_on Net::ReadTimeout, Net::OpenTimeout, Errno::ECONNRESET, wait: :exponentially_longer, attempts: 3
+
+  # Don't discard on other errors - all non-timeout failures should be visible
 
   # Class method to get job status
   def self.get_status(job_id)
@@ -250,6 +254,20 @@ class ClothingDetectionJob < ApplicationJob
     return [] if items.empty?
 
     created_items = []
+
+    # DEDUPLICATION: Check if items from this blob already exist
+    # Find all inventory items that use this blob as primary_image
+    existing_items_with_blob = InventoryItem.joins(:primary_image_attachment)
+      .where(active_storage_attachments: { blob_id: @image_blob.id, name: "primary_image" })
+      .where(user_id: @user.id)
+
+    if existing_items_with_blob.exists?
+      Rails.logger.info "DEDUPLICATION: Found #{existing_items_with_blob.count} existing inventory items with blob #{@image_blob.id}. Skipping automatic creation."
+      Rails.logger.info "Existing item IDs: #{existing_items_with_blob.pluck(:id).join(', ')}"
+
+      # Return existing items instead of creating duplicates
+      return existing_items_with_blob.to_a
+    end
 
     items.each do |item_data|
       begin

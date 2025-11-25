@@ -205,6 +205,76 @@ class ImageProcessingJobTest < ActiveJob::TestCase
     assert log_message.present?, "Should log warning on error"
   end
 
+  test "strip_exif_data handles Vips errors gracefully" do
+    @inventory_item.primary_image.attach(
+      io: File.open(Rails.root.join("test", "fixtures", "files", "sample_image.jpg")),
+      filename: "test.jpg",
+      content_type: "image/jpeg"
+    )
+
+    job = ImageProcessingJob.new
+    image = @inventory_item.primary_image
+    image.stubs(:id).returns(192)
+
+    # Define Vips::Error if not already defined (for testing)
+    unless defined?(Vips::Error)
+      module Vips
+        class Error < StandardError; end
+      end
+    end
+
+    # Simulate Vips error (like "Bogus marker length")
+    mock_variant = mock
+    mock_variant.stubs(:processed).raises(Vips::Error.new("VipsJpeg: Bogus marker length"))
+    image.stubs(:variant).returns(mock_variant)
+
+    log_messages = []
+    Rails.logger.stubs(:warn).with { |msg| log_messages << msg; true }
+    Rails.logger.stubs(:debug).with { |msg| log_messages << msg; true }
+
+    # Should not raise, just log warning
+    assert_nothing_raised do
+      job.send(:strip_exif_data, image)
+    end
+
+    log_message = log_messages.find { |msg| msg.include?("Vips error") }
+    assert log_message.present?, "Should log Vips error warning"
+  end
+
+  test "process_image_variants handles Vips errors gracefully" do
+    @inventory_item.primary_image.attach(
+      io: File.open(Rails.root.join("test", "fixtures", "files", "sample_image.jpg")),
+      filename: "test.jpg",
+      content_type: "image/jpeg"
+    )
+
+    job = ImageProcessingJob.new
+    image = @inventory_item.primary_image
+    image.stubs(:id).returns(192)
+
+    # Define Vips::Error if not already defined (for testing)
+    unless defined?(Vips::Error)
+      module Vips
+        class Error < StandardError; end
+      end
+    end
+
+    # Simulate Vips error during variant generation
+    image.stubs(:variant).raises(Vips::Error.new("VipsJpeg: Bogus marker length"))
+
+    log_messages = []
+    Rails.logger.stubs(:warn).with { |msg| log_messages << msg; true }
+    Rails.logger.stubs(:debug).with { |msg| log_messages << msg; true }
+
+    # Should not raise, just log warning
+    assert_nothing_raised do
+      job.send(:process_image_variants, image)
+    end
+
+    log_message = log_messages.find { |msg| msg.include?("Vips error") }
+    assert log_message.present?, "Should log Vips error warning"
+  end
+
   test "perform handles StandardError and re-raises" do
     @inventory_item.primary_image.attach(
       io: File.open(Rails.root.join("test", "fixtures", "files", "sample_image.jpg")),

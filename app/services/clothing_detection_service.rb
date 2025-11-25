@@ -6,7 +6,22 @@ class ClothingDetectionService
   DETECTION_PROMPT = <<~PROMPT
     CLOTHING DETECTION FOR SASTASPACE INVENTORY
 
-    Analyze this image and identify ALL clothing and fashion items visible on all people. Return only valid JSON.
+    Analyze this image and identify ALL UNIQUE clothing and fashion items visible on all people. Return only valid JSON.
+
+    CRITICAL RULES FOR UNIQUE ITEM IDENTIFICATION:
+    - Each physical item should be identified EXACTLY ONCE - no duplicates
+    - If you see a yellow floral shirt, list it as ONE item (not as both "dress" and "shirt")
+    - Choose the MOST ACCURATE category for each item - don't list the same item under multiple categories
+    - Example: A yellow floral garment is either a "shirt" OR a "dress", not both
+    - If uncertain about category, choose the most specific one that fits
+    - Count distinct physical items, not possible interpretations
+
+    CRITICAL IMAGE FILTERING RULES:
+    - IF this is a screenshot containing UI elements (buttons, menus, app interface, text overlays, watermarks, borders), IGNORE all non-clothing content
+    - IF image contains phone frames, app interfaces, or digital overlays, focus ONLY on the actual clothing visible through/in the image
+    - IF clothing is shown in a photo within a screenshot (e.g., social media post, shopping app), analyze ONLY the clothing in that inner photo
+    - IGNORE: UI buttons, navigation bars, text overlays, app interfaces, watermarks, logos that aren't part of the clothing item itself
+    - Focus EXCLUSIVELY on physical clothing and accessories worn by people in the photo
 
     {
       "total_items_detected": number,
@@ -40,13 +55,23 @@ class ClothingDetectionService
 
     IMPORTANT:
     - Return ONLY valid JSON, no markdown formatting or additional text
-    - Detect ALL visible items: clothing (tops, bottoms, outerwear), shoes, bags, accessories, jewelry, etc.
+    - Detect ALL UNIQUE visible items: clothing (tops, bottoms, outerwear), shoes, bags, accessories, jewelry, etc.
+    - Each physical item should appear EXACTLY ONCE in the list - NO DUPLICATES
+    - If unsure between categories (e.g., is it a dress or a long shirt?), choose the MOST ACCURATE one and list it ONCE
     - description should be RICH and COMPREHENSIVE for each item - include colors, materials, style, fit, season, occasion, and features. This is used for vector search and inventory management.
     - gender_styling MUST be one of: "men", "women", or "unisex" for each item
     - extraction_priority should reflect how important/visible each item is
     - confidence should reflect how certain you are about each item's analysis
-    - Include at least 2-3 items minimum if multiple items are visible
     - Be thorough but accurate - don't invent items that aren't clearly visible
+    - DUPLICATE CHECK: Before finalizing, review your list and remove any duplicate items (same physical garment listed twice)
+    - SCREENSHOT FILTERING: If this is a screenshot with UI elements, analyze ONLY the clothing items visible in the actual photo, NOT the UI elements, buttons, or interface
+
+    EXAMPLES OF CORRECT DETECTION:
+    ✓ CORRECT: One yellow floral shirt detected as {"item_name": "Yellow Floral Button-Up Shirt", "category": "tops", "subcategory": "shirt"}
+    ✗ WRONG: Same item detected twice as "Light-Colored Patterned Dress" AND "Yellow Polo Shirt"
+
+    ✓ CORRECT: Black trousers detected once as {"item_name": "Black Dress Trousers", "category": "bottoms"}
+    ✗ WRONG: Same trousers detected as "Dark Trousers" AND "Black Pants"
   PROMPT
 
   def initialize(image_blob:, user:, model_name: "qwen3-vl:8b")
@@ -209,7 +234,25 @@ class ClothingDetectionService
       end
 
       # Use RubyLLM's 'with:' parameter to pass the image file path
-      assistant_message = chat.ask(prompt, with: image_path)
+      # Retry logic with exponential backoff for network timeouts
+      max_retries = 3
+      retry_count = 0
+      assistant_message = nil
+
+      begin
+        assistant_message = chat.ask(prompt, with: image_path)
+      rescue Net::ReadTimeout, Net::OpenTimeout, Errno::ECONNRESET => e
+        retry_count += 1
+        if retry_count <= max_retries
+          wait_time = 2 ** retry_count # Exponential backoff: 2s, 4s, 8s
+          Rails.logger.warn "Network timeout (attempt #{retry_count}/#{max_retries}), retrying in #{wait_time}s: #{e.class.name}"
+          sleep(wait_time)
+          retry
+        else
+          Rails.logger.error "Network timeout after #{max_retries} retries: #{e.message}"
+          raise StandardError, "AI analysis timed out after #{max_retries} retries. Ollama may be overloaded or the image may be too complex."
+        end
+      end
 
       # Clean up temp file if we created one
       if temp_file
@@ -241,6 +284,12 @@ class ClothingDetectionService
         raise StandardError, "Ollama service unavailable. Please ensure Ollama is running."
       end
       raise e
+    ensure
+      # Ensure temp file cleanup even if error occurs
+      if temp_file
+        temp_file.close rescue nil
+        temp_file.unlink rescue nil
+      end
     end
   end
 
@@ -264,41 +313,83 @@ class ClothingDetectionService
   end
 
   def parse_analysis_response(content)
-    # Try to extract JSON from the response
-    json_match = content.match(/\{[\s\S]*\}/m)
+    # Extract JSON from response, handling AI's explanatory text
+    # Strategy: Find the first valid JSON object that parses successfully
 
-    if json_match
-      parsed = JSON.parse(json_match[0])
+    # First, try to find JSON between first { and last }
+    first_brace = content.index("{")
+    last_brace = content.rindex("}")
 
-      # Ensure items array exists
-      parsed["items"] ||= []
-      parsed["total_items_detected"] = parsed["items"].length
-      parsed["people_count"] ||= 0
+    if first_brace && last_brace && first_brace < last_brace
+      json_candidate = content[first_brace..last_brace]
 
-      # Ensure each item has required fields
-      parsed["items"] = parsed["items"].map do |item|
-        item["id"] ||= "item_#{SecureRandom.hex(4)}"
-        item["confidence"] ||= 0.5
-        item["gender_styling"] ||= "unisex" # Default to unisex if not specified
-        item["extraction_priority"] ||= "medium"
-        item["pattern_type"] ||= "solid"
-        item["style_category"] ||= "casual"
-        item
+      # Try parsing this candidate
+      begin
+        parsed = JSON.parse(json_candidate)
+        return format_parsed_results(parsed)
+      rescue JSON::ParserError => e
+        Rails.logger.debug "First attempt failed: #{e.message}, trying alternative extraction"
+      end
+    end
+
+    # Fallback: Try to extract JSON using code fence markers (```json ... ```)
+    if content.include?("```json") || content.include?("```")
+      json_match = content.match(/```(?:json)?\s*(\{[\s\S]*?\})\s*```/m)
+      if json_match
+        begin
+          parsed = JSON.parse(json_match[1])
+          return format_parsed_results(parsed)
+        rescue JSON::ParserError
+          # Continue to next strategy
+        end
+      end
+    end
+
+    # Last resort: Find lines that look like JSON (start with { or end with })
+    # and try to reconstruct the JSON object
+    json_lines = []
+    in_json = false
+    brace_count = 0
+
+    content.each_line do |line|
+      # Start capturing when we see an opening brace at start of line (trimmed)
+      if !in_json && line.strip.start_with?("{")
+        in_json = true
+        json_lines = []
       end
 
-      parsed
-    else
-      Rails.logger.warn "Could not parse JSON from AI response: #{content.truncate(200)}"
-      {
-        "items" => [],
-        "total_items_detected" => 0,
-        "people_count" => 0,
-        "parse_error" => true,
-        "error" => "Could not parse response"
-      }
+      if in_json
+        json_lines << line
+        brace_count += line.count("{") - line.count("}")
+
+        # Stop when braces are balanced
+        if brace_count == 0
+          json_str = json_lines.join
+          begin
+            parsed = JSON.parse(json_str)
+            return format_parsed_results(parsed)
+          rescue JSON::ParserError
+            # Reset and continue looking
+            in_json = false
+            json_lines = []
+            brace_count = 0
+          end
+        end
+      end
     end
+
+    # If all extraction strategies failed
+    Rails.logger.warn "Could not parse JSON from AI response. First 300 chars: #{content[0...300]}"
+    {
+      "items" => [],
+      "total_items_detected" => 0,
+      "people_count" => 0,
+      "parse_error" => true,
+      "error" => "Could not extract valid JSON from response"
+    }
   rescue JSON::ParserError => e
     Rails.logger.error "JSON parse error: #{e.message}"
+    Rails.logger.debug "Problematic content: #{content[0...500]}"
     {
       "items" => [],
       "total_items_detected" => 0,
@@ -306,6 +397,26 @@ class ClothingDetectionService
       "parse_error" => true,
       "error" => e.message
     }
+  end
+
+  def format_parsed_results(parsed)
+    # Ensure items array exists
+    parsed["items"] ||= []
+    parsed["total_items_detected"] = parsed["items"].length
+    parsed["people_count"] ||= 0
+
+    # Ensure each item has required fields
+    parsed["items"] = parsed["items"].map do |item|
+      item["id"] ||= "item_#{SecureRandom.hex(4)}"
+      item["confidence"] ||= 0.5
+      item["gender_styling"] ||= "unisex" # Default to unisex if not specified
+      item["extraction_priority"] ||= "medium"
+      item["pattern_type"] ||= "solid"
+      item["style_category"] ||= "casual"
+      item
+    end
+
+    parsed
   end
 
   def validate_and_enhance_results(results)
@@ -330,9 +441,90 @@ class ClothingDetectionService
 
         item
       end
+
+      # POST-PROCESSING DEDUPLICATION: Remove duplicate items based on similarity
+      results["items"] = deduplicate_detected_items(results["items"])
+      results["total_items_detected"] = results["items"].length
     end
 
     results
+  end
+
+  # Deduplicate detected items based on name and category similarity
+  # This is a safety net in case the AI model returns the same item multiple times
+  def deduplicate_detected_items(items)
+    return items if items.empty?
+
+    unique_items = []
+    seen_items = []
+
+    items.each do |item|
+      # Extract key attributes
+      name = (item["item_name"] || item[:item_name] || "").downcase.strip
+      category = (item["category"] || item[:category] || "").downcase.strip
+      color = (item["color_primary"] || item[:color_primary] || "").downcase.strip
+
+      # Normalize name by removing common descriptive words
+      normalized_name = name
+        .gsub(/\b(light|dark|colored|patterned|long|short)\b/, "")
+        .gsub(/\b(dress|shirt|top|blouse|polo)\b/, "garment") # Treat similar tops as same base type
+        .gsub(/\s+/, " ")
+        .strip
+
+      # Check for duplicates by comparing with already seen items
+      is_duplicate = seen_items.any? do |seen|
+        seen_name = seen[:normalized_name]
+        seen_category = seen[:category]
+        seen_color = seen[:color]
+
+        # Same if: Same category AND same color AND similar name
+        same_category = category == seen_category || (category == "tops" && seen_category == "tops")
+        same_color = color == seen_color
+
+        # Check name similarity using multiple strategies:
+        # 1. Exact match after normalization
+        # 2. One name contains the other
+        # 3. Significant word overlap (at least 60% of words match)
+        similar_name = false
+        if normalized_name.present? && seen_name.present?
+          similar_name = (normalized_name == seen_name) ||
+                         (normalized_name.include?(seen_name)) ||
+                         (seen_name.include?(normalized_name)) ||
+                         (word_overlap_percentage(normalized_name, seen_name) >= 0.6)
+        end
+
+        same_category && same_color && similar_name
+      end
+
+      if is_duplicate
+        Rails.logger.info "DEDUPLICATION: Skipping duplicate item '#{name}' (similar to existing item)"
+        next
+      end
+
+      seen_items << { normalized_name: normalized_name, category: category, color: color, original_name: name }
+      unique_items << item
+    end
+
+    if unique_items.length < items.length
+      Rails.logger.info "DEDUPLICATION: Removed #{items.length - unique_items.length} duplicate items from detection results"
+    end
+
+    unique_items
+  end
+
+  # Calculate percentage of word overlap between two strings
+  def word_overlap_percentage(str1, str2)
+    words1 = str1.split
+    words2 = str2.split
+
+    return 1.0 if words1 == words2
+    return 0.0 if words1.empty? || words2.empty?
+
+    # Find common words
+    common_words = (words1 & words2).length
+    smaller_set_size = [ words1.length, words2.length ].min
+
+    common_words.to_f / smaller_set_size
   end
 
   def filter_by_user_preference(items)

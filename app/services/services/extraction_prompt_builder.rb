@@ -14,6 +14,12 @@ module Services
         *** PROFESSIONAL E-COMMERCE PRODUCT PHOTOGRAPHY GENERATION ***
         Target Subject: #{item_name.upcase}
 
+        CRITICAL SOURCE IMAGE FILTERING:
+        - IF source is a screenshot with UI elements (buttons, menus, app interface, borders), EXTRACT ONLY the clothing item itself
+        - IGNORE all digital overlays, phone frames, app interfaces, navigation elements, text overlays, watermarks
+        - IF clothing appears within a photo inside a screenshot (social media post, shopping app), extract ONLY that specific clothing item
+        - Focus EXCLUSIVELY on the physical clothing/accessory product itself, not the digital container it's displayed in
+
         CONTEXT:
         Transform the source image into a premium e-commerce product photograph suitable for high-end fashion retail websites like Zara, H&M, Uniqlo, or luxury brands.
         Create a professional product photo that customers would see on an online shopping website.
@@ -33,22 +39,23 @@ module Services
         #{presentation_style_for_category}
 
         GENERATION DIRECTIVES:
-        1. SUBJECT FOCUS: Completely isolate the #{item_name}. Remove ALL human elements: person, model, body parts, hands, arms, legs, face, hair, skin.
-        2. PRESENTATION: #{presentation_instruction}
-        3. COMPOSITION: Centered, professional product photography composition. Item should fill 75-85% of frame. Maintain natural proportions.
-        4. LIGHTING: Professional e-commerce studio lighting - soft, even, diffused. No harsh shadows. Neutral white balance (5500K). Subtle rim lighting to show texture and depth.
-        5. BACKGROUND: Pure solid white background (#FFFFFF, RGB 255,255,255). Completely seamless, no gradients, no shadows, no texture. Professional product photography standard.
-        6. FIDELITY: PRESERVE exact colors, textures, patterns, logos, and material details from source. Do NOT invent new features, colors, or details.
-        7. RESTORATION: If parts were obscured (by body, arms, hair, or other objects), intelligently reconstruct them to show the complete garment naturally and accurately.
-        8. QUALITY: High-resolution, sharp focus throughout. Professional product photography quality suitable for zoom-in detail views.
-        9. ORIENTATION: Front-facing view showing the item as it would appear on a product page. For tops/jackets: show front with collar/opening visible. For bottoms: show front with waistband and leg opening visible.
+        1. SOURCE FILTERING: If source is a screenshot or contains UI elements, extract ONLY the #{item_name} itself. Completely remove: screenshot borders, UI buttons, app interfaces, navigation bars, status bars, phone frames, social media overlays, watermarks, text overlays, digital artifacts.
+        2. SUBJECT FOCUS: Completely isolate the #{item_name}. Remove ALL human elements: person, model, body parts, hands, arms, legs, face, hair, skin.
+        3. PRESENTATION: #{presentation_instruction}
+        4. COMPOSITION: Centered, professional product photography composition. Item should fill 75-85% of frame. Maintain natural proportions.
+        5. LIGHTING: Professional e-commerce studio lighting - soft, even, diffused. No harsh shadows. Neutral white balance (5500K). Subtle rim lighting to show texture and depth.
+        6. BACKGROUND: Pure solid white background (#FFFFFF, RGB 255,255,255). Completely seamless, no gradients, no shadows, no texture. Professional product photography standard.
+        7. FIDELITY: PRESERVE exact colors, textures, patterns, logos, and material details from the CLOTHING ITEM ONLY. Do NOT invent new features, colors, or details.
+        8. RESTORATION: If parts were obscured (by body, arms, hair, UI elements, or other objects), intelligently reconstruct them to show the complete garment naturally and accurately.
+        9. QUALITY: High-resolution, sharp focus throughout. Professional product photography quality suitable for zoom-in detail views.
+        10. ORIENTATION: Front-facing view showing the item as it would appear on a product page. For tops/jackets: show front with collar/opening visible. For bottoms: show front with waistband and leg opening visible.
 
         SPECIFIC REQUIREMENTS:
         #{description_based_requirements}
         #{category_specific_requirements}
 
         NEGATIVE PROMPT (STRICTLY AVOID):
-        human, person, model, body parts, skin, hands, arms, legs, face, hair, mannequin stand, visible mannequin, plastic mannequin, tied around waist, draped, worn, styled, messy background, noise, blur, distortion, low resolution, watermarks, text, overlay, filters, strong vignette, high contrast, dark shadows, colored background, gradient background, texture background, shadows on background, product tags visible, price tags, hangers visible, wrinkles, creases, folds that obscure details, casual styling, street style, lifestyle photography.
+        human, person, model, body parts, skin, hands, arms, legs, face, hair, mannequin stand, visible mannequin, plastic mannequin, tied around waist, draped, worn, styled, messy background, noise, blur, distortion, low resolution, watermarks, text, overlay, filters, strong vignette, high contrast, dark shadows, colored background, gradient background, texture background, shadows on background, product tags visible, price tags, hangers visible, wrinkles, creases, folds that obscure details, casual styling, street style, lifestyle photography, screenshot UI, app interface, buttons, navigation bars, phone frame, digital borders, status bar, social media interface, website chrome, browser elements, menu overlays, popup windows, notification badges, UI elements.
       PROMPT
     end
 

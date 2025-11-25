@@ -105,7 +105,9 @@ module Services
     def attach_additional_images_from_files(uploaded_files)
       return 0 unless uploaded_files.present?
 
-      count = 0
+      initial_count = @inventory_item.additional_images.count
+      successfully_attached = 0
+
       Array(uploaded_files).reject(&:blank?).each do |image|
         # Skip if not an uploaded file (could be empty string)
         next unless image.is_a?(ActionDispatch::Http::UploadedFile)
@@ -126,18 +128,27 @@ module Services
           )
 
           @inventory_item.additional_images.attach(blob)
+          successfully_attached += 1
 
-          if @inventory_item.additional_images.attached?
-             count += 1
-          end
+          Rails.logger.info "Attached additional image blob #{blob.id} to inventory item #{@inventory_item.id}"
         rescue StandardError => e
           Rails.logger.error "Error attaching additional image: #{e.message}"
           Rails.logger.error e.backtrace.first(5).join("\n")
         end
       end
+
       # Reload to ensure attachments are persisted and accessible
-      @inventory_item.reload if count > 0
-      count
+      @inventory_item.reload if successfully_attached > 0
+
+      # Verify actual attachment count increased
+      final_count = @inventory_item.additional_images.count
+      actual_attached = final_count - initial_count
+
+      if actual_attached != successfully_attached
+        Rails.logger.warn "Expected to attach #{successfully_attached} images, but only #{actual_attached} were attached"
+      end
+
+      actual_attached
     end
 
     # Handle blob_id from params or session (for AI uploads)

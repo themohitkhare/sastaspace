@@ -41,8 +41,8 @@ RubyLLM.configure do |config|
 
   # Retry configuration
   config.max_retries = (ENV["MAX_RETRIES"] || 3).to_i
-  config.retry_interval = (ENV["RETRY_INTERVAL"] || 1.0).to_f
-  config.request_timeout = (ENV["REQUEST_TIMEOUT"] || 120).to_i
+  config.retry_interval = (ENV["RETRY_INTERVAL"] || 2.0).to_f # Increased from 1.0 to 2.0 seconds
+  config.request_timeout = (ENV["REQUEST_TIMEOUT"] || 180).to_i # Increased from 120 to 180 seconds for vision models
 
   # Use the new association-based acts_as API (recommended)
   config.use_new_acts_as = true

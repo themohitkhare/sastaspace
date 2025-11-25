@@ -289,8 +289,8 @@ class InventoryItemWorkflowsTest < ActionDispatch::IntegrationTest
     item.reload
     assert_not item.primary_image.attached?
 
-    # Reattach with new image
-    file2 = fixture_file_upload("sample_image.jpg", "image/jpeg")
+    # Reattach with new image (different file to ensure different blob ID)
+    file2 = fixture_file_upload("test_image.jpg", "image/jpeg")
     post "/api/v1/inventory_items/#{item.id}/primary_image",
          params: { image: file2 },
          headers: api_v1_headers(@token)
@@ -298,7 +298,7 @@ class InventoryItemWorkflowsTest < ActionDispatch::IntegrationTest
     assert_success_response
     item.reload
     assert item.primary_image.attached?
-    assert_not_equal first_blob_id, item.primary_image.blob.id
+    assert_not_equal first_blob_id, item.primary_image.blob.id, "Reattached image should have different blob ID when using different file"
   end
 
   # Error Recovery Workflow
