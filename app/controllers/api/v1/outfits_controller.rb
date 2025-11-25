@@ -189,17 +189,20 @@ module Api
         end
 
         # Get AI-powered suggestions using VectorSearchService
-        suggested_items = VectorSearchService.suggest_outfit_items(
+        # Returns array of hashes with :item, :match_score, :reasoning, :badges
+        suggested_data_raw = VectorSearchService.suggest_outfit_items(
           current_user,
           outfit_items,
           limit: limit,
           exclude_ids: exclude_ids
         )
 
-        Rails.logger.info "Found #{suggested_items.count} suggestions for outfit #{@outfit.id}"
+        Rails.logger.info "Found #{suggested_data_raw.count} suggestions for outfit #{@outfit.id}"
 
-        # Serialize suggested items using the serializer
-        suggested_data = suggested_items.map { |item| Api::V1::InventoryItemSerializer.new(item).as_json }
+        # Serialize suggested items using the OutfitSuggestionSerializer
+        suggested_data = suggested_data_raw.map do |suggestion_hash|
+          Api::V1::OutfitSuggestionSerializer.new(suggestion_hash).as_json
+        end
 
         render json: {
           success: true,
@@ -207,9 +210,9 @@ module Api
             items: suggested_data,
             outfit_id: @outfit.id,
             existing_items_count: outfit_items.count,
-            suggestions_count: suggested_items.count
+            suggestions_count: suggested_data_raw.count
           },
-          message: suggested_items.any? ? "AI suggestions generated successfully" : "No suggestions available. Try adding more items to your wardrobe.",
+          message: suggested_data_raw.any? ? "AI suggestions generated successfully" : "No suggestions available. Try adding more items to your wardrobe.",
           timestamp: Time.current.iso8601
         }
       rescue ActiveRecord::RecordNotFound

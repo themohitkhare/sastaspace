@@ -90,8 +90,10 @@ class VectorSearchService
     # Get item IDs to exclude (items already in outfit)
     excluded_item_ids = (exclude_ids + items.map(&:id)).uniq
 
-    # Use caching for outfit suggestions
-    Caching::VectorCacheService.cache_outfit_suggestions(user, outfit_items, limit: limit, exclude_ids: excluded_item_ids) do
+      # Note: We can't use the standard cache here because we need to return enriched data
+      # (match_score, reasoning, badges), not just items. Cache will be handled differently.
+      # For now, skip caching to avoid breaking the structure - can optimize later
+      # Caching::VectorCacheService.cache_outfit_suggestions(user, outfit_items, limit: limit, exclude_ids: excluded_item_ids) do
       # Analyze existing outfit to determine what's missing
       existing_categories = items.map { |item| item.category&.name&.downcase }.compact
       existing_category_names = items.map { |item| item.category&.name }.compact
@@ -164,11 +166,37 @@ class VectorSearchService
         end
       end
 
-      # Sort by score (highest first) and return top items
-      suggestions.sort_by { |s| -s[:score] }
-                 .first(limit)
-                 .map { |s| s[:item] }
-    end
+      # Sort by score (highest first) and normalize scores
+      sorted_suggestions = suggestions.sort_by { |s| -s[:score] }.first(limit)
+
+      # Normalize scores to 0-1 range and add enhanced reasoning
+      max_score = sorted_suggestions.first&.dig(:score) || 1.0
+      sorted_suggestions.map do |suggestion|
+        normalized_score = max_score > 0 ? (suggestion[:score] / max_score).round(2) : 0.0
+        # Clamp between 0 and 1
+        normalized_score = [ 0.0, [ 1.0, normalized_score ].min ].max
+
+        # Build enhanced reasoning
+        reasoning = build_enhanced_reasoning(
+          suggestion[:item],
+          suggestion[:reason],
+          items,
+          existing_category_names,
+          suggestion[:score],
+          normalized_score
+        )
+
+        # Determine badges (missing_categories is in outer scope)
+        badges = determine_badges(normalized_score, suggestion[:item], existing_category_names, missing_categories)
+
+        {
+          item: suggestion[:item],
+          match_score: normalized_score,
+          reasoning: reasoning,
+          badges: badges
+        }
+      end
+    # end  # End of cache block (commented out for now)
   end
 
   private
@@ -252,6 +280,97 @@ class VectorSearchService
     else
       "Complements your outfit"
     end
+  end
+
+  def self.build_enhanced_reasoning(candidate_item, base_reason, outfit_items, existing_categories, raw_score, match_score)
+    tags = []
+    primary_reason = "Style match"
+    details = base_reason
+
+    # Analyze color coordination
+    candidate_color = candidate_item.color || candidate_item.metadata&.dig("color")
+    outfit_colors = outfit_items.map { |item| item.color || item.metadata&.dig("color") }.compact
+
+    if candidate_color.present? && outfit_colors.any?
+      # Check for color coordination
+      if outfit_colors.include?(candidate_color)
+        tags << "similar_color"
+        primary_reason = "Color coordination"
+        details = "Matches the #{candidate_color} in your outfit"
+      elsif ColorCoordinationService.normalize_colors(candidate_color).any? { |c| ColorCoordinationService.normalize_colors(outfit_colors.first).include?(c) }
+        tags << "complementary_color"
+        primary_reason = "Color coordination"
+        details = "Complements your #{outfit_colors.first} items"
+      end
+    end
+
+    # Check for style consistency
+    candidate_category = candidate_item.category&.name&.downcase || ""
+    if existing_categories.map(&:downcase).include?(candidate_category)
+      tags << "style_match"
+      primary_reason = "Style consistency" unless tags.include?("similar_color")
+      details = "Matches your #{candidate_item.category&.name} style"
+    end
+
+    # Check for complementary category
+    outfit_items.each do |outfit_item|
+      if complementary_category?(outfit_item.category&.name, candidate_item.category&.name)
+        tags << "complementary_style"
+        primary_reason = "Perfect pairing" unless tags.include?("similar_color")
+        details = "Pairs perfectly with your #{outfit_item.category&.name}"
+        break
+      end
+    end
+
+    # Check for occasion appropriateness (if outfit has occasion metadata)
+    # This is a placeholder - can be enhanced with actual occasion analysis
+    tags << "occasion_appropriate" if match_score > 0.7
+
+    # Fallback to base reason if no specific reason found
+    if primary_reason == "Style match" && details == base_reason
+      details = base_reason
+    end
+
+    {
+      primary: primary_reason,
+      details: details,
+      tags: tags.uniq
+    }
+  end
+
+  def self.determine_badges(match_score, candidate_item, existing_categories, missing_categories)
+    badges = []
+
+    # Best match badge (top 20% match score)
+    badges << "best_match" if match_score >= 0.8
+
+    # Completes outfit badge (fills missing category type)
+    candidate_category = candidate_item.category&.name&.downcase || ""
+    if missing_categories.any?
+      # Check if candidate matches any missing category type
+      missing_categories.each do |missing_type|
+        # missing_type is like "top", "bottom", "shoe"
+        # Check if candidate category name includes the missing type
+        category_patterns = {
+          "top" => [ "top", "shirt", "blouse", "t-shirt", "sweater" ],
+          "bottom" => [ "bottom", "jean", "pant", "skirt", "short" ],
+          "shoe" => [ "shoe", "boot", "sneaker", "sandal" ]
+        }
+
+        patterns = category_patterns[missing_type.downcase] || []
+        if patterns.any? { |pattern| candidate_category.include?(pattern) }
+          badges << "completes_outfit"
+          break
+        end
+      end
+    end
+
+    # Trending badge (high wear count indicates popularity)
+    if candidate_item.respond_to?(:wear_count) && candidate_item.wear_count.to_i > 5
+      badges << "trending"
+    end
+
+    badges
   end
 
   # Validate and sanitize vector input to prevent SQL injection
