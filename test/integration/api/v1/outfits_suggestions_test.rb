@@ -100,6 +100,41 @@ class Api::V1::OutfitsSuggestionsTest < ActionDispatch::IntegrationTest
     assert body["data"]["items"].is_a?(Array)
   end
 
+  test "GET /api/v1/outfits/:id/suggestions returns enhanced suggestion data" do
+    get "/api/v1/outfits/#{@outfit.id}/suggestions",
+        headers: api_headers
+
+    assert_response :success
+    body = json_response
+    assert body["success"]
+
+    # Verify enhanced suggestion structure
+    if body["data"]["items"].any?
+      first_item = body["data"]["items"].first
+
+      # Verify new fields are present
+      assert first_item.key?("match_score"), "Should include match_score"
+      assert first_item.key?("reasoning"), "Should include reasoning"
+      assert first_item.key?("badges"), "Should include badges"
+
+      # Verify reasoning structure
+      reasoning = first_item["reasoning"]
+      assert reasoning.is_a?(Hash), "Reasoning should be a hash"
+      assert reasoning.key?("primary"), "Reasoning should have primary field"
+      assert reasoning.key?("details"), "Reasoning should have details field"
+      assert reasoning.key?("tags"), "Reasoning should have tags field"
+      assert reasoning["tags"].is_a?(Array), "Tags should be an array"
+
+      # Verify match_score is between 0 and 1
+      match_score = first_item["match_score"]
+      assert match_score.is_a?(Numeric), "match_score should be numeric"
+      assert match_score >= 0.0 && match_score <= 1.0, "match_score should be between 0 and 1"
+
+      # Verify badges is an array
+      assert first_item["badges"].is_a?(Array), "badges should be an array"
+    end
+  end
+
   private
 
   def api_headers

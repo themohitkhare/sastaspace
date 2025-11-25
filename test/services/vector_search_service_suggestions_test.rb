@@ -41,8 +41,14 @@ class VectorSearchServiceSuggestionsTest < ActiveSupport::TestCase
 
     assert suggestions.is_a?(Array)
     # Should suggest bottoms or shoes, not another top
-    suggestions.each do |suggestion|
-      assert_not_equal @top_item.id, suggestion.id, "Should not suggest the same item"
+    suggestions.each do |suggestion_hash|
+      item = suggestion_hash[:item]
+      assert_not_nil item, "Suggestion should have an item"
+      assert_not_equal @top_item.id, item.id, "Should not suggest the same item"
+      # Verify enhanced data structure
+      assert suggestion_hash.key?(:match_score), "Should include match_score"
+      assert suggestion_hash.key?(:reasoning), "Should include reasoning"
+      assert suggestion_hash.key?(:badges), "Should include badges"
     end
   end
 
@@ -54,7 +60,7 @@ class VectorSearchServiceSuggestionsTest < ActiveSupport::TestCase
       exclude_ids: [ @bottom_item.id ]
     )
 
-    excluded_ids = suggestions.map(&:id)
+    excluded_ids = suggestions.map { |s| s[:item].id }
     assert_not_includes excluded_ids, @bottom_item.id, "Should exclude specified item"
     assert_not_includes excluded_ids, @top_item.id, "Should exclude items in outfit"
   end
@@ -63,8 +69,10 @@ class VectorSearchServiceSuggestionsTest < ActiveSupport::TestCase
     suggestions = VectorSearchService.suggest_outfit_items(@user, @outfit, limit: 5)
 
     assert suggestions.is_a?(Array)
-    suggestions.each do |suggestion|
-      assert_not_equal @top_item.id, suggestion.id
+    suggestions.each do |suggestion_hash|
+      item = suggestion_hash[:item]
+      assert_not_nil item, "Suggestion should have an item"
+      assert_not_equal @top_item.id, item.id
     end
   end
 
@@ -78,7 +86,7 @@ class VectorSearchServiceSuggestionsTest < ActiveSupport::TestCase
     suggestions = VectorSearchService.suggest_outfit_items(@user, [ @top_item ], limit: 10)
 
     # Should include items from missing categories (bottoms, shoes)
-    suggested_categories = suggestions.map { |s| s.category&.name&.downcase }.compact
+    suggested_categories = suggestions.map { |s| s[:item].category&.name&.downcase }.compact
     assert suggested_categories.any? { |cat| cat.include?("jean") || cat.include?("bottom") || cat.include?("shoe") || cat.include?("sneaker") }
   end
 
@@ -138,7 +146,7 @@ class VectorSearchServiceSuggestionsTest < ActiveSupport::TestCase
     suggestions = VectorSearchService.suggest_outfit_items(@user, items, limit: 5)
     assert suggestions.is_a?(Array)
     # Should suggest items from different categories
-    suggested_categories = suggestions.map { |s| s.category&.name&.downcase }.compact
+    suggested_categories = suggestions.map { |s| s[:item].category&.name&.downcase }.compact
     # At least some should be different from tops
     assert suggested_categories.any? { |cat| !cat.include?("top") } || suggestions.empty?
   end
@@ -173,7 +181,7 @@ class VectorSearchServiceSuggestionsTest < ActiveSupport::TestCase
       exclude_ids: [ bottom_item.id ]
     )
 
-    suggested_ids = suggestions.map(&:id)
+    suggested_ids = suggestions.map { |s| s[:item].id }
     assert_not_includes suggested_ids, @top_item.id
     assert_not_includes suggested_ids, bottom_item.id
   end

@@ -196,10 +196,8 @@ class InventoryItemUpdateServiceTest < ActiveSupport::TestCase
     @inventory_item.primary_image.attach(primary_blob)
     @inventory_item.update_column(:stock_photo_extraction_completed_at, Time.current)
 
-    # Stub the extraction service
-    mock_service = mock("StockPhotoExtractionService")
-    mock_service.expects(:queue_extraction).returns("job-123")
-    StockPhotoExtractionService.expects(:new).returns(mock_service)
+    # Stub the job enqueueing so the service method can run and clear the timestamp
+    ExtractStockPhotoJob.expects(:perform_later).returns(true)
 
     params = ActionController::Parameters.new({
       inventory_item: {
@@ -228,10 +226,8 @@ class InventoryItemUpdateServiceTest < ActiveSupport::TestCase
 
     new_category = create(:category, :clothing)
 
-    # Stub the extraction service
-    mock_service = mock("StockPhotoExtractionService")
-    mock_service.expects(:queue_extraction).returns("job-123")
-    StockPhotoExtractionService.expects(:new).returns(mock_service)
+    # Stub the job enqueueing so the service method can run and clear the timestamp
+    ExtractStockPhotoJob.expects(:perform_later).returns(true)
 
     params = ActionController::Parameters.new({
       inventory_item: {
@@ -258,10 +254,8 @@ class InventoryItemUpdateServiceTest < ActiveSupport::TestCase
     @inventory_item.primary_image.attach(primary_blob)
     @inventory_item.update_column(:stock_photo_extraction_completed_at, Time.current)
 
-    # Stub the extraction service
-    mock_service = mock("StockPhotoExtractionService")
-    mock_service.expects(:queue_extraction).returns("job-123")
-    StockPhotoExtractionService.expects(:new).returns(mock_service)
+    # Stub the job enqueueing so the service method can run and clear the timestamp
+    ExtractStockPhotoJob.expects(:perform_later).returns(true)
 
     params = ActionController::Parameters.new({
       inventory_item: {
@@ -300,7 +294,7 @@ class InventoryItemUpdateServiceTest < ActiveSupport::TestCase
     original_description = @inventory_item.description
 
     # Should NOT call extraction service when only purchase_price changes
-    StockPhotoExtractionService.expects(:new).never
+    ExtractStockPhotoJob.expects(:perform_later).never
 
     params = ActionController::Parameters.new({
       inventory_item: {
@@ -327,7 +321,7 @@ class InventoryItemUpdateServiceTest < ActiveSupport::TestCase
     @inventory_item.update_column(:stock_photo_extraction_completed_at, Time.current)
 
     # Should NOT call extraction service
-    StockPhotoExtractionService.expects(:new).never
+    ExtractStockPhotoJob.expects(:perform_later).never
 
     params = ActionController::Parameters.new({
       inventory_item: {
@@ -341,5 +335,123 @@ class InventoryItemUpdateServiceTest < ActiveSupport::TestCase
     ).update
 
     assert result[:success]
+  end
+
+  test "update retriggers stock photo extraction when additional images are added" do
+    # Attach primary image (required for extraction)
+    primary_blob = ActiveStorage::Blob.create_and_upload!(
+      io: StringIO.new("primary image data"),
+      filename: "primary.jpg",
+      content_type: "image/jpeg"
+    )
+    @inventory_item.primary_image.attach(primary_blob)
+    @inventory_item.update_column(:stock_photo_extraction_completed_at, Time.current)
+
+    # Create uploaded file objects for additional images
+    tempfile1 = Tempfile.new([ "additional1", ".jpg" ])
+    tempfile1.write("additional image data 1")
+    tempfile1.rewind
+
+    tempfile2 = Tempfile.new([ "additional2", ".jpg" ])
+    tempfile2.write("additional image data 2")
+    tempfile2.rewind
+
+    additional_file1 = ActionDispatch::Http::UploadedFile.new(
+      tempfile: tempfile1,
+      filename: "additional1.jpg",
+      type: "image/jpeg"
+    )
+
+    additional_file2 = ActionDispatch::Http::UploadedFile.new(
+      tempfile: tempfile2,
+      filename: "additional2.jpg",
+      type: "image/jpeg"
+    )
+
+    # Stub the job enqueueing so the service method can run and clear the timestamp
+    ExtractStockPhotoJob.expects(:perform_later).returns(true)
+
+    params = ActionController::Parameters.new({
+      inventory_item: {
+        name: @inventory_item.name, # Keep name to avoid validation errors
+        additional_images: [ additional_file1, additional_file2 ]
+      }
+    })
+
+    result = Services::InventoryItemUpdateService.new(
+      inventory_item: @inventory_item,
+      params: params
+    ).update
+
+    assert result[:success]
+    @inventory_item.reload
+    assert_nil @inventory_item.stock_photo_extraction_completed_at
+    assert_equal 2, @inventory_item.additional_images.count
+  ensure
+    tempfile1&.close
+    tempfile1&.unlink
+    tempfile2&.close
+    tempfile2&.unlink
+  end
+
+  test "update retriggers stock photo extraction when extraction_prompt changes" do
+    # Attach primary image (required for extraction)
+    primary_blob = ActiveStorage::Blob.create_and_upload!(
+      io: StringIO.new("primary image data"),
+      filename: "primary.jpg",
+      content_type: "image/jpeg"
+    )
+    @inventory_item.primary_image.attach(primary_blob)
+    @inventory_item.update_column(:stock_photo_extraction_completed_at, Time.current)
+
+    # Stub the job enqueueing so the service method can run and clear the timestamp
+    ExtractStockPhotoJob.expects(:perform_later).returns(true)
+
+    params = ActionController::Parameters.new({
+      inventory_item: {
+        extraction_prompt: "Updated extraction prompt"
+      }
+    })
+
+    result = Services::InventoryItemUpdateService.new(
+      inventory_item: @inventory_item,
+      params: params
+    ).update
+
+    assert result[:success]
+    assert_nil @inventory_item.reload.stock_photo_extraction_completed_at
+  end
+
+  test "update retriggers stock photo extraction when subcategory changes" do
+    # Attach primary image (required for extraction)
+    primary_blob = ActiveStorage::Blob.create_and_upload!(
+      io: StringIO.new("primary image data"),
+      filename: "primary.jpg",
+      content_type: "image/jpeg"
+    )
+    @inventory_item.primary_image.attach(primary_blob)
+    @inventory_item.update_column(:stock_photo_extraction_completed_at, Time.current)
+
+    unique_name = "Tops #{SecureRandom.hex(4)}"
+    parent_category = create(:category, name: unique_name)
+    subcategory_name = "T-Shirts #{SecureRandom.hex(4)}"
+    new_subcategory = create(:category, name: subcategory_name, parent_id: parent_category.id)
+
+    # Stub the job enqueueing so the service method can run and clear the timestamp
+    ExtractStockPhotoJob.expects(:perform_later).returns(true)
+
+    params = ActionController::Parameters.new({
+      inventory_item: {
+        subcategory_id: new_subcategory.id
+      }
+    })
+
+    result = Services::InventoryItemUpdateService.new(
+      inventory_item: @inventory_item,
+      params: params
+    ).update
+
+    assert result[:success]
+    assert_nil @inventory_item.reload.stock_photo_extraction_completed_at
   end
 end
