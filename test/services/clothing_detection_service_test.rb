@@ -377,7 +377,12 @@ class ClothingDetectionServiceTest < ActiveSupport::TestCase
   end
 
   test "enhance_item_with_matching adds category_id when category matches" do
-    category = create(:category, name: "Tops")
+    # Find or create category with exact name "Tops" to match the search
+    category = Category.find_or_create_by(name: "Tops") do |c|
+      c.description = "Test category"
+      c.sort_order = 1
+      c.active = true
+    end
     item_data = { "category" => "tops" }
 
     enhanced = @service.send(:enhance_item_with_matching, item_data)
@@ -405,7 +410,7 @@ class ClothingDetectionServiceTest < ActiveSupport::TestCase
   end
 
   test "find_matching_category finds exact match" do
-    category = create(:category, name: "T-Shirts")
+    category = create(:category, name: "T-Shirts #{SecureRandom.hex(4)}")
 
     result = @service.send(:find_matching_category, "t-shirts")
 
@@ -413,7 +418,7 @@ class ClothingDetectionServiceTest < ActiveSupport::TestCase
   end
 
   test "find_matching_category finds synonym match" do
-    category = create(:category, name: "T-Shirts")
+    category = create(:category, name: "T-Shirts #{SecureRandom.hex(4)}")
 
     result = @service.send(:find_matching_category, "t-shirt")
 
@@ -421,7 +426,7 @@ class ClothingDetectionServiceTest < ActiveSupport::TestCase
   end
 
   test "find_matching_category finds word-based match" do
-    category = create(:category, name: "Running Shoes")
+    category = create(:category, name: "Running Shoes #{SecureRandom.hex(4)}")
 
     result = @service.send(:find_matching_category, "running")
 
@@ -429,7 +434,7 @@ class ClothingDetectionServiceTest < ActiveSupport::TestCase
   end
 
   test "find_matching_category finds partial match" do
-    category = create(:category, name: "Denim Jeans")
+    category = create(:category, name: "Denim Jeans #{SecureRandom.hex(4)}")
 
     result = @service.send(:find_matching_category, "denim")
 
@@ -474,6 +479,58 @@ class ClothingDetectionServiceTest < ActiveSupport::TestCase
     assert_raises(StandardError) do
       @service.send(:check_ollama_availability!)
     end
+  end
+
+  test "perform_analysis retries on network timeout and succeeds" do
+    skip "Requires Ollama setup" unless ollama_available?
+
+    # Stub chat creation
+    chat_mock = mock
+    @service.stubs(:create_chat).returns(chat_mock)
+
+    # First call times out, second succeeds
+    message_mock = mock
+    message_mock.stubs(:content).returns('{"items": [{"item_name": "shirt"}]}')
+
+    call_count = 0
+    chat_mock.stubs(:ask).with { |*args|
+      call_count += 1
+      if call_count == 1
+        raise Net::ReadTimeout.new("Timeout")
+      else
+        message_mock
+      end
+    }
+
+    Rails.logger.stubs(:warn)
+    Object.any_instance.stubs(:sleep) # Don't actually sleep in tests
+
+    result = @service.send(:perform_analysis)
+
+    assert result.present?
+    assert_equal 2, call_count, "Should have retried once after timeout"
+  end
+
+  test "perform_analysis fails after max retries on persistent timeout" do
+    skip "Requires Ollama setup" unless ollama_available?
+
+    # Stub chat creation
+    chat_mock = mock
+    @service.stubs(:create_chat).returns(chat_mock)
+
+    # Always timeout
+    chat_mock.stubs(:ask).raises(Net::ReadTimeout.new("Persistent timeout"))
+
+    Rails.logger.stubs(:warn)
+    Rails.logger.stubs(:error)
+    Object.any_instance.stubs(:sleep) # Don't actually sleep in tests
+
+    error = assert_raises(StandardError) do
+      @service.send(:perform_analysis)
+    end
+
+    assert_includes error.message, "timed out after"
+    assert_includes error.message, "retries"
   end
 
   test "check_ollama_availability! raises error when model not found" do
@@ -601,7 +658,12 @@ class ClothingDetectionServiceTest < ActiveSupport::TestCase
   end
 
   test "analyze enhances items with category matching" do
-    category = create(:category, name: "Tops")
+    # Find or create category with exact name "Tops" to match the search
+    category = Category.find_or_create_by(name: "Tops") do |c|
+      c.description = "Test category"
+      c.sort_order = 1
+      c.active = true
+    end
     @service.stubs(:check_ollama_availability!)
     @service.stubs(:perform_analysis).returns({
       "total_items_detected" => 1,

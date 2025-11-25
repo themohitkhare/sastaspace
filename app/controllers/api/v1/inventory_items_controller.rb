@@ -241,15 +241,13 @@ module Api
 
       # PATCH /api/v1/inventory_items/:id
       def update
-        item_params = inventory_item_params
+        # Use service for consistent update logic and automatic extraction retrigger
+        result = Services::InventoryItemUpdateService.new(
+          inventory_item: @inventory_item,
+          params: params
+        ).update
 
-        # Handle metadata merging - merge incoming metadata with existing instead of replacing
-        if item_params[:metadata].present?
-          existing_metadata = @inventory_item.metadata || {}
-          item_params[:metadata] = existing_metadata.merge(item_params[:metadata])
-        end
-
-        if @inventory_item.update(item_params)
+        if result[:success]
           render json: {
             success: true,
             data: {
@@ -264,7 +262,7 @@ module Api
             error: {
               code: "VALIDATION_ERROR",
               message: "Inventory item update failed",
-              details: @inventory_item.errors.as_json
+              details: result[:errors].as_json
             },
             timestamp: Time.current.iso8601
           }, status: :unprocessable_entity

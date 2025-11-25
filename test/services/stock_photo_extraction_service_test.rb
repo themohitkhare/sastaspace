@@ -191,4 +191,77 @@ class StockPhotoExtractionServiceTest < ActiveSupport::TestCase
     result = service.instance_variable_get(:@analysis_results)
     assert result.is_a?(Hash)
   end
+
+  test "build_analysis_results_from_item builds correct hash" do
+    category = create(:category, name: "Tops #{SecureRandom.hex(4)}")
+    brand = create(:brand, name: "Nike #{SecureRandom.hex(4)}")
+    item = create(:inventory_item,
+      user: @user,
+      category: category,
+      brand: brand,
+      name: "Blue Shirt",
+      description: "A nice blue shirt",
+      color: "blue",
+      material: "cotton",
+      style_notes: "casual"
+    )
+
+    results = StockPhotoExtractionService.build_analysis_results_from_item(item)
+
+    assert_equal "Blue Shirt", results["name"]
+    assert_equal "A nice blue shirt", results["description"]
+    assert_equal category.name, results["category_name"]
+    assert_equal category.name, results["category_matched"]
+    assert_equal "cotton", results["material"]
+    assert_equal "casual", results["style_notes"]
+    assert_equal brand.name, results["brand_matched"]
+    assert_equal [ "blue" ], results["colors"]
+    assert_equal true, results["gender_appropriate"]
+    assert_equal 0.9, results["confidence"]
+  end
+
+  test "queue_for_item queues extraction for item with primary image" do
+    category = create(:category, name: "Tops #{SecureRandom.hex(4)}")
+    item = create(:inventory_item, user: @user, category: category)
+    item.primary_image.attach(@image_blob)
+
+    assert_enqueued_with(job: ExtractStockPhotoJob) do
+      job_id = StockPhotoExtractionService.queue_for_item(item)
+      assert_not_nil job_id
+    end
+  end
+
+  test "queue_for_item returns nil for item without primary image" do
+    item = create(:inventory_item, user: @user)
+
+    job_id = StockPhotoExtractionService.queue_for_item(item)
+    assert_nil job_id
+  end
+
+  test "queue_for_item clears completion timestamp when clear_completion_timestamp is true" do
+    category = create(:category, name: "Tops #{SecureRandom.hex(4)}")
+    item = create(:inventory_item, user: @user, category: category)
+    item.primary_image.attach(@image_blob)
+    item.update_column(:stock_photo_extraction_completed_at, Time.current)
+
+    assert_enqueued_with(job: ExtractStockPhotoJob) do
+      StockPhotoExtractionService.queue_for_item(item, clear_completion_timestamp: true)
+    end
+
+    assert_nil item.reload.stock_photo_extraction_completed_at
+  end
+
+  test "queue_for_item does not clear completion timestamp by default" do
+    category = create(:category, name: "Tops #{SecureRandom.hex(4)}")
+    item = create(:inventory_item, user: @user, category: category)
+    item.primary_image.attach(@image_blob)
+    timestamp = Time.current
+    item.update_column(:stock_photo_extraction_completed_at, timestamp)
+
+    assert_enqueued_with(job: ExtractStockPhotoJob) do
+      StockPhotoExtractionService.queue_for_item(item)
+    end
+
+    assert_equal timestamp.to_i, item.reload.stock_photo_extraction_completed_at.to_i
+  end
 end

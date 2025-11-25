@@ -17,8 +17,8 @@ class ClothingDetectionJobTest < ActiveJob::TestCase
   end
 
   test "job performs detection and creates analysis" do
-    category1 = create(:category, name: "Tops")
-    category2 = create(:category, name: "Bottoms")
+    category1 = create(:category, name: "Tops #{SecureRandom.hex(4)}")
+    category2 = create(:category, name: "Bottoms #{SecureRandom.hex(4)}")
     # Stub the detection service
     mock_result = {
       "total_items_detected" => 2,
@@ -93,7 +93,7 @@ class ClothingDetectionJobTest < ActiveJob::TestCase
   end
 
   test "job broadcasts progress updates" do
-    category = create(:category, name: "Tops")
+    category = create(:category, name: "Tops #{SecureRandom.hex(4)}")
     mock_result = {
       "total_items_detected" => 1,
       "items" => [
@@ -206,7 +206,7 @@ class ClothingDetectionJobTest < ActiveJob::TestCase
   end
 
   test "job uses LLM description when available" do
-    category = create(:category, name: "Tops")
+    category = create(:category, name: "Tops #{SecureRandom.hex(4)}")
     mock_result = {
       "total_items_detected" => 1,
       "items" => [
@@ -239,7 +239,7 @@ class ClothingDetectionJobTest < ActiveJob::TestCase
   end
 
   test "job builds description when LLM description not available" do
-    category = create(:category, name: "Tops")
+    category = create(:category, name: "Tops #{SecureRandom.hex(4)}")
     mock_result = {
       "total_items_detected" => 1,
       "items" => [
@@ -275,7 +275,7 @@ class ClothingDetectionJobTest < ActiveJob::TestCase
   end
 
   test "job builds description with all optional fields" do
-    category = create(:category, name: "Dresses")
+    category = create(:category, name: "Dresses #{SecureRandom.hex(4)}")
     mock_result = {
       "total_items_detected" => 1,
       "items" => [
@@ -321,7 +321,7 @@ class ClothingDetectionJobTest < ActiveJob::TestCase
   end
 
   test "job builds description with solid pattern (should not include pattern)" do
-    category = create(:category, name: "Bottoms")
+    category = create(:category, name: "Bottoms #{SecureRandom.hex(4)}")
     mock_result = {
       "total_items_detected" => 1,
       "items" => [
@@ -357,7 +357,7 @@ class ClothingDetectionJobTest < ActiveJob::TestCase
   end
 
   test "job builds description with minimal data" do
-    category = create(:category, name: "Uncategorized")
+    category = create(:category, name: "Uncategorized #{SecureRandom.hex(4)}")
     mock_result = {
       "total_items_detected" => 1,
       "items" => [
@@ -388,8 +388,8 @@ class ClothingDetectionJobTest < ActiveJob::TestCase
   end
 
   test "job handles category normalization with subcategory" do
-    parent_category = create(:category, name: "Tops")
-    subcategory = create(:category, name: "T-Shirts", parent_id: parent_category.id)
+    parent_category = create(:category, name: "Tops #{SecureRandom.hex(4)}")
+    subcategory = create(:category, name: "T-Shirts #{SecureRandom.hex(4)}", parent_id: parent_category.id)
 
     mock_result = {
       "total_items_detected" => 1,
@@ -422,7 +422,7 @@ class ClothingDetectionJobTest < ActiveJob::TestCase
   end
 
   test "job handles errors when creating inventory items" do
-    category = create(:category, name: "Tops")
+    category = create(:category, name: "Tops #{SecureRandom.hex(4)}")
     initial_count = @user.inventory_items.count
     mock_result = {
       "total_items_detected" => 2,
@@ -461,8 +461,56 @@ class ClothingDetectionJobTest < ActiveJob::TestCase
     assert_equal initial_count + 2, @user.inventory_items.count
   end
 
+  test "job prevents duplicate creation for same blob" do
+    category = create(:category, name: "Tops #{SecureRandom.hex(4)}")
+
+    # Create an existing inventory item with the same blob
+    existing_item = create(:inventory_item, user: @user, category: category)
+    existing_item.primary_image.attach(@image_blob)
+
+    initial_count = @user.inventory_items.count
+
+    mock_result = {
+      "total_items_detected" => 2,
+      "items" => [
+        {
+          "id" => "item_001",
+          "item_name" => "Blue Shirt",
+          "category_id" => category.id,
+          "gender_styling" => "men",
+          "confidence" => 0.9
+        },
+        {
+          "id" => "item_002",
+          "item_name" => "Black Pants",
+          "category_id" => category.id,
+          "gender_styling" => "unisex",
+          "confidence" => 0.85
+        }
+      ]
+    }
+
+    mock_service = stub
+    mock_service.stubs(:analyze).returns(mock_result)
+    ClothingDetectionService.stubs(:new).returns(mock_service)
+
+    ActionCable.server.stubs(:broadcast)
+    Rails.logger.stubs(:info)
+
+    ClothingDetectionJob.perform_now(@image_blob.id, @user.id)
+
+    # Should NOT create new items, count should remain the same
+    assert_equal initial_count, @user.inventory_items.count, "Should not create duplicate items for same blob"
+
+    # Verify the existing item is returned/found
+    items_with_blob = InventoryItem.joins(:primary_image_attachment)
+      .where(active_storage_attachments: { blob_id: @image_blob.id, name: "primary_image" })
+      .where(user_id: @user.id)
+    assert_equal 1, items_with_blob.count, "Should find the existing item with this blob"
+  end
+
   test "job handles attachment service errors gracefully" do
-    category = create(:category, name: "Tops")
+    category = create(:category, name: "Tops #{SecureRandom.hex(4)}")
     initial_count = @user.inventory_items.count
     mock_result = {
       "total_items_detected" => 1,
@@ -497,7 +545,7 @@ class ClothingDetectionJobTest < ActiveJob::TestCase
   end
 
   test "job builds description when item_name includes subcategory" do
-    category = create(:category, name: "Tops")
+    category = create(:category, name: "Tops #{SecureRandom.hex(4)}")
     mock_result = {
       "total_items_detected" => 1,
       "items" => [

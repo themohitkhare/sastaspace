@@ -4,8 +4,8 @@ require "test_helper"
 class QueryOptimizationTest < ActiveSupport::TestCase
   setup do
     @user = create(:user)
-    @category = create(:category, name: "Tops")
-    @subcategory = create(:category, name: "T-Shirts", parent_id: @category.id)
+    @category = create(:category, name: "Tops #{SecureRandom.hex(4)}")
+    @subcategory = create(:category, name: "T-Shirts #{SecureRandom.hex(4)}", parent_id: @category.id)
     @brand = create(:brand)
 
     # Create multiple items to test query performance

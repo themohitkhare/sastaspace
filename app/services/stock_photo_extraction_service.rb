@@ -11,6 +11,51 @@ class StockPhotoExtractionService
     @inventory_item_id = inventory_item_id
   end
 
+  # Build analysis_results hash from an InventoryItem
+  # This is the canonical way to build analysis_results for extraction
+  # @param item [InventoryItem] The inventory item to build analysis results from
+  # @return [Hash] Analysis results hash ready for extraction
+  def self.build_analysis_results_from_item(item)
+    {
+      "name" => item.name,
+      "description" => item.description,
+      "category_name" => item.category&.name,
+      "category_matched" => item.category&.name,
+      "subcategory" => item.subcategory&.name,
+      "material" => item.material,
+      "style" => item.style_notes,
+      "style_notes" => item.style_notes,
+      "brand_matched" => item.brand&.name,
+      "colors" => [ item.color ].compact,
+      "extraction_prompt" => item.extraction_prompt,
+      "gender_appropriate" => true,
+      "confidence" => 0.9
+    }
+  end
+
+  # Queue extraction for an inventory item (convenience method)
+  # Automatically builds analysis_results and queues the job
+  # @param item [InventoryItem] The inventory item to extract for
+  # @param clear_completion_timestamp [Boolean] Whether to clear the completion timestamp (for retriggering)
+  # @return [String] The job_id
+  def self.queue_for_item(item, clear_completion_timestamp: false)
+    return nil unless item.primary_image.attached?
+
+    # Clear completion timestamp if retriggering
+    item.update_column(:stock_photo_extraction_completed_at, nil) if clear_completion_timestamp
+
+    analysis_results = build_analysis_results_from_item(item)
+
+    service = new(
+      image_blob: item.primary_image.blob,
+      user: item.user,
+      analysis_results: analysis_results,
+      inventory_item_id: item.id
+    )
+
+    service.queue_extraction
+  end
+
   # Queue the extraction job
   # Returns the job_id if successful, raises error if validation fails
   def queue_extraction
