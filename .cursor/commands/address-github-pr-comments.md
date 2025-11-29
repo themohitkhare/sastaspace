@@ -1,11 +1,13 @@
 ---
-description: "Address pending GitHub PR comments by applying fixes to the codebase."
+description: "Address pending GitHub PR comments by applying fixes to the codebase. Use this when acting as Code-Agent to address Review-Agent feedback."
 globs: []
 ---
 
 # Address GitHub PR Comments
 
 You are tasked with resolving code review comments from a GitHub Pull Request.
+
+> **Note**: This is used by Code-Agent when addressing Review-Agent feedback. After fixing, re-request review by changing label back to `ready: review`.
 
 ## Prerequisites
 

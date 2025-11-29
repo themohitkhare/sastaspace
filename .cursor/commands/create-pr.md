@@ -1,11 +1,13 @@
 ---
-description: "Generate a Pull Request title and description based on the current git diff."
+description: "Generate a Pull Request title and description based on the current git diff. Use this when acting as Code-Agent to create PRs."
 globs: []
 ---
 
 # Create Pull Request Description
 
 Generate a structured PR description based on the uncommitted changes or the difference between the current branch and `main`.
+
+> **Note**: This is used by Code-Agent when creating PRs. Ensure the PR is labeled `ready: review` to trigger Review-Agent workflow.
 
 ## Steps
 

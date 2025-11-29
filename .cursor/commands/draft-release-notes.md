@@ -1,5 +1,5 @@
 ---
-description: "Draft release notes by analyzing the git log and categorizing changes."
+description: "Draft release notes by analyzing the git log and categorizing changes. Useful for release management outside of agent workflows."
 globs: []
 ---
 

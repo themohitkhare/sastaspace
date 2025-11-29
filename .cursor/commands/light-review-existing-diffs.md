@@ -1,5 +1,5 @@
 ---
-description: "Perform a light-weight review of the current uncommitted changes (git diff)."
+description: "Perform a light-weight review of the current uncommitted changes (git diff). Useful for quick pre-commit checks before Code-Agent creates a PR."
 globs: []
 ---
 
