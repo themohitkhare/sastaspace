@@ -11,9 +11,17 @@ class ClothingDetectionJobTest < ActiveJob::TestCase
   end
 
   test "job queues correctly" do
+    # Configure queue adapter to not perform jobs immediately
+    ActiveJob::Base.queue_adapter.perform_enqueued_jobs = false
+    ActiveJob::Base.queue_adapter.perform_enqueued_at_jobs = false
+
     assert_enqueued_with(job: ClothingDetectionJob, args: [ @image_blob.id, @user.id ]) do
       ClothingDetectionJob.perform_later(@image_blob.id, @user.id)
     end
+  ensure
+    # Restore queue adapter settings
+    ActiveJob::Base.queue_adapter.perform_enqueued_jobs = true
+    ActiveJob::Base.queue_adapter.perform_enqueued_at_jobs = true
   end
 
   test "job performs detection and creates analysis" do

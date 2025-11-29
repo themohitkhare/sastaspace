@@ -23,9 +23,17 @@ class ImageProcessingJobTest < ActiveJob::TestCase
       content_type: "image/jpeg"
     )
 
+    # Configure queue adapter to not perform jobs immediately
+    ActiveJob::Base.queue_adapter.perform_enqueued_jobs = false
+    ActiveJob::Base.queue_adapter.perform_enqueued_at_jobs = false
+
     assert_enqueued_with(job: ImageProcessingJob) do
       ImageProcessingJob.perform_later(@inventory_item)
     end
+  ensure
+    # Restore queue adapter settings
+    ActiveJob::Base.queue_adapter.perform_enqueued_jobs = true
+    ActiveJob::Base.queue_adapter.perform_enqueued_at_jobs = true
   end
 
   test "should process additional image variants" do

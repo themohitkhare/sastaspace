@@ -89,6 +89,10 @@ module Api
       end
 
       test "extract queues job successfully" do
+        # Configure queue adapter to not perform jobs immediately
+        ActiveJob::Base.queue_adapter.perform_enqueued_jobs = false
+        ActiveJob::Base.queue_adapter.perform_enqueued_at_jobs = false
+
         assert_enqueued_with(job: ExtractStockPhotoJob) do
           post "/api/v1/stock_extraction/extract",
             params: {
@@ -104,6 +108,10 @@ module Api
         assert_equal true, json["success"]
         assert json["data"]["job_id"].present?
         assert_equal "processing", json["data"]["status"]
+      ensure
+        # Restore queue adapter settings
+        ActiveJob::Base.queue_adapter.perform_enqueued_jobs = true
+        ActiveJob::Base.queue_adapter.perform_enqueued_at_jobs = true
       end
 
       test "extract handles missing blob" do

@@ -28,12 +28,20 @@ class ExtractStockPhotoJobTest < ActiveJob::TestCase
   end
 
   test "job queues correctly" do
+    # Configure queue adapter to not perform jobs immediately
+    ActiveJob::Base.queue_adapter.perform_enqueued_jobs = false
+    ActiveJob::Base.queue_adapter.perform_enqueued_at_jobs = false
+
     assert_enqueued_with(
       job: ExtractStockPhotoJob,
       args: [ @image_blob.id, @analysis_results, @user.id, @job_id ]
     ) do
       ExtractStockPhotoJob.perform_later(@image_blob.id, @analysis_results, @user.id, @job_id)
     end
+  ensure
+    # Restore queue adapter settings
+    ActiveJob::Base.queue_adapter.perform_enqueued_jobs = true
+    ActiveJob::Base.queue_adapter.perform_enqueued_at_jobs = true
   end
 
   test "job creates status entry in cache" do

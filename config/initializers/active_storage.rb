@@ -12,6 +12,12 @@ Rails.application.config.active_storage.variant_processor = :vips
 # Fallback: If VIPS fails, the serializer will use original images
 # This provides graceful degradation
 
+# Note: VIPS may emit warnings like "chunk data is too large" when processing
+# images with very large EXIF/metadata chunks. These warnings are harmless -
+# VIPS processes the images successfully anyway. They're logged to help identify
+# images that might benefit from metadata stripping. See ImageProcessingJob
+# for enhanced logging of image metadata.
+
 # In development, ensure Active Storage URLs use dev.sastaspace.com with HTTPS
 # This matches the Cloudflare proxy setup
 if Rails.env.development?
