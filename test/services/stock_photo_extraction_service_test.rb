@@ -20,6 +20,10 @@ class StockPhotoExtractionServiceTest < ActiveSupport::TestCase
   end
 
   test "queue_extraction enqueues job successfully" do
+    # Configure queue adapter to not perform jobs immediately
+    ActiveJob::Base.queue_adapter.perform_enqueued_jobs = false
+    ActiveJob::Base.queue_adapter.perform_enqueued_at_jobs = false
+
     service = StockPhotoExtractionService.new(
       image_blob: @image_blob,
       user: @user,
@@ -30,6 +34,10 @@ class StockPhotoExtractionServiceTest < ActiveSupport::TestCase
       job_id = service.queue_extraction
       assert_not_nil job_id
     end
+  ensure
+    # Restore queue adapter settings
+    ActiveJob::Base.queue_adapter.perform_enqueued_jobs = true
+    ActiveJob::Base.queue_adapter.perform_enqueued_at_jobs = true
   end
 
   test "queue_extraction raises error when image_blob is missing" do
@@ -110,6 +118,10 @@ class StockPhotoExtractionServiceTest < ActiveSupport::TestCase
   end
 
   test "queue_extraction accepts valid inventory_item_id" do
+    # Configure queue adapter to not perform jobs immediately
+    ActiveJob::Base.queue_adapter.perform_enqueued_jobs = false
+    ActiveJob::Base.queue_adapter.perform_enqueued_at_jobs = false
+
     item = create(:inventory_item, user: @user)
 
     service = StockPhotoExtractionService.new(
@@ -122,6 +134,10 @@ class StockPhotoExtractionServiceTest < ActiveSupport::TestCase
     assert_enqueued_with(job: ExtractStockPhotoJob) do
       service.queue_extraction
     end
+  ensure
+    # Restore queue adapter settings
+    ActiveJob::Base.queue_adapter.perform_enqueued_jobs = true
+    ActiveJob::Base.queue_adapter.perform_enqueued_at_jobs = true
   end
 
   test "sanitize_analysis_results handles ActionController::Parameters" do
@@ -221,6 +237,10 @@ class StockPhotoExtractionServiceTest < ActiveSupport::TestCase
   end
 
   test "queue_for_item queues extraction for item with primary image" do
+    # Configure queue adapter to not perform jobs immediately
+    ActiveJob::Base.queue_adapter.perform_enqueued_jobs = false
+    ActiveJob::Base.queue_adapter.perform_enqueued_at_jobs = false
+
     category = create(:category, name: "Tops #{SecureRandom.hex(4)}")
     item = create(:inventory_item, user: @user, category: category)
     item.primary_image.attach(@image_blob)
@@ -229,6 +249,10 @@ class StockPhotoExtractionServiceTest < ActiveSupport::TestCase
       job_id = StockPhotoExtractionService.queue_for_item(item)
       assert_not_nil job_id
     end
+  ensure
+    # Restore queue adapter settings
+    ActiveJob::Base.queue_adapter.perform_enqueued_jobs = true
+    ActiveJob::Base.queue_adapter.perform_enqueued_at_jobs = true
   end
 
   test "queue_for_item returns nil for item without primary image" do
@@ -239,6 +263,10 @@ class StockPhotoExtractionServiceTest < ActiveSupport::TestCase
   end
 
   test "queue_for_item clears completion timestamp when clear_completion_timestamp is true" do
+    # Configure queue adapter to not perform jobs immediately
+    ActiveJob::Base.queue_adapter.perform_enqueued_jobs = false
+    ActiveJob::Base.queue_adapter.perform_enqueued_at_jobs = false
+
     category = create(:category, name: "Tops #{SecureRandom.hex(4)}")
     item = create(:inventory_item, user: @user, category: category)
     item.primary_image.attach(@image_blob)
@@ -249,9 +277,17 @@ class StockPhotoExtractionServiceTest < ActiveSupport::TestCase
     end
 
     assert_nil item.reload.stock_photo_extraction_completed_at
+  ensure
+    # Restore queue adapter settings
+    ActiveJob::Base.queue_adapter.perform_enqueued_jobs = true
+    ActiveJob::Base.queue_adapter.perform_enqueued_at_jobs = true
   end
 
   test "queue_for_item does not clear completion timestamp by default" do
+    # Configure queue adapter to not perform jobs immediately
+    ActiveJob::Base.queue_adapter.perform_enqueued_jobs = false
+    ActiveJob::Base.queue_adapter.perform_enqueued_at_jobs = false
+
     category = create(:category, name: "Tops #{SecureRandom.hex(4)}")
     item = create(:inventory_item, user: @user, category: category)
     item.primary_image.attach(@image_blob)
@@ -263,5 +299,9 @@ class StockPhotoExtractionServiceTest < ActiveSupport::TestCase
     end
 
     assert_equal timestamp.to_i, item.reload.stock_photo_extraction_completed_at.to_i
+  ensure
+    # Restore queue adapter settings
+    ActiveJob::Base.queue_adapter.perform_enqueued_jobs = true
+    ActiveJob::Base.queue_adapter.perform_enqueued_at_jobs = true
   end
 end

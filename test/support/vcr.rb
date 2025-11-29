@@ -16,13 +16,20 @@ VCR.configure do |config|
 end
 
 # Configure WebMock
-# Allow real Ollama connections when ENABLE_OLLAMA_TESTS is set
+# CRITICAL: Block ALL external connections including ComfyUI (GPU service) by default
+# Only allow connections when explicitly enabled via environment variables
 if ENV["ENABLE_OLLAMA_TESTS"] == "true"
-  # Allow all localhost connections for Ollama testing
-  WebMock.allow_net_connect!(net_http_connect_on_start: true)
+  # Allow localhost connections for Ollama testing only (port 11434/11435)
+  WebMock.disable_net_connect!(allow_localhost: false)
+  WebMock.allow_net_connect!(net_http_connect_on_start: true, allow: %r{^http://localhost:(11434|11435)})
+elsif ENV["ENABLE_COMFY_UI_TESTS"] == "true"
+  # Allow localhost connections for ComfyUI testing only (port 8188)
+  WebMock.disable_net_connect!(allow_localhost: false)
+  WebMock.allow_net_connect!(net_http_connect_on_start: true, allow: %r{^http://localhost:8188})
 else
-  # Block external connections in normal tests
-  WebMock.disable_net_connect!(allow_localhost: true)
+  # Block ALL connections including localhost to prevent GPU usage
+  # This prevents accidental ComfyUI/Ollama calls during tests
+  WebMock.disable_net_connect!(allow_localhost: false)
 end
 
 # Ollama API stubs for testing
@@ -65,6 +72,15 @@ class ActiveSupport::TestCase
   def setup
     super
     WebMock.reset!
+
+    # CRITICAL: Stub ComfyUI availability check globally to prevent GPU usage
+    # Unless explicitly enabled via ENABLE_COMFY_UI_TESTS
+    unless ENV["ENABLE_COMFY_UI_TESTS"] == "true"
+      # Stub the availability check to raise error (will be caught by service)
+      # This prevents any accidental ComfyUI HTTP calls that could trigger GPU
+      WebMock.stub_request(:get, /http:\/\/localhost:8188\/$/)
+        .to_raise(Errno::ECONNREFUSED)
+    end
   end
 
   def teardown

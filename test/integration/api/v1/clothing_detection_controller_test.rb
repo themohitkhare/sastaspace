@@ -32,6 +32,10 @@ class Api::V1::ClothingDetectionControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "POST /api/v1/clothing_detection/analyze accepts image upload" do
+    # Configure queue adapter to not perform jobs immediately
+    ActiveJob::Base.queue_adapter.perform_enqueued_jobs = false
+    ActiveJob::Base.queue_adapter.perform_enqueued_at_jobs = false
+
     # The controller now queues a background job instead of processing synchronously
     assert_enqueued_with(job: ClothingDetectionJob) do
       post "/api/v1/clothing_detection/analyze",
@@ -47,6 +51,10 @@ class Api::V1::ClothingDetectionControllerTest < ActionDispatch::IntegrationTest
     assert body["data"]["user_id"].present?
     assert_equal "processing", body["data"]["status"]
     assert_equal "Clothing detection job queued successfully", body["data"]["message"]
+  ensure
+    # Restore queue adapter settings
+    ActiveJob::Base.queue_adapter.perform_enqueued_jobs = true
+    ActiveJob::Base.queue_adapter.perform_enqueued_at_jobs = true
   end
 
   test "POST /api/v1/clothing_detection/analyze rejects missing image" do
@@ -111,6 +119,10 @@ class Api::V1::ClothingDetectionControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "POST /api/v1/clothing_detection/analyze accepts model_name parameter" do
+    # Configure queue adapter to not perform jobs immediately
+    ActiveJob::Base.queue_adapter.perform_enqueued_jobs = false
+    ActiveJob::Base.queue_adapter.perform_enqueued_at_jobs = false
+
     assert_enqueued_with(job: ClothingDetectionJob) do
       post "/api/v1/clothing_detection/analyze",
            params: { image: @image_file, model_name: "custom-model:8b" },
@@ -120,6 +132,10 @@ class Api::V1::ClothingDetectionControllerTest < ActionDispatch::IntegrationTest
     assert_response :accepted
     body = json_response
     assert body["success"]
+  ensure
+    # Restore queue adapter settings
+    ActiveJob::Base.queue_adapter.perform_enqueued_jobs = true
+    ActiveJob::Base.queue_adapter.perform_enqueued_at_jobs = true
   end
 
   test "POST /api/v1/clothing_detection/analyze handles service errors gracefully" do

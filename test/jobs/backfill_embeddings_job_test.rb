@@ -46,6 +46,11 @@ class BackfillEmbeddingsJobTest < ActiveJob::TestCase
   end
 
   test "job re-queues itself if more items exist" do
+    # Configure queue adapter to not perform jobs immediately
+    # This allows us to test that the job is enqueued
+    ActiveJob::Base.queue_adapter.perform_enqueued_jobs = false
+    ActiveJob::Base.queue_adapter.perform_enqueued_at_jobs = false
+
     # Create items beyond batch size for this user
     # Store item IDs before processing since items may be reloaded
     additional_items = 15.times.map { create(:inventory_item, user: @user, category: @category, embedding_vector: nil) }
@@ -62,9 +67,9 @@ class BackfillEmbeddingsJobTest < ActiveJob::TestCase
     EmbeddingService.expects(:generate_for_item).at_least(5).returns(mock_vector)
 
     # The job should re-queue if there are more items after processing batch_size
-    # ActiveJob serializes keyword arguments with string keys like {"batch_size" => 5}
-    # We use assert_enqueued_jobs to check that a job was enqueued
-    assert_enqueued_jobs(1, only: BackfillEmbeddingsJob) do
+    # Use assert_enqueued_with to match the job with its arguments
+    # Note: ActiveJob serializes keyword arguments, so we check for batch_size in args
+    assert_enqueued_with(job: BackfillEmbeddingsJob) do
       BackfillEmbeddingsJob.perform_now(batch_size: 5)
     end
 
@@ -78,6 +83,10 @@ class BackfillEmbeddingsJobTest < ActiveJob::TestCase
     # Verify that items remain (so re-queuing was justified)
     remaining_count = InventoryItem.where(embedding_vector: nil).count
     assert remaining_count > 0, "Should have remaining items to justify re-queuing (remaining: #{remaining_count})"
+  ensure
+    # Restore queue adapter settings
+    ActiveJob::Base.queue_adapter.perform_enqueued_jobs = true
+    ActiveJob::Base.queue_adapter.perform_enqueued_at_jobs = true
   end
 
   test "job does not re-queue if all items processed" do

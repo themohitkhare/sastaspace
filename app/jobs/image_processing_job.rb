@@ -7,12 +7,15 @@ class ImageProcessingJob < ApplicationJob
     if additional_image_id
       # Process additional image
       image = inventory_item.additional_images.find(additional_image_id)
+      log_image_info(image, inventory_item, "additional")
       process_image_variants(image)
       strip_exif_data(image)
     else
       # Process primary image
-      process_image_variants(inventory_item.primary_image)
-      strip_exif_data(inventory_item.primary_image)
+      image = inventory_item.primary_image
+      log_image_info(image, inventory_item, "primary")
+      process_image_variants(image)
+      strip_exif_data(image)
     end
   rescue ActiveRecord::RecordNotFound => e
     Rails.logger.error "ImageProcessingJob: Image not found - #{e.message}"
@@ -22,6 +25,28 @@ class ImageProcessingJob < ApplicationJob
   end
 
   private
+
+  def log_image_info(image, inventory_item, image_type)
+    return unless image.present?
+
+    begin
+      # Check if image has a blob - works for both association proxies and Attachment objects
+      blob = image.blob
+      return unless blob.present?
+
+      # Log image metadata to help identify images that might trigger VIPS warnings
+      # "chunk data is too large" warnings are typically harmless but can indicate
+      # images with very large EXIF/metadata or high resolution
+      size_mb = blob.byte_size.to_f / (1024 * 1024)
+      Rails.logger.info(
+        "ImageProcessingJob: Processing #{image_type} image for item #{inventory_item.id} " \
+        "(blob_id: #{blob.id}, size: #{size_mb.round(2)}MB, content_type: #{blob.content_type})"
+      )
+    rescue StandardError => e
+      # Don't fail the job if metadata logging fails
+      Rails.logger.debug "ImageProcessingJob: Could not log image metadata: #{e.message}"
+    end
+  end
 
   def process_image_variants(image)
     return if image.nil? || (image.respond_to?(:attached?) && !image.attached?)

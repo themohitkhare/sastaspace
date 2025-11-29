@@ -46,10 +46,11 @@ class ImageUploadTest < ApplicationSystemTestCase
 
     # Step 3: Images
     image_path = Rails.root.join("test", "fixtures", "files", "sample_image.jpg")
+    image_path2 = Rails.root.join("test", "fixtures", "files", "test_image.jpg")
     attach_file "inventory_item[primary_image]", image_path, visible: false
 
     # Upload additional images
-    attach_file "inventory_item[additional_images][]", [ image_path, image_path ], visible: false
+    attach_file "inventory_item[additional_images][]", [ image_path, image_path2 ], visible: false
 
     page.execute_script("document.querySelector('form').requestSubmit()")
 

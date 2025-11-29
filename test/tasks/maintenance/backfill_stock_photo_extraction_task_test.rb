@@ -14,6 +14,10 @@ module Maintenance
     end
 
     test "processes items with images" do
+      # Configure queue adapter to not perform jobs immediately
+      ActiveJob::Base.queue_adapter.perform_enqueued_jobs = false
+      ActiveJob::Base.queue_adapter.perform_enqueued_at_jobs = false
+
       user = create(:user)
       item = create(:inventory_item, user: user)
 
@@ -27,6 +31,10 @@ module Maintenance
       end
 
       assert_equal 1, task.job_results[:queued].count
+    ensure
+      # Restore queue adapter settings
+      ActiveJob::Base.queue_adapter.perform_enqueued_jobs = true
+      ActiveJob::Base.queue_adapter.perform_enqueued_at_jobs = true
     end
 
     test "skips items without images" do

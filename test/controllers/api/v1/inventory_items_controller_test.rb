@@ -496,6 +496,10 @@ class Api::V1::InventoryItemsControllerTest < ActionDispatch::IntegrationTest
   # This controller test is redundant and has stubbing issues
 
   test "POST /api/v1/inventory_items/analyze_image_for_creation queues background job" do
+    # Configure queue adapter to not perform jobs immediately
+    ActiveJob::Base.queue_adapter.perform_enqueued_jobs = false
+    ActiveJob::Base.queue_adapter.perform_enqueued_at_jobs = false
+
     file = fixture_file_upload("sample_image.jpg", "image/jpeg")
 
     assert_enqueued_with(job: AnalyzeImageForCreationJob) do
@@ -508,6 +512,10 @@ class Api::V1::InventoryItemsControllerTest < ActionDispatch::IntegrationTest
     body = json_response
     assert body["data"]["job_id"].present?
     assert body["data"]["blob_id"].present?
+  ensure
+    # Restore queue adapter settings
+    ActiveJob::Base.queue_adapter.perform_enqueued_jobs = true
+    ActiveJob::Base.queue_adapter.perform_enqueued_at_jobs = true
   end
 
   test "GET /api/v1/inventory_items/analyze_image_status/:job_id requires job_id" do
