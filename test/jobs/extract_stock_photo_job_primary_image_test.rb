@@ -116,6 +116,9 @@ class ExtractStockPhotoJobPrimaryImageTest < ActiveJob::TestCase
     inventory_item.reload
 
     # Simulate user changing primary image to Image B
+    # Detach first to prevent purging of @image_blob (we want it to exist for the job)
+    inventory_item.primary_image.detach
+
     image_b_blob = ActiveStorage::Blob.create_and_upload!(
       io: File.open(Rails.root.join("test/fixtures/files/sample_image.jpg")),
       filename: "sample_image_b.jpg",
@@ -146,6 +149,9 @@ class ExtractStockPhotoJobPrimaryImageTest < ActiveJob::TestCase
     status = ExtractStockPhotoJob.get_status(@job_id)
 
     # Assertions: What SHOULD happen?
+    assert_equal "completed", status["status"], "Job failed with error: #{status["error"]}"
+    assert status["data"].present?, "Status data should be present"
+
     # Ideally, it should NOT replace Image B with Extracted A.
     # But currently logic falls back to finding item by blob A.
     # Blob A is detached (replaced by B).
@@ -172,6 +178,9 @@ class ExtractStockPhotoJobPrimaryImageTest < ActiveJob::TestCase
     inventory_item.reload
 
     # Simulate user changing primary image to Image B
+    # Detach first to prevent purging of @image_blob (we want it to exist for the job)
+    inventory_item.primary_image.detach
+
     image_b_blob = ActiveStorage::Blob.create_and_upload!(
       io: File.open(Rails.root.join("test/fixtures/files/sample_image.jpg")),
       filename: "sample_image_b.jpg",
@@ -197,6 +206,8 @@ class ExtractStockPhotoJobPrimaryImageTest < ActiveJob::TestCase
 
     inventory_item.reload
     status = ExtractStockPhotoJob.get_status(@job_id)
+
+    assert_equal "completed", status["status"], "Job failed with error: #{status["error"]}"
 
     # Currently, this FAILS to attach anything because it discards the item.
     # We want to fix it so it attaches to additional_images.
