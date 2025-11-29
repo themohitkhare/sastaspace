@@ -1,15 +1,52 @@
 <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-  <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">Outfit Canvas</h2>
+  <div class="flex items-center justify-between mb-4">
+    <h2 class="text-xl font-semibold text-gray-900 dark:text-white">Outfit Canvas</h2>
+    
+    <!-- Completeness Meter -->
+    <div class="flex items-center gap-3" data-outfit-builder-target="completenessContainer">
+      <div class="text-right">
+        <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Completeness</div>
+        <div class="text-sm font-bold text-gray-900 dark:text-white" data-outfit-builder-target="completenessText">0%</div>
+      </div>
+      <div class="w-12 h-12 relative flex items-center justify-center">
+        <svg class="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
+          <!-- Background Circle -->
+          <path class="text-gray-200 dark:text-gray-700" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-width="4" />
+          <!-- Progress Circle -->
+          <path 
+            data-outfit-builder-target="completenessRing"
+            class="text-primary-600 transition-all duration-1000 ease-out" 
+            stroke-dasharray="0, 100" 
+            d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" 
+            fill="none" 
+            stroke="currentColor" 
+            stroke-width="4" 
+          />
+        </svg>
+        <div class="absolute inset-0 flex items-center justify-center text-[10px]" data-outfit-builder-target="completenessIcon">
+          👕
+        </div>
+      </div>
+    </div>
+  </div>
   
   <div 
-    class="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-8 min-h-[300px] transition-colors"
+    class="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-8 min-h-[300px] transition-colors relative"
     data-outfit-builder-target="canvas"
   >
+    <!-- Missing Categories Hints -->
+    <div 
+      data-outfit-builder-target="hintsContainer"
+      class="absolute top-4 right-4 flex flex-col gap-2 pointer-events-none z-10"
+    >
+      <!-- Injected via JS -->
+    </div>
+
     <div 
       class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4"
       data-outfit-builder-target="selectedItems"
     >
-      <div class="text-center py-12 text-gray-500 dark:text-gray-400">
+      <div class="text-center py-12 text-gray-500 dark:text-gray-400 col-span-full">
         <svg class="mx-auto h-12 w-12 mb-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
         </svg>

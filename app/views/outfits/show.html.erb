@@ -29,6 +29,9 @@
     </div>
   </div>
 
+  <!-- AI Stylist Critique -->
+  <%= render partial: "outfit_critique", locals: { outfit: @outfit } %>
+
   <!-- Outfit Items -->
   <% if @outfit.inventory_items.any? %>
     <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 mb-6">

@@ -3,6 +3,7 @@ module Api
     class InventoryItemsController < BaseController
       before_action :authenticate_user!
       before_action :set_inventory_item, only: [ :show, :update, :destroy, :worn, :similar, :attach_primary_image, :attach_additional_images, :detach_primary_image, :detach_additional_image ]
+      before_action :check_inventory_quota, only: [ :create, :batch_create, :analyze_image_for_creation ]
 
       rescue_from ActionDispatch::Http::Parameters::ParseError, with: :handle_parse_error
 
@@ -659,6 +660,15 @@ module Api
       end
 
       private
+
+      def check_inventory_quota
+        QuotaService.check!(current_user, :inventory_items)
+      rescue QuotaService::QuotaExceededError => e
+        render json: {
+          success: false,
+          error: { code: "QUOTA_EXCEEDED", message: e.message }
+        }, status: :forbidden
+      end
 
       def set_inventory_item
         @inventory_item = current_user.inventory_items

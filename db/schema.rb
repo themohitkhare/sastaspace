@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2025_11_18_181549) do
+ActiveRecord::Schema[8.1].define(version: 2025_11_25_155338) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "vector"
@@ -50,14 +50,16 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_18_181549) do
     t.datetime "created_at", null: false
     t.boolean "high_confidence"
     t.string "image_hash"
-    t.integer "inventory_item_id", null: false
+    t.integer "inventory_item_id"
     t.string "model_used"
+    t.integer "outfit_id"
     t.integer "processing_time_ms"
     t.text "prompt_used"
     t.text "response"
     t.datetime "updated_at", null: false
     t.integer "user_id", null: false
     t.index ["inventory_item_id"], name: "index_ai_analyses_on_inventory_item_id"
+    t.index ["outfit_id"], name: "index_ai_analyses_on_outfit_id"
     t.index ["user_id"], name: "index_ai_analyses_on_user_id"
   end
 
@@ -382,11 +384,14 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_18_181549) do
     t.string "gender_preference", default: "unisex"
     t.string "last_name"
     t.string "password_digest"
+    t.string "plan_type", default: "free", null: false
+    t.string "stripe_customer_id"
     t.datetime "updated_at", null: false
     t.index ["admin"], name: "index_users_on_admin"
     t.index ["created_at"], name: "index_users_on_created_at"
     t.index ["email"], name: "index_users_on_email", unique: true
     t.index ["gender_preference"], name: "index_users_on_gender_preference"
+    t.index ["plan_type"], name: "index_users_on_plan_type"
   end
 
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"

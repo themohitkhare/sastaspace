@@ -5,6 +5,7 @@ class Outfit < ApplicationRecord
 
   has_many :outfit_items, dependent: :destroy
   has_many :inventory_items, through: :outfit_items
+  has_many :ai_analyses, dependent: :destroy
 
   validates :name, presence: true
   # Note: Outfits can exist without items initially (e.g., draft outfits)
