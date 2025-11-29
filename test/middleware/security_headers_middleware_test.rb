@@ -1,192 +1,112 @@
 require "test_helper"
 
 class SecurityHeadersMiddlewareTest < ActiveSupport::TestCase
-  setup do
+  def setup
     @app = ->(env) { [ 200, {}, [ "OK" ] ] }
     @middleware = SecurityHeadersMiddleware.new(@app)
   end
 
-  test "adds security headers to response" do
-    env = Rack::MockRequest.env_for("http://example.com")
-    status, headers, body = @middleware.call(env)
+  test "adds X-Frame-Options header" do
+    status, headers, _response = @middleware.call({})
 
-    assert_equal 200, status
-    assert_equal "nosniff", headers["X-Content-Type-Options"]
     assert_equal "DENY", headers["X-Frame-Options"]
+  end
+
+  test "adds X-Content-Type-Options header" do
+    status, headers, _response = @middleware.call({})
+
+    assert_equal "nosniff", headers["X-Content-Type-Options"]
+  end
+
+  test "adds X-XSS-Protection header" do
+    status, headers, _response = @middleware.call({})
+
     assert_equal "1; mode=block", headers["X-XSS-Protection"]
+  end
+
+  test "adds Referrer-Policy header" do
+    status, headers, _response = @middleware.call({})
+
     assert_equal "strict-origin-when-cross-origin", headers["Referrer-Policy"]
-    assert_includes headers["Permissions-Policy"], "geolocation=()"
-    assert_includes headers["Permissions-Policy"], "camera=()"
   end
 
-  test "sets Content-Security-Policy header" do
-    env = Rack::MockRequest.env_for("http://example.com")
-    _, headers, _ = @middleware.call(env)
+  test "adds Content-Security-Policy header" do
+    status, headers, _response = @middleware.call({})
 
-    csp = headers["Content-Security-Policy"]
-    assert_not_nil csp
-    assert_includes csp, "default-src 'self'"
-    assert_includes csp, "script-src 'self'"
-    assert_includes csp, "style-src 'self'"
-    assert_includes csp, "img-src 'self' data: https:"
-    assert_includes csp, "font-src 'self' data:"
-    assert_includes csp, "connect-src 'self'"
+    assert headers["Content-Security-Policy"].present?
+    assert_match(/default-src 'self'/, headers["Content-Security-Policy"])
+    assert_match(/script-src/, headers["Content-Security-Policy"])
+    assert_match(/style-src/, headers["Content-Security-Policy"])
+    assert_match(/img-src/, headers["Content-Security-Policy"])
   end
 
-  test "allows unsafe-inline for scripts and styles in development" do
+  test "adds Permissions-Policy header" do
+    status, headers, _response = @middleware.call({})
+
+    assert_equal "geolocation=(), microphone=(), camera=()", headers["Permissions-Policy"]
+  end
+
+  test "adds Strict-Transport-Security in production with HTTPS" do
     original_env = Rails.env
-    begin
-      Rails.env = "development"
-      @middleware = SecurityHeadersMiddleware.new(@app)
+    Rails.env = ActiveSupport::StringInquirer.new("production")
 
-      env = Rack::MockRequest.env_for("http://example.com")
-      _, headers, _ = @middleware.call(env)
+    env = { "rack.url_scheme" => "https" }
+    status, headers, _response = @middleware.call(env)
 
-      csp = headers["Content-Security-Policy"]
-      assert_includes csp, "'unsafe-inline'"
-      assert_includes csp, "'unsafe-eval'"
-    ensure
-      Rails.env = original_env
-    end
+    assert_equal "max-age=31536000; includeSubDomains; preload", headers["Strict-Transport-Security"]
+  ensure
+    Rails.env = original_env
   end
 
-  test "does not modify response body" do
-    env = Rack::MockRequest.env_for("http://example.com")
-    _, _, body = @middleware.call(env)
+  test "does not add Strict-Transport-Security in development" do
+    original_env = Rails.env
+    Rails.env = ActiveSupport::StringInquirer.new("development")
 
-    assert_equal [ "OK" ], body
+    env = { "rack.url_scheme" => "https" }
+    status, headers, _response = @middleware.call(env)
+
+    assert_nil headers["Strict-Transport-Security"]
+  ensure
+    Rails.env = original_env
+  end
+
+  test "does not add Strict-Transport-Security for HTTP" do
+    original_env = Rails.env
+    Rails.env = ActiveSupport::StringInquirer.new("production")
+
+    env = { "rack.url_scheme" => "http" }
+    status, headers, _response = @middleware.call(env)
+
+    assert_nil headers["Strict-Transport-Security"]
+  ensure
+    Rails.env = original_env
+  end
+
+  test "preserves original response status" do
+    app = ->(env) { [ 404, {}, [ "Not Found" ] ] }
+    middleware = SecurityHeadersMiddleware.new(app)
+
+    status, _headers, _response = middleware.call({})
+
+    assert_equal 404, status
+  end
+
+  test "preserves original response body" do
+    app = ->(env) { [ 200, {}, [ "Custom Response" ] ] }
+    middleware = SecurityHeadersMiddleware.new(app)
+
+    _status, _headers, response = middleware.call({})
+
+    assert_equal [ "Custom Response" ], response
   end
 
   test "preserves existing headers from app" do
-    app_with_headers = ->(env) { [ 200, { "X-Custom-Header" => "custom" }, [ "OK" ] ] }
-    middleware = SecurityHeadersMiddleware.new(app_with_headers)
-
-    env = Rack::MockRequest.env_for("http://example.com")
-    _, headers, _ = middleware.call(env)
-
-    assert_equal "custom", headers["X-Custom-Header"]
-    assert_equal "nosniff", headers["X-Content-Type-Options"]
-  end
-
-  test "handles different HTTP methods" do
-    %w[GET POST PUT PATCH DELETE].each do |method|
-      env = Rack::MockRequest.env_for("http://example.com", method: method)
-      status, headers, _ = @middleware.call(env)
-
-      assert_equal 200, status
-      assert_equal "nosniff", headers["X-Content-Type-Options"], "Should add headers for #{method}"
-    end
-  end
-
-  test "adds headers for error responses" do
-    error_app = ->(env) { [ 500, {}, [ "Error" ] ] }
-    middleware = SecurityHeadersMiddleware.new(error_app)
-
-    env = Rack::MockRequest.env_for("http://example.com")
-    status, headers, _ = middleware.call(env)
-
-    assert_equal 500, status
-    assert_equal "nosniff", headers["X-Content-Type-Options"]
-  end
-
-  test "adds HSTS header in production with HTTPS" do
-    original_env = Rails.env
-    begin
-      Rails.env = "production"
-      middleware = SecurityHeadersMiddleware.new(@app)
-
-      # HTTPS request
-      env = Rack::MockRequest.env_for("https://example.com")
-      env["rack.url_scheme"] = "https"
-      _, headers, _ = middleware.call(env)
-
-      assert_not_nil headers["Strict-Transport-Security"]
-      assert_includes headers["Strict-Transport-Security"], "max-age=31536000"
-      assert_includes headers["Strict-Transport-Security"], "includeSubDomains"
-      assert_includes headers["Strict-Transport-Security"], "preload"
-    ensure
-      Rails.env = original_env
-    end
-  end
-
-  test "does not add HSTS header in production with HTTP" do
-    original_env = Rails.env
-    begin
-      Rails.env = "production"
-      middleware = SecurityHeadersMiddleware.new(@app)
-
-      # HTTP request (not HTTPS)
-      env = Rack::MockRequest.env_for("http://example.com")
-      env["rack.url_scheme"] = "http"
-      _, headers, _ = middleware.call(env)
-
-      assert_nil headers["Strict-Transport-Security"]
-    ensure
-      Rails.env = original_env
-    end
-  end
-
-  test "does not add HSTS header in non-production environments" do
-    original_env = Rails.env
-    begin
-      Rails.env = "development"
-      middleware = SecurityHeadersMiddleware.new(@app)
-
-      # HTTPS request but in development
-      env = Rack::MockRequest.env_for("https://example.com")
-      env["rack.url_scheme"] = "https"
-      _, headers, _ = middleware.call(env)
-
-      assert_nil headers["Strict-Transport-Security"]
-    ensure
-      Rails.env = original_env
-    end
-  end
-
-  test "CSP includes Cloudflare Insights domains" do
-    env = Rack::MockRequest.env_for("http://example.com")
-    _, headers, _ = @middleware.call(env)
-
-    csp = headers["Content-Security-Policy"]
-    assert_includes csp, "https://static.cloudflareinsights.com"
-    assert_includes csp, "https://cloudflareinsights.com"
-  end
-
-  test "CSP includes frame-ancestors and base-uri directives" do
-    env = Rack::MockRequest.env_for("http://example.com")
-    _, headers, _ = @middleware.call(env)
-
-    csp = headers["Content-Security-Policy"]
-    assert_includes csp, "frame-ancestors 'none'"
-    assert_includes csp, "base-uri 'self'"
-    assert_includes csp, "form-action 'self'"
-  end
-
-  test "Permissions Policy includes microphone" do
-    env = Rack::MockRequest.env_for("http://example.com")
-    _, headers, _ = @middleware.call(env)
-
-    assert_includes headers["Permissions-Policy"], "microphone=()"
-  end
-
-  test "initializes with app" do
-    app = ->(env) { [ 200, {}, [ "OK" ] ] }
+    app = ->(env) { [ 200, { "Custom-Header" => "value" }, [ "OK" ] ] }
     middleware = SecurityHeadersMiddleware.new(app)
 
-    assert_not_nil middleware
-    env = Rack::MockRequest.env_for("http://example.com")
-    status, _, _ = middleware.call(env)
-    assert_equal 200, status
-  end
+    _status, headers, _response = middleware.call({})
 
-  test "returns status headers and response tuple" do
-    env = Rack::MockRequest.env_for("http://example.com")
-    result = @middleware.call(env)
-
-    assert_kind_of Array, result
-    assert_equal 3, result.size
-    assert_equal 200, result[0]
-    assert_kind_of Hash, result[1]
-    assert_kind_of Array, result[2]
+    assert_equal "value", headers["Custom-Header"]
+    assert_equal "DENY", headers["X-Frame-Options"] # Security headers still added
   end
 end

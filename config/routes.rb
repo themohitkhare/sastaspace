@@ -119,6 +119,7 @@ Rails.application.routes.draw do
           patch :favorite
           get :suggestions
           get :completeness
+          post :critique  # AI Critique
           post :duplicate
           put :toggle_favorite
           post :inventory_items

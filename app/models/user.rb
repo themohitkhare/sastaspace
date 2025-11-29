@@ -5,6 +5,9 @@ class User < ApplicationRecord
   # This prevents any application-level code from modifying admin privileges
   attr_readonly :admin
 
+  # Plan types
+  enum :plan_type, { free: "free", premium: "premium" }, default: :free
+
   validates :email, presence: true, uniqueness: true, format: { with: URI::MailTo::EMAIL_REGEXP }
   validates :password, presence: true,
                       length: { minimum: 8 },

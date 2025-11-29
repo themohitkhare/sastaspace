@@ -1,4 +1,16 @@
 class EmbeddingService
+  # Expected embedding dimensions for the database
+  EXPECTED_DIMENSIONS = 1536
+
+  # Embedding model to use (configurable via ENV)
+  # Default: mxbai-embed-large:latest (should return 1536 dimensions)
+  # Alternative models:
+  # - nomic-embed-text:latest (768 dimensions - requires schema change)
+  # - all-minilm:latest (384 dimensions - requires schema change)
+  def self.embedding_model
+    ENV["EMBEDDING_MODEL"] || "mxbai-embed-large:latest"
+  end
+
   # Generate embedding for an inventory item
   # Results are cached based on item properties to avoid regeneration
   def self.generate_for_item(inventory_item)
@@ -19,26 +31,39 @@ class EmbeddingService
     # Use caching to avoid expensive Ollama API calls
     Caching::EmbeddingCacheService.cache_text_embedding(text) do
       begin
-        Rails.logger.info "Generating embedding for text: #{text.truncate(100)}"
+        Rails.logger.info "Generating embedding for text: #{text.truncate(100)} (model: #{embedding_model})"
 
         embedding = RubyLLM.embed(
           text,
-          model: "mxbai-embed-large:latest",
+          model: embedding_model,
           provider: :ollama,
           assume_model_exists: true
         )
 
         if embedding&.vectors
-          Rails.logger.info "✓ Generated embedding with #{embedding.vectors.length} dimensions"
-          embedding.vectors
+          vector = embedding.vectors
+          Rails.logger.info "✓ Generated embedding with #{vector.length} dimensions"
+
+          # Validate dimension count matches database expectation
+          if vector.length != EXPECTED_DIMENSIONS
+            Rails.logger.error "Embedding dimension mismatch: expected #{EXPECTED_DIMENSIONS}, got #{vector.length}."
+            Rails.logger.error "Model '#{embedding_model}' may be misconfigured or wrong model installed."
+            Rails.logger.error "Please check: ollama list | grep embed"
+            Rails.logger.error "Or set EMBEDDING_MODEL environment variable to a model that returns #{EXPECTED_DIMENSIONS} dimensions."
+            # Return nil to prevent database errors - let the caller handle it
+            return nil
+          end
+
+          vector
         else
-          Rails.logger.warn "Failed to generate embedding, falling back to placeholder"
-          Array.new(1024) { rand(-1.0..1.0) }
+          Rails.logger.warn "Failed to generate embedding, returning nil"
+          nil
         end
       rescue StandardError => e
         Rails.logger.error "Error generating embedding: #{e.message}"
         Rails.logger.error e.backtrace.first(5).join("\n") if e.backtrace
-        Array.new(1024) { rand(-1.0..1.0) }
+        # Return nil instead of placeholder to prevent dimension mismatch errors
+        nil
       end
     end
   end

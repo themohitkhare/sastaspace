@@ -18,35 +18,44 @@ class EmbeddingServiceTest < ActiveSupport::TestCase
     assert_nil EmbeddingService.generate_text_embedding(nil)
   end
 
-  test "generate_text_embedding handles RubyLLM embedding call" do
+  test "generate_text_embedding handles RubyLLM embedding call with correct dimensions" do
     # Mock RubyLLM with Mocha - this is an external service
-    mock_embedding = stub(vectors: Array.new(1024) { rand(-1.0..1.0) })
+    mock_embedding = stub(vectors: Array.new(1536) { rand(-1.0..1.0) })
     RubyLLM.stubs(:embed).returns(mock_embedding)
 
     result = EmbeddingService.generate_text_embedding("test text")
 
     assert_not_nil result
-    assert_equal 1024, result.length
+    assert_equal 1536, result.length
   end
 
-  test "generate_text_embedding falls back when embedding is nil" do
+  test "generate_text_embedding returns nil when dimensions are wrong" do
+    # Mock RubyLLM returning wrong dimensions (1024 instead of 1536)
+    mock_embedding = stub(vectors: Array.new(1024) { rand(-1.0..1.0) })
+    RubyLLM.stubs(:embed).returns(mock_embedding)
+
+    result = EmbeddingService.generate_text_embedding("test text")
+
+    # Should return nil to prevent database errors
+    assert_nil result
+  end
+
+  test "generate_text_embedding returns nil when embedding is nil" do
     RubyLLM.stubs(:embed).returns(nil)
 
     result = EmbeddingService.generate_text_embedding("test text")
 
-    # Should return placeholder array
-    assert_not_nil result
-    assert_equal 1024, result.length
+    # Should return nil instead of placeholder
+    assert_nil result
   end
 
-  test "generate_text_embedding falls back on error" do
+  test "generate_text_embedding returns nil on error" do
     RubyLLM.stubs(:embed).raises(StandardError, "Connection failed")
 
     result = EmbeddingService.generate_text_embedding("test text")
 
-    # Should return placeholder array
-    assert_not_nil result
-    assert_equal 1024, result.length
+    # Should return nil instead of placeholder
+    assert_nil result
   end
 
   test "build_item_description includes all relevant fields" do

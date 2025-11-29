@@ -4,7 +4,9 @@ module Api
       skip_before_action :authenticate_user!, only: [ :index, :show ]
       before_action :authenticate_user_optional, only: [ :index, :show ]
       before_action :parse_json_params, only: [ :create, :update ]
-      before_action :set_outfit, only: [ :show, :update, :destroy, :wear, :favorite, :suggestions, :duplicate, :completeness ]
+      before_action :set_outfit, only: [ :show, :update, :destroy, :wear, :favorite, :suggestions, :duplicate, :completeness, :critique ]
+      before_action :check_outfit_quota, only: [ :create, :duplicate ]
+      before_action :check_critique_quota, only: [ :critique ]
 
       def index
         outfits = current_user ? current_user.outfits : Outfit.none
@@ -242,6 +244,33 @@ module Api
         render json: { success: true, data: analysis, message: "Completeness analysis", timestamp: Time.current }
       end
 
+      def critique
+        authorize_owner!
+
+        result = Services::OutfitCritiqueService.analyze(@outfit)
+
+        if result[:error]
+          render json: {
+            success: false,
+            error: { code: "CRITIQUE_ERROR", message: result[:error] }
+          }, status: :unprocessable_entity
+        else
+          render json: {
+            success: true,
+            data: result,
+            message: "Critique generated"
+          }
+        end
+      rescue ActiveRecord::RecordNotFound
+        raise # Let authorize_owner! error bubble up to be handled by base controller
+      rescue StandardError => e
+        Rails.logger.error "Critique error: #{e.message}"
+        render json: {
+          success: false,
+          error: { code: "SERVER_ERROR", message: "Failed to generate critique" }
+        }, status: :internal_server_error
+      end
+
       def duplicate
         authorize_owner!
         dup_attrs = @outfit.attributes.slice("name", "description", "season", "occasion")
@@ -403,6 +432,24 @@ module Api
       end
 
       private
+
+      def check_outfit_quota
+        QuotaService.check!(current_user, :outfits)
+      rescue QuotaService::QuotaExceededError => e
+        render json: {
+          success: false,
+          error: { code: "QUOTA_EXCEEDED", message: e.message }
+        }, status: :forbidden
+      end
+
+      def check_critique_quota
+        QuotaService.check!(current_user, :ai_critiques)
+      rescue QuotaService::QuotaExceededError => e
+        render json: {
+          success: false,
+          error: { code: "QUOTA_EXCEEDED", message: e.message }
+        }, status: :forbidden
+      end
 
       def parse_json_params
         if request.content_type == "application/json"
