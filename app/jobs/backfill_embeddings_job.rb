@@ -11,11 +11,28 @@ class BackfillEmbeddingsJob < ApplicationJob
       begin
         vector = EmbeddingService.generate_for_item(item)
         if vector
-          item.update_column(:embedding_vector, vector)
-          count += 1
+          # Double-check dimensions before saving to prevent database errors
+          if vector.length == EmbeddingService::EXPECTED_DIMENSIONS
+            item.update_column(:embedding_vector, vector)
+            count += 1
+          else
+            Rails.logger.error "Skipping item #{item.id}: embedding has #{vector.length} dimensions, expected #{EmbeddingService::EXPECTED_DIMENSIONS}"
+          end
+        else
+          Rails.logger.warn "Failed to generate embedding for item #{item.id}: service returned nil"
+        end
+      rescue PG::DataException => e
+        # Handle dimension mismatch errors from database
+        if e.message.include?("expected") && e.message.include?("dimensions")
+          Rails.logger.error "Dimension mismatch for item #{item.id}: #{e.message}"
+          Rails.logger.error "This item may have a cached embedding with wrong dimensions. Clearing cache and skipping."
+          Caching::EmbeddingCacheService.invalidate_item_embedding(item)
+        else
+          Rails.logger.error "Database error for item #{item.id}: #{e.message}"
         end
       rescue StandardError => e
         Rails.logger.error "Failed to generate embedding for item #{item.id}: #{e.message}"
+        Rails.logger.error e.backtrace.first(3).join("\n") if e.backtrace
       end
     end
 

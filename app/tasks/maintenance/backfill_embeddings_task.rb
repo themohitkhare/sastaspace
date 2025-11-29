@@ -32,14 +32,14 @@ module Maintenance
 
         if vector.present?
           # Validate vector dimensions before saving
-          if vector.length != 1536
+          if vector.length != EmbeddingService::EXPECTED_DIMENSIONS
             @job_results[:failed] << {
               item_id: item.id,
               item_name: item.name,
               error_class: "DimensionMismatch",
-              error_message: "Expected 1536 dimensions, got #{vector.length}"
+              error_message: "Expected #{EmbeddingService::EXPECTED_DIMENSIONS} dimensions, got #{vector.length}"
             }
-            Rails.logger.error "[BackfillEmbeddings] Dimension mismatch for item #{item.id} (#{item.name}): expected 1536, got #{vector.length}"
+            Rails.logger.error "[BackfillEmbeddings] Dimension mismatch for item #{item.id} (#{item.name}): expected #{EmbeddingService::EXPECTED_DIMENSIONS}, got #{vector.length}"
             return
           end
 

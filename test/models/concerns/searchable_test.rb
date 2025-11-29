@@ -12,14 +12,14 @@ class SearchableTest < ActiveSupport::TestCase
                    category: @category,
                    brand: @brand,
                    name: "Blue T-Shirt",
-                   embedding_vector: Array.new(1536) { rand(-1.0..1.0) })
+                   embedding_vector: Array.new(EmbeddingService::EXPECTED_DIMENSIONS) { rand(-1.0..1.0) })
 
     @item2 = create(:inventory_item,
                    user: @user,
                    category: @category,
                    brand: @brand,
                    name: "Red T-Shirt",
-                   embedding_vector: Array.new(1536) { rand(-1.0..1.0) })
+                   embedding_vector: Array.new(EmbeddingService::EXPECTED_DIMENSIONS) { rand(-1.0..1.0) })
   end
 
   test "similar_items returns similar items" do
@@ -49,7 +49,7 @@ class SearchableTest < ActiveSupport::TestCase
   end
 
   test "similar_to scope works" do
-    vector = Array.new(1536) { rand(-1.0..1.0) }
+    vector = Array.new(EmbeddingService::EXPECTED_DIMENSIONS) { rand(-1.0..1.0) }
     results = InventoryItem.similar_to(vector, limit: 10)
     assert results.is_a?(ActiveRecord::Relation)
     assert results.count <= 10

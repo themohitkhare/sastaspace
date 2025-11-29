@@ -18,7 +18,7 @@ class VectorSearchServiceTest < ActiveSupport::TestCase
                    brand: @brand,
                    name: "Blue T-Shirt",
                    item_type: "clothing",
-                   embedding_vector: Array.new(1536) { rand(-1.0..1.0) })
+                   embedding_vector: Array.new(EmbeddingService::EXPECTED_DIMENSIONS) { rand(-1.0..1.0) })
 
     @item2 = create(:inventory_item,
                    user: @user,
@@ -26,7 +26,7 @@ class VectorSearchServiceTest < ActiveSupport::TestCase
                    brand: @brand,
                    name: "Red T-Shirt",
                    item_type: "clothing",
-                   embedding_vector: Array.new(1536) { rand(-1.0..1.0) })
+                   embedding_vector: Array.new(EmbeddingService::EXPECTED_DIMENSIONS) { rand(-1.0..1.0) })
 
     @item3 = create(:inventory_item,
                    user: @user,
@@ -45,7 +45,7 @@ class VectorSearchServiceTest < ActiveSupport::TestCase
   end
 
   test "find_similar_items returns items with vectors" do
-    query_vector = Array.new(1536) { rand(-1.0..1.0) }
+    query_vector = Array.new(EmbeddingService::EXPECTED_DIMENSIONS) { rand(-1.0..1.0) }
 
     # Don't stub - let the actual code run
     # This will exercise the actual VectorSearchService code
@@ -62,7 +62,7 @@ class VectorSearchServiceTest < ActiveSupport::TestCase
     query_text = "blue casual shirt"
 
     # Mock the embedding service (external dependency)
-    mock_embedding = Array.new(1536) { rand(-1.0..1.0) }
+    mock_embedding = Array.new(EmbeddingService::EXPECTED_DIMENSIONS) { rand(-1.0..1.0) }
     EmbeddingService.stubs(:generate_text_embedding).returns(mock_embedding)
 
     # Let the actual service code run
@@ -84,7 +84,7 @@ class VectorSearchServiceTest < ActiveSupport::TestCase
   end
 
   test "find_items_by_image_similarity works with image vectors" do
-    image_vector = Array.new(1536) { rand(-1.0..1.0) }
+    image_vector = Array.new(EmbeddingService::EXPECTED_DIMENSIONS) { rand(-1.0..1.0) }
 
     # Don't stub - let the actual code run
     results = VectorSearchService.find_items_by_image_similarity(@user, image_vector, limit: 5)

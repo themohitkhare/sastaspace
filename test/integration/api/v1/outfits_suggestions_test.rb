@@ -15,21 +15,21 @@ class Api::V1::OutfitsSuggestionsTest < ActionDispatch::IntegrationTest
       user: @user,
       category: @tops_category,
       name: "Blue T-Shirt",
-      embedding_vector: Array.new(1536) { rand(-1.0..1.0) }
+      embedding_vector: Array.new(EmbeddingService::EXPECTED_DIMENSIONS) { rand(-1.0..1.0) }
     )
 
     @bottom_item = create(:inventory_item,
       user: @user,
       category: @bottoms_category,
       name: "Blue Jeans",
-      embedding_vector: Array.new(1536) { |i| @top_item.embedding_vector[i] + rand(-0.1..0.1) }
+      embedding_vector: Array.new(EmbeddingService::EXPECTED_DIMENSIONS) { |i| @top_item.embedding_vector[i] + rand(-0.1..0.1) }
     )
 
     @shoe_item = create(:inventory_item,
       user: @user,
       category: @shoes_category,
       name: "White Sneakers",
-      embedding_vector: Array.new(1536) { rand(-1.0..1.0) }
+      embedding_vector: Array.new(EmbeddingService::EXPECTED_DIMENSIONS) { rand(-1.0..1.0) }
     )
 
     # Create outfit with one item

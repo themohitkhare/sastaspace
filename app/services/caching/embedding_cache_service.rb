@@ -21,13 +21,23 @@ module Caching
     cached_result = read_cache(cache_key)
 
     if cached_result
-      log_cache_hit("text_embedding", cache_key)
-      return cached_result
+      # Validate cached embedding dimensions before returning
+      if validate_embedding_dimensions(cached_result)
+        log_cache_hit("text_embedding", cache_key)
+        return cached_result
+      else
+        # Cached embedding has wrong dimensions, invalidate and regenerate
+        Rails.logger.warn "[EmbeddingCache] Invalid cached embedding dimensions, invalidating cache for: #{cache_key.truncate(100)}"
+        delete_cache(cache_key)
+      end
     end
 
     log_cache_miss("text_embedding", cache_key)
     result = block.call
-    write_cache(cache_key, result, expires_in: TEXT_EMBEDDING_TTL) if result.is_a?(Array)
+    # Only cache if result is valid array with correct dimensions
+    if result.is_a?(Array) && validate_embedding_dimensions(result)
+      write_cache(cache_key, result, expires_in: TEXT_EMBEDDING_TTL)
+    end
     result
   end
 
@@ -45,13 +55,23 @@ module Caching
     cached_result = read_cache(cache_key)
 
     if cached_result
-      log_cache_hit("item_embedding", cache_key)
-      return cached_result
+      # Validate cached embedding dimensions before returning
+      if validate_embedding_dimensions(cached_result)
+        log_cache_hit("item_embedding", cache_key)
+        return cached_result
+      else
+        # Cached embedding has wrong dimensions, invalidate and regenerate
+        Rails.logger.warn "[EmbeddingCache] Invalid cached embedding dimensions, invalidating cache for: #{cache_key.truncate(100)}"
+        delete_cache(cache_key)
+      end
     end
 
     log_cache_miss("item_embedding", cache_key)
     result = block.call
-    write_cache(cache_key, result, expires_in: ITEM_EMBEDDING_TTL) if result.is_a?(Array)
+    # Only cache if result is valid array with correct dimensions
+    if result.is_a?(Array) && validate_embedding_dimensions(result)
+      write_cache(cache_key, result, expires_in: ITEM_EMBEDDING_TTL)
+    end
     result
   end
 
@@ -189,6 +209,24 @@ module Caching
     key = "#{CACHE_NAMESPACE}:model_version"
     current = read_model_version
     Rails.cache.write(key, current + 1, expires_in: nil) # Never expire
+  end
+
+  # Validate embedding dimensions match expected database schema
+  # @param embedding [Array<Float>] The embedding vector to validate
+  # @return [Boolean] True if dimensions are valid, false otherwise
+  def self.validate_embedding_dimensions(embedding)
+    return false unless embedding.is_a?(Array)
+    return false unless embedding.all? { |v| v.is_a?(Numeric) }
+
+    expected_dimensions = EmbeddingService::EXPECTED_DIMENSIONS
+    actual_dimensions = embedding.length
+
+    if actual_dimensions != expected_dimensions
+      Rails.logger.error "[EmbeddingCache] Dimension mismatch: expected #{expected_dimensions}, got #{actual_dimensions}"
+      return false
+    end
+
+    true
   end
   end
 end

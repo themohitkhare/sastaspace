@@ -24,12 +24,12 @@ class VectorSearchServiceEdgeTest < ActiveSupport::TestCase
 
   test "recommend_outfit_items limits results to specified limit" do
     base_item = create(:inventory_item, :clothing, user: @user)
-    base_item.update!(embedding_vector: [ 0.1 ] * 1536)
+    base_item.update!(embedding_vector: [ 0.1 ] * EmbeddingService::EXPECTED_DIMENSIONS)
 
     # Create many similar items
     10.times do |i|
       item = create(:inventory_item, :clothing, user: @user, category: base_item.category, brand: base_item.brand, name: "Similar #{i}")
-      item.update!(embedding_vector: [ 0.1 ] * 1536)
+      item.update!(embedding_vector: [ 0.1 ] * EmbeddingService::EXPECTED_DIMENSIONS)
     end
 
     results = VectorSearchService.recommend_outfit_items(@user, base_item, limit: 3)

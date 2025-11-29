@@ -31,7 +31,7 @@ module Maintenance
 
     test "process generates embedding for item" do
       task = Maintenance::BackfillEmbeddingsTask.new
-      mock_vector = Array.new(1536) { rand(-1.0..1.0) }
+      mock_vector = Array.new(EmbeddingService::EXPECTED_DIMENSIONS) { rand(-1.0..1.0) }
 
       EmbeddingService.expects(:generate_for_item).with(@item1).returns(mock_vector)
 
@@ -74,7 +74,7 @@ module Maintenance
 
     test "after_task logs summary" do
       task = Maintenance::BackfillEmbeddingsTask.new
-      mock_vector = Array.new(1536) { rand(-1.0..1.0) }
+      mock_vector = Array.new(EmbeddingService::EXPECTED_DIMENSIONS) { rand(-1.0..1.0) }
 
       # Process one item successfully
       EmbeddingService.expects(:generate_for_item).with(@item1).returns(mock_vector)
@@ -126,7 +126,7 @@ module Maintenance
 
     test "after_task logs processed items" do
       task = Maintenance::BackfillEmbeddingsTask.new
-      mock_vector = Array.new(1536) { rand(-1.0..1.0) }
+      mock_vector = Array.new(EmbeddingService::EXPECTED_DIMENSIONS) { rand(-1.0..1.0) }
 
       EmbeddingService.expects(:generate_for_item).with(@item1).returns(mock_vector)
       task.process(@item1)
@@ -188,7 +188,7 @@ module Maintenance
 
     test "after_task truncates long processed lists" do
       task = Maintenance::BackfillEmbeddingsTask.new
-      mock_vector = Array.new(1536) { rand(-1.0..1.0) }
+      mock_vector = Array.new(EmbeddingService::EXPECTED_DIMENSIONS) { rand(-1.0..1.0) }
 
       # Create 15 processed items
       15.times do |i|

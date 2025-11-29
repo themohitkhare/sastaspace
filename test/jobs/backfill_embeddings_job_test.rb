@@ -13,7 +13,7 @@ class BackfillEmbeddingsJobTest < ActiveJob::TestCase
 
   test "job generates embeddings for items without them" do
     # Stub EmbeddingService using Mocha
-    mock_vector = Array.new(1536) { rand(-1.0..1.0) }
+    mock_vector = Array.new(EmbeddingService::EXPECTED_DIMENSIONS) { rand(-1.0..1.0) }
     EmbeddingService.expects(:generate_for_item).at_least(3).returns(mock_vector)
 
     BackfillEmbeddingsJob.perform_now(batch_size: 10)
@@ -32,7 +32,7 @@ class BackfillEmbeddingsJobTest < ActiveJob::TestCase
     additional_items = 5.times.map { create(:inventory_item, user: @user, category: @category, embedding_vector: nil) }
     all_items = [ @item1, @item2, @item3 ] + additional_items
 
-    mock_vector = Array.new(1536) { rand(-1.0..1.0) }
+    mock_vector = Array.new(EmbeddingService::EXPECTED_DIMENSIONS) { rand(-1.0..1.0) }
 
     # The job processes items in batches, but we can't guarantee exact count
     # due to items from other tests. So we verify it processes at least batch_size
@@ -62,7 +62,7 @@ class BackfillEmbeddingsJobTest < ActiveJob::TestCase
     # Ensure we have more items than batch_size
     assert total_before > 5, "Should have more items than batch_size to test re-queuing (had: #{total_before})"
 
-    mock_vector = Array.new(1536) { rand(-1.0..1.0) }
+    mock_vector = Array.new(EmbeddingService::EXPECTED_DIMENSIONS) { rand(-1.0..1.0) }
     # Expect at least batch_size calls (5), but allow more
     EmbeddingService.expects(:generate_for_item).at_least(5).returns(mock_vector)
 
@@ -90,7 +90,7 @@ class BackfillEmbeddingsJobTest < ActiveJob::TestCase
   end
 
   test "job does not re-queue if all items processed" do
-    mock_vector = Array.new(1536) { rand(-1.0..1.0) }
+    mock_vector = Array.new(EmbeddingService::EXPECTED_DIMENSIONS) { rand(-1.0..1.0) }
     EmbeddingService.expects(:generate_for_item).at_least(3).returns(mock_vector)
 
     assert_no_enqueued_jobs(only: BackfillEmbeddingsJob) do
@@ -103,7 +103,7 @@ class BackfillEmbeddingsJobTest < ActiveJob::TestCase
     test_items = 10.times.map { create(:inventory_item, user: @user, category: @category, embedding_vector: nil) }
     all_items = [ @item1, @item2, @item3 ] + test_items
 
-    mock_vector = Array.new(1536) { rand(-1.0..1.0) }
+    mock_vector = Array.new(EmbeddingService::EXPECTED_DIMENSIONS) { rand(-1.0..1.0) }
 
     # Track calls and make some fail
     call_count = 0
@@ -151,9 +151,9 @@ class BackfillEmbeddingsJobTest < ActiveJob::TestCase
   end
 
   test "job skips items that already have embeddings" do
-    @item2.update_column(:embedding_vector, Array.new(1536) { rand(-1.0..1.0) })
+    @item2.update_column(:embedding_vector, Array.new(EmbeddingService::EXPECTED_DIMENSIONS) { rand(-1.0..1.0) })
 
-    mock_vector = Array.new(1536) { rand(-1.0..1.0) }
+    mock_vector = Array.new(EmbeddingService::EXPECTED_DIMENSIONS) { rand(-1.0..1.0) }
     EmbeddingService.expects(:generate_for_item).with(@item1).returns(mock_vector)
     EmbeddingService.expects(:generate_for_item).with(@item3).returns(mock_vector)
     EmbeddingService.expects(:generate_for_item).with(@item2).never

@@ -260,7 +260,7 @@ class Api::V1::InventoryItemsTest < ActionDispatch::IntegrationTest
 
   test "GET /api/v1/inventory_items/:id/similar should return similar items" do
     # Set up embedding vectors for similarity search
-    embedding_vector = (0..1535).to_a.map { |_i| rand(-1.0..1.0) }
+    embedding_vector = Array.new(EmbeddingService::EXPECTED_DIMENSIONS) { rand(-1.0..1.0) }
     @inventory_item.update!(embedding_vector: embedding_vector)
 
     similar_item = create(:inventory_item, :clothing, user: @user)

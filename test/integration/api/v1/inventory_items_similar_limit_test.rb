@@ -7,7 +7,7 @@ class Api::V1::InventoryItemsSimilarLimitTest < ActionDispatch::IntegrationTest
     category = create(:category, :clothing)
     base = create(:inventory_item, :clothing, user: user, category: category)
     # Set vectors
-    vec = Array.new(1536) { rand }
+    vec = Array.new(EmbeddingService::EXPECTED_DIMENSIONS) { rand }
     base.update!(embedding_vector: vec)
     # Create two other items with vectors
     i1 = create(:inventory_item, :clothing, user: user, category: category, embedding_vector: vec.map { |v| v + 0.01 })

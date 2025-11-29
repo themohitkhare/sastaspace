@@ -13,7 +13,7 @@ class Api::V1::InventoryItemsVectorSearchTest < ActionDispatch::IntegrationTest
                    brand: @brand,
                    name: "Blue T-Shirt",
                    item_type: "clothing",
-                   embedding_vector: Array.new(1536) { rand(-1.0..1.0) })
+                   embedding_vector: Array.new(EmbeddingService::EXPECTED_DIMENSIONS) { rand(-1.0..1.0) })
 
     @item2 = create(:inventory_item,
                    user: @user,
@@ -21,7 +21,7 @@ class Api::V1::InventoryItemsVectorSearchTest < ActionDispatch::IntegrationTest
                    brand: @brand,
                    name: "Red T-Shirt",
                    item_type: "clothing",
-                   embedding_vector: Array.new(1536) { rand(-1.0..1.0) })
+                   embedding_vector: Array.new(EmbeddingService::EXPECTED_DIMENSIONS) { rand(-1.0..1.0) })
   end
 
   test "vector search endpoints require authentication" do

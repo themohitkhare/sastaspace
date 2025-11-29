@@ -1,9 +1,10 @@
 class EmbeddingService
   # Expected embedding dimensions for the database
-  EXPECTED_DIMENSIONS = 1536
+  # mxbai-embed-large:latest returns 1024 dimensions
+  EXPECTED_DIMENSIONS = 1024
 
   # Embedding model to use (configurable via ENV)
-  # Default: mxbai-embed-large:latest (should return 1536 dimensions)
+  # Default: mxbai-embed-large:latest (returns 1024 dimensions)
   # Alternative models:
   # - nomic-embed-text:latest (768 dimensions - requires schema change)
   # - all-minilm:latest (384 dimensions - requires schema change)

@@ -13,7 +13,7 @@ class VectorSearchServiceSecurityTest < ActiveSupport::TestCase
                    brand: @brand,
                    name: "Blue T-Shirt",
                    item_type: "clothing",
-                   embedding_vector: Array.new(1536) { rand(-1.0..1.0) })
+                   embedding_vector: Array.new(EmbeddingService::EXPECTED_DIMENSIONS) { rand(-1.0..1.0) })
   end
 
   test "validate_and_sanitize_vector rejects non-array input" do
@@ -47,7 +47,7 @@ class VectorSearchServiceSecurityTest < ActiveSupport::TestCase
   end
 
   test "validate_and_sanitize_vector accepts valid numeric array" do
-    valid_vector = Array.new(1536) { rand(-1.0..1.0) }
+    valid_vector = Array.new(EmbeddingService::EXPECTED_DIMENSIONS) { rand(-1.0..1.0) }
     result = VectorSearchService.validate_and_sanitize_vector(valid_vector)
     assert_not_nil result, "Should accept valid numeric array"
     assert_equal valid_vector.length, result.length
