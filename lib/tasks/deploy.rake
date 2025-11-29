@@ -222,7 +222,7 @@ namespace :deploy do
   end
 
   desc "Full deployment check (pre + post)"
-  task check: [:pre_check, :post_check] do
+  task check: [ :pre_check, :post_check ] do
     puts ""
     puts "✅ Full deployment check completed!"
   end
