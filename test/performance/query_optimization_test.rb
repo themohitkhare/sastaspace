@@ -58,7 +58,7 @@ class QueryOptimizationTest < ActiveSupport::TestCase
   test "vector search includes all necessary associations" do
     # Create an item with embedding
     item = @items.first
-    item.update(embedding_vector: Array.new(1536) { rand })
+    item.update(embedding_vector: Array.new(EmbeddingService::EXPECTED_DIMENSIONS) { rand })
 
     queries = []
     callback = lambda do |name, start, finish, id, payload|

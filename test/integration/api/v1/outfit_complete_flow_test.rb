@@ -15,7 +15,7 @@ class Api::V1::OutfitCompleteFlowTest < ActionDispatch::IntegrationTest
       user: @user,
       category: @tops_category,
       name: "Blue T-Shirt",
-      embedding_vector: Array.new(1536) { rand(-1.0..1.0) }
+      embedding_vector: Array.new(EmbeddingService::EXPECTED_DIMENSIONS) { rand(-1.0..1.0) }
     )
     @top_item.update_column(:metadata, { "color" => "blue" }.to_json)
 
@@ -23,7 +23,7 @@ class Api::V1::OutfitCompleteFlowTest < ActionDispatch::IntegrationTest
       user: @user,
       category: @bottoms_category,
       name: "Blue Jeans",
-      embedding_vector: Array.new(1536) { rand(-1.0..1.0) }
+      embedding_vector: Array.new(EmbeddingService::EXPECTED_DIMENSIONS) { rand(-1.0..1.0) }
     )
     @bottom_item.update_column(:metadata, { "color" => "blue" }.to_json)
 
@@ -31,7 +31,7 @@ class Api::V1::OutfitCompleteFlowTest < ActionDispatch::IntegrationTest
       user: @user,
       category: @shoes_category,
       name: "White Sneakers",
-      embedding_vector: Array.new(1536) { rand(-1.0..1.0) }
+      embedding_vector: Array.new(EmbeddingService::EXPECTED_DIMENSIONS) { rand(-1.0..1.0) }
     )
     @shoe_item.update_column(:metadata, { "color" => "white" }.to_json)
   end

@@ -16,16 +16,16 @@ class VectorCacheServiceTest < ActiveSupport::TestCase
                    category: @category,
                    brand: @brand,
                    name: "Blue T-Shirt",
-                   embedding_vector: Array.new(1536) { rand(-1.0..1.0) })
+                   embedding_vector: Array.new(EmbeddingService::EXPECTED_DIMENSIONS) { rand(-1.0..1.0) })
 
     @item2 = create(:inventory_item,
                    user: @user,
                    category: @category,
                    brand: @brand,
                    name: "Red T-Shirt",
-                   embedding_vector: Array.new(1536) { rand(-1.0..1.0) })
+                   embedding_vector: Array.new(EmbeddingService::EXPECTED_DIMENSIONS) { rand(-1.0..1.0) })
 
-    @query_vector = Array.new(1536) { rand(-1.0..1.0) }
+    @query_vector = Array.new(EmbeddingService::EXPECTED_DIMENSIONS) { rand(-1.0..1.0) }
 
     # Clear cache before each test
     Rails.cache.clear
@@ -60,8 +60,8 @@ class VectorCacheServiceTest < ActiveSupport::TestCase
   end
 
   test "cache_similar_items uses different keys for different vectors" do
-    vector1 = Array.new(1536) { 0.1 }
-    vector2 = Array.new(1536) { 0.2 }
+    vector1 = Array.new(EmbeddingService::EXPECTED_DIMENSIONS) { 0.1 }
+    vector2 = Array.new(EmbeddingService::EXPECTED_DIMENSIONS) { 0.2 }
 
     call_count = 0
     ::Caching::VectorCacheService.cache_similar_items(@user, vector1, limit: 10) do

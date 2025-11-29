@@ -15,7 +15,7 @@ class CacheableTest < ActiveSupport::TestCase
                    category: @category,
                    brand: @brand,
                    name: "Blue T-Shirt",
-                   embedding_vector: Array.new(1536) { rand(-1.0..1.0) })
+                   embedding_vector: Array.new(EmbeddingService::EXPECTED_DIMENSIONS) { rand(-1.0..1.0) })
 
     @outfit = create(:outfit, user: @user, name: "Test Outfit")
 
@@ -57,7 +57,7 @@ class CacheableTest < ActiveSupport::TestCase
   end
 
   test "inventory item update invalidates embedding cache" do
-    mock_embedding = Array.new(1536) { rand(-1.0..1.0) }
+    mock_embedding = Array.new(EmbeddingService::EXPECTED_DIMENSIONS) { rand(-1.0..1.0) }
 
     # Cache an embedding
     Caching::EmbeddingCacheService.cache_item_embedding(@item) do
@@ -94,7 +94,7 @@ class CacheableTest < ActiveSupport::TestCase
   end
 
   test "outfit update invalidates user caches" do
-    query_vector = Array.new(1536) { rand(-1.0..1.0) }
+    query_vector = Array.new(EmbeddingService::EXPECTED_DIMENSIONS) { rand(-1.0..1.0) }
 
     # Cache a search result
     Caching::VectorCacheService.cache_similar_items(@user, query_vector, limit: 10) do
@@ -115,7 +115,7 @@ class CacheableTest < ActiveSupport::TestCase
   end
 
   test "outfit item creation invalidates user caches" do
-    query_vector = Array.new(1536) { rand(-1.0..1.0) }
+    query_vector = Array.new(EmbeddingService::EXPECTED_DIMENSIONS) { rand(-1.0..1.0) }
 
     # Cache a search result
     Caching::VectorCacheService.cache_similar_items(@user, query_vector, limit: 10) do
@@ -137,7 +137,7 @@ class CacheableTest < ActiveSupport::TestCase
 
   test "outfit item destruction invalidates user caches" do
     outfit_item = create(:outfit_item, outfit: @outfit, inventory_item: @item)
-    query_vector = Array.new(1536) { rand(-1.0..1.0) }
+    query_vector = Array.new(EmbeddingService::EXPECTED_DIMENSIONS) { rand(-1.0..1.0) }
 
     # Cache a search result
     Caching::VectorCacheService.cache_similar_items(@user, query_vector, limit: 10) do

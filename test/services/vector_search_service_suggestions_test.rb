@@ -14,21 +14,21 @@ class VectorSearchServiceSuggestionsTest < ActiveSupport::TestCase
       user: @user,
       category: @tops_category,
       name: "Blue T-Shirt",
-      embedding_vector: Array.new(1536) { rand(-1.0..1.0) }
+      embedding_vector: Array.new(EmbeddingService::EXPECTED_DIMENSIONS) { rand(-1.0..1.0) }
     )
 
     @bottom_item = create(:inventory_item,
       user: @user,
       category: @bottoms_category,
       name: "Blue Jeans",
-      embedding_vector: Array.new(1536) { |i| @top_item.embedding_vector[i] + rand(-0.1..0.1) } # Similar style
+      embedding_vector: Array.new(EmbeddingService::EXPECTED_DIMENSIONS) { |i| @top_item.embedding_vector[i] + rand(-0.1..0.1) } # Similar style
     )
 
     @shoe_item = create(:inventory_item,
       user: @user,
       category: @shoes_category,
       name: "White Sneakers",
-      embedding_vector: Array.new(1536) { rand(-1.0..1.0) }
+      embedding_vector: Array.new(EmbeddingService::EXPECTED_DIMENSIONS) { rand(-1.0..1.0) }
     )
 
     # Create outfit
@@ -100,7 +100,7 @@ class VectorSearchServiceSuggestionsTest < ActiveSupport::TestCase
   test "suggest_outfit_items handles items without embeddings gracefully" do
     category = create(:category, name: "Test #{SecureRandom.hex(4)}")
     item_without_vector = create(:inventory_item, user: @user, category: category, embedding_vector: nil)
-    item_with_vector = create(:inventory_item, user: @user, category: category, embedding_vector: Array.new(1536) { rand(-1.0..1.0) })
+    item_with_vector = create(:inventory_item, user: @user, category: category, embedding_vector: Array.new(EmbeddingService::EXPECTED_DIMENSIONS) { rand(-1.0..1.0) })
 
     # Should not crash even with mixed items
     suggestions = VectorSearchService.suggest_outfit_items(@user, [ item_without_vector, item_with_vector ], limit: 5)
@@ -139,7 +139,7 @@ class VectorSearchServiceSuggestionsTest < ActiveSupport::TestCase
         user: @user,
         category: @tops_category,
         name: "Top #{i}",
-        embedding_vector: Array.new(1536) { rand(-1.0..1.0) }
+        embedding_vector: Array.new(EmbeddingService::EXPECTED_DIMENSIONS) { rand(-1.0..1.0) }
       )
     end
 
@@ -158,7 +158,7 @@ class VectorSearchServiceSuggestionsTest < ActiveSupport::TestCase
         user: @user,
         category: @tops_category,
         name: "Top #{i}",
-        embedding_vector: Array.new(1536) { rand(-1.0..1.0) }
+        embedding_vector: Array.new(EmbeddingService::EXPECTED_DIMENSIONS) { rand(-1.0..1.0) }
       )
     end
 
@@ -171,7 +171,7 @@ class VectorSearchServiceSuggestionsTest < ActiveSupport::TestCase
       user: @user,
       category: @bottoms_category,
       name: "Bottom Item",
-      embedding_vector: Array.new(1536) { |i| @top_item.embedding_vector[i] + rand(-0.1..0.1) }
+      embedding_vector: Array.new(EmbeddingService::EXPECTED_DIMENSIONS) { |i| @top_item.embedding_vector[i] + rand(-0.1..0.1) }
     )
 
     suggestions = VectorSearchService.suggest_outfit_items(

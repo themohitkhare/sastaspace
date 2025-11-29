@@ -18,7 +18,7 @@ end
 
 # Helper methods for vector testing
 module VectorTestHelpers
-  def create_random_vector(dimensions = 1536)
+  def create_random_vector(dimensions = EmbeddingService::EXPECTED_DIMENSIONS)
     Array.new(dimensions) { rand(-1.0..1.0) }
   end
 

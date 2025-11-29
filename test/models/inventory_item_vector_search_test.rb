@@ -12,7 +12,7 @@ class InventoryItemVectorSearchTest < ActiveSupport::TestCase
                    brand: @brand,
                    name: "Blue T-Shirt",
                    item_type: "clothing",
-                   embedding_vector: Array.new(1536) { rand(-1.0..1.0) })
+                   embedding_vector: Array.new(EmbeddingService::EXPECTED_DIMENSIONS) { rand(-1.0..1.0) })
 
     @item2 = create(:inventory_item,
                    user: @user,
@@ -20,7 +20,7 @@ class InventoryItemVectorSearchTest < ActiveSupport::TestCase
                    brand: @brand,
                    name: "Red T-Shirt",
                    item_type: "clothing",
-                   embedding_vector: Array.new(1536) { rand(-1.0..1.0) })
+                   embedding_vector: Array.new(EmbeddingService::EXPECTED_DIMENSIONS) { rand(-1.0..1.0) })
 
     @item3 = create(:inventory_item,
                    user: @user,
@@ -74,7 +74,7 @@ class InventoryItemVectorSearchTest < ActiveSupport::TestCase
   end
 
   test "embedding_vector can be set and retrieved" do
-    vector = Array.new(1536) { rand(-1.0..1.0) }
+    vector = Array.new(EmbeddingService::EXPECTED_DIMENSIONS) { rand(-1.0..1.0) }
 
     @item3.embedding_vector = vector
     @item3.save!

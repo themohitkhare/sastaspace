@@ -20,18 +20,18 @@ class EmbeddingServiceTest < ActiveSupport::TestCase
 
   test "generate_text_embedding handles RubyLLM embedding call with correct dimensions" do
     # Mock RubyLLM with Mocha - this is an external service
-    mock_embedding = stub(vectors: Array.new(1536) { rand(-1.0..1.0) })
+    mock_embedding = stub(vectors: Array.new(EmbeddingService::EXPECTED_DIMENSIONS) { rand(-1.0..1.0) })
     RubyLLM.stubs(:embed).returns(mock_embedding)
 
     result = EmbeddingService.generate_text_embedding("test text")
 
     assert_not_nil result
-    assert_equal 1536, result.length
+    assert_equal EmbeddingService::EXPECTED_DIMENSIONS, result.length
   end
 
   test "generate_text_embedding returns nil when dimensions are wrong" do
-    # Mock RubyLLM returning wrong dimensions (1024 instead of 1536)
-    mock_embedding = stub(vectors: Array.new(1024) { rand(-1.0..1.0) })
+    # Mock RubyLLM returning wrong dimensions (768 instead of expected 1024)
+    mock_embedding = stub(vectors: Array.new(768) { rand(-1.0..1.0) })
     RubyLLM.stubs(:embed).returns(mock_embedding)
 
     result = EmbeddingService.generate_text_embedding("test text")
