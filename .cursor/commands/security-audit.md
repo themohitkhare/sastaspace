@@ -1,11 +1,13 @@
 ---
-description: "Conduct a security audit using Brakeman and manual review patterns."
+description: "Conduct a security audit using Brakeman and manual review patterns. Note: QA-Agent runs Brakeman automatically in CI, but this is useful for manual audits."
 globs: []
 ---
 
 # Security Audit
 
 Perform a security review of the codebase.
+
+> **Note**: The QA-Agent workflow (`.github/workflows/agent_orchestration.yml`) automatically runs Brakeman on every PR. This command is for manual security audits or pre-deployment checks.
 
 ## 1. Automated Scan
 Run Brakeman to find known vulnerabilities:
