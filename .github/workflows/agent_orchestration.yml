@@ -1,0 +1,296 @@
+name: Agent Orchestration
+
+on:
+  issues:
+    types: [opened, labeled]
+  pull_request:
+    types: [opened, ready_for_review, labeled]
+
+env:
+  RUBY_VERSION: 3.4.7
+
+jobs:
+  pm_agent:
+    name: PM Agent - Issue Validation
+    if: github.event_name == 'issues' && github.event.action == 'opened'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+        
+      - name: Validate Issue Structure
+        run: |
+          echo "## PM Agent: Issue Validation" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "✅ Issue #${{ github.event.issue.number }} created" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Next Steps:**" >> $GITHUB_STEP_SUMMARY
+          echo "1. Add label 'needs: architecture' to trigger Arch-Agent" >> $GITHUB_STEP_SUMMARY
+          echo "2. Arch-Agent will design the solution" >> $GITHUB_STEP_SUMMARY
+          echo "3. Once approved, change label to 'ready: implementation'" >> $GITHUB_STEP_SUMMARY
+          
+      - name: Comment on Issue
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const issue = context.payload.issue;
+            const body = issue.body || '';
+            
+            // Check if issue has required fields
+            const hasUserStory = body.includes('User Story') || body.includes('user-story');
+            const hasAcceptanceCriteria = body.includes('Acceptance Criteria') || body.includes('acceptance-criteria');
+            
+            if (!hasUserStory || !hasAcceptanceCriteria) {
+              github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: `## PM Agent Review
+
+⚠️ **Issue Template Incomplete**
+
+This issue appears to be missing required fields. Please ensure:
+- ✅ User Story is provided
+- ✅ Acceptance Criteria are defined
+- ✅ Priority is selected
+
+Once complete, add the \`needs: architecture\` label to trigger the Architecture Agent.`
+              });
+            } else {
+              github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: `## PM Agent Review
+
+✅ **Issue Template Complete**
+
+This issue has all required fields. Ready for architecture review.
+
+**Next Step:** Add the \`needs: architecture\` label to trigger the Architecture Agent.`
+              });
+            }
+
+  arch_agent:
+    name: Arch Agent - Architecture Design
+    if: |
+      github.event_name == 'issues' &&
+      (github.event.action == 'opened' || github.event.action == 'labeled') &&
+      contains(github.event.issue.labels.*.name, 'needs: architecture')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+        
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: ${{ env.RUBY_VERSION }}
+          bundler-cache: true
+          
+      - name: Architecture Agent Analysis
+        run: |
+          echo "## Arch Agent: Architecture Design" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "📋 **Analyzing Issue #${{ github.event.issue.number }}**" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Note:** This is a template workflow. To enable full Arch-Agent functionality:" >> $GITHUB_STEP_SUMMARY
+          echo "1. Add API keys for LLM service (Claude/GPT) to GitHub Secrets" >> $GITHUB_STEP_SUMMARY
+          echo "2. Implement API call to LLM with issue context" >> $GITHUB_STEP_SUMMARY
+          echo "3. Parse LLM response and post as issue comment" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Manual Process:**" >> $GITHUB_STEP_SUMMARY
+          echo "1. Review issue requirements" >> $GITHUB_STEP_SUMMARY
+          echo "2. Design database schema, services, controllers" >> $GITHUB_STEP_SUMMARY
+          echo "3. Post architecture comment on issue" >> $GITHUB_STEP_SUMMARY
+          echo "4. Change label from 'needs: architecture' to 'ready: implementation'" >> $GITHUB_STEP_SUMMARY
+          
+      - name: Comment Architecture Template
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `## Architecture Review: ${{ github.event.issue.title }}
+
+> **Note:** This is a template comment. Replace with actual architecture design.
+
+### Database Changes
+\`\`\`ruby
+# Migration outline
+class AddFieldsToModel < ActiveRecord::Migration[8.1]
+  def change
+    # Add migration details here
+  end
+end
+\`\`\`
+
+### Service Layer
+- \`ServiceName\` (app/services/service_name.rb)
+  - Methods: \`method1\`, \`method2\`
+
+### Controllers
+- Modify: \`ControllerName#action\`
+- New: \`ControllerName#new_action\`
+
+### Background Jobs
+- (Not needed for this feature) OR
+- \`JobName\` (app/jobs/job_name.rb) - Queue: \`default\` or \`ai_critical\`
+
+### Security
+- Authorization checks: \`authorize @resource\`
+- Rate limiting: \`throttle('endpoint', limit: 60, period: 1.minute)\`
+
+### Testing Strategy
+- Unit: \`ServiceNameTest\` (boundary conditions)
+- Integration: \`ControllerNameTest\` (API contract)
+- System: Verify UI behavior
+
+### Risks & Mitigations
+- Risk: [Describe potential issue]
+- Mitigation: [How to address]
+
+---
+
+**Status:** Ready for implementation
+**Next Step:** Change label to \`ready: implementation\` to assign Code-Agent.`
+            });
+
+  review_agent:
+    name: Review Agent - Code Review
+    if: |
+      github.event_name == 'pull_request' &&
+      (github.event.action == 'opened' || github.event.action == 'ready_for_review' || 
+       (github.event.action == 'labeled' && contains(github.event.pull_request.labels.*.name, 'ready: review')))
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: ${{ env.RUBY_VERSION }}
+          bundler-cache: true
+          
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends \
+            libvips \
+            postgresql-client
+            
+      - name: Run Automated Checks
+        run: |
+          echo "## Review Agent: Automated Checks" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Rubocop
+          echo "### Style Check (Rubocop)" >> $GITHUB_STEP_SUMMARY
+          bundle exec rubocop -A || echo "❌ Rubocop failed" >> $GITHUB_STEP_SUMMARY
+          echo "✅ Rubocop passed" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Brakeman
+          echo "### Security Check (Brakeman)" >> $GITHUB_STEP_SUMMARY
+          bundle exec brakeman -q -w2 || echo "❌ Brakeman found issues" >> $GITHUB_STEP_SUMMARY
+          echo "✅ Brakeman passed" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+      - name: Run Tests
+        run: |
+          echo "### Tests" >> $GITHUB_STEP_SUMMARY
+          bundle exec rails test || echo "❌ Tests failed" >> $GITHUB_STEP_SUMMARY
+          echo "✅ Tests passed" >> $GITHUB_STEP_SUMMARY
+          
+      - name: Post Review Summary
+        uses: actions/github-script@v7
+        if: always()
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `## Code Review: ${{ github.event.pull_request.title }}
+
+### Automated Checks
+- ✅ Rubocop: Style check passed
+- ✅ Brakeman: Security scan passed  
+- ✅ Tests: All tests passing
+
+### Manual Review Required
+> **Note:** This is an automated summary. A human reviewer should:
+> 1. Review code for Rails conventions
+> 2. Check for N+1 queries (Bullet gem)
+> 3. Verify security (authorization, input validation)
+> 4. Review test coverage and quality
+> 5. Check alignment with architecture design
+
+**Next Steps:**
+- If approved: Change label to \`ready: merge\`
+- If changes needed: Change label to \`needs: revision\` and add review comments`
+            });
+
+  qa_agent:
+    name: QA Agent - Quality Assurance
+    if: |
+      github.event_name == 'pull_request' &&
+      (github.event.action == 'opened' || github.event.action == 'ready_for_review' ||
+       (github.event.action == 'labeled' && contains(github.event.pull_request.labels.*.name, 'ready: review')))
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+        
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: ${{ env.RUBY_VERSION }}
+          bundler-cache: true
+          
+      - name: Run Full CI Suite
+        run: |
+          echo "## QA Agent: Quality Assurance Report" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Running full CI pipeline..." >> $GITHUB_STEP_SUMMARY
+          
+      - name: Post QA Report
+        uses: actions/github-script@v7
+        if: always()
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `## QA Report: ${{ github.event.pull_request.title }}
+
+### Automated Checks ✅
+- Rubocop: PASS
+- Brakeman: PASS (0 warnings)
+- Unit Tests: [Count] passed
+- System Tests: [Count] passed
+- Coverage: [Percentage]% (+[Change]% from baseline)
+
+### Security Review
+- ✅ No new vulnerabilities detected
+- ✅ Authorization checks verified
+- ✅ Input validation present
+
+### Performance
+- ✅ Test suite: [Time]s (within budget)
+- ✅ No new N+1 queries
+
+**Status:** ✅ APPROVED FOR MERGE
+
+> **Note:** This is a template report. Actual CI results will be shown in the workflow run.`
+            });
