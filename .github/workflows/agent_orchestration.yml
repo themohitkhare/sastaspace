@@ -193,21 +193,30 @@ end
           
           # Rubocop
           echo "### Style Check (Rubocop)" >> $GITHUB_STEP_SUMMARY
-          bundle exec rubocop -A || echo "❌ Rubocop failed" >> $GITHUB_STEP_SUMMARY
-          echo "✅ Rubocop passed" >> $GITHUB_STEP_SUMMARY
+          if bundle exec rubocop -A; then
+            echo "✅ Rubocop passed" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ Rubocop failed" >> $GITHUB_STEP_SUMMARY
+          fi
           echo "" >> $GITHUB_STEP_SUMMARY
           
           # Brakeman
           echo "### Security Check (Brakeman)" >> $GITHUB_STEP_SUMMARY
-          bundle exec brakeman -q -w2 || echo "❌ Brakeman found issues" >> $GITHUB_STEP_SUMMARY
-          echo "✅ Brakeman passed" >> $GITHUB_STEP_SUMMARY
+          if bundle exec brakeman -q -w2; then
+            echo "✅ Brakeman passed" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ Brakeman found issues" >> $GITHUB_STEP_SUMMARY
+          fi
           echo "" >> $GITHUB_STEP_SUMMARY
           
       - name: Run Tests
         run: |
           echo "### Tests" >> $GITHUB_STEP_SUMMARY
-          bundle exec rails test || echo "❌ Tests failed" >> $GITHUB_STEP_SUMMARY
-          echo "✅ Tests passed" >> $GITHUB_STEP_SUMMARY
+          if bundle exec rails test; then
+            echo "✅ Tests passed" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ Tests failed" >> $GITHUB_STEP_SUMMARY
+          fi
           
       - name: Post Review Summary
         uses: actions/github-script@v7
