@@ -1,0 +1,233 @@
+# SastaSpace - Cursor AI Configuration
+
+## Project Context
+- Rails 8.1 application with Hotwire frontend
+- PostgreSQL + pgvector for AI features
+- Local AI via Ollama (no API costs)
+- Testing: Minitest, Capybara, VCR, Mocha
+- CI: Rubocop, Brakeman, Simplecov
+- Background Jobs: Sidekiq with Redis
+
+## Coding Standards
+1. **Always use TDD**: Write tests before implementation
+2. **Rails Conventions**: Follow RESTful routing, use generators
+3. **No Fat Controllers**: Move business logic to services
+4. **Hotwire-First**: Use Turbo Frames/Streams, avoid custom JS unless necessary
+5. **Service Objects**: Plain Ruby classes in `app/services/` for business logic
+6. **Background Jobs**: Use Sidekiq workers in `app/jobs/` for async tasks
+
+## File Structure
+- Models: `app/models/` (ActiveRecord only, no business logic)
+- Services: `app/services/` (POROs for business logic)
+- Jobs: `app/jobs/` (Sidekiq workers for async tasks)
+- Controllers: `app/controllers/` (RESTful actions only)
+- API Controllers: `app/controllers/api/v1/` (namespaced)
+
+## Pre-Commit Checklist
+```bash
+bin/rubocop --autocorrect-all
+bin/brakeman --quiet
+bin/rails test
+```
+
+## Common Patterns
+
+### Service Object Template
+```ruby
+# app/services/quota_enforcer.rb
+class QuotaEnforcer
+  class QuotaExceededError < StandardError; end
+
+  def initialize(user)
+    @user = user
+  end
+
+  def check!(resource_type)
+    return true if @user.premium?
+
+    current_count = @user.send(resource_type).count
+    limit = LIMITS[@user.plan_type][resource_type]
+
+    raise QuotaExceededError if current_count >= limit
+    true
+  end
+
+  private
+
+  LIMITS = {
+    free: { inventory_items: 50, outfits: 10 },
+    premium: { inventory_items: Float::INFINITY, outfits: Float::INFINITY }
+  }.freeze
+end
+```
+
+### Controller Action Template
+```ruby
+# app/controllers/inventory_items_controller.rb
+def create
+  QuotaEnforcer.new(current_user).check!(:inventory_items)
+
+  @inventory_item = current_user.inventory_items.build(inventory_item_params)
+
+  if @inventory_item.save
+    redirect_to @inventory_item, notice: "Item added!"
+  else
+    render :new, status: :unprocessable_entity
+  end
+rescue QuotaEnforcer::QuotaExceededError
+  redirect_to upgrade_path, alert: "Quota exceeded. Upgrade to Premium!"
+end
+```
+
+### Test Template (Minitest)
+```ruby
+# test/services/quota_enforcer_test.rb
+require "test_helper"
+
+class QuotaEnforcerTest < ActiveSupport::TestCase
+  setup do
+    @user = users(:free_user)
+    @enforcer = QuotaEnforcer.new(@user)
+  end
+
+  test "allows creation under quota" do
+    assert @enforcer.check!(:inventory_items)
+  end
+
+  test "raises error when quota exceeded" do
+    create_list(:inventory_item, 50, user: @user)
+
+    assert_raises(QuotaEnforcer::QuotaExceededError) do
+      @enforcer.check!(:inventory_items)
+    end
+  end
+
+  test "allows unlimited for premium users" do
+    @user.update!(plan_type: :premium)
+    create_list(:inventory_item, 100, user: @user)
+
+    assert @enforcer.check!(:inventory_items)
+  end
+end
+```
+
+### API Controller Template
+```ruby
+# app/controllers/api/v1/base_controller.rb
+class Api::V1::BaseController < ApplicationController
+  include ApiResponse
+  include ErrorHandling
+  include Authenticable
+
+  before_action :authenticate_user!
+  before_action :set_pagination_params
+
+  private
+
+  def set_pagination_params
+    @page = params[:page] || 1
+    @per_page = [params[:per_page]&.to_i || 25, 100].min
+  end
+end
+```
+
+### Background Job Template
+```ruby
+# app/jobs/process_image_embedding_job.rb
+class ProcessImageEmbeddingJob < ApplicationJob
+  queue_as :ai_critical
+  include TrackableJob
+
+  def perform(inventory_item_id)
+    item = InventoryItem.find(inventory_item_id)
+    EmbeddingService.new.generate_and_store(item)
+  rescue ActiveRecord::RecordNotFound => e
+    Rails.logger.error("InventoryItem #{inventory_item_id} not found: #{e.message}")
+  end
+end
+```
+
+## Testing Guidelines
+
+### Avoid Hard-Coding in Tests
+**Critical Rule**: Never hard-code values in tests that could cause collisions.
+
+1. **Use Unique Identifiers**: Always use `SecureRandom.hex(4)`, `SecureRandom.uuid`, or FactoryBot sequences
+   ```ruby
+   # ❌ BAD: Hard-coded name can collide
+   category = create(:category, name: "T-Shirts")
+   
+   # ✅ GOOD: Unique name using SecureRandom
+   unique_name = "T-Shirts #{SecureRandom.hex(4)}"
+   category = create(:category, name: unique_name)
+   ```
+
+2. **Use Unique File Paths**: For temp files, file paths, or mock paths
+   ```ruby
+   # ❌ BAD: Hard-coded path
+   existing_path = "/tmp/existing_path.jpg"
+   
+   # ✅ GOOD: Unique path
+   existing_path = "/tmp/existing_path_#{SecureRandom.hex(4)}.jpg"
+   ```
+
+3. **Stub Order Matters**: When stubbing methods on an object, stub dependent methods BEFORE stubbing methods that return mocks/substitutes
+   ```ruby
+   # ✅ GOOD: Stub blob methods before stubbing service
+   @image_blob.stubs(:download).returns("fake data")
+   @image_blob.stubs(:content_type).returns("image/jpeg")
+   @image_blob.stubs(:service).returns(mock_service)
+   ```
+
+### AI Response Parsing (Critical!)
+- **NEVER assume AI models return perfect JSON** - they often include explanatory text, "thinking out loud", or markdown formatting
+- **Implement multi-strategy JSON extraction**:
+  1. Extract between first `{` and last `}`
+  2. Look for JSON in markdown code fences (`` ```json ... ``` ``)
+  3. Use line-by-line brace counting for complex cases
+- **Test with real-world AI responses** - not just perfect `.to_json` output
+- **Add production error cases to test suite immediately** when discovered
+
+## Commands for Cursor
+- "Generate tests for this service"
+- "Refactor this controller action following Rails conventions"
+- "Add database migration for [feature]"
+- "Create Turbo Frame for this UI component"
+- "Review this code for Rails best practices and security issues"
+
+## Agent Workflow Integration
+
+### When Acting as Code-Agent
+1. Read architecture comment from GitHub issue
+2. Create feature branch: `git checkout -b feature/issue-#{issue_number}-short-name`
+3. Write failing tests first (TDD)
+4. Implement minimal code to pass
+5. Run `bin/ci` before committing
+6. Create PR with proper description and labels
+
+### When Acting as Review-Agent
+1. Check automated checks (Rubocop, Brakeman, Tests)
+2. Review for Rails conventions
+3. Check for N+1 queries (Bullet gem)
+4. Verify security (authorization, input validation)
+5. Post review comments with inline suggestions
+
+### When Acting as Arch-Agent
+1. Analyze issue requirements
+2. Design database schema changes
+3. Plan service objects and controllers
+4. Consider background job needs
+5. Post architecture comment on issue
+
+## Security Checklist
+- [ ] Authorization checks present (`authorize @resource`)
+- [ ] Strong params validated
+- [ ] No raw SQL (or properly sanitized)
+- [ ] File uploads validated (size, type)
+- [ ] Rate limiting applied where needed
+
+## Performance Checklist
+- [ ] No N+1 queries detected
+- [ ] Database indexes added for new queries
+- [ ] Background job used for slow operations
+- [ ] Caching strategy considered

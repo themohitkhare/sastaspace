@@ -1,11 +1,13 @@
 ---
-description: "Run a code review checklist against the current changes focusing on Rails best practices, security, and style."
+description: "Run a code review checklist against the current changes focusing on Rails best practices, security, and style. Note: Review-Agent handles this automatically in CI, but this is useful for manual reviews."
 globs: []
 ---
 
 # Code Review Checklist
 
 Run this checklist against the current changeset (`git diff` or active files) to ensure compliance with SastaSpace standards.
+
+> **Note**: The Review-Agent workflow (`.github/workflows/agent_orchestration.yml`) automatically runs Rubocop, Brakeman, and tests on PRs. This command is for manual reviews or pre-commit checks.
 
 ## 1. Rails & Architecture Standards
 - [ ] **Rails 8 Idioms**: Are we using modern Rails features (e.g., `solid_queue`, `solid_cache` if applicable, `generates_token_for`)?

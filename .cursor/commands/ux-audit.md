@@ -1,5 +1,5 @@
 ---
-description: "Audit the UI implementation against Apple Design Guidelines and SastaSpace standards."
+description: "Audit the UI implementation against Apple Design Guidelines and SastaSpace standards. Useful for manual UX reviews or when Code-Agent implements frontend features."
 globs: []
 ---
 

@@ -1,11 +1,13 @@
 ---
-description: "Run all test suites (Unit, System, CI) and iteratively fix failures."
+description: "Run all test suites (Unit, System, CI) and iteratively fix failures. Use this when acting as Code-Agent during development."
 globs: []
 ---
 
 # Run All Tests and Fix
 
 Execute the full testing suite to ensure stability across environments.
+
+> **Note**: This is used by Code-Agent during development. Always run `bin/ci` before creating a PR to ensure Review-Agent and QA-Agent checks will pass.
 
 ## 1. Run Tests
 
