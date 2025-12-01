@@ -56,7 +56,7 @@ gem "maintenance_tasks"
 gem "bootsnap", "~> 1.18", require: false
 
 # Deploy this application anywhere as a Docker container [https://kamal-deploy.org]
-gem "kamal", "~> 2.8.2", require: false
+gem "kamal", "~> 2.9.0", require: false
 
 # Add HTTP asset caching/compression and X-Sendfile acceleration to Puma [https://github.com/basecamp/thruster/]
 gem "thruster", "~> 0.1", require: false
