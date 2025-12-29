@@ -107,7 +107,7 @@ group :test do
   gem "faker", "~> 3.5"
   gem "simplecov", "~> 0.22", require: false
   gem "webmock", "~> 3.26.1"
-  gem "vcr", "~> 6.3"
+  gem "vcr", "~> 6.4"
   gem "minitest-reporters", "~> 1.7"
   gem "shoulda-matchers", "~> 7.0.1"
   gem "mocha", "~> 2.7"
