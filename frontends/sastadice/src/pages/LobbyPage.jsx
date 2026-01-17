@@ -8,14 +8,13 @@ import LobbyView from '../components/lobby/LobbyView'
 
 export default function LobbyPage() {
   const gameId = useGameStore((s) => s.gameId)
-  const game = useGameStore((s) => s.game)
 
   // Start polling for lobby updates
-  useSastaPolling(gameId, 2000)
+  const { refetch } = useSastaPolling(gameId, 2000)
 
   return (
     <div className="min-h-screen bg-sasta-white">
-      <LobbyView />
+      <LobbyView onRefresh={refetch} />
     </div>
   )
 }

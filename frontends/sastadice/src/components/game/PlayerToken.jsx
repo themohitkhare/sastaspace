@@ -1,13 +1,17 @@
 /**
- * PlayerToken - Renders player avatar/token on the board
+ * PlayerToken - Renders player avatar/token on the board (Brutalist style)
  */
 import React from 'react'
-import { TILE_SIZE } from './IsometricContainer'
 
-export default function PlayerToken({ player, position, boardSize, board }) {
-  // Find tile at player's position
-  const tile = board?.find((t) => t.position === position)
+const TILE_SIZE = 72
 
+export default function PlayerToken({ 
+  player, 
+  tile, 
+  boardSize, 
+  offsetX = 0, 
+  offsetY = 0 
+}) {
   if (!tile) {
     return null
   }
@@ -17,22 +21,30 @@ export default function PlayerToken({ player, position, boardSize, board }) {
     return null
   }
 
+  // Player color with fallback
+  const playerColor = player.color || '#000000'
+
   return (
     <div
-      className="player-token absolute bg-sasta-black text-sasta-white rounded-full border-2 border-sasta-white"
+      className="player-token absolute font-zero font-bold text-sasta-white"
       style={{
-        left: `${tile.x * TILE_SIZE + TILE_SIZE / 2 - 15}px`,
-        top: `${tile.y * TILE_SIZE + TILE_SIZE / 2 - 15}px`,
-        width: '30px',
-        height: '30px',
+        // Position relative to grid
+        gridColumn: tile.x + 1,
+        gridRow: tile.y + 1,
+        // Center in tile with offset for multiple players
+        transform: `translate(${TILE_SIZE / 2 - 12 + offsetX}px, ${TILE_SIZE / 2 - 12 + offsetY}px)`,
+        backgroundColor: playerColor,
+        width: '24px',
+        height: '24px',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        fontSize: '12px',
-        fontWeight: 'bold',
-        zIndex: 10,
+        fontSize: '10px',
+        border: '2px solid #000',
+        zIndex: 20,
+        pointerEvents: 'none',
       }}
-      title={player.name}
+      title={`${player.name} - $${player.cash}`}
     >
       {player.name.charAt(0).toUpperCase()}
     </div>
@@ -42,3 +54,5 @@ export default function PlayerToken({ player, position, boardSize, board }) {
 function isOnBoardPerimeter(x, y, boardSize) {
   return x === 0 || x === boardSize - 1 || y === 0 || y === boardSize - 1
 }
+
+export { TILE_SIZE }
