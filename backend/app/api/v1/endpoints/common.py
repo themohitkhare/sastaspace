@@ -8,7 +8,7 @@ router = APIRouter()
 
 
 @router.get("/health")
-def health_check(db: duckdb.DuckDBPyConnection = Depends(get_db)) -> dict[str, str]:
+def health_check(db: duckdb.DuckDBCursor = Depends(get_db)) -> dict[str, str]:
     """
     Health check endpoint that verifies the database connection.
     
