@@ -22,6 +22,9 @@ describe('LobbyPage', () => {
       }
       return selector(state)
     })
+    
+    // Mock useSastaPolling to return refetch
+    useSastaPolling.mockReturnValue({ refetch: vi.fn() })
   })
 
   it('renders LobbyView', () => {
