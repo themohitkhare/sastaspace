@@ -1,19 +1,47 @@
-import { useCallback } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
 import { useSastaPolling } from '../hooks/useSastaPolling'
 import { useGameStore } from '../store/useGameStore'
+import { apiClient } from '../api/apiClient'
 import BoardView from '../components/game/BoardView'
 import PlayerPanel from '../components/game/PlayerPanel'
 import ActionPanel from '../components/game/ActionPanel'
 import DiceDisplay from '../components/game/DiceDisplay'
+
+const CPU_NAMES = new Set(['ROBOCOP', 'CHAD BOT', 'KAREN.EXE', 'STONKS', 'CPU-1', 'CPU-2', 'CPU-3', 'CPU-4', 'CPU-5'])
 
 export default function GamePage() {
   const gameId = useGameStore((s) => s.gameId)
   const playerId = useGameStore((s) => s.playerId)
   const game = useGameStore((s) => s.game)
   const isMyTurn = useGameStore((s) => s.isMyTurn)()
+  const cpuActionRef = useRef(false)
 
   const { refetch } = useSastaPolling(gameId, 1500)
   const handleActionComplete = useCallback(() => refetch(), [refetch])
+
+  const currentPlayer = game?.players?.find((p) => p.id === game?.current_turn_player_id)
+  const isCpuTurn = currentPlayer && CPU_NAMES.has(currentPlayer.name) && game?.status === 'ACTIVE'
+
+  useEffect(() => {
+    if (!isCpuTurn || cpuActionRef.current) return
+
+    const processCpuTurns = async () => {
+      cpuActionRef.current = true
+      
+      await new Promise(r => setTimeout(r, 600))
+      
+      try {
+        await apiClient.post(`/sastadice/games/${gameId}/cpu-turn`)
+        refetch()
+      } finally {
+        setTimeout(() => { cpuActionRef.current = false }, 300)
+      }
+    }
+
+    processCpuTurns()
+  }, [isCpuTurn, gameId, refetch])
+
+  const myPlayer = game?.players?.find((p) => p.id === playerId)
 
   if (!game) {
     return (
@@ -26,56 +54,48 @@ export default function GamePage() {
     )
   }
 
-  const currentPlayer = game.players?.find((p) => p.id === game.current_turn_player_id)
-  const myPlayer = game.players?.find((p) => p.id === playerId)
-
   return (
-    <div className="min-h-screen bg-sasta-white">
-      <header className="border-b-4 border-sasta-black bg-sasta-white">
-        <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold font-zero">SASTADICE</h1>
-            <p className="text-sm font-zero opacity-60">GAME: {gameId?.slice(0, 8)}...</p>
+    <div className="min-h-screen bg-sasta-white flex flex-col">
+      <header className="border-b-4 border-sasta-black bg-sasta-white shrink-0">
+        <div className="max-w-7xl mx-auto px-2 sm:px-4 py-2 sm:py-4 flex flex-wrap items-center justify-between gap-2">
+          <div className="min-w-0">
+            <h1 className="text-xl sm:text-3xl font-bold font-zero truncate">SASTADICE</h1>
+            <p className="text-xs sm:text-sm font-zero opacity-60 truncate">GAME: {gameId?.slice(0, 8)}...</p>
           </div>
           
-          <div className={`border-brutal-sm px-4 py-2 ${isMyTurn ? 'bg-sasta-accent' : 'bg-sasta-white'}`}>
-            <div className="text-xs font-zero font-bold opacity-60">CURRENT TURN</div>
-            <div className="font-zero font-bold">{currentPlayer?.name?.toUpperCase() || 'N/A'}</div>
-            {isMyTurn && <div className="text-xs font-zero text-sasta-black font-bold">YOUR TURN!</div>}
+          <div className={`border-brutal-sm px-2 sm:px-4 py-1 sm:py-2 ${isMyTurn ? 'bg-sasta-accent' : 'bg-sasta-white'}`}>
+            <div className="text-[10px] sm:text-xs font-zero font-bold opacity-60">CURRENT TURN</div>
+            <div className="font-zero font-bold text-sm sm:text-base">{currentPlayer?.name?.toUpperCase() || 'N/A'}</div>
+            {isMyTurn && <div className="text-[10px] sm:text-xs font-zero text-sasta-black font-bold">YOUR TURN!</div>}
+            {isCpuTurn && <div className="text-[10px] sm:text-xs font-zero text-blue-600 font-bold animate-pulse">CPU THINKING...</div>}
           </div>
 
           {myPlayer && (
-            <div className="text-right border-brutal-sm bg-sasta-black text-sasta-accent px-4 py-2">
-              <div className="text-xs font-zero opacity-60">YOUR CASH</div>
-              <div className="text-2xl font-zero font-bold">${myPlayer.cash.toLocaleString()}</div>
+            <div className="text-right border-brutal-sm bg-sasta-black text-sasta-accent px-2 sm:px-4 py-1 sm:py-2">
+              <div className="text-[10px] sm:text-xs font-zero opacity-60">YOUR CASH</div>
+              <div className="text-lg sm:text-2xl font-zero font-bold">${myPlayer.cash.toLocaleString()}</div>
             </div>
           )}
         </div>
       </header>
 
-      <div className="max-w-7xl mx-auto p-4 flex gap-4">
-        <div className="flex-1 border-brutal-lg bg-sasta-white shadow-brutal-lg overflow-hidden">
+      <div className="flex-1 min-h-0 max-w-full mx-auto w-full p-2 sm:p-4 flex flex-col lg:flex-row gap-4 overflow-hidden">
+        <div className="flex-1 min-h-0 min-w-0 border-brutal-lg bg-sasta-white shadow-brutal-lg overflow-hidden order-1 lg:order-1">
           <BoardView
             tiles={game.board || []}
             boardSize={game.board_size || 0}
             players={game.players || []}
           >
-            <div className="flex flex-col items-center gap-4 w-full max-w-xs p-4">
-              <DiceDisplay lastDiceRoll={game.last_dice_roll} />
-              <ActionPanel
-                gameId={gameId}
-                playerId={playerId}
-                turnPhase={game.turn_phase}
-                pendingDecision={game.pending_decision}
-                isMyTurn={isMyTurn}
-                lastEventMessage={game.last_event_message}
-                onActionComplete={handleActionComplete}
-              />
-            </div>
+            <DiceDisplay lastDiceRoll={game.last_dice_roll} />
+            {game.last_event_message && (
+              <p className="font-zero text-xs sm:text-sm text-center mt-2 p-2 bg-sasta-accent/20 border border-sasta-black">
+                {game.last_event_message}
+              </p>
+            )}
           </BoardView>
         </div>
 
-        <div className="w-72 border-brutal-lg bg-sasta-white shadow-brutal-lg p-4">
+        <div className="w-full lg:w-64 lg:shrink-0 border-brutal-lg bg-sasta-white shadow-brutal-lg p-3 sm:p-4 order-2 lg:order-2 lg:max-h-full lg:overflow-auto">
           <PlayerPanel
             players={game.players || []}
             currentTurnPlayerId={game.current_turn_player_id}
@@ -83,9 +103,9 @@ export default function GamePage() {
             tiles={game.board || []}
           />
 
-          <div className="mt-4 pt-4 border-t-2 border-sasta-black">
-            <h4 className="text-xs font-zero font-bold mb-3">GAME INFO</h4>
-            <div className="space-y-2 text-sm font-zero">
+          <div className="mt-3 sm:mt-4 pt-3 sm:pt-4 border-t-2 border-sasta-black">
+            <h4 className="text-xs font-zero font-bold mb-2 sm:mb-3">GAME INFO</h4>
+            <div className="grid grid-cols-2 lg:grid-cols-1 gap-2 text-xs sm:text-sm font-zero">
               <div className="flex justify-between border-brutal-sm p-2">
                 <span className="opacity-60">STATUS:</span>
                 <span className="font-bold">{game.status}</span>
@@ -106,6 +126,22 @@ export default function GamePage() {
           </div>
         </div>
       </div>
+
+      {isMyTurn && (
+        <div className="shrink-0 border-t-4 border-sasta-black bg-sasta-white p-2 sm:p-4">
+          <div className="max-w-md mx-auto">
+            <ActionPanel
+              gameId={gameId}
+              playerId={playerId}
+              turnPhase={game.turn_phase}
+              pendingDecision={game.pending_decision}
+              isMyTurn={isMyTurn}
+              lastEventMessage={null}
+              onActionComplete={handleActionComplete}
+            />
+          </div>
+        </div>
+      )}
     </div>
   )
 }

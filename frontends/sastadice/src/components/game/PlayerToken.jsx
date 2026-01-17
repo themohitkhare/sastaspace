@@ -1,45 +1,36 @@
-/**
- * PlayerToken - Renders player avatar/token on the board (Brutalist style)
- */
-import React from 'react'
-
-const TILE_SIZE = 72
+const DEFAULT_TILE_SIZE = 72
 
 export default function PlayerToken({ 
   player, 
   tile, 
-  boardSize, 
+  boardSize,
+  tileSize = DEFAULT_TILE_SIZE,
   offsetX = 0, 
   offsetY = 0 
 }) {
-  if (!tile) {
-    return null
-  }
+  if (!tile) return null
 
-  const isOnPerimeter = isOnBoardPerimeter(tile.x, tile.y, boardSize)
-  if (!isOnPerimeter) {
-    return null
-  }
+  const isOnPerimeter = tile.x === 0 || tile.x === boardSize - 1 || tile.y === 0 || tile.y === boardSize - 1
+  if (!isOnPerimeter) return null
 
-  // Player color with fallback
   const playerColor = player.color || '#000000'
+  const tokenSize = Math.max(16, Math.floor(tileSize / 3))
+  const fontSize = Math.max(8, Math.floor(tokenSize / 2.4))
 
   return (
     <div
       className="player-token absolute font-zero font-bold text-sasta-white"
       style={{
-        // Position relative to grid
         gridColumn: tile.x + 1,
         gridRow: tile.y + 1,
-        // Center in tile with offset for multiple players
-        transform: `translate(${TILE_SIZE / 2 - 12 + offsetX}px, ${TILE_SIZE / 2 - 12 + offsetY}px)`,
+        transform: `translate(${tileSize / 2 - tokenSize / 2 + offsetX}px, ${tileSize / 2 - tokenSize / 2 + offsetY}px)`,
         backgroundColor: playerColor,
-        width: '24px',
-        height: '24px',
+        width: `${tokenSize}px`,
+        height: `${tokenSize}px`,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        fontSize: '10px',
+        fontSize: `${fontSize}px`,
         border: '2px solid #000',
         zIndex: 20,
         pointerEvents: 'none',
@@ -51,8 +42,4 @@ export default function PlayerToken({
   )
 }
 
-function isOnBoardPerimeter(x, y, boardSize) {
-  return x === 0 || x === boardSize - 1 || y === 0 || y === boardSize - 1
-}
-
-export { TILE_SIZE }
+export { DEFAULT_TILE_SIZE as TILE_SIZE }

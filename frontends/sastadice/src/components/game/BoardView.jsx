@@ -1,9 +1,52 @@
+import { useState, useEffect, useRef } from 'react'
 import TileComponent from './TileComponent'
 import PlayerToken from './PlayerToken'
 
-const TILE_SIZE = 72
+const DEFAULT_TILE_SIZE = 72
+const MIN_TILE_SIZE = 50
+const MAX_TILE_SIZE = 150
+
+function useTileSize(boardSize, containerRef) {
+  const [tileSize, setTileSize] = useState(DEFAULT_TILE_SIZE)
+
+  useEffect(() => {
+    function calculateTileSize() {
+      if (!containerRef.current) return
+      
+      const container = containerRef.current
+      const availableWidth = container.clientWidth - 16
+      const availableHeight = container.clientHeight - 16
+      
+      const sizeFromWidth = Math.floor(availableWidth / boardSize)
+      const sizeFromHeight = Math.floor(availableHeight / boardSize)
+      
+      const calculated = Math.min(sizeFromWidth, sizeFromHeight)
+      const clamped = Math.max(MIN_TILE_SIZE, Math.min(MAX_TILE_SIZE, calculated))
+      
+      setTileSize(clamped)
+    }
+
+    calculateTileSize()
+    window.addEventListener('resize', calculateTileSize)
+    
+    const resizeObserver = new ResizeObserver(calculateTileSize)
+    if (containerRef.current) {
+      resizeObserver.observe(containerRef.current)
+    }
+    
+    return () => {
+      window.removeEventListener('resize', calculateTileSize)
+      resizeObserver.disconnect()
+    }
+  }, [boardSize, containerRef])
+
+  return tileSize
+}
 
 export default function BoardView({ tiles = [], boardSize, players = [], children }) {
+  const containerRef = useRef(null)
+  const tileSize = useTileSize(boardSize, containerRef)
+
   if (!boardSize || boardSize < 2) {
     return <div className="text-center p-8 font-zero">LOADING BOARD...</div>
   }
@@ -11,13 +54,13 @@ export default function BoardView({ tiles = [], boardSize, players = [], childre
   const isOnPerimeter = (x, y) => x === 0 || x === boardSize - 1 || y === 0 || y === boardSize - 1
 
   return (
-    <div className="board-wrapper flex justify-center items-center py-6">
+    <div ref={containerRef} className="board-wrapper w-full h-full flex justify-center items-center p-2">
       <div
         className="board-container relative border-brutal"
         style={{
           display: 'grid',
-          gridTemplateColumns: `repeat(${boardSize}, ${TILE_SIZE}px)`,
-          gridTemplateRows: `repeat(${boardSize}, ${TILE_SIZE}px)`,
+          gridTemplateColumns: `repeat(${boardSize}, ${tileSize}px)`,
+          gridTemplateRows: `repeat(${boardSize}, ${tileSize}px)`,
           gap: '0px',
           backgroundColor: '#000',
         }}
@@ -26,7 +69,7 @@ export default function BoardView({ tiles = [], boardSize, players = [], childre
           if (!isOnPerimeter(tile.x, tile.y)) return null
           return (
             <div key={tile.id} style={{ gridColumn: tile.x + 1, gridRow: tile.y + 1 }}>
-              <TileComponent tile={tile} players={players} />
+              <TileComponent tile={tile} players={players} size={tileSize} />
             </div>
           )
         })}
@@ -37,6 +80,7 @@ export default function BoardView({ tiles = [], boardSize, players = [], childre
 
           const playersOnSameTile = players.filter(p => p.position === player.position)
           const playerIndex = playersOnSameTile.findIndex(p => p.id === player.id)
+          const tokenOffset = Math.floor(tileSize / 4)
 
           return (
             <PlayerToken
@@ -44,15 +88,16 @@ export default function BoardView({ tiles = [], boardSize, players = [], childre
               player={player}
               tile={tile}
               boardSize={boardSize}
-              offsetX={(playerIndex % 2) * 18 - 9}
-              offsetY={Math.floor(playerIndex / 2) * 18 - 9}
+              tileSize={tileSize}
+              offsetX={(playerIndex % 2) * tokenOffset - tokenOffset / 2}
+              offsetY={Math.floor(playerIndex / 2) * tokenOffset - tokenOffset / 2}
             />
           )
         })}
 
         {boardSize > 2 && (
           <div
-            className="board-center bg-sasta-white border-brutal flex flex-col items-center justify-center"
+            className="board-center bg-sasta-white border-brutal flex flex-col items-center justify-center p-2 overflow-hidden"
             style={{ gridColumn: `2 / ${boardSize}`, gridRow: `2 / ${boardSize}` }}
           >
             {children}
@@ -63,4 +108,4 @@ export default function BoardView({ tiles = [], boardSize, players = [], childre
   )
 }
 
-export { TILE_SIZE }
+export { DEFAULT_TILE_SIZE as TILE_SIZE }

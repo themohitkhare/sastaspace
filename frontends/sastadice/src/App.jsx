@@ -1,13 +1,11 @@
-import React from 'react'
+import { useEffect, useState } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { useGameStore } from './store/useGameStore'
+import { apiClient } from './api/apiClient'
 import HomePage from './pages/HomePage'
 import LobbyPage from './pages/LobbyPage'
 import GamePage from './pages/GamePage'
 
-/**
- * ProtectedRoute - Redirects to home if no gameId
- */
 function ProtectedRoute({ children }) {
   const gameId = useGameStore((s) => s.gameId)
   if (!gameId) {
@@ -16,26 +14,63 @@ function ProtectedRoute({ children }) {
   return children
 }
 
-/**
- * GameRoute - Routes to lobby or game based on game status
- * The child pages (LobbyPage/GamePage) will handle polling
- */
 function GameRoute() {
+  const gameId = useGameStore((s) => s.gameId)
   const game = useGameStore((s) => s.game)
+  const setGame = useGameStore((s) => s.setGame)
+  const reset = useGameStore((s) => s.reset)
+  const [isRestoring, setIsRestoring] = useState(false)
+  const [restoreError, setRestoreError] = useState(null)
 
-  // If no game state yet, show loading (will be loaded by child pages)
-  if (!game) {
+  useEffect(() => {
+    if (gameId && !game && !isRestoring) {
+      setIsRestoring(true)
+      setRestoreError(null)
+      
+      apiClient.get(`/sastadice/games/${gameId}/state`)
+        .then((res) => {
+          setGame(res.data.game, res.data.version)
+        })
+        .catch((err) => {
+          if (err.response?.status === 404) {
+            setRestoreError('Game not found or expired')
+            reset()
+          } else {
+            setRestoreError('Failed to restore session')
+          }
+        })
+        .finally(() => {
+          setIsRestoring(false)
+        })
+    }
+  }, [gameId, game, isRestoring, setGame, reset])
+
+  if (isRestoring || (!game && gameId)) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full mx-auto mb-4"></div>
-          <p className="text-lg text-gray-600">Loading game...</p>
+      <div className="min-h-screen bg-sasta-white flex items-center justify-center">
+        <div className="text-center border-brutal-lg p-8 shadow-brutal-lg">
+          <div className="w-8 h-8 border-4 border-sasta-black border-t-sasta-accent animate-spin mx-auto mb-4"></div>
+          <p className="font-zero text-lg">RESTORING SESSION...</p>
         </div>
       </div>
     )
   }
 
-  // Route to appropriate page based on game status
+  if (restoreError) {
+    return (
+      <div className="min-h-screen bg-sasta-white flex items-center justify-center">
+        <div className="text-center border-brutal-lg p-8 shadow-brutal-lg">
+          <p className="font-zero text-lg text-red-500 mb-4">{restoreError}</p>
+          <a href="/" className="font-zero underline">GO HOME</a>
+        </div>
+      </div>
+    )
+  }
+
+  if (!game) {
+    return <Navigate to="/" replace />
+  }
+
   if (game.status === 'LOBBY') {
     return <LobbyPage />
   }
@@ -47,9 +82,6 @@ function GameRoute() {
   return <Navigate to="/" replace />
 }
 
-/**
- * App - Main entry point for SastaDice
- */
 function App() {
   return (
     <BrowserRouter>
