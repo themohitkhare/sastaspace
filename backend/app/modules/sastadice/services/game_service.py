@@ -40,27 +40,59 @@ class GameService:
         return game
 
     def join_game(
-        self, game_id: str, player_name: str, tiles: list[TileCreate]
+        self, game_id: str, player_name: str, tiles: Optional[list[TileCreate]] = None
     ) -> Player:
-        """Join a game and submit tiles."""
+        """Join a game and submit tiles (or use seeded tiles if not provided)."""
         game = self.get_game(game_id)
 
         if game.status != GameStatus.LOBBY:
             raise ValueError("Cannot join game that is not in LOBBY status")
 
-        if len(tiles) != 5:
+        if tiles is None:
+            tiles = self.board_service.generate_seeded_tiles_for_player(
+                player_name, game.players
+            )
+        elif len(tiles) != 5:
             raise ValueError("Must submit exactly 5 tiles")
 
         player_create = PlayerCreate(name=player_name)
         player = self.repository.add_player(game_id, player_create)
         self.repository.submit_tiles(game_id, player.id, tiles)
 
-        # Reload game to include new player
+        game = self.get_game(game_id)
+        self.repository.update(game)
+
         game = self.get_game(game_id)
         player = next((p for p in game.players if p.id == player.id), player)
         player.submitted_tiles = tiles
 
         return player
+
+    def add_cpu_players(self, game_id: str, target_count: int = 2) -> None:
+        """Add CPU players to reach target count."""
+        game = self.get_game(game_id)
+        current_count = len(game.players)
+        
+        if current_count >= target_count:
+            return
+        
+        cpu_names = ["CPU-1", "CPU-2", "CPU-3", "CPU-4", "CPU-5"]
+        
+        for i in range(target_count - current_count):
+            cpu_name = cpu_names[min(i, len(cpu_names) - 1)]
+            if i >= len(cpu_names):
+                cpu_name = f"CPU-{i + 1}"
+            
+            tiles = self.board_service.generate_seeded_tiles_for_player(
+                cpu_name, game.players
+            )
+            
+            player_create = PlayerCreate(name=cpu_name)
+            player = self.repository.add_player(game_id, player_create)
+            self.repository.submit_tiles(game_id, player.id, tiles)
+            
+            game = self.get_game(game_id)
+            self.repository.update(game)
 
     def start_game(self, game_id: str) -> GameSession:
         """Start a game and generate the board."""
@@ -70,13 +102,12 @@ class GameService:
             raise ValueError("Game must be in LOBBY status to start")
 
         if len(game.players) < 2:
-            raise ValueError("Need at least 2 players to start game")
+            self.add_cpu_players(game_id, target_count=2)
+            game = self.get_game(game_id)
 
-        # Collect all player tiles
         all_player_tiles = []
         for player in game.players:
             for tile_create in player.submitted_tiles:
-                # Convert TileCreate to Tile
                 tile = Tile(
                     type=tile_create.type,
                     name=tile_create.name,
@@ -84,26 +115,32 @@ class GameService:
                 )
                 all_player_tiles.append(tile)
 
-        # Calculate board dimensions
         board_size, _, padding = self.board_service.calculate_dimensions(
             len(game.players)
         )
 
-        # Generate board
+        min_tiles_for_good_game = max(20, board_size * 4 - 4)
+        player_tile_count = len(all_player_tiles)
+        additional_tiles_needed = max(0, min_tiles_for_good_game - player_tile_count)
+        
+        if additional_tiles_needed > 0:
+            generated_tiles = self.board_service.generate_additional_tiles(
+                additional_tiles_needed, all_player_tiles
+            )
+            all_player_tiles.extend(generated_tiles)
+            padding = max(0, padding - additional_tiles_needed)
+
         board = self.board_service.generate_board(
             all_player_tiles, board_size, padding
         )
 
-        # Save board to database
         self.repository.save_board(game_id, board)
 
-        # Update game status and set first player's turn
         game.status = GameStatus.ACTIVE
         game.board = board
         game.board_size = board_size
         game.current_turn_player_id = game.players[0].id if game.players else None
 
-        # Update game in database
         self.repository.update(game)
 
         return game
@@ -123,13 +160,11 @@ class GameService:
         total = dice1 + dice2
         is_doubles = dice1 == dice2
 
-        # Move player
         player = next((p for p in game.players if p.id == player_id), None)
         if player:
             new_position = (player.position + total) % len(game.board)
             self.repository.update_player_position(player_id, new_position)
 
-        # Update game version for polling
         self.repository.update(game)
 
         return DiceRollResult(
@@ -152,7 +187,6 @@ class GameService:
             if game.current_turn_player_id != player_id:
                 return ActionResult(success=False, message="Not your turn")
 
-            # Move to next player
             current_index = next(
                 (
                     i
@@ -169,7 +203,6 @@ class GameService:
             return ActionResult(success=True, message="Turn ended")
 
         elif action_type == ActionType.BUY_PROPERTY:
-            # Placeholder for buy property logic
             return ActionResult(
                 success=False, message="Buy property not yet implemented"
             )
