@@ -6,7 +6,6 @@ import { useGameStore } from '../store/useGameStore'
 import { apiClient } from '../api/apiClient'
 
 export function useSastaPolling(gameId, intervalMs = 2000) {
-  const version = useGameStore((s) => s.version)
   const setGame = useGameStore((s) => s.setGame)
   const setError = useGameStore((s) => s.setError)
   const intervalRef = useRef(null)
@@ -16,8 +15,11 @@ export function useSastaPolling(gameId, intervalMs = 2000) {
 
     const poll = async () => {
       try {
+        // Get current version from store on each poll to avoid stale closures
+        const currentVersion = useGameStore.getState().version
+        
         const res = await apiClient.get(`/sastadice/games/${gameId}/state`, {
-          params: { version },
+          params: { version: currentVersion },
           validateStatus: (status) => status === 200 || status === 304,
         })
 
@@ -44,5 +46,5 @@ export function useSastaPolling(gameId, intervalMs = 2000) {
         clearInterval(intervalRef.current)
       }
     }
-  }, [gameId, version, intervalMs, setGame, setError])
+  }, [gameId, intervalMs, setGame, setError])
 }
