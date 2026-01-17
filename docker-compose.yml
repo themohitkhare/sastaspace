@@ -84,6 +84,22 @@ services:
       - "traefik.http.services.frontend-sasta.loadbalancer.server.port=80"
     restart: unless-stopped
 
+  frontend-sastadice:
+    build:
+      context: ./frontends/sastadice
+      dockerfile: Dockerfile
+    container_name: sastaspace-frontend-sastadice
+    ports:
+      - "9001:80"
+    networks:
+      - sastaspace-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.frontend-sastadice.rule=Host(`sastadice.sastaspace.com`)"
+      - "traefik.http.routers.frontend-sastadice.entrypoints=web"
+      - "traefik.http.services.frontend-sastadice.loadbalancer.server.port=80"
+    restart: unless-stopped
+
 networks:
   sastaspace-network:
     driver: bridge
