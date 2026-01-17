@@ -21,14 +21,16 @@ function ProtectedRoute({ children }) {
  * The child pages (LobbyPage/GamePage) will handle polling
  */
 function GameRoute() {
-  const gameId = useGameStore((s) => s.gameId)
   const game = useGameStore((s) => s.game)
-  
+
   // If no game state yet, show loading (will be loaded by child pages)
   if (!game) {
     return (
-      <div className="min-h-screen bg-sasta-white p-8 flex items-center justify-center">
-        <p className="font-zero text-2xl">Loading game...</p>
+      <div className="min-h-screen bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full mx-auto mb-4"></div>
+          <p className="text-lg text-gray-600">Loading game...</p>
+        </div>
       </div>
     )
   }
@@ -53,6 +55,14 @@ function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<HomePage />} />
+        <Route
+          path="/lobby"
+          element={
+            <ProtectedRoute>
+              <GameRoute />
+            </ProtectedRoute>
+          }
+        />
         <Route
           path="/game"
           element={
