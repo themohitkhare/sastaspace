@@ -3,20 +3,36 @@ import { useNavigate } from 'react-router-dom'
 import { apiClient } from '../api/apiClient'
 import { useGameStore } from '../store/useGameStore'
 
+const CPU_CHARACTERS = [
+  { id: 'cpu1', name: 'ROBOCOP', color: '#FF6B6B', emoji: '🤖' },
+  { id: 'cpu2', name: 'CHAD BOT', color: '#4ECDC4', emoji: '💪' },
+  { id: 'cpu3', name: 'KAREN.EXE', color: '#FF69B4', emoji: '💅' },
+  { id: 'cpu4', name: 'STONKS', color: '#45B7D1', emoji: '📈' },
+]
+
 export default function HomePage() {
   const navigate = useNavigate()
   const setGameId = useGameStore((s) => s.setGameId)
   const setGame = useGameStore((s) => s.setGame)
   const reset = useGameStore((s) => s.reset)
   const [gameCode, setGameCode] = useState('')
+  const [selectedCpus, setSelectedCpus] = useState([])
   const [isCreating, setIsCreating] = useState(false)
   const [isJoining, setIsJoining] = useState(false)
+
+  const toggleCpu = (cpuId) => {
+    setSelectedCpus(prev => 
+      prev.includes(cpuId) 
+        ? prev.filter(id => id !== cpuId)
+        : [...prev, cpuId]
+    )
+  }
 
   const handleCreateGame = async () => {
     setIsCreating(true)
     reset()
     try {
-      const res = await apiClient.post('/sastadice/games')
+      const res = await apiClient.post(`/sastadice/games?cpu_count=${selectedCpus.length}`)
       setGameId(res.data.id)
       setGame(res.data, 0)
       navigate('/lobby')
@@ -71,6 +87,59 @@ export default function HomePage() {
         </div>
 
         <div className="space-y-6">
+          <div className="border-brutal-lg bg-sasta-white p-4 shadow-brutal-lg">
+            <label className="font-zero font-bold text-sm mb-3 block">SELECT YOUR OPPONENTS:</label>
+            <div className="grid grid-cols-2 gap-3">
+              {CPU_CHARACTERS.map((cpu) => {
+                const isSelected = selectedCpus.includes(cpu.id)
+                return (
+                  <button
+                    key={cpu.id}
+                    onClick={() => toggleCpu(cpu.id)}
+                    className={`relative p-3 border-brutal-sm transition-all ${
+                      isSelected
+                        ? 'shadow-none translate-x-0.5 translate-y-0.5'
+                        : 'shadow-brutal-sm hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-brutal-xs'
+                    }`}
+                    style={{
+                      backgroundColor: isSelected ? cpu.color : '#FFFFFF',
+                      borderColor: cpu.color,
+                      borderWidth: '3px',
+                    }}
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="text-2xl">{cpu.emoji}</span>
+                      <div className="text-left">
+                        <div 
+                          className="font-zero font-bold text-sm"
+                          style={{ color: isSelected ? '#000' : cpu.color }}
+                        >
+                          {cpu.name}
+                        </div>
+                        <div className="font-zero text-[10px] text-sasta-black/60">
+                          {isSelected ? '✓ SELECTED' : 'CLICK TO ADD'}
+                        </div>
+                      </div>
+                    </div>
+                    {isSelected && (
+                      <div 
+                        className="absolute -top-2 -right-2 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold border-2 border-black"
+                        style={{ backgroundColor: cpu.color }}
+                      >
+                        ✓
+                      </div>
+                    )}
+                  </button>
+                )
+              })}
+            </div>
+            <p className="font-zero text-xs text-sasta-black/60 mt-3 text-center">
+              {selectedCpus.length === 0 
+                ? '👆 TAP TO SELECT CPU OPPONENTS (OR PLAY MULTIPLAYER ONLY)' 
+                : `${selectedCpus.length} OPPONENT${selectedCpus.length > 1 ? 'S' : ''} READY TO BATTLE!`}
+            </p>
+          </div>
+          
           <button
             onClick={handleCreateGame}
             disabled={isCreating || isJoining}
