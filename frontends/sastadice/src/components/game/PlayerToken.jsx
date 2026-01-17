@@ -14,8 +14,9 @@ export default function PlayerToken({
   if (!isOnPerimeter) return null
 
   const playerColor = player.color || '#000000'
-  const tokenSize = Math.max(16, Math.floor(tileSize / 3))
-  const fontSize = Math.max(8, Math.floor(tokenSize / 2.4))
+  const tokenSize = Math.max(12, Math.min(40, Math.floor(tileSize / 3)))
+  const fontSize = Math.max(6, Math.min(16, Math.floor(tokenSize / 2.4)))
+  const borderWidth = Math.max(1, Math.min(3, Math.floor(tokenSize / 20)))
 
   return (
     <div
@@ -31,7 +32,7 @@ export default function PlayerToken({
         alignItems: 'center',
         justifyContent: 'center',
         fontSize: `${fontSize}px`,
-        border: '2px solid #000',
+        border: `${borderWidth}px solid #000`,
         zIndex: 20,
         pointerEvents: 'none',
       }}

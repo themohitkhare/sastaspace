@@ -14,9 +14,18 @@ export default function TileComponent({ tile, players = [], size = 72, style = {
   const isPurchasable = tile.type === 'PROPERTY' && isUnowned
   const accentColor = TILE_TYPE_COLORS[tile.type] || TILE_TYPE_COLORS.NEUTRAL
 
+  const baseTileSize = 72
+  const scaleFactor = size / baseTileSize
+  
+  const typeFontSize = Math.max(4, Math.min(10, Math.round(7 * scaleFactor)))
+  const nameFontSize = Math.max(5, Math.min(12, Math.round(8 * scaleFactor)))
+  const detailFontSize = Math.max(4, Math.min(10, Math.round(7 * scaleFactor)))
+  const rentFontSize = Math.max(3, Math.min(8, Math.round(6 * scaleFactor)))
+  const borderWidth = Math.max(1, Math.min(4, Math.round(3 * scaleFactor)))
+  const padding = Math.max(1, Math.min(4, Math.round(2 * scaleFactor)))
+  
   const isSmall = size < 60
-  const fontSize = isSmall ? '5px' : '7px'
-  const nameFontSize = isSmall ? '6px' : '8px'
+  const maxNameLength = size < 50 ? 4 : size < 70 ? 6 : size < 100 ? 8 : 12
 
   return (
     <div
@@ -24,28 +33,42 @@ export default function TileComponent({ tile, players = [], size = 72, style = {
       style={{
         width: `${size}px`,
         height: `${size}px`,
-        border: `${isSmall ? 2 : 3}px solid ${owner ? owner.color : '#000000'}`,
+        border: `${borderWidth}px solid ${owner ? owner.color : '#000000'}`,
         borderStyle: isUnowned ? 'dashed' : 'solid',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'space-between',
-        padding: isSmall ? '1px' : '2px',
+        padding: `${padding}px`,
         opacity: isUnowned ? 0.8 : 1,
+        boxSizing: 'border-box',
         ...style,
       }}
     >
       <div 
-        className="w-full px-0.5 text-center font-zero font-bold text-sasta-black"
-        style={{ backgroundColor: accentColor, fontSize, lineHeight: 1.2, padding: isSmall ? '1px 0' : '2px 0' }}
+        className="w-full text-center font-zero font-bold text-sasta-black"
+        style={{ 
+          backgroundColor: accentColor, 
+          fontSize: `${typeFontSize}px`, 
+          lineHeight: 1.2, 
+          padding: `${Math.max(1, Math.floor(padding / 2))}px 0` 
+        }}
       >
         {tile.type === 'CHANCE' ? 'SASTA' : tile.type}
       </div>
 
-      <div className="tile-name flex-1 flex items-center justify-center px-0.5 overflow-hidden">
+      <div className="tile-name flex-1 flex items-center justify-center px-0.5 overflow-hidden w-full">
         <span 
           className="font-zero font-bold text-center leading-tight text-sasta-black"
-          style={{ fontSize: nameFontSize, wordBreak: 'break-word', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}
+          style={{ 
+            fontSize: `${nameFontSize}px`, 
+            wordBreak: 'break-word', 
+            display: '-webkit-box', 
+            WebkitLineClamp: size < 60 ? 1 : 2, 
+            WebkitBoxOrient: 'vertical', 
+            overflow: 'hidden',
+            lineHeight: 1.1
+          }}
         >
           {tile.name.toUpperCase()}
         </span>
@@ -55,7 +78,7 @@ export default function TileComponent({ tile, players = [], size = 72, style = {
         {isPurchasable && tile.price > 0 && (
           <div 
             className="bg-sasta-black text-sasta-accent text-center font-zero font-bold"
-            style={{ fontSize: nameFontSize, padding: '1px 0' }}
+            style={{ fontSize: `${detailFontSize}px`, padding: `${Math.max(1, Math.floor(padding / 2))}px 0` }}
           >
             ${tile.price}
           </div>
@@ -64,14 +87,21 @@ export default function TileComponent({ tile, players = [], size = 72, style = {
         {owner && (
           <div
             className="text-center font-zero font-bold text-sasta-white"
-            style={{ backgroundColor: owner.color, fontSize: nameFontSize, padding: '1px 0' }}
+            style={{ 
+              backgroundColor: owner.color, 
+              fontSize: `${detailFontSize}px`, 
+              padding: `${Math.max(1, Math.floor(padding / 2))}px 0` 
+            }}
           >
-            {owner.name.slice(0, isSmall ? 4 : 6).toUpperCase()}
+            {owner.name.slice(0, maxNameLength).toUpperCase()}
           </div>
         )}
 
-        {owner && tile.rent > 0 && !isSmall && (
-          <div className="text-center font-zero text-[6px] text-sasta-black/60">
+        {owner && tile.rent > 0 && size >= 60 && (
+          <div 
+            className="text-center font-zero text-sasta-black/60"
+            style={{ fontSize: `${rentFontSize}px` }}
+          >
             RENT: ${tile.rent}
           </div>
         )}
@@ -79,7 +109,7 @@ export default function TileComponent({ tile, players = [], size = 72, style = {
         {tile.type === 'GO' && (
           <div 
             className="bg-sasta-accent text-sasta-black text-center font-zero font-bold"
-            style={{ fontSize: nameFontSize, padding: '1px 0' }}
+            style={{ fontSize: `${detailFontSize}px`, padding: `${Math.max(1, Math.floor(padding / 2))}px 0` }}
           >
             {'>> GO >>'}
           </div>

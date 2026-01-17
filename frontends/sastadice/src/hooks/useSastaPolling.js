@@ -28,9 +28,7 @@ export function useSastaPolling(gameId, intervalMs = 2000) {
       }
       // 304 = no changes, skip update
     } catch (err) {
-      // Only log if it's not a 304 Not Modified
       if (err.response?.status !== 304) {
-        console.error('Polling error:', err)
         setError(err.message)
       }
     }
