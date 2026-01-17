@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate, useParams } from 'react-router-dom'
 import { useGameStore } from './store/useGameStore'
 import { apiClient } from './api/apiClient'
 import HomePage from './pages/HomePage'
@@ -7,7 +7,20 @@ import LobbyPage from './pages/LobbyPage'
 import GamePage from './pages/GamePage'
 
 function ProtectedRoute({ children }) {
-  const gameId = useGameStore((s) => s.gameId)
+  const { gameId: urlGameId } = useParams()
+  const storeGameId = useGameStore((s) => s.gameId)
+  const setGameId = useGameStore((s) => s.setGameId)
+  
+  // Use gameId from URL if available, otherwise fall back to store
+  const gameId = urlGameId || storeGameId
+  
+  // If URL has gameId but store doesn't, set it in store
+  useEffect(() => {
+    if (urlGameId && urlGameId !== storeGameId) {
+      setGameId(urlGameId)
+    }
+  }, [urlGameId, storeGameId, setGameId])
+  
   if (!gameId) {
     return <Navigate to="/" replace />
   }
@@ -15,12 +28,27 @@ function ProtectedRoute({ children }) {
 }
 
 function GameRoute() {
-  const gameId = useGameStore((s) => s.gameId)
+  const { gameId: urlGameId } = useParams()
+  const storeGameId = useGameStore((s) => s.gameId)
+  const setGameId = useGameStore((s) => s.setGameId)
   const game = useGameStore((s) => s.game)
   const setGame = useGameStore((s) => s.setGame)
   const reset = useGameStore((s) => s.reset)
   const [isRestoring, setIsRestoring] = useState(false)
   const [restoreError, setRestoreError] = useState(null)
+
+  // Use gameId from URL if available, otherwise fall back to store
+  const gameId = urlGameId || storeGameId
+
+  // Set gameId in store from URL if needed
+  useEffect(() => {
+    if (urlGameId && urlGameId !== storeGameId) {
+      setGameId(urlGameId)
+    }
+  }, [urlGameId, storeGameId, setGameId])
+
+  const playerId = useGameStore((s) => s.playerId)
+  const setPlayerId = useGameStore((s) => s.setPlayerId)
 
   useEffect(() => {
     if (gameId && !game && !isRestoring) {
@@ -29,7 +57,18 @@ function GameRoute() {
       
       apiClient.get(`/sastadice/games/${gameId}/state`)
         .then((res) => {
-          setGame(res.data.game, res.data.version)
+          const restoredGame = res.data.game
+          setGame(restoredGame, res.data.version)
+          
+          // Validate that stored playerId belongs to this game
+          // If playerId exists but player is not in the game, clear it (spectator mode)
+          if (playerId) {
+            const playerExists = restoredGame.players?.some((p) => p.id === playerId)
+            if (!playerExists) {
+              // PlayerId doesn't belong to this game - clear it to enable spectator mode
+              setPlayerId(null)
+            }
+          }
         })
         .catch((err) => {
           if (err.response?.status === 404) {
@@ -43,7 +82,7 @@ function GameRoute() {
           setIsRestoring(false)
         })
     }
-  }, [gameId, game, isRestoring, setGame, reset])
+  }, [gameId, game, isRestoring, setGame, reset, playerId, setPlayerId])
 
   if (isRestoring || (!game && gameId)) {
     return (
@@ -88,7 +127,7 @@ function App() {
       <Routes>
         <Route path="/" element={<HomePage />} />
         <Route
-          path="/lobby"
+          path="/lobby/:gameId"
           element={
             <ProtectedRoute>
               <GameRoute />
@@ -96,12 +135,21 @@ function App() {
           }
         />
         <Route
-          path="/game"
+          path="/game/:gameId"
           element={
             <ProtectedRoute>
               <GameRoute />
             </ProtectedRoute>
           }
+        />
+        {/* Legacy routes for backwards compatibility - redirect to new format */}
+        <Route
+          path="/lobby"
+          element={<Navigate to="/" replace />}
+        />
+        <Route
+          path="/game"
+          element={<Navigate to="/" replace />}
         />
       </Routes>
     </BrowserRouter>
