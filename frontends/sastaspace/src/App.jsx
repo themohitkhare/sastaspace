@@ -64,7 +64,7 @@ function App() {
       <footer className="border-t-4 border-sasta-black bg-sasta-white py-8 mt-20">
         <div className="max-w-7xl mx-auto px-6 text-center">
           <p className="text-sm font-zero text-sasta-black/60">
-            &copy; 2024 SASTASPACE. ALL RIGHTS RESERVED. MAYBE.
+            &copy; 2026 SASTASPACE. ALL RIGHTS RESERVED. MAYBE.
           </p>
         </div>
       </footer>
