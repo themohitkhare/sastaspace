@@ -20,10 +20,10 @@ export default function ActionPanel({
     setError(null)
 
     try {
-      const response = await apiClient.post(`/sastadice/games/${gameId}/action`, {
-        type: actionType,
-        payload,
-      })
+      const response = await apiClient.post(
+        `/sastadice/games/${gameId}/action?player_id=${playerId}`,
+        { type: actionType, payload }
+      )
 
       if (!response.data.success) {
         setError(response.data.message)
@@ -33,7 +33,13 @@ export default function ActionPanel({
         onActionComplete(response.data)
       }
     } catch (err) {
-      setError(err.response?.data?.detail || err.message)
+      const errorDetail = err.response?.data?.detail
+      const errorText = Array.isArray(errorDetail)
+        ? errorDetail.map((e) => e.msg).join(', ')
+        : typeof errorDetail === 'string'
+          ? errorDetail
+          : err.message
+      setError(errorText)
     } finally {
       setIsLoading(false)
     }

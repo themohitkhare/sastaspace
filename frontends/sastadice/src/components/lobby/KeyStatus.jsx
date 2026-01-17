@@ -1,4 +1,4 @@
-export default function KeyStatus({ player, isMe }) {
+export default function KeyStatus({ player, isMe, isHost, canKick, onKick }) {
   const keyColor = player.color || '#FFB800'
   
   return (
@@ -32,12 +32,14 @@ export default function KeyStatus({ player, isMe }) {
         />
       </div>
 
-      {/* Player info */}
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
           <span className="font-zero text-sm font-bold text-zinc-200 truncate">
             {player.name.toUpperCase()}
           </span>
+          {isHost && (
+            <span className="font-zero text-[10px] bg-amber-500 text-black px-1.5 py-0.5">HOST</span>
+          )}
           {isMe && (
             <span className="font-zero text-[10px] bg-sasta-accent text-black px-1.5 py-0.5">YOU</span>
           )}
@@ -47,11 +49,20 @@ export default function KeyStatus({ player, isMe }) {
         </div>
       </div>
 
-      {/* Color indicator */}
       <div 
         className="w-4 h-4 border-2 border-black shadow-sm"
         style={{ backgroundColor: player.color }}
       />
+
+      {canKick && !isMe && (
+        <button
+          onClick={() => onKick(player.id)}
+          className="w-8 h-8 flex items-center justify-center bg-red-500 hover:bg-red-600 text-white font-bold border-2 border-black transition-colors"
+          title={`Kick ${player.name}`}
+        >
+          ✕
+        </button>
+      )}
     </div>
   )
 }
