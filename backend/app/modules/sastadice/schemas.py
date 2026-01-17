@@ -88,7 +88,7 @@ class JoinGameRequest(BaseModel):
     """Request schema for joining a game."""
 
     name: str
-    tiles: list[TileCreate] = Field(min_length=5, max_length=5)
+    tiles: Optional[list[TileCreate]] = None
 
 
 class ActionType(str, Enum):
