@@ -89,14 +89,14 @@ class GameService:
                         result = self.perform_action(game.id, cpu_player.id, ActionType.PASS_PROPERTY, None)
                         turn_log.append(f"{cpu_player.name} passed on decision type: {decision.type}")
                 else:
-                    turn_log.append(f"{cpu_player.name} in DECISION phase but no pending decision - ending turn")
-                    result = self.perform_action(game.id, cpu_player.id, ActionType.END_TURN, None)
-                    if result.success:
-                        turn_log.append(f"{cpu_player.name} ended turn (recovery)")
-                        break
-                    else:
-                        turn_log.append(f"{cpu_player.name} failed to end turn (recovery): {result.message}")
-                        break
+                    # DECISION phase but no pending_decision - this shouldn't happen normally,
+                    # but if it does, transition to POST_TURN to recover
+                    turn_log.append(f"{cpu_player.name} in DECISION phase but no pending decision - transitioning to POST_TURN")
+                    game = self.get_game(game.id)
+                    game.turn_phase = TurnPhase.POST_TURN
+                    game.pending_decision = None
+                    self.repository.update(game)
+                    # Continue to POST_TURN handling below
                 continue
 
             if game.turn_phase == TurnPhase.POST_TURN:
@@ -393,6 +393,11 @@ class GameService:
 
         if landed_tile:
             self._handle_tile_landing(game, player, landed_tile)
+        
+        # Safety check: If we're in DECISION phase but have no pending_decision,
+        # transition to POST_TURN (this shouldn't happen normally, but handle edge cases)
+        if game.turn_phase == TurnPhase.DECISION and not game.pending_decision:
+            game.turn_phase = TurnPhase.POST_TURN
 
         self.repository.update(game)
 
