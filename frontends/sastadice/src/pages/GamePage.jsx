@@ -80,7 +80,14 @@ export default function GamePage() {
       </header>
 
       <div className="flex-1 min-h-0 max-w-full mx-auto w-full p-2 sm:p-4 flex flex-col lg:flex-row gap-4 overflow-hidden">
-        <div className="flex-1 min-h-0 min-w-0 border-brutal-lg bg-sasta-white shadow-brutal-lg overflow-hidden order-1 lg:order-1">
+        <div 
+          className="flex-1 min-h-0 min-w-0 border-brutal-lg bg-sasta-white shadow-brutal-lg overflow-hidden order-1 lg:order-1"
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            position: 'relative',
+          }}
+        >
           <BoardView
             tiles={game.board || []}
             boardSize={game.board_size || 0}

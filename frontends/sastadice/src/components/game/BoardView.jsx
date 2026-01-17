@@ -3,19 +3,21 @@ import TileComponent from './TileComponent'
 import PlayerToken from './PlayerToken'
 
 const DEFAULT_TILE_SIZE = 72
-const MIN_TILE_SIZE = 50
-const MAX_TILE_SIZE = 150
+const MIN_TILE_SIZE = 40
+const MAX_TILE_SIZE = 200
 
 function useTileSize(boardSize, containerRef) {
   const [tileSize, setTileSize] = useState(DEFAULT_TILE_SIZE)
 
   useEffect(() => {
     function calculateTileSize() {
-      if (!containerRef.current) return
+      if (!containerRef.current || !boardSize || boardSize < 2) return
       
       const container = containerRef.current
-      const availableWidth = container.clientWidth - 16
-      const availableHeight = container.clientHeight - 16
+      const padding = 16
+      const borderWidth = 6
+      const availableWidth = container.clientWidth - padding - borderWidth
+      const availableHeight = container.clientHeight - padding - borderWidth
       
       const sizeFromWidth = Math.floor(availableWidth / boardSize)
       const sizeFromHeight = Math.floor(availableHeight / boardSize)
@@ -27,9 +29,15 @@ function useTileSize(boardSize, containerRef) {
     }
 
     calculateTileSize()
+    
     window.addEventListener('resize', calculateTileSize)
     
-    const resizeObserver = new ResizeObserver(calculateTileSize)
+    const resizeObserver = new ResizeObserver(() => {
+      requestAnimationFrame(() => {
+        calculateTileSize()
+      })
+    })
+    
     if (containerRef.current) {
       resizeObserver.observe(containerRef.current)
     }
@@ -54,7 +62,15 @@ export default function BoardView({ tiles = [], boardSize, players = [], childre
   const isOnPerimeter = (x, y) => x === 0 || x === boardSize - 1 || y === 0 || y === boardSize - 1
 
   return (
-    <div ref={containerRef} className="board-wrapper w-full h-full flex justify-center items-center p-2">
+    <div 
+      ref={containerRef} 
+      className="board-wrapper w-full h-full flex justify-center items-center p-2"
+      style={{
+        minWidth: 0,
+        minHeight: 0,
+        overflow: 'hidden',
+      }}
+    >
       <div
         className="board-container relative border-brutal"
         style={{
@@ -63,6 +79,10 @@ export default function BoardView({ tiles = [], boardSize, players = [], childre
           gridTemplateRows: `repeat(${boardSize}, ${tileSize}px)`,
           gap: '0px',
           backgroundColor: '#000',
+          width: `${boardSize * tileSize}px`,
+          height: `${boardSize * tileSize}px`,
+          maxWidth: '100%',
+          maxHeight: '100%',
         }}
       >
         {tiles.map((tile) => {
