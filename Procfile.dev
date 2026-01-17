@@ -1,3 +1,0 @@
-web: bin/rails server -p 3000
-jobs: bundle exec sidekiq -q ai_critical -q default
-css: bin/rails tailwindcss:watch
