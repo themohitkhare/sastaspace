@@ -77,17 +77,28 @@ def join_game(
         )
 
 
+@router.post("/games/{game_id}/ready/{player_id}")
+def toggle_ready(
+    game_id: str,
+    player_id: str,
+    service: GameService = Depends(get_game_service),
+) -> dict:
+    """Toggle player's launch key (ready status). Auto-starts if all ready."""
+    try:
+        return service.toggle_ready(game_id, player_id)
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
+
 @router.post("/games/{game_id}/start", response_model=GameSession)
 def start_game(
     game_id: str, service: GameService = Depends(get_game_service)
 ) -> GameSession:
-    """Start a game (host only - anyone can start for now)."""
+    """Force start game (bypasses ready check - for testing)."""
     try:
-        return service.start_game(game_id)
+        return service.start_game(game_id, force=True)
     except ValueError as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)
-        )
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 
 @router.post("/games/{game_id}/action", response_model=ActionResult)
