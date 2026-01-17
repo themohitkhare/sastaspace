@@ -59,3 +59,6 @@ Thumbs.db
 # Logs
 *.log
 logs/
+
+# Let's Encrypt
+traefik/letsencrypt/acme.json
