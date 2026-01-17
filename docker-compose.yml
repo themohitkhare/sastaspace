@@ -1,3 +1,24 @@
+# Docker Compose for LOCAL DEVELOPMENT
+# All services run on localhost with direct port access and Traefik routing
+#
+# Direct Access URLs:
+#   - Backend API: http://localhost:8000
+#   - Main Frontend: http://localhost:9000
+#   - SastaDice: http://localhost:9001
+#   - SastaHero: http://localhost:9002
+#   - Sasta: http://localhost:9003
+#   - Traefik Dashboard: http://localhost:8080
+#
+# Traefik Routing (through localhost:80):
+#   - Backend API: http://localhost/api/v1/...
+#   - Main Frontend: http://localhost/
+#   - SastaDice: http://localhost/sastadice/
+#   - SastaHero: http://localhost/sastahero/
+#   - Sasta: http://localhost/sasta/
+#
+# Backend has hot-reload enabled (--reload flag)
+# Frontends are built images (use npm run dev locally for hot-reload)
+
 services:
   traefik:
     image: traefik:v2.11
@@ -7,17 +28,12 @@ services:
       - "--providers.docker=true"
       - "--providers.docker.exposedbydefault=false"
       - "--entrypoints.web.address=:80"
-      - "--entrypoints.websecure.address=:443"
-      - "--certificatesresolvers.letsencrypt.acme.tlschallenge=true"
-      - "--certificatesresolvers.letsencrypt.acme.email=${ACME_EMAIL:-admin@sastaspace.com}"
-      - "--certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json"
+      - "--log.level=DEBUG"  # Debug logging for dev
     ports:
       - "80:80"
-      - "443:443"
       - "8080:8080"  # Traefik dashboard
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
-      - ./traefik/letsencrypt:/letsencrypt
     networks:
       - sastaspace-network
     restart: unless-stopped
@@ -29,15 +45,24 @@ services:
     container_name: sastaspace-backend
     environment:
       - DB_PATH=/app/data/sastaspace.db
+      - DEBUG=true
+      - ENVIRONMENT=development
     volumes:
+      # Mount source code for live reloading (read-write for uvicorn --reload)
+      - ./backend/app:/app/app
       - ./backend/data:/app/data
+    ports:
+      - "8000:8000"  # Direct access for development
     networks:
       - sastaspace-network
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.backend.rule=Host(`api.sastaspace.com`)"
+      - "traefik.http.routers.backend.rule=Host(`localhost`) && PathPrefix(`/api`)"
       - "traefik.http.routers.backend.entrypoints=web"
       - "traefik.http.services.backend.loadbalancer.server.port=8000"
+      - "traefik.http.middlewares.backend-stripprefix.stripprefix.prefixes=/api"
+      - "traefik.http.routers.backend.middlewares=backend-stripprefix"
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
     restart: unless-stopped
 
   frontend-main:
@@ -46,14 +71,15 @@ services:
       dockerfile: Dockerfile
     container_name: sastaspace-frontend-main
     ports:
-      - "9000:80"
+      - "9000:80"  # Direct access: http://localhost:9000
     networks:
       - sastaspace-network
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.frontend-main.rule=Host(`sastaspace.com`) || Host(`www.sastaspace.com`)"
+      - "traefik.http.routers.frontend-main.rule=Host(`localhost`) && PathPrefix(`/`) && !PathPrefix(`/api`) && !PathPrefix(`/sastahero`) && !PathPrefix(`/sasta`) && !PathPrefix(`/sastadice`)"
       - "traefik.http.routers.frontend-main.entrypoints=web"
       - "traefik.http.services.frontend-main.loadbalancer.server.port=80"
+      - "traefik.http.routers.frontend-main.priority=1"
     restart: unless-stopped
 
   frontend-sastahero:
@@ -61,13 +87,17 @@ services:
     container_name: sastaspace-frontend-sastahero
     volumes:
       - ./frontends/sastahero:/usr/share/nginx/html:ro
+    ports:
+      - "9002:80"  # Direct access: http://localhost:9002
     networks:
       - sastaspace-network
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.frontend-sastahero.rule=Host(`sastahero.sastaspace.com`)"
+      - "traefik.http.routers.frontend-sastahero.rule=Host(`localhost`) && PathPrefix(`/sastahero`)"
       - "traefik.http.routers.frontend-sastahero.entrypoints=web"
       - "traefik.http.services.frontend-sastahero.loadbalancer.server.port=80"
+      - "traefik.http.middlewares.sastahero-stripprefix.stripprefix.prefixes=/sastahero"
+      - "traefik.http.routers.frontend-sastahero.middlewares=sastahero-stripprefix"
     restart: unless-stopped
 
   frontend-sasta:
@@ -75,13 +105,17 @@ services:
     container_name: sastaspace-frontend-sasta
     volumes:
       - ./frontends/sasta:/usr/share/nginx/html:ro
+    ports:
+      - "9003:80"  # Direct access: http://localhost:9003
     networks:
       - sastaspace-network
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.frontend-sasta.rule=Host(`sasta.sastaspace.com`)"
+      - "traefik.http.routers.frontend-sasta.rule=Host(`localhost`) && PathPrefix(`/sasta`)"
       - "traefik.http.routers.frontend-sasta.entrypoints=web"
       - "traefik.http.services.frontend-sasta.loadbalancer.server.port=80"
+      - "traefik.http.middlewares.sasta-stripprefix.stripprefix.prefixes=/sasta"
+      - "traefik.http.routers.frontend-sasta.middlewares=sasta-stripprefix"
     restart: unless-stopped
 
   frontend-sastadice:
@@ -90,14 +124,16 @@ services:
       dockerfile: Dockerfile
     container_name: sastaspace-frontend-sastadice
     ports:
-      - "9001:80"
+      - "9001:80"  # Direct access: http://localhost:9001
     networks:
       - sastaspace-network
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.frontend-sastadice.rule=Host(`sastadice.sastaspace.com`)"
+      - "traefik.http.routers.frontend-sastadice.rule=Host(`localhost`) && PathPrefix(`/sastadice`)"
       - "traefik.http.routers.frontend-sastadice.entrypoints=web"
       - "traefik.http.services.frontend-sastadice.loadbalancer.server.port=80"
+      - "traefik.http.middlewares.sastadice-stripprefix.stripprefix.prefixes=/sastadice"
+      - "traefik.http.routers.frontend-sastadice.middlewares=sastadice-stripprefix"
     restart: unless-stopped
 
 networks:
