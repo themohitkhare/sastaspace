@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import apiClient from '../../api/apiClient'
 
 export default function ActionPanel({
@@ -16,6 +16,25 @@ export default function ActionPanel({
   const performAction = async (actionType, payload = {}) => {
     if (!gameId || !playerId) return
 
+    // Validate action is allowed in current phase before sending
+    if (actionType === 'ROLL_DICE' && turnPhase !== 'PRE_ROLL') {
+      setError('Cannot roll dice - not in PRE_ROLL phase. Refreshing game state...')
+      if (onActionComplete) {
+        await onActionComplete({})
+        setTimeout(() => setError(null), 1000)
+      }
+      return
+    }
+    
+    if (actionType === 'END_TURN' && turnPhase !== 'POST_TURN') {
+      setError(`Cannot end turn - currently in ${turnPhase} phase. Refreshing game state...`)
+      if (onActionComplete) {
+        await onActionComplete({})
+        setTimeout(() => setError(null), 1000)
+      }
+      return
+    }
+
     setIsLoading(true)
     setError(null)
 
@@ -32,21 +51,19 @@ export default function ActionPanel({
         // If it's a turn phase error, refresh game state and clear error after a delay
         if (errorMsg.includes('turn phase') || errorMsg.includes('Cannot roll dice')) {
           if (onActionComplete) {
-            // Refresh game state
-            setTimeout(() => {
-              onActionComplete(response.data)
-              // Clear error after state refresh
-              setTimeout(() => setError(null), 1000)
-            }, 500)
+            // Refresh game state and wait for it to complete
+            await onActionComplete(response.data)
+            // Clear error after state refresh
+            setTimeout(() => setError(null), 1000)
           }
         }
       } else {
         // Clear any previous errors on success
         setError(null)
-      }
-
-      if (onActionComplete) {
-        onActionComplete(response.data)
+        // On successful action, wait for state refresh before re-enabling buttons
+        if (onActionComplete) {
+          await onActionComplete(response.data)
+        }
       }
     } catch (err) {
       const errorDetail = err.response?.data?.detail
@@ -60,10 +77,8 @@ export default function ActionPanel({
       // If it's a turn phase error, refresh game state
       if (errorText.includes('turn phase') || errorText.includes('Cannot roll dice')) {
         if (onActionComplete) {
-          setTimeout(() => {
-            onActionComplete({})
-            setTimeout(() => setError(null), 1000)
-          }, 500)
+          await onActionComplete({})
+          setTimeout(() => setError(null), 1000)
         }
       }
     } finally {
@@ -75,6 +90,61 @@ export default function ActionPanel({
   const handleBuyProperty = () => performAction('BUY_PROPERTY')
   const handlePassProperty = () => performAction('PASS_PROPERTY')
   const handleEndTurn = () => performAction('END_TURN')
+
+  // Determine which button/content to show
+  const showRollDice = turnPhase === 'PRE_ROLL' && isMyTurn
+  const showDecision = turnPhase === 'DECISION' && isMyTurn && pendingDecision?.type === 'BUY'
+  const showEndTurn = turnPhase === 'POST_TURN' && isMyTurn
+  const showWaiting = !isMyTurn
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    if (!playerId || isLoading) return
+
+    const handleKeyPress = (e) => {
+      // Don't trigger shortcuts if user is typing in an input, textarea, or contenteditable
+      const target = e.target
+      if (
+        target.tagName === 'INPUT' ||
+        target.tagName === 'TEXTAREA' ||
+        target.isContentEditable
+      ) {
+        return
+      }
+
+      // Space bar: Roll dice (PRE_ROLL) or End turn (POST_TURN)
+      if (e.key === ' ' || e.key === 'Spacebar') {
+        e.preventDefault()
+        if (showRollDice) {
+          performAction('ROLL_DICE')
+        } else if (showEndTurn) {
+          performAction('END_TURN')
+        }
+      }
+
+      // Y key: Buy property (DECISION phase)
+      if (e.key === 'y' || e.key === 'Y') {
+        e.preventDefault()
+        if (showDecision) {
+          performAction('BUY_PROPERTY')
+        }
+      }
+
+      // N key: Pass property (DECISION phase)
+      if (e.key === 'n' || e.key === 'N') {
+        e.preventDefault()
+        if (showDecision) {
+          performAction('PASS_PROPERTY')
+        }
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyPress)
+    return () => {
+      window.removeEventListener('keydown', handleKeyPress)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [playerId, isLoading, showRollDice, showEndTurn, showDecision])
 
   return (
     <div className="action-panel w-full space-y-3">
@@ -90,54 +160,93 @@ export default function ActionPanel({
         </div>
       )}
 
-      <div className="flex flex-col gap-2">
-        {turnPhase === 'PRE_ROLL' && isMyTurn && (
+      {/* Container with smooth transitions - always renders to prevent layout shifts */}
+      {/* Min-height set to accommodate the tallest content (decision panel ~120px) */}
+      <div className="relative min-h-[120px]">
+        {/* Roll Dice Button */}
+        <div
+          className={`transition-opacity duration-200 ease-in-out ${
+            showRollDice
+              ? 'opacity-100 pointer-events-auto relative'
+              : 'opacity-0 pointer-events-none absolute inset-0'
+          }`}
+        >
           <button
             onClick={handleRollDice}
-            disabled={isLoading}
+            disabled={isLoading || !showRollDice}
             className="w-full py-3 px-4 bg-sasta-accent text-sasta-black font-zero font-bold border-brutal-sm shadow-brutal-sm hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all disabled:opacity-50"
           >
-            {isLoading ? '> ROLLING...' : '> ROLL DICE'}
+            {isLoading ? '> ROLLING...' : '> ROLL DICE [SPACE]'}
           </button>
-        )}
+        </div>
 
-        {turnPhase === 'DECISION' && isMyTurn && pendingDecision?.type === 'BUY' && (
+        {/* Decision Panel */}
+        <div
+          className={`transition-opacity duration-200 ease-in-out ${
+            showDecision
+              ? 'opacity-100 pointer-events-auto relative'
+              : 'opacity-0 pointer-events-none absolute inset-0'
+          }`}
+        >
           <div className="space-y-2">
             <div className="text-center font-zero text-xs font-bold bg-sasta-black text-sasta-accent p-2">
-              BUY FOR ${pendingDecision.price}?
+              BUY FOR ${pendingDecision?.price || 0}?
             </div>
             <div className="flex gap-2">
               <button
                 onClick={handleBuyProperty}
-                disabled={isLoading}
+                disabled={isLoading || !showDecision}
                 className="flex-1 py-2 px-3 bg-sasta-accent text-sasta-black font-zero font-bold text-sm border-brutal-sm shadow-brutal-sm hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none transition-all disabled:opacity-50"
               >
-                {isLoading ? '...' : `BUY $${pendingDecision.price}`}
+                {isLoading ? '...' : `BUY $${pendingDecision?.price || 0} [Y]`}
               </button>
               <button
                 onClick={handlePassProperty}
-                disabled={isLoading}
+                disabled={isLoading || !showDecision}
                 className="flex-1 py-2 px-3 bg-sasta-white text-sasta-black font-zero font-bold text-sm border-brutal-sm shadow-brutal-sm hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none transition-all disabled:opacity-50"
               >
-                {isLoading ? '...' : 'PASS'}
+                {isLoading ? '...' : 'PASS [N]'}
               </button>
             </div>
           </div>
-        )}
+        </div>
 
-        {turnPhase === 'POST_TURN' && isMyTurn && (
+        {/* End Turn Button */}
+        <div
+          className={`transition-opacity duration-200 ease-in-out ${
+            showEndTurn
+              ? 'opacity-100 pointer-events-auto relative'
+              : 'opacity-0 pointer-events-none absolute inset-0'
+          }`}
+        >
           <button
             onClick={handleEndTurn}
-            disabled={isLoading}
+            disabled={isLoading || !showEndTurn}
             className="w-full py-3 px-4 bg-sasta-black text-sasta-accent font-zero font-bold border-brutal-sm shadow-brutal-sm hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all disabled:opacity-50"
           >
-            {isLoading ? '> ENDING...' : '> END TURN'}
+            {isLoading ? '> ENDING...' : '> END TURN [SPACE]'}
           </button>
-        )}
+        </div>
 
-        {!isMyTurn && (
+        {/* Waiting Message - for players waiting their turn */}
+        <div
+          className={`transition-opacity duration-200 ease-in-out ${
+            showWaiting && playerId
+              ? 'opacity-100 pointer-events-auto relative'
+              : 'opacity-0 pointer-events-none absolute inset-0'
+          }`}
+        >
           <div className="text-center py-3 px-4 bg-sasta-black/10 font-zero text-sm">
             WAITING FOR OTHER PLAYER...
+          </div>
+        </div>
+
+        {/* Spectator Message - for non-players viewing the game */}
+        {!playerId && (
+          <div className="opacity-100 pointer-events-auto relative">
+            <div className="text-center py-3 px-4 bg-blue-100 border-2 border-blue-400 font-zero text-sm">
+              👁️ SPECTATOR MODE - VIEW ONLY
+            </div>
           </div>
         )}
       </div>
