@@ -33,9 +33,10 @@ export default function HomePage() {
     reset()
     try {
       const res = await apiClient.post(`/sastadice/games?cpu_count=${selectedCpus.length}`)
-      setGameId(res.data.id)
+      const newGameId = res.data.id
+      setGameId(newGameId)
       setGame(res.data, 0)
-      navigate('/lobby')
+      navigate(`/lobby/${newGameId}`)
     } catch (err) {
       alert('Failed to create game. Please try again.')
     } finally {
@@ -54,9 +55,10 @@ export default function HomePage() {
     reset()
     try {
       const res = await apiClient.get(`/sastadice/games/${cleanGameCode}`)
-      setGameId(res.data.id)
+      const joinedGameId = res.data.id
+      setGameId(joinedGameId)
       setGame(res.data, 0)
-      navigate('/lobby')
+      navigate(`/lobby/${joinedGameId}`)
     } catch (err) {
       if (err.response?.status === 404) {
         alert('Game not found. Please check the game code.')
