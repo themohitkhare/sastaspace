@@ -14,7 +14,6 @@ from app.modules.sastadice.schemas import (
     Player,
     GameActionRequest,
     ActionResult,
-    DiceRollResult,
 )
 
 router = APIRouter()
@@ -26,9 +25,12 @@ def get_game_service(db = Depends(get_db)) -> GameService:  # type: ignore
 
 
 @router.post("/games", response_model=GameSession, status_code=status.HTTP_201_CREATED)
-def create_game(service: GameService = Depends(get_game_service)) -> GameSession:
-    """Create a new game room."""
-    return service.create_game()
+def create_game(
+    cpu_count: int = Query(default=0, ge=0, le=4, description="Number of CPU players to add"),
+    service: GameService = Depends(get_game_service),
+) -> GameSession:
+    """Create a new game room with optional CPU players."""
+    return service.create_game(cpu_count=cpu_count)
 
 
 @router.get("/games/{game_id}", response_model=GameSession)
@@ -90,6 +92,20 @@ def toggle_ready(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 
+@router.delete("/games/{game_id}/players/{player_id}")
+def kick_player(
+    game_id: str,
+    player_id: str,
+    host_id: str = Query(..., description="Host player ID"),
+    service: GameService = Depends(get_game_service),
+) -> dict:
+    """Kick a player from the lobby. Only host can kick."""
+    try:
+        return service.kick_player(game_id, host_id, player_id)
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
+
 @router.post("/games/{game_id}/start", response_model=GameSession)
 def start_game(
     game_id: str, service: GameService = Depends(get_game_service)
@@ -117,3 +133,28 @@ def perform_action(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)
         )
+
+
+@router.post("/games/{game_id}/simulate")
+def simulate_game(
+    game_id: str,
+    max_turns: int = Query(default=100, ge=1, le=500, description="Maximum turns to simulate"),
+    service: GameService = Depends(get_game_service),
+) -> dict:
+    """Simulate CPU turns until game ends or max_turns reached. For testing."""
+    try:
+        return service.simulate_cpu_game(game_id, max_turns)
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
+
+@router.post("/games/{game_id}/cpu-turn")
+def process_cpu_turns(
+    game_id: str,
+    service: GameService = Depends(get_game_service),
+) -> dict:
+    """Process CPU turns until it's a human player's turn."""
+    try:
+        return service.process_cpu_turns(game_id)
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))

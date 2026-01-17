@@ -24,7 +24,7 @@ class GameRepository(BaseRepository[GameSession]):
     def get_by_id(self, id: str) -> Optional[GameSession]:
         """Get game session by ID."""
         result = self.cursor.execute(
-            """SELECT id, status, turn_phase, current_turn_player_id, board_size, 
+            """SELECT id, status, turn_phase, current_turn_player_id, host_id, board_size, 
                       starting_cash, go_bonus, last_dice_roll, pending_decision, last_event_message
                FROM sd_game_sessions WHERE id = ?""",
             [id],
@@ -33,7 +33,7 @@ class GameRepository(BaseRepository[GameSession]):
         if not result:
             return None
 
-        (game_id, status, turn_phase, current_turn_player_id, board_size,
+        (game_id, status, turn_phase, current_turn_player_id, host_id, board_size,
          starting_cash, go_bonus, last_dice_roll_json, pending_decision_json,
          last_event_message) = result
 
@@ -48,6 +48,7 @@ class GameRepository(BaseRepository[GameSession]):
             status=GameStatus(status),
             turn_phase=TurnPhase(turn_phase) if turn_phase else TurnPhase.PRE_ROLL,
             current_turn_player_id=current_turn_player_id,
+            host_id=host_id,
             players=players,
             board=board,
             board_size=board_size,
@@ -68,15 +69,16 @@ class GameRepository(BaseRepository[GameSession]):
         self.cursor.execute(
             """
             INSERT INTO sd_game_sessions 
-            (id, status, turn_phase, current_turn_player_id, board_size, version,
+            (id, status, turn_phase, current_turn_player_id, host_id, board_size, version,
              starting_cash, go_bonus, last_dice_roll, pending_decision, last_event_message)
-            VALUES (?, ?, ?, ?, ?, 0, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?, ?)
             """,
             [
                 game_id,
                 entity.status.value,
                 entity.turn_phase.value,
                 entity.current_turn_player_id,
+                entity.host_id,
                 entity.board_size,
                 entity.starting_cash,
                 entity.go_bonus,
@@ -105,12 +107,11 @@ class GameRepository(BaseRepository[GameSession]):
             json.dumps(entity.pending_decision.model_dump())
             if entity.pending_decision else None
         )
-        # Update version for polling optimization
         self.cursor.execute(
             """
             UPDATE sd_game_sessions 
-            SET status = ?, turn_phase = ?, current_turn_player_id = ?, board_size = ?,
-                starting_cash = ?, go_bonus = ?, last_dice_roll = ?, 
+            SET status = ?, turn_phase = ?, current_turn_player_id = ?, host_id = ?,
+                board_size = ?, starting_cash = ?, go_bonus = ?, last_dice_roll = ?, 
                 pending_decision = ?, last_event_message = ?, version = version + 1
             WHERE id = ?
             """,
@@ -118,6 +119,7 @@ class GameRepository(BaseRepository[GameSession]):
                 entity.status.value,
                 entity.turn_phase.value,
                 entity.current_turn_player_id,
+                entity.host_id,
                 entity.board_size,
                 entity.starting_cash,
                 entity.go_bonus,
@@ -198,6 +200,29 @@ class GameRepository(BaseRepository[GameSession]):
         if not result or result[0] == 0:
             return False
         return result[0] == result[1]
+
+    def set_host(self, game_id: str, player_id: str) -> None:
+        """Set the host of a game."""
+        self.cursor.execute(
+            "UPDATE sd_game_sessions SET host_id = ?, version = version + 1 WHERE id = ?",
+            [player_id, game_id]
+        )
+
+    def remove_player(self, game_id: str, player_id: str) -> bool:
+        """Remove a player from a game. Returns True if player was removed."""
+        self.cursor.execute(
+            "DELETE FROM sd_submitted_tiles WHERE game_id = ? AND player_id = ?",
+            [game_id, player_id]
+        )
+        self.cursor.execute(
+            "DELETE FROM sd_players WHERE id = ? AND game_id = ?",
+            [player_id, game_id]
+        )
+        self.cursor.execute(
+            "UPDATE sd_game_sessions SET version = version + 1 WHERE id = ?",
+            [game_id]
+        )
+        return self.cursor.rowcount > 0
 
     def submit_tiles(
         self, game_id: str, player_id: str, tiles: list[TileCreate]
