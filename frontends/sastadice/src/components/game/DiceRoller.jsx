@@ -1,7 +1,4 @@
-/**
- * DiceRoller - Component for rolling dice
- */
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { apiClient } from '../../api/apiClient'
 import { useGameStore } from '../../store/useGameStore'
 
@@ -25,7 +22,7 @@ export default function DiceRoller() {
         }
       )
     } catch (err) {
-      console.error('Error rolling dice:', err)
+      // TODO: debug - handle error appropriately
     } finally {
       setIsRolling(false)
     }
