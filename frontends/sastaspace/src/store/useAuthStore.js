@@ -8,11 +8,6 @@ const useAuthStore = create(
       isAuthenticated: false,
       
       login: async (email, password) => {
-        // Mock login - just console log for now
-        console.log('Login attempt:', { email, password })
-        
-        // Simulate async login
-        // In real implementation, this would call the API
         const mockUser = {
           id: 1,
           email: email,
@@ -35,7 +30,7 @@ const useAuthStore = create(
       },
     }),
     {
-      name: 'sastaspace-auth', // localStorage key
+      name: 'sastaspace-auth',
       storage: createJSONStorage(() => localStorage),
     }
   )

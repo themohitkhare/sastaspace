@@ -1,9 +1,5 @@
 import React from 'react'
 
-/**
- * ProjectCard - Displays a project with name, description, and Launch button
- * Neo-Brutalist styling with thick borders and hard shadows
- */
 const ProjectCard = ({ name, description, subdomain, accentColor = "#00ff00" }) => {
   const handleLaunch = () => {
     window.open(`https://${subdomain}.sastaspace.com`, '_blank')
