@@ -51,12 +51,10 @@ class GameService:
             iterations += 1
             game = self.get_game(game.id)
             
-            # Break if it's no longer this CPU player's turn
             if game.current_turn_player_id != cpu_player.id:
                 turn_log.append(f"{cpu_player.name} turn ended (not their turn anymore)")
                 break
 
-            # Refresh player data to get latest cash/properties
             cpu_player = next((p for p in game.players if p.id == cpu_player.id), cpu_player)
             if not cpu_player:
                 turn_log.append(f"{cpu_player.name} not found in game")
@@ -68,37 +66,30 @@ class GameService:
                     turn_log.append(f"{cpu_player.name} rolled: {roll_result.message}")
                 else:
                     turn_log.append(f"{cpu_player.name} failed to roll: {roll_result.message}")
-                    # If roll fails, we can't progress - break to avoid infinite loop
                     break
-                continue  # Refresh game state and continue
+                continue
 
             if game.turn_phase == TurnPhase.DECISION:
                 if game.pending_decision:
                     decision = game.pending_decision
                     
                     if decision.type == "BUY":
-                        # Use decision.price directly (PendingDecision has price attribute, not options)
                         tile_cost = decision.price
-                        # CPU buys if it can afford it and has at least 200 buffer
                         if cpu_player.cash >= tile_cost + 200:
                             result = self.perform_action(game.id, cpu_player.id, ActionType.BUY_PROPERTY, None)
                             if result.success:
                                 turn_log.append(f"{cpu_player.name} bought property: {result.message}")
                             else:
-                                # If buy fails, try to pass
                                 result = self.perform_action(game.id, cpu_player.id, ActionType.PASS_PROPERTY, None)
                                 turn_log.append(f"{cpu_player.name} passed (buy failed: {result.message})")
                         else:
                             result = self.perform_action(game.id, cpu_player.id, ActionType.PASS_PROPERTY, None)
                             turn_log.append(f"{cpu_player.name} passed on property (insufficient funds)")
                     else:
-                        # Unknown decision type - pass to continue
                         result = self.perform_action(game.id, cpu_player.id, ActionType.PASS_PROPERTY, None)
                         turn_log.append(f"{cpu_player.name} passed on decision type: {decision.type}")
                 else:
-                    # DECISION phase but no pending_decision - this shouldn't happen, but handle it
                     turn_log.append(f"{cpu_player.name} in DECISION phase but no pending decision - ending turn")
-                    # Try to end turn to recover
                     result = self.perform_action(game.id, cpu_player.id, ActionType.END_TURN, None)
                     if result.success:
                         turn_log.append(f"{cpu_player.name} ended turn (recovery)")
@@ -106,23 +97,20 @@ class GameService:
                     else:
                         turn_log.append(f"{cpu_player.name} failed to end turn (recovery): {result.message}")
                         break
-                continue  # Refresh game state and continue
+                continue
 
             if game.turn_phase == TurnPhase.POST_TURN:
                 result = self.perform_action(game.id, cpu_player.id, ActionType.END_TURN, None)
                 if result.success:
                     turn_log.append(f"{cpu_player.name} ended turn")
-                    break  # Turn is complete
+                    break
                 else:
                     turn_log.append(f"{cpu_player.name} failed to end turn: {result.message}")
-                    break  # Even on failure, exit to avoid loop
+                    break
 
-            # If we're in an unexpected phase (e.g., MOVING), wait and retry
             if game.turn_phase == TurnPhase.MOVING:
-                # MOVING phase should be brief - just continue to next iteration
                 continue
 
-            # If we're in an unexpected phase, log and break
             turn_log.append(f"{cpu_player.name} stuck in unexpected phase: {game.turn_phase.value}")
             break
 
@@ -175,7 +163,6 @@ class GameService:
             player_create = PlayerCreate(name=cpu_name)
             player = self.repository.add_player(game_id, player_create)
             self.repository.submit_tiles(game_id, player.id, tiles)
-            # Auto-ready CPU players
             self.repository.toggle_player_ready(player.id)
             game = self.get_game(game_id)
 
@@ -263,7 +250,6 @@ class GameService:
             player_create = PlayerCreate(name=cpu_name)
             player = self.repository.add_player(game_id, player_create)
             self.repository.submit_tiles(game_id, player.id, tiles)
-            # Auto-ready CPU players
             self.repository.toggle_player_ready(player.id)
 
             game = self.get_game(game_id)
@@ -449,8 +435,7 @@ class GameService:
         elif tile.type == TileType.CHANCE:
             event = self._handle_sasta_event(game, player, tile)
             game.last_event_message = f"🎲 {event['name']}: {event['desc']}"
-            if event.get("type") != "SKIP_BUY":
-                game.turn_phase = TurnPhase.POST_TURN
+            game.turn_phase = TurnPhase.POST_TURN
 
         elif tile.type == TileType.TAX:
             tax_amount = tile.price if tile.price > 0 else game.go_bonus // 2
@@ -659,7 +644,6 @@ class GameService:
                 )
                 if current_player and game.pending_decision.type == "BUY":
                     price = game.pending_decision.price
-                    # CPU buys if it can afford it and has at least 50% of price left after
                     if current_player.cash >= price * 1.5:
                         result = self.perform_action(game_id, current_player.id, ActionType.BUY_PROPERTY, {})
                         turn_info["actions"].append({"action": "BUY_PROPERTY", "result": result.message})
@@ -711,8 +695,7 @@ class GameService:
         
         for player in game.players:
             if player.cash < 0:
-                # Player is bankrupt - set cash to indicate elimination
-                player.cash = -9999  # Mark as bankrupt
+                player.cash = -9999
                 self.repository.update_player_cash(player.id, player.cash)
         
         return self.get_game(game_id)
@@ -725,10 +708,8 @@ class GameService:
             winner = active_players[0]
             return {"name": winner.name, "cash": winner.cash, "properties": len(winner.properties)}
         elif len(active_players) == 0:
-            # Everyone bankrupt - richest player wins
             richest = max(game.players, key=lambda x: x.cash)
             return {"name": richest.name, "cash": richest.cash, "properties": len(richest.properties)}
         else:
-            # Game still in progress - return current leader
             leader = max(active_players, key=lambda x: x.cash)
             return {"name": leader.name, "cash": leader.cash, "properties": len(leader.properties), "status": "in_progress"}
