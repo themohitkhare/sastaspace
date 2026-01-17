@@ -1,7 +1,9 @@
 """Game service for managing game sessions and actions."""
 import random
-from typing import Optional
-import duckdb
+from typing import Optional, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    import duckdb
 
 from app.modules.sastadice.repository import GameRepository
 from app.modules.sastadice.services.board_generation_service import BoardGenerationService
@@ -21,7 +23,7 @@ from app.modules.sastadice.schemas import (
 class GameService:
     """Service for game session management and actions."""
 
-    def __init__(self, cursor: duckdb.DuckDBCursor):
+    def __init__(self, cursor) -> None:  # type: ignore
         """Initialize game service with database cursor."""
         self.repository = GameRepository(cursor)
         self.board_service = BoardGenerationService()

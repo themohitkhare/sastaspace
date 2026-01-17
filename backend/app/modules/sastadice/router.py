@@ -1,7 +1,9 @@
 """API router for SastaDice game endpoints."""
-from fastapi import APIRouter, Depends, HTTPException, status, Query, Query
-from typing import Optional
-import duckdb
+from fastapi import APIRouter, Depends, HTTPException, status, Query
+from typing import Optional, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    import duckdb
 
 from app.db.session import get_db
 from app.modules.sastadice.services.game_service import GameService
@@ -18,7 +20,7 @@ from app.modules.sastadice.schemas import (
 router = APIRouter()
 
 
-def get_game_service(db: duckdb.DuckDBCursor = Depends(get_db)) -> GameService:
+def get_game_service(db = Depends(get_db)) -> GameService:  # type: ignore
     """Dependency to get game service."""
     return GameService(db)
 

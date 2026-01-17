@@ -51,13 +51,13 @@ _db_manager = DuckDBManager()
 
 
 @contextmanager
-def get_db() -> Generator[duckdb.DuckDBCursor, None, None]:
+def get_db() -> Generator[duckdb.DuckDBPyConnection, None, None]:
     """
-    Dependency function that yields a DuckDB cursor from the singleton connection.
+    Dependency function that yields a DuckDB connection from the singleton.
     
     Usage in FastAPI routes:
         @app.get("/endpoint")
-        def my_endpoint(db: duckdb.DuckDBCursor = Depends(get_db)):
+        def my_endpoint(db: duckdb.DuckDBPyConnection = Depends(get_db)):
             ...
     """
     cursor = _db_manager.connection.cursor()

@@ -1,7 +1,6 @@
 """Game repository for DuckDB operations."""
 import json
 from typing import Optional
-import duckdb
 import uuid
 
 from app.core.db_repo import BaseRepository
@@ -12,6 +11,7 @@ from app.modules.sastadice.schemas import (
     PlayerCreate,
     Tile,
     TileCreate,
+    TileType,
 )
 
 
