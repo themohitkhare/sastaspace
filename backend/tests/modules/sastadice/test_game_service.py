@@ -203,8 +203,8 @@ class TestGameService:
         service.join_game(game.id, "Player 1", tiles1)
         service.join_game(game.id, "Player 2", tiles2)
 
-        # Start game
-        started_game = service.start_game(game.id)
+        # Start game (force=True bypasses launch key requirement for tests)
+        started_game = service.start_game(game.id, force=True)
 
         assert started_game.status == GameStatus.ACTIVE
         assert len(started_game.board) > 0
@@ -232,7 +232,7 @@ class TestGameService:
         ]
         player1 = service.join_game(game.id, "Player 1", tiles1)
         player2 = service.join_game(game.id, "Player 2", tiles2)
-        service.start_game(game.id)
+        service.start_game(game.id, force=True)
 
         result = service.roll_dice(game.id, player1.id)
 
@@ -258,7 +258,7 @@ class TestGameService:
         ]
         service.join_game(game.id, "Player 1", tiles)
         service.join_game(game.id, "Player 2", tiles)
-        service.start_game(game.id)
+        service.start_game(game.id, force=True)
 
         # Try to join active game
         with pytest.raises(ValueError, match="Cannot join game"):
@@ -275,11 +275,11 @@ class TestGameService:
         ]
         service.join_game(game.id, "Player 1", tiles)
         service.join_game(game.id, "Player 2", tiles)
-        service.start_game(game.id)
+        service.start_game(game.id, force=True)
 
         # Try to start already active game
         with pytest.raises(ValueError, match="must be in LOBBY status"):
-            service.start_game(game.id)
+            service.start_game(game.id, force=True)
 
     def test_roll_dice_wrong_status(self, db_cursor):
         """Test rolling dice in wrong game status."""
@@ -311,7 +311,7 @@ class TestGameService:
         ]
         player1 = service.join_game(game.id, "Player 1", tiles1)
         player2 = service.join_game(game.id, "Player 2", tiles2)
-        service.start_game(game.id)
+        service.start_game(game.id, force=True)
 
         # Player 2 tries to roll when it's player 1's turn
         with pytest.raises(ValueError, match="Not your turn"):
@@ -332,7 +332,7 @@ class TestGameService:
         ]
         player1 = service.join_game(game.id, "Player 1", tiles1)
         player2 = service.join_game(game.id, "Player 2", tiles2)
-        service.start_game(game.id)
+        service.start_game(game.id, force=True)
 
         result = service.perform_action(game.id, player1.id, ActionType.ROLL_DICE, {})
         assert result.success is True
@@ -353,7 +353,7 @@ class TestGameService:
         ]
         player1 = service.join_game(game.id, "Player 1", tiles1)
         player2 = service.join_game(game.id, "Player 2", tiles2)
-        service.start_game(game.id)
+        service.start_game(game.id, force=True)
 
         # First roll dice to advance to DECISION/POST_TURN phase
         roll_result = service.perform_action(game.id, player1.id, ActionType.ROLL_DICE, {})
@@ -395,7 +395,7 @@ class TestGameService:
         ]
         player1 = service.join_game(game.id, "Player 1", tiles1)
         player2 = service.join_game(game.id, "Player 2", tiles2)
-        service.start_game(game.id)
+        service.start_game(game.id, force=True)
 
         result = service.perform_action(game.id, player2.id, ActionType.END_TURN, {})
         assert result.success is False
@@ -416,7 +416,7 @@ class TestGameService:
         ]
         player1 = service.join_game(game.id, "Player 1", tiles1)
         player2 = service.join_game(game.id, "Player 2", tiles2)
-        service.start_game(game.id)
+        service.start_game(game.id, force=True)
 
         # Try to buy without rolling first - should fail
         result = service.perform_action(game.id, player1.id, ActionType.BUY_PROPERTY, {})
@@ -438,7 +438,7 @@ class TestGameService:
         ]
         player1 = service.join_game(game.id, "Player 1", tiles1)
         player2 = service.join_game(game.id, "Player 2", tiles2)
-        started_game = service.start_game(game.id)
+        started_game = service.start_game(game.id, force=True)
 
         # Initial state should be PRE_ROLL
         assert started_game.turn_phase == TurnPhase.PRE_ROLL
@@ -480,7 +480,7 @@ class TestGameService:
         ]
         player1 = service.join_game(game.id, "Player 1", tiles)
         player2 = service.join_game(game.id, "Player 2", tiles)
-        service.start_game(game.id)
+        service.start_game(game.id, force=True)
 
         # Test ROLL_DICE
         result1 = service.perform_action(game.id, player1.id, ActionType.ROLL_DICE, {})
@@ -510,7 +510,7 @@ class TestGameService:
         ]
         player1 = service.join_game(game.id, "Player 1", tiles)
         player2 = service.join_game(game.id, "Player 2", tiles)
-        service.start_game(game.id)
+        service.start_game(game.id, force=True)
 
         # Create a mock ActionType that's not handled
         class MockActionType:
@@ -524,3 +524,197 @@ class TestGameService:
         result = service.perform_action(game.id, player1.id, mock_action, {})  # type: ignore
         assert result.success is False
         assert "Unknown action" in result.message
+
+    def test_kick_player(self, db_cursor):
+        """Test kicking a player from lobby."""
+        service = GameService(db_cursor)
+        game = service.create_game()
+
+        tiles = [
+            TileCreate(type=TileType.PROPERTY, name=f"Property {i}")
+            for i in range(5)
+        ]
+        player1 = service.join_game(game.id, "Player 1", tiles)
+        player2 = service.join_game(game.id, "Player 2", tiles)
+
+        # Player 1 should be host (first to join)
+        game_state = service.get_game(game.id)
+        assert game_state.host_id == player1.id
+        assert len(game_state.players) == 2
+
+        # Host kicks player 2
+        result = service.kick_player(game.id, player1.id, player2.id)
+        assert result["kicked"] is True
+        assert result["player_id"] == player2.id
+
+        # Verify player is removed
+        game_state = service.get_game(game.id)
+        assert len(game_state.players) == 1
+
+    def test_kick_player_not_host(self, db_cursor):
+        """Test that non-host cannot kick players."""
+        service = GameService(db_cursor)
+        game = service.create_game()
+
+        tiles = [
+            TileCreate(type=TileType.PROPERTY, name=f"Property {i}")
+            for i in range(5)
+        ]
+        player1 = service.join_game(game.id, "Player 1", tiles)
+        player2 = service.join_game(game.id, "Player 2", tiles)
+
+        # Player 2 tries to kick player 1
+        with pytest.raises(ValueError, match="Only the host can kick"):
+            service.kick_player(game.id, player2.id, player1.id)
+
+    def test_kick_player_after_start(self, db_cursor):
+        """Test cannot kick after game started."""
+        service = GameService(db_cursor)
+        game = service.create_game()
+
+        tiles = [
+            TileCreate(type=TileType.PROPERTY, name=f"Property {i}")
+            for i in range(5)
+        ]
+        player1 = service.join_game(game.id, "Player 1", tiles)
+        player2 = service.join_game(game.id, "Player 2", tiles)
+        service.toggle_ready(game.id, player1.id)
+        service.toggle_ready(game.id, player2.id)
+
+        # Game auto-starts when all ready
+        with pytest.raises(ValueError, match="Cannot kick players after game has started"):
+            service.kick_player(game.id, player1.id, player2.id)
+
+    def test_kick_self_fails(self, db_cursor):
+        """Test host cannot kick themselves."""
+        service = GameService(db_cursor)
+        game = service.create_game()
+
+        tiles = [
+            TileCreate(type=TileType.PROPERTY, name=f"Property {i}")
+            for i in range(5)
+        ]
+        player1 = service.join_game(game.id, "Player 1", tiles)
+
+        with pytest.raises(ValueError, match="Cannot kick yourself"):
+            service.kick_player(game.id, player1.id, player1.id)
+
+    def test_toggle_ready_auto_start(self, db_cursor):
+        """Test that game auto-starts when all players are ready."""
+        service = GameService(db_cursor)
+        game = service.create_game()
+
+        tiles = [
+            TileCreate(type=TileType.PROPERTY, name=f"Property {i}")
+            for i in range(5)
+        ]
+        player1 = service.join_game(game.id, "Player 1", tiles)
+        player2 = service.join_game(game.id, "Player 2", tiles)
+
+        # Player 1 turns key
+        result1 = service.toggle_ready(game.id, player1.id)
+        assert result1["ready"] is True
+        assert result1["game_started"] is False
+
+        # Player 2 turns key - should auto-start
+        result2 = service.toggle_ready(game.id, player2.id)
+        assert result2["ready"] is True
+        assert result2["game_started"] is True
+
+        # Verify game started
+        game_state = service.get_game(game.id)
+        assert game_state.status == GameStatus.ACTIVE
+
+    def test_toggle_ready_not_in_lobby(self, db_cursor):
+        """Test cannot toggle ready after game started."""
+        service = GameService(db_cursor)
+        game = service.create_game()
+
+        tiles = [
+            TileCreate(type=TileType.PROPERTY, name=f"Property {i}")
+            for i in range(5)
+        ]
+        player1 = service.join_game(game.id, "Player 1", tiles)
+        player2 = service.join_game(game.id, "Player 2", tiles)
+        service.toggle_ready(game.id, player1.id)
+        service.toggle_ready(game.id, player2.id)
+
+        # Game is now active
+        with pytest.raises(ValueError, match="Game already started"):
+            service.toggle_ready(game.id, player1.id)
+
+    def test_toggle_ready_player_not_found(self, db_cursor):
+        """Test toggle ready with invalid player."""
+        service = GameService(db_cursor)
+        game = service.create_game()
+
+        tiles = [
+            TileCreate(type=TileType.PROPERTY, name=f"Property {i}")
+            for i in range(5)
+        ]
+        service.join_game(game.id, "Player 1", tiles)
+
+        with pytest.raises(ValueError, match="Player not in this game"):
+            service.toggle_ready(game.id, "invalid-player-id")
+
+    def test_cpu_players_added_when_needed(self, db_cursor):
+        """Test CPU players are added when only one player."""
+        service = GameService(db_cursor)
+        game = service.create_game()
+
+        tiles = [
+            TileCreate(type=TileType.PROPERTY, name=f"Property {i}")
+            for i in range(5)
+        ]
+        player1 = service.join_game(game.id, "Player 1", tiles)
+
+        # Add CPU players to reach 2
+        service.add_cpu_players(game.id, target_count=2)
+
+        game_state = service.get_game(game.id)
+        assert len(game_state.players) == 2
+        # Check using the proper CPU detection method
+        assert any(service._is_cpu_player(p) for p in game_state.players)
+
+    def test_pass_property_action(self, db_cursor):
+        """Test passing on property purchase."""
+        service = GameService(db_cursor)
+        game = service.create_game()
+
+        tiles = [
+            TileCreate(type=TileType.PROPERTY, name=f"Property {i}")
+            for i in range(5)
+        ]
+        player1 = service.join_game(game.id, "Player 1", tiles)
+        player2 = service.join_game(game.id, "Player 2", tiles)
+        service.toggle_ready(game.id, player1.id)
+        service.toggle_ready(game.id, player2.id)
+
+        # Roll until we hit a property (DECISION phase)
+        for _ in range(20):  # Try up to 20 times
+            service.perform_action(game.id, player1.id, ActionType.ROLL_DICE, {})
+            game_state = service.get_game(game.id)
+            if game_state.turn_phase == TurnPhase.DECISION:
+                break
+            if game_state.turn_phase == TurnPhase.POST_TURN:
+                service.perform_action(game.id, player1.id, ActionType.END_TURN, {})
+                game_state = service.get_game(game.id)
+                if game_state.current_turn_player_id == player1.id:
+                    continue
+                service.perform_action(game.id, player2.id, ActionType.ROLL_DICE, {})
+                game_state = service.get_game(game.id)
+                if game_state.turn_phase == TurnPhase.DECISION:
+                    player1 = player2  # Switch to current player
+                    break
+                if game_state.turn_phase == TurnPhase.POST_TURN:
+                    service.perform_action(game.id, player2.id, ActionType.END_TURN, {})
+
+        # If we're in DECISION phase, test passing
+        game_state = service.get_game(game.id)
+        if game_state.turn_phase == TurnPhase.DECISION:
+            current_player_id = game_state.current_turn_player_id
+            result = service.perform_action(
+                game.id, current_player_id, ActionType.PASS_PROPERTY, {}
+            )
+            assert result.success is True
+            assert "Passed" in result.message

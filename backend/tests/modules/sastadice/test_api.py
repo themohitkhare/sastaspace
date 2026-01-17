@@ -7,6 +7,13 @@ from app.db.session import get_db
 from app.modules.sastadice.schemas import TileType, TileCreate
 
 
+def ready_and_start_game(client, game_id, player_ids):
+    """Helper to toggle ready for all players and start game."""
+    for pid in player_ids:
+        client.post(f"/api/v1/sastadice/games/{game_id}/ready/{pid}")
+    return client.post(f"/api/v1/sastadice/games/{game_id}/start")
+
+
 class TestSastaDiceAPI:
     """Test suite for SastaDice API endpoints."""
 
@@ -85,26 +92,17 @@ class TestSastaDiceAPI:
         assert response.status_code == 400
 
     def test_start_game(self, db_cursor, client):
-        """Test starting a game."""
-        # Create game
+        """Test starting a game (force=True endpoint bypasses ready check)."""
         create_response = client.post("/api/v1/sastadice/games")
         game_id = create_response.json()["id"]
 
-        # Add 2 players
         tiles = [
             {"type": "PROPERTY", "name": f"Property {i}", "effect_config": {}}
             for i in range(5)
         ]
-        client.post(
-            f"/api/v1/sastadice/games/{game_id}/join",
-            json={"name": "Player 1", "tiles": tiles},
-        )
-        client.post(
-            f"/api/v1/sastadice/games/{game_id}/join",
-            json={"name": "Player 2", "tiles": tiles},
-        )
+        client.post(f"/api/v1/sastadice/games/{game_id}/join", json={"name": "Player 1", "tiles": tiles})
+        client.post(f"/api/v1/sastadice/games/{game_id}/join", json={"name": "Player 2", "tiles": tiles})
 
-        # Start game
         response = client.post(f"/api/v1/sastadice/games/{game_id}/start")
         assert response.status_code == 200
         data = response.json()
