@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   traefik:
     image: traefik:v2.11
@@ -26,8 +24,8 @@ services:
 
   backend:
     build:
-      context: .
-      dockerfile: backend/Dockerfile
+      context: ./backend
+      dockerfile: Dockerfile
     container_name: sastaspace-backend
     environment:
       - DB_PATH=/app/data/sastaspace.db
@@ -43,10 +41,12 @@ services:
     restart: unless-stopped
 
   frontend-main:
-    image: nginx:alpine
+    build:
+      context: ./frontends/sastaspace
+      dockerfile: Dockerfile
     container_name: sastaspace-frontend-main
-    volumes:
-      - ./frontends/main_website:/usr/share/nginx/html:ro
+    ports:
+      - "9000:80"
     networks:
       - sastaspace-network
     labels:
