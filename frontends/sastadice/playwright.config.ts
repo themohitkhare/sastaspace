@@ -8,7 +8,7 @@ export default defineConfig({
   workers: process.env.CI ? 1 : undefined,
   reporter: 'html',
   use: {
-    baseURL: 'http://localhost:3001',
+    baseURL: 'http://localhost:9001',
     trace: 'on-first-retry',
   },
 
@@ -20,8 +20,9 @@ export default defineConfig({
   ],
 
   webServer: {
-    command: 'npm run dev',
-    url: 'http://localhost:3001',
-    reuseExistingServer: !process.env.CI,
+    command: 'echo "Frontend should be running on port 9001 via Docker"',
+    url: 'http://localhost:9001',
+    reuseExistingServer: true, // Use existing Docker container
+    timeout: 0, // Don't start server, use existing
   },
 })
