@@ -7,12 +7,21 @@
     @apply border-sasta-black;
   }
   
-  body {
+  html, body {
     @apply font-zero bg-sasta-white text-sasta-black;
     margin: 0;
     padding: 0;
+    overflow: hidden;
+    height: 100%;
+    width: 100%;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+  }
+  
+  #root {
+    height: 100%;
+    width: 100%;
+    overflow: hidden;
   }
 
   button {

@@ -15,31 +15,61 @@ export default function GamePage() {
   const game = useGameStore((s) => s.game)
   const isMyTurn = useGameStore((s) => s.isMyTurn)()
   const cpuActionRef = useRef(false)
+  const lastCpuPlayerIdRef = useRef(null)
 
   const { refetch } = useSastaPolling(gameId, 1500)
-  const handleActionComplete = useCallback(() => refetch(), [refetch])
+  const handleActionComplete = useCallback(async () => {
+    await refetch()
+  }, [refetch])
 
   const currentPlayer = game?.players?.find((p) => p.id === game?.current_turn_player_id)
   const isCpuTurn = currentPlayer && CPU_NAMES.has(currentPlayer.name) && game?.status === 'ACTIVE'
+  const currentTurnPlayerId = game?.current_turn_player_id
+  const turnPhase = game?.turn_phase
+
+  // Reset CPU action ref if the current player changes (turn advanced)
+  useEffect(() => {
+    if (currentTurnPlayerId && lastCpuPlayerIdRef.current && lastCpuPlayerIdRef.current !== currentTurnPlayerId) {
+      // Player changed, reset the processing flag to allow next CPU turn
+      cpuActionRef.current = false
+    }
+    if (currentTurnPlayerId) {
+      lastCpuPlayerIdRef.current = currentTurnPlayerId
+    }
+  }, [currentTurnPlayerId])
 
   useEffect(() => {
-    if (!isCpuTurn || cpuActionRef.current) return
+    if (!isCpuTurn || cpuActionRef.current || !gameId) return
 
     const processCpuTurns = async () => {
       cpuActionRef.current = true
       
+      // Small delay to show "CPU THINKING..." message
       await new Promise(r => setTimeout(r, 600))
       
       try {
         await apiClient.post(`/sastadice/games/${gameId}/cpu-turn`)
-        refetch()
+        // Immediately refresh game state after CPU turn
+        await refetch()
+        
+        // Additional refresh after a short delay to catch any state updates
+        await new Promise(r => setTimeout(r, 200))
+        await refetch()
+      } catch (error) {
+        console.error('CPU turn error:', error)
+        // Still refetch to get updated state even on error
+        await refetch()
       } finally {
-        setTimeout(() => { cpuActionRef.current = false }, 300)
+        // Reset the ref after state has had time to update
+        // Use a longer delay to ensure polling has a chance to update
+        setTimeout(() => {
+          cpuActionRef.current = false
+        }, 800)
       }
     }
 
     processCpuTurns()
-  }, [isCpuTurn, gameId, refetch])
+  }, [isCpuTurn, gameId, currentTurnPlayerId, turnPhase, refetch])
 
   const myPlayer = game?.players?.find((p) => p.id === playerId)
 
@@ -55,7 +85,7 @@ export default function GamePage() {
   }
 
   return (
-    <div className="min-h-screen bg-sasta-white flex flex-col">
+    <div className="h-screen bg-sasta-white flex flex-col overflow-hidden">
       <header className="border-b-4 border-sasta-black bg-sasta-white shrink-0">
         <div className="max-w-7xl mx-auto px-2 sm:px-4 py-2 sm:py-4 flex flex-wrap items-center justify-between gap-2">
           <div className="min-w-0">
@@ -68,6 +98,7 @@ export default function GamePage() {
             <div className="font-zero font-bold text-sm sm:text-base">{currentPlayer?.name?.toUpperCase() || 'N/A'}</div>
             {isMyTurn && <div className="text-[10px] sm:text-xs font-zero text-sasta-black font-bold">YOUR TURN!</div>}
             {isCpuTurn && <div className="text-[10px] sm:text-xs font-zero text-blue-600 font-bold animate-pulse">CPU THINKING...</div>}
+            {!playerId && <div className="text-[10px] sm:text-xs font-zero text-blue-600 font-bold">👁️ SPECTATOR</div>}
           </div>
 
           {myPlayer && (
@@ -134,21 +165,20 @@ export default function GamePage() {
         </div>
       </div>
 
-      {isMyTurn && (
-        <div className="shrink-0 border-t-4 border-sasta-black bg-sasta-white p-2 sm:p-4">
-          <div className="max-w-md mx-auto">
-            <ActionPanel
-              gameId={gameId}
-              playerId={playerId}
-              turnPhase={game.turn_phase}
-              pendingDecision={game.pending_decision}
-              isMyTurn={isMyTurn}
-              lastEventMessage={null}
-              onActionComplete={handleActionComplete}
-            />
-          </div>
+      {/* Always render ActionPanel container to prevent layout shifts */}
+      <div className="shrink-0 border-t-4 border-sasta-black bg-sasta-white p-2 sm:p-4">
+        <div className="max-w-md mx-auto">
+          <ActionPanel
+            gameId={gameId}
+            playerId={playerId}
+            turnPhase={game.turn_phase}
+            pendingDecision={game.pending_decision}
+            isMyTurn={isMyTurn}
+            lastEventMessage={null}
+            onActionComplete={handleActionComplete}
+          />
         </div>
-      )}
+      </div>
     </div>
   )
 }
