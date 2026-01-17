@@ -2,10 +2,6 @@ import React, { useState } from 'react'
 import { X } from 'lucide-react'
 import useAuthStore from '../store/useAuthStore'
 
-/**
- * AuthModal - Raw, brutalist modal pop-up for login
- * Thick black borders on all inputs, hard shadows
- */
 const AuthModal = ({ isOpen, onClose }) => {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -24,7 +20,6 @@ const AuthModal = ({ isOpen, onClose }) => {
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <div className="bg-sasta-white border-brutal-lg shadow-brutal-lg p-8 max-w-md w-full relative">
-        {/* Close button */}
         <button
           onClick={onClose}
           className="absolute top-4 right-4 border-brutal-sm bg-sasta-black text-sasta-white p-2 hover:bg-sasta-accent hover:text-sasta-black transition-colors"
