@@ -1,0 +1,27 @@
+---
+name: project-context
+description: This is a new rule
+---
+
+# Project Context: SastaSpace
+- Domain: sastaspace.com
+- Architecture: Monorepo with a single FastAPI backend and multiple sub-frontends.
+- Developer Persona: Solo Python Developer. Prefer simple, maintainable, high-performance code over complex microservices.
+- Tech Stack: 
+  - Backend: FastAPI (Python 3.11+), DuckDB (Embedded OLAP DB), Pydantic V2.
+  - Frontend: HTML/HTMX + Tailwind (primary), React (secondary/optional).
+  - Infrastructure: Docker Compose, Traefik (Reverse Proxy for subdomains).
+
+# Coding Standards & "Agentic" Rules
+1. **DuckDB Pattern:** Treat DuckDB as a SINGLETON. Never open a connection inside a route. Use a global dependency `get_db` that yields a cursor from a persistent connection pool.
+2. **Type Safety:** All Python code must be fully type-hinted. Use Pydantic models for all API inputs/outputs.
+3. **Monorepo Structure:** - Backend logic goes in `/backend`.
+   - Frontend projects go in `/frontends/<project_name>`.
+   - Shared logic (if any) goes in `/shared`.
+4. **Configuration:** Use `pydantic-settings` for all environment variables. Never hardcode secrets.
+5. **Simplicity:** If a solution requires a message broker (Redis/RabbitMQ) or complex cloud services, STOP and propose a simpler file-based or in-memory alternative first.
+
+# Subdomain Strategy
+- We use Traefik labels in `docker-compose.yml` to route traffic.
+- `sastaspace.com` -> Main frontend.
+- `*.sastaspace.com` -> Routed to specific project containers or handled via path routing if static.

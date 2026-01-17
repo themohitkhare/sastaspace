@@ -1,0 +1,89 @@
+version: '3.8'
+
+services:
+  traefik:
+    image: traefik:v2.11
+    container_name: sastaspace-traefik
+    command:
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+      - "--certificatesresolvers.letsencrypt.acme.tlschallenge=true"
+      - "--certificatesresolvers.letsencrypt.acme.email=${ACME_EMAIL:-admin@sastaspace.com}"
+      - "--certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json"
+    ports:
+      - "80:80"
+      - "443:443"
+      - "8080:8080"  # Traefik dashboard
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./traefik/letsencrypt:/letsencrypt
+    networks:
+      - sastaspace-network
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: sastaspace-backend
+    environment:
+      - DB_PATH=/app/data/sastaspace.db
+    volumes:
+      - ./backend/data:/app/data
+    networks:
+      - sastaspace-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.backend.rule=Host(`api.sastaspace.com`)"
+      - "traefik.http.routers.backend.entrypoints=web"
+      - "traefik.http.services.backend.loadbalancer.server.port=8000"
+    restart: unless-stopped
+
+  frontend-main:
+    image: nginx:alpine
+    container_name: sastaspace-frontend-main
+    volumes:
+      - ./frontends/main_website:/usr/share/nginx/html:ro
+    networks:
+      - sastaspace-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.frontend-main.rule=Host(`sastaspace.com`) || Host(`www.sastaspace.com`)"
+      - "traefik.http.routers.frontend-main.entrypoints=web"
+      - "traefik.http.services.frontend-main.loadbalancer.server.port=80"
+    restart: unless-stopped
+
+  frontend-sastahero:
+    image: nginx:alpine
+    container_name: sastaspace-frontend-sastahero
+    volumes:
+      - ./frontends/sastahero:/usr/share/nginx/html:ro
+    networks:
+      - sastaspace-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.frontend-sastahero.rule=Host(`sastahero.sastaspace.com`)"
+      - "traefik.http.routers.frontend-sastahero.entrypoints=web"
+      - "traefik.http.services.frontend-sastahero.loadbalancer.server.port=80"
+    restart: unless-stopped
+
+  frontend-sasta:
+    image: nginx:alpine
+    container_name: sastaspace-frontend-sasta
+    volumes:
+      - ./frontends/sasta:/usr/share/nginx/html:ro
+    networks:
+      - sastaspace-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.frontend-sasta.rule=Host(`sasta.sastaspace.com`)"
+      - "traefik.http.routers.frontend-sasta.entrypoints=web"
+      - "traefik.http.services.frontend-sasta.loadbalancer.server.port=80"
+    restart: unless-stopped
+
+networks:
+  sastaspace-network:
+    driver: bridge
