@@ -89,6 +89,70 @@ sastaspace/
 - `GET /` - Root endpoint
 - `GET /api/v1/common/health` - Health check with database connectivity
 
+## Running Backend as a Systemd Service (Non-Docker)
+
+To run the backend service in the background using systemd (instead of Docker):
+
+### Installation
+
+```bash
+# Install the systemd service
+make service-install
+
+# Enable service to start on boot (optional)
+sudo systemctl enable sastaspace-backend
+
+# Start the service
+make service-start
+```
+
+### Service Management
+
+```bash
+# Check service status
+make service-status
+
+# View logs (follow mode)
+make service-logs
+
+# Stop the service
+make service-stop
+
+# Remove the service
+make service-remove
+```
+
+The service will automatically restart if it crashes and will start on system boot if enabled.
+
+## DuckDB CLI Access
+
+DuckDB is already installed and available via the Python package. You can also access DuckDB CLI directly:
+
+### Using DuckDB CLI
+
+```bash
+# Access DuckDB CLI with project database
+make duckdb-cli
+
+# Or directly
+./backend/scripts/duckdb-cli.sh
+
+# Or use DuckDB CLI directly (without sudo)
+duckdb backend/data/sastaspace.db
+```
+
+**Note:** Don't use `sudo duckdb` - DuckDB CLI is installed in your user's local bin (`~/.local/bin/duckdb`), not in system paths accessible by sudo.
+
+### DuckDB Web UI
+
+If you want to use the DuckDB web UI:
+
+```bash
+duckdb -ui backend/data/sastaspace.db
+```
+
+This will start a local web server (usually on http://localhost:8080) for visual database interaction.
+
 ## Troubleshooting
 
 ### Check service status
