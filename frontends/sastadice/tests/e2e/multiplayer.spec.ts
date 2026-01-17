@@ -1,78 +1,136 @@
 /**
- * E2E test for multiplayer game flow with 2, 3, and 5 players
+ * E2E tests for SastaDice multiplayer game flow
+ * Tests the complete game lifecycle including turn phases and economy
  */
-import { test, expect } from '@playwright/test'
+import { test, expect, Page, BrowserContext } from '@playwright/test'
 
 const BASE_URL = 'http://localhost:9001'
 
 // Helper function to create a game and return game ID
-async function createGame(page) {
+async function createGame(page: Page): Promise<string> {
   await page.goto(BASE_URL)
-  await page.click('button:has-text("CREATE GAME")')
-  await page.waitForURL('**/game')
+  await page.click('button:has-text("Create New Game")')
+  await page.waitForURL('**/lobby', { timeout: 10000 })
   await page.waitForTimeout(2000) // Wait for game state to load
-  
-  // Extract game ID from the lobby page - look for the UUID pattern in the game ID display
+
+  // Extract game ID from the lobby page - look for the UUID pattern
   const gameIdElement = page.locator('text=/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i').first()
   await gameIdElement.waitFor({ timeout: 5000 })
   const gameIdText = await gameIdElement.textContent()
   if (!gameIdText) {
     throw new Error('Game ID not found on page')
   }
-  // Extract just the UUID from the text (handle case-insensitive)
+  // Extract just the UUID from the text
   const match = gameIdText.match(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i)
   const gameId = match ? match[0] : null
   if (!gameId) {
     throw new Error(`Could not extract game ID from: ${gameIdText}`)
   }
-  return gameId.toLowerCase() // Normalize to lowercase for consistency
+  return gameId.toLowerCase()
 }
 
-// Helper function to join a game
-async function joinGame(page, gameId: string, playerName: string, tiles: Array<{type: string, name: string}>) {
+// Helper function to join a game (go to home, enter code, navigate to lobby)
+async function navigateToGame(page: Page, gameId: string): Promise<void> {
   await page.goto(BASE_URL)
-  
-  // Clean game ID (ensure lowercase for consistency)
-  const cleanGameId = gameId.toLowerCase().trim()
-  
+
   // Enter game code
-  const gameCodeInput = page.locator('input[placeholder="ENTER GAME CODE"]')
+  const gameCodeInput = page.locator('input[placeholder="Enter game code..."]')
   await gameCodeInput.waitFor({ timeout: 5000 })
-  await gameCodeInput.fill(cleanGameId)
-  
-  // Click join button (wait for it to be enabled)
-  const joinButton = page.locator('button:has-text("JOIN GAME")')
+  await gameCodeInput.fill(gameId)
+
+  // Click join button
+  const joinButton = page.locator('button:has-text("Join Game")')
   await joinButton.waitFor({ state: 'visible', timeout: 5000 })
   await joinButton.click()
-  
-  await page.waitForURL('**/game', { timeout: 10000 })
-  await page.waitForTimeout(1000) // Wait for page to load
-  
+
+  await page.waitForURL('**/lobby', { timeout: 10000 })
+  await page.waitForTimeout(1000)
+}
+
+// Helper function to join as a player in the lobby
+async function joinAsPlayer(page: Page, playerName: string): Promise<void> {
   // Fill player name
   const nameInput = page.locator('input[placeholder="Enter your name"]')
   await nameInput.waitFor({ timeout: 5000 })
   await nameInput.fill(playerName)
-  
-  // Fill tiles
-  const tileInputs = await page.locator('input[placeholder*="Tile"]').all()
-  for (let i = 0; i < Math.min(tiles.length, tileInputs.length); i++) {
-    await tileInputs[i].waitFor({ state: 'visible', timeout: 5000 })
-    await tileInputs[i].fill(tiles[i].name)
-  }
-  
-  // Submit join - wait for button to be enabled
-  const joinSubmitButton = page.locator('button:has-text("JOIN GAME")').filter({ hasText: /^JOIN GAME$/ })
+
+  // Submit join
+  const joinSubmitButton = page.locator('button:has-text("Join Game")').last()
   await joinSubmitButton.waitFor({ state: 'visible', timeout: 5000 })
   await joinSubmitButton.click()
-  
-  await page.waitForTimeout(3000) // Wait for join to complete and polling to update
+
+  await page.waitForTimeout(2000) // Wait for join to complete
 }
 
-test.describe('Multiplayer Game Flow', () => {
-  test('2 players can create, join, and play a complete game', async ({ browser }) => {
+// Helper function to start the game
+async function startGame(page: Page): Promise<void> {
+  const startButton = page.locator('button:has-text("Start Game")')
+  await startButton.waitFor({ state: 'visible', timeout: 5000 })
+  await startButton.click()
+  await page.waitForTimeout(2000) // Wait for game to start
+}
+
+// Helper function to roll dice
+async function rollDice(page: Page): Promise<void> {
+  const rollButton = page.locator('button:has-text("Roll Dice")')
+  await rollButton.waitFor({ state: 'visible', timeout: 5000 })
+  await rollButton.click()
+  await page.waitForTimeout(1500) // Wait for roll animation and state update
+}
+
+// Helper function to end turn
+async function endTurn(page: Page): Promise<void> {
+  const endTurnButton = page.locator('button:has-text("End Turn")')
+  await endTurnButton.waitFor({ state: 'visible', timeout: 5000 })
+  await endTurnButton.click()
+  await page.waitForTimeout(1000)
+}
+
+// Helper function to buy property
+async function buyProperty(page: Page): Promise<void> {
+  const buyButton = page.locator('button:has-text("Buy")')
+  await buyButton.waitFor({ state: 'visible', timeout: 3000 })
+  await buyButton.click()
+  await page.waitForTimeout(1000)
+}
+
+// Helper function to pass on property
+async function passProperty(page: Page): Promise<void> {
+  const passButton = page.locator('button:has-text("Pass")')
+  await passButton.waitFor({ state: 'visible', timeout: 3000 })
+  await passButton.click()
+  await page.waitForTimeout(1000)
+}
+
+test.describe('SastaDice Multiplayer Game Flow', () => {
+  test('Single player can create game and start with CPU', async ({ page }) => {
+    // Create game
+    const gameId = await createGame(page)
+    expect(gameId).toBeTruthy()
+
+    // Join as player
+    await joinAsPlayer(page, 'TestPlayer')
+
+    // Verify player is in lobby
+    await expect(page.locator('text=TestPlayer')).toBeVisible()
+
+    // Start game (CPU will be added automatically)
+    await startGame(page)
+
+    // Verify game is active
+    await expect(page.locator('text=ACTIVE')).toBeVisible({ timeout: 5000 })
+
+    // Verify board is displayed
+    await expect(page.locator('.board-container')).toBeVisible({ timeout: 5000 })
+
+    // Verify player panel shows cash
+    await expect(page.locator('text=/\\$[0-9,]+/')).toBeVisible()
+  })
+
+  test('2 players can create, join, and play turns', async ({ browser }) => {
     const player1Context = await browser.newContext()
     const player2Context = await browser.newContext()
-    
+
     const player1Page = await player1Context.newPage()
     const player2Page = await player2Context.newPage()
 
@@ -80,39 +138,56 @@ test.describe('Multiplayer Game Flow', () => {
       // Player 1 creates game
       const gameId = await createGame(player1Page)
       expect(gameId).toBeTruthy()
-      
-      // Verify game ID is displayed in lobby
-      await expect(player1Page.locator(`text=${gameId}`)).toBeVisible()
-      await expect(player1Page.locator('button:has-text("COPY")')).toBeVisible()
 
-      // Player 2 joins game using game code
-      await joinGame(
-        player2Page,
-        gameId!,
-        'Player2',
-        [
-          { type: 'PROPERTY', name: 'Tile 1' },
-          { type: 'PROPERTY', name: 'Tile 2' },
-          { type: 'CHANCE', name: 'Tile 3' },
-          { type: 'TAX', name: 'Tile 4' },
-          { type: 'BUFF', name: 'Tile 5' },
-        ]
-      )
+      // Player 1 joins
+      await joinAsPlayer(player1Page, 'Alice')
 
-      // Verify both players are in the lobby
-      await player1Page.waitForTimeout(2000) // Wait for polling to update
-      await expect(player1Page.locator('text=/PLAYERS \\(2\\)/')).toBeVisible()
-      await expect(player2Page.locator('text=/PLAYERS \\(2\\)/')).toBeVisible()
+      // Player 2 navigates to game and joins
+      await navigateToGame(player2Page, gameId)
+      await joinAsPlayer(player2Page, 'Bob')
+
+      // Wait for both players to see each other
+      await player1Page.waitForTimeout(2000)
+      await expect(player1Page.locator('text=Alice')).toBeVisible()
+      await expect(player1Page.locator('text=Bob')).toBeVisible()
 
       // Player 1 starts the game
-      await player1Page.click('button:has-text("START GAME")')
-      await player1Page.waitForTimeout(2000)
+      await startGame(player1Page)
 
-      // Verify game status changed to ACTIVE
-      await expect(player1Page.locator('text=Status: ACTIVE')).toBeVisible({ timeout: 5000 })
+      // Verify game is active on both pages
+      await expect(player1Page.locator('text=ACTIVE')).toBeVisible({ timeout: 5000 })
+      await expect(player2Page.locator('text=ACTIVE')).toBeVisible({ timeout: 5000 })
 
-      // Verify board is generated (check for board elements or game page)
-      await expect(player1Page.locator('text=/SASTADICE GAME|GAME/')).toBeVisible({ timeout: 5000 })
+      // Verify turn indicator shows first player
+      await expect(player1Page.locator('text=Your turn!')).toBeVisible({ timeout: 5000 })
+
+      // Player 1 rolls dice
+      await rollDice(player1Page)
+
+      // Verify dice result is displayed
+      await expect(player1Page.locator('.dice-face')).toBeVisible({ timeout: 3000 })
+
+      // Handle decision phase if needed (buy/pass)
+      const buyButton = player1Page.locator('button:has-text("Buy")')
+      const passButton = player1Page.locator('button:has-text("Pass")')
+      const endTurnButton = player1Page.locator('button:has-text("End Turn")')
+
+      // Wait a moment for the phase to settle
+      await player1Page.waitForTimeout(500)
+
+      // If buy/pass buttons are visible, make a decision
+      if (await buyButton.isVisible()) {
+        await passProperty(player1Page) // Pass for simplicity
+      }
+
+      // End turn
+      if (await endTurnButton.isVisible()) {
+        await endTurn(player1Page)
+      }
+
+      // Verify turn passed to Player 2
+      await player2Page.waitForTimeout(2000)
+      await expect(player2Page.locator('text=Your turn!')).toBeVisible({ timeout: 5000 })
 
     } finally {
       await player1Context.close()
@@ -120,74 +195,149 @@ test.describe('Multiplayer Game Flow', () => {
     }
   })
 
-  test('3 players can create, join, and play a complete game', async ({ browser }) => {
-    const player1Context = await browser.newContext()
-    const player2Context = await browser.newContext()
-    const player3Context = await browser.newContext()
-    
-    const player1Page = await player1Context.newPage()
-    const player2Page = await player2Context.newPage()
-    const player3Page = await player3Context.newPage()
+  test('Turn phases work correctly (PRE_ROLL -> DECISION -> POST_TURN)', async ({ page }) => {
+    // Create and start a game
+    const gameId = await createGame(page)
+    await joinAsPlayer(page, 'PhaseTest')
+    await startGame(page)
 
-    try {
-      // Player 1 creates game
-      const gameId = await createGame(player1Page)
-      expect(gameId).toBeTruthy()
+    // Verify initial phase is PRE_ROLL
+    await expect(page.locator('text=PRE_ROLL')).toBeVisible({ timeout: 5000 })
 
-      // Player 2 joins
-      await joinGame(
-        player2Page,
-        gameId!,
-        'Player2',
-        [
-          { type: 'PROPERTY', name: 'P2 Tile 1' },
-          { type: 'PROPERTY', name: 'P2 Tile 2' },
-          { type: 'CHANCE', name: 'P2 Tile 3' },
-          { type: 'TAX', name: 'P2 Tile 4' },
-          { type: 'BUFF', name: 'P2 Tile 5' },
-        ]
-      )
+    // Roll dice
+    await rollDice(page)
 
-      // Player 3 joins
-      await joinGame(
-        player3Page,
-        gameId!,
-        'Player3',
-        [
-          { type: 'PROPERTY', name: 'P3 Tile 1' },
-          { type: 'PROPERTY', name: 'P3 Tile 2' },
-          { type: 'CHANCE', name: 'P3 Tile 3' },
-          { type: 'TAX', name: 'P3 Tile 4' },
-          { type: 'BUFF', name: 'P3 Tile 5' },
-        ]
-      )
+    // Verify phase changed (either DECISION or POST_TURN depending on tile)
+    const decisionOrPostTurn = page.locator('text=/DECISION|POST_TURN/')
+    await expect(decisionOrPostTurn).toBeVisible({ timeout: 5000 })
 
-      // Wait for all players to see each other
-      await player1Page.waitForTimeout(3000)
-      await expect(player1Page.locator('text=/PLAYERS \\(3\\)/')).toBeVisible({ timeout: 5000 })
-      await expect(player2Page.locator('text=/PLAYERS \\(3\\)/')).toBeVisible({ timeout: 5000 })
-      await expect(player3Page.locator('text=/PLAYERS \\(3\\)/')).toBeVisible({ timeout: 5000 })
+    // If in DECISION phase, make a choice
+    const buyButton = page.locator('button:has-text("Buy")')
+    const passButton = page.locator('button:has-text("Pass")')
 
-      // Player 1 starts the game
-      await player1Page.click('button:has-text("START GAME")')
-      await player1Page.waitForTimeout(2000)
+    if (await buyButton.isVisible()) {
+      await passProperty(page)
+    }
 
-      // Verify game started for all players
-      await expect(player1Page.locator('text=/Status: ACTIVE|SASTADICE GAME/')).toBeVisible({ timeout: 5000 })
+    // Verify POST_TURN phase
+    await expect(page.locator('text=POST_TURN')).toBeVisible({ timeout: 5000 })
 
-    } finally {
-      await player1Context.close()
-      await player2Context.close()
-      await player3Context.close()
+    // End turn
+    await endTurn(page)
+
+    // Verify back to PRE_ROLL (for next player or same player if solo)
+    await expect(page.locator('text=PRE_ROLL')).toBeVisible({ timeout: 5000 })
+  })
+
+  test('Player can buy property and see ownership', async ({ page }) => {
+    // Create and start a game
+    const gameId = await createGame(page)
+    await joinAsPlayer(page, 'Buyer')
+    await startGame(page)
+
+    // Get initial cash
+    const initialCashText = await page.locator('text=/Your Cash.*\\$[0-9,]+/').textContent()
+    const initialCash = parseInt(initialCashText?.match(/\$([0-9,]+)/)?.[1]?.replace(',', '') || '0')
+
+    // Roll dice until we land on a purchasable property
+    let attempts = 0
+    while (attempts < 10) {
+      // Roll dice
+      await rollDice(page)
+      await page.waitForTimeout(500)
+
+      // Check if buy button is visible
+      const buyButton = page.locator('button:has-text("Buy")')
+      if (await buyButton.isVisible()) {
+        // Buy the property
+        await buyProperty(page)
+
+        // Verify cash decreased
+        await page.waitForTimeout(1000)
+        const newCashText = await page.locator('text=/Your Cash.*\\$[0-9,]+/').textContent()
+        const newCash = parseInt(newCashText?.match(/\$([0-9,]+)/)?.[1]?.replace(',', '') || '0')
+        expect(newCash).toBeLessThan(initialCash)
+
+        // Verify ownership badge appears (player initial on tile)
+        await expect(page.locator('.owner-badge')).toBeVisible()
+        break
+      }
+
+      // End turn and try again
+      const endTurnButton = page.locator('button:has-text("End Turn")')
+      if (await endTurnButton.isVisible()) {
+        await endTurn(page)
+      }
+
+      attempts++
     }
   })
 
-  test('5 players can create, join, and play a complete game', async ({ browser }) => {
-    const contexts = []
-    const pages = []
-    
-    // Create 5 browser contexts
-    for (let i = 0; i < 5; i++) {
+  test('Dynamic economy scales with board size', async ({ page }) => {
+    // Create and start a game
+    const gameId = await createGame(page)
+    await joinAsPlayer(page, 'EconomyTest')
+    await startGame(page)
+
+    // Verify GO bonus is displayed
+    await expect(page.locator('text=/GO Bonus.*\\$[0-9]+/')).toBeVisible({ timeout: 5000 })
+
+    // Verify starting cash is displayed and reasonable
+    const cashText = await page.locator('text=/Your Cash.*\\$[0-9,]+/').textContent()
+    const cash = parseInt(cashText?.match(/\$([0-9,]+)/)?.[1]?.replace(',', '') || '0')
+    expect(cash).toBeGreaterThan(0)
+    expect(cash).toBeLessThan(10000) // Reasonable upper bound
+  })
+
+  test('Game copy functionality works', async ({ page }) => {
+    await createGame(page)
+
+    // Find and verify Copy button is visible
+    const copyButton = page.locator('button:has-text("Copy")')
+    await expect(copyButton).toBeVisible()
+
+    // Click copy button
+    await copyButton.click()
+
+    // Verify button changes to "Copied!"
+    await expect(page.locator('button:has-text("Copied")')).toBeVisible({ timeout: 2000 })
+  })
+
+  test('Event messages are displayed after actions', async ({ page }) => {
+    // Create and start a game
+    const gameId = await createGame(page)
+    await joinAsPlayer(page, 'EventTest')
+    await startGame(page)
+
+    // Roll dice
+    await rollDice(page)
+
+    // Verify an event message is displayed
+    await expect(page.locator('.event-message')).toBeVisible({ timeout: 5000 })
+  })
+
+  test('Player tokens move on the board', async ({ page }) => {
+    // Create and start a game
+    const gameId = await createGame(page)
+    await joinAsPlayer(page, 'MoveTest')
+    await startGame(page)
+
+    // Verify player token is visible
+    await expect(page.locator('.player-token')).toBeVisible({ timeout: 5000 })
+
+    // Roll dice
+    await rollDice(page)
+
+    // Token should still be visible (position changed)
+    await expect(page.locator('.player-token')).toBeVisible()
+  })
+
+  test('3 players can join and play', async ({ browser }) => {
+    const contexts: BrowserContext[] = []
+    const pages: Page[] = []
+
+    // Create 3 browser contexts
+    for (let i = 0; i < 3; i++) {
       contexts.push(await browser.newContext())
       pages.push(await contexts[i].newPage())
     }
@@ -197,64 +347,35 @@ test.describe('Multiplayer Game Flow', () => {
       const gameId = await createGame(pages[0])
       expect(gameId).toBeTruthy()
 
-      // Players 2-5 join
-      const playerNames = ['Player1', 'Player2', 'Player3', 'Player4', 'Player5']
-      for (let i = 1; i < 5; i++) {
-        await joinGame(
-          pages[i],
-          gameId!,
-          playerNames[i],
-          [
-            { type: 'PROPERTY', name: `P${i+1} Tile 1` },
-            { type: 'PROPERTY', name: `P${i+1} Tile 2` },
-            { type: 'CHANCE', name: `P${i+1} Tile 3` },
-            { type: 'TAX', name: `P${i+1} Tile 4` },
-            { type: 'BUFF', name: `P${i+1} Tile 5` },
-          ]
-        )
-      }
+      // All players join
+      await joinAsPlayer(pages[0], 'Player1')
+      await navigateToGame(pages[1], gameId)
+      await joinAsPlayer(pages[1], 'Player2')
+      await navigateToGame(pages[2], gameId)
+      await joinAsPlayer(pages[2], 'Player3')
 
       // Wait for all players to see each other
-      await pages[0].waitForTimeout(4000)
-      
-      // Verify all 5 players are visible
-      for (let i = 0; i < 5; i++) {
-        await expect(pages[i].locator('text=/PLAYERS \\(5\\)/')).toBeVisible({ timeout: 8000 })
+      await pages[0].waitForTimeout(3000)
+
+      // Verify all players are visible
+      for (const page of pages) {
+        await expect(page.locator('text=Player1')).toBeVisible({ timeout: 5000 })
+        await expect(page.locator('text=Player2')).toBeVisible({ timeout: 5000 })
+        await expect(page.locator('text=Player3')).toBeVisible({ timeout: 5000 })
       }
 
       // Player 1 starts the game
-      await pages[0].click('button:has-text("START GAME")')
-      await pages[0].waitForTimeout(2000)
+      await startGame(pages[0])
 
-      // Verify game started (all players should see active game)
-      for (let i = 0; i < 5; i++) {
-        await expect(pages[i].locator('text=/Status: ACTIVE|SASTADICE GAME/')).toBeVisible({ timeout: 8000 })
+      // Verify game started for all players
+      for (const page of pages) {
+        await expect(page.locator('text=ACTIVE')).toBeVisible({ timeout: 5000 })
       }
 
     } finally {
-      // Cleanup all contexts
       for (const context of contexts) {
         await context.close()
       }
     }
-  })
-
-  test('Game ID copy functionality works', async ({ page }) => {
-    await page.goto(BASE_URL)
-    await page.click('button:has-text("CREATE GAME")')
-    await page.waitForURL('**/game')
-    
-    // Find and verify COPY button is visible
-    const copyButton = page.locator('button:has-text("COPY")')
-    await expect(copyButton).toBeVisible()
-    
-    // Click copy button
-    await copyButton.click()
-    
-    // Verify button changes to "COPIED!"
-    await expect(page.locator('button:has-text("COPIED!")')).toBeVisible({ timeout: 1000 })
-    
-    // Verify clipboard contains game ID (if clipboard API is available in test environment)
-    // Note: This might not work in all test environments
   })
 })

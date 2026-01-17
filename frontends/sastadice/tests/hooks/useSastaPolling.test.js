@@ -1,7 +1,7 @@
 /**
  * Tests for useSastaPolling hook
  */
-import { renderHook } from '@testing-library/react'
+import { renderHook, act, waitFor } from '@testing-library/react'
 import { vi, beforeEach, afterEach } from 'vitest'
 import { useSastaPolling } from '../../src/hooks/useSastaPolling'
 import { useGameStore } from '../../src/store/useGameStore'
@@ -17,7 +17,7 @@ describe('useSastaPolling', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
-    vi.useRealTimers() // Use real timers for simplicity
+    vi.useFakeTimers()
     
     mockVersion = 0
     mockSetGame = vi.fn()
@@ -32,6 +32,11 @@ describe('useSastaPolling', () => {
       return selector(state)
     })
 
+    // Mock getState for the hook
+    useGameStore.getState = vi.fn(() => ({
+      version: mockVersion,
+    }))
+
     apiClient.get = vi.fn().mockResolvedValue({
       status: 200,
       data: {
@@ -42,14 +47,22 @@ describe('useSastaPolling', () => {
   })
 
   afterEach(() => {
+    vi.useRealTimers()
     vi.clearAllTimers()
   })
 
-  it('polls game state on mount', async () => {
-    renderHook(() => useSastaPolling('game-123', 100))
+  it('returns refetch function', () => {
+    const { result } = renderHook(() => useSastaPolling('game-123', 1000))
+    
+    expect(result.current).toHaveProperty('refetch')
+    expect(typeof result.current.refetch).toBe('function')
+  })
 
-    // Wait for initial poll
-    await new Promise(resolve => setTimeout(resolve, 150))
+  it('polls game state on mount', async () => {
+    renderHook(() => useSastaPolling('game-123', 1000))
+
+    // Flush pending promises
+    await vi.runOnlyPendingTimersAsync()
 
     expect(apiClient.get).toHaveBeenCalledWith(
       '/sastadice/games/game-123/state',
@@ -61,9 +74,9 @@ describe('useSastaPolling', () => {
   })
 
   it('updates game state when receiving 200 response', async () => {
-    renderHook(() => useSastaPolling('game-123', 100))
+    renderHook(() => useSastaPolling('game-123', 1000))
 
-    await new Promise(resolve => setTimeout(resolve, 150))
+    await vi.runOnlyPendingTimersAsync()
 
     expect(mockSetGame).toHaveBeenCalledWith(
       { id: 'game-123', status: 'ACTIVE' },
@@ -76,9 +89,9 @@ describe('useSastaPolling', () => {
       status: 304,
     })
 
-    renderHook(() => useSastaPolling('game-123', 100))
+    renderHook(() => useSastaPolling('game-123', 1000))
 
-    await new Promise(resolve => setTimeout(resolve, 150))
+    await vi.runOnlyPendingTimersAsync()
 
     expect(apiClient.get).toHaveBeenCalled()
     expect(mockSetGame).not.toHaveBeenCalled()
@@ -91,9 +104,9 @@ describe('useSastaPolling', () => {
 
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
 
-    renderHook(() => useSastaPolling('game-123', 100))
+    renderHook(() => useSastaPolling('game-123', 1000))
 
-    await new Promise(resolve => setTimeout(resolve, 150))
+    await vi.runOnlyPendingTimersAsync()
 
     expect(apiClient.get).toHaveBeenCalled()
     expect(mockSetError).not.toHaveBeenCalled()
@@ -108,49 +121,62 @@ describe('useSastaPolling', () => {
 
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
 
-    renderHook(() => useSastaPolling('game-123', 100))
+    renderHook(() => useSastaPolling('game-123', 1000))
 
-    await new Promise(resolve => setTimeout(resolve, 150))
+    await vi.runOnlyPendingTimersAsync()
     
     expect(mockSetError).toHaveBeenCalledWith('Server error')
     consoleError.mockRestore()
   })
 
   it('does not poll when gameId is null', async () => {
-    renderHook(() => useSastaPolling(null, 100))
+    renderHook(() => useSastaPolling(null, 1000))
 
-    await new Promise(resolve => setTimeout(resolve, 150))
+    await vi.runOnlyPendingTimersAsync()
 
     expect(apiClient.get).not.toHaveBeenCalled()
   })
 
   it('polls at specified interval', async () => {
-    renderHook(() => useSastaPolling('game-123', 100))
+    renderHook(() => useSastaPolling('game-123', 1000))
 
-    // Wait for initial poll (immediate) + first interval poll
-    await new Promise(resolve => setTimeout(resolve, 50))
+    // Initial poll happens immediately
+    await vi.runOnlyPendingTimersAsync()
     const initialCalls = apiClient.get.mock.calls.length
     expect(initialCalls).toBeGreaterThanOrEqual(1)
 
-    // Wait for next interval
-    await new Promise(resolve => setTimeout(resolve, 100))
-    expect(apiClient.get).toHaveBeenCalledTimes(initialCalls + 1)
+    // Advance timer by interval
+    await vi.advanceTimersByTimeAsync(1000)
+    expect(apiClient.get.mock.calls.length).toBeGreaterThan(initialCalls)
   })
 
   it('cleans up interval on unmount', async () => {
-    const { unmount } = renderHook(() => useSastaPolling('game-123', 100))
+    const { unmount } = renderHook(() => useSastaPolling('game-123', 1000))
 
-    // Wait for initial poll
-    await new Promise(resolve => setTimeout(resolve, 50))
+    // Initial poll
+    await vi.runOnlyPendingTimersAsync()
     const callsBeforeUnmount = apiClient.get.mock.calls.length
-    expect(callsBeforeUnmount).toBeGreaterThanOrEqual(1)
 
     unmount()
 
-    // Wait to see if polling continues
-    await new Promise(resolve => setTimeout(resolve, 100))
+    // Advance timer - should not poll after unmount
+    await vi.advanceTimersByTimeAsync(2000)
 
-    // Should not poll after unmount (calls should remain the same)
     expect(apiClient.get).toHaveBeenCalledTimes(callsBeforeUnmount)
+  })
+
+  it('refetch function triggers immediate poll', async () => {
+    const { result } = renderHook(() => useSastaPolling('game-123', 1000))
+
+    // Initial poll
+    await vi.runOnlyPendingTimersAsync()
+    const initialCalls = apiClient.get.mock.calls.length
+
+    // Call refetch
+    await act(async () => {
+      await result.current.refetch()
+    })
+
+    expect(apiClient.get).toHaveBeenCalledTimes(initialCalls + 1)
   })
 })

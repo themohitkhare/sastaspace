@@ -13,21 +13,12 @@ vi.mock('../../src/api/apiClient')
 vi.mock('../../src/components/lobby/PlayerList', () => ({
   default: ({ players }) => <div>PlayerList: {players?.length || 0} players</div>,
 }))
-vi.mock('../../src/components/lobby/TileSubmissionForm', () => ({
-  default: ({ tiles, setTiles }) => (
-    <div>
-      <button onClick={() => setTiles([...tiles, { type: 'PROPERTY', name: 'New', effect_config: {} }])}>
-        Add Tile
-      </button>
-      <span>Tiles: {tiles.length}</span>
-    </div>
-  ),
-}))
 
 describe('LobbyView', () => {
   let mockGameId
   let mockGame
   let mockSetPlayerId
+  let mockSetGame
 
   beforeEach(() => {
     vi.clearAllMocks()
@@ -39,23 +30,25 @@ describe('LobbyView', () => {
       players: [],
     }
     mockSetPlayerId = vi.fn()
+    mockSetGame = vi.fn()
 
     useGameStore.mockImplementation((selector) => {
       const state = {
         gameId: mockGameId,
         game: mockGame,
-        setPlayerId: mockSetPlayerId,
         playerId: null,
+        setPlayerId: mockSetPlayerId,
+        setGame: mockSetGame,
       }
       return selector(state)
     })
 
-    useGameStore.getState = vi.fn(() => ({
-      playerId: null,
-    }))
-
     apiClient.post = vi.fn().mockResolvedValue({
       data: { id: 'player-123', name: 'Test Player' },
+    })
+    
+    apiClient.get = vi.fn().mockResolvedValue({
+      data: { game: mockGame, version: 1 },
     })
   })
 
@@ -71,39 +64,37 @@ describe('LobbyView', () => {
 
   it('shows join form when player not in game', () => {
     render(<LobbyView />)
-    const joinButtons = screen.getAllByText('JOIN GAME')
-    expect(joinButtons.length).toBeGreaterThan(0)
+    expect(screen.getByText('JOIN GAME')).toBeInTheDocument()
     expect(screen.getByPlaceholderText('Enter your name')).toBeInTheDocument()
   })
 
   it('shows waiting message when player already joined', () => {
-    useGameStore.getState = vi.fn(() => ({
-      playerId: 'player-123',
-    }))
-    mockGame.players = [
-      { id: 'player-123', name: 'Test Player' },
-    ]
+    useGameStore.mockImplementation((selector) => {
+      const state = {
+        gameId: mockGameId,
+        game: {
+          ...mockGame,
+          players: [{ id: 'player-123', name: 'Test Player' }],
+        },
+        playerId: 'player-123',
+        setPlayerId: mockSetPlayerId,
+        setGame: mockSetGame,
+      }
+      return selector(state)
+    })
 
     render(<LobbyView />)
-    expect(screen.getByText(/Waiting for other players/)).toBeInTheDocument()
-    expect(screen.queryByText('JOIN GAME')).not.toBeInTheDocument()
+    expect(screen.getByText(/YOU'VE JOINED!/)).toBeInTheDocument()
   })
 
-  it('allows joining game with valid data', async () => {
+  it('allows joining game with valid name', async () => {
     const user = userEvent.setup()
     render(<LobbyView />)
 
     const nameInput = screen.getByPlaceholderText('Enter your name')
     await user.type(nameInput, 'Test Player')
 
-    // Add tiles
-    const addTileButton = screen.getByText('Add Tile')
-    for (let i = 0; i < 5; i++) {
-      await user.click(addTileButton)
-    }
-
-    const joinButtons = screen.getAllByText('JOIN GAME')
-    const joinButton = joinButtons[joinButtons.length - 1] // Get the actual button
+    const joinButton = screen.getByRole('button', { name: /JOIN GAME/i })
     await user.click(joinButton)
 
     await waitFor(() => {
@@ -111,34 +102,22 @@ describe('LobbyView', () => {
         '/sastadice/games/game-123/join',
         expect.objectContaining({
           name: 'Test Player',
-          tiles: expect.arrayContaining([]),
         })
       )
     })
   })
 
-  it('shows alert when joining without name or tiles', async () => {
+  it('shows alert when joining without name', async () => {
     const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {})
     const user = userEvent.setup()
-    const { container } = render(<LobbyView />)
+    render(<LobbyView />)
 
-    // Add tiles but no name - button should still be disabled, but we can test the function directly
-    // Or test with name but less than 5 tiles
-    const nameInput = screen.getByPlaceholderText('Enter your name')
-    await user.type(nameInput, 'Test Player')
-
-    // Now button is enabled (if we add tiles), but let's test the validation logic
-    // Since button is disabled when tiles.length !== 5, we'll test with name but insufficient tiles
-    const joinButtons = screen.getAllByText('JOIN GAME')
-    const joinButton = joinButtons[joinButtons.length - 1]
+    // Try to join without entering a name
+    const joinButton = screen.getByRole('button', { name: /JOIN GAME/i })
     
-    // The button is disabled when tiles.length !== 5, so onClick won't fire
-    // But we can test the handleJoin logic by checking if alert is called when we manually
-    // trigger it. Actually, since the validation happens in handleJoin, and the button
-    // is disabled, we can't test this path through the UI. Let's test the validation works
-    // by checking the button is disabled
-    
+    // Button should be disabled when name is empty
     expect(joinButton).toBeDisabled()
+    
     alertSpy.mockRestore()
   })
 
@@ -153,14 +132,7 @@ describe('LobbyView', () => {
     const nameInput = screen.getByPlaceholderText('Enter your name')
     await user.type(nameInput, 'Test Player')
 
-    // Add tiles
-    const addTileButton = screen.getByText('Add Tile')
-    for (let i = 0; i < 5; i++) {
-      await user.click(addTileButton)
-    }
-
-    const joinButtons = screen.getAllByText('JOIN GAME')
-    const joinButton = joinButtons[joinButtons.length - 1] // Get the actual button
+    const joinButton = screen.getByRole('button', { name: /JOIN GAME/i })
     await user.click(joinButton)
 
     await waitFor(() => {
@@ -170,44 +142,47 @@ describe('LobbyView', () => {
     consoleError.mockRestore()
   })
 
-  it('shows start button when 2+ players and status is LOBBY', () => {
-    useGameStore.getState = vi.fn(() => ({
-      playerId: 'player-1',
-    }))
-    mockGame.players = [
-      { id: 'player-1', name: 'Player 1' },
-      { id: 'player-2', name: 'Player 2' },
-    ]
+  it('shows start button when player has joined', () => {
+    useGameStore.mockImplementation((selector) => {
+      const state = {
+        gameId: mockGameId,
+        game: {
+          ...mockGame,
+          players: [{ id: 'player-1', name: 'Player 1' }],
+        },
+        playerId: 'player-1',
+        setPlayerId: mockSetPlayerId,
+        setGame: mockSetGame,
+      }
+      return selector(state)
+    })
 
     render(<LobbyView />)
-    expect(screen.getByText('START GAME')).toBeInTheDocument()
-  })
-
-  it('does not show start button with less than 2 players', () => {
-    useGameStore.getState = vi.fn(() => ({
-      playerId: 'player-1',
-    }))
-    mockGame.players = [
-      { id: 'player-1', name: 'Player 1' },
-    ]
-
-    render(<LobbyView />)
-    expect(screen.queryByText('START GAME')).not.toBeInTheDocument()
+    expect(screen.getByText(/START GAME/i)).toBeInTheDocument()
   })
 
   it('allows starting game', async () => {
-    useGameStore.getState = vi.fn(() => ({
-      playerId: 'player-1',
-    }))
-    mockGame.players = [
-      { id: 'player-1', name: 'Player 1' },
-      { id: 'player-2', name: 'Player 2' },
-    ]
+    useGameStore.mockImplementation((selector) => {
+      const state = {
+        gameId: mockGameId,
+        game: {
+          ...mockGame,
+          players: [
+            { id: 'player-1', name: 'Player 1' },
+            { id: 'player-2', name: 'Player 2' },
+          ],
+        },
+        playerId: 'player-1',
+        setPlayerId: mockSetPlayerId,
+        setGame: mockSetGame,
+      }
+      return selector(state)
+    })
 
     const user = userEvent.setup()
-    render(<LobbyView />)
+    render(<LobbyView onRefresh={vi.fn()} />)
 
-    const startButton = screen.getByText('START GAME')
+    const startButton = screen.getByRole('button', { name: /START GAME/i })
     await user.click(startButton)
 
     await waitFor(() => {
@@ -220,18 +195,27 @@ describe('LobbyView', () => {
     window.alert = vi.fn()
     apiClient.post = vi.fn().mockRejectedValue(new Error('Start failed'))
 
-    useGameStore.getState = vi.fn(() => ({
-      playerId: 'player-1',
-    }))
-    mockGame.players = [
-      { id: 'player-1', name: 'Player 1' },
-      { id: 'player-2', name: 'Player 2' },
-    ]
+    useGameStore.mockImplementation((selector) => {
+      const state = {
+        gameId: mockGameId,
+        game: {
+          ...mockGame,
+          players: [
+            { id: 'player-1', name: 'Player 1' },
+            { id: 'player-2', name: 'Player 2' },
+          ],
+        },
+        playerId: 'player-1',
+        setPlayerId: mockSetPlayerId,
+        setGame: mockSetGame,
+      }
+      return selector(state)
+    })
 
     const user = userEvent.setup()
     render(<LobbyView />)
 
-    const startButton = screen.getByText('START GAME')
+    const startButton = screen.getByRole('button', { name: /START GAME/i })
     await user.click(startButton)
 
     await waitFor(() => {
