@@ -70,7 +70,7 @@ class TestSastaDiceAPI:
         assert data["name"] == "Test Player"
 
     def test_join_game_invalid_tiles(self, db_cursor, client):
-        """Test joining with invalid number of tiles."""
+        """Test joining with invalid number of tiles returns 400."""
         create_response = client.post("/api/v1/sastadice/games")
         game_id = create_response.json()["id"]
 
@@ -81,7 +81,8 @@ class TestSastaDiceAPI:
             json={"name": "Test Player", "tiles": tiles},
         )
 
-        assert response.status_code == 422  # Validation error
+        # Returns 400 Bad Request due to ValueError in service
+        assert response.status_code == 400
 
     def test_start_game(self, db_cursor, client):
         """Test starting a game."""
@@ -182,16 +183,13 @@ class TestSastaDiceAPI:
         )
         assert response.status_code == 400
 
-    def test_start_game_error_cases(self, db_cursor, client):
-        """Test error cases for starting a game."""
-        # Start game with no players
+    def test_start_game_with_cpu_players(self, db_cursor, client):
+        """Test starting a game with less than 2 players adds CPU players."""
+        # Start game with no players - CPU players will be added
         create_response = client.post("/api/v1/sastadice/games")
         game_id = create_response.json()["id"]
 
-        response = client.post(f"/api/v1/sastadice/games/{game_id}/start")
-        assert response.status_code == 400
-
-        # Start game with only one player
+        # Add one player
         tiles = [
             {"type": "PROPERTY", "name": f"Property {i}", "effect_config": {}}
             for i in range(5)
@@ -201,8 +199,13 @@ class TestSastaDiceAPI:
             json={"name": "Player 1", "tiles": tiles},
         )
 
+        # Start game - should add CPU player automatically
         response = client.post(f"/api/v1/sastadice/games/{game_id}/start")
-        assert response.status_code == 400
+        assert response.status_code == 200
+        data = response.json()
+        assert data["status"] == "ACTIVE"
+        # Should have at least 2 players (1 human + 1 CPU)
+        assert len(data["players"]) >= 2
 
     def test_perform_action_roll_dice(self, db_cursor, client):
         """Test performing roll dice action."""
@@ -238,7 +241,7 @@ class TestSastaDiceAPI:
         assert "data" in data
 
     def test_perform_action_end_turn(self, db_cursor, client):
-        """Test performing end turn action."""
+        """Test performing end turn action after rolling dice."""
         # Create and start game
         create_response = client.post("/api/v1/sastadice/games")
         game_id = create_response.json()["id"]
@@ -261,7 +264,28 @@ class TestSastaDiceAPI:
 
         client.post(f"/api/v1/sastadice/games/{game_id}/start")
 
-        # End turn
+        # First roll dice to advance phase
+        roll_response = client.post(
+            f"/api/v1/sastadice/games/{game_id}/action",
+            params={"player_id": player1_id},
+            json={"type": "ROLL_DICE", "payload": {}},
+        )
+        assert roll_response.status_code == 200
+
+        # Check game state to see if we need to pass on property
+        state_response = client.get(f"/api/v1/sastadice/games/{game_id}/state")
+        game_state = state_response.json()["game"]
+        
+        if game_state["turn_phase"] == "DECISION" and game_state.get("pending_decision"):
+            # Pass on property
+            pass_response = client.post(
+                f"/api/v1/sastadice/games/{game_id}/action",
+                params={"player_id": player1_id},
+                json={"type": "PASS_PROPERTY", "payload": {}},
+            )
+            assert pass_response.status_code == 200
+
+        # Now end turn
         response = client.post(
             f"/api/v1/sastadice/games/{game_id}/action",
             params={"player_id": player1_id},
@@ -272,7 +296,7 @@ class TestSastaDiceAPI:
         assert data["success"] is True
 
     def test_perform_action_buy_property(self, db_cursor, client):
-        """Test performing buy property action."""
+        """Test performing buy property action requires proper phase."""
         # Create and start game
         create_response = client.post("/api/v1/sastadice/games")
         game_id = create_response.json()["id"]
@@ -293,7 +317,7 @@ class TestSastaDiceAPI:
         )
         client.post(f"/api/v1/sastadice/games/{game_id}/start")
 
-        # Try to buy property (not implemented)
+        # Try to buy property without rolling first - should fail
         response = client.post(
             f"/api/v1/sastadice/games/{game_id}/action",
             params={"player_id": player1_id},
@@ -317,3 +341,91 @@ class TestSastaDiceAPI:
         """Test getting game state for non-existent game."""
         response = client.get("/api/v1/sastadice/games/nonexistent-id/state")
         assert response.status_code == 404
+
+    def test_turn_phase_in_game_state(self, db_cursor, client):
+        """Test that turn_phase is included in game state."""
+        create_response = client.post("/api/v1/sastadice/games")
+        game_id = create_response.json()["id"]
+
+        tiles = [
+            {"type": "PROPERTY", "name": f"Property {i}", "effect_config": {}}
+            for i in range(5)
+        ]
+        client.post(
+            f"/api/v1/sastadice/games/{game_id}/join",
+            json={"name": "Player 1", "tiles": tiles},
+        )
+        client.post(
+            f"/api/v1/sastadice/games/{game_id}/join",
+            json={"name": "Player 2", "tiles": tiles},
+        )
+        client.post(f"/api/v1/sastadice/games/{game_id}/start")
+
+        response = client.get(f"/api/v1/sastadice/games/{game_id}/state")
+        assert response.status_code == 200
+        data = response.json()
+        assert "turn_phase" in data["game"]
+        assert data["game"]["turn_phase"] == "PRE_ROLL"
+
+    def test_dynamic_economy_in_game_state(self, db_cursor, client):
+        """Test that dynamic economy fields are in game state."""
+        create_response = client.post("/api/v1/sastadice/games")
+        game_id = create_response.json()["id"]
+
+        tiles = [
+            {"type": "PROPERTY", "name": f"Property {i}", "effect_config": {}}
+            for i in range(5)
+        ]
+        client.post(
+            f"/api/v1/sastadice/games/{game_id}/join",
+            json={"name": "Player 1", "tiles": tiles},
+        )
+        client.post(
+            f"/api/v1/sastadice/games/{game_id}/join",
+            json={"name": "Player 2", "tiles": tiles},
+        )
+        client.post(f"/api/v1/sastadice/games/{game_id}/start")
+
+        response = client.get(f"/api/v1/sastadice/games/{game_id}/state")
+        assert response.status_code == 200
+        data = response.json()["game"]
+        
+        # Verify economy fields
+        assert "starting_cash" in data
+        assert "go_bonus" in data
+        assert data["starting_cash"] > 0
+        assert data["go_bonus"] > 0
+        
+        # Verify players have cash
+        for player in data["players"]:
+            assert player["cash"] > 0
+
+    def test_player_colors_assigned(self, db_cursor, client):
+        """Test that players are assigned unique colors."""
+        create_response = client.post("/api/v1/sastadice/games")
+        game_id = create_response.json()["id"]
+
+        tiles = [
+            {"type": "PROPERTY", "name": f"Property {i}", "effect_config": {}}
+            for i in range(5)
+        ]
+        
+        # Add multiple players
+        join_response1 = client.post(
+            f"/api/v1/sastadice/games/{game_id}/join",
+            json={"name": "Player 1", "tiles": tiles},
+        )
+        join_response2 = client.post(
+            f"/api/v1/sastadice/games/{game_id}/join",
+            json={"name": "Player 2", "tiles": tiles},
+        )
+
+        # Verify colors are assigned and different
+        player1 = join_response1.json()
+        player2 = join_response2.json()
+        
+        assert "color" in player1
+        assert "color" in player2
+        assert player1["color"].startswith("#")
+        assert player2["color"].startswith("#")
+        assert player1["color"] != player2["color"]

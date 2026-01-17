@@ -4,6 +4,7 @@ from app.modules.sastadice.services.game_service import GameService
 from app.modules.sastadice.repository import GameRepository
 from app.modules.sastadice.schemas import (
     GameStatus,
+    TurnPhase,
     TileType,
     TileCreate,
     PlayerCreate,
@@ -52,15 +53,20 @@ class TestGameRepository:
 
         assert player.id is not None
         assert player.name == "Test Player"
-        assert player.cash == 1500
+        # Cash is now 0 until game starts (dynamic economy)
+        assert player.cash == 0
+        # Player should have a color assigned
+        assert player.color is not None
+        assert player.color.startswith('#')
 
         # Verify in database
         result = db_cursor.execute(
-            "SELECT name, cash FROM sd_players WHERE id = ?", [player.id]
+            "SELECT name, cash, color FROM sd_players WHERE id = ?", [player.id]
         ).fetchone()
         assert result is not None
         assert result[0] == "Test Player"
-        assert result[1] == 1500
+        assert result[1] == 0  # Cash set at game start
+        assert result[2] is not None  # Color assigned
 
     def test_submit_tiles(self, db_cursor):
         """Test submitting tiles for a player."""
@@ -204,6 +210,11 @@ class TestGameService:
         assert len(started_game.board) > 0
         assert started_game.board_size > 0
         assert started_game.current_turn_player_id is not None
+        # Verify dynamic economy is set
+        assert started_game.starting_cash > 0
+        assert started_game.go_bonus > 0
+        # Verify players have starting cash
+        assert all(p.cash > 0 for p in started_game.players)
 
     def test_roll_dice(self, db_cursor):
         """Test rolling dice."""
@@ -325,10 +336,10 @@ class TestGameService:
 
         result = service.perform_action(game.id, player1.id, ActionType.ROLL_DICE, {})
         assert result.success is True
-        assert "data" in result.message or result.data is not None
+        assert result.data is not None
 
     def test_perform_action_end_turn(self, db_cursor):
-        """Test perform_action with END_TURN."""
+        """Test perform_action with END_TURN after rolling dice."""
         service = GameService(db_cursor)
         game = service.create_game()
 
@@ -344,12 +355,30 @@ class TestGameService:
         player2 = service.join_game(game.id, "Player 2", tiles2)
         service.start_game(game.id)
 
+        # First roll dice to advance to DECISION/POST_TURN phase
+        roll_result = service.perform_action(game.id, player1.id, ActionType.ROLL_DICE, {})
+        assert roll_result.success is True
+
+        # Get game state to check phase
+        game_state = service.get_game(game.id)
+        
+        # If in DECISION phase with pending decision, pass on it
+        if game_state.turn_phase == TurnPhase.DECISION and game_state.pending_decision:
+            pass_result = service.perform_action(game.id, player1.id, ActionType.PASS_PROPERTY, {})
+            assert pass_result.success is True
+
+        # Now should be in POST_TURN phase
+        game_state = service.get_game(game.id)
+        assert game_state.turn_phase == TurnPhase.POST_TURN
+
+        # End turn
         result = service.perform_action(game.id, player1.id, ActionType.END_TURN, {})
         assert result.success is True
 
         # Verify turn moved to next player
         updated_game = service.get_game(game.id)
         assert updated_game.current_turn_player_id == player2.id
+        assert updated_game.turn_phase == TurnPhase.PRE_ROLL
 
     def test_perform_action_end_turn_not_your_turn(self, db_cursor):
         """Test perform_action END_TURN when not your turn."""
@@ -373,7 +402,7 @@ class TestGameService:
         assert "Not your turn" in result.message
 
     def test_perform_action_buy_property(self, db_cursor):
-        """Test perform_action with BUY_PROPERTY."""
+        """Test perform_action with BUY_PROPERTY requires DECISION phase."""
         service = GameService(db_cursor)
         game = service.create_game()
 
@@ -389,12 +418,59 @@ class TestGameService:
         player2 = service.join_game(game.id, "Player 2", tiles2)
         service.start_game(game.id)
 
+        # Try to buy without rolling first - should fail
         result = service.perform_action(game.id, player1.id, ActionType.BUY_PROPERTY, {})
         assert result.success is False
-        assert "not yet implemented" in result.message
+        assert "Cannot buy property now" in result.message
+
+    def test_turn_phase_state_machine(self, db_cursor):
+        """Test the turn phase state machine flow."""
+        service = GameService(db_cursor)
+        game = service.create_game()
+
+        tiles1 = [
+            TileCreate(type=TileType.PROPERTY, name=f"Property {i}")
+            for i in range(5)
+        ]
+        tiles2 = [
+            TileCreate(type=TileType.PROPERTY, name=f"Property {i+5}")
+            for i in range(5)
+        ]
+        player1 = service.join_game(game.id, "Player 1", tiles1)
+        player2 = service.join_game(game.id, "Player 2", tiles2)
+        started_game = service.start_game(game.id)
+
+        # Initial state should be PRE_ROLL
+        assert started_game.turn_phase == TurnPhase.PRE_ROLL
+
+        # Roll dice
+        roll_result = service.perform_action(game.id, player1.id, ActionType.ROLL_DICE, {})
+        assert roll_result.success is True
+
+        # After rolling, should be in DECISION or POST_TURN
+        game_state = service.get_game(game.id)
+        assert game_state.turn_phase in [TurnPhase.DECISION, TurnPhase.POST_TURN]
+
+        # If in DECISION with pending decision, handle it
+        if game_state.turn_phase == TurnPhase.DECISION and game_state.pending_decision:
+            pass_result = service.perform_action(game.id, player1.id, ActionType.PASS_PROPERTY, {})
+            assert pass_result.success is True
+            game_state = service.get_game(game.id)
+
+        # Should now be in POST_TURN
+        assert game_state.turn_phase == TurnPhase.POST_TURN
+
+        # End turn
+        end_result = service.perform_action(game.id, player1.id, ActionType.END_TURN, {})
+        assert end_result.success is True
+
+        # Should be back to PRE_ROLL for next player
+        final_state = service.get_game(game.id)
+        assert final_state.turn_phase == TurnPhase.PRE_ROLL
+        assert final_state.current_turn_player_id == player2.id
 
     def test_perform_action_unknown(self, db_cursor):
-        """Test perform_action with unknown action type."""
+        """Test perform_action with all valid action types."""
         service = GameService(db_cursor)
         game = service.create_game()
 
@@ -406,19 +482,25 @@ class TestGameService:
         player2 = service.join_game(game.id, "Player 2", tiles)
         service.start_game(game.id)
 
-        # Test all valid action types work
+        # Test ROLL_DICE
         result1 = service.perform_action(game.id, player1.id, ActionType.ROLL_DICE, {})
         assert result1.success is True
 
+        # Handle decision phase if needed
+        game_state = service.get_game(game.id)
+        if game_state.turn_phase == TurnPhase.DECISION and game_state.pending_decision:
+            service.perform_action(game.id, player1.id, ActionType.PASS_PROPERTY, {})
+
+        # Test END_TURN
         result2 = service.perform_action(game.id, player1.id, ActionType.END_TURN, {})
         assert result2.success is True
 
-        result3 = service.perform_action(game.id, player1.id, ActionType.BUY_PROPERTY, {})
-        assert result3.success is False  # Not implemented
+        # Test BUY_PROPERTY (should fail without proper phase)
+        result3 = service.perform_action(game.id, player2.id, ActionType.BUY_PROPERTY, {})
+        assert result3.success is False
 
     def test_perform_action_unknown_enum_value(self, db_cursor):
         """Test perform_action else branch with unknown action."""
-        from unittest.mock import MagicMock
         service = GameService(db_cursor)
         game = service.create_game()
 
@@ -431,7 +513,6 @@ class TestGameService:
         service.start_game(game.id)
 
         # Create a mock ActionType that's not handled
-        # We'll use a string that behaves like an enum value but isn't in the enum
         class MockActionType:
             def __eq__(self, other):
                 return False
