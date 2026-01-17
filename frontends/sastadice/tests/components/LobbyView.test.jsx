@@ -10,8 +10,17 @@ import { apiClient } from '../../src/api/apiClient'
 
 vi.mock('../../src/store/useGameStore')
 vi.mock('../../src/api/apiClient')
-vi.mock('../../src/components/lobby/PlayerList', () => ({
-  default: ({ players }) => <div>PlayerList: {players?.length || 0} players</div>,
+vi.mock('../../src/components/lobby/LaunchKey', () => ({
+  default: ({ isReady, onToggle }) => (
+    <button onClick={onToggle} aria-label="Turn key to ready up">
+      LaunchKey: {isReady ? 'READY' : 'NOT READY'}
+    </button>
+  ),
+}))
+vi.mock('../../src/components/lobby/KeyStatus', () => ({
+  default: ({ player, isMe }) => (
+    <div>KeyStatus: {player.name} {isMe ? '(YOU)' : ''}</div>
+  ),
 }))
 
 describe('LobbyView', () => {
@@ -57,9 +66,9 @@ describe('LobbyView', () => {
     expect(screen.getByText('GAME LOBBY')).toBeInTheDocument()
   })
 
-  it('renders PlayerList', () => {
+  it('renders join form when not joined', () => {
     render(<LobbyView />)
-    expect(screen.getByText(/PlayerList:/)).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: /JOIN GAME/i })).toBeInTheDocument()
   })
 
   it('shows join form when player not in game', () => {
@@ -84,7 +93,7 @@ describe('LobbyView', () => {
     })
 
     render(<LobbyView />)
-    expect(screen.getByText(/YOU'VE JOINED!/)).toBeInTheDocument()
+    expect(screen.getByText(/YOUR STATION/)).toBeInTheDocument()
   })
 
   it('allows joining game with valid name', async () => {
@@ -158,18 +167,18 @@ describe('LobbyView', () => {
     })
 
     render(<LobbyView />)
-    expect(screen.getByText(/START GAME/i)).toBeInTheDocument()
+    expect(screen.getByText(/LAUNCH CONTROL/i)).toBeInTheDocument()
   })
 
-  it('allows starting game', async () => {
+  it('allows toggling ready state via launch key', async () => {
     useGameStore.mockImplementation((selector) => {
       const state = {
         gameId: mockGameId,
         game: {
           ...mockGame,
           players: [
-            { id: 'player-1', name: 'Player 1' },
-            { id: 'player-2', name: 'Player 2' },
+            { id: 'player-1', name: 'Player 1', ready: false, color: '#FF0000' },
+            { id: 'player-2', name: 'Player 2', ready: false, color: '#00FF00' },
           ],
         },
         playerId: 'player-1',
@@ -182,18 +191,17 @@ describe('LobbyView', () => {
     const user = userEvent.setup()
     render(<LobbyView onRefresh={vi.fn()} />)
 
-    const startButton = screen.getByRole('button', { name: /START GAME/i })
-    await user.click(startButton)
+    const launchKey = screen.getByRole('button', { name: /Turn key to ready up/i })
+    await user.click(launchKey)
 
     await waitFor(() => {
-      expect(apiClient.post).toHaveBeenCalledWith('/sastadice/games/game-123/start')
+      expect(apiClient.post).toHaveBeenCalledWith('/sastadice/games/game-123/ready/player-1')
     })
   })
 
-  it('handles start game errors', async () => {
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+  it('handles toggle ready errors', async () => {
     window.alert = vi.fn()
-    apiClient.post = vi.fn().mockRejectedValue(new Error('Start failed'))
+    apiClient.post = vi.fn().mockRejectedValue(new Error('Ready failed'))
 
     useGameStore.mockImplementation((selector) => {
       const state = {
@@ -201,8 +209,8 @@ describe('LobbyView', () => {
         game: {
           ...mockGame,
           players: [
-            { id: 'player-1', name: 'Player 1' },
-            { id: 'player-2', name: 'Player 2' },
+            { id: 'player-1', name: 'Player 1', ready: false, color: '#FF0000' },
+            { id: 'player-2', name: 'Player 2', ready: false, color: '#00FF00' },
           ],
         },
         playerId: 'player-1',
@@ -215,13 +223,11 @@ describe('LobbyView', () => {
     const user = userEvent.setup()
     render(<LobbyView />)
 
-    const startButton = screen.getByRole('button', { name: /START GAME/i })
-    await user.click(startButton)
+    const launchKey = screen.getByRole('button', { name: /Turn key to ready up/i })
+    await user.click(launchKey)
 
     await waitFor(() => {
-      expect(window.alert).toHaveBeenCalledWith('Failed to start game')
+      expect(window.alert).toHaveBeenCalledWith('Failed to toggle ready')
     })
-
-    consoleError.mockRestore()
   })
 })
