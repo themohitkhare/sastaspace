@@ -64,16 +64,29 @@ export default function LobbyView({ onRefresh }) {
     }
   }
 
+  const handleKickPlayer = async (targetPlayerId) => {
+    if (!playerId || !game?.host_id) return
+    if (!confirm('Are you sure you want to kick this player?')) return
+    
+    try {
+      await apiClient.delete(`/sastadice/games/${gameId}/players/${targetPlayerId}?host_id=${playerId}`)
+      if (onRefresh) onRefresh()
+    } catch {
+      alert('Failed to kick player')
+    }
+  }
+
   const myPlayer = game?.players?.find((p) => p.id === playerId)
   const otherPlayers = game?.players?.filter((p) => p.id !== playerId) || []
   const hasJoined = !!myPlayer
   const allReady = game?.players?.length > 0 && game?.players?.every((p) => p.ready)
   const readyCount = game?.players?.filter((p) => p.ready).length || 0
   const totalPlayers = game?.players?.length || 0
+  const isHost = game?.host_id === playerId
 
   return (
-    <div className="max-w-4xl mx-auto p-8">
-      <h2 className="text-5xl font-bold font-zero mb-8">GAME LOBBY</h2>
+    <div className="max-w-4xl mx-auto p-4 sm:p-8">
+      <h2 className="text-3xl sm:text-5xl font-bold font-zero mb-4 sm:mb-8">GAME LOBBY</h2>
 
       {gameId && (
         <div className="mb-8 border-brutal-lg bg-sasta-accent p-6 shadow-brutal-lg">
@@ -119,7 +132,12 @@ export default function LobbyView({ onRefresh }) {
               <p className="font-zero text-sm mb-3">WAITING IN LOBBY ({totalPlayers}):</p>
               <div className="space-y-2">
                 {game?.players?.map((p) => (
-                  <KeyStatus key={p.id} player={p} isMe={false} />
+                  <KeyStatus 
+                    key={p.id} 
+                    player={p} 
+                    isMe={false}
+                    isHost={p.id === game?.host_id}
+                  />
                 ))}
               </div>
             </div>
@@ -163,21 +181,30 @@ export default function LobbyView({ onRefresh }) {
           <div className="border-brutal-lg bg-sasta-white p-6 shadow-brutal-lg">
             <h3 className="text-lg font-bold font-zero mb-4">OPERATOR STATUS</h3>
             
-            {/* My status */}
             {myPlayer && (
               <div className="mb-4">
-                <p className="font-zero text-xs text-zinc-500 mb-2">YOUR STATION</p>
-                <KeyStatus player={myPlayer} isMe={true} />
+                <p className="font-zero text-xs text-zinc-500 mb-2">YOUR STATION {isHost && '(HOST)'}</p>
+                <KeyStatus 
+                  player={myPlayer} 
+                  isMe={true}
+                  isHost={isHost}
+                />
               </div>
             )}
 
-            {/* Other players */}
             {otherPlayers.length > 0 && (
               <div>
                 <p className="font-zero text-xs text-zinc-500 mb-2">OTHER OPERATORS ({otherPlayers.length})</p>
                 <div className="space-y-2">
                   {otherPlayers.map((p) => (
-                    <KeyStatus key={p.id} player={p} isMe={false} />
+                    <KeyStatus 
+                      key={p.id} 
+                      player={p} 
+                      isMe={false}
+                      isHost={p.id === game?.host_id}
+                      canKick={isHost}
+                      onKick={handleKickPlayer}
+                    />
                   ))}
                 </div>
               </div>
