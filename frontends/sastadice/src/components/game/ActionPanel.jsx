@@ -26,7 +26,23 @@ export default function ActionPanel({
       )
 
       if (!response.data.success) {
-        setError(response.data.message)
+        const errorMsg = response.data.message || 'Action failed'
+        setError(errorMsg)
+        
+        // If it's a turn phase error, refresh game state and clear error after a delay
+        if (errorMsg.includes('turn phase') || errorMsg.includes('Cannot roll dice')) {
+          if (onActionComplete) {
+            // Refresh game state
+            setTimeout(() => {
+              onActionComplete(response.data)
+              // Clear error after state refresh
+              setTimeout(() => setError(null), 1000)
+            }, 500)
+          }
+        }
+      } else {
+        // Clear any previous errors on success
+        setError(null)
       }
 
       if (onActionComplete) {
@@ -40,6 +56,16 @@ export default function ActionPanel({
           ? errorDetail
           : err.message
       setError(errorText)
+      
+      // If it's a turn phase error, refresh game state
+      if (errorText.includes('turn phase') || errorText.includes('Cannot roll dice')) {
+        if (onActionComplete) {
+          setTimeout(() => {
+            onActionComplete({})
+            setTimeout(() => setError(null), 1000)
+          }, 500)
+        }
+      }
     } finally {
       setIsLoading(false)
     }
