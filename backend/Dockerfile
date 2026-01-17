@@ -8,8 +8,8 @@ RUN pip install --no-cache-dir uv
 # Copy dependency files
 COPY pyproject.toml ./
 
-# Install dependencies from pyproject.toml
-# uv can read pyproject.toml directly, but for simplicity we install directly
+# Install dependencies using uv (reads dependencies from pyproject.toml)
+# Install dependencies directly from the dependencies list
 RUN uv pip install --system \
     "fastapi>=0.104.0" \
     "uvicorn[standard]>=0.24.0" \
@@ -20,7 +20,7 @@ RUN uv pip install --system \
     "python-multipart>=0.0.6"
 
 # Copy application code
-COPY backend/app ./app
+COPY app ./app
 
 # Create data directory
 RUN mkdir -p /app/data
