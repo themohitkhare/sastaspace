@@ -6,7 +6,6 @@ from typing import Tuple
 from app.modules.sastadice.schemas import Tile, TileType, TileCreate
 
 
-# Sasta Events - Indian-flavored game events
 SASTA_EVENTS = [
     {"name": "UPI Server Down", "desc": "Cannot buy property this turn", "type": "SKIP_BUY", "value": 0},
     {"name": "Influencer Collab", "desc": "Collect from everyone", "type": "COLLECT_FROM_ALL", "value": 50},
@@ -55,7 +54,6 @@ class GameConfig:
         if tile_type != TileType.PROPERTY:
             return 0
 
-        # Price varies by position (later tiles cost more)
         position_multiplier = 1.0 + (position / self.num_tiles) * 0.5
         return int(self.base_property_price * position_multiplier)
 
@@ -232,7 +230,6 @@ class BoardGenerationService:
 
         board = self._map_tiles_to_perimeter(interleaved, board_size)
 
-        # Set prices and rents based on economy config
         if game_config:
             for tile in board:
                 tile.price = game_config.get_tile_price(tile.type, tile.position)

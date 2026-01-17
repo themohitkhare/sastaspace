@@ -15,6 +15,7 @@ def init_tables(cursor) -> None:  # type: ignore
             status VARCHAR NOT NULL DEFAULT 'LOBBY',
             turn_phase VARCHAR NOT NULL DEFAULT 'PRE_ROLL',
             current_turn_player_id VARCHAR,
+            host_id VARCHAR,
             board_size INTEGER DEFAULT 0,
             version INTEGER DEFAULT 0,
             starting_cash INTEGER DEFAULT 0,

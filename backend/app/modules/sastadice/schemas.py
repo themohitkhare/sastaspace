@@ -92,6 +92,7 @@ class GameSession(BaseModel):
     status: GameStatus = GameStatus.LOBBY
     turn_phase: TurnPhase = TurnPhase.PRE_ROLL
     current_turn_player_id: Optional[str] = None
+    host_id: Optional[str] = None
     players: list[Player] = Field(default_factory=list)
     board: list[Tile] = Field(default_factory=list)
     board_size: int = 0

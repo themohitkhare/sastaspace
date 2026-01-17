@@ -26,6 +26,8 @@ from app.modules.sastadice.schemas import (
     ActionResult,
 )
 
+CPU_NAMES = {"ROBOCOP", "CHAD BOT", "KAREN.EXE", "STONKS", "CPU-1", "CPU-2", "CPU-3", "CPU-4", "CPU-5"}
+
 
 class GameService:
     """Service for game session management and actions."""
@@ -35,9 +37,147 @@ class GameService:
         self.repository = GameRepository(cursor)
         self.board_service = BoardGenerationService()
 
-    def create_game(self) -> GameSession:
-        """Create a new game session."""
-        return self.repository.create_game()
+    def _is_cpu_player(self, player: Player) -> bool:
+        """Check if a player is a CPU."""
+        return player.name in CPU_NAMES
+
+    def _play_cpu_turn(self, game: GameSession, cpu_player: Player) -> list[str]:
+        """Play a full CPU turn until turn is complete, return log of actions."""
+        turn_log = []
+        max_iterations = 20  # Safety limit to prevent infinite loops
+        iterations = 0
+
+        while iterations < max_iterations:
+            iterations += 1
+            game = self.get_game(game.id)
+            
+            # Break if it's no longer this CPU player's turn
+            if game.current_turn_player_id != cpu_player.id:
+                turn_log.append(f"{cpu_player.name} turn ended (not their turn anymore)")
+                break
+
+            # Refresh player data to get latest cash/properties
+            cpu_player = next((p for p in game.players if p.id == cpu_player.id), cpu_player)
+            if not cpu_player:
+                turn_log.append(f"{cpu_player.name} not found in game")
+                break
+
+            if game.turn_phase == TurnPhase.PRE_ROLL:
+                roll_result = self.perform_action(game.id, cpu_player.id, ActionType.ROLL_DICE, None)
+                if roll_result.success:
+                    turn_log.append(f"{cpu_player.name} rolled: {roll_result.message}")
+                else:
+                    turn_log.append(f"{cpu_player.name} failed to roll: {roll_result.message}")
+                    # If roll fails, we can't progress - break to avoid infinite loop
+                    break
+                continue  # Refresh game state and continue
+
+            if game.turn_phase == TurnPhase.DECISION:
+                if game.pending_decision:
+                    decision = game.pending_decision
+                    
+                    if decision.type == "BUY":
+                        # Use decision.price directly (PendingDecision has price attribute, not options)
+                        tile_cost = decision.price
+                        # CPU buys if it can afford it and has at least 200 buffer
+                        if cpu_player.cash >= tile_cost + 200:
+                            result = self.perform_action(game.id, cpu_player.id, ActionType.BUY_PROPERTY, None)
+                            if result.success:
+                                turn_log.append(f"{cpu_player.name} bought property: {result.message}")
+                            else:
+                                # If buy fails, try to pass
+                                result = self.perform_action(game.id, cpu_player.id, ActionType.PASS_PROPERTY, None)
+                                turn_log.append(f"{cpu_player.name} passed (buy failed: {result.message})")
+                        else:
+                            result = self.perform_action(game.id, cpu_player.id, ActionType.PASS_PROPERTY, None)
+                            turn_log.append(f"{cpu_player.name} passed on property (insufficient funds)")
+                    else:
+                        # Unknown decision type - pass to continue
+                        result = self.perform_action(game.id, cpu_player.id, ActionType.PASS_PROPERTY, None)
+                        turn_log.append(f"{cpu_player.name} passed on decision type: {decision.type}")
+                else:
+                    # DECISION phase but no pending_decision - this shouldn't happen, but handle it
+                    turn_log.append(f"{cpu_player.name} in DECISION phase but no pending decision - ending turn")
+                    # Try to end turn to recover
+                    result = self.perform_action(game.id, cpu_player.id, ActionType.END_TURN, None)
+                    if result.success:
+                        turn_log.append(f"{cpu_player.name} ended turn (recovery)")
+                        break
+                    else:
+                        turn_log.append(f"{cpu_player.name} failed to end turn (recovery): {result.message}")
+                        break
+                continue  # Refresh game state and continue
+
+            if game.turn_phase == TurnPhase.POST_TURN:
+                result = self.perform_action(game.id, cpu_player.id, ActionType.END_TURN, None)
+                if result.success:
+                    turn_log.append(f"{cpu_player.name} ended turn")
+                    break  # Turn is complete
+                else:
+                    turn_log.append(f"{cpu_player.name} failed to end turn: {result.message}")
+                    break  # Even on failure, exit to avoid loop
+
+            # If we're in an unexpected phase (e.g., MOVING), wait and retry
+            if game.turn_phase == TurnPhase.MOVING:
+                # MOVING phase should be brief - just continue to next iteration
+                continue
+
+            # If we're in an unexpected phase, log and break
+            turn_log.append(f"{cpu_player.name} stuck in unexpected phase: {game.turn_phase.value}")
+            break
+
+        if iterations >= max_iterations:
+            turn_log.append(f"{cpu_player.name} hit max iterations limit ({max_iterations})")
+
+        return turn_log
+
+    def process_cpu_turns(self, game_id: str) -> dict:
+        """Process all consecutive CPU turns until a human player's turn."""
+        game = self.get_game(game_id)
+        all_logs = []
+        max_cpu_turns = 10  # Safety limit
+        turns_played = 0
+
+        while game.status == GameStatus.ACTIVE and turns_played < max_cpu_turns:
+            current_player = next(
+                (p for p in game.players if p.id == game.current_turn_player_id), None
+            )
+            if not current_player or not self._is_cpu_player(current_player):
+                break  # Human player's turn
+
+            turn_log = self._play_cpu_turn(game, current_player)
+            all_logs.extend(turn_log)
+            turns_played += 1
+            game = self.get_game(game_id)
+
+        return {"cpu_turns_played": turns_played, "log": all_logs}
+
+    def create_game(self, cpu_count: int = 0) -> GameSession:
+        """Create a new game session with optional CPU players."""
+        game = self.repository.create_game()
+        
+        if cpu_count > 0:
+            self.add_cpu_players_to_game(game.id, cpu_count)
+            game = self.get_game(game.id)
+        
+        return game
+    
+    def add_cpu_players_to_game(self, game_id: str, count: int) -> None:
+        """Add a specific number of CPU players to the game (auto-ready)."""
+        game = self.get_game(game_id)
+        cpu_names = ["ROBOCOP", "CHAD BOT", "KAREN.EXE", "STONKS", "CPU-5"]
+        
+        for i in range(min(count, 5)):
+            cpu_name = cpu_names[i]
+            tiles = self.board_service.generate_seeded_tiles_for_player(
+                cpu_name, game.players
+            )
+            player_create = PlayerCreate(name=cpu_name)
+            player = self.repository.add_player(game_id, player_create)
+            self.repository.submit_tiles(game_id, player.id, tiles)
+            # Auto-ready CPU players
+            self.repository.toggle_player_ready(player.id)
+            game = self.get_game(game_id)
 
     def get_game(self, game_id: str) -> GameSession:
         """Get game session by ID."""
@@ -62,9 +202,14 @@ class GameService:
         elif len(tiles) != 5:
             raise ValueError("Must submit exactly 5 tiles")
 
+        is_first_player = len(game.players) == 0
+
         player_create = PlayerCreate(name=player_name)
         player = self.repository.add_player(game_id, player_create)
         self.repository.submit_tiles(game_id, player.id, tiles)
+
+        if is_first_player:
+            self.repository.set_host(game_id, player.id)
 
         game = self.get_game(game_id)
         self.repository.update(game)
@@ -75,15 +220,36 @@ class GameService:
 
         return player
 
+    def kick_player(self, game_id: str, host_id: str, target_player_id: str) -> dict:
+        """Kick a player from the game. Only host can kick."""
+        game = self.get_game(game_id)
+
+        if game.status != GameStatus.LOBBY:
+            raise ValueError("Cannot kick players after game has started")
+
+        if game.host_id != host_id:
+            raise ValueError("Only the host can kick players")
+
+        if target_player_id == host_id:
+            raise ValueError("Cannot kick yourself")
+
+        target_player = next((p for p in game.players if p.id == target_player_id), None)
+        if not target_player:
+            raise ValueError("Player not found in this game")
+
+        self.repository.remove_player(game_id, target_player_id)
+
+        return {"kicked": True, "player_id": target_player_id, "player_name": target_player.name}
+
     def add_cpu_players(self, game_id: str, target_count: int = 2) -> None:
-        """Add CPU players to reach target count."""
+        """Add CPU players to reach target count (auto-ready)."""
         game = self.get_game(game_id)
         current_count = len(game.players)
 
         if current_count >= target_count:
             return
 
-        cpu_names = ["CPU-1", "CPU-2", "CPU-3", "CPU-4", "CPU-5"]
+        cpu_names = ["ROBOCOP", "CHAD BOT", "KAREN.EXE", "STONKS", "CPU-5"]
 
         for i in range(target_count - current_count):
             cpu_name = cpu_names[min(i, len(cpu_names) - 1)]
@@ -97,6 +263,8 @@ class GameService:
             player_create = PlayerCreate(name=cpu_name)
             player = self.repository.add_player(game_id, player_create)
             self.repository.submit_tiles(game_id, player.id, tiles)
+            # Auto-ready CPU players
+            self.repository.toggle_player_ready(player.id)
 
             game = self.get_game(game_id)
             self.repository.update(game)
@@ -118,7 +286,6 @@ class GameService:
         all_ready = self.repository.are_all_players_ready(game_id)
         game_started = False
 
-        # Auto-start when all human players ready (need at least 1)
         if all_ready and len(game.players) >= 1:
             self.start_game(game_id, force=True)
             game_started = True
@@ -137,7 +304,6 @@ class GameService:
         if game.status != GameStatus.LOBBY:
             raise ValueError("Game must be in LOBBY status to start")
 
-        # Check all players ready unless forced
         if not force and not self.repository.are_all_players_ready(game_id):
             raise ValueError("All players must turn their launch keys")
 
@@ -233,7 +399,6 @@ class GameService:
             "passed_go": passed_go,
         }
 
-        # Transition to DECISION phase and determine what happens on landed tile
         game.turn_phase = TurnPhase.DECISION
         game.pending_decision = None
         game.last_event_message = None
@@ -254,28 +419,23 @@ class GameService:
     ) -> None:
         """Handle what happens when a player lands on a tile."""
         if tile.type == TileType.GO:
-            # Landing on GO gives bonus (already handled if passed)
             game.last_event_message = f"Welcome to GO! Collect ${game.go_bonus} when you pass."
             game.turn_phase = TurnPhase.POST_TURN
 
         elif tile.type == TileType.PROPERTY:
             if tile.owner_id is None:
-                # Unowned property - offer to buy
                 game.pending_decision = PendingDecision(
                     type="BUY",
                     tile_id=tile.id,
                     price=tile.price,
                 )
                 game.last_event_message = f"'{tile.name}' is for sale! Price: ${tile.price}"
-                # Stay in DECISION phase
 
             elif tile.owner_id == player.id:
-                # Own property - nothing happens
                 game.last_event_message = f"You own '{tile.name}'. Safe!"
                 game.turn_phase = TurnPhase.POST_TURN
 
             else:
-                # Someone else's property - pay rent
                 owner = next((p for p in game.players if p.id == tile.owner_id), None)
                 if owner:
                     rent = tile.rent
@@ -287,14 +447,12 @@ class GameService:
                 game.turn_phase = TurnPhase.POST_TURN
 
         elif tile.type == TileType.CHANCE:
-            # Sasta Event!
             event = self._handle_sasta_event(game, player, tile)
             game.last_event_message = f"🎲 {event['name']}: {event['desc']}"
             if event.get("type") != "SKIP_BUY":
                 game.turn_phase = TurnPhase.POST_TURN
 
         elif tile.type == TileType.TAX:
-            # Pay tax
             tax_amount = tile.price if tile.price > 0 else game.go_bonus // 2
             player.cash -= tax_amount
             self.repository.update_player_cash(player.id, player.cash)
@@ -302,7 +460,6 @@ class GameService:
             game.turn_phase = TurnPhase.POST_TURN
 
         elif tile.type == TileType.BUFF:
-            # Receive bonus
             buff_amount = game.go_bonus // 2
             player.cash += buff_amount
             self.repository.update_player_cash(player.id, player.cash)
@@ -310,7 +467,6 @@ class GameService:
             game.turn_phase = TurnPhase.POST_TURN
 
         elif tile.type == TileType.TRAP:
-            # Pay penalty
             trap_amount = game.go_bonus // 3
             player.cash -= trap_amount
             self.repository.update_player_cash(player.id, player.cash)
@@ -318,7 +474,6 @@ class GameService:
             game.turn_phase = TurnPhase.POST_TURN
 
         elif tile.type == TileType.NEUTRAL:
-            # Nothing happens
             game.last_event_message = f"Landed on '{tile.name}'. Nothing happens."
             game.turn_phase = TurnPhase.POST_TURN
 
@@ -348,7 +503,6 @@ class GameService:
             self.repository.update_player_cash(player.id, player.cash)
 
         elif event["type"] == "SKIP_BUY":
-            # Cannot buy property this turn - clear any pending decision
             game.pending_decision = None
 
         elif event["type"] == "MOVE_BACK":
@@ -367,7 +521,6 @@ class GameService:
         if action_type == ActionType.ROLL_DICE:
             try:
                 dice_result = self.roll_dice(game_id, player_id)
-                # Reload game to get updated state
                 updated_game = self.get_game(game_id)
                 return ActionResult(
                     success=True,
@@ -404,18 +557,15 @@ class GameService:
             if player.cash < price:
                 return ActionResult(success=False, message=f"Not enough cash. Need ${price}, have ${player.cash}")
 
-            # Buy the property
             player.cash -= price
             player.properties.append(tile_id)
             self.repository.update_player_cash(player_id, player.cash)
             self.repository.update_player_properties(player_id, player.properties)
             self.repository.update_tile_owner(tile_id, player_id)
 
-            # Find tile name for message
             tile = next((t for t in game.board if t.id == tile_id), None)
             tile_name = tile.name if tile else "property"
 
-            # Clear decision and move to POST_TURN
             game.pending_decision = None
             game.turn_phase = TurnPhase.POST_TURN
             game.last_event_message = f"🏠 Bought '{tile_name}' for ${price}!"
@@ -430,7 +580,6 @@ class GameService:
             if game.turn_phase != TurnPhase.DECISION:
                 return ActionResult(success=False, message="Cannot pass now")
 
-            # Clear decision and move to POST_TURN
             game.pending_decision = None
             game.turn_phase = TurnPhase.POST_TURN
             game.last_event_message = "Passed on buying property."
@@ -448,7 +597,6 @@ class GameService:
                     message=f"Cannot end turn in {game.turn_phase.value} phase"
                 )
 
-            # Advance to next player
             current_index = next(
                 (i for i, p in enumerate(game.players) if p.id == game.current_turn_player_id),
                 0,
@@ -468,3 +616,119 @@ class GameService:
 
         else:
             return ActionResult(success=False, message=f"Unknown action: {action_type}")
+
+    def simulate_cpu_game(self, game_id: str, max_turns: int = 100) -> dict:
+        """Simulate a CPU-only game until completion or max turns."""
+        game = self.get_game(game_id)
+        
+        if game.status == GameStatus.LOBBY:
+            if len(game.players) < 2:
+                raise ValueError("Need at least 2 CPU players to simulate")
+            game = self.start_game(game_id, force=True)
+        
+        if game.status != GameStatus.ACTIVE:
+            raise ValueError(f"Game is not active: {game.status}")
+        
+        turns_played = 0
+        turn_log = []
+        
+        while turns_played < max_turns and game.status == GameStatus.ACTIVE:
+            current_player = next(
+                (p for p in game.players if p.id == game.current_turn_player_id), None
+            )
+            if not current_player:
+                break
+            
+            turn_info = {
+                "turn": turns_played + 1,
+                "player": current_player.name,
+                "player_id": current_player.id,
+                "cash_before": current_player.cash,
+                "position_before": current_player.position,
+                "actions": [],
+            }
+            
+            if game.turn_phase == TurnPhase.PRE_ROLL:
+                result = self.perform_action(game_id, current_player.id, ActionType.ROLL_DICE, {})
+                turn_info["actions"].append({"action": "ROLL_DICE", "result": result.message})
+                game = self.get_game(game_id)
+            
+            if game.turn_phase == TurnPhase.DECISION and game.pending_decision:
+                current_player = next(
+                    (p for p in game.players if p.id == game.current_turn_player_id), None
+                )
+                if current_player and game.pending_decision.type == "BUY":
+                    price = game.pending_decision.price
+                    # CPU buys if it can afford it and has at least 50% of price left after
+                    if current_player.cash >= price * 1.5:
+                        result = self.perform_action(game_id, current_player.id, ActionType.BUY_PROPERTY, {})
+                        turn_info["actions"].append({"action": "BUY_PROPERTY", "result": result.message})
+                    else:
+                        result = self.perform_action(game_id, current_player.id, ActionType.PASS_PROPERTY, {})
+                        turn_info["actions"].append({"action": "PASS_PROPERTY", "result": result.message})
+                    game = self.get_game(game_id)
+            
+            if game.turn_phase == TurnPhase.POST_TURN:
+                result = self.perform_action(game_id, current_player.id, ActionType.END_TURN, {})
+                turn_info["actions"].append({"action": "END_TURN", "result": result.message})
+                game = self.get_game(game_id)
+            
+            current_player = next(
+                (p for p in game.players if p.id == turn_info["player_id"]), None
+            )
+            if current_player:
+                turn_info["cash_after"] = current_player.cash
+                turn_info["position_after"] = current_player.position
+            
+            turn_log.append(turn_info)
+            turns_played += 1
+            
+            game = self._check_bankruptcy(game_id)
+            active_players = [p for p in game.players if p.cash >= 0]
+            if len(active_players) <= 1:
+                game.status = GameStatus.FINISHED
+                self.repository.update(game)
+                break
+        
+        # Final game state
+        game = self.get_game(game_id)
+        
+        return {
+            "game_id": game_id,
+            "status": game.status.value,
+            "turns_played": turns_played,
+            "winner": self._determine_winner(game),
+            "final_standings": [
+                {"name": p.name, "cash": p.cash, "properties": len(p.properties)}
+                for p in sorted(game.players, key=lambda x: x.cash, reverse=True)
+            ],
+            "turn_log": turn_log[-10:],  # Last 10 turns only
+        }
+    
+    def _check_bankruptcy(self, game_id: str) -> GameSession:
+        """Check for bankrupt players and mark them."""
+        game = self.get_game(game_id)
+        
+        for player in game.players:
+            if player.cash < 0:
+                # Player is bankrupt - set cash to indicate elimination
+                player.cash = -9999  # Mark as bankrupt
+                self.repository.update_player_cash(player.id, player.cash)
+        
+        return self.get_game(game_id)
+    
+    def _determine_winner(self, game: GameSession) -> Optional[dict]:
+        """Determine the winner of the game."""
+        active_players = [p for p in game.players if p.cash >= 0]
+        
+        if len(active_players) == 1:
+            winner = active_players[0]
+            return {"name": winner.name, "cash": winner.cash, "properties": len(winner.properties)}
+        elif len(active_players) == 0:
+            # Everyone bankrupt - richest player wins
+            richest = max(game.players, key=lambda x: x.cash)
+            return {"name": richest.name, "cash": richest.cash, "properties": len(richest.properties)}
+        else:
+            # Game still in progress - return current leader
+            leader = max(active_players, key=lambda x: x.cash)
+            return {"name": leader.name, "cash": leader.cash, "properties": len(leader.properties), "status": "in_progress"}
