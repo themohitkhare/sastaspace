@@ -1,7 +1,9 @@
 """Abstract base repository pattern for DuckDB operations."""
 from abc import ABC, abstractmethod
-from typing import TypeVar, Generic, Optional
-import duckdb
+from typing import TypeVar, Generic, Optional, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    import duckdb
 
 T = TypeVar("T")
 
@@ -9,7 +11,7 @@ T = TypeVar("T")
 class BaseRepository(ABC, Generic[T]):
     """Abstract base repository for database operations."""
 
-    def __init__(self, cursor: duckdb.DuckDBCursor):
+    def __init__(self, cursor) -> None:  # type: ignore
         """Initialize repository with a DuckDB cursor."""
         self.cursor = cursor
 

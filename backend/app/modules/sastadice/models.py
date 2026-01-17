@@ -1,8 +1,10 @@
 """DuckDB table definitions and initialization for SastaDice."""
-import duckdb
+from typing import TYPE_CHECKING
 
+if TYPE_CHECKING:
+    import duckdb
 
-def init_tables(cursor: duckdb.DuckDBCursor) -> None:
+def init_tables(cursor) -> None:  # type: ignore
     """Initialize all SastaDice tables in DuckDB."""
     # Game sessions table
     cursor.execute(
