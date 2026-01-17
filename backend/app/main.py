@@ -4,6 +4,9 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import settings
 from app.api.v1.router import api_router
+from app.db.session import get_db
+from app.modules.sastadice.models import init_tables
+
 
 app = FastAPI(
     title=settings.app_name,
@@ -22,6 +25,16 @@ app.add_middleware(
 
 # Include API routers
 app.include_router(api_router, prefix="/api/v1")
+
+
+@app.on_event("startup")
+def startup_event():
+    """Initialize database tables on application startup."""
+    db_cursor = next(get_db())
+    try:
+        init_tables(db_cursor)
+    finally:
+        db_cursor.close()
 
 
 @app.get("/")
