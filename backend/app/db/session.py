@@ -46,7 +46,6 @@ class MongoDBManager:
             self._initialized = False
 
 
-# Global singleton instance
 _db_manager: MongoDBManager | None = None
 
 
