@@ -1,18 +1,31 @@
 """Pytest configuration and fixtures."""
 import pytest
-import duckdb
-from app.modules.sastadice.models import init_tables
+import os
+from motor.motor_asyncio import AsyncIOMotorClient
+from app.db.session import _get_db_manager
 
 
 @pytest.fixture
-def db_cursor():
-    """In-memory DuckDB for isolated tests."""
-    conn = duckdb.connect(":memory:")
-    cursor = conn.cursor()
-    init_tables(cursor)
-    yield cursor
-    cursor.close()
-    conn.close()
+async def db_database():
+    """MongoDB database for isolated tests."""
+    # Use test database - connect to localhost
+    test_db_name = f"test_sastaspace_{os.getpid()}"
+    mongodb_url = os.getenv("MONGODB_URL", "mongodb://localhost:27017")
+    
+    client = AsyncIOMotorClient(mongodb_url)
+    database = client[test_db_name]
+    
+    # Clear collections before each test
+    await database.game_sessions.delete_many({})
+    await database.players.delete_many({})
+    await database.tiles.delete_many({})
+    await database.submitted_tiles.delete_many({})
+    
+    yield database
+    
+    # Cleanup - drop the test database
+    await database.client.drop_database(test_db_name)
+    client.close()
 
 
 @pytest.fixture
