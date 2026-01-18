@@ -11,7 +11,8 @@ class Settings(BaseSettings):
     debug: bool = False
 
     # Database
-    db_path: str = "data/sastaspace.db"
+    mongodb_url: str = "mongodb://mongodb:27017"
+    mongodb_database: str = "sastaspace"
 
     # Server
     host: str = "0.0.0.0"

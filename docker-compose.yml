@@ -38,13 +38,25 @@ services:
       - sastaspace-network
     restart: unless-stopped
 
+  mongodb:
+    image: mongo:7
+    container_name: sastaspace-mongodb
+    ports:
+      - "27017:27017"
+    volumes:
+      - ./backend/data/mongodb:/data/db
+    networks:
+      - sastaspace-network
+    restart: unless-stopped
+
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
     container_name: sastaspace-backend
     environment:
-      - DB_PATH=/app/data/sastaspace.db
+      - MONGODB_URL=mongodb://mongodb:27017
+      - MONGODB_DATABASE=sastaspace
       - DEBUG=true
       - ENVIRONMENT=development
     volumes:
@@ -57,6 +69,8 @@ services:
       - "8000:8000"  # Direct access for development
     networks:
       - sastaspace-network
+    depends_on:
+      - mongodb
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.backend.rule=Host(`localhost`) && PathPrefix(`/api`)"
