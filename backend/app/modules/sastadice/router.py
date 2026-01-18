@@ -53,7 +53,6 @@ def get_game_state(
         game = service.get_game(game_id)
         current_version = service.repository.get_version(game_id)
 
-        # If client version matches, return 304 (handled by FastAPI)
         if version is not None and version >= current_version:
             raise HTTPException(
                 status_code=status.HTTP_304_NOT_MODIFIED, detail="No changes"
@@ -121,7 +120,7 @@ def start_game(
 def perform_action(
     game_id: str,
     action: GameActionRequest,
-    player_id: str = Query(..., description="Player ID performing the action"),  # In production, get from auth token
+    player_id: str = Query(..., description="Player ID performing the action"),
     service: GameService = Depends(get_game_service),
 ) -> ActionResult:
     """Perform a game action (roll dice, buy property, end turn)."""
