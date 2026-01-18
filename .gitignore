@@ -44,6 +44,11 @@ backend/data/*.db
 backend/data/*.duckdb
 backend/data/*.db.wal
 
+# Test artifacts
+backend/data/game_logs/
+frontends/*/playwright-report/
+frontends/*/test-results/
+
 # Node.js / Frontend
 node_modules/
 npm-debug.log*
