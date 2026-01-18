@@ -170,11 +170,11 @@ class GameService:
             raise ValueError(f"Game {game_id} not found")
         return game
 
-    def join_game(
+    async def join_game(
         self, game_id: str, player_name: str, tiles: Optional[list[TileCreate]] = None
     ) -> Player:
         """Join a game and submit tiles (or use seeded tiles if not provided)."""
-        game = self.get_game(game_id)
+        game = await self.get_game(game_id)
 
         if game.status != GameStatus.LOBBY:
             raise ValueError("Cannot join game that is not in LOBBY status")
@@ -189,24 +189,24 @@ class GameService:
         is_first_player = len(game.players) == 0
 
         player_create = PlayerCreate(name=player_name)
-        player = self.repository.add_player(game_id, player_create)
-        self.repository.submit_tiles(game_id, player.id, tiles)
+        player = await self.repository.add_player(game_id, player_create)
+        await self.repository.submit_tiles(game_id, player.id, tiles)
 
         if is_first_player:
-            self.repository.set_host(game_id, player.id)
+            await self.repository.set_host(game_id, player.id)
 
-        game = self.get_game(game_id)
-        self.repository.update(game)
+        game = await self.get_game(game_id)
+        await self.repository.update(game)
 
-        game = self.get_game(game_id)
+        game = await self.get_game(game_id)
         player = next((p for p in game.players if p.id == player.id), player)
         player.submitted_tiles = tiles
 
         return player
 
-    def kick_player(self, game_id: str, host_id: str, target_player_id: str) -> dict:
+    async def kick_player(self, game_id: str, host_id: str, target_player_id: str) -> dict:
         """Kick a player from the game. Only host can kick."""
-        game = self.get_game(game_id)
+        game = await self.get_game(game_id)
 
         if game.status != GameStatus.LOBBY:
             raise ValueError("Cannot kick players after game has started")
@@ -221,13 +221,13 @@ class GameService:
         if not target_player:
             raise ValueError("Player not found in this game")
 
-        self.repository.remove_player(game_id, target_player_id)
+        await self.repository.remove_player(game_id, target_player_id)
 
         return {"kicked": True, "player_id": target_player_id, "player_name": target_player.name}
 
-    def add_cpu_players(self, game_id: str, target_count: int = 2) -> None:
+    async def add_cpu_players(self, game_id: str, target_count: int = 2) -> None:
         """Add CPU players to reach target count (auto-ready)."""
-        game = self.get_game(game_id)
+        game = await self.get_game(game_id)
         current_count = len(game.players)
 
         if current_count >= target_count:
@@ -245,16 +245,16 @@ class GameService:
             )
 
             player_create = PlayerCreate(name=cpu_name)
-            player = self.repository.add_player(game_id, player_create)
-            self.repository.submit_tiles(game_id, player.id, tiles)
-            self.repository.toggle_player_ready(player.id)
+            player = await self.repository.add_player(game_id, player_create)
+            await self.repository.submit_tiles(game_id, player.id, tiles)
+            await self.repository.toggle_player_ready(player.id)
 
-            game = self.get_game(game_id)
-            self.repository.update(game)
+            game = await self.get_game(game_id)
+            await self.repository.update(game)
 
-    def toggle_ready(self, game_id: str, player_id: str) -> dict:
+    async def toggle_ready(self, game_id: str, player_id: str) -> dict:
         """Toggle player's launch key. Auto-starts if all players ready."""
-        game = self.get_game(game_id)
+        game = await self.get_game(game_id)
 
         if game.status != GameStatus.LOBBY:
             raise ValueError("Game already started")
@@ -263,14 +263,14 @@ class GameService:
         if not player:
             raise ValueError("Player not in this game")
 
-        new_ready = self.repository.toggle_player_ready(player_id)
-        self.repository.update(game)  # Bump version for polling
+        new_ready = await self.repository.toggle_player_ready(player_id)
+        await self.repository.update(game)  # Bump version for polling
 
-        all_ready = self.repository.are_all_players_ready(game_id)
+        all_ready = await self.repository.are_all_players_ready(game_id)
         game_started = False
 
         if all_ready and len(game.players) >= 1:
-            self.start_game(game_id, force=True)
+            await self.start_game(game_id, force=True)
             game_started = True
 
         return {
