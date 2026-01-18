@@ -67,7 +67,7 @@ export default function LobbyView({ onRefresh }) {
   const handleKickPlayer = async (targetPlayerId) => {
     if (!playerId || !game?.host_id) return
     if (!confirm('Are you sure you want to kick this player?')) return
-    
+
     try {
       await apiClient.delete(`/sastadice/games/${gameId}/players/${targetPlayerId}?host_id=${playerId}`)
       if (onRefresh) onRefresh()
@@ -83,73 +83,58 @@ export default function LobbyView({ onRefresh }) {
   const readyCount = game?.players?.filter((p) => p.ready).length || 0
   const totalPlayers = game?.players?.length || 0
   const isHost = game?.host_id === playerId
+  const shortCode = gameId?.slice(0, 8)?.toUpperCase() || 'LOADING'
 
   return (
-    <div className="max-w-4xl mx-auto p-4 sm:p-8">
-      <h2 className="text-3xl sm:text-5xl font-bold font-zero mb-4 sm:mb-8">GAME LOBBY</h2>
+    <div className="h-screen bg-sasta-white flex flex-col lg:flex-row p-4 gap-4 overflow-hidden">
+      <div className="lg:w-[360px] flex flex-col gap-4 shrink-0">
+        <h1 className="text-3xl lg:text-4xl font-bold font-zero">GAME LOBBY</h1>
 
-      {gameId && (
-        <div className="mb-8 border-brutal-lg bg-sasta-accent p-6 shadow-brutal-lg">
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex-1">
-              <p className="text-sm font-zero font-bold mb-2 opacity-75">GAME CODE (SHARE WITH PLAYERS)</p>
-              <p className="text-lg font-zero font-bold break-all font-mono">{gameId}</p>
+        {gameId && (
+          <div className="bg-sasta-black text-sasta-accent p-4 border-brutal shadow-brutal">
+            <div className="text-[10px] font-data uppercase opacity-60 text-sasta-white mb-1">ACCESS CODE</div>
+            <div className="flex justify-between items-center gap-3">
+              <span className="text-2xl lg:text-3xl font-data font-bold tracking-wider">{shortCode}</span>
+              <button
+                onClick={handleCopyGameId}
+                className="bg-sasta-accent text-sasta-black px-4 py-2 font-data font-bold text-sm hover:bg-white transition-colors"
+              >
+                {copied ? '✓ COPIED' : 'COPY'}
+              </button>
             </div>
-            <button
-              onClick={handleCopyGameId}
-              className="border-brutal-sm bg-sasta-black text-sasta-white px-6 py-3 font-zero font-bold shadow-brutal-sm hover:bg-sasta-white hover:text-sasta-black transition-colors whitespace-nowrap"
-            >
-              {copied ? 'COPIED!' : 'COPY'}
-            </button>
           </div>
-        </div>
-      )}
+        )}
 
-      {!hasJoined ? (
-        <div className="border-brutal-lg bg-sasta-white p-6 shadow-brutal-lg">
-          <h3 className="text-2xl font-bold font-zero mb-4">JOIN GAME</h3>
-          <input
-            type="text"
-            value={playerName}
-            onChange={(e) => setPlayerName(e.target.value)}
-            placeholder="Enter your name"
-            className="w-full p-4 border-brutal-sm mb-4 font-zero text-lg"
-            onKeyPress={(e) => {
-              if (e.key === 'Enter' && playerName.trim() && !isJoining) handleJoin()
-            }}
-          />
-          <button
-            onClick={handleJoin}
-            disabled={isJoining || !playerName.trim()}
-            className="w-full border-brutal-sm bg-sasta-accent text-sasta-black px-6 py-4 font-zero font-bold text-lg shadow-brutal-sm hover:bg-sasta-black hover:text-sasta-accent transition-colors disabled:opacity-50"
-          >
-            {isJoining ? '> JOINING...' : '> JOIN GAME'}
-          </button>
-          <p className="text-sm font-zero mt-3 opacity-75 text-center">TILES WILL BE AUTO-ASSIGNED</p>
-          
-          {totalPlayers > 0 && (
-            <div className="mt-6 pt-6 border-t-2 border-sasta-black">
-              <p className="font-zero text-sm mb-3">WAITING IN LOBBY ({totalPlayers}):</p>
-              <div className="space-y-2">
-                {game?.players?.map((p) => (
-                  <KeyStatus 
-                    key={p.id} 
-                    player={p} 
-                    isMe={false}
-                    isHost={p.id === game?.host_id}
-                  />
-                ))}
-              </div>
+        {!hasJoined && (
+          <div className="border-2 border-sasta-black p-3 bg-white">
+            <div className="text-xs font-data font-bold mb-2 opacity-60">&gt; AUTHENTICATE PLAYER</div>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={playerName}
+                onChange={(e) => setPlayerName(e.target.value)}
+                placeholder="ENTER_NAME"
+                className="flex-1 bg-gray-100 border-b-2 border-sasta-black p-2 font-data text-sm focus:outline-none focus:bg-sasta-accent/20"
+                onKeyPress={(e) => {
+                  if (e.key === 'Enter' && playerName.trim() && !isJoining) handleJoin()
+                }}
+              />
+              <button
+                onClick={handleJoin}
+                disabled={isJoining || !playerName.trim()}
+                className="bg-sasta-black text-sasta-white px-4 py-2 font-data font-bold text-sm hover:bg-gray-800 transition-colors disabled:opacity-50"
+              >
+                {isJoining ? '...' : 'ENTER'}
+              </button>
             </div>
-          )}
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Launch Control Panel */}
-          <div className="border-brutal-lg bg-zinc-900 p-6 shadow-brutal-lg">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-zero text-lg font-bold text-zinc-300">LAUNCH CONTROL</h3>
-              <div className="font-zero text-sm text-zinc-500">
+          </div>
+        )}
+
+        {hasJoined && (
+          <div className="bg-zinc-900 p-4 border-brutal shadow-brutal flex-1 flex flex-col">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="font-data text-sm font-bold text-zinc-300">LAUNCH CONTROL</h3>
+              <div className="font-data text-xs text-zinc-500">
                 {readyCount}/{totalPlayers} ARMED
               </div>
             </div>
@@ -163,62 +148,92 @@ export default function LobbyView({ onRefresh }) {
             />
 
             {allReady && (
-              <div className="mt-4 p-4 bg-green-500/20 border-2 border-green-500 animate-pulse">
-                <p className="font-zero font-bold text-center text-green-400">
-                  🚀 ALL KEYS ARMED - INITIATING LAUNCH SEQUENCE 🚀
+              <div className="mt-3 p-3 bg-green-500/20 border border-green-500 animate-pulse">
+                <p className="font-data font-bold text-center text-green-400 text-sm">
+                  🚀 ALL ARMED - LAUNCHING...
                 </p>
               </div>
             )}
 
-            <p className="text-sm font-zero mt-4 text-zinc-500 text-center">
-              {totalPlayers === 1
-                ? 'CPU OPERATOR WILL BE ASSIGNED ON LAUNCH'
-                : `${totalPlayers} OPERATORS IN CONTROL ROOM`}
+            <p className="text-xs font-data mt-auto pt-3 text-zinc-500 text-center">
+              {totalPlayers === 1 ? 'CPU JOINS ON LAUNCH' : `${totalPlayers} OPERATORS`}
             </p>
           </div>
+        )}
+      </div>
 
-          {/* Operator Status Panel */}
-          <div className="border-brutal-lg bg-sasta-white p-6 shadow-brutal-lg">
-            <h3 className="text-lg font-bold font-zero mb-4">OPERATOR STATUS</h3>
-            
-            {myPlayer && (
-              <div className="mb-4">
-                <p className="font-zero text-xs text-zinc-500 mb-2">YOUR STATION {isHost && '(HOST)'}</p>
-                <KeyStatus 
-                  player={myPlayer} 
-                  isMe={true}
-                  isHost={isHost}
-                />
-              </div>
-            )}
-
-            {otherPlayers.length > 0 && (
-              <div>
-                <p className="font-zero text-xs text-zinc-500 mb-2">OTHER OPERATORS ({otherPlayers.length})</p>
-                <div className="space-y-2">
-                  {otherPlayers.map((p) => (
-                    <KeyStatus 
-                      key={p.id} 
-                      player={p} 
-                      isMe={false}
-                      isHost={p.id === game?.host_id}
-                      canKick={isHost}
-                      onKick={handleKickPlayer}
-                    />
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {otherPlayers.length === 0 && (
-              <div className="text-center py-8 border-2 border-dashed border-zinc-300">
-                <p className="font-zero text-zinc-500">WAITING FOR OTHER OPERATORS...</p>
-                <p className="font-zero text-xs text-zinc-400 mt-2">Share the game code to invite players</p>
-              </div>
-            )}
+      <div className="flex-1 border-brutal bg-white p-4 flex flex-col min-h-0 overflow-hidden">
+        <div className="flex justify-between items-center mb-3 border-b-2 border-sasta-black pb-2 shrink-0">
+          <div className="font-data font-bold text-base">CONNECTED_PLAYERS ({totalPlayers})</div>
+          <div className="flex items-center gap-2">
+            <div className="animate-pulse w-2 h-2 bg-green-500 rounded-full"></div>
+            <span className="text-xs font-data text-zinc-500">LIVE</span>
           </div>
         </div>
-      )}
+
+        <div className="flex-1 overflow-y-auto space-y-2 pr-1">
+          {myPlayer && (
+            <div className="flex items-center gap-3 p-3 border-2 border-sasta-black bg-sasta-accent/20">
+              <div
+                className="w-10 h-10 rounded-full border-2 border-sasta-black flex items-center justify-center font-data font-bold text-white text-lg"
+                style={{ backgroundColor: myPlayer.color }}
+              >
+                {myPlayer.name?.charAt(0)?.toUpperCase()}
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="font-data font-bold text-base leading-none truncate">
+                  {myPlayer.name?.toUpperCase()} {isHost && '👑'}
+                </div>
+                <div className={`text-xs font-data mt-0.5 ${myPlayer.ready ? 'text-green-600' : 'text-orange-600'}`}>
+                  {myPlayer.ready ? 'READY' : 'NOT READY'}
+                </div>
+              </div>
+              <div className="text-xs font-data bg-sasta-black text-sasta-accent px-2 py-1">YOU</div>
+            </div>
+          )}
+
+          {otherPlayers.map((p) => (
+            <div key={p.id} className="flex items-center gap-3 p-3 border-2 border-sasta-black">
+              <div
+                className="w-10 h-10 rounded-full border-2 border-sasta-black flex items-center justify-center font-data font-bold text-white text-lg"
+                style={{ backgroundColor: p.color }}
+              >
+                {p.name?.charAt(0)?.toUpperCase()}
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="font-data font-bold text-base leading-none truncate">
+                  {p.name?.toUpperCase()} {p.id === game?.host_id && '👑'}
+                </div>
+                <div className={`text-xs font-data mt-0.5 ${p.ready ? 'text-green-600' : 'text-orange-600'}`}>
+                  {p.ready ? 'READY' : 'NOT READY'}
+                </div>
+              </div>
+              {isHost && (
+                <button
+                  onClick={() => handleKickPlayer(p.id)}
+                  className="text-xs font-data text-red-500 hover:text-red-700 px-2 py-1 border border-red-500 hover:bg-red-50"
+                >
+                  KICK
+                </button>
+              )}
+            </div>
+          ))}
+
+          {totalPlayers === 0 && (
+            <div className="text-center py-8 border-2 border-dashed border-zinc-300">
+              <p className="font-data text-zinc-500">WAITING FOR PLAYERS...</p>
+              <p className="font-data text-xs text-zinc-400 mt-1">Share the code above</p>
+            </div>
+          )}
+
+          {hasJoined && otherPlayers.length === 0 && (
+            <div className="text-center py-6 border-2 border-dashed border-zinc-300">
+              <p className="font-data text-zinc-500 text-sm">WAITING FOR OPERATORS...</p>
+              <p className="font-data text-xs text-zinc-400 mt-1">Share code: {shortCode}</p>
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   )
 }
