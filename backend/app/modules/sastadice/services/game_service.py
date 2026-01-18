@@ -280,19 +280,19 @@ class GameService:
             "game_started": game_started,
         }
 
-    def start_game(self, game_id: str, force: bool = False) -> GameSession:
+    async def start_game(self, game_id: str, force: bool = False) -> GameSession:
         """Start a game and generate the board."""
-        game = self.get_game(game_id)
+        game = await self.get_game(game_id)
 
         if game.status != GameStatus.LOBBY:
             raise ValueError("Game must be in LOBBY status to start")
 
-        if not force and not self.repository.are_all_players_ready(game_id):
+        if not force and not await self.repository.are_all_players_ready(game_id):
             raise ValueError("All players must turn their launch keys")
 
         if len(game.players) < 2:
-            self.add_cpu_players(game_id, target_count=2)
-            game = self.get_game(game_id)
+            await self.add_cpu_players(game_id, target_count=2)
+            game = await self.get_game(game_id)
 
         all_player_tiles = []
         for player in game.players:
@@ -326,8 +326,8 @@ class GameService:
             all_player_tiles, board_size, padding, game_config
         )
 
-        self.repository.save_board(game_id, board)
-        self.repository.set_players_starting_cash(game_id, game_config.starting_cash)
+        await self.repository.save_board(game_id, board)
+        await self.repository.set_players_starting_cash(game_id, game_config.starting_cash)
 
         game.status = GameStatus.ACTIVE
         game.turn_phase = TurnPhase.PRE_ROLL
@@ -337,12 +337,12 @@ class GameService:
         game.starting_cash = game_config.starting_cash
         game.go_bonus = game_config.go_bonus
 
-        self.repository.update(game)
-        return self.get_game(game_id)
+        await self.repository.update(game)
+        return await self.get_game(game_id)
 
-    def roll_dice(self, game_id: str, player_id: str) -> DiceRollResult:
+    async def roll_dice(self, game_id: str, player_id: str) -> DiceRollResult:
         """Roll dice for a player."""
-        game = self.get_game(game_id)
+        game = await self.get_game(game_id)
 
         if game.status != GameStatus.ACTIVE:
             raise ValueError("Game must be ACTIVE to roll dice")
@@ -368,10 +368,10 @@ class GameService:
         passed_go = new_position < old_position and old_position != 0
         if passed_go:
             new_cash = player.cash + game.go_bonus
-            self.repository.update_player_cash(player_id, new_cash)
+            await self.repository.update_player_cash(player_id, new_cash)
             player.cash = new_cash
 
-        self.repository.update_player_position(player_id, new_position)
+        await self.repository.update_player_position(player_id, new_position)
         player.position = new_position
 
         game.last_dice_roll = {
@@ -389,18 +389,18 @@ class GameService:
         landed_tile = game.board[new_position] if new_position < len(game.board) else None
 
         if landed_tile:
-            self._handle_tile_landing(game, player, landed_tile)
+            await self._handle_tile_landing(game, player, landed_tile)
         
         if game.turn_phase == TurnPhase.DECISION and not game.pending_decision:
             game.turn_phase = TurnPhase.POST_TURN
 
-        self.repository.update(game)
+        await self.repository.update(game)
 
         return DiceRollResult(
             dice1=dice1, dice2=dice2, total=total, is_doubles=is_doubles
         )
 
-    def _handle_tile_landing(
+    async def _handle_tile_landing(
         self, game: GameSession, player: Player, tile: Tile
     ) -> None:
         """Handle what happens when a player lands on a tile."""
@@ -427,34 +427,34 @@ class GameService:
                     rent = tile.rent
                     player.cash -= rent
                     owner.cash += rent
-                    self.repository.update_player_cash(player.id, player.cash)
-                    self.repository.update_player_cash(owner.id, owner.cash)
+                    await self.repository.update_player_cash(player.id, player.cash)
+                    await self.repository.update_player_cash(owner.id, owner.cash)
                     game.last_event_message = f"Paid ${rent} rent to {owner.name} for '{tile.name}'"
                 game.turn_phase = TurnPhase.POST_TURN
 
         elif tile.type == TileType.CHANCE:
-            event = self._handle_sasta_event(game, player, tile)
+            event = await self._handle_sasta_event(game, player, tile)
             game.last_event_message = f"🎲 {event['name']}: {event['desc']}"
             game.turn_phase = TurnPhase.POST_TURN
 
         elif tile.type == TileType.TAX:
             tax_amount = tile.price if tile.price > 0 else game.go_bonus // 2
             player.cash -= tax_amount
-            self.repository.update_player_cash(player.id, player.cash)
+            await self.repository.update_player_cash(player.id, player.cash)
             game.last_event_message = f"💸 Paid ${tax_amount} in taxes for '{tile.name}'"
             game.turn_phase = TurnPhase.POST_TURN
 
         elif tile.type == TileType.BUFF:
             buff_amount = game.go_bonus // 2
             player.cash += buff_amount
-            self.repository.update_player_cash(player.id, player.cash)
+            await self.repository.update_player_cash(player.id, player.cash)
             game.last_event_message = f"🎁 Received ${buff_amount} from '{tile.name}'!"
             game.turn_phase = TurnPhase.POST_TURN
 
         elif tile.type == TileType.TRAP:
             trap_amount = game.go_bonus // 3
             player.cash -= trap_amount
-            self.repository.update_player_cash(player.id, player.cash)
+            await self.repository.update_player_cash(player.id, player.cash)
             game.last_event_message = f"⚠️ Lost ${trap_amount} from '{tile.name}'!"
             game.turn_phase = TurnPhase.POST_TURN
 
@@ -465,7 +465,7 @@ class GameService:
         else:
             game.turn_phase = TurnPhase.POST_TURN
 
-    def _handle_sasta_event(
+    async def _handle_sasta_event(
         self, game: GameSession, player: Player, tile: Tile
     ) -> dict:
         """Process Sasta Event effects."""
@@ -473,40 +473,40 @@ class GameService:
 
         if event["type"] == "CASH_GAIN":
             player.cash += event["value"]
-            self.repository.update_player_cash(player.id, player.cash)
+            await self.repository.update_player_cash(player.id, player.cash)
 
         elif event["type"] == "CASH_LOSS":
             player.cash -= event["value"]
-            self.repository.update_player_cash(player.id, player.cash)
+            await self.repository.update_player_cash(player.id, player.cash)
 
         elif event["type"] == "COLLECT_FROM_ALL":
             for p in game.players:
                 if p.id != player.id:
                     p.cash -= event["value"]
                     player.cash += event["value"]
-                    self.repository.update_player_cash(p.id, p.cash)
-            self.repository.update_player_cash(player.id, player.cash)
+                    await self.repository.update_player_cash(p.id, p.cash)
+            await self.repository.update_player_cash(player.id, player.cash)
 
         elif event["type"] == "SKIP_BUY":
             game.pending_decision = None
 
         elif event["type"] == "MOVE_BACK":
             new_pos = max(0, player.position - event["value"])
-            self.repository.update_player_position(player.id, new_pos)
+            await self.repository.update_player_position(player.id, new_pos)
             player.position = new_pos
 
         return event
 
-    def perform_action(
+    async def perform_action(
         self, game_id: str, player_id: str, action_type: ActionType, payload: dict
     ) -> ActionResult:
         """Perform a game action."""
-        game = self.get_game(game_id)
+        game = await self.get_game(game_id)
 
         if action_type == ActionType.ROLL_DICE:
             try:
-                dice_result = self.roll_dice(game_id, player_id)
-                updated_game = self.get_game(game_id)
+                dice_result = await self.roll_dice(game_id, player_id)
+                updated_game = await self.get_game(game_id)
                 return ActionResult(
                     success=True,
                     message=updated_game.last_event_message or "Dice rolled",
@@ -544,9 +544,9 @@ class GameService:
 
             player.cash -= price
             player.properties.append(tile_id)
-            self.repository.update_player_cash(player_id, player.cash)
-            self.repository.update_player_properties(player_id, player.properties)
-            self.repository.update_tile_owner(tile_id, player_id)
+            await self.repository.update_player_cash(player_id, player.cash)
+            await self.repository.update_player_properties(player_id, player.properties)
+            await self.repository.update_tile_owner(tile_id, player_id)
 
             tile = next((t for t in game.board if t.id == tile_id), None)
             tile_name = tile.name if tile else "property"
@@ -554,7 +554,7 @@ class GameService:
             game.pending_decision = None
             game.turn_phase = TurnPhase.POST_TURN
             game.last_event_message = f"🏠 Bought '{tile_name}' for ${price}!"
-            self.repository.update(game)
+            await self.repository.update(game)
 
             return ActionResult(success=True, message=f"Bought '{tile_name}' for ${price}")
 
@@ -568,7 +568,7 @@ class GameService:
             game.pending_decision = None
             game.turn_phase = TurnPhase.POST_TURN
             game.last_event_message = "Passed on buying property."
-            self.repository.update(game)
+            await self.repository.update(game)
 
             return ActionResult(success=True, message="Passed on property")
 
@@ -582,8 +582,8 @@ class GameService:
                     message=f"Cannot end turn in {game.turn_phase.value} phase"
                 )
 
-            if self._check_and_handle_end_conditions(game_id):
-                game = self.get_game(game_id)
+            if await self._check_and_handle_end_conditions(game_id):
+                game = await self.get_game(game_id)
                 winner = self._determine_winner(game)
                 return ActionResult(
                     success=True,
@@ -591,7 +591,7 @@ class GameService:
                     data={"game_over": True, "winner": winner}
                 )
 
-            game = self.get_game(game_id)
+            game = await self.get_game(game_id)
             
             active_players = [p for p in game.players if not p.is_bankrupt]
             current_index = next(
@@ -607,21 +607,21 @@ class GameService:
             game.last_dice_roll = None
             game.last_event_message = None
 
-            self.repository.update(game)
+            await self.repository.update(game)
 
             return ActionResult(success=True, message=f"Turn ended. {next_player.name}'s turn!")
 
         else:
             return ActionResult(success=False, message=f"Unknown action: {action_type}")
 
-    def simulate_cpu_game(self, game_id: str, max_turns: int = 100) -> dict:
+    async def simulate_cpu_game(self, game_id: str, max_turns: int = 100) -> dict:
         """Simulate a CPU-only game until completion or max turns."""
-        game = self.get_game(game_id)
+        game = await self.get_game(game_id)
         
         if game.status == GameStatus.LOBBY:
             if len(game.players) < 2:
                 raise ValueError("Need at least 2 CPU players to simulate")
-            game = self.start_game(game_id, force=True)
+            game = await self.start_game(game_id, force=True)
         
         if game.status != GameStatus.ACTIVE:
             raise ValueError(f"Game is not active: {game.status}")
@@ -646,9 +646,9 @@ class GameService:
             }
             
             if game.turn_phase == TurnPhase.PRE_ROLL:
-                result = self.perform_action(game_id, current_player.id, ActionType.ROLL_DICE, {})
+                result = await self.perform_action(game_id, current_player.id, ActionType.ROLL_DICE, {})
                 turn_info["actions"].append({"action": "ROLL_DICE", "result": result.message})
-                game = self.get_game(game_id)
+                game = await self.get_game(game_id)
             
             if game.turn_phase == TurnPhase.DECISION and game.pending_decision:
                 current_player = next(
@@ -657,17 +657,17 @@ class GameService:
                 if current_player and game.pending_decision.type == "BUY":
                     price = game.pending_decision.price
                     if current_player.cash >= price * 1.5:
-                        result = self.perform_action(game_id, current_player.id, ActionType.BUY_PROPERTY, {})
+                        result = await self.perform_action(game_id, current_player.id, ActionType.BUY_PROPERTY, {})
                         turn_info["actions"].append({"action": "BUY_PROPERTY", "result": result.message})
                     else:
-                        result = self.perform_action(game_id, current_player.id, ActionType.PASS_PROPERTY, {})
+                        result = await self.perform_action(game_id, current_player.id, ActionType.PASS_PROPERTY, {})
                         turn_info["actions"].append({"action": "PASS_PROPERTY", "result": result.message})
-                    game = self.get_game(game_id)
+                    game = await self.get_game(game_id)
             
             if game.turn_phase == TurnPhase.POST_TURN:
-                result = self.perform_action(game_id, current_player.id, ActionType.END_TURN, {})
+                result = await self.perform_action(game_id, current_player.id, ActionType.END_TURN, {})
                 turn_info["actions"].append({"action": "END_TURN", "result": result.message})
-                game = self.get_game(game_id)
+                game = await self.get_game(game_id)
             
             current_player = next(
                 (p for p in game.players if p.id == turn_info["player_id"]), None
@@ -679,14 +679,14 @@ class GameService:
             turn_log.append(turn_info)
             turns_played += 1
             
-            game = self._check_bankruptcy(game_id)
+            game = await self._check_bankruptcy(game_id)
             active_players = [p for p in game.players if p.cash >= 0]
             if len(active_players) <= 1:
                 game.status = GameStatus.FINISHED
-                self.repository.update(game)
+                await self.repository.update(game)
                 break
         
-        game = self.get_game(game_id)
+        game = await self.get_game(game_id)
         
         return {
             "game_id": game_id,
@@ -700,34 +700,34 @@ class GameService:
             "turn_log": turn_log[-10:],  # Last 10 turns only
         }
     
-    def _check_bankruptcy(self, game_id: str) -> GameSession:
+    async def _check_bankruptcy(self, game_id: str) -> GameSession:
         """Check for bankrupt players and mark them."""
-        game = self.get_game(game_id)
+        game = await self.get_game(game_id)
         
         for player in game.players:
             if player.cash < 0:
                 player.cash = -9999
-                self.repository.update_player_cash(player.id, player.cash)
+                await self.repository.update_player_cash(player.id, player.cash)
         
-        return self.get_game(game_id)
+        return await self.get_game(game_id)
 
-    def _check_and_handle_end_conditions(self, game_id: str) -> bool:
+    async def _check_and_handle_end_conditions(self, game_id: str) -> bool:
         """Check for bankruptcy and game end. Returns True if game ended."""
-        game = self.get_game(game_id)
+        game = await self.get_game(game_id)
         
         for player in game.players:
             if player.cash < 0 and not player.is_bankrupt:
                 player.is_bankrupt = True
-                self.repository.update_player_bankrupt(player.id, True)
+                await self.repository.update_player_bankrupt(player.id, True)
         
         active_players = [p for p in game.players if not p.is_bankrupt]
         
         if len(active_players) <= 1:
-            game = self.get_game(game_id)
+            game = await self.get_game(game_id)
             game.status = GameStatus.FINISHED
             winner = active_players[0] if active_players else max(game.players, key=lambda x: x.cash)
             game.last_event_message = f"🏆 GAME OVER! {winner.name} wins with ${winner.cash}!"
-            self.repository.update(game)
+            await self.repository.update(game)
             return True
         
         return False

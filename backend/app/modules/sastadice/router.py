@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, Query
 from typing import Optional, TYPE_CHECKING
 
 if TYPE_CHECKING:
-    import duckdb
+    from motor.motor_asyncio import AsyncIOMotorDatabase
 
 from app.db.session import get_db
 from app.modules.sastadice.services.game_service import GameService
@@ -19,39 +19,39 @@ from app.modules.sastadice.schemas import (
 router = APIRouter()
 
 
-def get_game_service(db = Depends(get_db)) -> GameService:  # type: ignore
+async def get_game_service(db = Depends(get_db)) -> GameService:  # type: ignore
     """Dependency to get game service."""
     return GameService(db)
 
 
 @router.post("/games", response_model=GameSession, status_code=status.HTTP_201_CREATED)
-def create_game(
+async def create_game(
     cpu_count: int = Query(default=0, ge=0, le=4, description="Number of CPU players to add"),
     service: GameService = Depends(get_game_service),
 ) -> GameSession:
     """Create a new game room with optional CPU players."""
-    return service.create_game(cpu_count=cpu_count)
+    return await service.create_game(cpu_count=cpu_count)
 
 
 @router.get("/games/{game_id}", response_model=GameSession)
-def get_game(game_id: str, service: GameService = Depends(get_game_service)) -> GameSession:
+async def get_game(game_id: str, service: GameService = Depends(get_game_service)) -> GameSession:
     """Get game state by ID."""
     try:
-        return service.get_game(game_id)
+        return await service.get_game(game_id)
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
 
 
 @router.get("/games/{game_id}/state", response_model=GameStateResponse)
-def get_game_state(
+async def get_game_state(
     game_id: str,
     version: Optional[int] = None,
     service: GameService = Depends(get_game_service),
 ) -> GameStateResponse:
     """Get game state with version for polling optimization."""
     try:
-        game = service.get_game(game_id)
-        current_version = service.repository.get_version(game_id)
+        game = await service.get_game(game_id)
+        current_version = await service.repository.get_version(game_id)
 
         if version is not None and version >= current_version:
             raise HTTPException(
@@ -64,14 +64,14 @@ def get_game_state(
 
 
 @router.post("/games/{game_id}/join", response_model=Player, status_code=status.HTTP_201_CREATED)
-def join_game(
+async def join_game(
     game_id: str,
     request: JoinGameRequest,
     service: GameService = Depends(get_game_service),
 ) -> Player:
     """Join a game and submit 5 custom tiles."""
     try:
-        return service.join_game(game_id, request.name, request.tiles)
+        return await service.join_game(game_id, request.name, request.tiles)
     except ValueError as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)
@@ -79,20 +79,20 @@ def join_game(
 
 
 @router.post("/games/{game_id}/ready/{player_id}")
-def toggle_ready(
+async def toggle_ready(
     game_id: str,
     player_id: str,
     service: GameService = Depends(get_game_service),
 ) -> dict:
     """Toggle player's launch key (ready status). Auto-starts if all ready."""
     try:
-        return service.toggle_ready(game_id, player_id)
+        return await service.toggle_ready(game_id, player_id)
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 
 @router.delete("/games/{game_id}/players/{player_id}")
-def kick_player(
+async def kick_player(
     game_id: str,
     player_id: str,
     host_id: str = Query(..., description="Host player ID"),
@@ -100,24 +100,24 @@ def kick_player(
 ) -> dict:
     """Kick a player from the lobby. Only host can kick."""
     try:
-        return service.kick_player(game_id, host_id, player_id)
+        return await service.kick_player(game_id, host_id, player_id)
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 
 @router.post("/games/{game_id}/start", response_model=GameSession)
-def start_game(
+async def start_game(
     game_id: str, service: GameService = Depends(get_game_service)
 ) -> GameSession:
     """Force start game (bypasses ready check - for testing)."""
     try:
-        return service.start_game(game_id, force=True)
+        return await service.start_game(game_id, force=True)
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 
 @router.post("/games/{game_id}/action", response_model=ActionResult)
-def perform_action(
+async def perform_action(
     game_id: str,
     action: GameActionRequest,
     player_id: str = Query(..., description="Player ID performing the action"),
@@ -125,7 +125,7 @@ def perform_action(
 ) -> ActionResult:
     """Perform a game action (roll dice, buy property, end turn)."""
     try:
-        return service.perform_action(
+        return await service.perform_action(
             game_id, player_id, action.type, action.payload
         )
     except ValueError as e:
@@ -135,25 +135,25 @@ def perform_action(
 
 
 @router.post("/games/{game_id}/simulate")
-def simulate_game(
+async def simulate_game(
     game_id: str,
     max_turns: int = Query(default=100, ge=1, le=500, description="Maximum turns to simulate"),
     service: GameService = Depends(get_game_service),
 ) -> dict:
     """Simulate CPU turns until game ends or max_turns reached. For testing."""
     try:
-        return service.simulate_cpu_game(game_id, max_turns)
+        return await service.simulate_cpu_game(game_id, max_turns)
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 
 @router.post("/games/{game_id}/cpu-turn")
-def process_cpu_turns(
+async def process_cpu_turns(
     game_id: str,
     service: GameService = Depends(get_game_service),
 ) -> dict:
     """Process CPU turns until it's a human player's turn."""
     try:
-        return service.process_cpu_turns(game_id)
+        return await service.process_cpu_turns(game_id)
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
