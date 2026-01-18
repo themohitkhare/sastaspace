@@ -9,6 +9,8 @@ export default function CenterActionButton({
     isMyTurn,
     isCpuTurn,
     onActionComplete,
+    myPlayer,
+    onDdosActivate,
 }) {
     const [isLoading, setIsLoading] = useState(false)
     const [error, setError] = useState(null)
@@ -112,14 +114,26 @@ export default function CenterActionButton({
     }
 
     if (turnPhase === 'PRE_ROLL') {
+        const hasDdosBuff = myPlayer?.active_buff === 'DDOS'
         return (
-            <button
-                onClick={() => performAction('ROLL_DICE')}
-                disabled={isLoading}
-                className="w-full py-4 px-8 bg-sasta-accent text-sasta-black font-zero font-bold text-xl border-brutal-sm shadow-brutal-sm hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all disabled:opacity-50"
-            >
-                {isLoading ? '🎲 ROLLING...' : '🎲 ROLL DICE'}
-            </button>
+            <div className="space-y-2">
+                {hasDdosBuff && onDdosActivate && (
+                    <button
+                        onClick={() => onDdosActivate(true)}
+                        disabled={isLoading}
+                        className="w-full py-2 px-4 bg-purple-600 text-white font-zero font-bold text-sm border-brutal-sm shadow-brutal-sm hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none transition-all disabled:opacity-50"
+                    >
+                        💀 USE DDOS
+                    </button>
+                )}
+                <button
+                    onClick={() => performAction('ROLL_DICE')}
+                    disabled={isLoading}
+                    className="w-full py-4 px-8 bg-sasta-accent text-sasta-black font-zero font-bold text-xl border-brutal-sm shadow-brutal-sm hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all disabled:opacity-50"
+                >
+                    {isLoading ? '🎲 ROLLING...' : '🎲 ROLL DICE'}
+                </button>
+            </div>
         )
     }
 
@@ -149,15 +163,58 @@ export default function CenterActionButton({
         )
     }
 
-    if (turnPhase === 'POST_TURN') {
+    if (turnPhase === 'DECISION' && pendingDecision?.type === 'MARKET') {
+        const buffs = pendingDecision?.event_data?.buffs || []
         return (
-            <button
-                onClick={() => performAction('END_TURN')}
-                disabled={isLoading}
-                className="w-full py-4 px-8 bg-sasta-black text-sasta-accent font-zero font-bold text-xl border-brutal-sm shadow-brutal-sm hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all disabled:opacity-50"
-            >
-                {isLoading ? '⏳ ENDING...' : '→ END TURN'}
-            </button>
+            <div className="space-y-1">
+                <div className="text-center font-zero text-[10px] font-bold bg-sasta-black text-sasta-accent py-1 px-1 border-brutal-sm">
+                    BLACK MARKET
+                </div>
+                <div className="flex flex-col gap-1">
+                    {buffs.map((buff) => (
+                        <button
+                            key={buff.id}
+                            onClick={() => performAction('BUY_BUFF', { buff_id: buff.id })}
+                            disabled={isLoading}
+                            className="py-1 px-2 bg-sasta-accent text-sasta-black font-zero text-[10px] font-bold border-brutal-sm hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none transition-all disabled:opacity-50 text-left flex justify-between"
+                        >
+                            <span>{buff.name.split(' ')[0]}</span>
+                            <span>${buff.cost}</span>
+                        </button>
+                    ))}
+                    <button
+                        onClick={() => performAction('PASS_PROPERTY')}
+                        disabled={isLoading}
+                        className="w-full py-1 px-2 bg-sasta-white text-sasta-black font-zero text-[10px] font-bold border-brutal-sm hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none transition-all disabled:opacity-50"
+                    >
+                        LEAVE [N]
+                    </button>
+                </div>
+            </div>
+        )
+    }
+
+    if (turnPhase === 'POST_TURN') {
+        const hasDdosBuff = myPlayer?.active_buff === 'DDOS'
+        return (
+            <div className="space-y-2">
+                {hasDdosBuff && onDdosActivate && (
+                    <button
+                        onClick={() => onDdosActivate(true)}
+                        disabled={isLoading}
+                        className="w-full py-2 px-4 bg-purple-600 text-white font-zero font-bold text-sm border-brutal-sm shadow-brutal-sm hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none transition-all disabled:opacity-50"
+                    >
+                        💀 USE DDOS
+                    </button>
+                )}
+                <button
+                    onClick={() => performAction('END_TURN')}
+                    disabled={isLoading}
+                    className="w-full py-4 px-8 bg-sasta-black text-sasta-accent font-zero font-bold text-xl border-brutal-sm shadow-brutal-sm hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all disabled:opacity-50"
+                >
+                    {isLoading ? '⏳ ENDING...' : '→ END TURN'}
+                </button>
+            </div>
         )
     }
 
