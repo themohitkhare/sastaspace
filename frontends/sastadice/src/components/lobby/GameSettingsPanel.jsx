@@ -19,10 +19,11 @@ const ROUND_PRESETS = [
     { value: 0, label: '∞ Unlimited' },
 ]
 
-export default function GameSettingsPanel({ settings, onUpdate, isHost }) {
+export default function GameSettingsPanel({ settings, onUpdate, onSave, hasChanges, isHost }) {
     const [expanded, setExpanded] = useState(false)
 
     if (!isHost) {
+        // ... existing read-only view ...
         return (
             <div className="bg-zinc-800 p-3 border border-zinc-700">
                 <div className="flex items-center gap-2 mb-2">
@@ -45,14 +46,16 @@ export default function GameSettingsPanel({ settings, onUpdate, isHost }) {
     }
 
     return (
-        <div className="bg-zinc-800 border border-zinc-700">
+        <div className={`bg-zinc-800 border transition-colors ${hasChanges ? 'border-yellow-500' : 'border-zinc-700'}`}>
             <button
                 onClick={() => setExpanded(!expanded)}
                 className="w-full p-3 flex justify-between items-center hover:bg-zinc-700/50 transition-colors"
             >
                 <div className="flex items-center gap-2">
                     <span className="text-lg">⚙️</span>
-                    <span className="font-data font-bold text-sm text-zinc-200">GAME SETTINGS</span>
+                    <span className="font-data font-bold text-sm text-zinc-200">
+                        GAME SETTINGS {hasChanges && <span className="text-yellow-500 text-xs ml-2">● UNSAVED</span>}
+                    </span>
                 </div>
                 <span className="text-zinc-400 text-lg">{expanded ? '▲' : '▼'}</span>
             </button>
@@ -68,8 +71,8 @@ export default function GameSettingsPanel({ settings, onUpdate, isHost }) {
                                     key={wc.value}
                                     onClick={() => handleChange('win_condition', wc.value)}
                                     className={`p-2 text-xs font-data text-center transition-colors ${settings?.win_condition === wc.value
-                                            ? 'bg-sasta-accent text-sasta-black font-bold'
-                                            : 'bg-zinc-700 text-zinc-300 hover:bg-zinc-600'
+                                        ? 'bg-sasta-accent text-sasta-black font-bold'
+                                        : 'bg-zinc-700 text-zinc-300 hover:bg-zinc-600'
                                         }`}
                                 >
                                     {wc.label}
@@ -88,8 +91,8 @@ export default function GameSettingsPanel({ settings, onUpdate, isHost }) {
                                         key={rp.value}
                                         onClick={() => handleChange('round_limit', rp.value)}
                                         className={`p-2 text-xs font-data text-center transition-colors ${settings?.round_limit === rp.value
-                                                ? 'bg-sasta-accent text-sasta-black font-bold'
-                                                : 'bg-zinc-700 text-zinc-300 hover:bg-zinc-600'
+                                            ? 'bg-sasta-accent text-sasta-black font-bold'
+                                            : 'bg-zinc-700 text-zinc-300 hover:bg-zinc-600'
                                             }`}
                                     >
                                         {rp.label}
@@ -108,8 +111,8 @@ export default function GameSettingsPanel({ settings, onUpdate, isHost }) {
                                     key={cl.value}
                                     onClick={() => handleChange('chaos_level', cl.value)}
                                     className={`p-2 text-xs font-data text-center transition-colors ${settings?.chaos_level === cl.value
-                                            ? 'bg-sasta-accent text-sasta-black font-bold'
-                                            : 'bg-zinc-700 text-zinc-300 hover:bg-zinc-600'
+                                        ? 'bg-sasta-accent text-sasta-black font-bold'
+                                        : 'bg-zinc-700 text-zinc-300 hover:bg-zinc-600'
                                         }`}
                                 >
                                     {cl.label}
@@ -148,11 +151,18 @@ export default function GameSettingsPanel({ settings, onUpdate, isHost }) {
                     {/* Summary */}
                     <div className="pt-2 border-t border-zinc-700">
                         <div className="text-xs font-data text-zinc-500 text-center">
-                            {settings?.win_condition === 'SUDDEN_DEATH' && `Richest after ${settings?.round_limit || 30} rounds wins`}
-                            {settings?.win_condition === 'LAST_STANDING' && 'Play until one player remains'}
                             {settings?.win_condition === 'FIRST_TO_CASH' && `First to $${settings?.target_cash || 10000} wins`}
                         </div>
                     </div>
+
+                    {hasChanges && (
+                        <button
+                            onClick={onSave}
+                            className="w-full py-2 bg-sasta-accent text-sasta-black font-bold font-data text-sm hover:bg-white transition-colors animate-pulse"
+                        >
+                            SAVE CHANGES
+                        </button>
+                    )}
                 </div>
             )}
         </div>
@@ -164,8 +174,8 @@ function ToggleButton({ label, value, onChange }) {
         <button
             onClick={() => onChange(!value)}
             className={`p-2 text-xs font-data flex items-center justify-between transition-colors ${value
-                    ? 'bg-green-500/20 text-green-400 border border-green-500/50'
-                    : 'bg-zinc-700/50 text-zinc-500 border border-zinc-600'
+                ? 'bg-green-500/20 text-green-400 border border-green-500/50'
+                : 'bg-zinc-700/50 text-zinc-500 border border-zinc-600'
                 }`}
         >
             <span>{label}</span>
