@@ -4,6 +4,8 @@ export default function PlayerToken({
   player, 
   tile, 
   boardSize,
+  tileWidth,
+  tileHeight,
   tileSize = DEFAULT_TILE_SIZE,
   offsetX = 0, 
   offsetY = 0 
@@ -14,6 +16,8 @@ export default function PlayerToken({
   if (!isOnPerimeter) return null
 
   const playerColor = player.color || '#000000'
+  const actualTileWidth = tileWidth || tileSize
+  const actualTileHeight = tileHeight || tileSize
   const tokenSize = Math.max(12, Math.min(40, Math.floor(tileSize / 3)))
   const fontSize = Math.max(6, Math.min(16, Math.floor(tokenSize / 2.4)))
   const borderWidth = Math.max(1, Math.min(3, Math.floor(tokenSize / 20)))
@@ -24,7 +28,7 @@ export default function PlayerToken({
       style={{
         gridColumn: tile.x + 1,
         gridRow: tile.y + 1,
-        transform: `translate(${tileSize / 2 - tokenSize / 2 + offsetX}px, ${tileSize / 2 - tokenSize / 2 + offsetY}px)`,
+        transform: `translate(${actualTileWidth / 2 - tokenSize / 2 + offsetX}px, ${actualTileHeight / 2 - tokenSize / 2 + offsetY}px)`,
         backgroundColor: playerColor,
         width: `${tokenSize}px`,
         height: `${tokenSize}px`,
