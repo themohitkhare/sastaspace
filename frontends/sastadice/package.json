@@ -8,7 +8,8 @@
     "preview": "vite preview",
     "test": "vitest",
     "test:coverage": "vitest --coverage",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "type-check": "tsc --noEmit"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.0.0",

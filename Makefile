@@ -19,3 +19,19 @@ test-frontend-sastaspace: ## Run sastaspace frontend tests (placeholder - no tes
 	@echo "No tests configured for sastaspace frontend"
 
 test-full: test-backend test-frontend-sastadice ## Run all tests
+
+dashboard: ## Generate and open RepoHealth dashboard
+	@echo "Collecting backend coverage..."
+	cd backend && uv run pytest tests/ --cov=app --cov-report=xml --cov-report=html -q || true
+	@echo "Collecting frontend coverage..."
+	@for dir in frontends/*/; do \
+		if [ -f "$$dir/package.json" ] && grep -q "test:coverage" "$$dir/package.json"; then \
+			echo "Running coverage for $$dir..."; \
+			cd "$$dir" && npm run test:coverage -- --run || true; \
+			cd -; \
+		fi; \
+	done
+	@echo "Generating dashboard..."
+	cd backend && uv run python3 ../scripts/generate_dashboard.py
+	@echo "Dashboard generated: dashboard.html"
+	@python3 -c "import webbrowser; webbrowser.open('dashboard.html')" || open dashboard.html || xdg-open dashboard.html

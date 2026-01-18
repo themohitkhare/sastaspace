@@ -96,3 +96,7 @@ traefik/letsencrypt/acme.json
 
 # Service files (but allow specific service files to be tracked)
 # *.service
+
+# RepoHealth Dashboard
+.repo_health_history.json
+dashboard.html
