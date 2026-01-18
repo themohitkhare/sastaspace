@@ -12,6 +12,8 @@ import PropertyDetailsModal from '../components/game/PropertyDetailsModal'
 import PeekEventsModal from '../components/game/PeekEventsModal'
 import TurnTimer from '../components/game/TurnTimer'
 import RulesModal from '../components/RulesModal'
+import TradeModal from '../components/game/TradeModal'
+import IncomingTradeAlert from '../components/game/IncomingTradeAlert'
 
 const CPU_NAMES = new Set(['ROBOCOP', 'CHAD BOT', 'KAREN.EXE', 'STONKS', 'CPU-1', 'CPU-2', 'CPU-3', 'CPU-4', 'CPU-5'])
 
@@ -123,6 +125,7 @@ export default function GamePage() {
   const [ddosMode, setDdosMode] = useState(false)
   const [peekEvents, setPeekEvents] = useState(null)
   const [showRules, setShowRules] = useState(false)
+  const [tradeTarget, setTradeTarget] = useState(null)
 
   const currentTile = currentPlayer && game?.board
     ? game.board[currentPlayer.position] || null
@@ -133,20 +136,60 @@ export default function GamePage() {
 
   const handleDdosTileSelect = async (tile) => {
     if (!gameId || !playerId || !tile) return
-    
+
     try {
       const response = await apiClient.post(
         `/sastadice/games/${gameId}/action?player_id=${playerId}`,
         { type: 'BLOCK_TILE', payload: { tile_id: tile.id } }
       )
-      
+
       if (response.data.success) {
         setDdosMode(false)
         await refetch()
       }
     } catch (err) {
-      // TODO: debug - DDoS action failed
       console.error('DDoS action failed:', err)
+    }
+  }
+
+  const handleProposeTrade = async (payload) => {
+    try {
+      await apiClient.post(`/sastadice/games/${gameId}/action`, {
+        type: 'PROPOSE_TRADE',
+        player_id: playerId,
+        payload
+      })
+      refetch()
+    } catch (err) {
+      console.error(err)
+      alert('Failed to propose trade')
+    }
+  }
+
+  const handleAcceptTrade = async (tradeId) => {
+    try {
+      await apiClient.post(`/sastadice/games/${gameId}/action`, {
+        type: 'ACCEPT_TRADE',
+        player_id: playerId,
+        payload: { trade_id: tradeId }
+      })
+      refetch()
+    } catch (err) {
+      console.error(err)
+      alert('Failed to accept trade')
+    }
+  }
+
+  const handleDeclineTrade = async (tradeId) => {
+    try {
+      await apiClient.post(`/sastadice/games/${gameId}/action`, {
+        type: 'DECLINE_TRADE',
+        player_id: playerId,
+        payload: { trade_id: tradeId }
+      })
+      refetch()
+    } catch (err) {
+      console.error(err)
     }
   }
 
@@ -238,6 +281,7 @@ export default function GamePage() {
             currentTurnPlayerId={game.current_turn_player_id}
             currentPlayerId={playerId}
             tiles={game.board || []}
+            onTradeClick={setTradeTarget}
           />
 
           <div className="mt-3 pt-3 border-t-2 border-sasta-black">
@@ -289,6 +333,28 @@ export default function GamePage() {
       />
 
       <RulesModal isOpen={showRules} onClose={() => setShowRules(false)} />
+
+      {tradeTarget && (
+        <TradeModal
+          targetPlayer={tradeTarget}
+          myPlayer={myPlayer}
+          tiles={game.board || []}
+          onClose={() => setTradeTarget(null)}
+          onPropose={handleProposeTrade}
+        />
+      )}
+
+      {game.active_trade_offers?.filter(o => o.target_id === playerId).map(offer => (
+        <IncomingTradeAlert
+          key={offer.id}
+          offer={offer}
+          initiator={game.players.find(p => p.id === offer.initiator_id)}
+          myPlayer={myPlayer}
+          tiles={game.board || []}
+          onAccept={() => handleAcceptTrade(offer.id)}
+          onDecline={() => handleDeclineTrade(offer.id)}
+        />
+      ))}
     </div>
   )
 }
