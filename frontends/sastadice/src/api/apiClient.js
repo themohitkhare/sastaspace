@@ -4,14 +4,14 @@ const getApiBaseUrl = () => {
   if (import.meta.env.VITE_API_URL) {
     return import.meta.env.VITE_API_URL
   }
-  
+
   const hostname = window.location.hostname
   const protocol = window.location.protocol
-  
+
   if (hostname !== 'localhost' && hostname !== '127.0.0.1') {
     return `${protocol}//${hostname}:8000/api/v1`
   }
-  
+
   return 'http://localhost:8000/api/v1'
 }
 
@@ -25,5 +25,4 @@ export const apiClient = axios.create({
   timeout: 10000,
 })
 
-export { apiClient }
 export default apiClient
