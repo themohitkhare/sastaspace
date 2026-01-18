@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RepoHealth Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border-width: 0;
+        }
+        .sr-only:focus {
+            position: fixed;
+            top: 1rem;
+            left: 1rem;
+            z-index: 50;
+            width: auto;
+            height: auto;
+            padding: 0.5rem 1rem;
+            margin: 0;
+            overflow: visible;
+            clip: auto;
+            white-space: normal;
+            background-color: #2563eb;
+            color: white;
+            border-radius: 0.25rem;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-100">
+    <a href="#main-content" class="sr-only focus:not-sr-only">Skip to Content</a>
+    
+    <main id="main-content" class="container mx-auto px-4 py-8">
+        <!-- Header Section -->
+        <div class="mb-8">
+            <h1 class="text-4xl font-bold mb-6">RepoHealth Dashboard</h1>
+            
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                <!-- Global Score Badge -->
+                <div class="bg-gray-800 rounded-lg p-4 text-center">
+                    <div class="text-sm text-gray-400 mb-2">Global Score</div>
+                    <div class="text-5xl font-bold {% if global_score == 'A' %}text-green-500{% elif global_score == 'B' %}text-yellow-500{% elif global_score == 'C' %}text-orange-500{% else %}text-red-500{% endif %}">
+                        {{ global_score }}
+                    </div>
+                </div>
+                
+                <!-- Total LOC -->
+                <div class="bg-gray-800 rounded-lg p-4 text-center">
+                    <div class="text-sm text-gray-400 mb-2">Total LOC</div>
+                    <div class="text-3xl font-bold">{{ "{:,}".format(total_loc) }}</div>
+                </div>
+                
+                <!-- Overall Coverage -->
+                <div class="bg-gray-800 rounded-lg p-4">
+                    <div class="text-sm text-gray-400 mb-2">Overall Coverage</div>
+                    <div class="text-3xl font-bold mb-2">{{ "%.1f"|format(overall_coverage) }}%</div>
+                    <div class="w-full bg-gray-700 rounded-full h-2">
+                        <div class="h-2 rounded-full {% if overall_coverage >= 80 %}bg-green-500{% elif overall_coverage >= 50 %}bg-yellow-500{% else %}bg-red-500{% endif %}" 
+                             style="width: {{ overall_coverage }}%"></div>
+                    </div>
+                    <div class="text-xs text-gray-500 mt-1">Backend: {{ "%.1f"|format(backend_coverage) }}% | Frontend: {{ "%.1f"|format(frontend_coverage) }}%</div>
+                </div>
+                
+                <!-- Type Safety Badge -->
+                <div class="bg-gray-800 rounded-lg p-4 text-center">
+                    <div class="text-sm text-gray-400 mb-2">Type Errors</div>
+                    <div class="text-3xl font-bold {% if total_type_errors == 0 %}text-green-500{% elif total_type_errors <= 10 %}text-yellow-500{% elif total_type_errors <= 50 %}text-orange-500{% else %}text-red-500{% endif %}">
+                        {{ total_type_errors if total_type_errors >= 0 else "?" }}
+                    </div>
+                    <div class="text-xs text-gray-500 mt-1">Py: {{ python_type_errors if python_type_errors >= 0 else "?" }} | TS: {{ typescript_type_errors }}</div>
+                </div>
+            </div>
+            
+            <!-- Complexity Trend Sparkline -->
+            {% if trend_history|length > 0 %}
+            <div class="bg-gray-800 rounded-lg p-4">
+                <h3 class="text-lg font-semibold mb-4">Complexity Trend (Last 30 Runs)</h3>
+                <div class="h-80 w-full relative">
+                    <canvas id="trendChart"></canvas>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        
+        <!-- Danger Zone -->
+        <div class="mb-8">
+            <h2 class="text-2xl font-bold mb-4 text-red-400">⚠️ Danger Zone</h2>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                <!-- Top Complex Functions -->
+                <div class="bg-gray-800 rounded-lg p-4">
+                    <h3 class="text-lg font-semibold mb-3">Top 5 Most Complex Functions</h3>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm">
+                            <thead>
+                                <tr class="border-b border-gray-700">
+                                    <th class="text-left p-2">Rank</th>
+                                    <th class="text-left p-2">Function</th>
+                                    <th class="text-left p-2">File</th>
+                                    <th class="text-right p-2">Complexity</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for func in top_complex_functions[:5] %}
+                                <tr class="{% if func.complexity > 15 %}bg-red-900/30{% endif %} border-b border-gray-700">
+                                    <td class="p-2">{{ loop.index }}</td>
+                                    <td class="p-2 font-mono text-xs">{{ func.name }}</td>
+                                    <td class="p-2 text-xs text-gray-400">{{ func.file.split('/')[-1] }}</td>
+                                    <td class="p-2 text-right font-bold {% if func.complexity > 15 %}text-red-400{% endif %}">{{ func.complexity }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <!-- Low Coverage Files -->
+                <div class="bg-gray-800 rounded-lg p-4">
+                    <h3 class="text-lg font-semibold mb-3">Low Coverage Files</h3>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm">
+                            <thead>
+                                <tr class="border-b border-gray-700">
+                                    <th class="text-left p-2">File</th>
+                                    <th class="text-right p-2">Coverage</th>
+                                    <th class="text-center p-2">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for file in low_coverage_files[:10] %}
+                                <tr class="border-b border-gray-700">
+                                    <td class="p-2 text-xs font-mono">{{ file.file.split('/')[-1] }}</td>
+                                    <td class="p-2 text-right {% if file.coverage < 50 %}text-red-400{% elif file.coverage < 80 %}text-yellow-400{% else %}text-green-400{% endif %}">
+                                        {{ "%.1f"|format(file.coverage) }}%
+                                    </td>
+                                    <td class="p-2 text-center">
+                                        <span class="px-2 py-1 rounded text-xs {% if file.coverage < 50 %}bg-red-900/50 text-red-300{% elif file.coverage < 80 %}bg-yellow-900/50 text-yellow-300{% else %}bg-green-900/50 text-green-300{% endif %}">
+                                            {% if file.coverage < 50 %}Bad{% elif file.coverage < 80 %}Warning{% else %}Good{% endif %}
+                                        </span>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <!-- Zombie Code -->
+                <div class="bg-gray-800 rounded-lg p-4">
+                    <h3 class="text-lg font-semibold mb-3">Zombie Code (Top 10)</h3>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm">
+                            <thead>
+                                <tr class="border-b border-gray-700">
+                                    <th class="text-left p-2">Type</th>
+                                    <th class="text-left p-2">Name</th>
+                                    <th class="text-left p-2">File</th>
+                                    <th class="text-right p-2">Confidence</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in (zombie_code.unused_functions + zombie_code.unused_classes)[:10] %}
+                                <tr class="border-b border-gray-700">
+                                    <td class="p-2 text-xs">{{ "Function" if "function" in item|string else "Class" }}</td>
+                                    <td class="p-2 font-mono text-xs">{{ item.name }}</td>
+                                    <td class="p-2 text-xs text-gray-400">{{ item.file.split('/')[-1] }}</td>
+                                    <td class="p-2 text-right">{{ "%.0f"|format(item.confidence * 100) }}%</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Visualizations Row -->
+        <div class="mb-8">
+            <h2 class="text-2xl font-bold mb-4">Visualizations</h2>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+                <!-- Scatter Plot -->
+                <div class="bg-gray-800 rounded-lg p-4">
+                    <h3 class="text-lg font-semibold mb-3">Complexity vs Coverage</h3>
+                    <div class="h-64 w-full relative">
+                        <canvas id="scatterChart"></canvas>
+                    </div>
+                </div>
+                
+                <!-- Pie Chart -->
+                <div class="bg-gray-800 rounded-lg p-4">
+                    <h3 class="text-lg font-semibold mb-3">File Distribution</h3>
+                    <div class="h-64 w-full relative">
+                        <canvas id="pieChart"></canvas>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <!-- Strictness Meter -->
+                <div class="bg-gray-800 rounded-lg p-4">
+                    <h3 class="text-lg font-semibold mb-3">The Strictness Meter</h3>
+                    <div class="h-64 w-full relative">
+                        <canvas id="gaugeChart"></canvas>
+                    </div>
+                    <div class="text-center mt-2 text-sm text-gray-400">
+                        Python: {{ python_type_errors if python_type_errors >= 0 else "?" }} errors | TypeScript: {{ typescript_type_errors }} errors
+                    </div>
+                </div>
+                
+                <!-- Type Debt Bar Chart -->
+                <div class="bg-gray-800 rounded-lg p-4">
+                    <h3 class="text-lg font-semibold mb-3">Type Debt Comparison</h3>
+                    <div class="h-64 w-full relative">
+                        <canvas id="barChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- AI Audit Section -->
+        <div class="mb-8">
+            <h2 class="text-2xl font-bold mb-4">🤖 AI Audit</h2>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
+                <!-- Verbosity Index -->
+                <div class="bg-gray-800 rounded-lg p-4">
+                    <h3 class="text-lg font-semibold mb-3">Verbosity Index</h3>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm">
+                            <thead>
+                                <tr class="border-b border-gray-700">
+                                    <th class="text-left p-2">File</th>
+                                    <th class="text-left p-2">Type</th>
+                                    <th class="text-right p-2">Ratio</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for file in verbose_files[:10] %}
+                                <tr class="border-b border-gray-700">
+                                    <td class="p-2 text-xs font-mono">{{ file.file.split('/')[-1] }}</td>
+                                    <td class="p-2 text-xs">{{ file.type }}</td>
+                                    <td class="p-2 text-right">{{ "%.2f"|format(file.ratio) }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <!-- Monolith Detector -->
+                <div class="bg-gray-800 rounded-lg p-4">
+                    <h3 class="text-lg font-semibold mb-3">Monolith Detector</h3>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm">
+                            <thead>
+                                <tr class="border-b border-gray-700">
+                                    <th class="text-left p-2">File</th>
+                                    <th class="text-left p-2">Type</th>
+                                    <th class="text-right p-2">LOC</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for file in large_files[:10] %}
+                                <tr class="border-b border-gray-700">
+                                    <td class="p-2 text-xs font-mono">{{ file.file.split('/')[-1] }}</td>
+                                    <td class="p-2 text-xs">{{ file.type }}</td>
+                                    <td class="p-2 text-right font-bold">{{ file.loc }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <!-- Duplication Summary -->
+                <div class="bg-gray-800 rounded-lg p-4">
+                    <h3 class="text-lg font-semibold mb-3">Duplication Summary</h3>
+                    <div class="text-4xl font-bold mb-4 text-center">{{ "{:,}".format(total_duplicated_lines) }}</div>
+                    <div class="text-sm text-gray-400 text-center mb-4">Total Duplicated Lines</div>
+                    {% if duplicate_blocks|length > 0 %}
+                    <div class="text-sm">
+                        <div class="font-semibold mb-2">Top Duplicate Blocks:</div>
+                        {% for block in duplicate_blocks[:5] %}
+                        <div class="mb-2 p-2 bg-gray-700 rounded text-xs">
+                            <div class="font-mono">{{ block.file.split('/')[-1] }}</div>
+                            <div class="text-gray-400">{{ block.lines }}</div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- AI Hallucination Index -->
+            <div class="bg-gray-800 rounded-lg p-4">
+                <h3 class="text-lg font-semibold mb-3">AI Hallucination Index</h3>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm">
+                        <thead>
+                            <tr class="border-b border-gray-700">
+                                <th class="text-left p-2">File</th>
+                                <th class="text-left p-2">Type</th>
+                                <th class="text-right p-2">Complexity</th>
+                                <th class="text-right p-2">Type Errors</th>
+                                <th class="text-left p-2">Pattern</th>
+                                <th class="text-right p-2">Score</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for file in hallucination_files[:10] %}
+                            <tr class="{% if file.hallucination_score > 0.5 %}bg-red-900/30{% endif %} border-b border-gray-700">
+                                <td class="p-2 text-xs font-mono">{{ file.file.split('/')[-1] }}</td>
+                                <td class="p-2 text-xs">{{ "Python" if file.file.endswith(".py") else "TypeScript" }}</td>
+                                <td class="p-2 text-right">{{ file.complexity }}</td>
+                                <td class="p-2 text-right">{{ file.type_errors }}</td>
+                                <td class="p-2">
+                                    <span class="px-2 py-1 rounded text-xs {% if file.pattern == 'confidently_wrong' %}bg-purple-900/50 text-purple-300{% else %}bg-orange-900/50 text-orange-300{% endif %}">
+                                        {% if file.pattern == 'confidently_wrong' %}Confidently Wrong{% else %}Complex & Wrong{% endif %}
+                                    </span>
+                                </td>
+                                <td class="p-2 text-right font-bold {% if file.hallucination_score > 0.5 %}text-red-400{% endif %}">
+                                    {{ "%.2f"|format(file.hallucination_score) }}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+    
+    <script>
+        // Embed data
+        const data = {{ data_json|safe }};
+        
+        // Trend Chart
+        {% if trend_history|length > 0 %}
+        const trendCtx = document.getElementById('trendChart').getContext('2d');
+        new Chart(trendCtx, {
+            type: 'line',
+            data: {
+                labels: data.trend_history.map(h => new Date(h.timestamp).toLocaleDateString()),
+                datasets: [{
+                    label: 'Total Complexity',
+                    data: data.trend_history.map(h => h.total_complexity),
+                    borderColor: 'rgb(59, 130, 246)',
+                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    y: { beginAtZero: true, ticks: { color: '#9ca3af' }, grid: { color: '#374151' } },
+                    x: { ticks: { color: '#9ca3af' }, grid: { color: '#374151' } }
+                }
+            }
+        });
+        {% endif %}
+        
+        // Scatter Plot
+        const scatterCtx = document.getElementById('scatterChart').getContext('2d');
+        new Chart(scatterCtx, {
+            type: 'scatter',
+            data: {
+                datasets: [{
+                    label: 'Files',
+                    data: data.complexity_scatter_data,
+                    backgroundColor: data.complexity_scatter_data.map(d => {
+                        if (d.rank === 'A') return 'rgba(34, 197, 94, 0.6)';
+                        if (d.rank === 'B') return 'rgba(234, 179, 8, 0.6)';
+                        if (d.rank === 'C') return 'rgba(249, 115, 22, 0.6)';
+                        return 'rgba(239, 68, 68, 0.6)';
+                    })
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    x: { title: { display: true, text: 'Complexity', color: '#9ca3af' }, ticks: { color: '#9ca3af' }, grid: { color: '#374151' } },
+                    y: { title: { display: true, text: 'Coverage %', color: '#9ca3af' }, ticks: { color: '#9ca3af' }, grid: { color: '#374151' } }
+                }
+            }
+        });
+        
+        // Pie Chart
+        const pieCtx = document.getElementById('pieChart').getContext('2d');
+        new Chart(pieCtx, {
+            type: 'pie',
+            data: {
+                labels: ['Backend', 'Frontend', 'Tests'],
+                datasets: [{
+                    data: [data.file_distribution.backend, data.file_distribution.frontend, data.file_distribution.tests],
+                    backgroundColor: ['rgba(59, 130, 246, 0.8)', 'rgba(168, 85, 247, 0.8)', 'rgba(34, 197, 94, 0.8)']
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { labels: { color: '#9ca3af' } }
+                }
+            }
+        });
+        
+        // Gauge Chart (Doughnut styled as gauge)
+        const gaugeCtx = document.getElementById('gaugeChart').getContext('2d');
+        const typeCoverage = data.type_coverage;
+        const gaugeColor = typeCoverage >= 90 ? 'rgba(34, 197, 94, 0.8)' : 
+                          typeCoverage >= 70 ? 'rgba(234, 179, 8, 0.8)' : 
+                          typeCoverage >= 50 ? 'rgba(249, 115, 22, 0.8)' : 'rgba(239, 68, 68, 0.8)';
+        new Chart(gaugeCtx, {
+            type: 'doughnut',
+            data: {
+                datasets: [{
+                    data: [typeCoverage, 100 - typeCoverage],
+                    backgroundColor: [gaugeColor, 'rgba(55, 65, 81, 0.8)']
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '75%',
+                plugins: {
+                    legend: { display: false },
+                    tooltip: { enabled: false }
+                }
+            },
+            plugins: [{
+                id: 'gaugeLabel',
+                afterDraw: (chart) => {
+                    const ctx = chart.ctx;
+                    ctx.save();
+                    ctx.font = 'bold 24px sans-serif';
+                    ctx.fillStyle = '#f3f4f6';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText(`${typeCoverage.toFixed(1)}%`, chart.chartArea.left + (chart.chartArea.right - chart.chartArea.left) / 2,
+                                 chart.chartArea.top + (chart.chartArea.bottom - chart.chartArea.top) / 2);
+                    ctx.restore();
+                }
+            }]
+        });
+        
+        // Bar Chart
+        const barCtx = document.getElementById('barChart').getContext('2d');
+        const pyErrors = data.python_type_errors >= 0 ? data.python_type_errors : 0;
+        const tsErrors = data.typescript_type_errors;
+        new Chart(barCtx, {
+            type: 'bar',
+            data: {
+                labels: ['Python (ty)', 'TypeScript (tsc)'],
+                datasets: [{
+                    label: 'Type Errors',
+                    data: [pyErrors, tsErrors],
+                    backgroundColor: [
+                        pyErrors < 5 ? 'rgba(34, 197, 94, 0.8)' : pyErrors < 20 ? 'rgba(234, 179, 8, 0.8)' : pyErrors < 50 ? 'rgba(249, 115, 22, 0.8)' : 'rgba(239, 68, 68, 0.8)',
+                        tsErrors < 5 ? 'rgba(34, 197, 94, 0.8)' : tsErrors < 20 ? 'rgba(234, 179, 8, 0.8)' : tsErrors < 50 ? 'rgba(249, 115, 22, 0.8)' : 'rgba(239, 68, 68, 0.8)'
+                    ]
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    y: { beginAtZero: true, ticks: { color: '#9ca3af' }, grid: { color: '#374151' } },
+                    x: { ticks: { color: '#9ca3af' }, grid: { color: '#374151' } }
+                }
+            }
+        });
+    </script>
+</body>
+</html>
