@@ -36,8 +36,6 @@ def run_radon_complexity(path: str) -> dict:
         functions = []
         files = {}
         
-        # Radon JSON is {filename: [functions]}
-        # Radon JSON is {filename: [functions]}
         for filename, file_functions in data.items():
             max_complexity = 0
             for func in file_functions:
@@ -96,31 +94,30 @@ def run_vulture_analysis(path: str = "backend/app") -> dict:
     try:
         vulture_exe = _find_executable("vulture")
         result = subprocess.run(
-            [vulture_exe, path, "--min-confidence", "80", "--format", "json"],
+            [vulture_exe, path, "--min-confidence", "60"],
             capture_output=True,
             text=True,
             timeout=120
         )
-        data = json.loads(result.stdout)
         unused_functions = []
         unused_classes = []
         
-        for item in data:
-            item_type = item.get("type", "")
-            if item_type == "function":
-                unused_functions.append({
-                    "name": item.get("name", ""),
-                    "file": item.get("file", ""),
-                    "line": item.get("line", 0),
-                    "confidence": item.get("confidence", 0.0)
-                })
-            elif item_type == "class":
-                unused_classes.append({
-                    "name": item.get("name", ""),
-                    "file": item.get("file", ""),
-                    "line": item.get("line", 0),
-                    "confidence": item.get("confidence", 0.0)
-                })
+        pattern = re.compile(r"^(.+?):(\d+): unused (function|variable|class|method|import|attribute|property) '([^']+)' \((\d+)% confidence\)")
+        
+        for line in result.stdout.split("\n"):
+            match = pattern.match(line)
+            if match:
+                file_path, line_num, item_type, name, confidence = match.groups()
+                item = {
+                    "name": name,
+                    "file": file_path,
+                    "line": int(line_num),
+                    "confidence": int(confidence) / 100.0
+                }
+                if item_type in ("function", "method"):
+                    unused_functions.append(item)
+                elif item_type == "class":
+                    unused_classes.append(item)
         
         unused_functions.sort(key=lambda x: x["confidence"], reverse=True)
         unused_classes.sort(key=lambda x: x["confidence"], reverse=True)
@@ -187,11 +184,18 @@ def run_ty_check(path: str = "backend/app") -> dict:
         )
         
         output = result.stdout + result.stderr
-        error_count = len(re.findall(r"error[:\[]", output, re.IGNORECASE))
+        error_matches = re.findall(r"error[:\[]", output, re.IGNORECASE)
+        error_count = len(error_matches)
+        
+        errors_by_file = {}
+        file_pattern = re.compile(r"-->\s*([^\s:]+\.py):\d+:\d+")
+        for match in file_pattern.finditer(output):
+            file_path = match.group(1)
+            errors_by_file[file_path] = errors_by_file.get(file_path, 0) + 1
         
         return {
             "total_errors": error_count,
-            "errors_by_file": {},
+            "errors_by_file": errors_by_file,
             "errors": []
         }
     except Exception:
