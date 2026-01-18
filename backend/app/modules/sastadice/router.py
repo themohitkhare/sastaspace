@@ -50,6 +50,8 @@ async def get_game_state(
 ) -> GameStateResponse:
     """Get game state with version for polling optimization."""
     try:
+        await service.check_timeout(game_id)
+        
         game = await service.get_game(game_id)
         current_version = await service.repository.get_version(game_id)
 
@@ -140,6 +142,8 @@ async def perform_action(
 ) -> ActionResult:
     """Perform a game action (roll dice, buy property, end turn)."""
     try:
+        await service.check_timeout(game_id)
+        
         return await service.perform_action(
             game_id, player_id, action.type, action.payload
         )
