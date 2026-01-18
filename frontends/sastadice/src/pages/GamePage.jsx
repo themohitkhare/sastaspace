@@ -6,6 +6,7 @@ import BoardView from '../components/game/BoardView'
 import PlayerPanel from '../components/game/PlayerPanel'
 import ActionPanel from '../components/game/ActionPanel'
 import DiceDisplay from '../components/game/DiceDisplay'
+import VictoryScreen from '../components/game/VictoryScreen'
 
 const CPU_NAMES = new Set(['ROBOCOP', 'CHAD BOT', 'KAREN.EXE', 'STONKS', 'CPU-1', 'CPU-2', 'CPU-3', 'CPU-4', 'CPU-5'])
 
@@ -43,25 +44,21 @@ export default function GamePage() {
 
     const processCpuTurns = async () => {
       cpuActionRef.current = true
-      
+
       // Small delay to show "CPU THINKING..." message
       await new Promise(r => setTimeout(r, 600))
-      
+
       try {
         await apiClient.post(`/sastadice/games/${gameId}/cpu-turn`)
         // Immediately refresh game state after CPU turn
         await refetch()
-        
+
         // Additional refresh after a short delay to catch any state updates
         await new Promise(r => setTimeout(r, 200))
         await refetch()
       } catch (error) {
-        console.error('CPU turn error:', error)
-        // Still refetch to get updated state even on error
         await refetch()
       } finally {
-        // Reset the ref after state has had time to update
-        // Use a longer delay to ensure polling has a chance to update
         setTimeout(() => {
           cpuActionRef.current = false
         }, 800)
@@ -84,6 +81,10 @@ export default function GamePage() {
     )
   }
 
+  if (game.status === 'FINISHED') {
+    return <VictoryScreen game={game} />
+  }
+
   return (
     <div className="h-screen bg-sasta-white flex flex-col overflow-hidden">
       <header className="border-b-4 border-sasta-black bg-sasta-white shrink-0">
@@ -92,7 +93,7 @@ export default function GamePage() {
             <h1 className="text-xl sm:text-3xl font-bold font-zero truncate">SASTADICE</h1>
             <p className="text-xs sm:text-sm font-zero opacity-60 truncate">GAME: {gameId?.slice(0, 8)}...</p>
           </div>
-          
+
           <div className={`border-brutal-sm px-2 sm:px-4 py-1 sm:py-2 ${isMyTurn ? 'bg-sasta-accent' : 'bg-sasta-white'}`}>
             <div className="text-[10px] sm:text-xs font-zero font-bold opacity-60">CURRENT TURN</div>
             <div className="font-zero font-bold text-sm sm:text-base">{currentPlayer?.name?.toUpperCase() || 'N/A'}</div>
@@ -111,7 +112,7 @@ export default function GamePage() {
       </header>
 
       <div className="flex-1 min-h-0 max-w-full mx-auto w-full p-2 sm:p-4 flex flex-col lg:flex-row gap-4 overflow-hidden">
-        <div 
+        <div
           className="flex-1 min-h-0 min-w-0 border-brutal-lg bg-sasta-white shadow-brutal-lg overflow-hidden order-1 lg:order-1"
           style={{
             display: 'flex',
@@ -165,7 +166,6 @@ export default function GamePage() {
         </div>
       </div>
 
-      {/* Always render ActionPanel container to prevent layout shifts */}
       <div className="shrink-0 border-t-4 border-sasta-black bg-sasta-white p-2 sm:p-4">
         <div className="max-w-md mx-auto">
           <ActionPanel
