@@ -105,6 +105,21 @@ async def kick_player(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 
+@router.patch("/games/{game_id}/settings")
+async def update_settings(
+    game_id: str,
+    request: dict,
+    service: GameService = Depends(get_game_service),
+) -> dict:
+    """Update game settings. Only host can update."""
+    try:
+        host_id = request.get("host_id")
+        settings = request.get("settings", {})
+        return await service.update_settings(game_id, host_id, settings)
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
+
 @router.post("/games/{game_id}/start", response_model=GameSession)
 async def start_game(
     game_id: str, service: GameService = Depends(get_game_service)

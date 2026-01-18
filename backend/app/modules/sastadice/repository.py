@@ -72,6 +72,14 @@ class GameRepository(BaseRepository[GameSession]):
         """Update game session."""
         game_doc = GameSessionDocument.from_game_session(entity)
         update_data = game_doc.to_dict()
+        
+        # Ensure optional fields are unset in DB if None on entity
+        # (to_dict uses exclude_none=True)
+        if entity.auction_state is None:
+            update_data["auction_state"] = None
+        if entity.pending_decision is None:
+            update_data["pending_decision"] = None
+            
         update_data.pop("_id", None)
         update_data.pop("version", None)
         
