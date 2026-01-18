@@ -12,6 +12,8 @@ from app.modules.sastadice.schemas import (
     TileCreate,
     TileType,
     PendingDecision,
+    GameSettings,
+    AuctionState,
 )
 
 
@@ -31,6 +33,13 @@ class GameSessionDocument(BaseModel):
     pending_decision: Optional[dict] = None
     last_event_message: Optional[str] = None
     created_at: Optional[datetime] = None
+    current_round: int = 0
+    max_rounds: int = 30
+    first_player_id: Optional[str] = None
+    auction_state: Optional[dict] = None
+    rent_multiplier: float = 1.0
+    blocked_tiles: list[str] = Field(default_factory=list)
+    settings: Optional[dict] = None
 
     model_config = {"populate_by_name": True, "arbitrary_types_allowed": True}
 
@@ -39,6 +48,12 @@ class GameSessionDocument(BaseModel):
         pending_decision = None
         if self.pending_decision:
             pending_decision = PendingDecision(**self.pending_decision)
+        
+        settings = GameSettings(**(self.settings or {}))
+        
+        auction_state = None
+        if self.auction_state:
+            auction_state = AuctionState(**self.auction_state)
         
         return GameSession(
             id=self.id,
@@ -54,6 +69,13 @@ class GameSessionDocument(BaseModel):
             last_dice_roll=self.last_dice_roll,
             pending_decision=pending_decision,
             last_event_message=self.last_event_message,
+            current_round=self.current_round,
+            max_rounds=self.max_rounds,
+            first_player_id=self.first_player_id,
+            auction_state=auction_state,
+            rent_multiplier=self.rent_multiplier,
+            blocked_tiles=self.blocked_tiles,
+            settings=settings,
         )
 
     @classmethod
@@ -62,6 +84,12 @@ class GameSessionDocument(BaseModel):
         pending_decision_dict = None
         if game.pending_decision:
             pending_decision_dict = game.pending_decision.model_dump()
+        
+        settings_dict = game.settings.model_dump() if game.settings else None
+        
+        auction_state_dict = None
+        if game.auction_state:
+            auction_state_dict = game.auction_state.model_dump()
         
         return cls(
             id=game.id,
@@ -77,12 +105,19 @@ class GameSessionDocument(BaseModel):
             pending_decision=pending_decision_dict,
             last_event_message=game.last_event_message,
             created_at=datetime.utcnow(),
+            # Phase 1 fields
+            current_round=game.current_round,
+            max_rounds=game.max_rounds,
+            first_player_id=game.first_player_id,
+            auction_state=auction_state_dict,
+            rent_multiplier=game.rent_multiplier,
+            blocked_tiles=game.blocked_tiles,
+            settings=settings_dict,
         )
 
     def to_dict(self) -> dict:
         """Convert to dictionary for MongoDB operations."""
-        data = self.model_dump(by_alias=True, exclude_none=True)
-        return data
+        return self.model_dump(by_alias=True, exclude_none=True)
 
 
 class PlayerDocument(BaseModel):
@@ -98,6 +133,10 @@ class PlayerDocument(BaseModel):
     ready: bool = False
     is_bankrupt: bool = False
     created_at: Optional[datetime] = None
+    in_jail: bool = False
+    jail_turns: int = 0
+    consecutive_doubles: int = 0
+    active_buff: Optional[str] = None
 
     model_config = {"populate_by_name": True}
 
@@ -113,6 +152,10 @@ class PlayerDocument(BaseModel):
             submitted_tiles=submitted_tiles,
             ready=self.ready,
             is_bankrupt=self.is_bankrupt,
+            in_jail=self.in_jail,
+            jail_turns=self.jail_turns,
+            consecutive_doubles=self.consecutive_doubles,
+            active_buff=self.active_buff,
         )
 
     @classmethod
@@ -129,6 +172,10 @@ class PlayerDocument(BaseModel):
             ready=player.ready,
             is_bankrupt=player.is_bankrupt,
             created_at=datetime.utcnow(),
+            in_jail=player.in_jail,
+            jail_turns=player.jail_turns,
+            consecutive_doubles=player.consecutive_doubles,
+            active_buff=player.active_buff,
         )
 
     def to_dict(self) -> dict:
@@ -150,6 +197,8 @@ class TileDocument(BaseModel):
     y: int = 0
     price: int = 0
     rent: int = 0
+    color: Optional[str] = None
+    upgrade_level: int = 0
 
     model_config = {"populate_by_name": True}
 
@@ -166,6 +215,8 @@ class TileDocument(BaseModel):
             y=self.y,
             price=self.price,
             rent=self.rent,
+            color=self.color,
+            upgrade_level=self.upgrade_level,
         )
 
     @classmethod
@@ -183,6 +234,8 @@ class TileDocument(BaseModel):
             y=tile.y,
             price=tile.price,
             rent=tile.rent,
+            color=tile.color,
+            upgrade_level=tile.upgrade_level,
         )
 
     def to_dict(self) -> dict:
