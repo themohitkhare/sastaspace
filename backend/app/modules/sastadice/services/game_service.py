@@ -968,6 +968,10 @@ class GameService:
             if game.current_turn_player_id != player_id:
                 return ActionResult(success=False, message="Can only propose trades on your turn")
             
+            player = next((p for p in game.players if p.id == player_id), None)
+            if not player:
+                return ActionResult(success=False, message="Player not found")
+            
             target_id = payload.get("target_id")
             if not target_id or target_id == player_id:
                 return ActionResult(success=False, message="Invalid trade target")
@@ -1278,6 +1282,10 @@ class GameService:
                     game.turn_phase = TurnPhase.POST_TURN
                     await self.repository.update(game)
             
+            # Process Trades
+            await self._simulate_cpu_trades(game, turn_info)
+            game = await self.get_game(game_id)
+
             if game.turn_phase == TurnPhase.POST_TURN:
                 result = await self.perform_action(game_id, current_player.id, ActionType.END_TURN, {})
                 turn_info["actions"].append({"action": "END_TURN", "result": result.message})
@@ -1446,6 +1454,52 @@ class GameService:
             game.last_event_message = (game.last_event_message or "") + f" | Survived by selling assets."
         else:
             await self._process_bankruptcy(game, player, creditor)
+
+    async def _simulate_cpu_trades(self, game, turn_info):
+        """Handle CPU trading logic (Propose/Accept/Decline)."""
+        # 1. Handle Incoming Offers
+        for offer in list(game.active_trade_offers):
+            target = next((p for p in game.players if p.id == offer.target_id), None)
+            if target: # Assume all in sim are CPUS or handled here
+                # Simple logic: Accept if receiving reasonable stuff? For now random.
+                # Accept 30% of time
+                if random.random() < 0.3:
+                    res = await self.perform_action(game.id, target.id, ActionType.ACCEPT_TRADE, {"trade_id": offer.id})
+                    turn_info["actions"].append({"action": f"ACCEPT_TRADE ({target.name})", "result": res.message})
+                else:
+                    res = await self.perform_action(game.id, target.id, ActionType.DECLINE_TRADE, {"trade_id": offer.id})
+                    turn_info["actions"].append({"action": f"DECLINE_TRADE ({target.name})", "result": res.message})
+
+        # 2. Propose Trade (Current Player)
+        current_player = next((p for p in game.players if p.id == game.current_turn_player_id), None)
+        if game.turn_phase == TurnPhase.POST_TURN and current_player and random.random() < 0.1: # 10% chance
+            potential_targets = [p for p in game.players if p.id != current_player.id]
+            if not potential_targets: return
+            
+            target = random.choice(potential_targets)
+            
+            # Offer 1 prop or cash
+            my_props = [t.id for t in game.board if t.owner_id == current_player.id]
+            their_props = [t.id for t in game.board if t.owner_id == target.id]
+            
+            offer_props = [random.choice(my_props)] if my_props and random.random() < 0.5 else []
+            req_props = [random.choice(their_props)] if their_props and random.random() < 0.5 else []
+            
+            offer_cash = min(current_player.cash, 100) if random.random() < 0.5 else 0
+            
+            if not offer_props and not req_props and offer_cash == 0:
+                return # Empty trade
+            
+            payload = {
+                "target_id": target.id,
+                "offer_cash": offer_cash,
+                "req_cash": 0,
+                "offer_props": offer_props,
+                "req_props": req_props
+            }
+            
+            res = await self.perform_action(game.id, current_player.id, ActionType.PROPOSE_TRADE, payload)
+            turn_info["actions"].append({"action": "PROPOSE_TRADE", "result": res.message})
 
     async def _check_bankruptcy(self, game_id: str) -> GameSession:
         """Check for bankrupt players and mark them."""
