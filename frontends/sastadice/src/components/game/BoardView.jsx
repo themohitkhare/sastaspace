@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import TileComponent from './TileComponent'
 import PlayerToken from './PlayerToken'
 
-export default function BoardView({ tiles = [], boardSize, players = [], onTileClick, children }) {
+export default function BoardView({ tiles = [], boardSize, players = [], onTileClick, children, ddosMode = false, onDdosTileSelect, currentRound = 0 }) {
   const containerRef = useRef(null)
   const wrapperRef = useRef(null)
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 })
@@ -113,8 +113,16 @@ export default function BoardView({ tiles = [], boardSize, players = [], onTileC
                 gridRow: tile.y + 1,
                 cursor: 'pointer'
               }}
-              className="w-full h-full relative overflow-hidden hover:z-30 transition-transform active:scale-95"
-              onClick={() => onTileClick && onTileClick(tile)}
+              className={`w-full h-full relative overflow-hidden transition-transform active:scale-95 ${
+                ddosMode && tile.type === 'PROPERTY' ? 'cursor-pointer hover:z-30' : onTileClick ? 'cursor-pointer hover:z-30' : ''
+              }`}
+              onClick={() => {
+                if (ddosMode && tile.type === 'PROPERTY' && onDdosTileSelect) {
+                  onDdosTileSelect(tile)
+                } else if (onTileClick) {
+                  onTileClick(tile)
+                }
+              }}
             >
               <TileComponent
                 tile={tile}
@@ -125,6 +133,8 @@ export default function BoardView({ tiles = [], boardSize, players = [], onTileC
                 isLandscape={isLandscape}
                 edge={getTileEdge(tile.x, tile.y)}
                 boardSize={boardSize}
+                isBlocked={tile.blocked_until_round && tile.blocked_until_round > currentRound}
+                isDdosTarget={ddosMode && tile.type === 'PROPERTY'}
               />
             </div>
           )

@@ -9,6 +9,9 @@ import TurnAnnouncement from '../components/game/TurnAnnouncement'
 import CenterStage from '../components/game/CenterStage'
 import AuctionModal from '../components/game/AuctionModal'
 import PropertyDetailsModal from '../components/game/PropertyDetailsModal'
+import PeekEventsModal from '../components/game/PeekEventsModal'
+import TurnTimer from '../components/game/TurnTimer'
+import RulesModal from '../components/RulesModal'
 
 const CPU_NAMES = new Set(['ROBOCOP', 'CHAD BOT', 'KAREN.EXE', 'STONKS', 'CPU-1', 'CPU-2', 'CPU-3', 'CPU-4', 'CPU-5'])
 
@@ -23,12 +26,18 @@ export default function GamePage() {
   const [announcedPlayer, setAnnouncedPlayer] = useState(null)
   const lastAnnouncedTurnRef = useRef(null)
 
-  // Property Details
   const [selectedTile, setSelectedTile] = useState(null)
 
   const pollingInterval = game?.turn_phase === 'AUCTION' ? 300 : 1500
   const { refetch } = useSastaPolling(gameId, pollingInterval)
-  const handleActionComplete = useCallback(async () => {
+  const handleActionComplete = useCallback(async (actionResult) => {
+    if (actionResult?.message && actionResult.message.includes('Insider Info')) {
+      const match = actionResult.message.match(/Next Events: (.+)/)
+      if (match) {
+        const eventNames = match[1].split(', ').map(name => name.trim())
+        setPeekEvents(eventNames)
+      }
+    }
     await refetch()
   }, [refetch])
 
@@ -42,6 +51,7 @@ export default function GamePage() {
       lastAnnouncedTurnRef.current = currentTurnPlayerId
       setAnnouncedPlayer(currentPlayer)
       setShowTurnAnnouncement(true)
+      setDdosMode(false) // Reset DDOS mode on turn change
       const timeout = setTimeout(() => setShowTurnAnnouncement(false), 1600)
       return () => clearTimeout(timeout)
     }
@@ -65,6 +75,7 @@ export default function GamePage() {
       })
       refetch()
     } catch (err) {
+      // TODO: debug - Bid failed
       console.error('Bid failed:', err)
     }
   }
@@ -78,6 +89,7 @@ export default function GamePage() {
       })
       refetch()
     } catch (err) {
+      // TODO: debug - Resolve failed
       console.error('Resolve failed:', err)
     }
   }
@@ -108,6 +120,9 @@ export default function GamePage() {
   }, [isCpuTurn, gameId, currentTurnPlayerId, turnPhase, refetch])
 
   const myPlayer = game?.players?.find((p) => p.id === playerId)
+  const [ddosMode, setDdosMode] = useState(false)
+  const [peekEvents, setPeekEvents] = useState(null)
+  const [showRules, setShowRules] = useState(false)
 
   const currentTile = currentPlayer && game?.board
     ? game.board[currentPlayer.position] || null
@@ -115,6 +130,25 @@ export default function GamePage() {
   const tileOwner = currentTile?.owner_id
     ? game?.players?.find(p => p.id === currentTile.owner_id)
     : null
+
+  const handleDdosTileSelect = async (tile) => {
+    if (!gameId || !playerId || !tile) return
+    
+    try {
+      const response = await apiClient.post(
+        `/sastadice/games/${gameId}/action?player_id=${playerId}`,
+        { type: 'BLOCK_TILE', payload: { tile_id: tile.id } }
+      )
+      
+      if (response.data.success) {
+        setDdosMode(false)
+        await refetch()
+      }
+    } catch (err) {
+      // TODO: debug - DDoS action failed
+      console.error('DDoS action failed:', err)
+    }
+  }
 
   if (!game) {
     return (
@@ -139,6 +173,12 @@ export default function GamePage() {
             <h1 className="text-lg sm:text-xl font-bold font-zero">SASTADICE</h1>
             <span className="text-[10px] font-data opacity-40 hidden sm:inline">#{gameId?.slice(0, 8)}</span>
           </div>
+          <button
+            onClick={() => setShowRules(true)}
+            className="bg-sasta-accent text-sasta-black px-2 py-1 font-data font-bold text-xs border-brutal-sm hover:bg-sasta-white transition-colors"
+          >
+            📖 RULES
+          </button>
 
           <div className={`border-brutal-sm px-2 py-1 ${isMyTurn ? 'bg-sasta-accent' : 'bg-sasta-white'}`}>
             <div className="flex items-center gap-2">
@@ -160,7 +200,10 @@ export default function GamePage() {
             tiles={game.board || []}
             boardSize={game.board_size || 0}
             players={game.players || []}
-            onTileClick={setSelectedTile}
+            onTileClick={ddosMode ? null : setSelectedTile}
+            ddosMode={ddosMode}
+            onDdosTileSelect={handleDdosTileSelect}
+            currentRound={game.current_round || 0}
           >
             <CenterStage
               lastDiceRoll={game.last_dice_roll}
@@ -176,11 +219,20 @@ export default function GamePage() {
               myPlayerCash={myPlayer?.cash}
               lastEventMessage={game.last_event_message}
               onActionComplete={handleActionComplete}
+              myPlayer={myPlayer}
+              onDdosActivate={setDdosMode}
             />
           </BoardView>
         </div>
 
         <div className="w-full lg:w-56 lg:shrink-0 border-brutal-sm bg-sasta-white shadow-brutal-sm p-2 order-2 lg:max-h-full lg:overflow-auto">
+          {isMyTurn && game.status === 'ACTIVE' && game.turn_start_time && (
+            <TurnTimer
+              turnStartTime={game.turn_start_time}
+              timeoutSeconds={game.settings?.turn_timer_seconds || 30}
+            />
+          )}
+
           <PlayerPanel
             players={game.players || []}
             currentTurnPlayerId={game.current_turn_player_id}
@@ -230,6 +282,13 @@ export default function GamePage() {
         onClose={() => setSelectedTile(null)}
         onRefresh={refetch}
       />
+
+      <PeekEventsModal
+        events={peekEvents}
+        onClose={() => setPeekEvents(null)}
+      />
+
+      <RulesModal isOpen={showRules} onClose={() => setShowRules(false)} />
     </div>
   )
 }

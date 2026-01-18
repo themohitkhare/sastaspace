@@ -8,7 +8,7 @@ const TILE_TYPE_COLORS = {
   GO: '#00ff00',
 }
 
-export default function TileComponent({ tile, players = [], width, height, size = 72, isLandscape = false, edge = null, boardSize = 0, style = {} }) {
+export default function TileComponent({ tile, players = [], width, height, size = 72, isLandscape = false, edge = null, boardSize = 0, style = {}, isBlocked = false, isDdosTarget = false }) {
   const owner = players.find(p => p.id === tile.owner_id)
   const isUnowned = !tile.owner_id
   const isPurchasable = tile.type === 'PROPERTY' && isUnowned
@@ -32,6 +32,25 @@ export default function TileComponent({ tile, players = [], width, height, size 
   const ownerBgColor = owner ? `${owner.color}33` : 'transparent'
   const ownerBorderWidth = owner ? Math.max(2, borderWidth + 1) : borderWidth
 
+  const blockedOverlay = isBlocked ? {
+    backgroundColor: 'rgba(255, 0, 0, 0.4)',
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 5,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    pointerEvents: 'none',
+  } : null
+
+  const ddosHighlight = isDdosTarget ? {
+    boxShadow: '0 0 8px 2px #ff00ff',
+    border: `${ownerBorderWidth + 2}px solid #ff00ff`,
+  } : {}
+
   return (
     <div
       className="tile relative overflow-hidden"
@@ -45,9 +64,23 @@ export default function TileComponent({ tile, players = [], width, height, size 
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
+        ...ddosHighlight,
         ...style,
       }}
     >
+      {isBlocked && (
+        <div style={blockedOverlay}>
+          <div
+            className="font-zero font-bold text-white"
+            style={{
+              fontSize: `${Math.max(6, Math.round(8 * scaleFactor))}px`,
+              textShadow: '1px 1px 2px #000',
+            }}
+          >
+            BLOCKED
+          </div>
+        </div>
+      )}
       {owner && size >= 50 && (
         <div
           className="absolute font-zero font-bold text-white flex items-center justify-center"

@@ -17,6 +17,8 @@ export default function CenterStage({
     myPlayerCash,
     lastEventMessage,
     onActionComplete,
+    myPlayer,
+    onDdosActivate,
 }) {
     return (
         <div className="w-full h-full flex flex-row">
@@ -73,6 +75,8 @@ export default function CenterStage({
                         isMyTurn={isMyTurn}
                         isCpuTurn={isCpuTurn}
                         onActionComplete={onActionComplete}
+                        myPlayer={myPlayer}
+                        onDdosActivate={onDdosActivate}
                     />
                 </div>
 

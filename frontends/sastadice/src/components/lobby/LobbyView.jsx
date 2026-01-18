@@ -4,13 +4,15 @@ import { useGameStore } from '../../store/useGameStore'
 import LaunchKey from './LaunchKey'
 import KeyStatus from './KeyStatus'
 import GameSettingsPanel from './GameSettingsPanel'
+import RulesModal from '../RulesModal'
 
 export default function LobbyView({ onRefresh }) {
   const [playerName, setPlayerName] = useState('')
   const [isJoining, setIsJoining] = useState(false)
   const [isToggling, setIsToggling] = useState(false)
-  const [isUpdatingSettings, setIsUpdatingSettings] = useState(false)
+  const [hasChanges, setHasChanges] = useState(false)
   const [copied, setCopied] = useState(false)
+  const [showRules, setShowRules] = useState(false)
   const [settings, setSettings] = useState({
     win_condition: 'SUDDEN_DEATH',
     round_limit: 30,
@@ -29,27 +31,28 @@ export default function LobbyView({ onRefresh }) {
 
   // Load settings from game state
   useEffect(() => {
-    if (game?.settings && !isUpdatingSettings) {
+    if (game?.settings && !hasChanges) {
       setSettings(game.settings)
     }
-  }, [game?.settings, isUpdatingSettings])
+  }, [game?.settings, hasChanges])
 
-  const handleUpdateSettings = async (newSettings) => {
+  const handleUpdateSettings = (newSettings) => {
     setSettings(newSettings)
-    setIsUpdatingSettings(true)
-    // Send to backend
+    setHasChanges(true)
+  }
+
+  const handleSaveSettings = async () => {
     try {
       await apiClient.patch(`/sastadice/games/${gameId}/settings`, {
         host_id: playerId,
-        settings: newSettings,
+        settings: settings,
       })
+      setHasChanges(false)
       if (onRefresh) await onRefresh()
     } catch (err) {
+      // TODO: debug - Failed to update settings
       console.error('Failed to update settings:', err)
-      // Revert from game state if failed
-      if (game?.settings) setSettings(game.settings)
-    } finally {
-      setIsUpdatingSettings(false)
+      alert('Failed to save settings')
     }
   }
 
@@ -93,10 +96,17 @@ export default function LobbyView({ onRefresh }) {
     if (!playerId) return
     setIsToggling(true)
     try {
+      // Auto-save settings if host has unsaved changes
+      if (isHost && hasChanges) {
+        await handleSaveSettings()
+      }
+
       await apiClient.post(`/sastadice/games/${gameId}/ready/${playerId}`)
-      if (onRefresh) onRefresh()
-    } catch {
-      alert('Failed to toggle ready')
+      if (onRefresh) await onRefresh()
+    } catch (err) {
+      // TODO: debug - Toggle ready failed
+      console.error(err)
+      alert(hasChanges ? 'Failed to save settings and toggle ready' : 'Failed to toggle ready')
     } finally {
       setIsToggling(false)
     }
@@ -126,7 +136,15 @@ export default function LobbyView({ onRefresh }) {
   return (
     <div className="h-screen bg-sasta-white flex flex-col lg:flex-row p-4 gap-4 overflow-hidden">
       <div className="lg:w-[360px] flex flex-col gap-4 shrink-0">
-        <h1 className="text-3xl lg:text-4xl font-bold font-zero">GAME LOBBY</h1>
+        <div className="flex items-center justify-between">
+          <h1 className="text-3xl lg:text-4xl font-bold font-zero">GAME LOBBY</h1>
+          <button
+            onClick={() => setShowRules(true)}
+            className="bg-sasta-accent text-sasta-black px-3 py-1.5 font-data font-bold text-xs border-brutal-sm hover:bg-sasta-white transition-colors"
+          >
+            📖 RULES
+          </button>
+        </div>
 
         {gameId && (
           <div className="bg-sasta-black text-sasta-accent p-4 border-brutal shadow-brutal">
@@ -173,6 +191,8 @@ export default function LobbyView({ onRefresh }) {
             <GameSettingsPanel
               settings={settings}
               onUpdate={handleUpdateSettings}
+              onSave={handleSaveSettings}
+              hasChanges={hasChanges}
               isHost={isHost}
             />
 
@@ -280,6 +300,8 @@ export default function LobbyView({ onRefresh }) {
           )}
         </div>
       </div>
+
+      <RulesModal isOpen={showRules} onClose={() => setShowRules(false)} />
     </div>
   )
 }
