@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import TileComponent from './TileComponent'
 import PlayerToken from './PlayerToken'
 
-export default function BoardView({ tiles = [], boardSize, players = [], children }) {
+export default function BoardView({ tiles = [], boardSize, players = [], onTileClick, children }) {
   const containerRef = useRef(null)
   const wrapperRef = useRef(null)
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 })
@@ -111,8 +111,10 @@ export default function BoardView({ tiles = [], boardSize, players = [], childre
               style={{
                 gridColumn: tile.x + 1,
                 gridRow: tile.y + 1,
+                cursor: 'pointer'
               }}
-              className="w-full h-full relative overflow-hidden"
+              className="w-full h-full relative overflow-hidden hover:z-30 transition-transform active:scale-95"
+              onClick={() => onTileClick && onTileClick(tile)}
             >
               <TileComponent
                 tile={tile}

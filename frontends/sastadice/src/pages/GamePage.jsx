@@ -7,6 +7,8 @@ import PlayerPanel from '../components/game/PlayerPanel'
 import VictoryScreen from '../components/game/VictoryScreen'
 import TurnAnnouncement from '../components/game/TurnAnnouncement'
 import CenterStage from '../components/game/CenterStage'
+import AuctionModal from '../components/game/AuctionModal'
+import PropertyDetailsModal from '../components/game/PropertyDetailsModal'
 
 const CPU_NAMES = new Set(['ROBOCOP', 'CHAD BOT', 'KAREN.EXE', 'STONKS', 'CPU-1', 'CPU-2', 'CPU-3', 'CPU-4', 'CPU-5'])
 
@@ -21,7 +23,11 @@ export default function GamePage() {
   const [announcedPlayer, setAnnouncedPlayer] = useState(null)
   const lastAnnouncedTurnRef = useRef(null)
 
-  const { refetch } = useSastaPolling(gameId, 1500)
+  // Property Details
+  const [selectedTile, setSelectedTile] = useState(null)
+
+  const pollingInterval = game?.turn_phase === 'AUCTION' ? 300 : 1500
+  const { refetch } = useSastaPolling(gameId, pollingInterval)
   const handleActionComplete = useCallback(async () => {
     await refetch()
   }, [refetch])
@@ -50,10 +56,37 @@ export default function GamePage() {
     }
   }, [currentTurnPlayerId])
 
+  const handleBid = async (amount) => {
+    try {
+      await apiClient.post(`/sastadice/games/${gameId}/action`, {
+        type: 'BID',
+        player_id: playerId,
+        payload: { amount }
+      })
+      refetch()
+    } catch (err) {
+      console.error('Bid failed:', err)
+    }
+  }
+
+  const handleAuctionExpire = async () => {
+    try {
+      await apiClient.post(`/sastadice/games/${gameId}/action`, {
+        type: 'RESOLVE_AUCTION',
+        player_id: playerId,
+        payload: {}
+      })
+      refetch()
+    } catch (err) {
+      console.error('Resolve failed:', err)
+    }
+  }
+
   useEffect(() => {
     if (!isCpuTurn || cpuActionRef.current || !gameId) return
 
     const processCpuTurns = async () => {
+      // ... same content ...
       cpuActionRef.current = true
       await new Promise(r => setTimeout(r, 600))
 
@@ -123,7 +156,12 @@ export default function GamePage() {
           className="flex-1 min-h-0 min-w-0 border-brutal-sm bg-sasta-white shadow-brutal-sm overflow-hidden order-1"
           style={{ display: 'flex', flexDirection: 'column', position: 'relative' }}
         >
-          <BoardView tiles={game.board || []} boardSize={game.board_size || 0} players={game.players || []}>
+          <BoardView
+            tiles={game.board || []}
+            boardSize={game.board_size || 0}
+            players={game.players || []}
+            onTileClick={setSelectedTile}
+          >
             <CenterStage
               lastDiceRoll={game.last_dice_roll}
               gameId={gameId}
@@ -174,6 +212,23 @@ export default function GamePage() {
         playerName={announcedPlayer?.name}
         isMyTurn={announcedPlayer?.id === playerId}
         show={showTurnAnnouncement}
+      />
+
+      {game.turn_phase === 'AUCTION' && game.auction_state && (
+        <AuctionModal
+          auctionState={game.auction_state}
+          tiles={game.board}
+          players={game.players}
+          playerId={playerId}
+          onBid={handleBid}
+          onExpire={handleAuctionExpire}
+        />
+      )}
+
+      <PropertyDetailsModal
+        tile={selectedTile}
+        onClose={() => setSelectedTile(null)}
+        onRefresh={refetch}
       />
     </div>
   )
