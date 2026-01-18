@@ -43,11 +43,11 @@ test.describe('SastaDice Comprehensive Game Flow', () => {
         // The LaunchKey has aria-label="Turn key to ready up" or "Key turned - Ready"
         const hostLaunchKey = hostPage.locator('button[aria-label*="key"], button[aria-label*="Key"], .launch-key-container').first();
         const p2LaunchKey = p2Page.locator('button[aria-label*="key"], button[aria-label*="Key"], .launch-key-container').first();
-        
+
         await expect(hostLaunchKey).toBeVisible({ timeout: 5000 });
         await hostLaunchKey.click();
         await hostPage.waitForTimeout(2000); // Wait for state update and polling
-        
+
         await expect(p2LaunchKey).toBeVisible({ timeout: 5000 });
         await p2LaunchKey.click();
         await p2Page.waitForTimeout(2000); // Wait for state update and polling
@@ -69,12 +69,12 @@ test.describe('SastaDice Comprehensive Game Flow', () => {
                 console.log(`Waiting for game start... Host: ${hostUrl.includes('/game/')}, P2: ${p2Url.includes('/game/')}`);
             }
             return bothInGame;
-        }, { 
-            timeout: 30000, 
+        }, {
+            timeout: 30000,
             intervals: [1000, 2000, 3000],
             message: 'Game did not start automatically - may need manual start or more players'
         }).toBeTruthy().catch(() => false);
-        
+
         if (!gameStarted) {
             console.log('⚠️ Game did not auto-start within timeout. Testing what we can from lobby...');
             // Test Rules Modal from lobby instead
@@ -89,7 +89,7 @@ test.describe('SastaDice Comprehensive Game Flow', () => {
             console.log('Test completed (partial - game did not auto-start)');
             return;
         }
-        
+
         console.log('Game Started!');
 
         // --- 2. GAMEPLAY LOOP ---
@@ -163,7 +163,7 @@ test.describe('SastaDice Comprehensive Game Flow', () => {
         console.log('Round 1 Complete');
 
         // --- 3. TEST PHASE 3 FEATURES ---
-        
+
         // Test Rules Modal
         console.log('Testing Rules Modal...');
         const rulesButton = hostPage.getByRole('button', { name: /RULES/i });
@@ -194,13 +194,13 @@ test.describe('SastaDice Comprehensive Game Flow', () => {
         // Test Black Market and Buffs (if we land on it)
         // We'll need to play more turns to potentially land on Black Market
         console.log('Playing additional turns to test Black Market features...');
-        
+
         // Play a few more turns to increase chance of landing on Black Market
         for (let i = 0; i < 3; i++) {
             // Check whose turn it is
             const hostTurn = await hostPage.getByText('YOUR TURN!').isVisible().catch(() => false);
             const p2Turn = await p2Page.getByText('YOUR TURN!').isVisible().catch(() => false);
-            
+
             if (hostTurn) {
                 await playTurn(hostPage, p1Name);
             } else if (p2Turn) {
@@ -217,11 +217,11 @@ test.describe('SastaDice Comprehensive Game Flow', () => {
         if (ddosButton) {
             console.log('DDOS buff available! Testing tile selection...');
             await hostPage.getByRole('button', { name: /USE DDOS|💀/i }).click();
-            
+
             // Should enter DDOS mode - tiles should be clickable
             // Wait for board to be in DDOS mode (tiles highlighted)
             await hostPage.waitForTimeout(1000);
-            
+
             // Try clicking a property tile (if visible)
             // Note: This is tricky in e2e - we'll just verify the button worked
             console.log('DDOS mode activated');
@@ -241,6 +241,45 @@ test.describe('SastaDice Comprehensive Game Flow', () => {
             console.log('PEEK modal not visible (player may not have used PEEK buff yet)');
         }
 
+        // Test Trading System
+        console.log('Testing Trading System...');
+
+        // Host proposes trade to P2
+        // Find P2 in Host's PlayerPanel
+        // P2 Name is 'PlayerTwo'
+        const p2Card = hostPage.locator('.player-panel').locator('div', { hasText: 'PLAYERTWO' });
+        // Click TRADE button (it's small, has text TRADE)
+        const tradeBtn = p2Card.getByRole('button', { name: /TRADE/i });
+        if (await tradeBtn.isVisible({ timeout: 2000 })) {
+            await tradeBtn.click();
+            await expect(hostPage.getByText('TRADE PROPOSAL')).toBeVisible();
+
+            // Offer $10
+            // Input might be tricky, try typing '10' into 'CASH OFFER' input
+            const offerInput = hostPage.locator('input').first(); // Adjust selector if needed
+            await offerInput.fill('10');
+
+            await hostPage.getByRole('button', { name: /PROPOSE TRADE/i }).click();
+
+            // Verify P2 receives alert
+            await expect(p2Page.getByText('Incoming Trade!', { exact: false })).toBeVisible({ timeout: 5000 });
+            console.log('Trade alert received by P2');
+
+            // P2 Accepts
+            await p2Page.getByRole('button', { name: /ACCEPT/i }).click();
+
+            // Verify success (Toast or logs?)
+            // We can check cash updates if we knew cash before.
+            // Or check logs in backend simulation?
+            // Just verifying UI flow is good enough for E2E.
+            console.log('Trade Accepted');
+
+            // Wait for alert to disappear
+            await expect(p2Page.getByText('Incoming Trade!')).not.toBeVisible();
+        } else {
+            console.log('Trade button not visible (maybe self?)');
+        }
+
         await hostContext.close();
         await p2Context.close();
     });
@@ -255,17 +294,17 @@ test.describe('SastaDice Comprehensive Game Flow', () => {
         await hostPage.getByRole('button', { name: /CREATE GAME/i }).click();
         await hostPage.getByPlaceholder('ENTER_NAME').fill('BuffTester');
         await hostPage.getByRole('button', { name: 'ENTER' }).click();
-        
+
         // Wait for launch key to be visible, then click it
         const launchKey = hostPage.locator('button[aria-label*="key"], button[aria-label*="Key"], .launch-key-container').first();
         await expect(launchKey).toBeVisible({ timeout: 10000 });
         await launchKey.click();
-        
+
         // For single player, game needs at least 2 players to start
         // CPU players are auto-added when game starts, so wait for that
         // Or just verify we're in lobby and can access rules
         await hostPage.waitForTimeout(2000);
-        
+
         // Check if we're still in lobby (single player) or in game (auto-started with CPU)
         const currentUrl = hostPage.url();
         if (currentUrl.includes('/game/')) {
@@ -286,10 +325,10 @@ test.describe('SastaDice Comprehensive Game Flow', () => {
         // Play turns until we land on Black Market (or simulate it)
         // For now, we'll just verify the UI elements exist
         console.log('Verifying Black Market UI elements...');
-        
+
         // Check if we can see the game board
         await expect(hostPage.getByText(/SASTADICE/i)).toBeVisible({ timeout: 10000 });
-        
+
         // Rules modal should be accessible
         const rulesBtn = hostPage.getByRole('button', { name: /RULES/i });
         if (await rulesBtn.isVisible({ timeout: 5000 }).catch(() => false)) {
