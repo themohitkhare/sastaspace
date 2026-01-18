@@ -19,7 +19,7 @@ export default function BoardView({ tiles = [], boardSize, players = [], childre
         const rect = wrapper.getBoundingClientRect()
         const availableWidth = Math.max(0, rect.width - 32)
         const availableHeight = Math.max(0, rect.height - 32)
-        
+
         setBoardDimensions({
           width: availableWidth,
           height: availableHeight
@@ -67,13 +67,13 @@ export default function BoardView({ tiles = [], boardSize, players = [], childre
   const tileHeight = dimensions.height > 0 ? dimensions.height / boardSize : 0
   const tileSize = (tileWidth + tileHeight) / 2
   const isLandscape = boardDimensions.width > boardDimensions.height
-  
+
   if (!boardSize || boardSize < 2) {
     return <div className="text-center p-8 font-zero animate-pulse">LOADING BOARD...</div>
   }
 
   const isOnPerimeter = (x, y) => x === 0 || x === boardSize - 1 || y === 0 || y === boardSize - 1
-  
+
   const getTileEdge = (x, y) => {
     if (y === 0) return 'top'
     if (y === boardSize - 1) return 'bottom'
@@ -83,7 +83,7 @@ export default function BoardView({ tiles = [], boardSize, players = [], childre
   }
 
   return (
-    <div 
+    <div
       ref={wrapperRef}
       className="board-wrapper w-full h-full flex justify-center items-center p-4 overflow-hidden"
       style={{ overflow: 'hidden' }}
@@ -106,17 +106,17 @@ export default function BoardView({ tiles = [], boardSize, players = [], childre
         {tiles.map((tile) => {
           if (!isOnPerimeter(tile.x, tile.y)) return null
           return (
-            <div 
-              key={tile.id} 
-              style={{ 
-                gridColumn: tile.x + 1, 
+            <div
+              key={tile.id}
+              style={{
+                gridColumn: tile.x + 1,
                 gridRow: tile.y + 1,
               }}
               className="w-full h-full relative overflow-hidden"
             >
-              <TileComponent 
-                tile={tile} 
-                players={players} 
+              <TileComponent
+                tile={tile}
+                players={players}
                 width={tileWidth}
                 height={tileHeight}
                 size={tileSize}
@@ -134,8 +134,26 @@ export default function BoardView({ tiles = [], boardSize, players = [], childre
 
           const playersOnSameTile = players.filter(p => p.position === player.position)
           const playerIndex = playersOnSameTile.findIndex(p => p.id === player.id)
-          const tokenOffset = Math.floor(tileSize / 4)
-          
+          const totalOnTile = playersOnSameTile.length
+
+          const baseOffset = Math.floor(tileSize / 5)
+          let offsetX = 0, offsetY = 0
+
+          if (totalOnTile === 1) {
+            offsetX = 0
+            offsetY = 0
+          } else if (totalOnTile === 2) {
+            offsetX = playerIndex === 0 ? -baseOffset : baseOffset
+            offsetY = 0
+          } else if (totalOnTile === 3) {
+            if (playerIndex === 0) { offsetX = 0; offsetY = -baseOffset }
+            else if (playerIndex === 1) { offsetX = -baseOffset; offsetY = baseOffset }
+            else { offsetX = baseOffset; offsetY = baseOffset }
+          } else {
+            offsetX = (playerIndex % 2 === 0 ? -1 : 1) * baseOffset
+            offsetY = (playerIndex < 2 ? -1 : 1) * baseOffset
+          }
+
           return (
             <div
               key={player.id}
@@ -143,20 +161,21 @@ export default function BoardView({ tiles = [], boardSize, players = [], childre
                 gridColumn: tile.x + 1,
                 gridRow: tile.y + 1,
                 pointerEvents: 'none',
-                zIndex: 20
+                zIndex: 20 + playerIndex
               }}
               className="relative w-full h-full"
             >
-               <PlayerToken
-                  player={player}
-                  tile={tile}
-                  boardSize={boardSize}
-                  tileWidth={tileWidth}
-                  tileHeight={tileHeight}
-                  tileSize={tileSize}
-                  offsetX={(playerIndex % 2) * tokenOffset - tokenOffset / 2}
-                  offsetY={Math.floor(playerIndex / 2) * tokenOffset - tokenOffset / 2}
-                />
+              <PlayerToken
+                player={player}
+                tile={tile}
+                boardSize={boardSize}
+                tileWidth={tileWidth}
+                tileHeight={tileHeight}
+                tileSize={tileSize}
+                totalOnTile={totalOnTile}
+                offsetX={offsetX}
+                offsetY={offsetY}
+              />
             </div>
           )
         })}
@@ -164,9 +183,9 @@ export default function BoardView({ tiles = [], boardSize, players = [], childre
         {boardSize > 2 && (
           <div
             className="board-center bg-sasta-white border-brutal flex flex-col items-center justify-center p-2 overflow-hidden z-10"
-            style={{ 
-              gridColumn: `2 / ${boardSize}`, 
-              gridRow: `2 / ${boardSize}` 
+            style={{
+              gridColumn: `2 / ${boardSize}`,
+              gridRow: `2 / ${boardSize}`
             }}
           >
             {children}

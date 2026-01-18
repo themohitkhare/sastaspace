@@ -8,8 +8,6 @@ import LobbyView from '../components/lobby/LobbyView'
 
 export default function LobbyPage() {
   const gameId = useGameStore((s) => s.gameId)
-
-  // Start polling for lobby updates
   const { refetch } = useSastaPolling(gameId, 2000)
 
   return (

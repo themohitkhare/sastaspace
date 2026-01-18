@@ -10,11 +10,8 @@ function ProtectedRoute({ children }) {
   const { gameId: urlGameId } = useParams()
   const storeGameId = useGameStore((s) => s.gameId)
   const setGameId = useGameStore((s) => s.setGameId)
-  
-  // Use gameId from URL if available, otherwise fall back to store
   const gameId = urlGameId || storeGameId
   
-  // If URL has gameId but store doesn't, set it in store
   useEffect(() => {
     if (urlGameId && urlGameId !== storeGameId) {
       setGameId(urlGameId)
@@ -36,11 +33,8 @@ function GameRoute() {
   const reset = useGameStore((s) => s.reset)
   const [isRestoring, setIsRestoring] = useState(false)
   const [restoreError, setRestoreError] = useState(null)
-
-  // Use gameId from URL if available, otherwise fall back to store
   const gameId = urlGameId || storeGameId
 
-  // Set gameId in store from URL if needed
   useEffect(() => {
     if (urlGameId && urlGameId !== storeGameId) {
       setGameId(urlGameId)
@@ -60,12 +54,9 @@ function GameRoute() {
           const restoredGame = res.data.game
           setGame(restoredGame, res.data.version)
           
-          // Validate that stored playerId belongs to this game
-          // If playerId exists but player is not in the game, clear it (spectator mode)
           if (playerId) {
             const playerExists = restoredGame.players?.some((p) => p.id === playerId)
             if (!playerExists) {
-              // PlayerId doesn't belong to this game - clear it to enable spectator mode
               setPlayerId(null)
             }
           }
@@ -142,7 +133,6 @@ function App() {
             </ProtectedRoute>
           }
         />
-        {/* Legacy routes for backwards compatibility - redirect to new format */}
         <Route
           path="/lobby"
           element={<Navigate to="/" replace />}
