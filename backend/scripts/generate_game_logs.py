@@ -3,14 +3,14 @@
 import sys
 import random
 import json
-import duckdb
+import asyncio
 from pathlib import Path
 from datetime import datetime
+from motor.motor_asyncio import AsyncIOMotorClient
 
 # Add parent directory to path to import app modules
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from app.modules.sastadice.models import init_tables
 from app.modules.sastadice.services.game_service import GameService
 from app.modules.sastadice.schemas import TileType
 
@@ -54,7 +54,7 @@ def get_board_structure(game):
     return board_info
 
 
-def simulate_and_log_game(service: GameService, game_num: int, cpu_count: int, output_dir: Path) -> dict:
+async def simulate_and_log_game(service: GameService, game_num: int, cpu_count: int, output_dir: Path) -> dict:
     """Simulate a single game and generate detailed log."""
     log_data = {
         "game_number": game_num,
@@ -71,7 +71,7 @@ def simulate_and_log_game(service: GameService, game_num: int, cpu_count: int, o
     
     try:
         # Create game
-        game = service.create_game(cpu_count=cpu_count)
+        game = await service.create_game(cpu_count=cpu_count)
         log_data["game_id"] = game.id
         
         # Capture initial game structure
@@ -95,16 +95,16 @@ def simulate_and_log_game(service: GameService, game_num: int, cpu_count: int, o
         }
         
         # Start game
-        game = service.start_game(game.id, force=True)
+        game = await service.start_game(game.id, force=True)
         
         # Capture board after start
         log_data["game_structure"]["board_after_start"] = get_board_structure(game)
         
         # Simulate game
-        result = service.simulate_cpu_game(game.id, max_turns=200)
+        result = await service.simulate_cpu_game(game.id, max_turns=200)
         
         # Get final game state
-        final_game = service.get_game(game.id)
+        final_game = await service.get_game(game.id)
         
         log_data["status"] = result.get("status")
         log_data["turns_played"] = result.get("turns_played", 0)
@@ -191,7 +191,7 @@ def simulate_and_log_game(service: GameService, game_num: int, cpu_count: int, o
         return log_data
 
 
-def main():
+async def main():
     """Generate 10 detailed game logs."""
     print("="*60)
     print("SASTADICE GAME LOG GENERATOR")
@@ -203,12 +203,12 @@ def main():
     output_dir.mkdir(parents=True, exist_ok=True)
     print(f"\nOutput directory: {output_dir}")
     
-    conn = duckdb.connect(":memory:")
-    cursor = conn.cursor()
-    init_tables(cursor)
+    # Connect to MongoDB (use localhost for scripts)
+    client = AsyncIOMotorClient("mongodb://localhost:27017")
+    database = client.test_game_logs
     
     try:
-        service = GameService(cursor)
+        service = GameService(database)
         
         results = []
         # Use different seeds for variety
@@ -218,7 +218,7 @@ def main():
         for i in range(10):
             random.seed(seeds[i])
             cpu_count = cpu_counts[i]
-            result = simulate_and_log_game(service, i + 1, cpu_count, output_dir)
+            result = await simulate_and_log_game(service, i + 1, cpu_count, output_dir)
             results.append(result)
         
         # Summary
@@ -262,9 +262,8 @@ def main():
         return 0 if successful == len(results) and total_errors == 0 else 1
         
     finally:
-        cursor.close()
-        conn.close()
+        client.close()
 
 
 if __name__ == "__main__":
-    exit(main())
+    exit(asyncio.run(main()))

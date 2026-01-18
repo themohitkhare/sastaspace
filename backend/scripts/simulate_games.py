@@ -2,29 +2,29 @@
 """Script to simulate multiple games with CPU players to verify game stability."""
 import sys
 import random
-import duckdb
+import asyncio
 from pathlib import Path
+from motor.motor_asyncio import AsyncIOMotorClient
 
 # Add parent directory to path to import app modules
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from app.modules.sastadice.models import init_tables
 from app.modules.sastadice.services.game_service import GameService
 
 
-def simulate_single_game(service: GameService, game_num: int, cpu_count: int) -> dict:
+async def simulate_single_game(service: GameService, game_num: int, cpu_count: int) -> dict:
     """Simulate a single game to completion."""
     print(f"\n{'='*60}")
     print(f"Game {game_num}: Starting with {cpu_count} CPU players")
     print(f"{'='*60}")
     
     try:
-        game = service.create_game(cpu_count=cpu_count)
+        game = await service.create_game(cpu_count=cpu_count)
         print(f"✓ Game created: {game.id}")
         print(f"  Players: {[p.name for p in game.players]}")
         
         print(f"✓ Starting simulation...")
-        result = service.simulate_cpu_game(game.id, max_turns=200)
+        result = await service.simulate_cpu_game(game.id, max_turns=200)
         
         errors = []
         if result.get("status") not in ["ACTIVE", "FINISHED"]:
@@ -73,26 +73,26 @@ def simulate_single_game(service: GameService, game_num: int, cpu_count: int) ->
         }
 
 
-def main():
+async def main():
     """Run simulation of 10 games."""
     print("="*60)
     print("SASTADICE GAME SIMULATION")
     print("Simulating 10 games with 2-4 random CPU players each")
     print("="*60)
     
-    conn = duckdb.connect(":memory:")
-    cursor = conn.cursor()
-    init_tables(cursor)
+    # Connect to MongoDB (use localhost for scripts)
+    client = AsyncIOMotorClient("mongodb://localhost:27017")
+    database = client.test_simulations
     
     try:
-        service = GameService(cursor)
+        service = GameService(database)
         
         results = []
         random.seed(42)  # For reproducibility
         
         for i in range(10):
             cpu_count = random.randint(2, 4)
-            result = simulate_single_game(service, i + 1, cpu_count)
+            result = await simulate_single_game(service, i + 1, cpu_count)
             results.append(result)
         
         # Summary
@@ -129,9 +129,8 @@ def main():
         return 0 if successful == len(results) and total_errors == 0 else 1
         
     finally:
-        cursor.close()
-        conn.close()
+        client.close()
 
 
 if __name__ == "__main__":
-    exit(main())
+    exit(asyncio.run(main()))
