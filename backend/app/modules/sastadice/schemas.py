@@ -60,7 +60,6 @@ class PlayerCreate(BaseModel):
     name: str
 
 
-# Player colors for visual distinction
 PLAYER_COLORS = ["#FF6B6B", "#4ECDC4", "#45B7D1", "#96CEB4", "#FFEAA7"]
 
 
@@ -73,7 +72,8 @@ class Player(PlayerCreate):
     color: str = "#888888"
     properties: list[str] = Field(default_factory=list)
     submitted_tiles: list[TileCreate] = Field(default_factory=list)
-    ready: bool = False  # Launch key turned
+    ready: bool = False
+    is_bankrupt: bool = False
 
 
 class PendingDecision(BaseModel):
@@ -96,13 +96,11 @@ class GameSession(BaseModel):
     players: list[Player] = Field(default_factory=list)
     board: list[Tile] = Field(default_factory=list)
     board_size: int = 0
-    # Dynamic economy
     starting_cash: int = 0
     go_bonus: int = 0
-    # Turn state
-    last_dice_roll: Optional[dict] = None  # {dice1, dice2, total, is_doubles}
+    last_dice_roll: Optional[dict] = None
     pending_decision: Optional[PendingDecision] = None
-    last_event_message: Optional[str] = None  # For displaying Sasta Events
+    last_event_message: Optional[str] = None
 
 
 class GameStateResponse(BaseModel):
