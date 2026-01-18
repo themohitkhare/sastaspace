@@ -16,7 +16,6 @@ export default function ActionPanel({
   const performAction = async (actionType, payload = {}) => {
     if (!gameId || !playerId) return
 
-    // Validate action is allowed in current phase before sending
     if (actionType === 'ROLL_DICE' && turnPhase !== 'PRE_ROLL') {
       setError('Cannot roll dice - not in PRE_ROLL phase. Refreshing game state...')
       if (onActionComplete) {
@@ -48,19 +47,14 @@ export default function ActionPanel({
         const errorMsg = response.data.message || 'Action failed'
         setError(errorMsg)
         
-        // If it's a turn phase error, refresh game state and clear error after a delay
         if (errorMsg.includes('turn phase') || errorMsg.includes('Cannot roll dice')) {
           if (onActionComplete) {
-            // Refresh game state and wait for it to complete
             await onActionComplete(response.data)
-            // Clear error after state refresh
             setTimeout(() => setError(null), 1000)
           }
         }
       } else {
-        // Clear any previous errors on success
         setError(null)
-        // On successful action, wait for state refresh before re-enabling buttons
         if (onActionComplete) {
           await onActionComplete(response.data)
         }
@@ -74,7 +68,6 @@ export default function ActionPanel({
           : err.message
       setError(errorText)
       
-      // If it's a turn phase error, refresh game state
       if (errorText.includes('turn phase') || errorText.includes('Cannot roll dice')) {
         if (onActionComplete) {
           await onActionComplete({})
@@ -91,13 +84,11 @@ export default function ActionPanel({
   const handlePassProperty = () => performAction('PASS_PROPERTY')
   const handleEndTurn = () => performAction('END_TURN')
 
-  // Determine which button/content to show
   const showRollDice = turnPhase === 'PRE_ROLL' && isMyTurn
   const showDecision = turnPhase === 'DECISION' && isMyTurn && pendingDecision?.type === 'BUY'
   const showEndTurn = turnPhase === 'POST_TURN' && isMyTurn
   const showWaiting = !isMyTurn
 
-  // Keyboard shortcuts
   useEffect(() => {
     if (!playerId || isLoading) return
 
