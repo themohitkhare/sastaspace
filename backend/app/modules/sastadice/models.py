@@ -18,7 +18,7 @@ from app.modules.sastadice.schemas import (
 class GameSessionDocument(BaseModel):
     """MongoDB document model for game sessions."""
     
-    _id: str = Field(alias="_id")
+    id: str = Field(alias="_id")
     status: GameStatus
     turn_phase: TurnPhase
     current_turn_player_id: Optional[str] = None
@@ -32,9 +32,7 @@ class GameSessionDocument(BaseModel):
     last_event_message: Optional[str] = None
     created_at: Optional[datetime] = None
 
-    class Config:
-        populate_by_name = True
-        arbitrary_types_allowed = True
+    model_config = {"populate_by_name": True, "arbitrary_types_allowed": True}
 
     def to_game_session(self, players: list[Player], board: list[Tile]) -> GameSession:
         """Convert document to GameSession schema."""
@@ -43,7 +41,7 @@ class GameSessionDocument(BaseModel):
             pending_decision = PendingDecision(**self.pending_decision)
         
         return GameSession(
-            id=self._id,
+            id=self.id,
             status=self.status,
             turn_phase=self.turn_phase,
             current_turn_player_id=self.current_turn_player_id,
@@ -66,7 +64,7 @@ class GameSessionDocument(BaseModel):
             pending_decision_dict = game.pending_decision.model_dump()
         
         return cls(
-            _id=game.id,
+            id=game.id,
             status=game.status,
             turn_phase=game.turn_phase,
             current_turn_player_id=game.current_turn_player_id,
@@ -90,7 +88,7 @@ class GameSessionDocument(BaseModel):
 class PlayerDocument(BaseModel):
     """MongoDB document model for players."""
     
-    _id: str = Field(alias="_id")
+    id: str = Field(alias="_id")
     game_id: str
     name: str
     cash: int = 0
@@ -101,13 +99,12 @@ class PlayerDocument(BaseModel):
     is_bankrupt: bool = False
     created_at: Optional[datetime] = None
 
-    class Config:
-        populate_by_name = True
+    model_config = {"populate_by_name": True}
 
     def to_player(self, submitted_tiles: list[TileCreate]) -> Player:
         """Convert document to Player schema."""
         return Player(
-            id=self._id,
+            id=self.id,
             name=self.name,
             cash=self.cash,
             position=self.position,
@@ -122,7 +119,7 @@ class PlayerDocument(BaseModel):
     def from_player(cls, player: Player, game_id: str) -> "PlayerDocument":
         """Create document from Player schema."""
         return cls(
-            _id=player.id,
+            id=player.id,
             game_id=game_id,
             name=player.name,
             cash=player.cash,
@@ -142,7 +139,7 @@ class PlayerDocument(BaseModel):
 class TileDocument(BaseModel):
     """MongoDB document model for board tiles."""
     
-    _id: str = Field(alias="_id")
+    id: str = Field(alias="_id")
     game_id: str
     owner_id: Optional[str] = None
     type: TileType
@@ -154,13 +151,12 @@ class TileDocument(BaseModel):
     price: int = 0
     rent: int = 0
 
-    class Config:
-        populate_by_name = True
+    model_config = {"populate_by_name": True}
 
     def to_tile(self) -> Tile:
         """Convert document to Tile schema."""
         return Tile(
-            id=self._id,
+            id=self.id,
             owner_id=self.owner_id,
             type=self.type,
             name=self.name,
@@ -176,7 +172,7 @@ class TileDocument(BaseModel):
     def from_tile(cls, tile: Tile, game_id: str) -> "TileDocument":
         """Create document from Tile schema."""
         return cls(
-            _id=tile.id,
+            id=tile.id,
             game_id=game_id,
             owner_id=tile.owner_id,
             type=tile.type,
@@ -192,7 +188,6 @@ class TileDocument(BaseModel):
     def to_dict(self) -> dict:
         """Convert to dictionary for MongoDB operations."""
         data = self.model_dump(by_alias=True, exclude_none=True)
-        # Convert enum to string for MongoDB
         data["type"] = self.type.value
         return data
 
@@ -200,15 +195,14 @@ class TileDocument(BaseModel):
 class SubmittedTileDocument(BaseModel):
     """MongoDB document model for submitted tiles."""
     
-    _id: str = Field(alias="_id")
+    id: str = Field(alias="_id")
     game_id: str
     player_id: str
     type: TileType
     name: str
     effect_config: dict = Field(default_factory=dict)
 
-    class Config:
-        populate_by_name = True
+    model_config = {"populate_by_name": True}
 
     def to_tile_create(self) -> TileCreate:
         """Convert document to TileCreate schema."""
@@ -222,7 +216,7 @@ class SubmittedTileDocument(BaseModel):
     def from_tile_create(cls, tile: TileCreate, game_id: str, player_id: str, tile_id: str) -> "SubmittedTileDocument":
         """Create document from TileCreate schema."""
         return cls(
-            _id=tile_id,
+            id=tile_id,
             game_id=game_id,
             player_id=player_id,
             type=tile.type,
@@ -233,6 +227,5 @@ class SubmittedTileDocument(BaseModel):
     def to_dict(self) -> dict:
         """Convert to dictionary for MongoDB operations."""
         data = self.model_dump(by_alias=True, exclude_none=True)
-        # Convert enum to string for MongoDB
         data["type"] = self.type.value
         return data

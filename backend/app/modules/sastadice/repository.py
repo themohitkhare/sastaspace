@@ -1,5 +1,4 @@
 """Game repository for MongoDB operations."""
-import json
 from typing import Optional
 import uuid
 from datetime import datetime
@@ -65,8 +64,8 @@ class GameRepository(BaseRepository[GameSession]):
         """Update game session."""
         game_doc = GameSessionDocument.from_game_session(entity)
         update_data = game_doc.to_dict()
-        # Remove _id from update data
         update_data.pop("_id", None)
+        update_data.pop("version", None)
         
         await self.database.game_sessions.update_one(
             {"_id": entity.id},
@@ -95,7 +94,7 @@ class GameRepository(BaseRepository[GameSession]):
         color = PLAYER_COLORS[count % len(PLAYER_COLORS)]
         
         player_doc = PlayerDocument(
-            _id=player_id,
+            id=player_id,
             game_id=game_id,
             name=player_create.name,
             cash=0,
@@ -156,19 +155,16 @@ class GameRepository(BaseRepository[GameSession]):
 
     async def remove_player(self, game_id: str, player_id: str) -> bool:
         """Remove a player from a game. Returns True if player was removed."""
-        # Delete submitted tiles
         await self.database.submitted_tiles.delete_many({
             "game_id": game_id,
             "player_id": player_id
         })
         
-        # Delete player
         result = await self.database.players.delete_one({
             "_id": player_id,
             "game_id": game_id
         })
         
-        # Bump version
         await self.database.game_sessions.update_one(
             {"_id": game_id},
             {"$inc": {"version": 1}}
@@ -180,13 +176,11 @@ class GameRepository(BaseRepository[GameSession]):
         self, game_id: str, player_id: str, tiles: list[TileCreate]
     ) -> None:
         """Submit tiles for a player."""
-        # Delete existing submitted tiles
         await self.database.submitted_tiles.delete_many({
             "game_id": game_id,
             "player_id": player_id
         })
 
-        # Insert new tiles
         for tile in tiles:
             tile_id = str(uuid.uuid4())
             tile_doc = SubmittedTileDocument.from_tile_create(tile, game_id, player_id, tile_id)
@@ -194,10 +188,8 @@ class GameRepository(BaseRepository[GameSession]):
 
     async def save_board(self, game_id: str, tiles: list[Tile]) -> None:
         """Save board tiles to database."""
-        # Delete existing tiles
         await self.database.tiles.delete_many({"game_id": game_id})
 
-        # Insert new tiles
         for tile in tiles:
             tile_doc = TileDocument.from_tile(tile, game_id)
             await self.database.tiles.insert_one(tile_doc.to_dict())
@@ -262,7 +254,7 @@ class GameRepository(BaseRepository[GameSession]):
         
         async for player_doc in cursor:
             player_document = PlayerDocument(**player_doc)
-            submitted_tiles = await self._get_submitted_tiles(game_id, player_document._id)
+            submitted_tiles = await self._get_submitted_tiles(game_id, player_document.id)
             players.append(player_document.to_player(submitted_tiles))
 
         return players
@@ -278,7 +270,6 @@ class GameRepository(BaseRepository[GameSession]):
         
         tiles = []
         async for tile_doc in cursor:
-            # Convert type string back to enum
             tile_doc["type"] = TileType(tile_doc["type"])
             tile_document = SubmittedTileDocument(**tile_doc)
             tiles.append(tile_document.to_tile_create())
@@ -291,7 +282,6 @@ class GameRepository(BaseRepository[GameSession]):
         
         tiles = []
         async for tile_doc in cursor:
-            # Convert type string back to enum
             tile_doc["type"] = TileType(tile_doc["type"])
             tile_document = TileDocument(**tile_doc)
             tiles.append(tile_document.to_tile())

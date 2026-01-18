@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    import duckdb
+    from motor.motor_asyncio import AsyncIOMotorDatabase
 
 from app.db.session import get_db
 
@@ -11,16 +11,16 @@ router = APIRouter()
 
 
 @router.get("/health")
-def health_check(db = Depends(get_db)) -> dict[str, str]:  # type: ignore
+async def health_check(db = Depends(get_db)) -> dict[str, str]:  # type: ignore
     """
     Health check endpoint that verifies the database connection.
     
     Returns:
         dict: Status message confirming database connectivity
     """
-    # Simple query to verify DB connection
-    result = db.execute("SELECT 1 as status").fetchone()
-    
-    if result and result[0] == 1:
+    # Simple query to verify MongoDB connection
+    try:
+        await db.command("ping")
         return {"status": "healthy", "database": "connected"}
-    return {"status": "unhealthy", "database": "disconnected"}
+    except Exception:
+        return {"status": "unhealthy", "database": "disconnected"}
