@@ -1,8 +1,9 @@
-export default function PlayerPanel({ 
-  players = [], 
-  currentTurnPlayerId, 
+export default function PlayerPanel({
+  players = [],
+  currentTurnPlayerId,
   currentPlayerId,
-  tiles = []
+  tiles = [],
+  onTradeClick
 }) {
   return (
     <div className="player-panel w-full">
@@ -16,9 +17,8 @@ export default function PlayerPanel({
           return (
             <div
               key={player.id}
-              className={`border-brutal-sm p-2 ${
-                isCurrentTurn ? 'bg-sasta-accent' : 'bg-sasta-white'
-              }`}
+              className={`border-brutal-sm p-2 ${isCurrentTurn ? 'bg-sasta-accent' : 'bg-sasta-white'
+                }`}
             >
               <div className="flex items-center gap-2">
                 <div
@@ -50,6 +50,14 @@ export default function PlayerPanel({
                   <div className="font-zero font-bold text-sm text-sasta-black">
                     ${player.cash.toLocaleString()}
                   </div>
+                  {!isMe && onTradeClick && (
+                    <button
+                      onClick={() => onTradeClick(player)}
+                      className="mt-1 block ml-auto bg-sasta-accent border border-black px-1.5 py-0.5 text-[9px] font-bold font-zero shadow-brutal-sm hover:shadow-none hover:translate-x-0.5 hover:translate-y-0.5 transition-all"
+                    >
+                      TRADE
+                    </button>
+                  )}
                 </div>
               </div>
 
