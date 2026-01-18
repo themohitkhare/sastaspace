@@ -8,6 +8,7 @@ export default {
     extend: {
       fontFamily: {
         'zero': ['Courier New', 'Fira Code', 'monospace'],
+        'data': ['JetBrains Mono', 'Roboto Mono', 'monospace'],
       },
       colors: {
         'sasta-black': '#000000',
