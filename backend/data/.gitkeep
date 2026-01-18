@@ -1,2 +1,2 @@
-# This directory contains DuckDB data files
+# This directory contains MongoDB data files
 # All .db files are git-ignored

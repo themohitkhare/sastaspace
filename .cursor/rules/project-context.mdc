@@ -13,13 +13,12 @@ description: This is a new rule
   - Infrastructure: Docker Compose, Traefik (Reverse Proxy for subdomains).
 
 # Coding Standards & "Agentic" Rules
-1. **DuckDB Pattern:** Treat DuckDB as a SINGLETON. Never open a connection inside a route. Use a global dependency `get_db` that yields a cursor from a persistent connection pool.
-2. **Type Safety:** All Python code must be fully type-hinted. Use Pydantic models for all API inputs/outputs.
-3. **Monorepo Structure:** - Backend logic goes in `/backend`.
+1. **Type Safety:** All Python code must be fully type-hinted. Use Pydantic models for all API inputs/outputs.
+2. **Monorepo Structure:** - Backend logic goes in `/backend`.
    - Frontend projects go in `/frontends/<project_name>`.
    - Shared logic (if any) goes in `/shared`.
-4. **Configuration:** Use `pydantic-settings` for all environment variables. Never hardcode secrets.
-5. **Simplicity:** If a solution requires a message broker (Redis/RabbitMQ) or complex cloud services, STOP and propose a simpler file-based or in-memory alternative first.
+3. **Configuration:** Use `pydantic-settings` for all environment variables. Never hardcode secrets.
+4. **Simplicity:** If a solution requires a message broker (Redis/RabbitMQ) or complex cloud services, STOP and propose a simpler file-based or in-memory alternative first.
 
 # Subdomain Strategy
 - We use Traefik labels in `docker-compose.yml` to route traffic.
