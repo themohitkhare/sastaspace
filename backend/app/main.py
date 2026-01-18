@@ -4,8 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import settings
 from app.api.v1.router import api_router
-from app.db.session import get_db_context
-from app.modules.sastadice.models import init_tables
+from app.db.session import _get_db_manager
 
 
 app = FastAPI(
@@ -14,24 +13,35 @@ app = FastAPI(
     debug=settings.debug,
 )
 
-# CORS middleware (configure as needed)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Configure appropriately for production
+    allow_origins=[
+        "http://localhost:9001",
+        "http://127.0.0.1:9001",
+        "http://192.168.0.38:9001",
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Include API routers
 app.include_router(api_router, prefix="/api/v1")
 
 
 @app.on_event("startup")
-def startup_event():
-    """Initialize database tables on application startup."""
-    with get_db_context() as db_cursor:
-        init_tables(db_cursor)
+async def startup_event():
+    """Initialize MongoDB connection on application startup."""
+    manager = _get_db_manager()
+    await manager.initialize()
+
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    """Close MongoDB connection on application shutdown."""
+    manager = _get_db_manager()
+    await manager.close()
 
 
 @app.get("/")
