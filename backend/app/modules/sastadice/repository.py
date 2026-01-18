@@ -263,6 +263,13 @@ class GameRepository(BaseRepository[GameSession]):
             {"$set": {"is_bankrupt": is_bankrupt}}
         )
 
+    async def update_player_buff(self, player_id: str, buff: Optional[str]) -> None:
+        """Update player's active buff."""
+        await self.database.players.update_one(
+            {"_id": player_id},
+            {"$set": {"active_buff": buff}}
+        )
+
     async def _get_players(self, game_id: str) -> list[Player]:
         """Get all players for a game ordered by join time."""
         cursor = self.database.players.find({"game_id": game_id}).sort("created_at", 1)

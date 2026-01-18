@@ -40,6 +40,9 @@ class GameSessionDocument(BaseModel):
     rent_multiplier: float = 1.0
     blocked_tiles: list[str] = Field(default_factory=list)
     settings: Optional[dict] = None
+    turn_start_time: float = 0.0
+    event_deck: list[int] = Field(default_factory=list)
+    used_event_deck: list[int] = Field(default_factory=list)
 
     model_config = {"populate_by_name": True, "arbitrary_types_allowed": True}
 
@@ -76,6 +79,9 @@ class GameSessionDocument(BaseModel):
             rent_multiplier=self.rent_multiplier,
             blocked_tiles=self.blocked_tiles,
             settings=settings,
+            turn_start_time=self.turn_start_time,
+            event_deck=getattr(self, 'event_deck', []),
+            used_event_deck=getattr(self, 'used_event_deck', []),
         )
 
     @classmethod
@@ -113,6 +119,9 @@ class GameSessionDocument(BaseModel):
             rent_multiplier=game.rent_multiplier,
             blocked_tiles=game.blocked_tiles,
             settings=settings_dict,
+            turn_start_time=getattr(game, 'turn_start_time', 0.0),
+            event_deck=getattr(game, 'event_deck', []),
+            used_event_deck=getattr(game, 'used_event_deck', []),
         )
 
     def to_dict(self) -> dict:
@@ -199,6 +208,7 @@ class TileDocument(BaseModel):
     rent: int = 0
     color: Optional[str] = None
     upgrade_level: int = 0
+    blocked_until_round: Optional[int] = None
 
     model_config = {"populate_by_name": True}
 
@@ -217,6 +227,7 @@ class TileDocument(BaseModel):
             rent=self.rent,
             color=self.color,
             upgrade_level=self.upgrade_level,
+            blocked_until_round=self.blocked_until_round,
         )
 
     @classmethod
@@ -236,6 +247,7 @@ class TileDocument(BaseModel):
             rent=tile.rent,
             color=tile.color,
             upgrade_level=tile.upgrade_level,
+            blocked_until_round=tile.blocked_until_round,
         )
 
     def to_dict(self) -> dict:

@@ -105,6 +105,7 @@ class Tile(TileCreate):
     rent: int = 0
     color: Optional[str] = None
     upgrade_level: int = 0
+    blocked_until_round: Optional[int] = None
 
 
 class PlayerCreate(BaseModel):
@@ -165,6 +166,10 @@ class GameSession(BaseModel):
     rent_multiplier: float = 1.0
     blocked_tiles: list[str] = Field(default_factory=list)
     settings: GameSettings = Field(default_factory=GameSettings)
+    event_deck: list[int] = Field(default_factory=list)
+    used_event_deck: list[int] = Field(default_factory=list)
+    turn_start_time: float = 0.0
+    active_trade_offers: list["TradeOffer"] = Field(default_factory=list)
 
 
 class GameStateResponse(BaseModel):
@@ -200,7 +205,13 @@ class ActionType(str, Enum):
     BID = "BID"
     RESOLVE_AUCTION = "RESOLVE_AUCTION"
     UPGRADE = "UPGRADE"
-
+    BUY_BUFF = "BUY_BUFF"
+    PEEK_EVENTS = "PEEK_EVENTS"  # Optional if used as action
+    BLOCK_TILE = "BLOCK_TILE"
+    PROPOSE_TRADE = "PROPOSE_TRADE"
+    ACCEPT_TRADE = "ACCEPT_TRADE"
+    DECLINE_TRADE = "DECLINE_TRADE"
+    CANCEL_TRADE = "CANCEL_TRADE"
 
 
 class AuctionStatus(str, Enum):
@@ -219,6 +230,18 @@ class AuctionState(BaseModel):
     status: AuctionStatus = AuctionStatus.ACTIVE
     min_bid_increment: int = 10
     start_time: float = 0.0
+
+
+class TradeOffer(BaseModel):
+    """Schema for a trade offer."""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    initiator_id: str
+    target_id: str
+    offering_cash: int = 0
+    offering_properties: list[str] = Field(default_factory=list)
+    requesting_cash: int = 0
+    requesting_properties: list[str] = Field(default_factory=list)
+    created_at: float = 0.0
 
 
 class SastaEvent(BaseModel):
