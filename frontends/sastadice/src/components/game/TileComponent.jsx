@@ -18,27 +18,29 @@ export default function TileComponent({ tile, players = [], width, height, size 
   const tileHeight = height || size
   const baseTileSize = 72
   const scaleFactor = size / baseTileSize
-  
+
   const typeFontSize = Math.max(4, Math.min(10, Math.round(7 * scaleFactor)))
   const nameFontSize = Math.max(5, Math.min(12, Math.round(8 * scaleFactor)))
   const detailFontSize = Math.max(4, Math.min(10, Math.round(7 * scaleFactor)))
   const rentFontSize = Math.max(3, Math.min(8, Math.round(6 * scaleFactor)))
   const borderWidth = Math.max(1, Math.min(4, Math.round(3 * scaleFactor)))
   const padding = Math.max(1, Math.min(4, Math.round(2 * scaleFactor)))
-  
+
   const maxNameLength = size < 50 ? 4 : size < 70 ? 6 : size < 100 ? 8 : 12
   const contentWidth = tileWidth - (borderWidth * 2)
   const contentHeight = tileHeight - (borderWidth * 2)
+  const ownerBgColor = owner ? `${owner.color}33` : 'transparent'
+  const ownerBorderWidth = owner ? Math.max(2, borderWidth + 1) : borderWidth
 
   return (
     <div
-      className="tile relative bg-sasta-white overflow-hidden"
+      className="tile relative overflow-hidden"
       style={{
         width: `${tileWidth}px`,
         height: `${tileHeight}px`,
-        border: `${borderWidth}px solid ${owner ? owner.color : '#000000'}`,
+        border: `${ownerBorderWidth}px solid ${owner ? owner.color : '#000000'}`,
         borderStyle: isUnowned ? 'dashed' : 'solid',
-        opacity: isUnowned ? 0.8 : 1,
+        backgroundColor: owner ? ownerBgColor : '#FFFFFF',
         boxSizing: 'border-box',
         display: 'flex',
         alignItems: 'center',
@@ -46,8 +48,26 @@ export default function TileComponent({ tile, players = [], width, height, size 
         ...style,
       }}
     >
+      {owner && size >= 50 && (
+        <div
+          className="absolute font-zero font-bold text-white flex items-center justify-center"
+          style={{
+            top: '2px',
+            right: '2px',
+            width: `${Math.max(10, Math.round(14 * scaleFactor))}px`,
+            height: `${Math.max(10, Math.round(14 * scaleFactor))}px`,
+            backgroundColor: owner.color,
+            border: '1px solid #000',
+            fontSize: `${Math.max(6, Math.round(8 * scaleFactor))}px`,
+            zIndex: 10,
+          }}
+        >
+          {owner.name?.charAt(0)?.toUpperCase()}
+        </div>
+      )}
+
       <div
-        className="tile-content relative bg-sasta-white"
+        className="tile-content relative"
         style={{
           width: `${contentWidth}px`,
           height: `${contentHeight}px`,
@@ -59,27 +79,27 @@ export default function TileComponent({ tile, players = [], width, height, size 
           boxSizing: 'border-box',
         }}
       >
-        <div 
+        <div
           className="w-full text-center font-zero font-bold text-sasta-black"
-          style={{ 
-            backgroundColor: accentColor, 
-            fontSize: `${typeFontSize}px`, 
-            lineHeight: 1.2, 
-            padding: `${Math.max(1, Math.floor(padding / 2))}px 0` 
+          style={{
+            backgroundColor: accentColor,
+            fontSize: `${typeFontSize}px`,
+            lineHeight: 1.2,
+            padding: `${Math.max(1, Math.floor(padding / 2))}px 0`
           }}
         >
           {tile.type === 'CHANCE' ? 'SASTA' : tile.type}
         </div>
 
         <div className="tile-name flex-1 flex items-center justify-center px-0.5 overflow-hidden w-full">
-          <span 
+          <span
             className="font-zero font-bold text-center leading-tight text-sasta-black"
-            style={{ 
-              fontSize: `${nameFontSize}px`, 
-              wordBreak: 'break-word', 
-              display: '-webkit-box', 
-              WebkitLineClamp: size < 60 ? 1 : 2, 
-              WebkitBoxOrient: 'vertical', 
+            style={{
+              fontSize: `${nameFontSize}px`,
+              wordBreak: 'break-word',
+              display: '-webkit-box',
+              WebkitLineClamp: size < 60 ? 1 : 2,
+              WebkitBoxOrient: 'vertical',
               overflow: 'hidden',
               lineHeight: 1.1
             }}
@@ -90,7 +110,7 @@ export default function TileComponent({ tile, players = [], width, height, size 
 
         <div className="w-full">
           {isPurchasable && tile.price > 0 && (
-            <div 
+            <div
               className="bg-sasta-black text-sasta-accent text-center font-zero font-bold"
               style={{ fontSize: `${detailFontSize}px`, padding: `${Math.max(1, Math.floor(padding / 2))}px 0` }}
             >
@@ -101,10 +121,10 @@ export default function TileComponent({ tile, players = [], width, height, size 
           {owner && (
             <div
               className="text-center font-zero font-bold text-sasta-white"
-              style={{ 
-                backgroundColor: owner.color, 
-                fontSize: `${detailFontSize}px`, 
-                padding: `${Math.max(1, Math.floor(padding / 2))}px 0` 
+              style={{
+                backgroundColor: owner.color,
+                fontSize: `${detailFontSize}px`,
+                padding: `${Math.max(1, Math.floor(padding / 2))}px 0`
               }}
             >
               {owner.name.slice(0, maxNameLength).toUpperCase()}
@@ -112,7 +132,7 @@ export default function TileComponent({ tile, players = [], width, height, size 
           )}
 
           {owner && tile.rent > 0 && size >= 60 && (
-            <div 
+            <div
               className="text-center font-zero text-sasta-black/60"
               style={{ fontSize: `${rentFontSize}px` }}
             >
@@ -121,7 +141,7 @@ export default function TileComponent({ tile, players = [], width, height, size 
           )}
 
           {tile.type === 'GO' && (
-            <div 
+            <div
               className="bg-sasta-accent text-sasta-black text-center font-zero font-bold"
               style={{ fontSize: `${detailFontSize}px`, padding: `${Math.max(1, Math.floor(padding / 2))}px 0` }}
             >

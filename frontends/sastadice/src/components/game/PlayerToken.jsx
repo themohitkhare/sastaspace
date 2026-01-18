@@ -1,14 +1,15 @@
 const DEFAULT_TILE_SIZE = 72
 
-export default function PlayerToken({ 
-  player, 
-  tile, 
+export default function PlayerToken({
+  player,
+  tile,
   boardSize,
   tileWidth,
   tileHeight,
   tileSize = DEFAULT_TILE_SIZE,
-  offsetX = 0, 
-  offsetY = 0 
+  totalOnTile = 1,
+  offsetX = 0,
+  offsetY = 0
 }) {
   if (!tile) return null
 
@@ -18,13 +19,14 @@ export default function PlayerToken({
   const playerColor = player.color || '#000000'
   const actualTileWidth = tileWidth || tileSize
   const actualTileHeight = tileHeight || tileSize
-  const tokenSize = Math.max(12, Math.min(40, Math.floor(tileSize / 3)))
-  const fontSize = Math.max(6, Math.min(16, Math.floor(tokenSize / 2.4)))
-  const borderWidth = Math.max(1, Math.min(3, Math.floor(tokenSize / 20)))
+  const sizeFactor = totalOnTile > 2 ? 0.8 : totalOnTile > 1 ? 0.9 : 1
+  const tokenSize = Math.max(12, Math.min(40, Math.floor(tileSize / 2.5 * sizeFactor)))
+  const fontSize = Math.max(6, Math.min(16, Math.floor(tokenSize / 2.2)))
+  const borderWidth = Math.max(2, Math.min(3, Math.floor(tokenSize / 14)))
 
   return (
     <div
-      className="player-token absolute font-zero font-bold text-sasta-white"
+      className="player-token absolute font-data font-bold text-white"
       style={{
         gridColumn: tile.x + 1,
         gridRow: tile.y + 1,
@@ -32,11 +34,14 @@ export default function PlayerToken({
         backgroundColor: playerColor,
         width: `${tokenSize}px`,
         height: `${tokenSize}px`,
+        borderRadius: '50%',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
         fontSize: `${fontSize}px`,
-        border: `${borderWidth}px solid #000`,
+        border: `${borderWidth}px solid #FFF`,
+        boxShadow: '0 2px 4px rgba(0,0,0,0.4)',
+        outline: '1px solid #000',
         zIndex: 20,
         pointerEvents: 'none',
       }}
@@ -48,3 +53,4 @@ export default function PlayerToken({
 }
 
 export { DEFAULT_TILE_SIZE as TILE_SIZE }
+
