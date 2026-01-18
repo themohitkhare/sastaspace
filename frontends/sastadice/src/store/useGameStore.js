@@ -1,13 +1,9 @@
-/**
- * Zustand store for game state management
- */
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 
 export const useGameStore = create(
   persist(
     (set, get) => ({
-      // State
       gameId: null,
       playerId: null,
       game: null,
@@ -15,14 +11,12 @@ export const useGameStore = create(
       isLoading: false,
       error: null,
 
-      // Actions
       setGame: (game, version) => set({ game, version, error: null }),
       setGameId: (gameId) => set({ gameId }),
       setPlayerId: (playerId) => set({ playerId }),
       setLoading: (isLoading) => set({ isLoading }),
       setError: (error) => set({ error }),
 
-      // Computed selectors (as functions for backwards compatibility)
       isMyTurn: () => {
         const { game, playerId } = get()
         return game?.current_turn_player_id === playerId
