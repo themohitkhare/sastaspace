@@ -1,19 +1,57 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { apiClient } from '../../api/apiClient'
 import { useGameStore } from '../../store/useGameStore'
 import LaunchKey from './LaunchKey'
 import KeyStatus from './KeyStatus'
+import GameSettingsPanel from './GameSettingsPanel'
 
 export default function LobbyView({ onRefresh }) {
   const [playerName, setPlayerName] = useState('')
   const [isJoining, setIsJoining] = useState(false)
   const [isToggling, setIsToggling] = useState(false)
+  const [isUpdatingSettings, setIsUpdatingSettings] = useState(false)
   const [copied, setCopied] = useState(false)
+  const [settings, setSettings] = useState({
+    win_condition: 'SUDDEN_DEATH',
+    round_limit: 30,
+    chaos_level: 'NORMAL',
+    doubles_give_extra_turn: true,
+    enable_stimulus: true,
+    enable_black_market: true,
+    enable_auctions: true,
+    target_cash: 10000,
+  })
   const gameId = useGameStore((s) => s.gameId)
   const game = useGameStore((s) => s.game)
   const playerId = useGameStore((s) => s.playerId)
   const setPlayerId = useGameStore((s) => s.setPlayerId)
   const setGame = useGameStore((s) => s.setGame)
+
+  // Load settings from game state
+  useEffect(() => {
+    if (game?.settings && !isUpdatingSettings) {
+      setSettings(game.settings)
+    }
+  }, [game?.settings, isUpdatingSettings])
+
+  const handleUpdateSettings = async (newSettings) => {
+    setSettings(newSettings)
+    setIsUpdatingSettings(true)
+    // Send to backend
+    try {
+      await apiClient.patch(`/sastadice/games/${gameId}/settings`, {
+        host_id: playerId,
+        settings: newSettings,
+      })
+      if (onRefresh) await onRefresh()
+    } catch (err) {
+      console.error('Failed to update settings:', err)
+      // Revert from game state if failed
+      if (game?.settings) setSettings(game.settings)
+    } finally {
+      setIsUpdatingSettings(false)
+    }
+  }
 
   const handleCopyGameId = async () => {
     if (!gameId) return
@@ -131,34 +169,42 @@ export default function LobbyView({ onRefresh }) {
         )}
 
         {hasJoined && (
-          <div className="bg-zinc-900 p-4 border-brutal shadow-brutal flex-1 flex flex-col">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="font-data text-sm font-bold text-zinc-300">LAUNCH CONTROL</h3>
-              <div className="font-data text-xs text-zinc-500">
-                {readyCount}/{totalPlayers} ARMED
-              </div>
-            </div>
-
-            <LaunchKey
-              isReady={myPlayer?.ready || false}
-              isLoading={isToggling}
-              onToggle={handleToggleReady}
-              playerName={myPlayer?.name}
-              playerColor={myPlayer?.color}
+          <>
+            <GameSettingsPanel
+              settings={settings}
+              onUpdate={handleUpdateSettings}
+              isHost={isHost}
             />
 
-            {allReady && (
-              <div className="mt-3 p-3 bg-green-500/20 border border-green-500 animate-pulse">
-                <p className="font-data font-bold text-center text-green-400 text-sm">
-                  🚀 ALL ARMED - LAUNCHING...
-                </p>
+            <div className="bg-zinc-900 p-4 border-brutal shadow-brutal flex-1 flex flex-col">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="font-data text-sm font-bold text-zinc-300">LAUNCH CONTROL</h3>
+                <div className="font-data text-xs text-zinc-500">
+                  {readyCount}/{totalPlayers} ARMED
+                </div>
               </div>
-            )}
 
-            <p className="text-xs font-data mt-auto pt-3 text-zinc-500 text-center">
-              {totalPlayers === 1 ? 'CPU JOINS ON LAUNCH' : `${totalPlayers} OPERATORS`}
-            </p>
-          </div>
+              <LaunchKey
+                isReady={myPlayer?.ready || false}
+                isLoading={isToggling}
+                onToggle={handleToggleReady}
+                playerName={myPlayer?.name}
+                playerColor={myPlayer?.color}
+              />
+
+              {allReady && (
+                <div className="mt-3 p-3 bg-green-500/20 border border-green-500 animate-pulse">
+                  <p className="font-data font-bold text-center text-green-400 text-sm">
+                    🚀 ALL ARMED - LAUNCHING...
+                  </p>
+                </div>
+              )}
+
+              <p className="text-xs font-data mt-auto pt-3 text-zinc-500 text-center">
+                {totalPlayers === 1 ? 'CPU JOINS ON LAUNCH' : `${totalPlayers} OPERATORS`}
+              </p>
+            </div>
+          </>
         )}
       </div>
 
