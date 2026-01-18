@@ -1,7 +1,7 @@
 """MongoDB document models for SastaDice."""
 from pydantic import BaseModel, Field
 from typing import Optional
-from datetime import datetime
+from datetime import datetime, timezone
 
 from app.modules.sastadice.schemas import (
     GameSession,
@@ -98,7 +98,7 @@ class GameSessionDocument(BaseModel):
             auction_state_dict = game.auction_state.model_dump()
         
         return cls(
-            id=game.id,
+            _id=game.id,
             status=game.status,
             turn_phase=game.turn_phase,
             current_turn_player_id=game.current_turn_player_id,
@@ -110,7 +110,7 @@ class GameSessionDocument(BaseModel):
             last_dice_roll=game.last_dice_roll,
             pending_decision=pending_decision_dict,
             last_event_message=game.last_event_message,
-            created_at=datetime.utcnow(),
+            created_at=datetime.now(timezone.utc),
             # Phase 1 fields
             current_round=game.current_round,
             max_rounds=game.max_rounds,
@@ -171,7 +171,7 @@ class PlayerDocument(BaseModel):
     def from_player(cls, player: Player, game_id: str) -> "PlayerDocument":
         """Create document from Player schema."""
         return cls(
-            id=player.id,
+            _id=player.id,
             game_id=game_id,
             name=player.name,
             cash=player.cash,
@@ -180,7 +180,7 @@ class PlayerDocument(BaseModel):
             properties=player.properties,
             ready=player.ready,
             is_bankrupt=player.is_bankrupt,
-            created_at=datetime.utcnow(),
+            created_at=datetime.now(timezone.utc),
             in_jail=player.in_jail,
             jail_turns=player.jail_turns,
             consecutive_doubles=player.consecutive_doubles,
@@ -234,7 +234,7 @@ class TileDocument(BaseModel):
     def from_tile(cls, tile: Tile, game_id: str) -> "TileDocument":
         """Create document from Tile schema."""
         return cls(
-            id=tile.id,
+            _id=tile.id,
             game_id=game_id,
             owner_id=tile.owner_id,
             type=tile.type,
@@ -281,7 +281,7 @@ class SubmittedTileDocument(BaseModel):
     def from_tile_create(cls, tile: TileCreate, game_id: str, player_id: str, tile_id: str) -> "SubmittedTileDocument":
         """Create document from TileCreate schema."""
         return cls(
-            id=tile_id,
+            _id=tile_id,
             game_id=game_id,
             player_id=player_id,
             type=tile.type,
