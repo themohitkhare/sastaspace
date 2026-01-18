@@ -1,6 +1,3 @@
-/**
- * Polling hook with version diffing to avoid unnecessary re-renders
- */
 import { useEffect, useRef, useCallback } from 'react'
 import { useGameStore } from '../store/useGameStore'
 import { apiClient } from '../api/apiClient'
@@ -14,7 +11,6 @@ export function useSastaPolling(gameId, intervalMs = 2000) {
     if (!gameId) return
 
     try {
-      // Get current version from store on each poll to avoid stale closures
       const currentVersion = useGameStore.getState().version
 
       const res = await apiClient.get(`/sastadice/games/${gameId}/state`, {
@@ -22,11 +18,9 @@ export function useSastaPolling(gameId, intervalMs = 2000) {
         validateStatus: (status) => status === 200 || status === 304,
       })
 
-      // 200 = new data, update state
       if (res.status === 200 && res.data) {
         setGame(res.data.game, res.data.version)
       }
-      // 304 = no changes, skip update
     } catch (err) {
       if (err.response?.status !== 304) {
         setError(err.message)
@@ -37,9 +31,8 @@ export function useSastaPolling(gameId, intervalMs = 2000) {
   useEffect(() => {
     if (!gameId) return
 
-    // Start polling
     intervalRef.current = setInterval(fetchGameState, intervalMs)
-    fetchGameState() // Initial fetch immediately
+    fetchGameState()
 
     return () => {
       if (intervalRef.current) {
@@ -48,6 +41,5 @@ export function useSastaPolling(gameId, intervalMs = 2000) {
     }
   }, [gameId, intervalMs, fetchGameState])
 
-  // Return refetch function for manual refresh
   return { refetch: fetchGameState }
 }
