@@ -60,10 +60,5 @@ exclude_lines = [
     "if TYPE_CHECKING:",
 ]
 
-[tool.ty]
-python_version = "3.11"
-exclude = [
-    "**/__pycache__/**",
-    "**/tests/**",
-    "**/.pytest_cache/**",
-]
+
+
