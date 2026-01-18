@@ -1,5 +1,5 @@
 [Unit]
-Description=SastaSpace Backend API with DuckDB
+Description=SastaSpace Backend API with MongoDB
 After=network.target
 
 [Service]

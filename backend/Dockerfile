@@ -13,7 +13,7 @@ COPY pyproject.toml ./
 RUN uv pip install --system \
     "fastapi>=0.104.0" \
     "uvicorn[standard]>=0.24.0" \
-    "duckdb>=0.9.0" \
+    "motor>=3.3.0" \
     "pydantic>=2.5.0" \
     "pydantic-settings>=2.1.0" \
     "jinja2>=3.1.0" \
