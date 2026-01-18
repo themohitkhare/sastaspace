@@ -83,7 +83,17 @@ async def test_skip_buy_event_does_not_stuck_game(db_database):
             pass_result = await service.perform_action(game.id, player.id, ActionType.PASS_PROPERTY, {})
             assert pass_result.success, "Should be able to pass on decision"
             game = await service.get_game(game.id)
-            assert game.turn_phase == TurnPhase.POST_TURN, "After passing, should be in POST_TURN"
+            # May go to AUCTION phase if auctions enabled, or POST_TURN if disabled
+            assert game.turn_phase in [TurnPhase.POST_TURN, TurnPhase.AUCTION], \
+                f"After passing, should be in POST_TURN or AUCTION, got {game.turn_phase}"
+            
+            # If in AUCTION phase, resolve it
+            if game.turn_phase == TurnPhase.AUCTION:
+                resolve_result = await service.perform_action(game.id, player.id, ActionType.RESOLVE_AUCTION, {})
+                assert resolve_result.success, "Should be able to resolve auction"
+                game = await service.get_game(game.id)
+            
+            assert game.turn_phase == TurnPhase.POST_TURN, "After passing/resolving, should be in POST_TURN"
         
         if game.turn_phase == TurnPhase.POST_TURN:
             end_result = await service.perform_action(game.id, player.id, ActionType.END_TURN, {})
