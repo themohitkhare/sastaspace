@@ -24,7 +24,7 @@ describe('ActionPanel', () => {
         isMyTurn={true}
       />
     )
-    expect(screen.getByText('> ROLL DICE')).toBeInTheDocument()
+    expect(screen.getByText('> ROLL DICE [SPACE]')).toBeInTheDocument()
   })
 
   it('shows waiting message when not my turn', () => {
@@ -48,7 +48,7 @@ describe('ActionPanel', () => {
         isMyTurn={true}
       />
     )
-    expect(screen.getByText('> END TURN')).toBeInTheDocument()
+    expect(screen.getByText('> END TURN [SPACE]')).toBeInTheDocument()
   })
 
   it('shows buy/pass buttons in DECISION phase with BUY pending', () => {
@@ -62,8 +62,8 @@ describe('ActionPanel', () => {
       />
     )
     expect(screen.getByText('BUY FOR $200?')).toBeInTheDocument()
-    expect(screen.getByText('BUY $200')).toBeInTheDocument()
-    expect(screen.getByText('PASS')).toBeInTheDocument()
+    expect(screen.getByText('BUY $200 [Y]')).toBeInTheDocument()
+    expect(screen.getByText('PASS [N]')).toBeInTheDocument()
   })
 
   it('displays last event message', () => {
@@ -93,7 +93,7 @@ describe('ActionPanel', () => {
       />
     )
 
-    fireEvent.click(screen.getByText('> ROLL DICE'))
+    fireEvent.click(screen.getByText('> ROLL DICE [SPACE]'))
 
     await waitFor(() => {
       expect(apiClient.post).toHaveBeenCalledWith(
@@ -116,7 +116,7 @@ describe('ActionPanel', () => {
       />
     )
 
-    fireEvent.click(screen.getByText('> ROLL DICE'))
+    fireEvent.click(screen.getByText('> ROLL DICE [SPACE]'))
 
     await waitFor(() => {
       expect(screen.getByText('Invalid move')).toBeInTheDocument()
@@ -137,7 +137,7 @@ describe('ActionPanel', () => {
       />
     )
 
-    fireEvent.click(screen.getByText('> ROLL DICE'))
+    fireEvent.click(screen.getByText('> ROLL DICE [SPACE]'))
 
     await waitFor(() => {
       expect(screen.getByText('Something went wrong')).toBeInTheDocument()
@@ -158,7 +158,7 @@ describe('ActionPanel', () => {
       />
     )
 
-    fireEvent.click(screen.getByText('> ROLL DICE'))
+    fireEvent.click(screen.getByText('> ROLL DICE [SPACE]'))
 
     await waitFor(() => {
       expect(screen.getByText('Error 1, Error 2')).toBeInTheDocument()
@@ -177,7 +177,7 @@ describe('ActionPanel', () => {
       />
     )
 
-    fireEvent.click(screen.getByText('> ROLL DICE'))
+    fireEvent.click(screen.getByText('> ROLL DICE [SPACE]'))
 
     await waitFor(() => {
       expect(screen.getByText('Network Error')).toBeInTheDocument()
@@ -193,7 +193,7 @@ describe('ActionPanel', () => {
       />
     )
 
-    fireEvent.click(screen.getByText('> ROLL DICE'))
+    fireEvent.click(screen.getByText('> ROLL DICE [SPACE]'))
 
     await waitFor(() => {
       expect(apiClient.post).not.toHaveBeenCalled()
@@ -209,7 +209,7 @@ describe('ActionPanel', () => {
       />
     )
 
-    fireEvent.click(screen.getByText('> ROLL DICE'))
+    fireEvent.click(screen.getByText('> ROLL DICE [SPACE]'))
 
     await waitFor(() => {
       expect(apiClient.post).not.toHaveBeenCalled()
@@ -229,7 +229,7 @@ describe('ActionPanel', () => {
       />
     )
 
-    fireEvent.click(screen.getByText('BUY $200'))
+    fireEvent.click(screen.getByText('BUY $200 [Y]'))
 
     await waitFor(() => {
       expect(apiClient.post).toHaveBeenCalledWith(
@@ -252,7 +252,7 @@ describe('ActionPanel', () => {
       />
     )
 
-    fireEvent.click(screen.getByText('PASS'))
+    fireEvent.click(screen.getByText('PASS [N]'))
 
     await waitFor(() => {
       expect(apiClient.post).toHaveBeenCalledWith(
@@ -274,7 +274,7 @@ describe('ActionPanel', () => {
       />
     )
 
-    fireEvent.click(screen.getByText('> END TURN'))
+    fireEvent.click(screen.getByText('> END TURN [SPACE]'))
 
     await waitFor(() => {
       expect(apiClient.post).toHaveBeenCalledWith(
