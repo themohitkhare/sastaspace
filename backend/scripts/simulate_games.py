@@ -39,6 +39,12 @@ class SimulationStats:
         self.buffs_bought = 0
         self.doubles_rolled = 0
         self.stimulus_checks = 0
+        # Phase 3 features
+        self.ddos_buffs_bought = 0
+        self.ddos_tiles_blocked = 0
+        self.peek_buffs_bought = 0
+        self.turn_timeouts = 0
+        self.blocked_tiles_cleared = 0
         
         # Config tracking
         self.configs_tested: Dict[str, int] = {}
@@ -194,10 +200,24 @@ async def simulate_single_game(
             if len(active) <= 1:
                 stats.last_standing_wins += 1
         
+        # Check for blocked tiles cleared (check final game state)
+        try:
+            final_game = await service.get_game(game.id)
+            # Count tiles that were blocked but are now cleared (blocked_until_round <= current_round)
+            cleared_count = sum(1 for t in final_game.board if t.blocked_until_round and t.blocked_until_round <= final_game.current_round)
+            # If round advanced and we had blocked tiles, they should be cleared
+            if final_game.current_round > 1 and cleared_count > 0:
+                stats.blocked_tiles_cleared += cleared_count
+        except Exception as e:
+            if verbose:
+                print(f"  Note: Could not check blocked tiles: {e}")
+            pass
+        
         # Analyze turn log
         for turn in result.get("turn_log", []):
             for action in turn.get("actions", []):
                 action_result = action.get("result", "")
+                action_type = action.get("action", "")
                 if "DOUBLES" in action_result.upper():
                     stats.doubles_rolled += 1
                 if "STIMULUS" in action_result.upper():
@@ -206,8 +226,17 @@ async def simulate_single_game(
                     stats.glitch_teleports += 1
                 if "JAIL" in action_result.upper() or "SERVER DOWNTIME" in action_result.upper():
                     stats.jail_visits += 1
-                if "BUY_BUFF" in action.get("action", ""):
+                if "BUY_BUFF" in action_type:
                     stats.buffs_bought += 1
+                    # Track specific buffs
+                    if "DDOS" in action_result.upper() or "DDoS" in action_result:
+                        stats.ddos_buffs_bought += 1
+                    if "PEEK" in action_result.upper() or "INSIDER INFO" in action_result.upper():
+                        stats.peek_buffs_bought += 1
+                if "BLOCK_TILE" in action_type or "DDOS ATTACK" in action_result.upper():
+                    stats.ddos_tiles_blocked += 1
+                if "TIMEOUT" in action_result.upper() or "FORCED" in action_result.upper():
+                    stats.turn_timeouts += 1
         
         result["success"] = result.get("status") in ["ACTIVE", "FINISHED"]
         
@@ -341,6 +370,13 @@ async def main():
         print(f"  Glitch teleports: {stats.glitch_teleports}")
         print(f"  Buffs bought: {stats.buffs_bought}")
         print(f"  Stimulus checks: {stats.stimulus_checks}")
+        
+        print(f"\n🎯 PHASE 3 FEATURES")
+        print(f"  DDOS buffs bought: {stats.ddos_buffs_bought}")
+        print(f"  Tiles blocked (DDOS): {stats.ddos_tiles_blocked}")
+        print(f"  PEEK buffs bought: {stats.peek_buffs_bought}")
+        print(f"  Turn timeouts: {stats.turn_timeouts}")
+        print(f"  Blocked tiles cleared: {stats.blocked_tiles_cleared}")
         
         print(f"\n📋 CONFIGURATIONS TESTED")
         for config, count in stats.configs_tested.items():
