@@ -1,7 +1,8 @@
-"""Game repository for DuckDB operations."""
+"""Game repository for MongoDB operations."""
 import json
 from typing import Optional
 import uuid
+from datetime import datetime
 
 from app.core.db_repo import BaseRepository
 from app.modules.sastadice.schemas import (
@@ -16,82 +17,41 @@ from app.modules.sastadice.schemas import (
     TileType,
     PLAYER_COLORS,
 )
+from app.modules.sastadice.models import (
+    GameSessionDocument,
+    PlayerDocument,
+    TileDocument,
+    SubmittedTileDocument,
+)
 
 
 class GameRepository(BaseRepository[GameSession]):
     """Repository for game session operations."""
 
-    def get_by_id(self, id: str) -> Optional[GameSession]:
+    async def get_by_id(self, id: str) -> Optional[GameSession]:
         """Get game session by ID."""
-        result = self.cursor.execute(
-            """SELECT id, status, turn_phase, current_turn_player_id, host_id, board_size, 
-                      starting_cash, go_bonus, last_dice_roll, pending_decision, last_event_message
-               FROM sd_game_sessions WHERE id = ?""",
-            [id],
-        ).fetchone()
-
-        if not result:
+        game_doc = await self.database.game_sessions.find_one({"_id": id})
+        
+        if not game_doc:
             return None
 
-        (game_id, status, turn_phase, current_turn_player_id, host_id, board_size,
-         starting_cash, go_bonus, last_dice_roll_json, pending_decision_json,
-         last_event_message) = result
+        game_document = GameSessionDocument(**game_doc)
+        players = await self._get_players(id)
+        board = await self._get_board_tiles(id)
 
-        players = self._get_players(game_id)
-        board = self._get_board_tiles(game_id)
-        last_dice_roll = json.loads(last_dice_roll_json) if last_dice_roll_json else None
-        pending_decision_data = json.loads(pending_decision_json) if pending_decision_json else None
-        pending_decision = PendingDecision(**pending_decision_data) if pending_decision_data else None
+        return game_document.to_game_session(players, board)
 
-        return GameSession(
-            id=game_id,
-            status=GameStatus(status),
-            turn_phase=TurnPhase(turn_phase) if turn_phase else TurnPhase.PRE_ROLL,
-            current_turn_player_id=current_turn_player_id,
-            host_id=host_id,
-            players=players,
-            board=board,
-            board_size=board_size,
-            starting_cash=starting_cash or 0,
-            go_bonus=go_bonus or 0,
-            last_dice_roll=last_dice_roll,
-            pending_decision=pending_decision,
-            last_event_message=last_event_message,
-        )
-
-    def create(self, entity: GameSession) -> GameSession:
+    async def create(self, entity: GameSession) -> GameSession:
         """Create a new game session."""
         game_id = entity.id if entity.id else str(uuid.uuid4())
-        pending_decision_json = (
-            json.dumps(entity.pending_decision.model_dump())
-            if entity.pending_decision else None
-        )
-        self.cursor.execute(
-            """
-            INSERT INTO sd_game_sessions 
-            (id, status, turn_phase, current_turn_player_id, host_id, board_size, version,
-             starting_cash, go_bonus, last_dice_roll, pending_decision, last_event_message)
-            VALUES (?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?, ?)
-            """,
-            [
-                game_id,
-                entity.status.value,
-                entity.turn_phase.value,
-                entity.current_turn_player_id,
-                entity.host_id,
-                entity.board_size,
-                entity.starting_cash,
-                entity.go_bonus,
-                json.dumps(entity.last_dice_roll) if entity.last_dice_roll else None,
-                pending_decision_json,
-                entity.last_event_message,
-            ],
-        )
-
         entity.id = game_id
+        
+        game_doc = GameSessionDocument.from_game_session(entity)
+        await self.database.game_sessions.insert_one(game_doc.to_dict())
+        
         return entity
 
-    def create_game(self) -> GameSession:
+    async def create_game(self) -> GameSession:
         """Create a new empty game session."""
         game = GameSession(
             id=str(uuid.uuid4()),
@@ -99,70 +59,57 @@ class GameRepository(BaseRepository[GameSession]):
             turn_phase=TurnPhase.PRE_ROLL,
             board_size=0,
         )
-        return self.create(game)
+        return await self.create(game)
 
-    def update(self, entity: GameSession) -> GameSession:
+    async def update(self, entity: GameSession) -> GameSession:
         """Update game session."""
-        pending_decision_json = (
-            json.dumps(entity.pending_decision.model_dump())
-            if entity.pending_decision else None
-        )
-        self.cursor.execute(
-            """
-            UPDATE sd_game_sessions 
-            SET status = ?, turn_phase = ?, current_turn_player_id = ?, host_id = ?,
-                board_size = ?, starting_cash = ?, go_bonus = ?, last_dice_roll = ?, 
-                pending_decision = ?, last_event_message = ?, version = version + 1
-            WHERE id = ?
-            """,
-            [
-                entity.status.value,
-                entity.turn_phase.value,
-                entity.current_turn_player_id,
-                entity.host_id,
-                entity.board_size,
-                entity.starting_cash,
-                entity.go_bonus,
-                json.dumps(entity.last_dice_roll) if entity.last_dice_roll else None,
-                pending_decision_json,
-                entity.last_event_message,
-                entity.id,
-            ],
+        game_doc = GameSessionDocument.from_game_session(entity)
+        update_data = game_doc.to_dict()
+        # Remove _id from update data
+        update_data.pop("_id", None)
+        
+        await self.database.game_sessions.update_one(
+            {"_id": entity.id},
+            {"$set": update_data, "$inc": {"version": 1}}
         )
         return entity
 
-    def delete(self, id: str) -> bool:
+    async def delete(self, id: str) -> bool:
         """Delete game session by ID."""
-        self.cursor.execute("DELETE FROM sd_game_sessions WHERE id = ?", [id])
-        return self.cursor.rowcount > 0
+        result = await self.database.game_sessions.delete_one({"_id": id})
+        return result.deleted_count > 0
 
-    def get_version(self, game_id: str) -> int:
+    async def get_version(self, game_id: str) -> int:
         """Get current version number for polling optimization."""
-        result = self.cursor.execute(
-            "SELECT version FROM sd_game_sessions WHERE id = ?", [game_id]
-        ).fetchone()
-        return result[0] if result else 0
+        game_doc = await self.database.game_sessions.find_one(
+            {"_id": game_id},
+            {"version": 1}
+        )
+        return game_doc.get("version", 0) if game_doc else 0
 
-    def add_player(self, game_id: str, player_create: PlayerCreate) -> Player:
+    async def add_player(self, game_id: str, player_create: PlayerCreate) -> Player:
         """Add a player to a game."""
         player_id = str(uuid.uuid4())
         
-        count_result = self.cursor.execute(
-            "SELECT COUNT(*) FROM sd_players WHERE game_id = ?",
-            [game_id],
-        ).fetchone()
-        player_count = count_result[0] if count_result else 0
-        color = PLAYER_COLORS[player_count % len(PLAYER_COLORS)]
+        count = await self.database.players.count_documents({"game_id": game_id})
+        color = PLAYER_COLORS[count % len(PLAYER_COLORS)]
         
-        self.cursor.execute(
-            """
-            INSERT INTO sd_players (id, game_id, name, cash, position, color, properties, ready)
-            VALUES (?, ?, ?, 0, 0, ?, '[]', FALSE)
-            """,
-            [player_id, game_id, player_create.name, color],
+        player_doc = PlayerDocument(
+            _id=player_id,
+            game_id=game_id,
+            name=player_create.name,
+            cash=0,
+            position=0,
+            color=color,
+            properties=[],
+            ready=False,
+            is_bankrupt=False,
+            created_at=datetime.utcnow(),
         )
+        
+        await self.database.players.insert_one(player_doc.to_dict())
 
-        submitted_tiles = self._get_submitted_tiles(game_id, player_id)
+        submitted_tiles = await self._get_submitted_tiles(game_id, player_id)
 
         return Player(
             id=player_id,
@@ -175,235 +122,178 @@ class GameRepository(BaseRepository[GameSession]):
             ready=False,
         )
 
-    def toggle_player_ready(self, player_id: str) -> bool:
+    async def toggle_player_ready(self, player_id: str) -> bool:
         """Toggle player's ready status. Returns new ready state."""
-        self.cursor.execute(
-            "UPDATE sd_players SET ready = NOT ready WHERE id = ?",
-            [player_id]
-        )
-        result = self.cursor.execute(
-            "SELECT ready FROM sd_players WHERE id = ?",
-            [player_id]
-        ).fetchone()
-        return result[0] if result else False
-
-    def are_all_players_ready(self, game_id: str) -> bool:
-        """Check if all players in a game are ready."""
-        result = self.cursor.execute(
-            """
-            SELECT COUNT(*) as total, 
-                   SUM(CASE WHEN ready THEN 1 ELSE 0 END) as ready_count
-            FROM sd_players WHERE game_id = ?
-            """,
-            [game_id]
-        ).fetchone()
-        if not result or result[0] == 0:
+        player_doc = await self.database.players.find_one({"_id": player_id})
+        if not player_doc:
             return False
-        return result[0] == result[1]
+        
+        new_ready = not player_doc.get("ready", False)
+        await self.database.players.update_one(
+            {"_id": player_id},
+            {"$set": {"ready": new_ready}}
+        )
+        return new_ready
 
-    def set_host(self, game_id: str, player_id: str) -> None:
+    async def are_all_players_ready(self, game_id: str) -> bool:
+        """Check if all players in a game are ready."""
+        total = await self.database.players.count_documents({"game_id": game_id})
+        if total == 0:
+            return False
+        
+        ready_count = await self.database.players.count_documents({
+            "game_id": game_id,
+            "ready": True
+        })
+        return total == ready_count
+
+    async def set_host(self, game_id: str, player_id: str) -> None:
         """Set the host of a game."""
-        self.cursor.execute(
-            "UPDATE sd_game_sessions SET host_id = ?, version = version + 1 WHERE id = ?",
-            [player_id, game_id]
+        await self.database.game_sessions.update_one(
+            {"_id": game_id},
+            {"$set": {"host_id": player_id}, "$inc": {"version": 1}}
         )
 
-    def remove_player(self, game_id: str, player_id: str) -> bool:
+    async def remove_player(self, game_id: str, player_id: str) -> bool:
         """Remove a player from a game. Returns True if player was removed."""
-        self.cursor.execute(
-            "DELETE FROM sd_submitted_tiles WHERE game_id = ? AND player_id = ?",
-            [game_id, player_id]
+        # Delete submitted tiles
+        await self.database.submitted_tiles.delete_many({
+            "game_id": game_id,
+            "player_id": player_id
+        })
+        
+        # Delete player
+        result = await self.database.players.delete_one({
+            "_id": player_id,
+            "game_id": game_id
+        })
+        
+        # Bump version
+        await self.database.game_sessions.update_one(
+            {"_id": game_id},
+            {"$inc": {"version": 1}}
         )
-        self.cursor.execute(
-            "DELETE FROM sd_players WHERE id = ? AND game_id = ?",
-            [player_id, game_id]
-        )
-        self.cursor.execute(
-            "UPDATE sd_game_sessions SET version = version + 1 WHERE id = ?",
-            [game_id]
-        )
-        return self.cursor.rowcount > 0
+        
+        return result.deleted_count > 0
 
-    def submit_tiles(
+    async def submit_tiles(
         self, game_id: str, player_id: str, tiles: list[TileCreate]
     ) -> None:
         """Submit tiles for a player."""
-        self.cursor.execute(
-            "DELETE FROM sd_submitted_tiles WHERE game_id = ? AND player_id = ?",
-            [game_id, player_id],
-        )
+        # Delete existing submitted tiles
+        await self.database.submitted_tiles.delete_many({
+            "game_id": game_id,
+            "player_id": player_id
+        })
 
+        # Insert new tiles
         for tile in tiles:
             tile_id = str(uuid.uuid4())
-            self.cursor.execute(
-                """
-                INSERT INTO sd_submitted_tiles (id, game_id, player_id, type, name, effect_config)
-                VALUES (?, ?, ?, ?, ?, ?)
-                """,
-                [
-                    tile_id,
-                    game_id,
-                    player_id,
-                    tile.type.value,
-                    tile.name,
-                    json.dumps(tile.effect_config),
-                ],
-            )
+            tile_doc = SubmittedTileDocument.from_tile_create(tile, game_id, player_id, tile_id)
+            await self.database.submitted_tiles.insert_one(tile_doc.to_dict())
 
-    def save_board(self, game_id: str, tiles: list[Tile]) -> None:
+    async def save_board(self, game_id: str, tiles: list[Tile]) -> None:
         """Save board tiles to database."""
-        self.cursor.execute("DELETE FROM sd_tiles WHERE game_id = ?", [game_id])
+        # Delete existing tiles
+        await self.database.tiles.delete_many({"game_id": game_id})
 
+        # Insert new tiles
         for tile in tiles:
-            self.cursor.execute(
-                """
-                INSERT INTO sd_tiles (id, game_id, owner_id, type, name, effect_config, position, x, y, price, rent)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                """,
-                [
-                    tile.id,
-                    game_id,
-                    tile.owner_id,
-                    tile.type.value,
-                    tile.name,
-                    json.dumps(tile.effect_config),
-                    tile.position,
-                    tile.x,
-                    tile.y,
-                    tile.price,
-                    tile.rent,
-                ],
-            )
+            tile_doc = TileDocument.from_tile(tile, game_id)
+            await self.database.tiles.insert_one(tile_doc.to_dict())
 
-    def update_game_status(self, game_id: str, status: GameStatus) -> GameSession:
+    async def update_game_status(self, game_id: str, status: GameStatus) -> GameSession:
         """Update game status."""
-        self.cursor.execute(
-            "UPDATE sd_game_sessions SET status = ?, version = version + 1 WHERE id = ?",
-            [status.value, game_id],
+        await self.database.game_sessions.update_one(
+            {"_id": game_id},
+            {"$set": {"status": status.value}, "$inc": {"version": 1}}
         )
-        game = self.get_by_id(game_id)
+        game = await self.get_by_id(game_id)
         if game:
             game.status = status
         return game
 
-    def update_player_position(self, player_id: str, position: int) -> None:
+    async def update_player_position(self, player_id: str, position: int) -> None:
         """Update player's board position."""
-        self.cursor.execute(
-            "UPDATE sd_players SET position = ? WHERE id = ?", [position, player_id]
+        await self.database.players.update_one(
+            {"_id": player_id},
+            {"$set": {"position": position}}
         )
 
-    def update_player_cash(self, player_id: str, cash: int) -> None:
+    async def update_player_cash(self, player_id: str, cash: int) -> None:
         """Update player's cash."""
-        self.cursor.execute(
-            "UPDATE sd_players SET cash = ? WHERE id = ?", [cash, player_id]
+        await self.database.players.update_one(
+            {"_id": player_id},
+            {"$set": {"cash": cash}}
         )
 
-    def update_player_properties(self, player_id: str, properties: list[str]) -> None:
+    async def update_player_properties(self, player_id: str, properties: list[str]) -> None:
         """Update player's owned properties."""
-        self.cursor.execute(
-            "UPDATE sd_players SET properties = ? WHERE id = ?",
-            [json.dumps(properties), player_id]
+        await self.database.players.update_one(
+            {"_id": player_id},
+            {"$set": {"properties": properties}}
         )
 
-    def update_tile_owner(self, tile_id: str, owner_id: str) -> None:
+    async def update_tile_owner(self, tile_id: str, owner_id: str) -> None:
         """Update tile ownership."""
-        self.cursor.execute(
-            "UPDATE sd_tiles SET owner_id = ? WHERE id = ?", [owner_id, tile_id]
+        await self.database.tiles.update_one(
+            {"_id": tile_id},
+            {"$set": {"owner_id": owner_id}}
         )
 
-    def set_players_starting_cash(self, game_id: str, starting_cash: int) -> None:
+    async def set_players_starting_cash(self, game_id: str, starting_cash: int) -> None:
         """Set starting cash for all players in a game."""
-        self.cursor.execute(
-            "UPDATE sd_players SET cash = ? WHERE game_id = ?",
-            [starting_cash, game_id]
+        await self.database.players.update_many(
+            {"game_id": game_id},
+            {"$set": {"cash": starting_cash}}
         )
 
-    def _get_players(self, game_id: str) -> list[Player]:
-        """Get all players for a game ordered by join time."""
-        results = self.cursor.execute(
-            """SELECT id, name, cash, position, color, properties, ready
-               FROM sd_players WHERE game_id = ? ORDER BY created_at""",
-            [game_id],
-        ).fetchall()
+    async def update_player_bankrupt(self, player_id: str, is_bankrupt: bool) -> None:
+        """Update player's bankruptcy status."""
+        await self.database.players.update_one(
+            {"_id": player_id},
+            {"$set": {"is_bankrupt": is_bankrupt}}
+        )
 
+    async def _get_players(self, game_id: str) -> list[Player]:
+        """Get all players for a game ordered by join time."""
+        cursor = self.database.players.find({"game_id": game_id}).sort("created_at", 1)
         players = []
-        for player_id, name, cash, position, color, properties_json, ready in results:
-            submitted_tiles = self._get_submitted_tiles(game_id, player_id)
-            properties = json.loads(properties_json) if properties_json else []
-            players.append(
-                Player(
-                    id=player_id,
-                    name=name,
-                    cash=cash,
-                    position=position,
-                    color=color or "#888888",
-                    properties=properties,
-                    submitted_tiles=submitted_tiles,
-                    ready=bool(ready),
-                )
-            )
+        
+        async for player_doc in cursor:
+            player_document = PlayerDocument(**player_doc)
+            submitted_tiles = await self._get_submitted_tiles(game_id, player_document._id)
+            players.append(player_document.to_player(submitted_tiles))
 
         return players
 
-    def _get_submitted_tiles(
+    async def _get_submitted_tiles(
         self, game_id: str, player_id: str
     ) -> list[TileCreate]:
         """Get submitted tiles for a player."""
-        results = self.cursor.execute(
-            """
-            SELECT type, name, effect_config 
-            FROM sd_submitted_tiles 
-            WHERE game_id = ? AND player_id = ?
-            """,
-            [game_id, player_id],
-        ).fetchall()
-
+        cursor = self.database.submitted_tiles.find({
+            "game_id": game_id,
+            "player_id": player_id
+        })
+        
         tiles = []
-        for tile_type, name, effect_config_json in results:
-            effect_config = json.loads(effect_config_json) if effect_config_json else {}
-            tiles.append(TileCreate(type=TileType(tile_type), name=name, effect_config=effect_config))
+        async for tile_doc in cursor:
+            # Convert type string back to enum
+            tile_doc["type"] = TileType(tile_doc["type"])
+            tile_document = SubmittedTileDocument(**tile_doc)
+            tiles.append(tile_document.to_tile_create())
 
         return tiles
 
-    def _get_board_tiles(self, game_id: str) -> list[Tile]:
+    async def _get_board_tiles(self, game_id: str) -> list[Tile]:
         """Get all board tiles for a game."""
-        results = self.cursor.execute(
-            """
-            SELECT id, owner_id, type, name, effect_config, position, x, y, price, rent
-            FROM sd_tiles
-            WHERE game_id = ?
-            ORDER BY position
-            """,
-            [game_id],
-        ).fetchall()
-
+        cursor = self.database.tiles.find({"game_id": game_id}).sort("position", 1)
+        
         tiles = []
-        for (
-            tile_id,
-            owner_id,
-            tile_type,
-            name,
-            effect_config_json,
-            position,
-            x,
-            y,
-            price,
-            rent,
-        ) in results:
-            effect_config = json.loads(effect_config_json) if effect_config_json else {}
-            tiles.append(
-                Tile(
-                    id=tile_id,
-                    owner_id=owner_id,
-                    type=TileType(tile_type),
-                    name=name,
-                    effect_config=effect_config,
-                    position=position,
-                    x=x,
-                    y=y,
-                    price=price or 0,
-                    rent=rent or 0,
-                )
-            )
+        async for tile_doc in cursor:
+            # Convert type string back to enum
+            tile_doc["type"] = TileType(tile_doc["type"])
+            tile_document = TileDocument(**tile_doc)
+            tiles.append(tile_document.to_tile())
 
         return tiles
