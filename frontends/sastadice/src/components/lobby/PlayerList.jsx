@@ -46,7 +46,6 @@ export default function PlayerList({ players, currentPlayerId }) {
               </div>
             </div>
 
-            {/* Ready Status - Launch Key */}
             <div className={`text-2xl transition-transform ${player.ready ? 'rotate-90' : 'opacity-30'}`}>
               🔑
             </div>
