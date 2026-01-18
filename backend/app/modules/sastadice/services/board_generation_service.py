@@ -223,19 +223,70 @@ class BoardGenerationService:
         go_tile = Tile(
             type=TileType.GO,
             name="GO",
-            effect_config={"bonus": game_config.go_bonus if game_config else 100},
+            effect_config={"bonus": 200},  # Base $200, inflation added at runtime
             id=str(uuid.uuid4()),
         )
         interleaved.insert(0, go_tile)
 
         board = self._map_tiles_to_perimeter(interleaved, board_size)
+        total_tiles = len(board)
+
+        if total_tiles >= 8:
+            glitch_pos = total_tiles // 4
+            board[glitch_pos] = Tile(
+                type=TileType.TELEPORT,
+                name="THE GLITCH",
+                effect_config={},
+                id=str(uuid.uuid4()),
+                position=glitch_pos,
+                x=board[glitch_pos].x,
+                y=board[glitch_pos].y,
+            )
+
+            jail_pos = total_tiles // 2
+            board[jail_pos] = Tile(
+                type=TileType.JAIL,
+                name="SERVER DOWNTIME",
+                effect_config={},
+                id=str(uuid.uuid4()),
+                position=jail_pos,
+                x=board[jail_pos].x,
+                y=board[jail_pos].y,
+            )
+
+            market_pos = (total_tiles * 3) // 4
+            board[market_pos] = Tile(
+                type=TileType.MARKET,
+                name="BLACK MARKET",
+                effect_config={},
+                id=str(uuid.uuid4()),
+                position=market_pos,
+                x=board[market_pos].x,
+                y=board[market_pos].y,
+            )
 
         if game_config:
             for tile in board:
                 tile.price = game_config.get_tile_price(tile.type, tile.position)
                 tile.rent = game_config.get_tile_rent(tile.type, tile.position)
 
+        self._assign_colors(board)
+
         return board
+
+    def _assign_colors(self, board: list[Tile]) -> None:
+        """Assign colors to property tiles in groups of 2-3."""
+        from app.modules.sastadice.schemas import PROPERTY_COLORS
+        
+        properties = [t for t in board if t.type == TileType.PROPERTY]
+        if not properties:
+            return
+
+        set_size = 2 if len(properties) <= 8 else 3
+        
+        for i, prop in enumerate(properties):
+            color_index = (i // set_size) % len(PROPERTY_COLORS)
+            prop.color = PROPERTY_COLORS[color_index]
 
     def _interleave_tiles(
         self, player_tiles: list[Tile], padding_tiles: list[Tile]
