@@ -45,6 +45,8 @@ class SimulationStats:
         self.peek_buffs_bought = 0
         self.turn_timeouts = 0
         self.blocked_tiles_cleared = 0
+        self.trades_proposed = 0
+        self.trades_accepted = 0
         
         # Config tracking
         self.configs_tested: Dict[str, int] = {}
@@ -237,6 +239,10 @@ async def simulate_single_game(
                     stats.ddos_tiles_blocked += 1
                 if "TIMEOUT" in action_result.upper() or "FORCED" in action_result.upper():
                     stats.turn_timeouts += 1
+                if "PROPOSE_TRADE" in action_result or "PROPOSE_TRADE" in action_type:
+                    stats.trades_proposed += 1
+                if "ACCEPT_TRADE" in action_result or "ACCEPT_TRADE" in action_type:
+                    stats.trades_accepted += 1
         
         result["success"] = result.get("status") in ["ACTIVE", "FINISHED"]
         
@@ -305,24 +311,39 @@ async def main():
         
         game_num = 0
         
+        semaphore = asyncio.Semaphore(5)
+
+        async def run_game_safely(g_num, config=None, is_random=False, r_cpu=None, r_settings=None, r_name=None):
+            async with semaphore:
+                if is_random:
+                    await simulate_single_game(
+                        service=service,
+                        game_num=g_num,
+                        cpu_count=r_cpu,
+                        settings=r_settings,
+                        stats=stats,
+                        config_name=r_name,
+                        verbose=True
+                    )
+                else:
+                    await simulate_single_game(
+                        service=service,
+                        game_num=g_num,
+                        cpu_count=config["players"],
+                        settings=config["settings"],
+                        stats=stats,
+                        config_name=config["name"],
+                        verbose=True
+                    )
+
+        tasks = []
+        
         # Run each configuration
         for config in TEST_CONFIGS:
             game_num += 1
-            await simulate_single_game(
-                service=service,
-                game_num=game_num,
-                cpu_count=config["players"],
-                settings=config["settings"],
-                stats=stats,
-                config_name=config["name"],
-                verbose=True
-            )
-        
+            tasks.append(run_game_safely(game_num, config=config))
+            
         # Run additional random variations
-        print(f"\n{'='*70}")
-        print("Running additional random configuration tests...")
-        print(f"{'='*70}")
-        
         random.seed(42)
         for i in range(5):
             game_num += 1
@@ -333,15 +354,19 @@ async def main():
                 go_inflation_per_round=random.choice([10, 20, 30]),
                 chaos_level=random.choice(list(ChaosLevel)),
             )
-            await simulate_single_game(
-                service=service,
-                game_num=game_num,
-                cpu_count=random.randint(2, 5),
-                settings=random_settings,
-                stats=stats,
-                config_name=f"Random Config #{i+1}",
-                verbose=True
-            )
+            tasks.append(run_game_safely(
+                game_num, 
+                is_random=True, 
+                r_cpu=random.randint(2, 5), 
+                r_settings=random_settings, 
+                r_name=f"Random Config #{i+1}"
+            ))
+            
+        print(f"\n{'='*70}")
+        print(f"Running {len(tasks)} simulations in parallel (Concurrency: 5)...")
+        print(f"{'='*70}")
+        
+        await asyncio.gather(*tasks)
         
         # Print comprehensive summary
         print(f"\n{'='*70}")
@@ -377,6 +402,8 @@ async def main():
         print(f"  PEEK buffs bought: {stats.peek_buffs_bought}")
         print(f"  Turn timeouts: {stats.turn_timeouts}")
         print(f"  Blocked tiles cleared: {stats.blocked_tiles_cleared}")
+        print(f"  Trades proposed: {stats.trades_proposed}")
+        print(f"  Trades accepted: {stats.trades_accepted}")
         
         print(f"\n📋 CONFIGURATIONS TESTED")
         for config, count in stats.configs_tested.items():
