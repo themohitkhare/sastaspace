@@ -28,15 +28,23 @@ class GameRepository(BaseRepository[GameSession]):
     """Repository for game session operations."""
 
     async def get_by_id(self, id: str) -> Optional[GameSession]:
-        """Get game session by ID."""
-        game_doc = await self.database.game_sessions.find_one({"_id": id})
+        """Get game session by ID or short code (first 8 chars)."""
+        if len(id) < 32:
+            short_id = id.lower()
+            game_doc = await self.database.game_sessions.find_one({
+                "_id": {"$regex": f"^{short_id}", "$options": "i"}
+            })
+        else:
+            game_doc = await self.database.game_sessions.find_one({"_id": id})
+            if not game_doc:
+                game_doc = await self.database.game_sessions.find_one({"_id": id.lower()})
         
         if not game_doc:
             return None
 
         game_document = GameSessionDocument(**game_doc)
-        players = await self._get_players(id)
-        board = await self._get_board_tiles(id)
+        players = await self._get_players(game_document.id)
+        board = await self._get_board_tiles(game_document.id)
 
         return game_document.to_game_session(players, board)
 
