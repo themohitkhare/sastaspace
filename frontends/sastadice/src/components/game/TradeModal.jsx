@@ -45,7 +45,6 @@ export default function TradeModal({ myPlayer, targetPlayer, tiles, onClose, onP
             })
             onClose()
         } catch (e) {
-            console.error(e)
             setIsSubmitting(false)
         }
     }
@@ -53,14 +52,12 @@ export default function TradeModal({ myPlayer, targetPlayer, tiles, onClose, onP
     return (
         <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
             <div className="bg-sasta-white border-brutal w-full max-w-4xl max-h-[90vh] flex flex-col shadow-brutal-lg">
-                {/* Header */}
                 <div className="bg-sasta-black text-white p-3 flex justify-between items-center shrink-0">
                     <h2 className="font-zero text-xl">TRADE PROPOSAL</h2>
                     <button onClick={onClose} className="text-white hover:text-sasta-accent">✕</button>
                 </div>
 
                 <div className="flex-1 overflow-hidden flex flex-col md:flex-row divide-y md:divide-y-0 md:divide-x-2 divide-sasta-black/20">
-                    {/* LEFT: YOU GIVE */}
                     <div className="flex-1 p-4 bg-red-50/50 flex flex-col min-h-0">
                         <div className="flex items-center gap-2 mb-4 border-b pb-2 border-red-200">
                             <div className="font-bold font-data text-lg text-red-600">YOU GIVE</div>
@@ -101,7 +98,6 @@ export default function TradeModal({ myPlayer, targetPlayer, tiles, onClose, onP
                         </div>
                     </div>
 
-                    {/* RIGHT: YOU GET */}
                     <div className="flex-1 p-4 bg-green-50/50 flex flex-col min-h-0">
                         <div className="flex items-center gap-2 mb-4 border-b pb-2 border-green-200">
                             <div className="font-bold font-data text-lg text-green-600">YOU GET</div>
@@ -142,7 +138,6 @@ export default function TradeModal({ myPlayer, targetPlayer, tiles, onClose, onP
                     </div>
                 </div>
 
-                {/* Footer */}
                 <div className="p-4 bg-white border-t border-black flex justify-end gap-2 shrink-0">
                     <button onClick={onClose} className="px-6 py-3 font-bold font-zero text-sm hover:underline">CANCEL</button>
                     <button

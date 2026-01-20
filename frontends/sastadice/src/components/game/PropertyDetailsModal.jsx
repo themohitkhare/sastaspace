@@ -41,9 +41,8 @@ export default function PropertyDetailsModal({ tile, onClose, onRefresh }) {
 
     const handleUpgrade = async () => {
         try {
-            await apiClient.post(`/sastadice/games/${gameId}/action`, {
+            await apiClient.post(`/sastadice/games/${gameId}/action?player_id=${playerId}`, {
                 type: 'UPGRADE',
-                player_id: playerId,
                 payload: { tile_id: tile.id }
             })
             onRefresh && onRefresh()
@@ -53,17 +52,15 @@ export default function PropertyDetailsModal({ tile, onClose, onRefresh }) {
         }
     }
 
-    // Calculate refund for downgrade (50% of original cost)
     const downgradeRefund = tile.upgrade_level === 2
-        ? tile.price  // Level 2 -> 1: refund half of price*2 = price
-        : Math.floor(tile.price / 2)  // Level 1 -> 0: refund half of price
+        ? tile.price
+        : Math.floor(tile.price / 2)
 
     const handleDowngrade = async () => {
         if (!confirm(`Sell upgrade for $${downgradeRefund}?`)) return
         try {
-            await apiClient.post(`/sastadice/games/${gameId}/action`, {
+            await apiClient.post(`/sastadice/games/${gameId}/action?player_id=${playerId}`, {
                 type: 'DOWNGRADE',
-                player_id: playerId,
                 payload: { tile_id: tile.id }
             })
             onRefresh && onRefresh()
@@ -76,7 +73,6 @@ export default function PropertyDetailsModal({ tile, onClose, onRefresh }) {
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={onClose}>
             <div className="bg-sasta-white border-brutal-lg shadow-brutal-lg max-w-sm w-full p-0 overflow-hidden text-left" onClick={e => e.stopPropagation()}>
-                {/* Header */}
                 <div
                     className="p-4 text-center font-zero font-bold text-xl text-sasta-black border-b-2 border-sasta-black relative"
                     style={{ backgroundColor: TILE_TYPE_COLORS[tile.type] || '#FFFFFF' }}

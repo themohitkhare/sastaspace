@@ -5,7 +5,6 @@ export default function AuctionModal({ auctionState, tiles, players, playerId, o
     const [myBid, setMyBid] = useState('')
     const resolveAttempted = useRef(false)
 
-    // Reset local state when auction changes
     useEffect(() => {
         resolveAttempted.current = false
         setMyBid('')
@@ -56,7 +55,6 @@ export default function AuctionModal({ auctionState, tiles, players, playerId, o
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm animate-fade-in">
             <div className="w-full max-w-md bg-sasta-white border-brutal-lg shadow-brutal-lg p-6 relative overflow-hidden">
 
-                {/* Header */}
                 <div className="text-center mb-6">
                     <h2 className="font-zero text-2xl font-bold bg-sasta-black text-sasta-white inline-block px-3 py-1 mb-2 transform -rotate-1">
                         🔨 AUCTION TIME
@@ -66,7 +64,6 @@ export default function AuctionModal({ auctionState, tiles, players, playerId, o
                     </div>
                 </div>
 
-                {/* Property Card Preview */}
                 <div className="flex justify-center mb-6">
                     <div className="w-40 border-brutal-sm bg-white p-2 shadow-brutal-sm transform rotate-1">
                         <div
@@ -83,7 +80,6 @@ export default function AuctionModal({ auctionState, tiles, players, playerId, o
                     </div>
                 </div>
 
-                {/* Bid Status */}
                 <div className="text-center mb-6 space-y-2">
                     <div className="font-data text-sm opacity-60">CURRENT HIGHEST BID</div>
                     <div className="font-zero text-4xl font-bold text-sasta-accent drop-shadow-[2px_2px_0_rgba(0,0,0,1)]">
@@ -98,7 +94,6 @@ export default function AuctionModal({ auctionState, tiles, players, playerId, o
                     )}
                 </div>
 
-                {/* Timer */}
                 <div className="w-full bg-sasta-black h-4 mb-6 relative border-brutal-sm">
                     <div
                         className="h-full transition-all duration-100 ease-linear"
@@ -112,7 +107,6 @@ export default function AuctionModal({ auctionState, tiles, players, playerId, o
                     </div>
                 </div>
 
-                {/* Controls */}
                 <div className="space-y-3">
                     <div className="grid grid-cols-2 gap-2">
                         {quickBidAmounts.map(amt => (
