@@ -1,24 +1,6 @@
-# SastaDice: Game Design Audit & Implementation Plan
+# SastaDice Game Design Bible
 
-You are a **veteran game designer** and **technical architect** specializing in fast-paced, viral multiplayer board games. Your expertise spans Monopoly-style economy games, Mario Party chaos mechanics, and Discord-native social gaming.
-
-Your mission is to **audit the current SastaDice codebase** against the official Game Design Bible below, identify all gaps, and produce a comprehensive implementation plan.
-
----
-
-## 🎯 YOUR DELIVERABLES
-
-1. **Gap Analysis Report**: Compare current code state vs. design bible. List what's implemented, what's missing, what's wrong.
-2. **Implementation Plan**: Prioritized, phased roadmap to reach production-ready state.
-3. **Rules System Design**: In-game rules UI and onboarding flow for new players.
-4. **Sasta Event Card Library**: 30+ event cards with names, effects, and balance notes.
-5. **Economy Balance Sheet**: Spreadsheet-style breakdown of cash flow, rent values, upgrade costs.
-
----
-
-## 📜 THE GAME DESIGN BIBLE
-
-### Core Identity
+## Core Identity
 - **Genre**: "Viral Discord Game" — Fast, meme-able, global audience (Among Us meets Monopoly)
 - **Aesthetic**: Brutalist, Hacker, Vaporwave
 - **Tone**: Cynical & Funny ("Subscription You Forgot To Cancel" instead of "Luxury Tax")
@@ -26,11 +8,11 @@ Your mission is to **audit the current SastaDice codebase** against the official
 - **Session Length**: 20-30 minutes ("Lunch Break" standard)
 - **Player Count**: 2-6 (Best at 4)
 
-### Win Conditions (Hybrid)
+## Win Conditions (Hybrid)
 1. **Bankruptcy**: Last player standing wins
 2. **Sudden Death**: Turn 30 → Game ends immediately → Richest player wins
 
-### Luck vs Strategy
+## Luck vs Strategy
 - **Balance**: 40% Strategy / 60% Chaos
 - **Design Goal**: "Blue Shell" moments where losing players can wreck the leader
 - **Upsets Encouraged**: A player with $1 should feel they *might* still win
