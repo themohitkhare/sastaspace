@@ -83,7 +83,6 @@ export default function TileComponent({ tile, players = [], width, height, size 
           </div>
         </div>
       )}
-      {/* Upgrade level badge */}
       {tile.upgrade_level > 0 && size >= 50 && (
         <div
           className="absolute font-zero font-bold text-yellow-500 flex items-center justify-center"

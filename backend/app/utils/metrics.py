@@ -356,7 +356,7 @@ def parse_frontend_coverage(frontend_path: str = "frontends") -> dict:
                     for line in f:
                         if line.startswith("SF:"):
                             current_file = line[3:].strip()
-                            file_lines = 0  # Reset for new file
+                            file_lines = 0
                         elif line.startswith("LF:"):
                             file_lines = int(line[3:].strip())
                             project_lines += file_lines

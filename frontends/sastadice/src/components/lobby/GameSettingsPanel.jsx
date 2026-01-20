@@ -19,8 +19,9 @@ const ROUND_PRESETS = [
     { value: 0, label: '∞ Unlimited' },
 ]
 
-export default function GameSettingsPanel({ settings, onUpdate, onSave, hasChanges, isHost }) {
+export default function GameSettingsPanel({ settings, onUpdate, onSave, hasChanges, isHost, alwaysExpanded = false }) {
     const [expanded, setExpanded] = useState(false)
+    const showContent = alwaysExpanded || expanded
 
     if (!isHost) {
         // ... existing read-only view ...
@@ -47,22 +48,29 @@ export default function GameSettingsPanel({ settings, onUpdate, onSave, hasChang
 
     return (
         <div className={`bg-zinc-800 border transition-colors ${hasChanges ? 'border-yellow-500' : 'border-zinc-700'}`}>
-            <button
-                onClick={() => setExpanded(!expanded)}
-                className="w-full p-3 flex justify-between items-center hover:bg-zinc-700/50 transition-colors"
-            >
-                <div className="flex items-center gap-2">
-                    <span className="text-lg">⚙️</span>
-                    <span className="font-data font-bold text-sm text-zinc-200">
-                        GAME SETTINGS {hasChanges && <span className="text-yellow-500 text-xs ml-2">● UNSAVED</span>}
+            {!alwaysExpanded ? (
+                <button
+                    onClick={() => setExpanded(!expanded)}
+                    className="w-full p-3 flex justify-between items-center hover:bg-zinc-700/50 transition-colors"
+                >
+                    <div className="flex items-center gap-2">
+                        <span className="text-lg">⚙️</span>
+                        <span className="font-data font-bold text-sm text-zinc-200">
+                            GAME SETTINGS {hasChanges && <span className="text-yellow-500 text-xs ml-2">● UNSAVED</span>}
+                        </span>
+                    </div>
+                    <span className="text-zinc-400 text-lg">{expanded ? '▲' : '▼'}</span>
+                </button>
+            ) : (
+                <div className="p-3 bg-zinc-800/50 flex items-center justify-between border-b border-zinc-700">
+                    <span className="font-data font-bold text-sm text-zinc-200 flex items-center gap-2">
+                        ⚙️ GAME SETTINGS {hasChanges && <span className="text-yellow-500 text-xs ml-2">● UNSAVED</span>}
                     </span>
                 </div>
-                <span className="text-zinc-400 text-lg">{expanded ? '▲' : '▼'}</span>
-            </button>
+            )}
 
-            {expanded && (
+            {showContent && (
                 <div className="p-3 border-t border-zinc-700 space-y-4">
-                    {/* Win Condition */}
                     <div>
                         <label className="block text-xs font-data text-zinc-400 mb-2">WIN CONDITION</label>
                         <div className="grid grid-cols-3 gap-1">
@@ -81,7 +89,6 @@ export default function GameSettingsPanel({ settings, onUpdate, onSave, hasChang
                         </div>
                     </div>
 
-                    {/* Round Limit */}
                     {settings?.win_condition !== 'LAST_STANDING' && (
                         <div>
                             <label className="block text-xs font-data text-zinc-400 mb-2">ROUND LIMIT</label>
@@ -102,7 +109,6 @@ export default function GameSettingsPanel({ settings, onUpdate, onSave, hasChang
                         </div>
                     )}
 
-                    {/* Chaos Level */}
                     <div>
                         <label className="block text-xs font-data text-zinc-400 mb-2">CHAOS LEVEL</label>
                         <div className="grid grid-cols-3 gap-1">
@@ -121,7 +127,6 @@ export default function GameSettingsPanel({ settings, onUpdate, onSave, hasChang
                         </div>
                     </div>
 
-                    {/* Feature Toggles */}
                     <div>
                         <label className="block text-xs font-data text-zinc-400 mb-2">FEATURES</label>
                         <div className="grid grid-cols-2 gap-2">
@@ -148,7 +153,6 @@ export default function GameSettingsPanel({ settings, onUpdate, onSave, hasChang
                         </div>
                     </div>
 
-                    {/* Summary */}
                     <div className="pt-2 border-t border-zinc-700">
                         <div className="text-xs font-data text-zinc-500 text-center">
                             {settings?.win_condition === 'FIRST_TO_CASH' && `First to $${settings?.target_cash || 10000} wins`}
