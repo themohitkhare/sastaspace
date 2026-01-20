@@ -31,7 +31,7 @@ describe('LobbyView', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
-    
+
     mockGameId = 'game-123'
     mockGame = {
       id: 'game-123',
@@ -55,7 +55,7 @@ describe('LobbyView', () => {
     apiClient.post = vi.fn().mockResolvedValue({
       data: { id: 'player-123', name: 'Test Player' },
     })
-    
+
     apiClient.get = vi.fn().mockResolvedValue({
       data: { game: mockGame, version: 1 },
     })
@@ -68,13 +68,13 @@ describe('LobbyView', () => {
 
   it('renders join form when not joined', () => {
     render(<LobbyView />)
-    expect(screen.getByRole('heading', { name: /JOIN GAME/i })).toBeInTheDocument()
+    expect(screen.getByText(/AUTHENTICATE PLAYER/i)).toBeInTheDocument()
   })
 
   it('shows join form when player not in game', () => {
     render(<LobbyView />)
-    expect(screen.getByText('JOIN GAME')).toBeInTheDocument()
-    expect(screen.getByPlaceholderText('Enter your name')).toBeInTheDocument()
+    expect(screen.getByText(/AUTHENTICATE PLAYER/i)).toBeInTheDocument()
+    expect(screen.getByPlaceholderText('ENTER_NAME')).toBeInTheDocument()
   })
 
   it('shows waiting message when player already joined', () => {
@@ -93,17 +93,17 @@ describe('LobbyView', () => {
     })
 
     render(<LobbyView />)
-    expect(screen.getByText(/YOUR STATION/)).toBeInTheDocument()
+    expect(screen.getByText('YOU')).toBeInTheDocument()
   })
 
   it('allows joining game with valid name', async () => {
     const user = userEvent.setup()
     render(<LobbyView />)
 
-    const nameInput = screen.getByPlaceholderText('Enter your name')
+    const nameInput = screen.getByPlaceholderText('ENTER_NAME')
     await user.type(nameInput, 'Test Player')
 
-    const joinButton = screen.getByRole('button', { name: /JOIN GAME/i })
+    const joinButton = screen.getByRole('button', { name: /ENTER/i })
     await user.click(joinButton)
 
     await waitFor(() => {
@@ -117,31 +117,31 @@ describe('LobbyView', () => {
   })
 
   it('shows alert when joining without name', async () => {
-    const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {})
+    const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => { })
     const user = userEvent.setup()
     render(<LobbyView />)
 
     // Try to join without entering a name
-    const joinButton = screen.getByRole('button', { name: /JOIN GAME/i })
-    
+    const joinButton = screen.getByRole('button', { name: /ENTER/i })
+
     // Button should be disabled when name is empty
     expect(joinButton).toBeDisabled()
-    
+
     alertSpy.mockRestore()
   })
 
   it('handles join errors', async () => {
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => { })
     window.alert = vi.fn()
     apiClient.post = vi.fn().mockRejectedValue(new Error('Join failed'))
 
     const user = userEvent.setup()
     render(<LobbyView />)
 
-    const nameInput = screen.getByPlaceholderText('Enter your name')
+    const nameInput = screen.getByPlaceholderText('ENTER_NAME')
     await user.type(nameInput, 'Test Player')
 
-    const joinButton = screen.getByRole('button', { name: /JOIN GAME/i })
+    const joinButton = screen.getByRole('button', { name: /ENTER/i })
     await user.click(joinButton)
 
     await waitFor(() => {

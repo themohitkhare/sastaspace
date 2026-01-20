@@ -42,6 +42,6 @@ describe('HomePage', () => {
 
   it('renders join game input', () => {
     renderWithRouter(<HomePage />)
-    expect(screen.getByPlaceholderText('ENTER CODE...')).toBeInTheDocument()
+    expect(screen.getByPlaceholderText('PASTE OR TYPE CODE...')).toBeInTheDocument()
   })
 })

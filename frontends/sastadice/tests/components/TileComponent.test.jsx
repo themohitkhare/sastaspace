@@ -52,7 +52,7 @@ describe('TileComponent', () => {
 
   it('renders different tile types', () => {
     const tileTypes = ['PROPERTY', 'TAX', 'CHANCE', 'TRAP', 'BUFF', 'NEUTRAL', 'GO']
-    
+
     tileTypes.forEach((type) => {
       const tile = { ...mockTile, type, name: `${type} Tile` }
       const { container, unmount } = render(
@@ -93,13 +93,14 @@ describe('TileComponent', () => {
     expect(tileElement).toHaveStyle({ borderStyle: 'solid' })
   })
 
-  it('applies reduced opacity for unowned tiles', () => {
+  it('distinguishes owned vs unowned tiles visually', () => {
     const unownedTile = { ...mockTile, owner_id: null }
     const { container } = render(
       <TileComponent tile={unownedTile} players={mockPlayers} />
     )
     const tileElement = container.querySelector('.tile')
-    expect(tileElement).toHaveStyle({ opacity: 0.8 })
+    // Unowned tiles have dashed borders (tested above)
+    expect(tileElement).toHaveStyle({ borderStyle: 'dashed' })
   })
 
   it('applies custom styles', () => {
