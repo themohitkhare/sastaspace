@@ -1,13 +1,13 @@
 """MongoDB connection management - Async singleton pattern."""
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
-from typing import AsyncGenerator
+from typing import AsyncGenerator, Optional
 from app.core.config import settings
 
 
 class MongoDBManager:
     """Singleton manager for MongoDB connections."""
 
-    _instance: "MongoDBManager" = None
+    _instance: Optional["MongoDBManager"] = None
     _client: AsyncIOMotorClient | None = None
     _database: AsyncIOMotorDatabase | None = None
     _initialized: bool = False

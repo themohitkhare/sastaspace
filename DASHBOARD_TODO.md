@@ -8,11 +8,11 @@ identified from code analysis that can be used as input for an AI agent.
 
 ## 🔴 High Complexity Functions (Refactor Priority)
 
-- [ ] **perform_action** (complexity: 166) in `game_service.py`
-- [ ] **simulate_cpu_game** (complexity: 37) in `game_service.py`
-- [ ] **calculate_loc_stats** (complexity: 31) in `metrics.py`
-- [ ] **_simulate_cpu_trades** (complexity: 26) in `game_service.py`
-- [ ] **_handle_tile_landing** (complexity: 25) in `game_service.py`
+- [x] **perform_action** (complexity: 166) in `game_service.py`
+- [x] **simulate_cpu_game** (complexity: 37) in `game_service.py`
+- [x] **calculate_loc_stats** (complexity: 31) in `metrics.py`
+- [x] **_simulate_cpu_trades** (complexity: 26) in `game_service.py`
+- [x] **_handle_tile_landing** (complexity: 25) in `game_service.py`
 
 ## 🟡 Low Coverage Files (Add Tests)
 

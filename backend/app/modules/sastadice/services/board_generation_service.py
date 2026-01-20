@@ -2,7 +2,7 @@
 import math
 import random
 import uuid
-from typing import Tuple
+from typing import Optional, Tuple
 from app.modules.sastadice.schemas import Tile, TileType, TileCreate
 
 
@@ -188,7 +188,7 @@ class BoardGenerationService:
 
     def generate_board(
         self, player_tiles: list[Tile], board_size: int, padding: int,
-        game_config: GameConfig = None
+        game_config: Optional[GameConfig] = None
     ) -> list[Tile]:
         """
         Generate a closed loop board from player tiles.
