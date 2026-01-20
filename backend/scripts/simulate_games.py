@@ -47,6 +47,12 @@ class SimulationStats:
         self.blocked_tiles_cleared = 0
         self.trades_proposed = 0
         self.trades_accepted = 0
+        # Upgrade features (Monopoly audit fixes)
+        self.properties_upgraded = 0
+        self.properties_downgraded = 0
+        self.cpu_upgrades = 0
+        self.upgrade_to_script_kiddie = 0
+        self.upgrade_to_1337_haxxor = 0
         
         # Config tracking
         self.configs_tested: Dict[str, int] = {}
@@ -54,7 +60,7 @@ class SimulationStats:
 
 # Define test configurations
 TEST_CONFIGS = [
-    # Standard configs
+    # ===== STANDARD CONFIGS =====
     {
         "name": "Default (Sudden Death 30)",
         "players": 4,
@@ -70,7 +76,13 @@ TEST_CONFIGS = [
         "players": 3,
         "settings": GameSettings(round_limit=50)
     },
-    # Last Standing (no round limit)
+    {
+        "name": "Extended Game (100 rounds)",
+        "players": 2,
+        "settings": GameSettings(round_limit=100)
+    },
+    
+    # ===== WIN CONDITIONS =====
     {
         "name": "Last Standing (∞ rounds)",
         "players": 2,
@@ -79,18 +91,61 @@ TEST_CONFIGS = [
             round_limit=0
         )
     },
-    # Economy variations
+    {
+        "name": "Last Standing 3 Players",
+        "players": 3,
+        "settings": GameSettings(
+            win_condition=WinCondition.LAST_STANDING,
+            round_limit=0
+        )
+    },
+    {
+        "name": "First to $5000",
+        "players": 4,
+        "settings": GameSettings(
+            win_condition=WinCondition.FIRST_TO_CASH,
+            target_cash=5000,
+            round_limit=100
+        )
+    },
+    {
+        "name": "First to $10000",
+        "players": 3,
+        "settings": GameSettings(
+            win_condition=WinCondition.FIRST_TO_CASH,
+            target_cash=10000,
+            round_limit=150
+        )
+    },
+    
+    # ===== ECONOMY VARIATIONS =====
     {
         "name": "Rich Start (2x cash)",
         "players": 4,
         "settings": GameSettings(starting_cash_multiplier=2.0)
     },
     {
+        "name": "Poor Start (0.5x cash)",
+        "players": 4,
+        "settings": GameSettings(starting_cash_multiplier=0.5)
+    },
+    {
         "name": "High Inflation (+$50/round)",
         "players": 3,
         "settings": GameSettings(go_inflation_per_round=50)
     },
-    # Chaos variations
+    {
+        "name": "Low Inflation (+$5/round)",
+        "players": 4,
+        "settings": GameSettings(go_inflation_per_round=5)
+    },
+    {
+        "name": "High GO Bonus ($500)",
+        "players": 4,
+        "settings": GameSettings(go_bonus_base=500)
+    },
+    
+    # ===== CHAOS LEVELS =====
     {
         "name": "Chill Mode",
         "players": 4,
@@ -101,24 +156,45 @@ TEST_CONFIGS = [
         "players": 4,
         "settings": GameSettings(chaos_level=ChaosLevel.CHAOS)
     },
-    # Jail variations
+    {
+        "name": "Chaos + Rich",
+        "players": 4,
+        "settings": GameSettings(
+            chaos_level=ChaosLevel.CHAOS,
+            starting_cash_multiplier=2.0
+        )
+    },
+    
+    # ===== JAIL VARIATIONS =====
     {
         "name": "Strict Jail (3 turns)",
         "players": 3,
         "settings": GameSettings(jail_turns_max=3)
     },
-    # Player count variations
+    {
+        "name": "Expensive Jail ($200 bribe)",
+        "players": 4,
+        "settings": GameSettings(jail_bribe_cost=200)
+    },
+    
+    # ===== PLAYER COUNT STRESS =====
     {
         "name": "2 Players",
         "players": 2,
         "settings": GameSettings(round_limit=20)
     },
     {
+        "name": "3 Players",
+        "players": 3,
+        "settings": GameSettings(round_limit=25)
+    },
+    {
         "name": "5 Players",
         "players": 5,
         "settings": GameSettings()
     },
-    # Feature toggles
+    
+    # ===== FEATURE TOGGLES =====
     {
         "name": "No Stimulus",
         "players": 4,
@@ -133,6 +209,95 @@ TEST_CONFIGS = [
         "name": "No Black Market",
         "players": 4,
         "settings": GameSettings(enable_black_market=False)
+    },
+    {
+        "name": "No Trading",
+        "players": 4,
+        "settings": GameSettings(enable_trading=False)
+    },
+    {
+        "name": "No Auctions",
+        "players": 4,
+        "settings": GameSettings(enable_auctions=False)
+    },
+    {
+        "name": "No Upgrades",
+        "players": 4,
+        "settings": GameSettings(enable_upgrades=False)
+    },
+    {
+        "name": "All Features Disabled",
+        "players": 4,
+        "settings": GameSettings(
+            enable_stimulus=False,
+            enable_black_market=False,
+            enable_trading=False,
+            enable_auctions=False,
+            enable_upgrades=False,
+            doubles_give_extra_turn=False
+        )
+    },
+    
+    # ===== UPGRADE-FOCUSED (Long games for upgrade opportunities) =====
+    {
+        "name": "Upgrade Focus (Rich + Long)",
+        "players": 2,
+        "settings": GameSettings(
+            starting_cash_multiplier=3.0,
+            round_limit=80,
+            go_bonus_base=300
+        )
+    },
+    {
+        "name": "Upgrade Focus (2 Players Long)",
+        "players": 2,
+        "settings": GameSettings(
+            starting_cash_multiplier=2.5,
+            round_limit=100,
+        )
+    },
+    
+    # ===== TRADING FOCUS =====
+    {
+        "name": "Trading Focus (Long + Rich)",
+        "players": 4,
+        "settings": GameSettings(
+            starting_cash_multiplier=2.0,
+            round_limit=60,
+            enable_trading=True
+        )
+    },
+    
+    # ===== TIMER/TIMEOUT =====
+    {
+        "name": "Fast Timer (10s)",
+        "players": 4,
+        "settings": GameSettings(turn_timer_seconds=10)
+    },
+    {
+        "name": "Slow Timer (60s)",
+        "players": 4,
+        "settings": GameSettings(turn_timer_seconds=60)
+    },
+    
+    # ===== STRESS TESTS =====
+    {
+        "name": "Stress: 5P Long Chaos",
+        "players": 5,
+        "settings": GameSettings(
+            round_limit=100,
+            chaos_level=ChaosLevel.CHAOS,
+            go_inflation_per_round=30
+        )
+    },
+    {
+        "name": "Stress: 2P Last Standing Rich",
+        "players": 2,
+        "settings": GameSettings(
+            win_condition=WinCondition.LAST_STANDING,
+            starting_cash_multiplier=3.0,
+            round_limit=0
+        )
     },
 ]
 
@@ -243,6 +408,19 @@ async def simulate_single_game(
                     stats.trades_proposed += 1
                 if "ACCEPT_TRADE" in action_result or "ACCEPT_TRADE" in action_type:
                     stats.trades_accepted += 1
+                # Upgrade/Downgrade tracking
+                if "UPGRADE" in action_type or "upgraded" in action_result.lower():
+                    stats.properties_upgraded += 1
+                    if "SCRIPT KIDDIE" in action_result.upper():
+                        stats.upgrade_to_script_kiddie += 1
+                    if "1337 HAXXOR" in action_result.upper():
+                        stats.upgrade_to_1337_haxxor += 1
+                    # Check if CPU (CPU names in action result)
+                    cpu_names = ["ROBOCOP", "CHAD BOT", "KAREN.EXE", "STONKS", "CPU-"]
+                    if any(cpu in action_result.upper() for cpu in cpu_names):
+                        stats.cpu_upgrades += 1
+                if "DOWNGRADE" in action_type or "sold" in action_result.lower() and "upgrade" in action_result.lower():
+                    stats.properties_downgraded += 1
         
         result["success"] = result.get("status") in ["ACTIVE", "FINISHED"]
         
@@ -311,7 +489,7 @@ async def main():
         
         game_num = 0
         
-        semaphore = asyncio.Semaphore(5)
+        semaphore = asyncio.Semaphore(10)  # Run 10 games in parallel for faster execution
 
         async def run_game_safely(g_num, config=None, is_random=False, r_cpu=None, r_settings=None, r_name=None):
             async with semaphore:
@@ -363,7 +541,7 @@ async def main():
             ))
             
         print(f"\n{'='*70}")
-        print(f"Running {len(tasks)} simulations in parallel (Concurrency: 5)...")
+        print(f"Running {len(tasks)} simulations in parallel (Concurrency: 10)...")
         print(f"{'='*70}")
         
         await asyncio.gather(*tasks)
@@ -404,6 +582,13 @@ async def main():
         print(f"  Blocked tiles cleared: {stats.blocked_tiles_cleared}")
         print(f"  Trades proposed: {stats.trades_proposed}")
         print(f"  Trades accepted: {stats.trades_accepted}")
+        
+        print(f"\n🔨 UPGRADE FEATURES")
+        print(f"  Properties upgraded: {stats.properties_upgraded}")
+        print(f"    → Script Kiddie (L1): {stats.upgrade_to_script_kiddie}")
+        print(f"    → 1337 Haxxor (L2): {stats.upgrade_to_1337_haxxor}")
+        print(f"  CPU upgrades: {stats.cpu_upgrades}")
+        print(f"  Properties downgraded: {stats.properties_downgraded}")
         
         print(f"\n📋 CONFIGURATIONS TESTED")
         for config, count in stats.configs_tested.items():
