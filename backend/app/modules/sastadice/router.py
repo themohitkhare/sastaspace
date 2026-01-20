@@ -19,7 +19,7 @@ from app.modules.sastadice.schemas import (
 router = APIRouter()
 
 
-async def get_game_service(db = Depends(get_db)) -> GameService:  # type: ignore
+async def get_game_service(db = Depends(get_db)) -> GameService:
     """Dependency to get game service."""
     return GameService(db)
 
@@ -116,6 +116,8 @@ async def update_settings(
     """Update game settings. Only host can update."""
     try:
         host_id = request.get("host_id")
+        if not host_id or not isinstance(host_id, str):
+            raise ValueError("host_id is required and must be a string")
         settings = request.get("settings", {})
         return await service.update_settings(game_id, host_id, settings)
     except ValueError as e:

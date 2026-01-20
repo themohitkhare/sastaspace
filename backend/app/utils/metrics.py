@@ -4,7 +4,10 @@ import subprocess
 import re
 import sys
 from pathlib import Path
-from lxml import etree
+try:
+    from lxml import etree  # type: ignore[import-untyped]
+except ImportError:
+    etree = None
 
 
 def _find_executable(name: str) -> str:
@@ -271,6 +274,8 @@ def parse_coverage_xml(path: str = "htmlcov/coverage.xml") -> dict:
         return {"total_lines": 0, "covered_lines": 0, "coverage_percent": 0.0, "files": {}}
     
     try:
+        if etree is None:
+            return {"total_lines": 0, "covered_lines": 0, "coverage_percent": 0.0, "files": {}}
         tree = etree.parse(str(coverage_path))
         root = tree.getroot()
         
@@ -325,6 +330,8 @@ def parse_frontend_coverage(frontend_path: str = "frontends") -> dict:
         
         if clover_path.exists():
             try:
+                if etree is None:
+                    continue
                 tree = etree.parse(str(clover_path))
                 root = tree.getroot()
                 
@@ -345,9 +352,11 @@ def parse_frontend_coverage(frontend_path: str = "frontends") -> dict:
             try:
                 with open(lcov_path) as f:
                     current_file = None
+                    file_lines = 0
                     for line in f:
                         if line.startswith("SF:"):
                             current_file = line[3:].strip()
+                            file_lines = 0  # Reset for new file
                         elif line.startswith("LF:"):
                             file_lines = int(line[3:].strip())
                             project_lines += file_lines
@@ -427,95 +436,26 @@ def calculate_loc_stats(backend_path: str = "backend/app", frontend_path: str = 
             if "tests" in str(py_file) or "__pycache__" in str(py_file):
                 continue
             
-            try:
-                with open(py_file, encoding="utf-8", errors="ignore") as f:
-                    lines = f.readlines()
-                
-                loc = 0
-                comments = 0
-                for line in lines:
-                    stripped = line.strip()
-                    if not stripped:
-                        continue
-                    if stripped.startswith("#") and not stripped.startswith("#!"):
-                        comments += 1
-                    else:
-                        loc += 1
-                
-                if loc > 0:
-                    abs_file = py_file.resolve()
-                    abs_cwd = Path.cwd().resolve()
-                    try:
-                        rel_path = str(abs_file.relative_to(abs_cwd))
-                    except ValueError:
-                        rel_path = str(py_file)
-                    files[rel_path] = {
-                        "loc": loc,
-                        "comments": comments,
-                        "ratio": comments / loc if loc > 0 else 0.0,
-                        "type": "python"
-                    }
-                    total_loc += loc
-                    total_comments += comments
-            except Exception:
-                pass
+            result = _process_python_file(py_file)
+            if result:
+                 files[result["rel_path"]] = result["data"]
+                 total_loc += result["data"]["loc"]
+                 total_comments += result["data"]["comments"]
     
     if frontend_base.exists():
         for js_file in frontend_base.rglob("*"):
-            if not js_file.is_file():
+             if not js_file.is_file():
                 continue
-            if js_file.suffix not in [".js", ".jsx", ".ts", ".tsx"]:
+             if js_file.suffix not in [".js", ".jsx", ".ts", ".tsx"]:
                 continue
-            if "node_modules" in str(js_file) or "dist" in str(js_file):
+             if "node_modules" in str(js_file) or "dist" in str(js_file):
                 continue
-            
-            try:
-                with open(js_file, encoding="utf-8", errors="ignore") as f:
-                    content = f.read()
-                
-                lines = content.split("\n")
-                loc = 0
-                comments = 0
-                in_multiline = False
-                
-                for line in lines:
-                    stripped = line.strip()
-                    if not stripped:
-                        continue
-                    
-                    if "/*" in stripped:
-                        in_multiline = True
-                    if "*/" in stripped:
-                        in_multiline = False
-                        comments += 1
-                        continue
-                    if in_multiline:
-                        comments += 1
-                        continue
-                    
-                    if stripped.startswith("//"):
-                        comments += 1
-                    else:
-                        loc += 1
-                
-                if loc > 0:
-                    abs_file = js_file.resolve()
-                    abs_cwd = Path.cwd().resolve()
-                    try:
-                        rel_path = str(abs_file.relative_to(abs_cwd))
-                    except ValueError:
-                        rel_path = str(js_file)
-                    file_type = "typescript" if js_file.suffix in [".ts", ".tsx"] else "javascript"
-                    files[rel_path] = {
-                        "loc": loc,
-                        "comments": comments,
-                        "ratio": comments / loc if loc > 0 else 0.0,
-                        "type": file_type
-                    }
-                    total_loc += loc
-                    total_comments += comments
-            except Exception:
-                pass
+             
+             result = _process_js_file(js_file)
+             if result:
+                 files[result["rel_path"]] = result["data"]
+                 total_loc += result["data"]["loc"]
+                 total_comments += result["data"]["comments"]
     
     return {
         "total_loc": total_loc,
@@ -523,6 +463,97 @@ def calculate_loc_stats(backend_path: str = "backend/app", frontend_path: str = 
         "ratio": total_comments / total_loc if total_loc > 0 else 0.0,
         "files": files
     }
+
+def _process_python_file(file_path: Path) -> dict | None:
+    try:
+        with open(file_path, encoding="utf-8", errors="ignore") as f:
+            lines = f.readlines()
+        
+        loc, comments = _count_python_lines(lines)
+        
+        if loc > 0:
+             return {
+                 "rel_path": _get_relative_path(file_path),
+                 "data": {
+                     "loc": loc,
+                     "comments": comments,
+                     "ratio": comments / loc if loc > 0 else 0.0,
+                     "type": "python"
+                 }
+             }
+    except Exception:
+        pass
+    return None
+
+def _count_python_lines(lines: list[str]) -> tuple[int, int]:
+    loc = 0
+    comments = 0
+    for line in lines:
+        stripped = line.strip()
+        if not stripped:
+            continue
+        if stripped.startswith("#") and not stripped.startswith("#!"):
+            comments += 1
+        else:
+            loc += 1
+    return loc, comments
+
+def _process_js_file(file_path: Path) -> dict | None:
+    try:
+        with open(file_path, encoding="utf-8", errors="ignore") as f:
+             content = f.read()
+        
+        lines = content.split("\n")
+        loc, comments = _count_js_lines(lines)
+
+        if loc > 0:
+            file_type = "typescript" if file_path.suffix in [".ts", ".tsx"] else "javascript"
+            return {
+                "rel_path": _get_relative_path(file_path),
+                "data": {
+                    "loc": loc,
+                    "comments": comments,
+                    "ratio": comments / loc if loc > 0 else 0.0,
+                    "type": file_type
+                }
+            }
+    except Exception:
+        pass
+    return None
+
+def _count_js_lines(lines: list[str]) -> tuple[int, int]:
+    loc = 0
+    comments = 0
+    in_multiline = False
+
+    for line in lines:
+        stripped = line.strip()
+        if not stripped:
+            continue
+
+        if "/*" in stripped:
+            in_multiline = True
+        if "*/" in stripped:
+            in_multiline = False
+            comments += 1
+            continue
+        if in_multiline:
+            comments += 1
+            continue
+
+        if stripped.startswith("//"):
+            comments += 1
+        else:
+            loc += 1
+    return loc, comments
+
+def _get_relative_path(file_path: Path) -> str:
+    abs_file = file_path.resolve()
+    abs_cwd = Path.cwd().resolve()
+    try:
+        return str(abs_file.relative_to(abs_cwd))
+    except ValueError:
+        return str(file_path)
 
 
 def find_large_files(backend_path: str = "backend/app", frontend_path: str = "frontends", threshold: int = 300) -> list:

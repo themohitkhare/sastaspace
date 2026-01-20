@@ -7,7 +7,7 @@ router = APIRouter()
 
 
 @router.get("/health")
-async def health_check(db = Depends(get_db)) -> dict[str, str]:  # type: ignore
+async def health_check(db = Depends(get_db)) -> dict[str, str]:
     """Health check endpoint that verifies the database connection."""
     try:
         await db.command("ping")

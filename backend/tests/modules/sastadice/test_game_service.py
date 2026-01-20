@@ -1,5 +1,6 @@
 """Tests for GameService and GameRepository."""
 import pytest
+from unittest.mock import patch
 from app.modules.sastadice.services.game_service import GameService
 from app.modules.sastadice.repository import GameRepository
 from app.modules.sastadice.schemas import (
@@ -9,6 +10,7 @@ from app.modules.sastadice.schemas import (
     TileCreate,
     PlayerCreate,
     ActionType,
+    DiceRollResult,
 )
 
 
@@ -459,6 +461,10 @@ class TestGameService:
         """Test the turn phase state machine flow."""
         service = GameService(db_database)
         game = await service.create_game()
+        
+        # Disable auctions for deterministic flow
+        game.settings.enable_auctions = False
+        await service.repository.update(game)
 
         tiles1 = [
             TileCreate(type=TileType.PROPERTY, name=f"Property {i}")
@@ -513,6 +519,11 @@ class TestGameService:
         ]
         player1 = await service.join_game(game.id, "Player 1", tiles)
         player2 = await service.join_game(game.id, "Player 2", tiles)
+        
+        # Disable auctions for deterministic flow
+        game.settings.enable_auctions = False
+        await service.repository.update(game)
+        
         await service.start_game(game.id, force=True)
 
         # Test ROLL_DICE

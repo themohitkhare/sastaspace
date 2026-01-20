@@ -1,5 +1,6 @@
 """Tests for SastaDice API endpoints."""
 import pytest
+from unittest.mock import patch
 from httpx import AsyncClient, ASGITransport
 from app.main import app
 from app.db.session import get_db
@@ -264,11 +265,12 @@ class TestSastaDiceAPI:
         await client.post(f"/api/v1/sastadice/games/{game_id}/start")
 
         # First roll dice to advance phase
-        roll_response = await client.post(
-            f"/api/v1/sastadice/games/{game_id}/action",
-            params={"player_id": player1_id},
-            json={"type": "ROLL_DICE", "payload": {}},
-        )
+        with patch("app.modules.sastadice.services.game_service.random.randint", side_effect=[1, 2]):
+            roll_response = await client.post(
+                f"/api/v1/sastadice/games/{game_id}/action",
+                params={"player_id": player1_id},
+                json={"type": "ROLL_DICE", "payload": {}},
+            )
         assert roll_response.status_code == 200
 
         # Check game state to see if we need to pass on property
@@ -276,11 +278,11 @@ class TestSastaDiceAPI:
         game_state = state_response.json()["game"]
         
         if game_state["turn_phase"] == "DECISION" and game_state.get("pending_decision"):
-            # Pass on property
+            # Buy property to avoid auction and go to POST_TURN
             pass_response = await client.post(
                 f"/api/v1/sastadice/games/{game_id}/action",
                 params={"player_id": player1_id},
-                json={"type": "PASS_PROPERTY", "payload": {}},
+                json={"type": "BUY_PROPERTY", "payload": {}},
             )
             assert pass_response.status_code == 200
 
@@ -400,6 +402,88 @@ class TestSastaDiceAPI:
             assert player["cash"] > 0
 
     async def test_player_colors_assigned(self, db_database, client):
+        """Test that players get assigned different colors."""
+        # Create game
+        create_response = await client.post("/api/v1/sastadice/games")
+        game_id = create_response.json()["id"]
+
+        # Join multiple players
+        player1_response = await client.post(
+            f"/api/v1/sastadice/games/{game_id}/join",
+            json={"name": "Player 1", "tiles": []}
+        )
+        player2_response = await client.post(
+            f"/api/v1/sastadice/games/{game_id}/join",
+            json={"name": "Player 2", "tiles": []}
+        )
+
+        player1 = player1_response.json()
+        player2 = player2_response.json()
+
+        assert player1["color"] != player2["color"]
+
+    async def test_toggle_ready_error(self, db_database, client):
+        """Test toggle_ready endpoint error handling."""
+        # Create game
+        create_response = await client.post("/api/v1/sastadice/games")
+        game_id = create_response.json()["id"]
+
+        # Try to toggle ready for non-existent player
+        response = await client.post(f"/api/v1/sastadice/games/{game_id}/ready/invalid_player_id")
+        assert response.status_code == 400
+
+    async def test_kick_player_error(self, db_database, client):
+        """Test kick_player endpoint error handling."""
+        # Create game
+        create_response = await client.post("/api/v1/sastadice/games")
+        game_id = create_response.json()["id"]
+
+        # Try to kick player with invalid host
+        response = await client.delete(
+            f"/api/v1/sastadice/games/{game_id}/players/invalid_player_id",
+            params={"host_id": "invalid_host"}
+        )
+        assert response.status_code == 400
+
+    async def test_update_settings_error(self, db_database, client):
+        """Test update_settings endpoint error handling."""
+        # Create game
+        create_response = await client.post("/api/v1/sastadice/games")
+        game_id = create_response.json()["id"]
+
+        # Try to update settings without host_id
+        response = await client.patch(
+            f"/api/v1/sastadice/games/{game_id}/settings",
+            json={"settings": {"round_limit": 20}}
+        )
+        assert response.status_code == 400
+
+        # Try with invalid host_id type
+        response = await client.patch(
+            f"/api/v1/sastadice/games/{game_id}/settings",
+            json={"host_id": 123, "settings": {"round_limit": 20}}
+        )
+        assert response.status_code == 400
+
+    async def test_start_game_error(self, db_database, client):
+        """Test start_game endpoint error handling."""
+        # Try to start non-existent game
+        response = await client.post("/api/v1/sastadice/games/invalid_game_id/start")
+        assert response.status_code == 400
+
+    async def test_simulate_game_error(self, db_database, client):
+        """Test simulate_game endpoint error handling."""
+        # Try to simulate non-existent game
+        response = await client.post("/api/v1/sastadice/games/invalid_game_id/simulate")
+        assert response.status_code == 400
+
+    async def test_process_cpu_turns_error(self, db_database, client):
+        """Test process_cpu_turns endpoint error handling."""
+        # Try to process CPU turns for non-existent game
+        response = await client.post("/api/v1/sastadice/games/invalid_game_id/cpu-turn")
+        assert response.status_code == 400
+
+    async def test_player_colors_assigned(self, db_database, client):
         """Test that players are assigned unique colors."""
         create_response = await client.post("/api/v1/sastadice/games")
         game_id = create_response.json()["id"]
@@ -428,3 +512,64 @@ class TestSastaDiceAPI:
         assert player1["color"].startswith("#")
         assert player2["color"].startswith("#")
         assert player1["color"] != player2["color"]
+
+    async def test_toggle_ready_error(self, db_database, client):
+        """Test toggle_ready endpoint error handling."""
+        # Create game
+        create_response = await client.post("/api/v1/sastadice/games")
+        game_id = create_response.json()["id"]
+
+        # Try to toggle ready for non-existent player
+        response = await client.post(f"/api/v1/sastadice/games/{game_id}/ready/invalid_player_id")
+        assert response.status_code == 400
+
+    async def test_kick_player_error(self, db_database, client):
+        """Test kick_player endpoint error handling."""
+        # Create game
+        create_response = await client.post("/api/v1/sastadice/games")
+        game_id = create_response.json()["id"]
+
+        # Try to kick player with invalid host
+        response = await client.delete(
+            f"/api/v1/sastadice/games/{game_id}/players/invalid_player_id",
+            params={"host_id": "invalid_host"}
+        )
+        assert response.status_code == 400
+
+    async def test_update_settings_error(self, db_database, client):
+        """Test update_settings endpoint error handling."""
+        # Create game
+        create_response = await client.post("/api/v1/sastadice/games")
+        game_id = create_response.json()["id"]
+
+        # Try to update settings without host_id
+        response = await client.patch(
+            f"/api/v1/sastadice/games/{game_id}/settings",
+            json={"settings": {"round_limit": 20}}
+        )
+        assert response.status_code == 400
+
+        # Try with invalid host_id type
+        response = await client.patch(
+            f"/api/v1/sastadice/games/{game_id}/settings",
+            json={"host_id": 123, "settings": {"round_limit": 20}}
+        )
+        assert response.status_code == 400
+
+    async def test_start_game_error(self, db_database, client):
+        """Test start_game endpoint error handling."""
+        # Try to start non-existent game
+        response = await client.post("/api/v1/sastadice/games/invalid_game_id/start")
+        assert response.status_code == 400
+
+    async def test_simulate_game_error(self, db_database, client):
+        """Test simulate_game endpoint error handling."""
+        # Try to simulate non-existent game
+        response = await client.post("/api/v1/sastadice/games/invalid_game_id/simulate")
+        assert response.status_code == 400
+
+    async def test_process_cpu_turns_error(self, db_database, client):
+        """Test process_cpu_turns endpoint error handling."""
+        # Try to process CPU turns for non-existent game
+        response = await client.post("/api/v1/sastadice/games/invalid_game_id/cpu-turn")
+        assert response.status_code == 400

@@ -1,7 +1,7 @@
 """Game repository for MongoDB operations."""
 from typing import Optional
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 
 from app.core.db_repo import BaseRepository
 from app.modules.sastadice.schemas import (
@@ -110,7 +110,7 @@ class GameRepository(BaseRepository[GameSession]):
         color = PLAYER_COLORS[count % len(PLAYER_COLORS)]
         
         player_doc = PlayerDocument(
-            id=player_id,
+            _id=player_id,
             game_id=game_id,
             name=player_create.name,
             cash=0,
@@ -119,7 +119,7 @@ class GameRepository(BaseRepository[GameSession]):
             properties=[],
             ready=False,
             is_bankrupt=False,
-            created_at=datetime.utcnow(),
+            created_at=datetime.now(timezone.utc),
         )
         
         await self.database.players.insert_one(player_doc.to_dict())
@@ -210,7 +210,7 @@ class GameRepository(BaseRepository[GameSession]):
             tile_doc = TileDocument.from_tile(tile, game_id)
             await self.database.tiles.insert_one(tile_doc.to_dict())
 
-    async def update_game_status(self, game_id: str, status: GameStatus) -> GameSession:
+    async def update_game_status(self, game_id: str, status: GameStatus) -> Optional[GameSession]:
         """Update game status."""
         await self.database.game_sessions.update_one(
             {"_id": game_id},
