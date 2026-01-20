@@ -31,6 +31,7 @@ env/
 
 # Coverage reports
 backend/coverage.json
+backend/coverage.xml
 coverage/
 *.coverage
 .coverage.*
@@ -100,3 +101,4 @@ traefik/letsencrypt/acme.json
 # RepoHealth Dashboard
 .repo_health_history.json
 dashboard.html
+dashboard_data.json
