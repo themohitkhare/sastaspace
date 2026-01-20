@@ -14,18 +14,25 @@ export default function PropertyDetailsModal({ tile, onClose, onRefresh }) {
     const owner = game?.players?.find(p => p.id === tile.owner_id)
     const isOwner = owner?.id === playerId
     const isUnowned = !tile.owner_id
-    const isProeprty = tile.type === 'PROPERTY'
+    const isProperty = tile.type === 'PROPERTY'
 
-    // Check upgrade eligibility
     const canUpgrade = isOwner && tile.upgrade_level < 2
 
-    // Check full set ownership
     const colorTiles = game?.board?.filter(t => t.type === 'PROPERTY' && t.color === tile.color) || []
     const ownsFullSet = colorTiles.length > 0 && colorTiles.every(t => t.owner_id === playerId)
 
-    // Upgrade cost
-    // Level 0 -> 1: Base Price
-    // Level 1 -> 2: Base Price * 2
+    const ownerOwnsFullSet = owner && colorTiles.length > 0 && colorTiles.every(t => t.owner_id === owner.id)
+
+    const calculateDisplayRent = () => {
+        let rent = tile.rent || 0
+        if (ownerOwnsFullSet) rent *= 2
+        if (tile.upgrade_level === 1) rent = Math.floor(rent * 1.5)
+        else if (tile.upgrade_level === 2) rent = Math.floor(rent * 3.0)
+        return rent
+    }
+    const displayRent = calculateDisplayRent()
+    const hasBonus = displayRent !== (tile.rent || 0)
+
     const upgradeCost = tile.price * (tile.upgrade_level === 1 ? 2 : 1)
     const canAfford = myPlayer?.cash >= upgradeCost
 
@@ -46,6 +53,26 @@ export default function PropertyDetailsModal({ tile, onClose, onRefresh }) {
         }
     }
 
+    // Calculate refund for downgrade (50% of original cost)
+    const downgradeRefund = tile.upgrade_level === 2
+        ? tile.price  // Level 2 -> 1: refund half of price*2 = price
+        : Math.floor(tile.price / 2)  // Level 1 -> 0: refund half of price
+
+    const handleDowngrade = async () => {
+        if (!confirm(`Sell upgrade for $${downgradeRefund}?`)) return
+        try {
+            await apiClient.post(`/sastadice/games/${gameId}/action`, {
+                type: 'DOWNGRADE',
+                player_id: playerId,
+                payload: { tile_id: tile.id }
+            })
+            onRefresh && onRefresh()
+            onClose && onClose()
+        } catch (err) {
+            alert(err.response?.data?.message || 'Downgrade failed')
+        }
+    }
+
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={onClose}>
             <div className="bg-sasta-white border-brutal-lg shadow-brutal-lg max-w-sm w-full p-0 overflow-hidden text-left" onClick={e => e.stopPropagation()}>
@@ -59,13 +86,12 @@ export default function PropertyDetailsModal({ tile, onClose, onRefresh }) {
                 </div>
 
                 <div className="p-4 font-data space-y-3">
-                    {/* Status */}
                     <div className="flex justify-between items-center border-b border-gray-200 pb-2">
                         <span className="text-zinc-500 text-xs">TYPE</span>
                         <span className="font-bold text-sm">{tile.type}</span>
                     </div>
 
-                    {isProeprty && (
+                    {isProperty && (
                         <>
                             <div className="flex justify-between items-center border-b border-gray-200 pb-2">
                                 <span className="text-zinc-500 text-xs">OWNER</span>
@@ -83,7 +109,14 @@ export default function PropertyDetailsModal({ tile, onClose, onRefresh }) {
 
                             <div className="flex justify-between items-center border-b border-gray-200 pb-2">
                                 <span className="text-zinc-500 text-xs">RENT</span>
-                                <span className="font-bold text-lg">${tile.rent || 0}</span>
+                                <span className="font-bold text-lg">
+                                    ${displayRent}
+                                    {hasBonus && (
+                                        <span className="text-xs text-green-600 ml-1">
+                                            (base: ${tile.rent})
+                                        </span>
+                                    )}
+                                </span>
                             </div>
 
                             <div className="flex justify-between items-center border-b border-gray-200 pb-2">
@@ -91,7 +124,6 @@ export default function PropertyDetailsModal({ tile, onClose, onRefresh }) {
                                 <span className="font-bold text-sasta-accent bg-sasta-black px-2 text-xs">{levelName} {tile.upgrade_level > 0 && '⚡'}</span>
                             </div>
 
-                            {/* Upgrade UI */}
                             {isOwner && (
                                 <div className="mt-4 pt-2 border-t-2 border-sasta-black">
                                     {tile.upgrade_level < 2 ? (
@@ -110,8 +142,8 @@ export default function PropertyDetailsModal({ tile, onClose, onRefresh }) {
                                                     onClick={handleUpgrade}
                                                     disabled={!canAfford}
                                                     className={`w-full py-2 border-brutal-sm font-bold text-sm transition-transform active:scale-95 ${canAfford
-                                                            ? 'bg-sasta-accent text-sasta-black hover:bg-white'
-                                                            : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                                                        ? 'bg-sasta-accent text-sasta-black hover:bg-white'
+                                                        : 'bg-gray-200 text-gray-400 cursor-not-allowed'
                                                         }`}
                                                 >
                                                     {canAfford ? 'UPGRADE NOW' : 'INSUFFICIENT FUNDS'}
@@ -123,12 +155,21 @@ export default function PropertyDetailsModal({ tile, onClose, onRefresh }) {
                                             ★ MAX LEVEL REACHED ★
                                         </div>
                                     )}
+
+                                    {tile.upgrade_level > 0 && (
+                                        <button
+                                            onClick={handleDowngrade}
+                                            className="w-full py-2 mt-2 border-brutal-sm font-bold text-sm bg-red-100 text-red-700 hover:bg-red-200 transition-colors"
+                                        >
+                                            💸 SELL UPGRADE (+${downgradeRefund})
+                                        </button>
+                                    )}
                                 </div>
                             )}
                         </>
                     )}
 
-                    {!isProeprty && (
+                    {!isProperty && (
                         <div className="bg-gray-50 p-2 text-xs text-center border overflow-auto max-h-40">
                             {tile.description || JSON.stringify(tile.effect_config) || 'No details'}
                         </div>

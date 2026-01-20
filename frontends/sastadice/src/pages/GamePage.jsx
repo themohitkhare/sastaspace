@@ -9,6 +9,7 @@ import TurnAnnouncement from '../components/game/TurnAnnouncement'
 import CenterStage from '../components/game/CenterStage'
 import AuctionModal from '../components/game/AuctionModal'
 import PropertyDetailsModal from '../components/game/PropertyDetailsModal'
+import PropertyManagerModal from '../components/game/PropertyManagerModal'
 import PeekEventsModal from '../components/game/PeekEventsModal'
 import TurnTimer from '../components/game/TurnTimer'
 import RulesModal from '../components/RulesModal'
@@ -29,6 +30,7 @@ export default function GamePage() {
   const lastAnnouncedTurnRef = useRef(null)
 
   const [selectedTile, setSelectedTile] = useState(null)
+  const [showPropertyManager, setShowPropertyManager] = useState(false)
 
   const pollingInterval = game?.turn_phase === 'AUCTION' ? 300 : 1500
   const { refetch } = useSastaPolling(gameId, pollingInterval)
@@ -264,6 +266,8 @@ export default function GamePage() {
               onActionComplete={handleActionComplete}
               myPlayer={myPlayer}
               onDdosActivate={setDdosMode}
+              onManageProperties={() => setShowPropertyManager(true)}
+              hasUpgradeableProperties={game?.board?.some(t => t.owner_id === playerId && t.type === 'PROPERTY')}
             />
           </BoardView>
         </div>
@@ -326,6 +330,18 @@ export default function GamePage() {
         onClose={() => setSelectedTile(null)}
         onRefresh={refetch}
       />
+
+      {showPropertyManager && (
+        <PropertyManagerModal
+          tiles={game?.board || []}
+          playerId={playerId}
+          onSelectTile={(tile) => {
+            setShowPropertyManager(false)
+            setSelectedTile(tile)
+          }}
+          onClose={() => setShowPropertyManager(false)}
+        />
+      )}
 
       <PeekEventsModal
         events={peekEvents}

@@ -47,9 +47,9 @@ class WinCondition(str, Enum):
 
 class ChaosLevel(str, Enum):
     """Event chaos intensity."""
-    CHILL = "CHILL"  # Fewer events, less dramatic
-    NORMAL = "NORMAL"  # Balanced chaos
-    CHAOS = "CHAOS"  # Maximum events, high variance
+    CHILL = "CHILL"
+    NORMAL = "NORMAL"
+    CHAOS = "CHAOS"
 
 
 class GameSettings(BaseModel):
@@ -76,12 +76,10 @@ class GameSettings(BaseModel):
     
     enable_black_market: bool = True
     
-    # Special Modes
     doubles_give_extra_turn: bool = True
     triple_doubles_jail: bool = True
 
 
-# Property color groups
 PROPERTY_COLORS = ["RED", "BLUE", "GREEN", "PURPLE", "ORANGE", "TEAL"]
 
 
@@ -137,7 +135,7 @@ class Player(PlayerCreate):
 class PendingDecision(BaseModel):
     """Pending decision for current player."""
 
-    type: str  # "BUY", "EVENT"
+    type: str
     tile_id: Optional[str] = None
     price: int = 0
     event_data: Optional[dict] = None
@@ -200,13 +198,14 @@ class ActionType(str, Enum):
 
     ROLL_DICE = "ROLL_DICE"
     BUY_PROPERTY = "BUY_PROPERTY"
-    PASS_PROPERTY = "PASS_PROPERTY"  # Decline to buy -> triggers auction
+    PASS_PROPERTY = "PASS_PROPERTY"
     END_TURN = "END_TURN"
     BID = "BID"
     RESOLVE_AUCTION = "RESOLVE_AUCTION"
     UPGRADE = "UPGRADE"
+    DOWNGRADE = "DOWNGRADE"
     BUY_BUFF = "BUY_BUFF"
-    PEEK_EVENTS = "PEEK_EVENTS"  # Optional if used as action
+    PEEK_EVENTS = "PEEK_EVENTS"
     BLOCK_TILE = "BLOCK_TILE"
     PROPOSE_TRADE = "PROPOSE_TRADE"
     ACCEPT_TRADE = "ACCEPT_TRADE"
@@ -250,7 +249,7 @@ class SastaEvent(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     name: str
     description: str
-    effect_type: str  # "CASH_GAIN", "CASH_LOSS", "SKIP_BUY", "COLLECT_FROM_ALL", etc.
+    effect_type: str
     effect_value: int = 0
 
 
