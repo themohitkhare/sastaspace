@@ -63,18 +63,18 @@ describe('LobbyView', () => {
 
   it('renders lobby heading', () => {
     render(<LobbyView />)
-    expect(screen.getByText('GAME LOBBY')).toBeInTheDocument()
+    expect(screen.getByText('SASTADICE')).toBeInTheDocument()
   })
 
   it('renders join form when not joined', () => {
     render(<LobbyView />)
-    expect(screen.getByText(/AUTHENTICATE PLAYER/i)).toBeInTheDocument()
+    expect(screen.getByText(/AUTHENTICATE_OPERATOR/i)).toBeInTheDocument()
   })
 
   it('shows join form when player not in game', () => {
     render(<LobbyView />)
-    expect(screen.getByText(/AUTHENTICATE PLAYER/i)).toBeInTheDocument()
-    expect(screen.getByPlaceholderText('ENTER_NAME')).toBeInTheDocument()
+    expect(screen.getByText(/AUTHENTICATE_OPERATOR/i)).toBeInTheDocument()
+    expect(screen.getByPlaceholderText('CODENAME')).toBeInTheDocument()
   })
 
   it('shows waiting message when player already joined', () => {
@@ -100,10 +100,10 @@ describe('LobbyView', () => {
     const user = userEvent.setup()
     render(<LobbyView />)
 
-    const nameInput = screen.getByPlaceholderText('ENTER_NAME')
+    const nameInput = screen.getByPlaceholderText('CODENAME')
     await user.type(nameInput, 'Test Player')
 
-    const joinButton = screen.getByRole('button', { name: /ENTER/i })
+    const joinButton = screen.getByRole('button', { name: /INIT_CONNECTION/i })
     await user.click(joinButton)
 
     await waitFor(() => {
@@ -122,7 +122,7 @@ describe('LobbyView', () => {
     render(<LobbyView />)
 
     // Try to join without entering a name
-    const joinButton = screen.getByRole('button', { name: /ENTER/i })
+    const joinButton = screen.getByRole('button', { name: /INIT_CONNECTION/i })
 
     // Button should be disabled when name is empty
     expect(joinButton).toBeDisabled()
@@ -138,10 +138,10 @@ describe('LobbyView', () => {
     const user = userEvent.setup()
     render(<LobbyView />)
 
-    const nameInput = screen.getByPlaceholderText('ENTER_NAME')
+    const nameInput = screen.getByPlaceholderText('CODENAME')
     await user.type(nameInput, 'Test Player')
 
-    const joinButton = screen.getByRole('button', { name: /ENTER/i })
+    const joinButton = screen.getByRole('button', { name: /INIT_CONNECTION/i })
     await user.click(joinButton)
 
     await waitFor(() => {
@@ -151,7 +151,7 @@ describe('LobbyView', () => {
     consoleError.mockRestore()
   })
 
-  it('shows start button when player has joined', () => {
+  it('shows launch control section when player has joined', () => {
     useGameStore.mockImplementation((selector) => {
       const state = {
         gameId: mockGameId,
@@ -167,7 +167,7 @@ describe('LobbyView', () => {
     })
 
     render(<LobbyView />)
-    expect(screen.getByText(/LAUNCH CONTROL/i)).toBeInTheDocument()
+    expect(screen.getByText(/LAUNCH_SEQUENCE/i)).toBeInTheDocument()
   })
 
   it('allows toggling ready state via launch key', async () => {
@@ -229,5 +229,127 @@ describe('LobbyView', () => {
     await waitFor(() => {
       expect(window.alert).toHaveBeenCalledWith('Failed to toggle ready')
     })
+  })
+
+  // === ANCHOR PATTERN LAYOUT TESTS ===
+
+  it('renders access code section', () => {
+    render(<LobbyView />)
+    expect(screen.getByText('ACCESS_KEY')).toBeInTheDocument()
+    expect(screen.getByText('GAME-123')).toBeInTheDocument()
+  })
+
+  it('renders COPY button for game code', () => {
+    render(<LobbyView />)
+    expect(screen.getByText('COPY_ACCESS_KEY')).toBeInTheDocument()
+  })
+
+  it('renders RULES button', () => {
+    render(<LobbyView />)
+    expect(screen.getByText(/REQ_INTEL/)).toBeInTheDocument()
+  })
+
+  it('displays connected players count', () => {
+    useGameStore.mockImplementation((selector) => {
+      const state = {
+        gameId: mockGameId,
+        game: {
+          ...mockGame,
+          players: [
+            { id: 'player-1', name: 'Player 1', ready: false, color: '#FF0000' },
+          ],
+        },
+        playerId: 'player-1',
+        setPlayerId: mockSetPlayerId,
+        setGame: mockSetGame,
+      }
+      return selector(state)
+    })
+
+    render(<LobbyView />)
+    expect(screen.getByText('01')).toBeInTheDocument() // Adjusted to expect '01' based on rendered output
+  })
+
+  it('shows launch control section when player has joined', () => {
+    useGameStore.mockImplementation((selector) => {
+      const state = {
+        gameId: mockGameId,
+        game: {
+          ...mockGame,
+          players: [{ id: 'player-1', name: 'Player 1', ready: false, color: '#FF0000' }],
+        },
+        playerId: 'player-1',
+        setPlayerId: mockSetPlayerId,
+        setGame: mockSetGame,
+      }
+      return selector(state)
+    })
+
+    render(<LobbyView />)
+    expect(screen.getByText('LAUNCH_SEQUENCE')).toBeInTheDocument()
+  })
+
+  it('displays armed count in launch control', () => {
+    useGameStore.mockImplementation((selector) => {
+      const state = {
+        gameId: mockGameId,
+        game: {
+          ...mockGame,
+          players: [
+            { id: 'player-1', name: 'Player 1', ready: true, color: '#FF0000' },
+            { id: 'player-2', name: 'Player 2', ready: false, color: '#00FF00' },
+          ],
+        },
+        playerId: 'player-1',
+        setPlayerId: mockSetPlayerId,
+        setGame: mockSetGame,
+      }
+      return selector(state)
+    })
+
+    render(<LobbyView />)
+    expect(screen.getByText('1/2 ARMED')).toBeInTheDocument()
+  })
+
+  it('shows all armed message when everyone is ready', () => {
+    useGameStore.mockImplementation((selector) => {
+      const state = {
+        gameId: mockGameId,
+        game: {
+          ...mockGame,
+          players: [
+            { id: 'player-1', name: 'Player 1', ready: true, color: '#FF0000' },
+            { id: 'player-2', name: 'Player 2', ready: true, color: '#00FF00' },
+          ],
+        },
+        playerId: 'player-1',
+        setPlayerId: mockSetPlayerId,
+        setGame: mockSetGame,
+      }
+      return selector(state)
+    })
+
+    render(<LobbyView />)
+    expect(screen.getByText(/LAUNCH IMMINENT/)).toBeInTheDocument()
+  })
+
+  it('shows host crown indicator for host player', () => {
+    useGameStore.mockImplementation((selector) => {
+      const state = {
+        gameId: mockGameId,
+        game: {
+          ...mockGame,
+          host_id: 'player-1',
+          players: [{ id: 'player-1', name: 'Player 1', ready: false, color: '#FF0000' }],
+        },
+        playerId: 'player-1',
+        setPlayerId: mockSetPlayerId,
+        setGame: mockSetGame,
+      }
+      return selector(state)
+    })
+
+    render(<LobbyView />)
+    expect(screen.getAllByText('CMD')[0]).toBeInTheDocument()
   })
 })
