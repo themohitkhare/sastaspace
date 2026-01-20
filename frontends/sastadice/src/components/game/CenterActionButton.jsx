@@ -11,6 +11,8 @@ export default function CenterActionButton({
     onActionComplete,
     myPlayer,
     onDdosActivate,
+    onManageProperties,
+    hasUpgradeableProperties,
 }) {
     const [isLoading, setIsLoading] = useState(false)
     const [error, setError] = useState(null)
@@ -117,6 +119,15 @@ export default function CenterActionButton({
         const hasDdosBuff = myPlayer?.active_buff === 'DDOS'
         return (
             <div className="space-y-2">
+                {hasUpgradeableProperties && onManageProperties && (
+                    <button
+                        onClick={onManageProperties}
+                        disabled={isLoading}
+                        className="w-full py-2 px-4 bg-purple-500 text-white font-zero font-bold text-sm border-brutal-sm shadow-brutal-sm hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none transition-all disabled:opacity-50"
+                    >
+                        🏠 MANAGE PROPERTIES
+                    </button>
+                )}
                 {hasDdosBuff && onDdosActivate && (
                     <button
                         onClick={() => onDdosActivate(true)}
@@ -198,6 +209,15 @@ export default function CenterActionButton({
         const hasDdosBuff = myPlayer?.active_buff === 'DDOS'
         return (
             <div className="space-y-2">
+                {hasUpgradeableProperties && onManageProperties && (
+                    <button
+                        onClick={onManageProperties}
+                        disabled={isLoading}
+                        className="w-full py-2 px-4 bg-purple-500 text-white font-zero font-bold text-sm border-brutal-sm shadow-brutal-sm hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none transition-all disabled:opacity-50"
+                    >
+                        🏠 MANAGE PROPERTIES
+                    </button>
+                )}
                 {hasDdosBuff && onDdosActivate && (
                     <button
                         onClick={() => onDdosActivate(true)}

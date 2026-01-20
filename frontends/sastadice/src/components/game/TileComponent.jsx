@@ -8,7 +8,8 @@ const TILE_TYPE_COLORS = {
   GO: '#00ff00',
 }
 
-export default function TileComponent({ tile, players = [], width, height, size = 72, isLandscape = false, edge = null, boardSize = 0, style = {}, isBlocked = false, isDdosTarget = false }) {
+export default function TileComponent({ tile, players = [], width, height, size = 72, isLandscape = false, edge = null, boardSize = 0, style = {}, isBlocked = false, isDdosTarget = false, onClick }) {
+  const isClickable = tile.type === 'PROPERTY' && onClick
   const owner = players.find(p => p.id === tile.owner_id)
   const isUnowned = !tile.owner_id
   const isPurchasable = tile.type === 'PROPERTY' && isUnowned
@@ -53,7 +54,8 @@ export default function TileComponent({ tile, players = [], width, height, size 
 
   return (
     <div
-      className="tile relative overflow-hidden"
+      className={`tile relative overflow-hidden ${isClickable ? 'cursor-pointer hover:brightness-110 transition-all' : ''}`}
+      onClick={isClickable ? () => onClick(tile) : undefined}
       style={{
         width: `${tileWidth}px`,
         height: `${tileHeight}px`,
@@ -79,6 +81,21 @@ export default function TileComponent({ tile, players = [], width, height, size 
           >
             BLOCKED
           </div>
+        </div>
+      )}
+      {/* Upgrade level badge */}
+      {tile.upgrade_level > 0 && size >= 50 && (
+        <div
+          className="absolute font-zero font-bold text-yellow-500 flex items-center justify-center"
+          style={{
+            top: '2px',
+            left: '2px',
+            fontSize: `${Math.max(8, Math.round(10 * scaleFactor))}px`,
+            zIndex: 10,
+            textShadow: '1px 1px 2px #000',
+          }}
+        >
+          {tile.upgrade_level === 1 ? '⚡' : '⚡⚡'}
         </div>
       )}
       {owner && size >= 50 && (
