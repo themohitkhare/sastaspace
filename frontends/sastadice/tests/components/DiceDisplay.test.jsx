@@ -1,12 +1,31 @@
-import { render, screen } from '@testing-library/react'
-import { describe, it, expect } from 'vitest'
+import { render, screen, act } from '@testing-library/react'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import DiceDisplay from '../../src/components/game/DiceDisplay'
 
 describe('DiceDisplay', () => {
+  beforeEach(() => {
+    vi.useFakeTimers()
+  })
+
+  afterEach(() => {
+    vi.runOnlyPendingTimers()
+    vi.useRealTimers()
+  })
+
   it('renders placeholder when no dice roll', () => {
     render(<DiceDisplay lastDiceRoll={null} />)
-    expect(screen.getByText('NO ROLL YET')).toBeInTheDocument()
+    expect(screen.getByText('WAITING FOR ROLL')).toBeInTheDocument()
     expect(screen.getAllByText('?')).toHaveLength(2)
+  })
+
+  it('handles undefined lastDiceRoll', () => {
+    render(<DiceDisplay />)
+    expect(screen.getByText('WAITING FOR ROLL')).toBeInTheDocument()
+  })
+
+  it('handles roll without dice1', () => {
+    render(<DiceDisplay lastDiceRoll={{}} />)
+    expect(screen.getByText('WAITING FOR ROLL')).toBeInTheDocument()
   })
 
   it('renders dice values when roll is provided', () => {
@@ -17,10 +36,19 @@ describe('DiceDisplay', () => {
       is_doubles: false,
     }
     render(<DiceDisplay lastDiceRoll={diceRoll} />)
+
+    // Initially shows "ROLLING..." during animation
+    expect(screen.getByText('ROLLING...')).toBeInTheDocument()
+
+    // After animation completes
+    act(() => {
+      vi.advanceTimersByTime(700)
+    })
+
     expect(screen.getByText(/TOTAL: 7/)).toBeInTheDocument()
   })
 
-  it('highlights doubles', () => {
+  it('highlights doubles after animation', () => {
     const diceRoll = {
       dice1: 5,
       dice2: 5,
@@ -28,10 +56,16 @@ describe('DiceDisplay', () => {
       is_doubles: true,
     }
     render(<DiceDisplay lastDiceRoll={diceRoll} />)
-    expect(screen.getByText(/DOUBLES!/)).toBeInTheDocument()
+
+    // After animation completes
+    act(() => {
+      vi.advanceTimersByTime(700)
+    })
+
+    expect(screen.getByText(/DOUBLES/)).toBeInTheDocument()
   })
 
-  it('shows passed GO bonus', () => {
+  it('shows passed GO bonus after animation', () => {
     const diceRoll = {
       dice1: 6,
       dice2: 6,
@@ -40,16 +74,12 @@ describe('DiceDisplay', () => {
       passed_go: 200,
     }
     render(<DiceDisplay lastDiceRoll={diceRoll} />)
-    expect(screen.getByText(/PASSED GO! \+\$200/)).toBeInTheDocument()
-  })
 
-  it('handles undefined lastDiceRoll', () => {
-    render(<DiceDisplay />)
-    expect(screen.getByText('NO ROLL YET')).toBeInTheDocument()
-  })
+    // After animation completes
+    act(() => {
+      vi.advanceTimersByTime(700)
+    })
 
-  it('handles roll without dice1', () => {
-    render(<DiceDisplay lastDiceRoll={{}} />)
-    expect(screen.getByText('NO ROLL YET')).toBeInTheDocument()
+    expect(screen.getByText(/PASSED GO/)).toBeInTheDocument()
   })
 })

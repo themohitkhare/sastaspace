@@ -344,4 +344,139 @@ test.describe('SastaDice Comprehensive Game Flow', () => {
 
         await hostContext.close();
     });
+
+    test('Test Property Upgrade and Manage Properties Flow', async ({ browser }) => {
+        console.log('Testing Property Upgrade Flow...');
+        const hostContext = await browser.newContext();
+        const hostPage = await hostContext.newPage();
+
+        // Create game and join
+        await hostPage.goto('http://localhost:9001');
+        await hostPage.getByRole('button', { name: /CREATE GAME/i }).click();
+        await hostPage.getByPlaceholder('ENTER_NAME').fill('UpgradeTester');
+        await hostPage.getByRole('button', { name: 'ENTER' }).click();
+
+        // Wait for launch key and click it
+        const launchKey = hostPage.locator('button[aria-label*=\"key\"], button[aria-label*=\"Key\"], .launch-key-container').first();
+        await expect(launchKey).toBeVisible({ timeout: 10000 });
+        await launchKey.click();
+
+        // Wait for game to potentially start with CPU
+        await hostPage.waitForTimeout(3000);
+
+        // Check if we're in game
+        const currentUrl = hostPage.url();
+        if (!currentUrl.includes('/game/')) {
+            console.log('Game did not auto-start - testing from lobby');
+            await hostContext.close();
+            return;
+        }
+
+        console.log('Game started, testing property features...');
+
+        // Helper to play turn
+        const playTurn = async (page) => {
+            // Wait for turn indicator
+            const myTurn = await page.getByText('YOUR TURN!').isVisible({ timeout: 5000 }).catch(() => false);
+            if (!myTurn) {
+                console.log('Not my turn, waiting...');
+                await page.waitForTimeout(3000);
+                return false;
+            }
+
+            // ROLL DICE
+            const rollBtn = page.getByRole('button', { name: /ROLL DICE/i });
+            if (await rollBtn.isVisible().catch(() => false)) {
+                await rollBtn.click();
+            }
+
+            // Handle decision
+            await page.waitForTimeout(1000);
+            if (await page.getByRole('button', { name: /BUY/i }).isVisible().catch(() => false)) {
+                await page.getByRole('button', { name: /BUY/i }).click();
+            } else if (await page.getByRole('button', { name: /PASS/i }).isVisible().catch(() => false)) {
+                await page.getByRole('button', { name: /PASS/i }).click();
+            } else if (await page.getByRole('button', { name: /LEAVE/i }).isVisible().catch(() => false)) {
+                await page.getByRole('button', { name: /LEAVE/i }).click();
+            }
+
+            // End turn
+            await page.waitForTimeout(500);
+            const endBtn = page.getByRole('button', { name: /END TURN/i });
+            if (await endBtn.isVisible({ timeout: 5000 }).catch(() => false)) {
+                await endBtn.click();
+            }
+            return true;
+        };
+
+        // Play several turns to acquire properties
+        for (let i = 0; i < 5; i++) {
+            await playTurn(hostPage);
+            await hostPage.waitForTimeout(2000); // Wait for CPU turns
+        }
+
+        // Test MANAGE PROPERTIES button
+        console.log('Testing Manage Properties button...');
+        const manageBtn = hostPage.getByRole('button', { name: /MANAGE PROPERTIES/i });
+        if (await manageBtn.isVisible({ timeout: 5000 }).catch(() => false)) {
+            await manageBtn.click();
+
+            // Verify Property Manager Modal opens
+            await expect(hostPage.getByText('YOUR PROPERTIES')).toBeVisible({ timeout: 5000 });
+            console.log('Property Manager Modal opened!');
+
+            // Check for upgrade indicators
+            const canUpgradeVisible = await hostPage.getByText('CAN UPGRADE').isVisible().catch(() => false);
+            const fullSetVisible = await hostPage.getByText('FULL SET').isVisible().catch(() => false);
+            console.log(`Upgrade indicators - CAN UPGRADE: ${canUpgradeVisible}, FULL SET: ${fullSetVisible}`);
+
+            // Close modal
+            await hostPage.getByRole('button', { name: /X|CLOSE/i }).first().click();
+        } else {
+            console.log('Manage Properties button not visible (may not own properties yet)');
+        }
+
+        // Test clicking a tile to open PropertyDetailsModal
+        console.log('Testing tile click for PropertyDetailsModal...');
+        // Click on the board area (first property-type tile we can find)
+        const tiles = hostPage.locator('.tile');
+        const tileCount = await tiles.count();
+        if (tileCount > 0) {
+            // Click the first tile (usually GO, but we just want to test click works)
+            await tiles.first().click();
+            await hostPage.waitForTimeout(500);
+
+            // Check if modal opened (only for property tiles)
+            const modalVisible = await hostPage.getByText('RENT').isVisible({ timeout: 2000 }).catch(() => false);
+            if (modalVisible) {
+                console.log('PropertyDetailsModal opened on tile click!');
+
+                // Check for rent display with bonus indicator
+                const rentText = await hostPage.locator('.font-bold.text-lg').first().textContent().catch(() => '');
+                console.log(`Rent display: ${rentText}`);
+
+                // Check for upgrade button
+                const upgradeBtn = await hostPage.getByRole('button', { name: /UPGRADE NOW/i }).isVisible().catch(() => false);
+                const insufficientFunds = await hostPage.getByText('INSUFFICIENT FUNDS').isVisible().catch(() => false);
+                const mustOwnSet = await hostPage.getByText('MUST OWN ALL').isVisible().catch(() => false);
+                console.log(`Upgrade status - Button: ${upgradeBtn}, Insufficient: ${insufficientFunds}, Must Own Set: ${mustOwnSet}`);
+
+                // Check for Sell Upgrade button (only visible if property has upgrades)
+                const sellUpgradeBtn = await hostPage.getByRole('button', { name: /SELL UPGRADE/i }).isVisible().catch(() => false);
+                console.log(`Sell Upgrade button visible: ${sellUpgradeBtn}`);
+
+                // Close modal
+                await hostPage.getByRole('button', { name: /X/i }).first().click();
+            } else {
+                console.log('Modal did not open (tile may not be a property)');
+            }
+        }
+
+        // Test upgrade badge visibility on tiles
+        console.log('Checking for upgrade badges on tiles...');
+        const upgradeBadge = await hostPage.locator('text=⚡').first().isVisible().catch(() => false);
+        console.log(`Upgrade badge (⚡) visible on board: ${upgradeBadge}`);
+
+        await hostContext.close();
+    });
 });

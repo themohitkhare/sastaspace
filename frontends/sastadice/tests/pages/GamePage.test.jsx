@@ -15,11 +15,41 @@ vi.mock('../../src/components/game/BoardView', () => ({
 vi.mock('../../src/components/game/PlayerPanel', () => ({
   default: () => <div>PlayerPanel</div>,
 }))
-vi.mock('../../src/components/game/ActionPanel', () => ({
-  default: () => <div>ActionPanel</div>,
+vi.mock('../../src/components/game/CenterStage', () => ({
+  default: () => <div>CenterStage</div>,
 }))
 vi.mock('../../src/components/game/DiceDisplay', () => ({
   default: () => <div>DiceDisplay</div>,
+}))
+vi.mock('../../src/components/game/VictoryScreen', () => ({
+  default: () => <div>VictoryScreen</div>,
+}))
+vi.mock('../../src/components/game/TurnAnnouncement', () => ({
+  default: () => <div>TurnAnnouncement</div>,
+}))
+vi.mock('../../src/components/game/AuctionModal', () => ({
+  default: () => null,
+}))
+vi.mock('../../src/components/game/PropertyDetailsModal', () => ({
+  default: () => null,
+}))
+vi.mock('../../src/components/game/PropertyManagerModal', () => ({
+  default: () => null,
+}))
+vi.mock('../../src/components/game/PeekEventsModal', () => ({
+  default: () => null,
+}))
+vi.mock('../../src/components/game/TurnTimer', () => ({
+  default: () => <div>TurnTimer</div>,
+}))
+vi.mock('../../src/components/RulesModal', () => ({
+  default: () => null,
+}))
+vi.mock('../../src/components/game/TradeModal', () => ({
+  default: () => null,
+}))
+vi.mock('../../src/components/game/IncomingTradeAlert', () => ({
+  default: () => null,
 }))
 
 describe('GamePage', () => {
@@ -51,8 +81,7 @@ describe('GamePage', () => {
       }
       return selector(state)
     })
-    
-    // Mock useSastaPolling to return refetch
+
     useSastaPolling.mockReturnValue({ refetch: vi.fn() })
   })
 
@@ -101,13 +130,8 @@ describe('GamePage', () => {
     expect(screen.getByText('PlayerPanel')).toBeInTheDocument()
   })
 
-  it('renders DiceDisplay component', () => {
+  it('renders CenterStage component', () => {
     render(<GamePage />)
-    expect(screen.getByText('DiceDisplay')).toBeInTheDocument()
-  })
-
-  it('renders ActionPanel component', () => {
-    render(<GamePage />)
-    expect(screen.getByText('ActionPanel')).toBeInTheDocument()
+    expect(screen.getByText('CenterStage')).toBeInTheDocument()
   })
 })
