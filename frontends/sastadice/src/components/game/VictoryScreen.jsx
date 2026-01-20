@@ -1,168 +1,132 @@
+import { useState, useEffect } from 'react'
+import Confetti from 'react-confetti'
 import { useNavigate } from 'react-router-dom'
-import { useGameStore } from '../../store/useGameStore'
-import { useEffect, useState } from 'react'
 
-function Confetti() {
-    const colors = ['#00ff00', '#ff0000', '#ffff00', '#00ffff', '#ff00ff', '#ffffff']
-    const [particles, setParticles] = useState([])
-
-    useEffect(() => {
-        const newParticles = Array.from({ length: 50 }, (_, i) => ({
-            id: i,
-            left: Math.random() * 100,
-            delay: Math.random() * 2,
-            duration: 2 + Math.random() * 2,
-            color: colors[Math.floor(Math.random() * colors.length)],
-            size: 6 + Math.random() * 8,
-        }))
-        setParticles(newParticles)
-    }, [])
-
-    return (
-        <div className="fixed inset-0 pointer-events-none overflow-hidden z-40">
-            {particles.map((p) => (
-                <div
-                    key={p.id}
-                    className="absolute animate-confetti"
-                    style={{
-                        left: `${p.left}%`,
-                        top: '-20px',
-                        width: `${p.size}px`,
-                        height: `${p.size}px`,
-                        backgroundColor: p.color,
-                        animationDelay: `${p.delay}s`,
-                        animationDuration: `${p.duration}s`,
-                    }}
-                />
-            ))}
-        </div>
-    )
-}
-
-export default function VictoryScreen({ game, winner }) {
+export default function VictoryScreen({ winner, players, onPlayAgain }) {
+    const { width, height } = useWindowSize()
+    const [showStats, setShowStats] = useState(false)
     const navigate = useNavigate()
-    const reset = useGameStore((s) => s.reset)
-    const [showConfetti, setShowConfetti] = useState(true)
 
-    const gameWinner = winner || (() => {
-        const activePlayers = game.players.filter((p) => !p.is_bankrupt)
-        if (activePlayers.length === 1) {
-            return activePlayers[0]
-        }
-        return [...game.players].sort((a, b) => b.cash - a.cash)[0]
-    })()
+    const sortedPlayers = [...players].sort((a, b) => b.cash - a.cash)
 
-    const standings = [...game.players].sort((a, b) => b.cash - a.cash)
-    const totalProperties = game.board?.filter(t => t.owner_id)?.length || 0
-    const bankruptPlayers = game.players?.filter(p => p.is_bankrupt)?.length || 0
-    const winnerProperties = game.board?.filter(t => t.owner_id === gameWinner.id)?.length || 0
+    let winnerDetails = sortedPlayers.find((p) => p.id === winner)
 
-    useEffect(() => {
-        const timeout = setTimeout(() => setShowConfetti(false), 4000)
-        return () => clearTimeout(timeout)
-    }, [])
-
-    const handlePlayAgain = () => {
-        reset()
-        navigate('/')
+    if (!winnerDetails && sortedPlayers.length > 0) {
+        winnerDetails = sortedPlayers[0]
     }
 
-    const handleGoHome = () => {
-        reset()
-        navigate('/')
+    if (!winnerDetails) {
+        winnerDetails = { name: 'UNKNOWN', cash: 0, color: '#00FF00' }
     }
+
+    const losers = sortedPlayers.filter((p) => p.id !== winnerDetails.id)
 
     return (
-        <div className="min-h-screen bg-sasta-black flex items-center justify-center p-4 relative">
-            {showConfetti && <Confetti />}
-
-            <div className="max-w-lg w-full relative z-10">
-                <div className="border-brutal-lg bg-sasta-accent shadow-brutal-lg p-8 text-center mb-6 animate-bounce-slow">
-                    <div className="text-6xl mb-4 animate-pulse">🏆</div>
-                    <h1 className="font-zero text-4xl font-bold text-sasta-black mb-2">
-                        WINNER!
-                    </h1>
-                    <div className="font-zero text-2xl font-bold text-sasta-black mb-4">
-                        {gameWinner.name?.toUpperCase()}
-                    </div>
-                    <div className="flex flex-wrap justify-center gap-3 font-zero text-sm">
-                        <div className="border-brutal-sm bg-sasta-white px-3 py-2">
-                            <span className="opacity-60">CASH:</span>
-                            <span className="font-bold ml-2">${gameWinner.cash?.toLocaleString()}</span>
-                        </div>
-                        <div className="border-brutal-sm bg-sasta-white px-3 py-2">
-                            <span className="opacity-60">PROPERTIES:</span>
-                            <span className="font-bold ml-2">{winnerProperties}</span>
-                </div>
-              </div>
+        <div className="h-screen w-screen bg-sasta-white overflow-hidden flex flex-col font-data text-sasta-black selection:bg-sasta-accent selection:text-sasta-black relative">
+            <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
+                <Confetti
+                    width={width}
+                    height={height}
+                    recycle={true}
+                    numberOfPieces={100}
+                    colors={['#000000', '#00ff00', '#ffffff']}
+                />
             </div>
 
-                <div className="border-brutal-lg bg-sasta-black border-sasta-accent shadow-brutal-lg p-4 mb-6">
-                    <h3 className="font-zero text-sm font-bold text-sasta-accent mb-3 text-center">
-                        📊 GAME STATS
-                    </h3>
-                    <div className="grid grid-cols-3 gap-2 text-center font-zero text-xs">
-                        <div className="bg-sasta-accent/20 p-2 border border-sasta-accent">
-                            <div className="text-sasta-accent font-bold text-lg">{game.players?.length || 0}</div>
-                            <div className="text-sasta-white/60">PLAYERS</div>
-                        </div>
-                        <div className="bg-sasta-accent/20 p-2 border border-sasta-accent">
-                            <div className="text-sasta-accent font-bold text-lg">{totalProperties}</div>
-                            <div className="text-sasta-white/60">OWNED</div>
-                        </div>
-                        <div className="bg-sasta-accent/20 p-2 border border-sasta-accent">
-                            <div className="text-sasta-accent font-bold text-lg">{bankruptPlayers}</div>
-                            <div className="text-sasta-white/60">BANKRUPT</div>
-                        </div>
+            <div className="border-b-2 border-sasta-black p-4 bg-sasta-white z-20 shrink-0">
+                <div className="flex flex-col items-center">
+                    <div className="text-[10px] font-data font-bold tracking-widest text-sasta-black/60 mb-1 uppercase">
+                        GAME COMPLETE
                     </div>
+                    <h1 className="text-4xl md:text-6xl font-zero font-black tracking-tighter uppercase text-sasta-black text-center leading-none">
+                        VICTORY
+                    </h1>
                 </div>
+            </div>
 
-                <div className="border-brutal-lg bg-sasta-white shadow-brutal-lg p-6 mb-6">
-                    <h2 className="font-zero text-xl font-bold mb-4 text-center border-b-2 border-sasta-black pb-2">
-                        FINAL STANDINGS
-                    </h2>
-                    <div className="space-y-2">
-                        {standings.map((player, index) => (
-                            <div
-                                key={player.id}
-                                className={`flex items-center justify-between p-3 border-brutal-sm ${player.is_bankrupt ? 'bg-red-100 opacity-60' : 'bg-sasta-white'
-                                    }`}
-                            >
-                                <div className="flex items-center gap-3">
-                                    <span className="font-zero text-lg font-bold w-8">
-                                        {index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `#${index + 1}`}
-                                    </span>
-                                    <div
-                                        className="w-4 h-4 border-2 border-sasta-black"
-                                        style={{ backgroundColor: player.color }}
-                                    />
-                                    <span className="font-zero font-bold">
-                                        {player.name?.toUpperCase()}
-                                    </span>
-                                    {player.is_bankrupt && (
-                                        <span className="text-xs font-zero text-red-500">(BANKRUPT)</span>
-                                    )}
-                                </div>
-                                <div className="font-zero font-bold">
-                                    ${player.cash?.toLocaleString()}
+            <div className="flex-1 flex flex-col items-center justify-center p-4 z-20 min-h-0 overflow-hidden">
+                <div className="w-full max-w-xl bg-sasta-white border-brutal-lg shadow-brutal-lg p-6 relative mb-6 shrink-0">
+                    <div className="flex flex-row items-center gap-6">
+                        <div
+                            className="w-24 h-24 md:w-32 md:h-32 border-brutal-lg bg-sasta-black flex items-center justify-center font-zero font-bold text-5xl text-sasta-accent shadow-brutal-sm shrink-0"
+                            style={{ backgroundColor: winnerDetails.color }}
+                        >
+                            <span className="relative z-10 filter grayscale mix-blend-multiply">{winnerDetails.name[0]?.toUpperCase()}</span>
+                        </div>
+
+                        <div className="flex-1 w-full overflow-hidden">
+                            <div className="flex items-center gap-2 text-sasta-black mb-1">
+                                <span className="text-[10px] font-bold tracking-widest uppercase border border-sasta-black px-1">[ WINNER ]</span>
+                            </div>
+                            <h2 className="text-3xl md:text-5xl font-zero font-bold text-sasta-black mb-2 truncate uppercase tracking-tight">
+                                {winnerDetails.name}
+                            </h2>
+                            <div className="inline-block bg-sasta-white border-2 border-sasta-black px-3 py-1 mt-1 shadow-brutal-sm">
+                                <div className="text-[8px] text-sasta-black/60 uppercase tracking-wider mb-0.5">FINAL BALANCE</div>
+                                <div className="text-2xl md:text-3xl font-data font-bold text-sasta-black">
+                                    ${winnerDetails.cash?.toLocaleString()}
                                 </div>
                             </div>
-                        ))}
+                        </div>
                     </div>
                 </div>
 
-                <div className="flex gap-4">
+                <div className="w-full max-w-xl flex flex-col min-h-0 shrink-0">
                     <button
-                        onClick={handlePlayAgain}
-                        className="flex-1 min-h-[48px] py-4 px-6 bg-sasta-accent text-sasta-black font-zero font-bold text-lg border-brutal-lg shadow-brutal-lg hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all"
+                        onClick={() => setShowStats(!showStats)}
+                        className={`w-full flex items-center justify-between bg-sasta-white border-2 border-sasta-black p-3 hover:bg-sasta-accent hover:text-sasta-black transition-colors font-zero font-bold group shadow-brutal-sm ${showStats ? 'mb-0 border-b-0 pb-2' : 'mb-0'}`}
                     >
+                        <div className="flex items-center gap-3">
+                            <span className="uppercase tracking-widest text-sm">BANKRUPT PLAYERS [{losers.length}]</span>
+                        </div>
+                        <span className="text-xs">{showStats ? '▲' : '▼'}</span>
+                    </button>
+
+                    {showStats && (
+                        <div className="bg-sasta-white border-2 border-t-0 border-sasta-black p-4 shadow-brutal-sm overflow-y-auto max-h-[30vh]">
+                            <div className="flex flex-col gap-2 font-data text-xs">
+                                {losers.length === 0 ? (
+                                    <div className="text-sasta-black/60 italic text-center py-2 uppercase">NO BANKRUPTCIES</div>
+                                ) : (
+                                    losers.map((player, index) => (
+                                        <div key={player.id} className="flex justify-between items-center border-b border-dashed border-sasta-black/20 pb-1 mb-1 last:border-0 hover:bg-sasta-accent/10 px-2 transition-colors">
+                                            <div className="flex items-center gap-3">
+                                                <span className="text-sasta-black/60 font-bold w-4">#{index + 2}</span>
+                                                <div className="flex flex-col">
+                                                    <span className="font-bold text-sasta-black uppercase">{player.name}</span>
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                {(player.is_bankrupt || player.bankrupt) && <span className="text-[9px] text-sasta-white font-bold bg-sasta-black px-1">ELIMINATED</span>}
+                                                <span className="font-bold text-sasta-black">${player.cash?.toLocaleString()}</span>
+                                            </div>
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+                        </div>
+                    )}
+                </div>
+            </div>
+
+            <div className="border-t-2 border-sasta-black p-4 bg-sasta-white z-50 shrink-0">
+                <div className="max-w-4xl mx-auto flex flex-col sm:flex-row gap-4">
+                    <button
+                        onClick={onPlayAgain}
+                        className="flex-1 bg-sasta-accent text-sasta-black py-4 font-bold font-zero text-lg border-brutal-sm shadow-brutal-sm hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none transition-all uppercase tracking-widest flex items-center justify-center gap-2"
+                    >
+                        <span>↻</span>
                         PLAY AGAIN
                     </button>
                     <button
-                        onClick={handleGoHome}
-                        className="flex-1 min-h-[48px] py-4 px-6 bg-sasta-white text-sasta-black font-zero font-bold text-lg border-brutal-lg shadow-brutal-lg hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all"
+                        onClick={() => {
+                            onPlayAgain?.()
+                            navigate('/')
+                        }}
+                        className="flex-1 bg-sasta-black text-sasta-accent py-4 font-bold font-zero text-lg border-brutal-sm shadow-brutal-sm hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none transition-all uppercase tracking-widest flex items-center justify-center gap-2"
                     >
-                        HOME
+                        <span>⌂</span>
+                        RETURN TO HOME
                     </button>
                 </div>
             </div>
@@ -170,3 +134,12 @@ export default function VictoryScreen({ game, winner }) {
     )
 }
 
+function useWindowSize() {
+    const [size, setSize] = useState({ width: window.innerWidth, height: window.innerHeight })
+    useEffect(() => {
+        const handleResize = () => setSize({ width: window.innerWidth, height: window.innerHeight })
+        window.addEventListener('resize', handleResize)
+        return () => window.removeEventListener('resize', handleResize)
+    }, [])
+    return size
+}

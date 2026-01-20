@@ -264,4 +264,45 @@
   .animate-toast-out {
     animation: toast-out 0.3s ease-in;
   }
+
+  /* Neon pulse glow for winner screen */
+  @keyframes neon-pulse {
+    0%, 100% {
+      box-shadow: 0 0 20px rgba(0, 255, 136, 0.4);
+      text-shadow: 0 0 20px rgba(0, 255, 136, 0.4);
+    }
+    50% {
+      box-shadow: 0 0 40px rgba(0, 255, 136, 0.8), 0 0 60px rgba(0, 255, 136, 0.4);
+      text-shadow: 0 0 40px rgba(0, 255, 136, 0.8), 0 0 60px rgba(0, 255, 136, 0.4);
+    }
+  }
+
+  .animate-neon-pulse {
+    animation: neon-pulse 2s ease-in-out infinite;
+  }
+
+  /* Fade in for collapsible sections */
+  @keyframes fade-in {
+    0% {
+      opacity: 0;
+      transform: translateY(-10px);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .animate-fade-in {
+    animation: fade-in 0.3s ease-out;
+  }
+
+  /* Hide scrollbar but keep scrolling */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
 }

@@ -55,7 +55,7 @@ export default function GamePage() {
       lastAnnouncedTurnRef.current = currentTurnPlayerId
       setAnnouncedPlayer(currentPlayer)
       setShowTurnAnnouncement(true)
-      setDdosMode(false) // Reset DDOS mode on turn change
+      setDdosMode(false)
       const timeout = setTimeout(() => setShowTurnAnnouncement(false), 1600)
       return () => clearTimeout(timeout)
     }
@@ -150,7 +150,7 @@ export default function GamePage() {
         await refetch()
       }
     } catch (err) {
-      console.error('DDoS action failed:', err)
+      alert('DDoS action failed')
     }
   }
 
@@ -163,7 +163,6 @@ export default function GamePage() {
       })
       refetch()
     } catch (err) {
-      console.error(err)
       alert('Failed to propose trade')
     }
   }
@@ -177,7 +176,6 @@ export default function GamePage() {
       })
       refetch()
     } catch (err) {
-      console.error(err)
       alert('Failed to accept trade')
     }
   }
@@ -190,8 +188,7 @@ export default function GamePage() {
         payload: { trade_id: tradeId }
       })
       refetch()
-    } catch (err) {
-      console.error(err)
+    } catch {
     }
   }
 
@@ -206,8 +203,16 @@ export default function GamePage() {
     )
   }
 
+  const reset = useGameStore((s) => s.reset)
+
   if (game.status === 'FINISHED') {
-    return <VictoryScreen game={game} />
+    return (
+      <VictoryScreen
+        winner={game.winner_id}
+        players={game.players}
+        onPlayAgain={reset}
+      />
+    )
   }
 
   return (
@@ -273,7 +278,7 @@ export default function GamePage() {
         </div>
 
         <div className="w-full lg:w-56 lg:shrink-0 border-brutal-sm bg-sasta-white shadow-brutal-sm p-2 order-2 lg:max-h-full lg:overflow-auto">
-          {isMyTurn && game.status === 'ACTIVE' && game.turn_start_time && (
+          {game.status === 'ACTIVE' && (
             <TurnTimer
               turnStartTime={game.turn_start_time}
               timeoutSeconds={game.settings?.turn_timer_seconds || 30}

@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react'
 import { apiClient } from '../../api/apiClient'
 import { useGameStore } from '../../store/useGameStore'
 import LaunchKey from './LaunchKey'
-import KeyStatus from './KeyStatus'
 import GameSettingsPanel from './GameSettingsPanel'
 import RulesModal from '../RulesModal'
 
@@ -29,7 +28,6 @@ export default function LobbyView({ onRefresh }) {
   const setPlayerId = useGameStore((s) => s.setPlayerId)
   const setGame = useGameStore((s) => s.setGame)
 
-  // Load settings from game state
   useEffect(() => {
     if (game?.settings && !hasChanges) {
       setSettings(game.settings)
@@ -50,8 +48,6 @@ export default function LobbyView({ onRefresh }) {
       setHasChanges(false)
       if (onRefresh) await onRefresh()
     } catch (err) {
-      // TODO: debug - Failed to update settings
-      console.error('Failed to update settings:', err)
       alert('Failed to save settings')
     }
   }
@@ -96,16 +92,13 @@ export default function LobbyView({ onRefresh }) {
     if (!playerId) return
     setIsToggling(true)
     try {
-      // Auto-save settings if host has unsaved changes
       if (isHost && hasChanges) {
         await handleSaveSettings()
       }
 
       await apiClient.post(`/sastadice/games/${gameId}/ready/${playerId}`)
       if (onRefresh) await onRefresh()
-    } catch (err) {
-      // TODO: debug - Toggle ready failed
-      console.error(err)
+    } catch {
       alert(hasChanges ? 'Failed to save settings and toggle ready' : 'Failed to toggle ready')
     } finally {
       setIsToggling(false)
@@ -134,43 +127,54 @@ export default function LobbyView({ onRefresh }) {
   const shortCode = gameId?.slice(0, 8)?.toUpperCase() || 'LOADING'
 
   return (
-    <div className="h-screen bg-sasta-white flex flex-col lg:flex-row p-4 gap-4 overflow-hidden">
-      <div className="lg:w-[360px] flex flex-col gap-4 shrink-0">
+    <div className="h-screen w-full bg-white text-black overflow-hidden flex flex-col lg:grid lg:grid-cols-12 divide-y lg:divide-y-0 lg:divide-x divide-black">
+
+      <div className="lg:col-span-3 p-6 flex flex-col gap-6 bg-white overflow-y-auto z-10">
         <div className="flex items-center justify-between">
-          <h1 className="text-3xl lg:text-4xl font-bold font-zero">GAME LOBBY</h1>
+          <h1 className="text-4xl font-black font-zero tracking-tighter">SASTADICE</h1>
           <button
             onClick={() => setShowRules(true)}
-            className="bg-sasta-accent text-sasta-black px-3 py-1.5 font-data font-bold text-xs border-brutal-sm hover:bg-sasta-white transition-colors"
+            className="bg-black text-white px-3 py-1 font-data font-bold text-xs hover:bg-gray-800 transition-colors"
           >
-            📖 RULES
+            REQ_INTEL
           </button>
         </div>
 
         {gameId && (
-          <div className="bg-sasta-black text-sasta-accent p-4 border-brutal shadow-brutal">
-            <div className="text-[10px] font-data uppercase opacity-60 text-sasta-white mb-1">ACCESS CODE</div>
-            <div className="flex justify-between items-center gap-3">
-              <span className="text-2xl lg:text-3xl font-data font-bold tracking-wider">{shortCode}</span>
-              <button
-                onClick={handleCopyGameId}
-                className="bg-sasta-accent text-sasta-black px-4 py-2 font-data font-bold text-sm hover:bg-white transition-colors"
-              >
-                {copied ? '✓ COPIED' : 'COPY'}
-              </button>
+          <div className="bg-black p-6 relative overflow-hidden group">
+            <div className="absolute top-0 right-0 w-16 h-16 bg-sasta-accent/20 rounded-bl-full transform translate-x-8 -translate-y-8 group-hover:bg-sasta-accent/40 transition-colors"></div>
+            <div className="text-[10px] font-data text-sasta-accent mb-2 tracking-[0.2em]">ACCESS_KEY</div>
+            <div className="flex items-baseline justify-between gap-2 mb-4">
+              <span className="text-4xl font-zero font-bold text-white tracking-widest">{shortCode}</span>
+            </div>
+            <button
+              onClick={handleCopyGameId}
+              className="w-full bg-sasta-accent text-black py-2 font-bold font-data text-xs hover:bg-white transition-colors uppercase tracking-widest"
+            >
+              {copied ? '✓ KEY_COPIED' : 'COPY_ACCESS_KEY'}
+            </button>
+            <div className="mt-4 flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+              <span className="text-[10px] font-data text-zinc-500">NET_STATUS: LIVE</span>
             </div>
           </div>
         )}
 
-        {!hasJoined && (
-          <div className="border-2 border-sasta-black p-3 bg-white">
-            <div className="text-xs font-data font-bold mb-2 opacity-60">&gt; AUTHENTICATE PLAYER</div>
-            <div className="flex gap-2">
+        <div className="font-data text-xs border-l-2 border-black pl-3 py-1">
+          <div className="opacity-50 mb-1">CURRENT_MODE</div>
+          <div className="font-bold">{settings.win_condition || 'SUDDEN_DEATH'}</div>
+        </div>
+
+        {!hasJoined ? (
+          <div className="border-2 border-black p-4 mt-auto">
+            <div className="text-xs font-data font-bold mb-3">&gt; AUTHENTICATE_OPERATOR</div>
+            <div className="flex flex-col gap-3">
               <input
                 type="text"
                 value={playerName}
                 onChange={(e) => setPlayerName(e.target.value)}
-                placeholder="ENTER_NAME"
-                className="flex-1 bg-gray-100 border-b-2 border-sasta-black p-2 font-data text-sm focus:outline-none focus:bg-sasta-accent/20"
+                placeholder="CODENAME"
+                className="w-full bg-gray-100 border-b-2 border-black p-3 font-data text-sm focus:outline-none focus:bg-sasta-accent/20 uppercase"
                 onKeyPress={(e) => {
                   if (e.key === 'Enter' && playerName.trim() && !isJoining) handleJoin()
                 }}
@@ -178,127 +182,130 @@ export default function LobbyView({ onRefresh }) {
               <button
                 onClick={handleJoin}
                 disabled={isJoining || !playerName.trim()}
-                className="bg-sasta-black text-sasta-white px-4 py-2 font-data font-bold text-sm hover:bg-gray-800 transition-colors disabled:opacity-50"
+                className="w-full bg-black text-white p-3 font-data font-bold hover:bg-gray-900 transition-colors disabled:opacity-50"
               >
-                {isJoining ? '...' : 'ENTER'}
+                {isJoining ? 'CONNECTING...' : 'INIT_CONNECTION'}
               </button>
             </div>
           </div>
-        )}
+        ) : (
+          <div className="bg-black p-6 shrink-0 border-t-4 border-sasta-accent mt-auto">
+            <div className="flex justify-between items-center mb-4 text-zinc-500 text-[10px] font-data">
+              <span>LAUNCH_SEQUENCE</span>
+              <span>{readyCount}/{totalPlayers} ARMED</span>
+            </div>
 
-        {hasJoined && (
-          <>
-            <GameSettingsPanel
-              settings={settings}
-              onUpdate={handleUpdateSettings}
-              onSave={handleSaveSettings}
-              hasChanges={hasChanges}
-              isHost={isHost}
+            <LaunchKey
+              isReady={myPlayer?.ready || false}
+              isLoading={isToggling}
+              onToggle={handleToggleReady}
+              playerName={myPlayer?.name}
+              playerColor={myPlayer?.color}
             />
 
-            <div className="bg-zinc-900 p-4 border-brutal shadow-brutal flex-1 flex flex-col">
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="font-data text-sm font-bold text-zinc-300">LAUNCH CONTROL</h3>
-                <div className="font-data text-xs text-zinc-500">
-                  {readyCount}/{totalPlayers} ARMED
-                </div>
+            {allReady && (
+              <div className="mt-3 text-center text-sasta-accent text-xs font-bold animate-pulse">
+                ⚠ LAUNCH IMMINENT ⚠
               </div>
-
-              <LaunchKey
-                isReady={myPlayer?.ready || false}
-                isLoading={isToggling}
-                onToggle={handleToggleReady}
-                playerName={myPlayer?.name}
-                playerColor={myPlayer?.color}
-              />
-
-              {allReady && (
-                <div className="mt-3 p-3 bg-green-500/20 border border-green-500 animate-pulse">
-                  <p className="font-data font-bold text-center text-green-400 text-sm">
-                    🚀 ALL ARMED - LAUNCHING...
-                  </p>
-                </div>
-              )}
-
-              <p className="text-xs font-data mt-auto pt-3 text-zinc-500 text-center">
-                {totalPlayers === 1 ? 'CPU JOINS ON LAUNCH' : `${totalPlayers} OPERATORS`}
-              </p>
-            </div>
-          </>
+            )}
+          </div>
         )}
       </div>
 
-      <div className="flex-1 border-brutal bg-white p-4 flex flex-col min-h-0 overflow-hidden">
-        <div className="flex justify-between items-center mb-3 border-b-2 border-sasta-black pb-2 shrink-0">
-          <div className="font-data font-bold text-base">CONNECTED_PLAYERS ({totalPlayers})</div>
-          <div className="flex items-center gap-2">
-            <div className="animate-pulse w-2 h-2 bg-green-500 rounded-full"></div>
-            <span className="text-xs font-data text-zinc-500">LIVE</span>
+      <div className="lg:col-span-6 bg-gray-50/50 p-6 lg:p-8 flex flex-col relative overflow-hidden">
+        <div className="flex justify-between items-end mb-6 border-b-2 border-black pb-4">
+          <div>
+            <h2 className="font-data font-bold text-xl">SQUADRON</h2>
+            <div className="text-xs font-data opacity-50 mt-1">ACTIVE OPERATORS</div>
+          </div>
+          <div className="font-zero text-4xl font-bold opacity-20">
+            {totalPlayers.toString().padStart(2, '0')}
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto space-y-2 pr-1">
+        <div className="flex-1 overflow-y-auto pr-2 space-y-3 scrollbar-hide">
           {myPlayer && (
-            <div className="flex items-center gap-3 p-3 border-2 border-sasta-black bg-sasta-accent/20">
+            <div className="flex items-center gap-4 p-4 bg-white border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-1 transition-transform">
               <div
-                className="w-10 h-10 rounded-full border-2 border-sasta-black flex items-center justify-center font-data font-bold text-white text-lg"
+                className="w-12 h-12 border-2 border-black flex items-center justify-center font-data font-bold text-white text-xl shrink-0"
                 style={{ backgroundColor: myPlayer.color }}
               >
                 {myPlayer.name?.charAt(0)?.toUpperCase()}
               </div>
               <div className="flex-1 min-w-0">
-                <div className="font-data font-bold text-base leading-none truncate">
-                  {myPlayer.name?.toUpperCase()} {isHost && '👑'}
+                <div className="flex items-center gap-2">
+                  <div className="font-zero font-bold text-lg leading-none truncate">
+                    {myPlayer.name?.toUpperCase()}
+                  </div>
+                  {isHost && <span className="text-[10px] bg-black text-sasta-accent px-1">CMD</span>}
+                  <span className="text-[10px] border border-black px-1">YOU</span>
                 </div>
-                <div className={`text-xs font-data mt-0.5 ${myPlayer.ready ? 'text-green-600' : 'text-orange-600'}`}>
-                  {myPlayer.ready ? 'READY' : 'NOT READY'}
+                <div className={`text-xs font-data mt-1 ${myPlayer.ready ? 'text-green-600 font-bold' : 'text-orange-600'}`}>
+                  {myPlayer.ready ? '● READY_FOR_DEPLOY' : '○ STANDBY'}
                 </div>
               </div>
-              <div className="text-xs font-data bg-sasta-black text-sasta-accent px-2 py-1">YOU</div>
             </div>
           )}
 
           {otherPlayers.map((p) => (
-            <div key={p.id} className="flex items-center gap-3 p-3 border-2 border-sasta-black">
+            <div key={p.id} className="flex items-center gap-4 p-4 bg-white border border-gray-300 hover:border-black transition-colors group">
               <div
-                className="w-10 h-10 rounded-full border-2 border-sasta-black flex items-center justify-center font-data font-bold text-white text-lg"
+                className="w-12 h-12 border-2 border-black flex items-center justify-center font-data font-bold text-white text-xl shrink-0 grayscale opacity-80"
                 style={{ backgroundColor: p.color }}
               >
                 {p.name?.charAt(0)?.toUpperCase()}
               </div>
               <div className="flex-1 min-w-0">
-                <div className="font-data font-bold text-base leading-none truncate">
-                  {p.name?.toUpperCase()} {p.id === game?.host_id && '👑'}
+                <div className="flex items-center gap-2">
+                  <div className="font-zero font-bold text-lg leading-none truncate text-gray-700">
+                    {p.name?.toUpperCase()}
+                  </div>
+                  {p.id === game?.host_id && <span className="text-[10px] bg-gray-200 px-1">CMD</span>}
                 </div>
-                <div className={`text-xs font-data mt-0.5 ${p.ready ? 'text-green-600' : 'text-orange-600'}`}>
-                  {p.ready ? 'READY' : 'NOT READY'}
+                <div className={`text-xs font-data mt-1 ${p.ready ? 'text-green-600 font-bold' : 'text-gray-400'}`}>
+                  {p.ready ? '● READY' : '○ STANDBY'}
                 </div>
               </div>
               {isHost && (
                 <button
                   onClick={() => handleKickPlayer(p.id)}
-                  className="text-xs font-data text-red-500 hover:text-red-700 px-2 py-1 border border-red-500 hover:bg-red-50"
+                  className="text-xs font-data text-red-500 hover:bg-red-50 px-3 py-2 border border-transparent hover:border-red-500 transition-all"
                 >
-                  KICK
+                  EJECT
                 </button>
               )}
             </div>
           ))}
 
           {totalPlayers === 0 && (
-            <div className="text-center py-8 border-2 border-dashed border-zinc-300">
-              <p className="font-data text-zinc-500">WAITING FOR PLAYERS...</p>
-              <p className="font-data text-xs text-zinc-400 mt-1">Share the code above</p>
-            </div>
-          )}
-
-          {hasJoined && otherPlayers.length === 0 && (
-            <div className="text-center py-6 border-2 border-dashed border-zinc-300">
-              <p className="font-data text-zinc-500 text-sm">WAITING FOR OPERATORS...</p>
-              <p className="font-data text-xs text-zinc-400 mt-1">Share code: {shortCode}</p>
+            <div className="h-full flex flex-col items-center justify-center opacity-30">
+              <div className="text-6xl mb-4">📡</div>
+              <div className="font-data font-bold">SEARCHING_FOR_SIGNALS...</div>
             </div>
           )}
         </div>
+      </div>
+
+      <div className="lg:col-span-3 bg-white flex flex-col h-full overflow-hidden border-l border-black">
+        <div className="flex-1 overflow-y-auto p-6 pb-8">
+          <h3 className="font-data font-bold text-sm mb-6 border-b-2 border-black pb-2">MISSION_PARAMETERS</h3>
+          {hasJoined ? (
+            <GameSettingsPanel
+              settings={settings}
+              onUpdate={handleUpdateSettings}
+              onSave={handleSaveSettings}
+              hasChanges={hasChanges}
+              isHost={isHost}
+              alwaysExpanded={true}
+            />
+          ) : (
+            <div className="text-xs text-gray-400 font-data p-4 border border-dashed border-gray-300 text-center">
+              ACCESS DISTRIBUTED AFTER AUTHENTICATION
+            </div>
+          )}
+        </div>
+
+
       </div>
 
       <RulesModal isOpen={showRules} onClose={() => setShowRules(false)} />
