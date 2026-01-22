@@ -1,6 +1,7 @@
 """Abstract base repository pattern for MongoDB operations."""
+
 from abc import ABC, abstractmethod
-from typing import TypeVar, Generic, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, Generic, TypeVar
 
 if TYPE_CHECKING:
     from motor.motor_asyncio import AsyncIOMotorDatabase
@@ -16,7 +17,7 @@ class BaseRepository(ABC, Generic[T]):
         self.database = database
 
     @abstractmethod
-    async def get_by_id(self, id: str) -> Optional[T]:
+    async def get_by_id(self, id: str) -> T | None:
         """Get entity by ID."""
         ...  # pragma: no cover
 

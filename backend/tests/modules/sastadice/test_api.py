@@ -1,10 +1,12 @@
 """Tests for SastaDice API endpoints."""
-import pytest
+
 from unittest.mock import patch
-from httpx import AsyncClient, ASGITransport
-from app.main import app
+
+import pytest
+from httpx import ASGITransport, AsyncClient
+
 from app.db.session import get_db
-from app.modules.sastadice.schemas import TileType, TileCreate
+from app.main import app
 
 
 async def ready_and_start_game(client, game_id, player_ids):
@@ -20,8 +22,10 @@ class TestSastaDiceAPI:
     @pytest.fixture(autouse=True)
     async def setup_test_db(self, db_database):
         """Override database dependency for all tests in this class."""
+
         async def override_get_db():
             yield db_database
+
         app.dependency_overrides[get_db] = override_get_db
         yield
         app.dependency_overrides.clear()
@@ -66,8 +70,7 @@ class TestSastaDiceAPI:
 
         # Join game
         tiles = [
-            {"type": "PROPERTY", "name": f"Property {i}", "effect_config": {}}
-            for i in range(5)
+            {"type": "PROPERTY", "name": f"Property {i}", "effect_config": {}} for i in range(5)
         ]
         join_response = await client.post(
             f"/api/v1/sastadice/games/{game_id}/join",
@@ -99,11 +102,14 @@ class TestSastaDiceAPI:
         game_id = create_response.json()["id"]
 
         tiles = [
-            {"type": "PROPERTY", "name": f"Property {i}", "effect_config": {}}
-            for i in range(5)
+            {"type": "PROPERTY", "name": f"Property {i}", "effect_config": {}} for i in range(5)
         ]
-        await client.post(f"/api/v1/sastadice/games/{game_id}/join", json={"name": "Player 1", "tiles": tiles})
-        await client.post(f"/api/v1/sastadice/games/{game_id}/join", json={"name": "Player 2", "tiles": tiles})
+        await client.post(
+            f"/api/v1/sastadice/games/{game_id}/join", json={"name": "Player 1", "tiles": tiles}
+        )
+        await client.post(
+            f"/api/v1/sastadice/games/{game_id}/join", json={"name": "Player 2", "tiles": tiles}
+        )
 
         response = await client.post(f"/api/v1/sastadice/games/{game_id}/start")
         assert response.status_code == 200
@@ -118,8 +124,7 @@ class TestSastaDiceAPI:
         game_id = create_response.json()["id"]
 
         tiles = [
-            {"type": "PROPERTY", "name": f"Property {i}", "effect_config": {}}
-            for i in range(5)
+            {"type": "PROPERTY", "name": f"Property {i}", "effect_config": {}} for i in range(5)
         ]
         await client.post(
             f"/api/v1/sastadice/games/{game_id}/join",
@@ -145,8 +150,7 @@ class TestSastaDiceAPI:
         game_id = create_response.json()["id"]
 
         tiles = [
-            {"type": "PROPERTY", "name": f"Property {i}", "effect_config": {}}
-            for i in range(5)
+            {"type": "PROPERTY", "name": f"Property {i}", "effect_config": {}} for i in range(5)
         ]
         await client.post(
             f"/api/v1/sastadice/games/{game_id}/join",
@@ -174,8 +178,7 @@ class TestSastaDiceAPI:
 
         # Try to join non-existent game
         tiles = [
-            {"type": "PROPERTY", "name": f"Property {i}", "effect_config": {}}
-            for i in range(5)
+            {"type": "PROPERTY", "name": f"Property {i}", "effect_config": {}} for i in range(5)
         ]
         response = await client.post(
             "/api/v1/sastadice/games/nonexistent/join",
@@ -191,8 +194,7 @@ class TestSastaDiceAPI:
 
         # Add one player
         tiles = [
-            {"type": "PROPERTY", "name": f"Property {i}", "effect_config": {}}
-            for i in range(5)
+            {"type": "PROPERTY", "name": f"Property {i}", "effect_config": {}} for i in range(5)
         ]
         await client.post(
             f"/api/v1/sastadice/games/{game_id}/join",
@@ -214,8 +216,7 @@ class TestSastaDiceAPI:
         game_id = create_response.json()["id"]
 
         tiles = [
-            {"type": "PROPERTY", "name": f"Property {i}", "effect_config": {}}
-            for i in range(5)
+            {"type": "PROPERTY", "name": f"Property {i}", "effect_config": {}} for i in range(5)
         ]
         join_response = await client.post(
             f"/api/v1/sastadice/games/{game_id}/join",
@@ -247,8 +248,7 @@ class TestSastaDiceAPI:
         game_id = create_response.json()["id"]
 
         tiles = [
-            {"type": "PROPERTY", "name": f"Property {i}", "effect_config": {}}
-            for i in range(5)
+            {"type": "PROPERTY", "name": f"Property {i}", "effect_config": {}} for i in range(5)
         ]
         join_response1 = await client.post(
             f"/api/v1/sastadice/games/{game_id}/join",
@@ -265,7 +265,9 @@ class TestSastaDiceAPI:
         await client.post(f"/api/v1/sastadice/games/{game_id}/start")
 
         # First roll dice to advance phase
-        with patch("app.modules.sastadice.services.game_service.random.randint", side_effect=[1, 2]):
+        with patch(
+            "app.modules.sastadice.services.game_service.random.randint", side_effect=[1, 2]
+        ):
             roll_response = await client.post(
                 f"/api/v1/sastadice/games/{game_id}/action",
                 params={"player_id": player1_id},
@@ -276,7 +278,7 @@ class TestSastaDiceAPI:
         # Check game state to see if we need to pass on property
         state_response = await client.get(f"/api/v1/sastadice/games/{game_id}/state")
         game_state = state_response.json()["game"]
-        
+
         if game_state["turn_phase"] == "DECISION" and game_state.get("pending_decision"):
             # Buy property to avoid auction and go to POST_TURN
             pass_response = await client.post(
@@ -303,8 +305,7 @@ class TestSastaDiceAPI:
         game_id = create_response.json()["id"]
 
         tiles = [
-            {"type": "PROPERTY", "name": f"Property {i}", "effect_config": {}}
-            for i in range(5)
+            {"type": "PROPERTY", "name": f"Property {i}", "effect_config": {}} for i in range(5)
         ]
         join_response = await client.post(
             f"/api/v1/sastadice/games/{game_id}/join",
@@ -349,8 +350,7 @@ class TestSastaDiceAPI:
         game_id = create_response.json()["id"]
 
         tiles = [
-            {"type": "PROPERTY", "name": f"Property {i}", "effect_config": {}}
-            for i in range(5)
+            {"type": "PROPERTY", "name": f"Property {i}", "effect_config": {}} for i in range(5)
         ]
         await client.post(
             f"/api/v1/sastadice/games/{game_id}/join",
@@ -374,8 +374,7 @@ class TestSastaDiceAPI:
         game_id = create_response.json()["id"]
 
         tiles = [
-            {"type": "PROPERTY", "name": f"Property {i}", "effect_config": {}}
-            for i in range(5)
+            {"type": "PROPERTY", "name": f"Property {i}", "effect_config": {}} for i in range(5)
         ]
         await client.post(
             f"/api/v1/sastadice/games/{game_id}/join",
@@ -390,13 +389,13 @@ class TestSastaDiceAPI:
         response = await client.get(f"/api/v1/sastadice/games/{game_id}/state")
         assert response.status_code == 200
         data = response.json()["game"]
-        
+
         # Verify economy fields
         assert "starting_cash" in data
         assert "go_bonus" in data
         assert data["starting_cash"] > 0
         assert data["go_bonus"] > 0
-        
+
         # Verify players have cash
         for player in data["players"]:
             assert player["cash"] > 0
@@ -409,12 +408,10 @@ class TestSastaDiceAPI:
 
         # Join multiple players
         player1_response = await client.post(
-            f"/api/v1/sastadice/games/{game_id}/join",
-            json={"name": "Player 1", "tiles": []}
+            f"/api/v1/sastadice/games/{game_id}/join", json={"name": "Player 1", "tiles": []}
         )
         player2_response = await client.post(
-            f"/api/v1/sastadice/games/{game_id}/join",
-            json={"name": "Player 2", "tiles": []}
+            f"/api/v1/sastadice/games/{game_id}/join", json={"name": "Player 2", "tiles": []}
         )
 
         player1 = player1_response.json()
@@ -441,7 +438,7 @@ class TestSastaDiceAPI:
         # Try to kick player with invalid host
         response = await client.delete(
             f"/api/v1/sastadice/games/{game_id}/players/invalid_player_id",
-            params={"host_id": "invalid_host"}
+            params={"host_id": "invalid_host"},
         )
         assert response.status_code == 400
 
@@ -453,15 +450,14 @@ class TestSastaDiceAPI:
 
         # Try to update settings without host_id
         response = await client.patch(
-            f"/api/v1/sastadice/games/{game_id}/settings",
-            json={"settings": {"round_limit": 20}}
+            f"/api/v1/sastadice/games/{game_id}/settings", json={"settings": {"round_limit": 20}}
         )
         assert response.status_code == 400
 
         # Try with invalid host_id type
         response = await client.patch(
             f"/api/v1/sastadice/games/{game_id}/settings",
-            json={"host_id": 123, "settings": {"round_limit": 20}}
+            json={"host_id": 123, "settings": {"round_limit": 20}},
         )
         assert response.status_code == 400
 
@@ -489,10 +485,9 @@ class TestSastaDiceAPI:
         game_id = create_response.json()["id"]
 
         tiles = [
-            {"type": "PROPERTY", "name": f"Property {i}", "effect_config": {}}
-            for i in range(5)
+            {"type": "PROPERTY", "name": f"Property {i}", "effect_config": {}} for i in range(5)
         ]
-        
+
         # Add multiple players
         join_response1 = await client.post(
             f"/api/v1/sastadice/games/{game_id}/join",
@@ -506,7 +501,7 @@ class TestSastaDiceAPI:
         # Verify colors are assigned and different
         player1 = join_response1.json()
         player2 = join_response2.json()
-        
+
         assert "color" in player1
         assert "color" in player2
         assert player1["color"].startswith("#")
@@ -532,7 +527,7 @@ class TestSastaDiceAPI:
         # Try to kick player with invalid host
         response = await client.delete(
             f"/api/v1/sastadice/games/{game_id}/players/invalid_player_id",
-            params={"host_id": "invalid_host"}
+            params={"host_id": "invalid_host"},
         )
         assert response.status_code == 400
 
@@ -544,15 +539,14 @@ class TestSastaDiceAPI:
 
         # Try to update settings without host_id
         response = await client.patch(
-            f"/api/v1/sastadice/games/{game_id}/settings",
-            json={"settings": {"round_limit": 20}}
+            f"/api/v1/sastadice/games/{game_id}/settings", json={"settings": {"round_limit": 20}}
         )
         assert response.status_code == 400
 
         # Try with invalid host_id type
         response = await client.patch(
             f"/api/v1/sastadice/games/{game_id}/settings",
-            json={"host_id": 123, "settings": {"round_limit": 20}}
+            json={"host_id": 123, "settings": {"round_limit": 20}},
         )
         assert response.status_code == 400
 

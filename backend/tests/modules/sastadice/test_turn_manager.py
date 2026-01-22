@@ -1,17 +1,19 @@
 """Tests for TurnManager."""
+
 import pytest
-from app.modules.sastadice.services.turn_manager import TurnManager
+
 from app.modules.sastadice.schemas import (
-    GameSession,
-    GameStatus,
-    TurnPhase,
-    TileType,
-    Tile,
-    Player,
-    GameSettings,
-    WinCondition,
     ChaosLevel,
+    GameSession,
+    GameSettings,
+    GameStatus,
+    Player,
+    Tile,
+    TileType,
+    TurnPhase,
+    WinCondition,
 )
+from app.modules.sastadice.services.turn_manager import TurnManager
 
 
 @pytest.fixture

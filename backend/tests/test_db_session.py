@@ -1,10 +1,12 @@
 """Tests for database session management."""
+
+from unittest.mock import AsyncMock, patch
+
 import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
 
-from app.db.session import MongoDBManager, _get_db_manager, get_db
 from app.core.config import settings
+from app.db.session import MongoDBManager, _get_db_manager, get_db
 
 
 class TestMongoDBManager:
@@ -17,10 +19,10 @@ class TestMongoDBManager:
         MongoDBManager._client = None
         MongoDBManager._database = None
         MongoDBManager._initialized = False
-        
+
         manager1 = MongoDBManager()
         manager2 = MongoDBManager()
-        
+
         assert manager1 is manager2
         assert MongoDBManager._instance is manager1
 
@@ -32,17 +34,17 @@ class TestMongoDBManager:
         MongoDBManager._client = None
         MongoDBManager._database = None
         MongoDBManager._initialized = False
-        
+
         manager = MongoDBManager()
-        
-        with patch('app.db.session.AsyncIOMotorClient') as mock_client_class:
+
+        with patch("app.db.session.AsyncIOMotorClient") as mock_client_class:
             mock_client = AsyncMock(spec=AsyncIOMotorClient)
             mock_database = AsyncMock(spec=AsyncIOMotorDatabase)
             mock_client.__getitem__.return_value = mock_database
             mock_client_class.return_value = mock_client
-            
+
             await manager.initialize()
-            
+
             assert manager._initialized is True
             assert manager._client is not None
             assert manager._database is not None
@@ -56,21 +58,21 @@ class TestMongoDBManager:
         MongoDBManager._client = None
         MongoDBManager._database = None
         MongoDBManager._initialized = False
-        
+
         manager = MongoDBManager()
-        
-        with patch('app.db.session.AsyncIOMotorClient') as mock_client_class:
+
+        with patch("app.db.session.AsyncIOMotorClient") as mock_client_class:
             mock_client = AsyncMock(spec=AsyncIOMotorClient)
             mock_database = AsyncMock(spec=AsyncIOMotorDatabase)
             mock_client.__getitem__.return_value = mock_database
             mock_client_class.return_value = mock_client
-            
+
             await manager.initialize()
             first_client = manager._client
-            
+
             # Call again - should not create new client
             await manager.initialize()
-            
+
             assert manager._client is first_client
             assert mock_client_class.call_count == 1
 
@@ -82,18 +84,18 @@ class TestMongoDBManager:
         MongoDBManager._client = None
         MongoDBManager._database = None
         MongoDBManager._initialized = False
-        
+
         manager = MongoDBManager()
-        
-        with patch('app.db.session.AsyncIOMotorClient') as mock_client_class:
+
+        with patch("app.db.session.AsyncIOMotorClient") as mock_client_class:
             mock_client = AsyncMock(spec=AsyncIOMotorClient)
             mock_database = AsyncMock(spec=AsyncIOMotorDatabase)
             mock_client.__getitem__.return_value = mock_database
             mock_client_class.return_value = mock_client
-            
+
             await manager.initialize()
             db = manager.database
-            
+
             assert db is mock_database
 
     def test_database_property_not_initialized(self):
@@ -103,9 +105,9 @@ class TestMongoDBManager:
         MongoDBManager._client = None
         MongoDBManager._database = None
         MongoDBManager._initialized = False
-        
+
         manager = MongoDBManager()
-        
+
         with pytest.raises(RuntimeError, match="MongoDB not initialized"):
             _ = manager.database
 
@@ -117,18 +119,18 @@ class TestMongoDBManager:
         MongoDBManager._client = None
         MongoDBManager._database = None
         MongoDBManager._initialized = False
-        
+
         manager = MongoDBManager()
-        
-        with patch('app.db.session.AsyncIOMotorClient') as mock_client_class:
+
+        with patch("app.db.session.AsyncIOMotorClient") as mock_client_class:
             mock_client = AsyncMock(spec=AsyncIOMotorClient)
             mock_database = AsyncMock(spec=AsyncIOMotorDatabase)
             mock_client.__getitem__.return_value = mock_database
             mock_client_class.return_value = mock_client
-            
+
             await manager.initialize()
             await manager.close()
-            
+
             mock_client.close.assert_called_once()
             assert manager._client is None
             assert manager._database is None
@@ -142,12 +144,12 @@ class TestMongoDBManager:
         MongoDBManager._client = None
         MongoDBManager._database = None
         MongoDBManager._initialized = False
-        
+
         manager = MongoDBManager()
-        
+
         # Should not raise error
         await manager.close()
-        
+
         assert manager._client is None
         assert manager._database is None
         assert manager._initialized is False
@@ -160,11 +162,12 @@ class TestGetDBManager:
         """Test that _get_db_manager returns singleton."""
         # Reset global
         import app.db.session as session_module
+
         session_module._db_manager = None
-        
+
         manager1 = _get_db_manager()
         manager2 = _get_db_manager()
-        
+
         assert manager1 is manager2
 
 
@@ -179,16 +182,16 @@ class TestGetDB:
         MongoDBManager._client = None
         MongoDBManager._database = None
         MongoDBManager._initialized = False
-        
-        with patch('app.db.session.AsyncIOMotorClient') as mock_client_class:
+
+        with patch("app.db.session.AsyncIOMotorClient") as mock_client_class:
             mock_client = AsyncMock(spec=AsyncIOMotorClient)
             mock_database = AsyncMock(spec=AsyncIOMotorDatabase)
             mock_client.__getitem__.return_value = mock_database
             mock_client_class.return_value = mock_client
-            
+
             manager = _get_db_manager()
             await manager.initialize()
-            
+
             # Test async generator
             async for db in get_db():
                 assert db is mock_database

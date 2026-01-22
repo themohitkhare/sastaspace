@@ -1,25 +1,27 @@
 """API router for SastaDice game endpoints."""
-from fastapi import APIRouter, Depends, HTTPException, status, Query
-from typing import Optional, TYPE_CHECKING
+
+from typing import TYPE_CHECKING
+
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 if TYPE_CHECKING:
-    from motor.motor_asyncio import AsyncIOMotorDatabase
+    pass
 
 from app.db.session import get_db
-from app.modules.sastadice.services.game_service import GameService
 from app.modules.sastadice.schemas import (
+    ActionResult,
+    GameActionRequest,
     GameSession,
     GameStateResponse,
     JoinGameRequest,
     Player,
-    GameActionRequest,
-    ActionResult,
 )
+from app.modules.sastadice.services.game_service import GameService
 
 router = APIRouter()
 
 
-async def get_game_service(db = Depends(get_db)) -> GameService:
+async def get_game_service(db=Depends(get_db)) -> GameService:
     """Dependency to get game service."""
     return GameService(db)
 
@@ -45,20 +47,18 @@ async def get_game(game_id: str, service: GameService = Depends(get_game_service
 @router.get("/games/{game_id}/state", response_model=GameStateResponse)
 async def get_game_state(
     game_id: str,
-    version: Optional[int] = None,
+    version: int | None = None,
     service: GameService = Depends(get_game_service),
 ) -> GameStateResponse:
     """Get game state with version for polling optimization."""
     try:
         await service.check_timeout(game_id)
-        
+
         game = await service.get_game(game_id)
         current_version = await service.repository.get_version(game_id)
 
         if version is not None and version >= current_version:
-            raise HTTPException(
-                status_code=status.HTTP_304_NOT_MODIFIED, detail="No changes"
-            )
+            raise HTTPException(status_code=status.HTTP_304_NOT_MODIFIED, detail="No changes")
 
         return GameStateResponse(version=current_version, game=game)
     except ValueError as e:
@@ -75,9 +75,7 @@ async def join_game(
     try:
         return await service.join_game(game_id, request.name, request.tiles)
     except ValueError as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)
-        )
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 
 @router.post("/games/{game_id}/ready/{player_id}")
@@ -125,9 +123,7 @@ async def update_settings(
 
 
 @router.post("/games/{game_id}/start", response_model=GameSession)
-async def start_game(
-    game_id: str, service: GameService = Depends(get_game_service)
-) -> GameSession:
+async def start_game(game_id: str, service: GameService = Depends(get_game_service)) -> GameSession:
     """Force start game (bypasses ready check - for testing)."""
     try:
         return await service.start_game(game_id, force=True)
@@ -145,14 +141,10 @@ async def perform_action(
     """Perform a game action (roll dice, buy property, end turn)."""
     try:
         await service.check_timeout(game_id)
-        
-        return await service.perform_action(
-            game_id, player_id, action.type, action.payload
-        )
+
+        return await service.perform_action(game_id, player_id, action.type, action.payload)
     except ValueError as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)
-        )
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 
 @router.post("/games/{game_id}/simulate")

@@ -1,6 +1,8 @@
 """Tests for main application."""
+
+from unittest.mock import AsyncMock, patch
+
 import pytest
-from unittest.mock import AsyncMock, patch, MagicMock
 from fastapi.testclient import TestClient
 
 from app.main import app
@@ -13,7 +15,7 @@ class TestMainApp:
         """Test root endpoint."""
         client = TestClient(app)
         response = client.get("/")
-        
+
         assert response.status_code == 200
         data = response.json()
         assert "message" in data
@@ -23,27 +25,29 @@ class TestMainApp:
     @pytest.mark.asyncio
     async def test_startup_event(self):
         """Test startup event handler."""
-        with patch('app.main._get_db_manager') as mock_get_manager:
+        with patch("app.main._get_db_manager") as mock_get_manager:
             mock_manager = AsyncMock()
             mock_get_manager.return_value = mock_manager
-            
+
             # Simulate startup
             from app.main import startup_event
+
             await startup_event()
-            
+
             mock_manager.initialize.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_shutdown_event(self):
         """Test shutdown event handler."""
-        with patch('app.main._get_db_manager') as mock_get_manager:
+        with patch("app.main._get_db_manager") as mock_get_manager:
             mock_manager = AsyncMock()
             mock_get_manager.return_value = mock_manager
-            
+
             # Simulate shutdown
             from app.main import shutdown_event
+
             await shutdown_event()
-            
+
             mock_manager.close.assert_called_once()
 
     def test_cors_middleware_configured(self):

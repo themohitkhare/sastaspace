@@ -1,24 +1,44 @@
 """Board generation service for creating game boards from player tiles."""
+
 import math
 import random
 import uuid
-from typing import Optional, Tuple
-from app.modules.sastadice.schemas import Tile, TileType, TileCreate
 
+from app.modules.sastadice.schemas import Tile, TileCreate, TileType
 
 SASTA_EVENTS = [
-    {"name": "UPI Server Down", "desc": "Cannot buy property this turn", "type": "SKIP_BUY", "value": 0},
-    {"name": "Influencer Collab", "desc": "Collect from everyone", "type": "COLLECT_FROM_ALL", "value": 50},
+    {
+        "name": "UPI Server Down",
+        "desc": "Cannot buy property this turn",
+        "type": "SKIP_BUY",
+        "value": 0,
+    },
+    {
+        "name": "Influencer Collab",
+        "desc": "Collect from everyone",
+        "type": "COLLECT_FROM_ALL",
+        "value": 50,
+    },
     {"name": "GST Refund", "desc": "Receive bonus cash", "type": "CASH_GAIN", "value": 100},
     {"name": "Chai Break", "desc": "Skip next turn (relax!)", "type": "SKIP_TURN", "value": 0},
     {"name": "Wedding Season", "desc": "Pay for gifts", "type": "CASH_LOSS", "value": 150},
     {"name": "Startup Funding", "desc": "Receive investment", "type": "CASH_GAIN", "value": 200},
     {"name": "Auto Rickshaw Strike", "desc": "Move back 3 spaces", "type": "MOVE_BACK", "value": 3},
-    {"name": "Diwali Bonus", "desc": "Double rent collection next turn", "type": "DOUBLE_RENT", "value": 0},
+    {
+        "name": "Diwali Bonus",
+        "desc": "Double rent collection next turn",
+        "type": "DOUBLE_RENT",
+        "value": 0,
+    },
     {"name": "IPL Match Day", "desc": "Everyone pays you", "type": "COLLECT_FROM_ALL", "value": 25},
     {"name": "Monsoon Flooding", "desc": "Pay repair costs", "type": "CASH_LOSS", "value": 75},
     {"name": "Jugaad Success", "desc": "Free property upgrade", "type": "FREE_UPGRADE", "value": 0},
-    {"name": "Traffic Jam", "desc": "Stay where you are next turn", "type": "SKIP_MOVE", "value": 0},
+    {
+        "name": "Traffic Jam",
+        "desc": "Stay where you are next turn",
+        "type": "SKIP_MOVE",
+        "value": 0,
+    },
 ]
 
 
@@ -69,7 +89,7 @@ class GameConfig:
 class BoardGenerationService:
     """Service for generating game boards with closed loop topology."""
 
-    def calculate_dimensions(self, num_players: int) -> Tuple[int, int, int]:
+    def calculate_dimensions(self, num_players: int) -> tuple[int, int, int]:
         """
         Calculate board dimensions for a given number of players.
 
@@ -93,19 +113,19 @@ class BoardGenerationService:
     ) -> list[TileCreate]:
         """
         Generate 5 seeded tiles for a player joining the game.
-        
+
         Args:
             player_name: Name of the player
             existing_players: List of existing players to avoid duplicates
-            
+
         Returns:
             List of 5 TileCreate objects
         """
         existing_names = set()
         for player in existing_players:
-            for tile in getattr(player, 'submitted_tiles', []):
+            for tile in getattr(player, "submitted_tiles", []):
                 existing_names.add(tile.name.lower())
-        
+
         seeded_tiles = [
             TileCreate(type=TileType.PROPERTY, name=f"{player_name}'s Property 1"),
             TileCreate(type=TileType.PROPERTY, name=f"{player_name}'s Property 2"),
@@ -113,55 +133,94 @@ class BoardGenerationService:
             TileCreate(type=TileType.TAX, name=f"{player_name}'s Tax"),
             TileCreate(type=TileType.BUFF, name=f"{player_name}'s Buff"),
         ]
-        
+
         return seeded_tiles
 
     def generate_additional_tiles(self, needed: int, player_tiles: list[Tile]) -> list[Tile]:
         """
         Generate additional tiles to supplement player tiles for a better game experience.
-        
+
         Args:
             needed: Number of additional tiles to generate
             player_tiles: Existing player tiles to avoid duplicates
-            
+
         Returns:
             List of generated tiles
         """
         generated_tiles = []
         player_names = {tile.name.lower() for tile in player_tiles}
-        
+
         tile_templates = {
             TileType.PROPERTY: [
-                "Park Avenue", "Broadway", "Fifth Avenue", "Times Square",
-                "Central Park", "Wall Street", "Madison Avenue", "Lexington Avenue",
-                "Park Place", "Marvin Gardens", "Ventnor Avenue", "Atlantic Avenue",
-                "Pacific Avenue", "North Carolina", "Pennsylvania Avenue", "Illinois Avenue",
+                "Park Avenue",
+                "Broadway",
+                "Fifth Avenue",
+                "Times Square",
+                "Central Park",
+                "Wall Street",
+                "Madison Avenue",
+                "Lexington Avenue",
+                "Park Place",
+                "Marvin Gardens",
+                "Ventnor Avenue",
+                "Atlantic Avenue",
+                "Pacific Avenue",
+                "North Carolina",
+                "Pennsylvania Avenue",
+                "Illinois Avenue",
             ],
             TileType.CHANCE: [
-                "Community Chest", "Lucky Draw", "Free Parking", "Go to Go",
-                "Collect $200", "Advance to Boardwalk", "Bank Dividend", "Life Insurance Matures",
-                "Holiday Fund", "Income Tax Refund", "Beauty Contest", "Stock Sale",
+                "Community Chest",
+                "Lucky Draw",
+                "Free Parking",
+                "Go to Go",
+                "Collect $200",
+                "Advance to Boardwalk",
+                "Bank Dividend",
+                "Life Insurance Matures",
+                "Holiday Fund",
+                "Income Tax Refund",
+                "Beauty Contest",
+                "Stock Sale",
             ],
             TileType.TAX: [
-                "Income Tax", "Luxury Tax", "Property Tax", "Sales Tax",
-                "City Tax", "Federal Tax", "State Tax", "Inheritance Tax",
+                "Income Tax",
+                "Luxury Tax",
+                "Property Tax",
+                "Sales Tax",
+                "City Tax",
+                "Federal Tax",
+                "State Tax",
+                "Inheritance Tax",
             ],
             TileType.TRAP: [
-                "Go to Jail", "Speeding Fine", "Parking Violation", "Court Fee",
-                "Medical Bill", "Repair Bill", "School Tax", "Hospital Fee",
+                "Go to Jail",
+                "Speeding Fine",
+                "Parking Violation",
+                "Court Fee",
+                "Medical Bill",
+                "Repair Bill",
+                "School Tax",
+                "Hospital Fee",
             ],
             TileType.BUFF: [
-                "Pass Go Bonus", "Birthday Gift", "Stock Dividend", "Insurance Payout",
-                "Lottery Win", "Bonus Pay", "Tax Refund", "Cash Advance",
+                "Pass Go Bonus",
+                "Birthday Gift",
+                "Stock Dividend",
+                "Insurance Payout",
+                "Lottery Win",
+                "Bonus Pay",
+                "Tax Refund",
+                "Cash Advance",
             ],
         }
-        
+
         available_types = [t for t in TileType if t != TileType.NEUTRAL]
-        
+
         for i in range(needed):
             tile_type = available_types[i % len(available_types)]
             templates = tile_templates.get(tile_type, [])
-            
+
             name = None
             attempts = 0
             while name is None or name.lower() in player_names:
@@ -173,7 +232,7 @@ class BoardGenerationService:
                 if attempts > 50:
                     name = f"{tile_type.value} {i + 1000}"
                     break
-            
+
             generated_tiles.append(
                 Tile(
                     type=tile_type,
@@ -183,12 +242,15 @@ class BoardGenerationService:
                 )
             )
             player_names.add(name.lower())
-        
+
         return generated_tiles
 
     def generate_board(
-        self, player_tiles: list[Tile], board_size: int, padding: int,
-        game_config: Optional[GameConfig] = None
+        self,
+        player_tiles: list[Tile],
+        board_size: int,
+        padding: int,
+        game_config: GameConfig | None = None,
     ) -> list[Tile]:
         """
         Generate a closed loop board from player tiles.
@@ -277,20 +339,18 @@ class BoardGenerationService:
     def _assign_colors(self, board: list[Tile]) -> None:
         """Assign colors to property tiles in groups of 2-3."""
         from app.modules.sastadice.schemas import PROPERTY_COLORS
-        
+
         properties = [t for t in board if t.type == TileType.PROPERTY]
         if not properties:
             return
 
         set_size = 2 if len(properties) <= 8 else 3
-        
+
         for i, prop in enumerate(properties):
             color_index = (i // set_size) % len(PROPERTY_COLORS)
             prop.color = PROPERTY_COLORS[color_index]
 
-    def _interleave_tiles(
-        self, player_tiles: list[Tile], padding_tiles: list[Tile]
-    ) -> list[Tile]:
+    def _interleave_tiles(self, player_tiles: list[Tile], padding_tiles: list[Tile]) -> list[Tile]:
         """Interleave padding tiles evenly among player tiles."""
         result = []
         player_idx = 0
@@ -319,9 +379,7 @@ class BoardGenerationService:
 
         return result
 
-    def _map_tiles_to_perimeter(
-        self, tiles: list[Tile], board_size: int
-    ) -> list[Tile]:
+    def _map_tiles_to_perimeter(self, tiles: list[Tile], board_size: int) -> list[Tile]:
         """
         Map tiles to perimeter positions in clockwise order.
 
@@ -374,9 +432,4 @@ class BoardGenerationService:
 
     def _is_on_perimeter(self, x: int, y: int, board_size: int) -> bool:
         """Check if coordinates are on the board perimeter."""
-        return (
-            x == 0
-            or x == board_size - 1
-            or y == 0
-            or y == board_size - 1
-        )
+        return x == 0 or x == board_size - 1 or y == 0 or y == board_size - 1

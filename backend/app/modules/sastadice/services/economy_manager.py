@@ -1,10 +1,10 @@
 """Economy manager for financial operations and bankruptcy logic."""
-from typing import Optional, TYPE_CHECKING
+
+from typing import TYPE_CHECKING, Optional
 
 if TYPE_CHECKING:
     from app.modules.sastadice.repository import GameRepository
     from app.modules.sastadice.schemas import GameSession, Player
-
 
 
 class EconomyManager:
@@ -46,17 +46,11 @@ class EconomyManager:
             await self.process_bankruptcy(game, player, creditor)
             return {"action": "bankrupt", "creditor_id": creditor.id if creditor else None}
 
-    async def auto_liquidate(
-        self, game: "GameSession", player: "Player", needed: int
-    ) -> int:
+    async def auto_liquidate(self, game: "GameSession", player: "Player", needed: int) -> int:
         """Attempt to raise cash by downgrading/selling assets. Returns amount raised."""
         raised = 0
 
-        upgraded_tiles = [
-            t
-            for t in game.board
-            if t.owner_id == player.id and t.upgrade_level > 0
-        ]
+        upgraded_tiles = [t for t in game.board if t.owner_id == player.id and t.upgrade_level > 0]
         upgraded_tiles.sort(key=lambda x: x.upgrade_level, reverse=True)
 
         for tile in upgraded_tiles:
@@ -121,9 +115,7 @@ class EconomyManager:
             for tile in debtor_properties:
                 tile.owner_id = None
                 tile.upgrade_level = 0
-            game.last_event_message = (
-                f"💀 {debtor.name} went BANKRUPT! Assets seized by Bank."
-            )
+            game.last_event_message = f"💀 {debtor.name} went BANKRUPT! Assets seized by Bank."
 
         await self.repository.update_player_bankrupt(debtor.id, True)
         await self.repository.update_player_cash(debtor.id, 0)
@@ -135,7 +127,7 @@ class EconomyManager:
 
     async def handle_buy_property(
         self, game: "GameSession", player_id: str
-    ) -> tuple[bool, str, Optional[str], Optional[int]]:
+    ) -> tuple[bool, str, str | None, int | None]:
         """Handle buying a property. Returns (success, message, tile_name, price)."""
         from app.modules.sastadice.schemas import TurnPhase
 
@@ -179,7 +171,7 @@ class EconomyManager:
 
     async def handle_upgrade(
         self, game: "GameSession", player_id: str, payload: dict, turn_manager
-    ) -> tuple[bool, str, Optional[str]]:
+    ) -> tuple[bool, str, str | None]:
         """Handle property upgrade. Returns (success, message, level_name)."""
         from app.modules.sastadice.schemas import TileType
 
@@ -221,7 +213,7 @@ class EconomyManager:
 
     async def handle_downgrade(
         self, game: "GameSession", player_id: str, payload: dict
-    ) -> tuple[bool, str, Optional[int]]:
+    ) -> tuple[bool, str, int | None]:
         """Handle property downgrade. Returns (success, message, refund)."""
         from app.modules.sastadice.schemas import TileType
 
@@ -255,7 +247,7 @@ class EconomyManager:
 
         return True, f"Sold upgrade for ${refund}", refund
 
-    def determine_winner(self, game: "GameSession") -> Optional[dict]:
+    def determine_winner(self, game: "GameSession") -> dict | None:
         """Determine the winner of the game."""
         active_players = [p for p in game.players if p.cash >= 0]
 
