@@ -1,5 +1,5 @@
 # Build stage
-FROM node:20-alpine AS builder
+FROM oven/bun:1.3-alpine AS build
 
 WORKDIR /app
 
@@ -8,22 +8,22 @@ COPY shared/ ./shared/
 
 # Copy sastaspace package files
 COPY sastaspace/package.json ./
-COPY sastaspace/package-lock.json* ./
+COPY sastaspace/bun.lock ./
 
 # Install dependencies
-RUN npm install
+RUN bun install --frozen-lockfile
 
 # Copy sastaspace source files
 COPY sastaspace/ .
 
 # Build the Vite app
-RUN npm run build
+RUN bun run build
 
 # Production stage
 FROM nginx:alpine
 
 # Copy built files from builder stage to nginx html directory
-COPY --from=builder /app/dist /usr/share/nginx/html
+COPY --from=build /app/dist /usr/share/nginx/html
 
 # Expose port 80
 EXPOSE 80
