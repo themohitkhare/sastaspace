@@ -17,6 +17,7 @@ from app.modules.sastadice.schemas import (
     TileType,
     TurnPhase,
 )
+from app.modules.sastadice.events.events_data import SASTA_EVENTS
 
 
 class ActionDispatcher:
@@ -35,7 +36,6 @@ class ActionDispatcher:
         handle_tile_landing_callback: Any = None,
         send_to_jail_callback: Any = None,
     ) -> None:
-        """Initialize action dispatcher with injected managers."""
         self.repository = repository
         self.economy_manager = economy_manager
         self.auction_manager = auction_manager
@@ -150,7 +150,6 @@ class ActionDispatcher:
                 return ActionResult(success=False, message=f"Unknown action: {action_type}")
 
     async def _handle_roll_dice(self, game: GameSession, player_id: str) -> ActionResult:
-        """Handle dice roll action - delegates to orchestrator."""
         try:
             if self.roll_dice_callback:
                 dice_result = await self.roll_dice_callback(game.id, player_id)
@@ -180,7 +179,6 @@ class ActionDispatcher:
             return ActionResult(success=False, message=str(e))
 
     async def _handle_buy_property(self, game: GameSession, player_id: str) -> ActionResult:
-        """Handle buy property action."""
         if game.current_turn_player_id != player_id:
             return ActionResult(success=False, message="Not your turn")
 
@@ -195,7 +193,6 @@ class ActionDispatcher:
         return ActionResult(success=success, message=message)
 
     async def _handle_pass_property(self, game: GameSession, player_id: str) -> ActionResult:
-        """Handle pass property action."""
         if game.current_turn_player_id != player_id:
             return ActionResult(success=False, message="Not your turn")
 
@@ -232,7 +229,6 @@ class ActionDispatcher:
     async def _handle_bid(
         self, game: GameSession, player_id: str, payload: dict
     ) -> ActionResult:
-        """Handle bid action."""
         if game.turn_phase != TurnPhase.AUCTION or not game.auction_state:
             return ActionResult(success=False, message="No active auction")
 
@@ -251,7 +247,6 @@ class ActionDispatcher:
     async def _handle_upgrade(
         self, game: GameSession, player_id: str, payload: dict
     ) -> ActionResult:
-        """Handle upgrade action."""
         success, message, level_name = await self.economy_manager.handle_upgrade(
             game, player_id, payload, self.turn_manager
         )
@@ -271,7 +266,6 @@ class ActionDispatcher:
     async def _handle_downgrade(
         self, game: GameSession, player_id: str, payload: dict
     ) -> ActionResult:
-        """Handle downgrade action."""
         success, message, refund = await self.economy_manager.handle_downgrade(
             game, player_id, payload
         )
@@ -294,7 +288,6 @@ class ActionDispatcher:
     async def _handle_buy_buff(
         self, game: GameSession, player_id: str, payload: dict
     ) -> ActionResult:
-        """Handle buy buff action."""
         if (
             game.turn_phase != TurnPhase.DECISION
             or not game.pending_decision
@@ -318,8 +311,6 @@ class ActionDispatcher:
             return ActionResult(success=False, message="Insufficient funds")
 
         if buff_id == "PEEK":
-            from app.modules.sastadice.events.events_data import SASTA_EVENTS
-
             needed = 3
             self.turn_manager.ensure_deck_capacity(game, needed)
             preview_indices = game.event_deck[:needed]
@@ -350,7 +341,6 @@ class ActionDispatcher:
     async def _handle_block_tile(
         self, game: GameSession, player_id: str, payload: dict
     ) -> ActionResult:
-        """Handle block tile action."""
         if game.current_turn_player_id != player_id:
             return ActionResult(success=False, message="Not your turn")
 
@@ -389,7 +379,6 @@ class ActionDispatcher:
     async def _handle_propose_trade(
         self, game: GameSession, player_id: str, payload: dict
     ) -> ActionResult:
-        """Handle propose trade action."""
         if game.current_turn_player_id != player_id:
             return ActionResult(
                 success=False, message="Can only propose trades on your turn"
@@ -419,9 +408,6 @@ class ActionDispatcher:
     async def _handle_accept_trade(
         self, game: GameSession, player_id: str, payload: dict
     ) -> ActionResult:
-        """Handle accept trade action."""
-        from app.modules.sastadice.schemas import TradeOffer
-
         trade_id = payload.get("trade_id")
         offer = next((t for t in game.active_trade_offers if t.id == trade_id), None)
         if not offer:
@@ -456,7 +442,7 @@ class ActionDispatcher:
         )
 
         initiator.cash = transfer_data["initiator_cash"]
-        target.cash = transfer_data["target_cash"]
+        player.cash = transfer_data["target_cash"]
 
         await self.repository.update_player_cash(initiator.id, initiator.cash)
         await self.repository.update_player_cash(player.id, player.cash)
@@ -483,7 +469,6 @@ class ActionDispatcher:
     async def _handle_decline_trade(
         self, game: GameSession, player_id: str, payload: dict
     ) -> ActionResult:
-        """Handle decline trade action."""
         trade_id = payload.get("trade_id")
         offer = next((t for t in game.active_trade_offers if t.id == trade_id), None)
         if not offer:
@@ -502,7 +487,6 @@ class ActionDispatcher:
     async def _handle_cancel_trade(
         self, game: GameSession, player_id: str, payload: dict
     ) -> ActionResult:
-        """Handle cancel trade action."""
         trade_id = payload.get("trade_id")
         offer = next((t for t in game.active_trade_offers if t.id == trade_id), None)
         if not offer:
@@ -516,7 +500,6 @@ class ActionDispatcher:
         return ActionResult(success=True, message="Cancelled")
 
     async def _handle_end_turn(self, game: GameSession, player_id: str) -> ActionResult:
-        """Handle end turn action."""
         return await self.turn_coordinator.handle_end_turn(
             game,
             player_id,
@@ -525,7 +508,6 @@ class ActionDispatcher:
         )
 
     async def _handle_buy_release(self, game: GameSession, player_id: str) -> ActionResult:
-        """Handle buy release (jail bribe) action."""
         if not self.jail_manager:
             return ActionResult(success=False, message="Jail manager not available")
 
@@ -545,7 +527,6 @@ class ActionDispatcher:
     async def _handle_roll_for_doubles(
         self, game: GameSession, player_id: str
     ) -> ActionResult:
-        """Handle roll for doubles (jail escape) action."""
         if not self.jail_manager:
             return ActionResult(success=False, message="Jail manager not available")
 
@@ -574,7 +555,6 @@ class ActionDispatcher:
             )
 
     async def _resolve_auction(self, game: GameSession) -> ActionResult:
-        """Resolve a finished auction."""
         success, message, winner_id, amount, prop_id = self.auction_manager.resolve_auction(
             game
         )
@@ -597,7 +577,6 @@ class ActionDispatcher:
         return ActionResult(success=True, message=final_message)
 
     async def _get_game(self, game_id: str) -> GameSession:
-        """Get game session by ID."""
         game = await self.repository.get_by_id(game_id)
         if not game:
             raise ValueError(f"Game {game_id} not found")
@@ -606,7 +585,6 @@ class ActionDispatcher:
     async def _send_to_jail_callback(
         self, game: GameSession, player: "Player"
     ) -> None:
-        """Callback for sending player to jail."""
         if self.jail_manager:
             self.jail_manager.send_to_jail(game, player)
             jail_pos = len(game.board) // 2
@@ -615,7 +593,6 @@ class ActionDispatcher:
     async def _handle_event_clone_upgrade(
         self, game: GameSession, player_id: str, payload: dict
     ) -> ActionResult:
-        """Clone upgrade from source property to target property."""
         source_tile_id = payload.get("source_tile_id")
         target_tile_id = payload.get("target_tile_id")
         
@@ -642,7 +619,7 @@ class ActionDispatcher:
             return ActionResult(success=False, message="Can only clone to properties")
         
         target_tile.upgrade_level = source_tile.upgrade_level
-        await self.repository.save_board(game.board)
+        await self.repository.save_board(game.id, game.board)
         
         game.pending_decision = None
         game.turn_phase = TurnPhase.POST_TURN
@@ -656,7 +633,6 @@ class ActionDispatcher:
     async def _handle_event_force_buy(
         self, game: GameSession, player_id: str, payload: dict
     ) -> ActionResult:
-        """Buy any property at multiplied price."""
         tile_id = payload.get("tile_id")
         
         if not tile_id:
@@ -703,7 +679,6 @@ class ActionDispatcher:
     async def _handle_event_free_landing(
         self, game: GameSession, player_id: str, payload: dict
     ) -> ActionResult:
-        """Make a property free to land on for N rounds."""
         tile_id = payload.get("tile_id")
         
         if not tile_id:
@@ -724,7 +699,7 @@ class ActionDispatcher:
         free_rounds = event_data.get("actions", {}).get("free_rounds", 1)
         
         tile.free_landing_until_round = game.current_round + free_rounds
-        await self.repository.save_board(game.board)
+        await self.repository.save_board(game.id, game.board)
         
         game.pending_decision = None
         game.turn_phase = TurnPhase.POST_TURN
@@ -738,7 +713,6 @@ class ActionDispatcher:
     async def _handle_tile_landing_callback(
         self, game: GameSession, player: "Player", tile: "Tile"
     ) -> None:
-        """Callback for handling tile landing - delegated to orchestrator."""
         pass
 
     async def _check_and_handle_end_conditions(self, game_id: str) -> bool:
@@ -771,5 +745,4 @@ class ActionDispatcher:
         return False
 
     def _determine_winner(self, game: GameSession) -> dict | None:
-        """Determine the winner of the game."""
         return self.economy_manager.determine_winner(game)
