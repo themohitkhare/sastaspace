@@ -1,6 +1,6 @@
 """MongoDB document models for SastaDice."""
 
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 
 from pydantic import BaseModel, Field
 
@@ -111,7 +111,7 @@ class GameSessionDocument(BaseModel):
             last_dice_roll=game.last_dice_roll,
             pending_decision=pending_decision_dict,
             last_event_message=game.last_event_message,
-            created_at=datetime.now(UTC),
+            created_at=datetime.now(timezone.utc),
             # Phase 1 fields
             current_round=game.current_round,
             max_rounds=game.max_rounds,
@@ -181,7 +181,7 @@ class PlayerDocument(BaseModel):
             properties=player.properties,
             ready=player.ready,
             is_bankrupt=player.is_bankrupt,
-            created_at=datetime.now(UTC),
+            created_at=datetime.now(timezone.utc),
             in_jail=player.in_jail,
             jail_turns=player.jail_turns,
             consecutive_doubles=player.consecutive_doubles,

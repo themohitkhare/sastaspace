@@ -38,6 +38,8 @@ class TileType(str, Enum):
     JAIL = "JAIL"
     TELEPORT = "TELEPORT"
     MARKET = "MARKET"
+    NODE = "NODE"  # Server Node (railroad equivalent)
+    GO_TO_JAIL = "GO_TO_JAIL"  # 404: Access Denied
 
 
 class WinCondition(str, Enum):
@@ -215,6 +217,8 @@ class ActionType(str, Enum):
     ACCEPT_TRADE = "ACCEPT_TRADE"
     DECLINE_TRADE = "DECLINE_TRADE"
     CANCEL_TRADE = "CANCEL_TRADE"
+    BUY_RELEASE = "BUY_RELEASE"  # Pay bribe to exit jail
+    ROLL_FOR_DOUBLES = "ROLL_FOR_DOUBLES"  # Roll dice only for jail escape
 
 
 class AuctionStatus(str, Enum):

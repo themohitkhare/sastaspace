@@ -1,7 +1,7 @@
 """Game repository for MongoDB operations."""
 
 import uuid
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 
 from app.core.db_repo import BaseRepository
 from app.modules.sastadice.models import (
@@ -113,7 +113,7 @@ class GameRepository(BaseRepository[GameSession]):
             properties=[],
             ready=False,
             is_bankrupt=False,
-            created_at=datetime.now(UTC),
+            created_at=datetime.now(timezone.utc),
         )
 
         await self.database.players.insert_one(player_doc.to_dict())
@@ -232,6 +232,12 @@ class GameRepository(BaseRepository[GameSession]):
     async def update_player_buff(self, player_id: str, buff: str | None) -> None:
         """Update player's active buff."""
         await self.database.players.update_one({"_id": player_id}, {"$set": {"active_buff": buff}})
+
+    async def update_player_jail(self, player_id: str, in_jail: bool, jail_turns: int = 0) -> None:
+        """Update player's jail status."""
+        await self.database.players.update_one(
+            {"_id": player_id}, {"$set": {"in_jail": in_jail, "jail_turns": jail_turns}}
+        )
 
     async def _get_players(self, game_id: str) -> list[Player]:
         """Get all players for a game ordered by join time."""
