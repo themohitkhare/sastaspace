@@ -16,7 +16,10 @@ from app.modules.sastadice.schemas import (
     JoinGameRequest,
     Player,
 )
-from app.modules.sastadice.services.game_service import GameService
+from app.modules.sastadice.services.game_orchestrator import GameOrchestrator
+
+# Backward compatibility alias
+GameService = GameOrchestrator
 
 router = APIRouter()
 

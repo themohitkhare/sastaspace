@@ -7,7 +7,8 @@ if TYPE_CHECKING:
     from app.modules.sastadice.schemas import GameSession, Player, Tile
 
 from app.modules.sastadice.schemas import PendingDecision, TileType, TurnPhase
-from app.modules.sastadice.services.board_generation_service import SASTA_EVENTS
+from app.modules.sastadice.events.events_data import SASTA_EVENTS
+from app.modules.sastadice.events.event_manager import EventManager
 
 
 class TurnManager:
@@ -58,32 +59,18 @@ class TurnManager:
 
     @staticmethod
     def initialize_event_deck(game: "GameSession") -> None:
-        """Initialize and shuffle the event deck."""
-        game.event_deck = list(range(len(SASTA_EVENTS)))
-        random.shuffle(game.event_deck)
-        game.used_event_deck = []
+        """Initialize and shuffle the event deck (delegates to EventManager)."""
+        EventManager.initialize_deck(game)
 
     @staticmethod
     def ensure_deck_capacity(game: "GameSession", count: int = 3) -> None:
         """Ensure deck has enough cards by reshuffling discard if needed."""
-        if len(game.event_deck) < count:
-            if game.used_event_deck:
-                game.event_deck.extend(game.used_event_deck)
-                game.used_event_deck = []
-                random.shuffle(game.event_deck)
+        EventManager.ensure_capacity(game, count)
 
     @staticmethod
     def draw_event(game: "GameSession") -> dict | None:
-        """Draw next event from deck."""
-        if not game.event_deck:
-            TurnManager.ensure_deck_capacity(game, 1)
-
-        if not game.event_deck:
-            return None
-
-        event_idx = game.event_deck.pop(0)
-        game.used_event_deck.append(event_idx)
-        return SASTA_EVENTS[event_idx]
+        """Draw next event from deck (delegates to EventManager)."""
+        return EventManager.draw_event(game)
 
     @staticmethod
     def handle_go_landing(game: "GameSession", tile: "Tile") -> None:
@@ -214,8 +201,12 @@ class TurnManager:
 
     @staticmethod
     def apply_event_effect(game: "GameSession", player: "Player", event: dict) -> dict:
-        """Apply event effect - returns action dict for orchestrator."""
-        actions = {"cash_changes": {}, "position_changes": {}, "skip_buy": False}
+        """
+        Apply event effect - returns action dict for orchestrator.
+        NOTE: This is a legacy method. For new code, use EventManager.apply_effect
+        which includes repository updates. This method only returns action dicts.
+        """
+        actions = {"cash_changes": {}, "position_changes": {}, "skip_buy": False, "special": None}
 
         if event["type"] == "CASH_GAIN":
             actions["cash_changes"][player.id] = event["value"]
@@ -235,5 +226,11 @@ class TurnManager:
         elif event["type"] == "MOVE_BACK":
             new_pos = max(0, player.position - event["value"])
             actions["position_changes"][player.id] = new_pos
+
+        elif event["type"] == "MARKET_CRASH":
+            actions["special"] = "MARKET_CRASH"
+
+        elif event["type"] == "BULL_MARKET":
+            actions["special"] = "BULL_MARKET"
 
         return actions
