@@ -10,6 +10,9 @@ export default defineConfig({
   resolve: {
     alias: {
       '@shared': path.resolve(__dirname, '../shared/src'),
+      'zustand': path.resolve(__dirname, 'node_modules/zustand'),
+      'zustand/middleware': path.resolve(__dirname, 'node_modules/zustand/middleware'),
+      'lucide-react': path.resolve(__dirname, 'node_modules/lucide-react'),
     },
   },
   build: {
