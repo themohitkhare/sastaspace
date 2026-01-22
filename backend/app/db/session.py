@@ -58,15 +58,6 @@ def _get_db_manager() -> MongoDBManager:
 
 
 async def get_db() -> AsyncGenerator[AsyncIOMotorDatabase, None]:
-    """
-    Async dependency function that yields a MongoDB database instance.
-    
-    FastAPI will automatically handle this as a dependency with proper cleanup.
-    
-    Usage in FastAPI routes:
-        @app.get("/endpoint")
-        async def my_endpoint(db: AsyncIOMotorDatabase = Depends(get_db)):
-            ...
-    """
+    """FastAPI dependency that yields a MongoDB database instance."""
     manager = _get_db_manager()
     yield manager.database
