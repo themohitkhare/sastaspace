@@ -13,7 +13,6 @@ class TurnAdvancementHandler:
     """Handles turn advancement and round management."""
 
     def __init__(self, repository: "GameRepository") -> None:
-        """Initialize turn advancement handler."""
         self.repository = repository
 
     async def handle_end_turn(
@@ -23,7 +22,6 @@ class TurnAdvancementHandler:
         check_end_conditions_callback: Callable,
         determine_winner_callback: Callable,
     ) -> ActionResult:
-        """Handle end turn action."""
         if game.current_turn_player_id != player_id:
             return ActionResult(success=False, message="Not your turn")
 
@@ -85,7 +83,6 @@ class TurnAdvancementHandler:
     async def _check_doubles_replay(
         self, game: "GameSession", player: "Player | None"
     ) -> ActionResult | None:
-        """Check if doubles allow replay."""
         if player and game.last_dice_roll and game.last_dice_roll.get("is_doubles"):
             game.turn_phase = TurnPhase.PRE_ROLL
             game.pending_decision = None
@@ -101,7 +98,6 @@ class TurnAdvancementHandler:
         check_end_conditions_callback: Callable,
         determine_winner_callback: Callable,
     ) -> ActionResult | None:
-        """Check for game end conditions."""
         if await check_end_conditions_callback(game.id):
             updated_game = await self.repository.get_by_id(game.id)
             if not updated_game:
@@ -119,7 +115,6 @@ class TurnAdvancementHandler:
     async def _advance_to_next_player(
         self, game: "GameSession"
     ) -> tuple["Player", int]:
-        """Advance to next player and return (next_player, old_round)."""
         active_players = [p for p in game.players if not p.is_bankrupt]
         current_index = next(
             (
@@ -145,7 +140,6 @@ class TurnAdvancementHandler:
         old_round: int,
         check_sudden_death_callback: Callable,
     ) -> ActionResult | None:
-        """Increment round if needed and check sudden death."""
         if next_player.id == game.first_player_id:
             game.current_round += 1
 
@@ -165,9 +159,6 @@ class TurnAdvancementHandler:
     async def _check_sudden_death(
         self, game: "GameSession", determine_winner_callback: Callable
     ) -> ActionResult | None:
-        """Check for sudden death condition."""
-        from app.modules.sastadice.schemas import GameStatus
-
         if (
             game.settings.win_condition == WinCondition.SUDDEN_DEATH
             and game.settings.round_limit > 0

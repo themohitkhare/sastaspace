@@ -174,7 +174,6 @@ class GameOrchestrator:
             await self.repository.update(game)
             return
 
-        # Handle special effects
         if actions.get("special") == "MARKET_CRASH":
             game.rent_multiplier = 0.5
         elif actions.get("special") == "BULL_MARKET":

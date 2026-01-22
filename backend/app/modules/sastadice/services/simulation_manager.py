@@ -186,8 +186,7 @@ class SimulationManager:
     ) -> None:
         """Handle decision phase in simulation."""
         game = await self._get_game(game_id)
-        
-        # Handle NODE tile landing (CPU buys if affordable)
+
         tile = game.board[current_player.position] if current_player.position < len(game.board) else None
         if tile and tile.type == TileType.NODE and not tile.owner_id:
             if current_player.cash >= tile.price + 200:
@@ -196,15 +195,12 @@ class SimulationManager:
                 )
                 turn_info["actions"].append({"action": "BUY_NODE", "result": result.message})
                 return
-        
-        # Handle GO_TO_JAIL tile (CPU is sent to jail, no decision)
+
         if tile and tile.type == TileType.GO_TO_JAIL:
             turn_info["actions"].append({"action": "SENT_TO_JAIL", "result": "Landed on 404"})
             return
-        
-        # Handle jail escape for CPU
+
         if current_player.in_jail:
-            from app.modules.sastadice.services.jail_manager import JailManager
             bribe_cost = game.settings.jail_bribe_cost
             if current_player.cash >= bribe_cost + 300:
                 result = await self.action_dispatcher.dispatch(
@@ -216,7 +212,7 @@ class SimulationManager:
                 )
             turn_info["actions"].append({"action": "JAIL_ESCAPE", "result": result.message})
             return
-        
+
         if not game.pending_decision:
             return
 
