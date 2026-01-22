@@ -20,7 +20,7 @@ async def test_auction_flow():
     print("="*60)
 
     # Connect to DB
-    client = AsyncIOMotorClient("mongodb://mongodb:27017")
+    client = AsyncIOMotorClient("mongodb://localhost:27017")
     db = client.test_auctions
     service = GameService(db)
     
