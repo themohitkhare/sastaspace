@@ -13,6 +13,8 @@ export default function CenterActionButton({
     onDdosActivate,
     onManageProperties,
     hasUpgradeableProperties,
+    board,
+    players,
 }) {
     const [isLoading, setIsLoading] = useState(false)
     const [error, setError] = useState(null)
@@ -177,6 +179,103 @@ export default function CenterActionButton({
                         className="flex-1 py-3 px-4 bg-sasta-white text-sasta-black font-zero font-bold border-brutal-sm shadow-brutal-sm hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none transition-all disabled:opacity-50"
                     >
                         ✗ PASS [N]
+                    </button>
+                </div>
+            </div>
+        )
+    }
+
+    if (turnPhase === 'DECISION' && pendingDecision?.type === 'EVENT_FORCE_BUY') {
+        const ownedByOthers = (board || []).filter(t => t.owner_id && t.owner_id !== playerId && t.type === 'PROPERTY')
+        return (
+            <div className="space-y-1">
+                <div className="text-center font-zero text-[10px] font-bold bg-red-700 text-white py-1 px-1 border-brutal-sm">
+                    ⚔️ HOSTILE TAKEOVER
+                </div>
+                <div className="flex flex-col gap-1 max-h-40 overflow-y-auto">
+                    {ownedByOthers.map((tile) => (
+                        <button
+                            key={tile.id}
+                            onClick={() => performAction('EVENT_FORCE_BUY', { tile_id: tile.id })}
+                            disabled={isLoading}
+                            className="py-1 px-2 bg-red-600 text-white font-zero text-[10px] font-bold border-brutal-sm hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none transition-all disabled:opacity-50 text-left flex justify-between"
+                        >
+                            <span>{tile.name.substring(0, 12)}</span>
+                            <span>${Math.floor(tile.price * 1.5)}</span>
+                        </button>
+                    ))}
+                    <button
+                        onClick={() => performAction('PASS_PROPERTY')}
+                        disabled={isLoading}
+                        className="w-full py-1 px-2 bg-sasta-white text-sasta-black font-zero text-[10px] font-bold border-brutal-sm hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none transition-all disabled:opacity-50"
+                    >
+                        SKIP
+                    </button>
+                </div>
+            </div>
+        )
+    }
+
+    if (turnPhase === 'DECISION' && pendingDecision?.type === 'EVENT_CLONE_UPGRADE') {
+        const ownedByOthers = (board || []).filter(t => t.owner_id && t.owner_id !== playerId && t.type === 'PROPERTY' && t.upgrade_level > 0)
+        const myProperties = (board || []).filter(t => t.owner_id === playerId && t.type === 'PROPERTY')
+        
+        return (
+            <div className="space-y-1">
+                <div className="text-center font-zero text-[10px] font-bold bg-cyan-600 text-white py-1 px-1 border-brutal-sm">
+                    🍴 FORK REPO
+                </div>
+                <div className="text-[9px] font-data text-white mb-1 text-center">Clone upgrades</div>
+                <div className="flex flex-col gap-1 max-h-32 overflow-y-auto">
+                    {ownedByOthers.map((source) =>
+                        myProperties.map((target) => (
+                            <button
+                                key={`${source.id}-${target.id}`}
+                                onClick={() => performAction('EVENT_CLONE_UPGRADE', { source_tile_id: source.id, target_tile_id: target.id })}
+                                disabled={isLoading}
+                                className="py-1 px-1 bg-cyan-500 text-white font-zero text-[9px] font-bold border-brutal-sm hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none transition-all disabled:opacity-50 text-left"
+                            >
+                                {source.name.substring(0, 8)} L{source.upgrade_level} → {target.name.substring(0, 8)}
+                            </button>
+                        ))
+                    )}
+                    <button
+                        onClick={() => performAction('PASS_PROPERTY')}
+                        disabled={isLoading}
+                        className="w-full py-1 px-2 bg-sasta-white text-sasta-black font-zero text-[10px] font-bold border-brutal-sm hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none transition-all disabled:opacity-50"
+                    >
+                        SKIP
+                    </button>
+                </div>
+            </div>
+        )
+    }
+
+    if (turnPhase === 'DECISION' && pendingDecision?.type === 'EVENT_FREE_LANDING') {
+        const myProperties = (board || []).filter(t => t.owner_id === playerId && t.type === 'PROPERTY')
+        return (
+            <div className="space-y-1">
+                <div className="text-center font-zero text-[10px] font-bold bg-green-600 text-white py-1 px-1 border-brutal-sm">
+                    🔓 OPEN SOURCE
+                </div>
+                <div className="text-[9px] font-data text-white mb-1 text-center">Make property free for 1 round</div>
+                <div className="flex flex-col gap-1 max-h-40 overflow-y-auto">
+                    {myProperties.map((tile) => (
+                        <button
+                            key={tile.id}
+                            onClick={() => performAction('EVENT_FREE_LANDING', { tile_id: tile.id })}
+                            disabled={isLoading}
+                            className="py-1 px-2 bg-green-500 text-white font-zero text-[10px] font-bold border-brutal-sm hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none transition-all disabled:opacity-50 text-left"
+                        >
+                            {tile.name}
+                        </button>
+                    ))}
+                    <button
+                        onClick={() => performAction('PASS_PROPERTY')}
+                        disabled={isLoading}
+                        className="w-full py-1 px-2 bg-sasta-white text-sasta-black font-zero text-[10px] font-bold border-brutal-sm hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none transition-all disabled:opacity-50"
+                    >
+                        SKIP
                     </button>
                 </div>
             </div>

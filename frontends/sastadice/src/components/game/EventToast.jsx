@@ -13,6 +13,11 @@ const TOAST_TYPES = {
     SYSTEM_UPDATE: { icon: '🔄', bg: 'bg-purple-600/90', text: 'text-white' },
     RANSOMWARE: { icon: '🔒', bg: 'bg-red-800/90', text: 'text-red-200' },
     IDENTITY_THEFT: { icon: '🎭', bg: 'bg-pink-600/90', text: 'text-white' },
+    WHISTLEBLOWER: { icon: '🔍', bg: 'bg-indigo-600/90', text: 'text-white' },
+    FORK_REPO: { icon: '🍴', bg: 'bg-cyan-600/90', text: 'text-white' },
+    HOSTILE_TAKEOVER: { icon: '⚔️', bg: 'bg-red-700/90', text: 'text-white', animate: 'animate-pulse' },
+    OPEN_SOURCE: { icon: '🔓', bg: 'bg-green-600/90', text: 'text-white' },
+    SYSTEM_RESTORE: { icon: '⏪', bg: 'bg-blue-600/90', text: 'text-white' },
     DEFAULT: { icon: '📢', bg: 'bg-sasta-black/80', text: 'text-sasta-accent' },
 }
 
@@ -25,6 +30,11 @@ function parseEventType(message) {
     if (msg.includes('system update') || msg.includes('all players skip')) return 'SYSTEM_UPDATE'
     if (msg.includes('ransomware') || msg.includes('steal')) return 'RANSOMWARE'
     if (msg.includes('identity theft') || msg.includes('swap cash')) return 'IDENTITY_THEFT'
+    if (msg.includes('whistleblower') || msg.includes('reveal')) return 'WHISTLEBLOWER'
+    if (msg.includes('fork') || msg.includes('clone upgrade')) return 'FORK_REPO'
+    if (msg.includes('hostile takeover') || msg.includes('force buy')) return 'HOSTILE_TAKEOVER'
+    if (msg.includes('open source') || msg.includes('free landing')) return 'OPEN_SOURCE'
+    if (msg.includes('system restore') || msg.includes('previous position')) return 'SYSTEM_RESTORE'
     if (msg.includes('rent') || msg.includes('paid $')) return 'RENT'
     if (msg.includes('bought') || msg.includes('purchased')) return 'PURCHASE'
     if (msg.includes('go') && msg.includes('+$')) return 'GO_BONUS'
