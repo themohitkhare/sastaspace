@@ -1,4 +1,4 @@
-.PHONY: deploy-dev deploy-prod test-backend test-frontend-sastadice test-frontend-sastaspace test-full
+.PHONY: deploy-dev deploy-prod test-backend test-frontend-sastadice test-frontend-sastaspace test-full test-e2e-sastadice test-e2e-auction test-e2e-all
 
 deploy-dev: ## Deploy all services in development mode
 	docker-compose up -d --build
@@ -17,6 +17,20 @@ test-frontend-sastadice: ## Run sastadice frontend tests
 
 test-frontend-sastaspace: ## Run sastaspace frontend tests (placeholder - no tests yet)
 	@echo "No tests configured for sastaspace frontend"
+
+test-e2e-sastadice: ## Run sastadice E2E tests with Playwright
+	@export NVM_DIR="$$HOME/.nvm" && [ -s "$$NVM_DIR/nvm.sh" ] && \. "$$NVM_DIR/nvm.sh" && \
+	cd frontends/sastadice && \
+	([ -f .nvmrc ] && nvm use || nvm use --lts) && \
+	npx playwright test tests/e2e/ --workers=2
+
+test-e2e-auction: ## Run only auction E2E tests
+	@export NVM_DIR="$$HOME/.nvm" && [ -s "$$NVM_DIR/nvm.sh" ] && \. "$$NVM_DIR/nvm.sh" && \
+	cd frontends/sastadice && \
+	([ -f .nvmrc ] && nvm use || nvm use --lts) && \
+	npx playwright test tests/e2e/auction_complete.spec.js --headed
+
+test-e2e-all: test-e2e-sastadice ## Run all E2E tests
 
 test-full: test-backend test-frontend-sastadice ## Run all tests
 
