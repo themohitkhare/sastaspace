@@ -85,7 +85,7 @@ describe('AuctionModal', () => {
 
         const button = screen.getByText('BID $510').closest('button')
         expect(button).toBeDisabled()
-        expect(screen.getByText('WINNING')).toBeInTheDocument()
+        expect(screen.getByText(/YOU ARE WINNING/i)).toBeInTheDocument()
     })
 
     it('shows panic mode visuals when time is low', () => {
