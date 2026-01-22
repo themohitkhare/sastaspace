@@ -295,6 +295,8 @@ export default function GamePage() {
               onDdosActivate={setDdosMode}
               onManageProperties={() => setShowPropertyManager(true)}
               hasUpgradeableProperties={game?.board?.some(t => t.owner_id === playerId && t.type === 'PROPERTY')}
+              board={game?.board}
+              players={game?.players}
             />
           </BoardView>
         </div>

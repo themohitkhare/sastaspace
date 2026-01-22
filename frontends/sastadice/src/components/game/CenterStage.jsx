@@ -21,6 +21,8 @@ export default function CenterStage({
     onDdosActivate,
     onManageProperties,
     hasUpgradeableProperties,
+    board,
+    players,
 }) {
     return (
         <div className="w-full h-full flex flex-row">
@@ -81,6 +83,8 @@ export default function CenterStage({
                         onDdosActivate={onDdosActivate}
                         onManageProperties={onManageProperties}
                         hasUpgradeableProperties={hasUpgradeableProperties}
+                        board={board}
+                        players={players}
                     />
                 </div>
 
