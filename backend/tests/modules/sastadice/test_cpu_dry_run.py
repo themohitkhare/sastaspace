@@ -68,9 +68,9 @@ async def test_cpu_game_dry_run_all_scenarios(db_database):
     await service.repository.update_player_cash(cpu_player.id, 10)
     print(f"Set {cpu_player.name} cash to 10")
 
-    # Try to play turn - should handle gracefully
-    turn_log = await service._play_cpu_turn(game3, cpu_player)
-    print(f"Turn log: {turn_log}")
+    # Try to process turns - should handle gracefully
+    result = await service.process_cpu_turns(game3.id)
+    print(f"CPU turns played: {result['cpu_turns_played']}")
 
     game3 = await service.get_game(game3.id)
     print(f"Game still active: {game3.status == GameStatus.ACTIVE}")
@@ -111,11 +111,11 @@ async def test_cpu_game_dry_run_all_scenarios(db_database):
             (p for p in game5.players if p.id == game5.current_turn_player_id), None
         )
 
-        if not current_player or not service._is_cpu_player(current_player):
+        if not current_player or not service.cpu_manager.is_cpu_player(current_player):
             break
 
-        turn_log = await service._play_cpu_turn(game5, current_player)
-        if not turn_log:
+        result = await service.process_cpu_turns(game5.id)
+        if result["cpu_turns_played"] == 0:
             break
 
     print(f"Phases seen: {[p.value for p in phases_seen]}")

@@ -266,7 +266,7 @@ class TestSastaDiceAPI:
 
         # First roll dice to advance phase
         with patch(
-            "app.modules.sastadice.services.game_service.random.randint", side_effect=[1, 2]
+            "app.modules.sastadice.services.movement_handler.random.randint", side_effect=[1, 2]
         ):
             roll_response = await client.post(
                 f"/api/v1/sastadice/games/{game_id}/action",
