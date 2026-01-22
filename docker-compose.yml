@@ -84,8 +84,8 @@ services:
 
   frontend-main:
     build:
-      context: ./frontends/sastaspace
-      dockerfile: Dockerfile
+      context: ./frontends
+      dockerfile: sastaspace/Dockerfile
     container_name: sastaspace-frontend-main
     ports:
       - "9000:80"  # Direct access: http://localhost:9000
@@ -137,8 +137,8 @@ services:
 
   frontend-sastadice:
     build:
-      context: ./frontends/sastadice
-      dockerfile: Dockerfile
+      context: ./frontends
+      dockerfile: sastadice/Dockerfile
     container_name: sastaspace-frontend-sastadice
     ports:
       - "9001:80"  # Direct access: http://localhost:9001
