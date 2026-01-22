@@ -85,16 +85,46 @@ export default function TileComponent({ tile, players = [], width, height, size 
       )}
       {tile.upgrade_level > 0 && size >= 50 && (
         <div
-          className="absolute font-zero font-bold text-yellow-500 flex items-center justify-center"
+          className={`absolute flex items-center gap-0.5 ${
+            tile.upgrade_level === 2 ? 'animate-pulse' : ''
+          }`}
           style={{
             top: '2px',
             left: '2px',
-            fontSize: `${Math.max(8, Math.round(10 * scaleFactor))}px`,
             zIndex: 10,
-            textShadow: '1px 1px 2px #000',
           }}
+          role="status"
+          aria-label={`Upgrade level ${tile.upgrade_level}: ${
+            tile.upgrade_level === 1 ? 'Script Kiddie' : 'Elite Hacker'
+          }`}
         >
-          {tile.upgrade_level === 1 ? '⚡' : '⚡⚡'}
+          {/* LED indicator */}
+          <div
+            className={`rounded-full ${
+              tile.upgrade_level === 1
+                ? 'bg-green-500 w-2 h-2'
+                : 'bg-yellow-400 w-3 h-3 shadow-[0_0_8px_#fbbf24]'
+            }`}
+            aria-hidden="true"
+          />
+          {/* Level badge */}
+          <span
+            className="font-zero font-bold text-white bg-black/70 px-0.5 rounded"
+            style={{ fontSize: `${Math.max(7, Math.round(9 * scaleFactor))}px` }}
+          >
+            L{tile.upgrade_level}
+          </span>
+        </div>
+      )}
+
+      {/* NODE tile indicator */}
+      {tile.type === 'NODE' && size >= 50 && (
+        <div
+          className="absolute bottom-1 right-1 text-[8px] font-bold text-cyan-400"
+          aria-label="Server Node"
+          style={{ fontSize: `${Math.max(6, Math.round(8 * scaleFactor))}px` }}
+        >
+          NODE
         </div>
       )}
       {owner && size >= 50 && (
