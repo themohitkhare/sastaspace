@@ -50,6 +50,14 @@ export default function CenterActionButton({
                 : typeof errorDetail === 'string'
                     ? errorDetail
                     : err.message
+
+            // Auto-refresh on specific state desync error
+            if (errorText && errorText.includes('Cannot roll dice in current turn phase')) {
+                // TODO: debug - Game state desync detected, reloading
+                window.location.reload()
+                return
+            }
+
             setError(errorText)
             if (onActionComplete) await onActionComplete({})
         } finally {

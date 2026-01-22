@@ -2,153 +2,186 @@ import { useEffect, useState, useRef } from 'react'
 
 export default function AuctionModal({ auctionState, tiles, players, playerId, onBid, onExpire }) {
     const [timeLeft, setTimeLeft] = useState(0)
-    const [myBid, setMyBid] = useState('')
+    const [stuckTimer, setStuckTimer] = useState(0)
+    const [error, setError] = useState(null)
     const resolveAttempted = useRef(false)
 
     useEffect(() => {
         resolveAttempted.current = false
-        setMyBid('')
+        setStuckTimer(0)
+        setError(null)
     }, [auctionState?.property_id])
 
+    // Timer effect with stuck detection
     useEffect(() => {
         const timer = setInterval(() => {
             if (!auctionState) return
 
-            // Calculate remaining time
-            // auctionState.end_time is Unix timestamp (seconds)
-            // Date.now() is ms
             const remaining = Math.max(0, auctionState.end_time - Date.now() / 1000)
             setTimeLeft(remaining)
 
+            // Track how long we've been stuck at 0
+            if (remaining <= 0) {
+                setStuckTimer(prev => prev + 0.05)
+            } else {
+                setStuckTimer(0)
+            }
+
+            // Force resolve on first hit of 0
             if (remaining <= 0 && !resolveAttempted.current && onExpire) {
                 resolveAttempted.current = true
                 onExpire()
             }
-        }, 100)
+        }, 50)
         return () => clearInterval(timer)
     }, [auctionState, onExpire])
+
+    // Kill switch: force reload if stuck >2s
+    useEffect(() => {
+        if (stuckTimer > 2) {
+            // TODO: debug - Auction stuck at 0 for >2s, forcing page reload
+            window.location.reload()
+        }
+    }, [stuckTimer])
 
     if (!auctionState) return null
 
     const property = tiles.find(t => t.id === auctionState.property_id)
     const highestBidder = players.find(p => p.id === auctionState.highest_bidder_id)
     const currentBid = auctionState.highest_bid
-    // Min bid logic: current + increment. If 0, min is 10 (or start price? No, usually low start).
-    // Schema says min_bid_increment = 10.
-    const minBid = currentBid + auctionState.min_bid_increment
+
+    // Fixed bid calculation: start from max(currentBid, basePrice)
+    const startPrice = Math.max(currentBid, property?.price || 0)
 
     const handleBid = (amount) => {
+        setError(null)
         onBid(amount)
-        setMyBid('')
     }
 
-    const quickBidAmounts = [
-        minBid,
-        minBid + 10,
-        minBid + 50,
-        minBid + 100
-    ].filter(amt => amt > 0)
+    const handleManualSync = () => {
+        if (onExpire) onExpire()
+    }
 
+    const quickBidIncrements = [10, 50, 100]
     const isHighestBidder = highestBidder?.id === playerId
+    const isPanicMode = timeLeft < 5
+    const showSyncButton = timeLeft <= 0 && stuckTimer > 1
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm animate-fade-in">
-            <div className="w-full max-w-md bg-sasta-white border-brutal-lg shadow-brutal-lg p-6 relative overflow-hidden">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 backdrop-blur-md animate-fade-in">
+            <div className={`w-full max-w-md bg-sasta-black border-[4px] ${isPanicMode ? 'border-red-600 animate-pulse' : 'border-red-500'} shadow-[0_0_50px_rgba(255,0,0,0.5)] p-6 relative overflow-hidden transition-all duration-75`}>
 
-                <div className="text-center mb-6">
-                    <h2 className="font-zero text-2xl font-bold bg-sasta-black text-sasta-white inline-block px-3 py-1 mb-2 transform -rotate-1">
-                        🔨 AUCTION TIME
+                {/* Header */}
+                <div className="text-center mb-4 relative z-10">
+                    <h2 className={`font-zero text-3xl font-bold text-red-500 inline-block px-3 py-1 mb-2 transform bg-black border-2 border-red-500 ${isPanicMode ? 'animate-ping' : ''}`}>
+                        ⚠️ BIDDING WAR ⚠️
                     </h2>
-                    <div className="font-data text-sasta-black/60 text-sm">
-                        BID TO WIN THIS PROPERTY
-                    </div>
                 </div>
 
-                <div className="flex justify-center mb-6">
-                    <div className="w-40 border-brutal-sm bg-white p-2 shadow-brutal-sm transform rotate-1">
+                {/* Property Card */}
+                <div className="flex justify-center mb-6 relative z-10">
+                    <div className="w-48 border-4 border-white bg-white p-2 shadow-[10px_10px_0_rgba(255,0,0,1)] transform -rotate-2 hover:rotate-0 transition-transform duration-300 scale-110">
                         <div
-                            className="h-12 border-b-2 border-black mb-2 flex items-center justify-center font-zero font-bold text-center leading-none"
+                            className="h-16 border-b-4 border-black mb-2 flex items-center justify-center font-zero font-black text-xl text-center leading-none"
                             style={{ backgroundColor: property?.color || '#ccc' }}
                         >
-                            <span className="drop-shadow-md text-white px-1" style={{ textShadow: '1px 1px 0 #000' }}>
+                            <span className="drop-shadow-md text-white px-1 uppercase tracking-tighter" style={{ textShadow: '2px 2px 0 #000' }}>
                                 {property?.name}
                             </span>
                         </div>
-                        <div className="text-center font-data text-xs mb-2">
-                            BASE PRICE: ${property?.price}
+                        <div className="text-center font-mono font-bold text-sm mb-1 uppercase tracking-widest">
+                            Base: ${property?.price}
                         </div>
                     </div>
                 </div>
 
-                <div className="text-center mb-6 space-y-2">
-                    <div className="font-data text-sm opacity-60">CURRENT HIGHEST BID</div>
-                    <div className="font-zero text-4xl font-bold text-sasta-accent drop-shadow-[2px_2px_0_rgba(0,0,0,1)]">
-                        ${currentBid}
-                    </div>
-                    {highestBidder ? (
-                        <div className="font-data font-bold text-sm bg-black text-white inline-block px-2 py-0.5">
-                            Held by: {highestBidder.name}
+                {/* Winner Badge */}
+                <div className="text-center mb-2 relative z-10">
+                    {isHighestBidder ? (
+                        <div className="inline-block px-4 py-1 bg-green-500 text-black font-mono font-bold text-xs uppercase tracking-widest border-2 border-green-400">
+                            [ YOU ARE WINNING ]
+                        </div>
+                    ) : highestBidder ? (
+                        <div className="inline-block px-4 py-1 bg-red-600 text-white font-mono font-bold text-xs uppercase tracking-widest border-2 border-red-500">
+                            [ WINNING: {highestBidder.name} ]
                         </div>
                     ) : (
-                        <div className="font-data text-xs italic">No bids yet</div>
+                        <div className="h-6"></div>
                     )}
                 </div>
 
-                <div className="w-full bg-sasta-black h-4 mb-6 relative border-brutal-sm">
-                    <div
-                        className="h-full transition-all duration-100 ease-linear"
-                        style={{
-                            width: `${Math.min(100, (timeLeft / 20) * 100)}%`,
-                            backgroundColor: timeLeft < 3 ? '#FF0000' : timeLeft < 5 ? '#FF4444' : '#4ECDC4'
-                        }}
-                    />
-                    <div className="absolute inset-0 flex items-center justify-center text-[10px] font-bold text-white font-mono">
+                {/* Price Display */}
+                <div className="text-center mb-6 space-y-2 relative z-10">
+                    <div className="font-mono text-xs text-red-500 tracking-[0.3em] font-bold">CURRENT PRICE</div>
+                    {currentBid > 0 ? (
+                        <div className="font-mono text-7xl font-black text-[#00ff2b] drop-shadow-[4px_4px_0_rgba(0,0,0,1)] tracking-tighter leading-none">
+                            ${currentBid}
+                        </div>
+                    ) : (
+                        <div className="font-mono text-5xl font-black text-yellow-500 drop-shadow-[4px_4px_0_rgba(0,0,0,1)] tracking-tighter leading-none">
+                            START: ${property?.price}
+                        </div>
+                    )}
+                </div>
+
+                {/* Timer */}
+                <div className="text-center mb-6 relative z-10">
+                    <div className={`font-mono font-black text-6xl transition-colors duration-100 ${timeLeft < 5 ? 'text-red-500 animate-shake' : 'text-white'}`}>
                         {timeLeft.toFixed(1)}s
                     </div>
                 </div>
 
-                <div className="space-y-3">
-                    <div className="grid grid-cols-2 gap-2">
-                        {quickBidAmounts.map(amt => (
-                            <button
-                                key={amt}
-                                onClick={() => handleBid(amt)}
-                                disabled={isHighestBidder}
-                                className="py-2 border-brutal-sm bg-white hover:bg-sasta-accent hover:translate-x-0.5 hover:translate-y-0.5 transition-all font-bold text-sm disabled:opacity-50 disabled:hover:translate-x-0 disabled:hover:translate-y-0 disabled:hover:bg-white"
-                            >
-                                BID ${amt}
-                            </button>
-                        ))}
-                    </div>
-
-                    <form
-                        onSubmit={(e) => { e.preventDefault(); if (myBid) handleBid(parseInt(myBid)); }}
-                        className="flex gap-2"
-                    >
-                        <input
-                            type="number"
-                            placeholder="Custom Amount..."
-                            className="flex-1 border-brutal-sm p-2 font-data text-sm"
-                            value={myBid}
-                            onChange={(e) => setMyBid(e.target.value)}
-                            min={minBid}
-                        />
-                        <button
-                            type="submit"
-                            disabled={isHighestBidder || !myBid}
-                            className="px-4 border-brutal-sm bg-sasta-black text-white font-bold hover:bg-sasta-accent hover:text-black transition-colors disabled:opacity-50"
-                        >
-                            BID
-                        </button>
-                    </form>
-
-                    {isHighestBidder && (
-                        <div className="text-center font-data text-xs text-green-600 font-bold animate-bounce mt-2">
-                            YOU ARE WINNING!
+                {/* Error Toast */}
+                {error && (
+                    <div className="mb-4 relative z-10">
+                        <div className="bg-red-500 text-white px-4 py-2 text-center font-mono font-bold text-sm animate-pulse">
+                            {error}
                         </div>
-                    )}
-                </div>
+                    </div>
+                )}
 
+                {/* Manual Sync Button */}
+                {showSyncButton && (
+                    <div className="mb-4 relative z-10">
+                        <button
+                            onClick={handleManualSync}
+                            className="w-full py-2 px-4 bg-yellow-500 text-black font-mono font-bold text-sm border-2 border-yellow-400 hover:bg-yellow-400 transition-colors"
+                        >
+                            ⚠️ SYNC NOW
+                        </button>
+                    </div>
+                )}
+
+                {/* Bid Buttons */}
+                <div className="grid grid-cols-3 gap-3 relative z-10">
+                    {quickBidIncrements.map((inc, idx) => {
+                        const totalBid = startPrice + inc
+                        const isHighValue = inc === 100
+                        return (
+                            <button
+                                key={inc}
+                                onClick={() => handleBid(totalBid)}
+                                disabled={isHighestBidder}
+                                className={`
+                                    py-4 px-2 border-2 
+                                    ${isHighValue
+                                        ? 'bg-green-500 text-black border-green-400 hover:bg-green-400'
+                                        : 'bg-[#111] text-white border-white hover:bg-[#222]'
+                                    }
+                                    active:scale-95
+                                    font-mono font-bold text-sm
+                                    transition-all duration-75 uppercase
+                                    disabled:opacity-30 disabled:cursor-not-allowed
+                                    hover:shadow-[0_0_15px_rgba(255,255,255,0.5)]
+                                    flex flex-col items-center justify-center gap-1
+                                `}
+                            >
+                                <span className={`text-xs ${isHighValue ? 'text-green-900' : 'text-green-400'}`}>+${inc}</span>
+                                <span className="text-lg">BID ${totalBid}</span>
+                            </button>
+                        )
+                    })}
+                </div>
             </div>
         </div>
     )
