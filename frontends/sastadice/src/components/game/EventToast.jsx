@@ -7,18 +7,30 @@ const TOAST_TYPES = {
     TAX: { icon: '📋', bg: 'bg-orange-500/80', text: 'text-white' },
     EVENT: { icon: '⚡', bg: 'bg-purple-500/80', text: 'text-white' },
     BUFF: { icon: '✨', bg: 'bg-cyan-500/80', text: 'text-white' },
+    MARKET_CRASH: { icon: '📉', bg: 'bg-red-600/90', text: 'text-white', animate: 'animate-pulse' },
+    BULL_MARKET: { icon: '📈', bg: 'bg-green-600/90', text: 'text-white', animate: 'animate-pulse' },
+    HYPERINFLATION: { icon: '💸', bg: 'bg-yellow-500/90', text: 'text-black', animate: 'animate-bounce' },
+    SYSTEM_UPDATE: { icon: '🔄', bg: 'bg-purple-600/90', text: 'text-white' },
+    RANSOMWARE: { icon: '🔒', bg: 'bg-red-800/90', text: 'text-red-200' },
+    IDENTITY_THEFT: { icon: '🎭', bg: 'bg-pink-600/90', text: 'text-white' },
     DEFAULT: { icon: '📢', bg: 'bg-sasta-black/80', text: 'text-sasta-accent' },
 }
 
 function parseEventType(message) {
     if (!message) return 'DEFAULT'
     const msg = message.toLowerCase()
+    if (msg.includes('market crash') || msg.includes('rent halved')) return 'MARKET_CRASH'
+    if (msg.includes('bull market') || msg.includes('rent +50%')) return 'BULL_MARKET'
+    if (msg.includes('hyperinflation') || msg.includes('go bonus triples')) return 'HYPERINFLATION'
+    if (msg.includes('system update') || msg.includes('all players skip')) return 'SYSTEM_UPDATE'
+    if (msg.includes('ransomware') || msg.includes('steal')) return 'RANSOMWARE'
+    if (msg.includes('identity theft') || msg.includes('swap cash')) return 'IDENTITY_THEFT'
     if (msg.includes('rent') || msg.includes('paid $')) return 'RENT'
     if (msg.includes('bought') || msg.includes('purchased')) return 'PURCHASE'
     if (msg.includes('go') && msg.includes('+$')) return 'GO_BONUS'
     if (msg.includes('tax')) return 'TAX'
     if (msg.includes('buff') || msg.includes('bonus')) return 'BUFF'
-    if (msg.includes('event') || msg.includes('sasta') || msg.includes('monsoon') || msg.includes('flood')) return 'EVENT'
+    if (msg.includes('event') || msg.includes('sasta') || msg.includes('gateway') || msg.includes('crypto') || msg.includes('viral')) return 'EVENT'
     return 'DEFAULT'
 }
 
@@ -36,7 +48,7 @@ function SingleToast({ message, type, onComplete }) {
 
     return (
         <div
-            className={`${config.bg} ${config.text} px-2 py-1 font-data text-xs flex items-center gap-1 rounded transition-all duration-200 ${isVisible ? 'animate-toast-in opacity-100' : 'animate-toast-out opacity-0'
+            className={`${config.bg} ${config.text} ${config.animate || ''} px-2 py-1 font-data text-xs flex items-center gap-1 rounded transition-all duration-200 border-2 ${type === 'MARKET_CRASH' ? 'border-red-400' : type === 'BULL_MARKET' ? 'border-green-400' : 'border-transparent'} ${isVisible ? 'animate-toast-in opacity-100' : 'animate-toast-out opacity-0'
                 }`}
         >
             <span>{config.icon}</span>
