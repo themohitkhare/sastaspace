@@ -98,7 +98,6 @@ class EventManager:
                 if t.type.value == "PROPERTY" and not t.owner_id
             ]
             if unowned:
-                import random
                 target = random.choice(unowned)
                 player.position = target.position
                 await self.repository.update_player_position(player.id, target.position)
@@ -116,7 +115,6 @@ class EventManager:
                 actions["cash_changes"][player.id] = amount
 
         elif effect_type == "SWAP_CASH":
-            import random
             other_players = [p for p in game.players if p.id != player.id]
             if other_players:
                 target = random.choice(other_players)
@@ -162,6 +160,37 @@ class EventManager:
 
         elif effect_type == "DOUBLE_RENT":
             actions["double_rent"] = True
+
+        elif effect_type == "REVEAL_CASH":
+            other_players = [p for p in game.players if p.id != player.id]
+            if other_players:
+                target = random.choice(other_players)
+                actions["revealed_player"] = {"id": target.id, "name": target.name, "cash": target.cash}
+
+        elif effect_type == "ALL_SKIP_TURN":
+            for p in game.players:
+                p.active_buff = "SKIP_TURN"
+            actions["special"] = "ALL_SKIP_TURN"
+
+        elif effect_type == "MOVE_TO_PREVIOUS":
+            new_pos = player.previous_position
+            player.position = new_pos
+            await self.repository.update_player_position(player.id, new_pos)
+            actions["position_changes"][player.id] = new_pos
+
+        elif effect_type == "CLONE_UPGRADE":
+            actions["special"] = "CLONE_UPGRADE"
+            actions["requires_decision"] = True
+
+        elif effect_type == "FORCE_BUY":
+            actions["special"] = "FORCE_BUY"
+            actions["force_buy_multiplier"] = value / 100
+            actions["requires_decision"] = True
+
+        elif effect_type == "FREE_LANDING":
+            actions["special"] = "FREE_LANDING"
+            actions["free_rounds"] = value
+            actions["requires_decision"] = True
 
         # Update game state for special effects
         if actions["special"]:

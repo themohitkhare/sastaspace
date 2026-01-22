@@ -161,8 +161,18 @@ class GameOrchestrator:
     ) -> None:
         """Handle chance landing."""
         event = self.turn_manager.handle_chance_landing(game, player, tile)
-        # Use EventManager for atomic repository updates
         actions = await self.event_manager.apply_effect(game, player, event)
+
+        if actions.get("requires_decision"):
+            from app.modules.sastadice.schemas import PendingDecision
+            game.pending_decision = PendingDecision(
+                type=f"EVENT_{actions['special']}",
+                event_data={"event": event, "actions": actions}
+            )
+            game.last_event_message = f"🎲 {event['name']}: {event['desc']}"
+            game.turn_phase = TurnPhase.DECISION
+            await self.repository.update(game)
+            return
 
         # Handle special effects
         if actions.get("special") == "MARKET_CRASH":
@@ -170,13 +180,17 @@ class GameOrchestrator:
         elif actions.get("special") == "BULL_MARKET":
             game.rent_multiplier = 1.5
         elif actions.get("special") == "HYPERINFLATION":
-            # Triple GO bonus this round (handled in calculate_go_bonus)
             pass
 
         if actions.get("skip_buy"):
             game.pending_decision = None
 
-        game.last_event_message = f"🎲 {event['name']}: {event['desc']}"
+        if actions.get("revealed_player"):
+            revealed = actions["revealed_player"]
+            game.last_event_message = f"🔍 {event['name']}: {revealed['name']} has ${revealed['cash']}"
+        else:
+            game.last_event_message = f"🎲 {event['name']}: {event['desc']}"
+        
         game.turn_phase = TurnPhase.POST_TURN
 
     async def _handle_tax_landing(
