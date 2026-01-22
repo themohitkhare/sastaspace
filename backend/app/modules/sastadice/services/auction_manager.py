@@ -1,11 +1,12 @@
 """Auction manager for handling auction state machine with race-condition safety."""
+
 import time
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from app.modules.sastadice.schemas import GameSession, Player, Tile, AuctionState
+    from app.modules.sastadice.schemas import AuctionState, GameSession, Player, Tile
 
-from app.modules.sastadice.schemas import TurnPhase, AuctionState
+from app.modules.sastadice.schemas import AuctionState, TurnPhase
 
 
 class AuctionManager:
@@ -36,9 +37,7 @@ class AuctionManager:
         return auction_state
 
     @staticmethod
-    def validate_bid(
-        auction: "AuctionState", player: "Player", amount: int
-    ) -> Optional[str]:
+    def validate_bid(auction: "AuctionState", player: "Player", amount: int) -> str | None:
         """Validate a bid. Returns error message if invalid, None if valid."""
         if time.time() > auction.end_time:
             return "Auction has ended"
@@ -56,9 +55,7 @@ class AuctionManager:
         return None
 
     @staticmethod
-    def place_bid(
-        game: "GameSession", player_id: str, amount: int
-    ) -> tuple[bool, str]:
+    def place_bid(game: "GameSession", player_id: str, amount: int) -> tuple[bool, str]:
         """Place a bid in the auction. Returns (success, message)."""
         if game.turn_phase != TurnPhase.AUCTION or not game.auction_state:
             return False, "No active auction"
@@ -94,7 +91,7 @@ class AuctionManager:
         auction.end_time = time.time() + seconds
 
     @staticmethod
-    def resolve_auction(game: "GameSession") -> tuple[bool, str, Optional[str], int]:
+    def resolve_auction(game: "GameSession") -> tuple[bool, str, str | None, int]:
         """Resolve a finished auction. Returns (success, message, winner_id, amount, prop_id)."""
         if not game.auction_state:
             return False, "No auction state", None, 0, None
@@ -110,9 +107,7 @@ class AuctionManager:
         if winner_id:
             winner = next((p for p in game.players if p.id == winner_id), None)
             if winner:
-                game.last_event_message = (
-                    f"🔨 SOLD! {tile_name} to {winner.name} for ${amount}!"
-                )
+                game.last_event_message = f"🔨 SOLD! {tile_name} to {winner.name} for ${amount}!"
                 game.auction_state = None
                 game.turn_phase = TurnPhase.POST_TURN
                 return True, f"Sold to {winner.name} for ${amount}", winner_id, amount, prop_id
@@ -120,4 +115,4 @@ class AuctionManager:
         game.last_event_message = f"🔨 Auction ended. No bids for {tile_name}."
         game.auction_state = None
         game.turn_phase = TurnPhase.POST_TURN
-        return True, f"Auction ended with no bids", None, 0, prop_id
+        return True, "Auction ended with no bids", None, 0, prop_id

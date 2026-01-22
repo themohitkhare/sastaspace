@@ -1,12 +1,13 @@
 """Turn manager for pure game rules - no database access."""
+
 import random
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 if TYPE_CHECKING:
     from app.modules.sastadice.schemas import GameSession, Player, Tile
 
+from app.modules.sastadice.schemas import PendingDecision, TileType, TurnPhase
 from app.modules.sastadice.services.board_generation_service import SASTA_EVENTS
-from app.modules.sastadice.schemas import TileType, PendingDecision, TurnPhase
 
 
 class TurnManager:
@@ -24,9 +25,7 @@ class TurnManager:
         """Check if player owns all properties of a color."""
         if not color:
             return False
-        color_tiles = [
-            t for t in board if t.type == TileType.PROPERTY and t.color == color
-        ]
+        color_tiles = [t for t in board if t.type == TileType.PROPERTY and t.color == color]
         if not color_tiles:
             return False
         return all(t.owner_id == player.id for t in color_tiles)
@@ -49,10 +48,7 @@ class TurnManager:
 
         base_rent = int(base_rent * game.rent_multiplier)
 
-        if (
-            tile.blocked_until_round
-            and tile.blocked_until_round > game.current_round
-        ):
+        if tile.blocked_until_round and tile.blocked_until_round > game.current_round:
             return 0
 
         if tile.id in game.blocked_tiles:
@@ -77,7 +73,7 @@ class TurnManager:
                 random.shuffle(game.event_deck)
 
     @staticmethod
-    def draw_event(game: "GameSession") -> Optional[dict]:
+    def draw_event(game: "GameSession") -> dict | None:
         """Draw next event from deck."""
         if not game.event_deck:
             TurnManager.ensure_deck_capacity(game, 1)
@@ -97,18 +93,12 @@ class TurnManager:
         game.turn_phase = TurnPhase.POST_TURN
 
     @staticmethod
-    def handle_property_landing(
-        game: "GameSession", player: "Player", tile: "Tile"
-    ) -> dict:
+    def handle_property_landing(game: "GameSession", player: "Player", tile: "Tile") -> dict:
         """Handle landing on property tile - returns action dict for orchestrator."""
         if tile.owner_id is None:
-            game.pending_decision = PendingDecision(
-                type="BUY", tile_id=tile.id, price=tile.price
-            )
+            game.pending_decision = PendingDecision(type="BUY", tile_id=tile.id, price=tile.price)
             color_info = f" [{tile.color}]" if tile.color else ""
-            game.last_event_message = (
-                f"'{tile.name}'{color_info} is for sale! Price: ${tile.price}"
-            )
+            game.last_event_message = f"'{tile.name}'{color_info} is for sale! Price: ${tile.price}"
             return {"action": "buy_decision", "tile_id": tile.id}
         elif tile.owner_id == player.id:
             game.last_event_message = f"You own '{tile.name}'. Safe!"
@@ -118,9 +108,7 @@ class TurnManager:
             return {"action": "pay_rent", "tile_id": tile.id, "owner_id": tile.owner_id}
 
     @staticmethod
-    def handle_chance_landing(
-        game: "GameSession", player: "Player", tile: "Tile"
-    ) -> dict:
+    def handle_chance_landing(game: "GameSession", player: "Player", tile: "Tile") -> dict:
         """Handle landing on chance tile - returns event dict for orchestrator to apply."""
         event = TurnManager.draw_event(game)
         if not event:
@@ -128,9 +116,7 @@ class TurnManager:
         return event
 
     @staticmethod
-    def handle_tax_landing(
-        game: "GameSession", player: "Player", tile: "Tile"
-    ) -> int:
+    def handle_tax_landing(game: "GameSession", player: "Player", tile: "Tile") -> int:
         """Handle landing on tax tile - returns amount to charge."""
         go_bonus = TurnManager.calculate_go_bonus(game)
         tax_amount = tile.price if tile.price > 0 else go_bonus // 2
@@ -138,9 +124,7 @@ class TurnManager:
         return tax_amount
 
     @staticmethod
-    def handle_buff_landing(
-        game: "GameSession", player: "Player", tile: "Tile"
-    ) -> int:
+    def handle_buff_landing(game: "GameSession", player: "Player", tile: "Tile") -> int:
         """Handle landing on buff tile - returns amount to give."""
         go_bonus = TurnManager.calculate_go_bonus(game)
         buff_amount = go_bonus // 2
@@ -148,9 +132,7 @@ class TurnManager:
         return buff_amount
 
     @staticmethod
-    def handle_trap_landing(
-        game: "GameSession", player: "Player", tile: "Tile"
-    ) -> int:
+    def handle_trap_landing(game: "GameSession", player: "Player", tile: "Tile") -> int:
         """Handle landing on trap tile - returns amount to charge."""
         go_bonus = TurnManager.calculate_go_bonus(game)
         trap_amount = go_bonus // 3
@@ -194,15 +176,9 @@ class TurnManager:
         game.turn_phase = TurnPhase.POST_TURN
 
     @staticmethod
-    def handle_glitch_teleport(
-        game: "GameSession", player: "Player"
-    ) -> Optional["Tile"]:
+    def handle_glitch_teleport(game: "GameSession", player: "Player") -> Optional["Tile"]:
         """Handle glitch teleport - returns target tile for orchestrator to move to."""
-        unowned = [
-            t
-            for t in game.board
-            if t.type == TileType.PROPERTY and not t.owner_id
-        ]
+        unowned = [t for t in game.board if t.type == TileType.PROPERTY and not t.owner_id]
 
         if unowned:
             target = random.choice(unowned)
@@ -213,25 +189,17 @@ class TurnManager:
         return target
 
     @staticmethod
-    def resolve_tile_landing(
-        game: "GameSession", player: "Player", tile: "Tile"
-    ) -> dict:
+    def resolve_tile_landing(game: "GameSession", player: "Player", tile: "Tile") -> dict:
         """Resolve tile landing - returns action dict for orchestrator."""
         handler_map = {
             TileType.GO: lambda: TurnManager.handle_go_landing(game, tile),
-            TileType.PROPERTY: lambda: TurnManager.handle_property_landing(
-                game, player, tile
-            ),
-            TileType.CHANCE: lambda: TurnManager.handle_chance_landing(
-                game, player, tile
-            ),
+            TileType.PROPERTY: lambda: TurnManager.handle_property_landing(game, player, tile),
+            TileType.CHANCE: lambda: TurnManager.handle_chance_landing(game, player, tile),
             TileType.TAX: lambda: TurnManager.handle_tax_landing(game, player, tile),
             TileType.BUFF: lambda: TurnManager.handle_buff_landing(game, player, tile),
             TileType.TRAP: lambda: TurnManager.handle_trap_landing(game, player, tile),
             TileType.JAIL: lambda: TurnManager.handle_jail_landing(game),
-            TileType.TELEPORT: lambda: TurnManager.handle_glitch_teleport(
-                game, player
-            ),
+            TileType.TELEPORT: lambda: TurnManager.handle_glitch_teleport(game, player),
             TileType.MARKET: lambda: TurnManager.handle_market_landing(game),
         }
 
@@ -245,9 +213,7 @@ class TurnManager:
             return {"type": "NEUTRAL", "result": None}
 
     @staticmethod
-    def apply_event_effect(
-        game: "GameSession", player: "Player", event: dict
-    ) -> dict:
+    def apply_event_effect(game: "GameSession", player: "Player", event: dict) -> dict:
         """Apply event effect - returns action dict for orchestrator."""
         actions = {"cash_changes": {}, "position_changes": {}, "skip_buy": False}
 
@@ -261,9 +227,7 @@ class TurnManager:
             for p in game.players:
                 if p.id != player.id:
                     actions["cash_changes"][p.id] = -event["value"]
-            actions["cash_changes"][player.id] = (
-                event["value"] * (len(game.players) - 1)
-            )
+            actions["cash_changes"][player.id] = event["value"] * (len(game.players) - 1)
 
         elif event["type"] == "SKIP_BUY":
             actions["skip_buy"] = True

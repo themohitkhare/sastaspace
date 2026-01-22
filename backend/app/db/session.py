@@ -1,6 +1,10 @@
 """MongoDB connection management - Async singleton pattern."""
+
+from collections.abc import AsyncGenerator
+from typing import Optional
+
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
-from typing import AsyncGenerator, Optional
+
 from app.core.config import settings
 
 

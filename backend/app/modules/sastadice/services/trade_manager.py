@@ -1,6 +1,7 @@
 """Trade manager for player-to-player trading with validation."""
+
 import time
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 if TYPE_CHECKING:
     from app.modules.sastadice.schemas import GameSession, Player, TradeOffer
@@ -14,7 +15,7 @@ class TradeManager:
     @staticmethod
     def create_trade_offer(
         game: "GameSession", initiator: "Player", payload: dict
-    ) -> tuple[Optional["TradeOffer"], Optional[str]]:
+    ) -> tuple[Optional["TradeOffer"], str | None]:
         """Create a trade offer. Returns (offer, error_message)."""
         target_id = payload.get("target_id")
         if not target_id or target_id == initiator.id:
@@ -63,7 +64,7 @@ class TradeManager:
         offer: "TradeOffer",
         initiator: "Player",
         target: "Player",
-    ) -> Optional[str]:
+    ) -> str | None:
         """Validate that trade assets are still available. Returns error if invalid."""
         if initiator.cash < offer.offering_cash:
             return "Initiator cannot afford trade anymore"

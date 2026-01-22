@@ -1,19 +1,21 @@
 """Tests for AuctionManager."""
-import pytest
+
 import time
-from app.modules.sastadice.services.auction_manager import AuctionManager
+
+import pytest
+
 from app.modules.sastadice.schemas import (
-    GameSession,
-    GameStatus,
-    TurnPhase,
-    TileType,
-    Tile,
-    Player,
-    GameSettings,
-    WinCondition,
-    ChaosLevel,
     AuctionState,
+    GameSession,
+    GameSettings,
+    GameStatus,
+    Player,
+    Tile,
+    TileType,
+    TurnPhase,
+    WinCondition,
 )
+from app.modules.sastadice.services.auction_manager import AuctionManager
 
 
 @pytest.fixture
@@ -73,8 +75,24 @@ class TestAuctionManager:
     def test_start_auction(self, sample_game, sample_tile):
         """Test starting an auction."""
         sample_game.players = [
-            Player(id="p1", name="P1", cash=1000, position=0, color="#FF0000", properties=[], ready=True),
-            Player(id="p2", name="P2", cash=1000, position=0, color="#00FF00", properties=[], ready=True),
+            Player(
+                id="p1",
+                name="P1",
+                cash=1000,
+                position=0,
+                color="#FF0000",
+                properties=[],
+                ready=True,
+            ),
+            Player(
+                id="p2",
+                name="P2",
+                cash=1000,
+                position=0,
+                color="#00FF00",
+                properties=[],
+                ready=True,
+            ),
         ]
         auction = AuctionManager.start_auction(sample_game, sample_tile, auction_duration=30)
         assert auction is not None
@@ -140,7 +158,9 @@ class TestAuctionManager:
     def test_resolve_auction_with_winner(self, sample_game, sample_player):
         """Test resolving an auction with a winner."""
         sample_game.players = [sample_player]
-        sample_game.board = [Tile(id="tile1", type=TileType.PROPERTY, name="Test", position=0, price=200, rent=20)]
+        sample_game.board = [
+            Tile(id="tile1", type=TileType.PROPERTY, name="Test", position=0, price=200, rent=20)
+        ]
         auction = AuctionState(
             property_id="tile1",
             highest_bid=150,
@@ -158,7 +178,9 @@ class TestAuctionManager:
 
     def test_resolve_auction_no_bids(self, sample_game):
         """Test resolving an auction with no bids."""
-        sample_game.board = [Tile(id="tile1", type=TileType.PROPERTY, name="Test", position=0, price=200, rent=20)]
+        sample_game.board = [
+            Tile(id="tile1", type=TileType.PROPERTY, name="Test", position=0, price=200, rent=20)
+        ]
         auction = AuctionState(
             property_id="tile1",
             highest_bid=0,

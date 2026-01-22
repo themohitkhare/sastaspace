@@ -1,8 +1,10 @@
 """Pydantic schemas for SastaDice game models."""
-from enum import Enum
-from pydantic import BaseModel, Field
-from typing import Optional
+
 import uuid
+from enum import Enum
+from typing import Optional
+
+from pydantic import BaseModel, Field
 
 
 class GameStatus(str, Enum):
@@ -40,6 +42,7 @@ class TileType(str, Enum):
 
 class WinCondition(str, Enum):
     """Game win condition modes."""
+
     SUDDEN_DEATH = "SUDDEN_DEATH"
     LAST_STANDING = "LAST_STANDING"
     FIRST_TO_CASH = "FIRST_TO_CASH"
@@ -47,6 +50,7 @@ class WinCondition(str, Enum):
 
 class ChaosLevel(str, Enum):
     """Event chaos intensity."""
+
     CHILL = "CHILL"
     NORMAL = "NORMAL"
     CHAOS = "CHAOS"
@@ -54,28 +58,28 @@ class ChaosLevel(str, Enum):
 
 class GameSettings(BaseModel):
     """Customizable game settings that host can configure."""
-    
+
     win_condition: WinCondition = WinCondition.SUDDEN_DEATH
     round_limit: int = 30
     target_cash: int = 10000
-    
+
     starting_cash_multiplier: float = 1.0
     go_bonus_base: int = 200
     go_inflation_per_round: int = 20
-    
+
     chaos_level: ChaosLevel = ChaosLevel.NORMAL
     enable_trading: bool = True
     enable_auctions: bool = True
     enable_upgrades: bool = True
     enable_stimulus: bool = True
-    
+
     jail_turns_max: int = 1
     jail_bribe_cost: int = 50
-    
+
     turn_timer_seconds: int = 30
-    
+
     enable_black_market: bool = True
-    
+
     doubles_give_extra_turn: bool = True
     triple_doubles_jail: bool = True
 
@@ -95,15 +99,15 @@ class Tile(TileCreate):
     """Schema for a game tile."""
 
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    owner_id: Optional[str] = None
+    owner_id: str | None = None
     position: int = 0
     x: int = 0
     y: int = 0
     price: int = 0
     rent: int = 0
-    color: Optional[str] = None
+    color: str | None = None
     upgrade_level: int = 0
-    blocked_until_round: Optional[int] = None
+    blocked_until_round: int | None = None
 
 
 class PlayerCreate(BaseModel):
@@ -129,16 +133,16 @@ class Player(PlayerCreate):
     in_jail: bool = False
     jail_turns: int = 0
     consecutive_doubles: int = 0
-    active_buff: Optional[str] = None
+    active_buff: str | None = None
 
 
 class PendingDecision(BaseModel):
     """Pending decision for current player."""
 
     type: str
-    tile_id: Optional[str] = None
+    tile_id: str | None = None
     price: int = 0
-    event_data: Optional[dict] = None
+    event_data: dict | None = None
 
 
 class GameSession(BaseModel):
@@ -147,19 +151,19 @@ class GameSession(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     status: GameStatus = GameStatus.LOBBY
     turn_phase: TurnPhase = TurnPhase.PRE_ROLL
-    current_turn_player_id: Optional[str] = None
-    host_id: Optional[str] = None
+    current_turn_player_id: str | None = None
+    host_id: str | None = None
     players: list[Player] = Field(default_factory=list)
     board: list[Tile] = Field(default_factory=list)
     board_size: int = 0
     starting_cash: int = 0
     go_bonus: int = 0
-    last_dice_roll: Optional[dict] = None
-    pending_decision: Optional[PendingDecision] = None
-    last_event_message: Optional[str] = None
+    last_dice_roll: dict | None = None
+    pending_decision: PendingDecision | None = None
+    last_event_message: str | None = None
     current_round: int = 0
     max_rounds: int = 30
-    first_player_id: Optional[str] = None
+    first_player_id: str | None = None
     auction_state: Optional["AuctionState"] = None
     rent_multiplier: float = 1.0
     blocked_tiles: list[str] = Field(default_factory=list)
@@ -190,7 +194,7 @@ class JoinGameRequest(BaseModel):
     """Request schema for joining a game."""
 
     name: str
-    tiles: Optional[list[TileCreate]] = None
+    tiles: list[TileCreate] | None = None
 
 
 class ActionType(str, Enum):
@@ -221,9 +225,10 @@ class AuctionStatus(str, Enum):
 
 class AuctionState(BaseModel):
     """Current state of an active auction."""
+
     property_id: str
     highest_bid: int
-    highest_bidder_id: Optional[str] = None
+    highest_bidder_id: str | None = None
     end_time: float
     participants: list[str] = Field(default_factory=list)
     status: AuctionStatus = AuctionStatus.ACTIVE
@@ -233,6 +238,7 @@ class AuctionState(BaseModel):
 
 class TradeOffer(BaseModel):
     """Schema for a trade offer."""
+
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     initiator_id: str
     target_id: str
@@ -265,4 +271,4 @@ class ActionResult(BaseModel):
 
     success: bool
     message: str
-    data: Optional[dict] = None
+    data: dict | None = None

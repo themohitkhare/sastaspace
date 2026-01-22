@@ -1,13 +1,13 @@
 """CPU manager for AI behavior and game simulation."""
+
 import random
 from enum import Enum
-from typing import Optional, TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from app.modules.sastadice.schemas import GameSession, Player
 
-from app.modules.sastadice.schemas import TurnPhase, ActionType, GameStatus, TileType
-
+from app.modules.sastadice.schemas import ActionType, GameStatus, TileType, TurnPhase
 
 CPU_NAMES = {
     "ROBOCOP",
@@ -56,9 +56,7 @@ class CpuManager:
                 continue
             if tile.upgrade_level >= 2:
                 continue
-            if not tile.color or not turn_manager.owns_full_set(
-                cpu_player, tile.color, game.board
-            ):
+            if not tile.color or not turn_manager.owns_full_set(cpu_player, tile.color, game.board):
                 continue
 
             upgrade_cost = tile.price * (2 if tile.upgrade_level == 1 else 1)
@@ -70,9 +68,7 @@ class CpuManager:
                     return True
         return False
 
-    async def play_cpu_turn(
-        self, game: "GameSession", cpu_player: "Player"
-    ) -> list[str]:
+    async def play_cpu_turn(self, game: "GameSession", cpu_player: "Player") -> list[str]:
         """Play a full CPU turn using state machine pattern."""
         turn_log = []
         max_iterations = 20
@@ -93,23 +89,17 @@ class CpuManager:
             game = await self.orchestrator.get_game(game.id)
 
             if game.current_turn_player_id != cpu_player.id:
-                turn_log.append(
-                    f"{cpu_player.name} turn ended (not their turn anymore)"
-                )
+                turn_log.append(f"{cpu_player.name} turn ended (not their turn anymore)")
                 break
 
-            cpu_player = next(
-                (p for p in game.players if p.id == cpu_player.id), cpu_player
-            )
+            cpu_player = next((p for p in game.players if p.id == cpu_player.id), cpu_player)
             if not cpu_player:
                 turn_log.append(f"{cpu_player.name} not found in game")
                 break
 
             handler = handlers.get(state)
             if not handler:
-                turn_log.append(
-                    f"{cpu_player.name} stuck in unexpected phase: {state.value}"
-                )
+                turn_log.append(f"{cpu_player.name} stuck in unexpected phase: {state.value}")
                 break
 
             new_state, log_entry = await handler(game, cpu_player)
@@ -122,15 +112,13 @@ class CpuManager:
             state = new_state
 
         if iterations >= max_iterations:
-            turn_log.append(
-                f"{cpu_player.name} hit max iterations limit ({max_iterations})"
-            )
+            turn_log.append(f"{cpu_player.name} hit max iterations limit ({max_iterations})")
 
         return turn_log
 
     async def _handle_cpu_pre_roll(
         self, game: "GameSession", cpu_player: "Player"
-    ) -> tuple[CpuTurnState, Optional[str]]:
+    ) -> tuple[CpuTurnState, str | None]:
         """Handle CPU pre-roll phase."""
         roll_result = await self.orchestrator.perform_action(
             game.id, cpu_player.id, ActionType.ROLL_DICE, {}
@@ -147,14 +135,17 @@ class CpuManager:
 
     async def _handle_cpu_decision(
         self, game: "GameSession", cpu_player: "Player"
-    ) -> tuple[CpuTurnState, Optional[str]]:
+    ) -> tuple[CpuTurnState, str | None]:
         """Handle CPU decision phase."""
         if not game.pending_decision:
             game = await self.orchestrator.get_game(game.id)
             game.turn_phase = TurnPhase.POST_TURN
             game.pending_decision = None
             await self.orchestrator.repository.update(game)
-            return CpuTurnState.POST_TURN, f"{cpu_player.name} in DECISION phase but no pending decision - transitioning to POST_TURN"
+            return (
+                CpuTurnState.POST_TURN,
+                f"{cpu_player.name} in DECISION phase but no pending decision - transitioning to POST_TURN",
+            )
 
         decision_type = game.pending_decision.type
         if decision_type == "BUY":
@@ -207,15 +198,13 @@ class CpuManager:
 
     async def _handle_cpu_post_turn(
         self, game: "GameSession", cpu_player: "Player"
-    ) -> tuple[CpuTurnState, Optional[str]]:
+    ) -> tuple[CpuTurnState, str | None]:
         """Handle CPU post-turn phase."""
         turn_manager = self.orchestrator.turn_manager
         upgraded = await self.cpu_upgrade_properties(game, cpu_player, turn_manager)
         if upgraded:
             game = await self.orchestrator.get_game(game.id)
-            cpu_player = next(
-                (p for p in game.players if p.id == cpu_player.id), cpu_player
-            )
+            cpu_player = next((p for p in game.players if p.id == cpu_player.id), cpu_player)
             return CpuTurnState.POST_TURN, f"{cpu_player.name} upgraded a property"
 
         result = await self.orchestrator.perform_action(
@@ -231,7 +220,7 @@ class CpuManager:
 
     async def _handle_cpu_moving(
         self, game: "GameSession", cpu_player: "Player"
-    ) -> tuple[CpuTurnState, Optional[str]]:
+    ) -> tuple[CpuTurnState, str | None]:
         """Handle CPU moving phase - just wait for transition."""
         updated_game = await self.orchestrator.get_game(game.id)
         new_state = CpuTurnState(updated_game.turn_phase.value)
@@ -239,7 +228,7 @@ class CpuManager:
 
     async def _handle_cpu_auction(
         self, game: "GameSession", cpu_player: "Player"
-    ) -> tuple[CpuTurnState, Optional[str]]:
+    ) -> tuple[CpuTurnState, str | None]:
         """Handle CPU auction phase."""
         return (
             CpuTurnState.AUCTION,
@@ -341,22 +330,16 @@ class CpuManager:
             "actions": [],
         }
 
-    def _update_turn_info_post_turn(
-        self, game: "GameSession", turn_info: dict
-    ) -> None:
+    def _update_turn_info_post_turn(self, game: "GameSession", turn_info: dict) -> None:
         """Update turn info after turn completes."""
-        current_player = next(
-            (p for p in game.players if p.id == turn_info["player_id"]), None
-        )
+        current_player = next((p for p in game.players if p.id == turn_info["player_id"]), None)
         if current_player:
             turn_info["cash_after"] = current_player.cash
             turn_info["position_after"] = current_player.position
 
     def _check_simulation_end(self, game: "GameSession") -> bool:
         """Check if simulation should end."""
-        active_players = [
-            p for p in game.players if not p.is_bankrupt and p.cash >= 0
-        ]
+        active_players = [p for p in game.players if not p.is_bankrupt and p.cash >= 0]
         if len(active_players) <= 1:
             game.status = GameStatus.FINISHED
             return True
@@ -413,9 +396,7 @@ class CpuManager:
             game = await self.orchestrator.get_game(game_id)
 
             if result.data and result.data.get("game_over"):
-                turn_info["actions"].append(
-                    {"action": "GAME_OVER", "result": result.message}
-                )
+                turn_info["actions"].append({"action": "GAME_OVER", "result": result.message})
                 return True
 
         return False
@@ -442,16 +423,12 @@ class CpuManager:
                 result = await self.orchestrator.perform_action(
                     game_id, game_current_player.id, ActionType.BUY_PROPERTY, {}
                 )
-                turn_info["actions"].append(
-                    {"action": "BUY_PROPERTY", "result": result.message}
-                )
+                turn_info["actions"].append({"action": "BUY_PROPERTY", "result": result.message})
             else:
                 result = await self.orchestrator.perform_action(
                     game_id, game_current_player.id, ActionType.PASS_PROPERTY, {}
                 )
-                turn_info["actions"].append(
-                    {"action": "PASS_PROPERTY", "result": result.message}
-                )
+                turn_info["actions"].append({"action": "PASS_PROPERTY", "result": result.message})
 
         elif decision_type == "MARKET":
             buffs = (
@@ -463,10 +440,7 @@ class CpuManager:
 
             if game_current_player and not game_current_player.active_buff:
                 for buff in buffs:
-                    if (
-                        game_current_player
-                        and game_current_player.cash >= buff["cost"] + 300
-                    ):
+                    if game_current_player and game_current_player.cash >= buff["cost"] + 300:
                         result = await self.orchestrator.perform_action(
                             game_id,
                             game_current_player.id,
@@ -483,9 +457,7 @@ class CpuManager:
                 result = await self.orchestrator.perform_action(
                     game_id, current_player.id, ActionType.PASS_PROPERTY, {}
                 )
-                turn_info["actions"].append(
-                    {"action": "PASS_MARKET", "result": result.message}
-                )
+                turn_info["actions"].append({"action": "PASS_MARKET", "result": result.message})
 
         else:
             turn_info["actions"].append(
@@ -498,9 +470,7 @@ class CpuManager:
             game.turn_phase = TurnPhase.POST_TURN
             await self.orchestrator.repository.update(game)
 
-    async def _simulate_cpu_trades(
-        self, game: "GameSession", turn_info: dict
-    ) -> None:
+    async def _simulate_cpu_trades(self, game: "GameSession", turn_info: dict) -> None:
         """Handle CPU trading logic in simulation."""
         await self._process_incoming_trade_offers(game, turn_info)
 
@@ -510,9 +480,7 @@ class CpuManager:
         if game.turn_phase == TurnPhase.POST_TURN and current_player:
             await self._attempt_cpu_trade_proposal(game, current_player, turn_info)
 
-    async def _process_incoming_trade_offers(
-        self, game: "GameSession", turn_info: dict
-    ) -> None:
+    async def _process_incoming_trade_offers(self, game: "GameSession", turn_info: dict) -> None:
         """Process trade offers sent to CPU players."""
         for offer in list(game.active_trade_offers):
             target = next((p for p in game.players if p.id == offer.target_id), None)
@@ -560,14 +528,8 @@ class CpuManager:
         my_props = [t.id for t in game.board if t.owner_id == current_player.id]
         their_props = [t.id for t in game.board if t.owner_id == target.id]
 
-        offer_props = (
-            [random.choice(my_props)] if my_props and random.random() < 0.5 else []
-        )
-        req_props = (
-            [random.choice(their_props)]
-            if their_props and random.random() < 0.5
-            else []
-        )
+        offer_props = [random.choice(my_props)] if my_props and random.random() < 0.5 else []
+        req_props = [random.choice(their_props)] if their_props and random.random() < 0.5 else []
 
         offer_cash = min(current_player.cash, 100) if random.random() < 0.5 else 0
 
@@ -594,8 +556,6 @@ class CpuManager:
         for player in game.players:
             if player.cash < 0:
                 player.cash = -9999
-                await self.orchestrator.repository.update_player_cash(
-                    player.id, player.cash
-                )
+                await self.orchestrator.repository.update_player_cash(player.id, player.cash)
 
         return await self.orchestrator.get_game(game_id)

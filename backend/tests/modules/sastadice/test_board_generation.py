@@ -1,7 +1,7 @@
 """Tests for BoardGenerationService."""
-import pytest
-from app.modules.sastadice.services.board_generation_service import BoardGenerationService
+
 from app.modules.sastadice.schemas import Tile, TileType
+from app.modules.sastadice.services.board_generation_service import BoardGenerationService
 
 
 class TestBoardGenerationService:
@@ -68,8 +68,7 @@ class TestBoardGenerationService:
         """Test that generated board forms a closed loop."""
         service = BoardGenerationService()
         player_tiles = [
-            Tile(type=TileType.PROPERTY, name=f"Property {i}", id=f"tile-{i}")
-            for i in range(10)
+            Tile(type=TileType.PROPERTY, name=f"Property {i}", id=f"tile-{i}") for i in range(10)
         ]
         board_size = 4
 
@@ -86,8 +85,7 @@ class TestBoardGenerationService:
         """Test that all tiles have valid (x, y) coordinates."""
         service = BoardGenerationService()
         player_tiles = [
-            Tile(type=TileType.PROPERTY, name=f"Property {i}", id=f"tile-{i}")
-            for i in range(15)
+            Tile(type=TileType.PROPERTY, name=f"Property {i}", id=f"tile-{i}") for i in range(15)
         ]
         board_size = 5
 
@@ -102,8 +100,7 @@ class TestBoardGenerationService:
         """Test that tile positions are continuous (0 to N-1)."""
         service = BoardGenerationService()
         player_tiles = [
-            Tile(type=TileType.PROPERTY, name=f"Property {i}", id=f"tile-{i}")
-            for i in range(10)
+            Tile(type=TileType.PROPERTY, name=f"Property {i}", id=f"tile-{i}") for i in range(10)
         ]
         board_size = 4
 
@@ -116,8 +113,7 @@ class TestBoardGenerationService:
         """Test that padding tiles are of type NEUTRAL."""
         service = BoardGenerationService()
         player_tiles = [
-            Tile(type=TileType.PROPERTY, name=f"Property {i}", id=f"tile-{i}")
-            for i in range(10)
+            Tile(type=TileType.PROPERTY, name=f"Property {i}", id=f"tile-{i}") for i in range(10)
         ]
         board_size = 4
 
@@ -145,8 +141,7 @@ class TestBoardGenerationService:
         """Test interleaving when there are no padding tiles."""
         service = BoardGenerationService()
         player_tiles = [
-            Tile(type=TileType.PROPERTY, name=f"Property {i}", id=f"tile-{i}")
-            for i in range(10)
+            Tile(type=TileType.PROPERTY, name=f"Property {i}", id=f"tile-{i}") for i in range(10)
         ]
         padding_tiles = []
 
@@ -160,12 +155,10 @@ class TestBoardGenerationService:
         # Create scenario where some tiles remain after interleaving
         # Use numbers that will cause remaining tiles after main loop
         player_tiles = [
-            Tile(type=TileType.PROPERTY, name=f"Property {i}", id=f"tile-{i}")
-            for i in range(10)
+            Tile(type=TileType.PROPERTY, name=f"Property {i}", id=f"tile-{i}") for i in range(10)
         ]
         padding_tiles = [
-            Tile(type=TileType.NEUTRAL, name="Padding", id=f"pad-{i}")
-            for i in range(3)
+            Tile(type=TileType.NEUTRAL, name="Padding", id=f"pad-{i}") for i in range(3)
         ]
 
         result = service._interleave_tiles(player_tiles, padding_tiles)
@@ -186,8 +179,7 @@ class TestBoardGenerationService:
         service = BoardGenerationService()
         # Create scenario where padding tiles remain after main loop
         player_tiles = [
-            Tile(type=TileType.PROPERTY, name=f"Property {i}", id=f"tile-{i}")
-            for i in range(5)
+            Tile(type=TileType.PROPERTY, name=f"Property {i}", id=f"tile-{i}") for i in range(5)
         ]
         padding_tiles = [
             Tile(type=TileType.NEUTRAL, name="Padding", id=f"pad-{i}")
@@ -212,8 +204,7 @@ class TestBoardGenerationService:
         # Create scenario where player tiles remain after main loop
         # With high spacing, padding is inserted infrequently, leaving player tiles unadded
         player_tiles = [
-            Tile(type=TileType.PROPERTY, name=f"Property {i}", id=f"tile-{i}")
-            for i in range(20)
+            Tile(type=TileType.PROPERTY, name=f"Property {i}", id=f"tile-{i}") for i in range(20)
         ]
         padding_tiles = [
             Tile(type=TileType.NEUTRAL, name="Padding", id=f"pad-{i}")

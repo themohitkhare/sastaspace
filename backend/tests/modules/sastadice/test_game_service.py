@@ -1,17 +1,17 @@
 """Tests for GameService and GameRepository."""
+
 import pytest
-from unittest.mock import patch
-from app.modules.sastadice.services.game_service import GameService
+
 from app.modules.sastadice.repository import GameRepository
 from app.modules.sastadice.schemas import (
-    GameStatus,
-    TurnPhase,
-    TileType,
-    TileCreate,
-    PlayerCreate,
     ActionType,
-    DiceRollResult,
+    GameStatus,
+    PlayerCreate,
+    TileCreate,
+    TileType,
+    TurnPhase,
 )
+from app.modules.sastadice.services.game_service import GameService
 
 
 class TestGameRepository:
@@ -60,7 +60,7 @@ class TestGameRepository:
         assert player.cash == 0
         # Player should have a color assigned
         assert player.color is not None
-        assert player.color.startswith('#')
+        assert player.color.startswith("#")
 
         # Verify in database
         result = await db_database.players.find_one({"_id": player.id})
@@ -77,10 +77,7 @@ class TestGameRepository:
         player_create = PlayerCreate(name="Test Player")
         player = await repo.add_player(game.id, player_create)
 
-        tiles = [
-            TileCreate(type=TileType.PROPERTY, name=f"Property {i}")
-            for i in range(5)
-        ]
+        tiles = [TileCreate(type=TileType.PROPERTY, name=f"Property {i}") for i in range(5)]
 
         await repo.submit_tiles(game.id, player.id, tiles)
 
@@ -164,10 +161,7 @@ class TestGameService:
         service = GameService(db_database)
         game = await service.create_game()
 
-        tiles = [
-            TileCreate(type=TileType.PROPERTY, name=f"Property {i}")
-            for i in range(5)
-        ]
+        tiles = [TileCreate(type=TileType.PROPERTY, name=f"Property {i}") for i in range(5)]
 
         player = await service.join_game(game.id, "Test Player", tiles)
 
@@ -185,10 +179,7 @@ class TestGameService:
         game = await service.create_game()
 
         # Try with 4 tiles (should be 5)
-        tiles = [
-            TileCreate(type=TileType.PROPERTY, name=f"Property {i}")
-            for i in range(4)
-        ]
+        tiles = [TileCreate(type=TileType.PROPERTY, name=f"Property {i}") for i in range(4)]
 
         with pytest.raises(ValueError, match="exactly 5 tiles"):
             await service.join_game(game.id, "Test Player", tiles)
@@ -200,14 +191,8 @@ class TestGameService:
         game = await service.create_game()
 
         # Add 2 players
-        tiles1 = [
-            TileCreate(type=TileType.PROPERTY, name=f"P1-Property {i}")
-            for i in range(5)
-        ]
-        tiles2 = [
-            TileCreate(type=TileType.PROPERTY, name=f"P2-Property {i}")
-            for i in range(5)
-        ]
+        tiles1 = [TileCreate(type=TileType.PROPERTY, name=f"P1-Property {i}") for i in range(5)]
+        tiles2 = [TileCreate(type=TileType.PROPERTY, name=f"P2-Property {i}") for i in range(5)]
 
         await service.join_game(game.id, "Player 1", tiles1)
         await service.join_game(game.id, "Player 2", tiles2)
@@ -232,14 +217,8 @@ class TestGameService:
         game = await service.create_game()
 
         # Add 2 players to allow starting the game
-        tiles1 = [
-            TileCreate(type=TileType.PROPERTY, name=f"Property {i}")
-            for i in range(5)
-        ]
-        tiles2 = [
-            TileCreate(type=TileType.PROPERTY, name=f"Property {i+5}")
-            for i in range(5)
-        ]
+        tiles1 = [TileCreate(type=TileType.PROPERTY, name=f"Property {i}") for i in range(5)]
+        tiles2 = [TileCreate(type=TileType.PROPERTY, name=f"Property {i + 5}") for i in range(5)]
         player1 = await service.join_game(game.id, "Player 1", tiles1)
         player2 = await service.join_game(game.id, "Player 2", tiles2)
         await service.start_game(game.id, force=True)
@@ -264,10 +243,7 @@ class TestGameService:
         service = GameService(db_database)
         game = await service.create_game()
 
-        tiles = [
-            TileCreate(type=TileType.PROPERTY, name=f"Property {i}")
-            for i in range(5)
-        ]
+        tiles = [TileCreate(type=TileType.PROPERTY, name=f"Property {i}") for i in range(5)]
         await service.join_game(game.id, "Player 1", tiles)
         await service.join_game(game.id, "Player 2", tiles)
         await service.start_game(game.id, force=True)
@@ -282,10 +258,7 @@ class TestGameService:
         service = GameService(db_database)
         game = await service.create_game()
 
-        tiles = [
-            TileCreate(type=TileType.PROPERTY, name=f"Property {i}")
-            for i in range(5)
-        ]
+        tiles = [TileCreate(type=TileType.PROPERTY, name=f"Property {i}") for i in range(5)]
         await service.join_game(game.id, "Player 1", tiles)
         await service.join_game(game.id, "Player 2", tiles)
         await service.start_game(game.id, force=True)
@@ -300,10 +273,7 @@ class TestGameService:
         service = GameService(db_database)
         game = await service.create_game()
 
-        tiles = [
-            TileCreate(type=TileType.PROPERTY, name=f"Property {i}")
-            for i in range(5)
-        ]
+        tiles = [TileCreate(type=TileType.PROPERTY, name=f"Property {i}") for i in range(5)]
         player = await service.join_game(game.id, "Player 1", tiles)
 
         # Try to roll dice in LOBBY status
@@ -316,14 +286,8 @@ class TestGameService:
         service = GameService(db_database)
         game = await service.create_game()
 
-        tiles1 = [
-            TileCreate(type=TileType.PROPERTY, name=f"Property {i}")
-            for i in range(5)
-        ]
-        tiles2 = [
-            TileCreate(type=TileType.PROPERTY, name=f"Property {i+5}")
-            for i in range(5)
-        ]
+        tiles1 = [TileCreate(type=TileType.PROPERTY, name=f"Property {i}") for i in range(5)]
+        tiles2 = [TileCreate(type=TileType.PROPERTY, name=f"Property {i + 5}") for i in range(5)]
         player1 = await service.join_game(game.id, "Player 1", tiles1)
         player2 = await service.join_game(game.id, "Player 2", tiles2)
         await service.start_game(game.id, force=True)
@@ -338,14 +302,8 @@ class TestGameService:
         service = GameService(db_database)
         game = await service.create_game()
 
-        tiles1 = [
-            TileCreate(type=TileType.PROPERTY, name=f"Property {i}")
-            for i in range(5)
-        ]
-        tiles2 = [
-            TileCreate(type=TileType.PROPERTY, name=f"Property {i+5}")
-            for i in range(5)
-        ]
+        tiles1 = [TileCreate(type=TileType.PROPERTY, name=f"Property {i}") for i in range(5)]
+        tiles2 = [TileCreate(type=TileType.PROPERTY, name=f"Property {i + 5}") for i in range(5)]
         player1 = await service.join_game(game.id, "Player 1", tiles1)
         player2 = await service.join_game(game.id, "Player 2", tiles2)
         await service.start_game(game.id, force=True)
@@ -360,22 +318,16 @@ class TestGameService:
         service = GameService(db_database)
         game = await service.create_game()
 
-        tiles1 = [
-            TileCreate(type=TileType.PROPERTY, name=f"Property {i}")
-            for i in range(5)
-        ]
-        tiles2 = [
-            TileCreate(type=TileType.PROPERTY, name=f"Property {i+5}")
-            for i in range(5)
-        ]
+        tiles1 = [TileCreate(type=TileType.PROPERTY, name=f"Property {i}") for i in range(5)]
+        tiles2 = [TileCreate(type=TileType.PROPERTY, name=f"Property {i + 5}") for i in range(5)]
         player1 = await service.join_game(game.id, "Player 1", tiles1)
         player2 = await service.join_game(game.id, "Player 2", tiles2)
-        
+
         # Disable auctions for this test
         game = await service.get_game(game.id)
         game.settings.enable_auctions = False
         await service.repository.update(game)
-        
+
         await service.start_game(game.id, force=True)
 
         # First roll dice to advance to DECISION/POST_TURN phase
@@ -384,22 +336,26 @@ class TestGameService:
 
         # Get game state to check phase
         game_state = await service.get_game(game.id)
-        
+
         # If in DECISION phase with pending decision, pass on it
         if game_state.turn_phase == TurnPhase.DECISION and game_state.pending_decision:
-            pass_result = await service.perform_action(game.id, player1.id, ActionType.PASS_PROPERTY, {})
+            pass_result = await service.perform_action(
+                game.id, player1.id, ActionType.PASS_PROPERTY, {}
+            )
             assert pass_result.success is True
 
         # Now should be in POST_TURN phase (or AUCTION if auctions enabled)
         game_state = await service.get_game(game.id)
         assert game_state.turn_phase in [TurnPhase.POST_TURN, TurnPhase.AUCTION]
-        
+
         # If in AUCTION phase, resolve it
         if game_state.turn_phase == TurnPhase.AUCTION:
-            resolve_result = await service.perform_action(game.id, player1.id, ActionType.RESOLVE_AUCTION, {})
+            resolve_result = await service.perform_action(
+                game.id, player1.id, ActionType.RESOLVE_AUCTION, {}
+            )
             assert resolve_result.success is True
             game_state = await service.get_game(game.id)
-        
+
         assert game_state.turn_phase == TurnPhase.POST_TURN
 
         # End turn
@@ -417,14 +373,8 @@ class TestGameService:
         service = GameService(db_database)
         game = await service.create_game()
 
-        tiles1 = [
-            TileCreate(type=TileType.PROPERTY, name=f"Property {i}")
-            for i in range(5)
-        ]
-        tiles2 = [
-            TileCreate(type=TileType.PROPERTY, name=f"Property {i+5}")
-            for i in range(5)
-        ]
+        tiles1 = [TileCreate(type=TileType.PROPERTY, name=f"Property {i}") for i in range(5)]
+        tiles2 = [TileCreate(type=TileType.PROPERTY, name=f"Property {i + 5}") for i in range(5)]
         player1 = await service.join_game(game.id, "Player 1", tiles1)
         player2 = await service.join_game(game.id, "Player 2", tiles2)
         await service.start_game(game.id, force=True)
@@ -439,14 +389,8 @@ class TestGameService:
         service = GameService(db_database)
         game = await service.create_game()
 
-        tiles1 = [
-            TileCreate(type=TileType.PROPERTY, name=f"Property {i}")
-            for i in range(5)
-        ]
-        tiles2 = [
-            TileCreate(type=TileType.PROPERTY, name=f"Property {i+5}")
-            for i in range(5)
-        ]
+        tiles1 = [TileCreate(type=TileType.PROPERTY, name=f"Property {i}") for i in range(5)]
+        tiles2 = [TileCreate(type=TileType.PROPERTY, name=f"Property {i + 5}") for i in range(5)]
         player1 = await service.join_game(game.id, "Player 1", tiles1)
         player2 = await service.join_game(game.id, "Player 2", tiles2)
         await service.start_game(game.id, force=True)
@@ -461,19 +405,13 @@ class TestGameService:
         """Test the turn phase state machine flow."""
         service = GameService(db_database)
         game = await service.create_game()
-        
+
         # Disable auctions for deterministic flow
         game.settings.enable_auctions = False
         await service.repository.update(game)
 
-        tiles1 = [
-            TileCreate(type=TileType.PROPERTY, name=f"Property {i}")
-            for i in range(5)
-        ]
-        tiles2 = [
-            TileCreate(type=TileType.PROPERTY, name=f"Property {i+5}")
-            for i in range(5)
-        ]
+        tiles1 = [TileCreate(type=TileType.PROPERTY, name=f"Property {i}") for i in range(5)]
+        tiles2 = [TileCreate(type=TileType.PROPERTY, name=f"Property {i + 5}") for i in range(5)]
         player1 = await service.join_game(game.id, "Player 1", tiles1)
         player2 = await service.join_game(game.id, "Player 2", tiles2)
         started_game = await service.start_game(game.id, force=True)
@@ -491,7 +429,9 @@ class TestGameService:
 
         # If in DECISION with pending decision, handle it
         if game_state.turn_phase == TurnPhase.DECISION and game_state.pending_decision:
-            pass_result = await service.perform_action(game.id, player1.id, ActionType.PASS_PROPERTY, {})
+            pass_result = await service.perform_action(
+                game.id, player1.id, ActionType.PASS_PROPERTY, {}
+            )
             assert pass_result.success is True
             game_state = await service.get_game(game.id)
 
@@ -513,17 +453,14 @@ class TestGameService:
         service = GameService(db_database)
         game = await service.create_game()
 
-        tiles = [
-            TileCreate(type=TileType.PROPERTY, name=f"Property {i}")
-            for i in range(5)
-        ]
+        tiles = [TileCreate(type=TileType.PROPERTY, name=f"Property {i}") for i in range(5)]
         player1 = await service.join_game(game.id, "Player 1", tiles)
         player2 = await service.join_game(game.id, "Player 2", tiles)
-        
+
         # Disable auctions for deterministic flow
         game.settings.enable_auctions = False
         await service.repository.update(game)
-        
+
         await service.start_game(game.id, force=True)
 
         # Test ROLL_DICE
@@ -549,10 +486,7 @@ class TestGameService:
         service = GameService(db_database)
         game = await service.create_game()
 
-        tiles = [
-            TileCreate(type=TileType.PROPERTY, name=f"Property {i}")
-            for i in range(5)
-        ]
+        tiles = [TileCreate(type=TileType.PROPERTY, name=f"Property {i}") for i in range(5)]
         player1 = await service.join_game(game.id, "Player 1", tiles)
         player2 = await service.join_game(game.id, "Player 2", tiles)
         await service.start_game(game.id, force=True)
@@ -561,9 +495,10 @@ class TestGameService:
         class MockActionType:
             def __eq__(self, other):
                 return False
+
             def __str__(self):
                 return "UNKNOWN_ACTION"
-        
+
         mock_action = MockActionType()
         # Bypass type checking to test else branch
         result = await service.perform_action(game.id, player1.id, mock_action, {})  # type: ignore
@@ -576,10 +511,7 @@ class TestGameService:
         service = GameService(db_database)
         game = await service.create_game()
 
-        tiles = [
-            TileCreate(type=TileType.PROPERTY, name=f"Property {i}")
-            for i in range(5)
-        ]
+        tiles = [TileCreate(type=TileType.PROPERTY, name=f"Property {i}") for i in range(5)]
         player1 = await service.join_game(game.id, "Player 1", tiles)
         player2 = await service.join_game(game.id, "Player 2", tiles)
 
@@ -603,10 +535,7 @@ class TestGameService:
         service = GameService(db_database)
         game = await service.create_game()
 
-        tiles = [
-            TileCreate(type=TileType.PROPERTY, name=f"Property {i}")
-            for i in range(5)
-        ]
+        tiles = [TileCreate(type=TileType.PROPERTY, name=f"Property {i}") for i in range(5)]
         player1 = await service.join_game(game.id, "Player 1", tiles)
         player2 = await service.join_game(game.id, "Player 2", tiles)
 
@@ -620,10 +549,7 @@ class TestGameService:
         service = GameService(db_database)
         game = await service.create_game()
 
-        tiles = [
-            TileCreate(type=TileType.PROPERTY, name=f"Property {i}")
-            for i in range(5)
-        ]
+        tiles = [TileCreate(type=TileType.PROPERTY, name=f"Property {i}") for i in range(5)]
         player1 = await service.join_game(game.id, "Player 1", tiles)
         player2 = await service.join_game(game.id, "Player 2", tiles)
         await service.toggle_ready(game.id, player1.id)
@@ -639,10 +565,7 @@ class TestGameService:
         service = GameService(db_database)
         game = await service.create_game()
 
-        tiles = [
-            TileCreate(type=TileType.PROPERTY, name=f"Property {i}")
-            for i in range(5)
-        ]
+        tiles = [TileCreate(type=TileType.PROPERTY, name=f"Property {i}") for i in range(5)]
         player1 = await service.join_game(game.id, "Player 1", tiles)
 
         with pytest.raises(ValueError, match="Cannot kick yourself"):
@@ -654,10 +577,7 @@ class TestGameService:
         service = GameService(db_database)
         game = await service.create_game()
 
-        tiles = [
-            TileCreate(type=TileType.PROPERTY, name=f"Property {i}")
-            for i in range(5)
-        ]
+        tiles = [TileCreate(type=TileType.PROPERTY, name=f"Property {i}") for i in range(5)]
         player1 = await service.join_game(game.id, "Player 1", tiles)
         player2 = await service.join_game(game.id, "Player 2", tiles)
 
@@ -681,10 +601,7 @@ class TestGameService:
         service = GameService(db_database)
         game = await service.create_game()
 
-        tiles = [
-            TileCreate(type=TileType.PROPERTY, name=f"Property {i}")
-            for i in range(5)
-        ]
+        tiles = [TileCreate(type=TileType.PROPERTY, name=f"Property {i}") for i in range(5)]
         player1 = await service.join_game(game.id, "Player 1", tiles)
         player2 = await service.join_game(game.id, "Player 2", tiles)
         await service.toggle_ready(game.id, player1.id)
@@ -700,10 +617,7 @@ class TestGameService:
         service = GameService(db_database)
         game = await service.create_game()
 
-        tiles = [
-            TileCreate(type=TileType.PROPERTY, name=f"Property {i}")
-            for i in range(5)
-        ]
+        tiles = [TileCreate(type=TileType.PROPERTY, name=f"Property {i}") for i in range(5)]
         await service.join_game(game.id, "Player 1", tiles)
 
         with pytest.raises(ValueError, match="Player not in this game"):
@@ -715,10 +629,7 @@ class TestGameService:
         service = GameService(db_database)
         game = await service.create_game()
 
-        tiles = [
-            TileCreate(type=TileType.PROPERTY, name=f"Property {i}")
-            for i in range(5)
-        ]
+        tiles = [TileCreate(type=TileType.PROPERTY, name=f"Property {i}") for i in range(5)]
         player1 = await service.join_game(game.id, "Player 1", tiles)
 
         # Add CPU players to reach 2
@@ -735,18 +646,15 @@ class TestGameService:
         service = GameService(db_database)
         game = await service.create_game()
 
-        tiles = [
-            TileCreate(type=TileType.PROPERTY, name=f"Property {i}")
-            for i in range(5)
-        ]
+        tiles = [TileCreate(type=TileType.PROPERTY, name=f"Property {i}") for i in range(5)]
         player1 = await service.join_game(game.id, "Player 1", tiles)
         player2 = await service.join_game(game.id, "Player 2", tiles)
-        
+
         # Disable auctions for this test
         game = await service.get_game(game.id)
         game.settings.enable_auctions = False
         await service.repository.update(game)
-        
+
         await service.toggle_ready(game.id, player1.id)
         await service.toggle_ready(game.id, player2.id)
 

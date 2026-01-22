@@ -1,45 +1,46 @@
 """MongoDB document models for SastaDice."""
+
+from datetime import UTC, datetime
+
 from pydantic import BaseModel, Field
-from typing import Optional
-from datetime import datetime, timezone
 
 from app.modules.sastadice.schemas import (
+    AuctionState,
     GameSession,
+    GameSettings,
     GameStatus,
-    TurnPhase,
+    PendingDecision,
     Player,
     Tile,
     TileCreate,
     TileType,
-    PendingDecision,
-    GameSettings,
-    AuctionState,
+    TurnPhase,
 )
 
 
 class GameSessionDocument(BaseModel):
     """MongoDB document model for game sessions."""
-    
+
     id: str = Field(alias="_id")
     status: GameStatus
     turn_phase: TurnPhase
-    current_turn_player_id: Optional[str] = None
-    host_id: Optional[str] = None
+    current_turn_player_id: str | None = None
+    host_id: str | None = None
     board_size: int = 0
     version: int = 0
     starting_cash: int = 0
     go_bonus: int = 0
-    last_dice_roll: Optional[dict] = None
-    pending_decision: Optional[dict] = None
-    last_event_message: Optional[str] = None
-    created_at: Optional[datetime] = None
+    last_dice_roll: dict | None = None
+    pending_decision: dict | None = None
+    last_event_message: str | None = None
+    created_at: datetime | None = None
     current_round: int = 0
     max_rounds: int = 30
-    first_player_id: Optional[str] = None
-    auction_state: Optional[dict] = None
+    first_player_id: str | None = None
+    auction_state: dict | None = None
     rent_multiplier: float = 1.0
     blocked_tiles: list[str] = Field(default_factory=list)
-    settings: Optional[dict] = None
+    settings: dict | None = None
     turn_start_time: float = 0.0
     event_deck: list[int] = Field(default_factory=list)
     used_event_deck: list[int] = Field(default_factory=list)
@@ -51,13 +52,13 @@ class GameSessionDocument(BaseModel):
         pending_decision = None
         if self.pending_decision:
             pending_decision = PendingDecision(**self.pending_decision)
-        
+
         settings = GameSettings(**(self.settings or {}))
-        
+
         auction_state = None
         if self.auction_state:
             auction_state = AuctionState(**self.auction_state)
-        
+
         return GameSession(
             id=self.id,
             status=self.status,
@@ -80,8 +81,8 @@ class GameSessionDocument(BaseModel):
             blocked_tiles=self.blocked_tiles,
             settings=settings,
             turn_start_time=self.turn_start_time,
-            event_deck=getattr(self, 'event_deck', []),
-            used_event_deck=getattr(self, 'used_event_deck', []),
+            event_deck=getattr(self, "event_deck", []),
+            used_event_deck=getattr(self, "used_event_deck", []),
         )
 
     @classmethod
@@ -90,13 +91,13 @@ class GameSessionDocument(BaseModel):
         pending_decision_dict = None
         if game.pending_decision:
             pending_decision_dict = game.pending_decision.model_dump()
-        
+
         settings_dict = game.settings.model_dump() if game.settings else None
-        
+
         auction_state_dict = None
         if game.auction_state:
             auction_state_dict = game.auction_state.model_dump()
-        
+
         return cls(
             _id=game.id,
             status=game.status,
@@ -104,13 +105,13 @@ class GameSessionDocument(BaseModel):
             current_turn_player_id=game.current_turn_player_id,
             host_id=game.host_id,
             board_size=game.board_size,
-            version=getattr(game, 'version', 0),
+            version=getattr(game, "version", 0),
             starting_cash=game.starting_cash,
             go_bonus=game.go_bonus,
             last_dice_roll=game.last_dice_roll,
             pending_decision=pending_decision_dict,
             last_event_message=game.last_event_message,
-            created_at=datetime.now(timezone.utc),
+            created_at=datetime.now(UTC),
             # Phase 1 fields
             current_round=game.current_round,
             max_rounds=game.max_rounds,
@@ -119,9 +120,9 @@ class GameSessionDocument(BaseModel):
             rent_multiplier=game.rent_multiplier,
             blocked_tiles=game.blocked_tiles,
             settings=settings_dict,
-            turn_start_time=getattr(game, 'turn_start_time', 0.0),
-            event_deck=getattr(game, 'event_deck', []),
-            used_event_deck=getattr(game, 'used_event_deck', []),
+            turn_start_time=getattr(game, "turn_start_time", 0.0),
+            event_deck=getattr(game, "event_deck", []),
+            used_event_deck=getattr(game, "used_event_deck", []),
         )
 
     def to_dict(self) -> dict:
@@ -131,7 +132,7 @@ class GameSessionDocument(BaseModel):
 
 class PlayerDocument(BaseModel):
     """MongoDB document model for players."""
-    
+
     id: str = Field(alias="_id")
     game_id: str
     name: str
@@ -141,11 +142,11 @@ class PlayerDocument(BaseModel):
     properties: list[str] = Field(default_factory=list)
     ready: bool = False
     is_bankrupt: bool = False
-    created_at: Optional[datetime] = None
+    created_at: datetime | None = None
     in_jail: bool = False
     jail_turns: int = 0
     consecutive_doubles: int = 0
-    active_buff: Optional[str] = None
+    active_buff: str | None = None
 
     model_config = {"populate_by_name": True}
 
@@ -180,7 +181,7 @@ class PlayerDocument(BaseModel):
             properties=player.properties,
             ready=player.ready,
             is_bankrupt=player.is_bankrupt,
-            created_at=datetime.now(timezone.utc),
+            created_at=datetime.now(UTC),
             in_jail=player.in_jail,
             jail_turns=player.jail_turns,
             consecutive_doubles=player.consecutive_doubles,
@@ -194,10 +195,10 @@ class PlayerDocument(BaseModel):
 
 class TileDocument(BaseModel):
     """MongoDB document model for board tiles."""
-    
+
     id: str = Field(alias="_id")
     game_id: str
-    owner_id: Optional[str] = None
+    owner_id: str | None = None
     type: TileType
     name: str
     effect_config: dict = Field(default_factory=dict)
@@ -206,9 +207,9 @@ class TileDocument(BaseModel):
     y: int = 0
     price: int = 0
     rent: int = 0
-    color: Optional[str] = None
+    color: str | None = None
     upgrade_level: int = 0
-    blocked_until_round: Optional[int] = None
+    blocked_until_round: int | None = None
 
     model_config = {"populate_by_name": True}
 
@@ -259,7 +260,7 @@ class TileDocument(BaseModel):
 
 class SubmittedTileDocument(BaseModel):
     """MongoDB document model for submitted tiles."""
-    
+
     id: str = Field(alias="_id")
     game_id: str
     player_id: str
@@ -278,7 +279,9 @@ class SubmittedTileDocument(BaseModel):
         )
 
     @classmethod
-    def from_tile_create(cls, tile: TileCreate, game_id: str, player_id: str, tile_id: str) -> "SubmittedTileDocument":
+    def from_tile_create(
+        cls, tile: TileCreate, game_id: str, player_id: str, tile_id: str
+    ) -> "SubmittedTileDocument":
         """Create document from TileCreate schema."""
         return cls(
             _id=tile_id,

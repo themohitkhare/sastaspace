@@ -1,13 +1,13 @@
 """Tests for CPU turn logic to ensure games don't get stuck."""
+
 import pytest
-from app.modules.sastadice.services.game_service import GameService
+
 from app.modules.sastadice.schemas import (
+    ActionType,
     GameStatus,
     TurnPhase,
-    TileType,
-    TileCreate,
-    ActionType,
 )
+from app.modules.sastadice.services.game_service import GameService
 
 
 class TestCPUTurnLogic:
@@ -21,9 +21,7 @@ class TestCPUTurnLogic:
         game = await service.start_game(game.id, force=True)
 
         # Get the first CPU player
-        cpu_player = next(
-            (p for p in game.players if service._is_cpu_player(p)), None
-        )
+        cpu_player = next((p for p in game.players if service._is_cpu_player(p)), None)
         assert cpu_player is not None, "Should have CPU player"
 
         # Play CPU turn
@@ -31,7 +29,7 @@ class TestCPUTurnLogic:
 
         # Verify turn completed
         assert len(turn_log) > 0, "Should have action log"
-        
+
         # Check that turn moved to next player or completed
         updated_game = await service.get_game(game.id)
         assert (
@@ -47,7 +45,7 @@ class TestCPUTurnLogic:
         game = await service.start_game(game.id, force=True)
 
         cpu_player = game.players[0]
-        
+
         # Roll dice until we hit a property (or max attempts)
         for _ in range(50):
             game = await service.get_game(game.id)
@@ -57,7 +55,7 @@ class TestCPUTurnLogic:
                 )
                 if not cpu_player:
                     break
-            
+
             if game.turn_phase == TurnPhase.PRE_ROLL:
                 await service.perform_action(game.id, cpu_player.id, ActionType.ROLL_DICE, None)
             elif game.turn_phase == TurnPhase.DECISION and game.pending_decision:
@@ -78,13 +76,13 @@ class TestCPUTurnLogic:
         game = await service.start_game(game.id, force=True)
 
         cpu_player = game.players[0]
-        
+
         # Set CPU cash to very low amount
         await service.repository.update_player_cash(cpu_player.id, 50)
-        
+
         # Try to play turn - should handle gracefully
         turn_log = await service._play_cpu_turn(game, cpu_player)
-        
+
         # Should not crash and should have logged actions
         assert isinstance(turn_log, list)
         # CPU should have passed on any expensive properties
@@ -97,15 +95,15 @@ class TestCPUTurnLogic:
         game = await service.start_game(game.id, force=True)
 
         cpu_player = game.players[0]
-        
+
         # Manually set to DECISION phase without pending_decision (edge case)
         game.turn_phase = TurnPhase.DECISION
         game.pending_decision = None
         await service.repository.update(game)
-        
+
         # CPU should handle this gracefully
         turn_log = await service._play_cpu_turn(game, cpu_player)
-        
+
         # Should not crash
         assert isinstance(turn_log, list)
         # Should have attempted recovery
@@ -119,11 +117,11 @@ class TestCPUTurnLogic:
 
         # Process CPU turns
         result = await service.process_cpu_turns(game.id)
-        
+
         assert "cpu_turns_played" in result
         assert "log" in result
         assert isinstance(result["log"], list)
-        
+
         # Game should still be active or moved to human player
         updated_game = await service.get_game(game.id)
         assert updated_game.status == GameStatus.ACTIVE
@@ -136,15 +134,15 @@ class TestCPUTurnLogic:
         game = await service.start_game(game.id, force=True)
 
         cpu_player = game.players[0]
-        
+
         # Create a problematic state that might cause looping
         # (e.g., set phase to something that doesn't progress)
         game.turn_phase = TurnPhase.MOVING
         await service.repository.update(game)
-        
+
         # CPU should hit max iterations and exit gracefully
         turn_log = await service._play_cpu_turn(game, cpu_player)
-        
+
         # Should not hang - should return with log
         assert isinstance(turn_log, list)
         # Check if it hit max iterations
@@ -156,16 +154,16 @@ class TestCPUTurnLogic:
         """Test that simulate_cpu_game can complete a full game."""
         service = GameService(db_database)
         game = await service.create_game(cpu_count=2)
-        
+
         # Simulate game
         result = await service.simulate_cpu_game(game.id, max_turns=50)
-        
+
         assert "game_id" in result
         assert "status" in result
         assert "turns_played" in result
         assert "winner" in result
         assert "final_standings" in result
-        
+
         # Game should be finished or at least progressed
         assert result["turns_played"] > 0
         assert result["status"] in ["ACTIVE", "FINISHED"]
@@ -178,15 +176,15 @@ class TestCPUTurnLogic:
         game = await service.start_game(game.id, force=True)
 
         cpu_player = game.players[0]
-        
+
         # Try to perform invalid action (e.g., END_TURN when not in POST_TURN)
         # This should be handled by the action validation, but CPU should recover
         game.turn_phase = TurnPhase.PRE_ROLL
         await service.repository.update(game)
-        
+
         # CPU should roll dice successfully
         turn_log = await service._play_cpu_turn(game, cpu_player)
-        
+
         # Should have attempted actions
         assert len(turn_log) > 0
 
@@ -199,11 +197,12 @@ class TestCPUTurnLogic:
 
         # Create a fake player object with invalid ID
         from app.modules.sastadice.schemas import Player
+
         fake_player = Player(id="fake-id", name="FAKE CPU")
-        
+
         # Should handle gracefully
         turn_log = await service._play_cpu_turn(game, fake_player)
-        
+
         # Should not crash
         assert isinstance(turn_log, list)
         # Should have logged the issue
