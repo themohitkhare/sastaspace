@@ -1,0 +1,12 @@
+{
+  "name": "@sastaspace/shared",
+  "version": "0.1.0",
+  "type": "module",
+  "private": true,
+  "exports": {
+    "./components/Navbar": "./src/components/Navbar.jsx",
+    "./components/AuthModal": "./src/components/AuthModal.jsx",
+    "./store/useAuthStore": "./src/store/useAuthStore.js",
+    "./assets/SastaAssets": "./src/assets/SastaAssets.jsx"
+  }
+}
