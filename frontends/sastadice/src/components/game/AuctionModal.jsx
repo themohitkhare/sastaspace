@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'react'
 
-export default function AuctionModal({ auctionState, tiles, players, playerId, onBid, onExpire }) {
+export default function AuctionModal({ auctionState, tiles, players, playerId, onBid, onExpire, game, onClose }) {
     const [timeLeft, setTimeLeft] = useState(0)
     const [stuckTimer, setStuckTimer] = useState(0)
     const [error, setError] = useState(null)
@@ -36,13 +36,12 @@ export default function AuctionModal({ auctionState, tiles, players, playerId, o
         return () => clearInterval(timer)
     }, [auctionState, onExpire])
 
-    // Kill switch: force reload if stuck >2s
+    // Close modal when auction phase ends (server-driven)
     useEffect(() => {
-        if (stuckTimer > 2) {
-            // TODO: debug - Auction stuck at 0 for >2s, forcing page reload
-            window.location.reload()
+        if (game?.turn_phase !== 'AUCTION' || !game?.auction_state) {
+            onClose?.()
         }
-    }, [stuckTimer])
+    }, [game?.turn_phase, game?.auction_state, onClose])
 
     if (!auctionState) return null
 
