@@ -31,6 +31,8 @@ dev = [
     "lxml>=5.0.0",
     "vulture>=2.9.0",
     "pylint>=3.0.0",
+    "ruff>=0.4.0",
+    "mypy>=1.10.0",
 ]
 
 [tool.pytest.ini_options]
@@ -51,6 +53,7 @@ omit = [
 precision = 2
 show_missing = true
 skip_covered = false
+fail_under = 100
 exclude_lines = [
     "pragma: no cover",
     "def __repr__",
@@ -59,6 +62,30 @@ exclude_lines = [
     "if __name__ == .__main__.:",
     "if TYPE_CHECKING:",
 ]
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "W", "F", "I", "B", "C4", "UP", "ARG", "SIM", "C90"]
+
+[tool.ruff.lint.mccabe]
+max-complexity = 10
+
+[tool.ruff.lint.isort]
+known-first-party = ["app"]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+warn_return_any = true
+warn_unused_ignores = true
+plugins = ["pydantic.mypy"]
+
+[[tool.mypy.overrides]]
+module = ["motor.*", "bson.*"]
+ignore_missing_imports = true
 
 
 
