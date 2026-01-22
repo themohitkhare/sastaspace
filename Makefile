@@ -10,25 +10,16 @@ test-backend: ## Run backend tests
 	cd backend && uv run pytest tests/ -v
 
 test-frontend-sastadice: ## Run sastadice frontend tests
-	@export NVM_DIR="$$HOME/.nvm" && [ -s "$$NVM_DIR/nvm.sh" ] && \. "$$NVM_DIR/nvm.sh" && \
-	cd frontends/sastadice && \
-	([ -f .nvmrc ] && nvm use || nvm use --lts) && \
-	npm test -- --run
+	cd frontends/sastadice && bun run test -- --run
 
 test-frontend-sastaspace: ## Run sastaspace frontend tests (placeholder - no tests yet)
 	@echo "No tests configured for sastaspace frontend"
 
 test-e2e-sastadice: ## Run sastadice E2E tests with Playwright
-	@export NVM_DIR="$$HOME/.nvm" && [ -s "$$NVM_DIR/nvm.sh" ] && \. "$$NVM_DIR/nvm.sh" && \
-	cd frontends/sastadice && \
-	([ -f .nvmrc ] && nvm use || nvm use --lts) && \
-	npx playwright test tests/e2e/ --workers=2
+	cd frontends/sastadice && bun run test:e2e -- tests/e2e/ --workers=2
 
 test-e2e-auction: ## Run only auction E2E tests
-	@export NVM_DIR="$$HOME/.nvm" && [ -s "$$NVM_DIR/nvm.sh" ] && \. "$$NVM_DIR/nvm.sh" && \
-	cd frontends/sastadice && \
-	([ -f .nvmrc ] && nvm use || nvm use --lts) && \
-	npx playwright test tests/e2e/auction_complete.spec.js --headed
+	cd frontends/sastadice && bun run test:e2e -- tests/e2e/auction_complete.spec.js --headed
 
 test-e2e-all: test-e2e-sastadice ## Run all E2E tests
 
@@ -59,7 +50,7 @@ dashboard: ## Generate and open RepoHealth dashboard
 	@for dir in frontends/*/; do \
 		if [ -f "$$dir/package.json" ] && grep -q "test:coverage" "$$dir/package.json"; then \
 			echo "Running coverage for $$dir..."; \
-			cd "$$dir" && npm run test:coverage -- --run || true; \
+			cd "$$dir" && bun run test:coverage -- --run || true; \
 			cd -; \
 		fi; \
 	done
