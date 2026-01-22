@@ -87,6 +87,7 @@ class MovementHandler:
         stimulus_active: bool,
     ) -> bool:
         """Handle player movement and GO passing."""
+        player.previous_position = player.position
         old_position = player.position
         new_position = (player.position + total) % len(game.board)
         passed_go = new_position < old_position and old_position != 0

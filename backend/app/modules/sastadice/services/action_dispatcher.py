@@ -140,6 +140,12 @@ class ActionDispatcher:
                 return await self._handle_buy_release(game, player_id)
             case ActionType.ROLL_FOR_DOUBLES:
                 return await self._handle_roll_for_doubles(game, player_id)
+            case ActionType.EVENT_CLONE_UPGRADE:
+                return await self._handle_event_clone_upgrade(game, player_id, validated_payload)
+            case ActionType.EVENT_FORCE_BUY:
+                return await self._handle_event_force_buy(game, player_id, validated_payload)
+            case ActionType.EVENT_FREE_LANDING:
+                return await self._handle_event_free_landing(game, player_id, validated_payload)
             case _:
                 return ActionResult(success=False, message=f"Unknown action: {action_type}")
 
@@ -606,6 +612,129 @@ class ActionDispatcher:
             jail_pos = len(game.board) // 2
             await self.repository.update_player_position(player.id, jail_pos)
     
+    async def _handle_event_clone_upgrade(
+        self, game: GameSession, player_id: str, payload: dict
+    ) -> ActionResult:
+        """Clone upgrade from source property to target property."""
+        source_tile_id = payload.get("source_tile_id")
+        target_tile_id = payload.get("target_tile_id")
+        
+        if not source_tile_id or not target_tile_id:
+            return ActionResult(success=False, message="Must specify source and target tiles")
+        
+        player = next((p for p in game.players if p.id == player_id), None)
+        if not player:
+            return ActionResult(success=False, message="Player not found")
+        
+        source_tile = next((t for t in game.board if t.id == source_tile_id), None)
+        target_tile = next((t for t in game.board if t.id == target_tile_id), None)
+        
+        if not source_tile or not target_tile:
+            return ActionResult(success=False, message="Tile not found")
+        
+        if source_tile.upgrade_level == 0:
+            return ActionResult(success=False, message="Source property has no upgrades")
+        
+        if target_tile.owner_id != player_id:
+            return ActionResult(success=False, message="You don't own the target property")
+        
+        if target_tile.type != TileType.PROPERTY:
+            return ActionResult(success=False, message="Can only clone to properties")
+        
+        target_tile.upgrade_level = source_tile.upgrade_level
+        await self.repository.save_board(game.board)
+        
+        game.pending_decision = None
+        game.turn_phase = TurnPhase.POST_TURN
+        await self.repository.update(game)
+        
+        return ActionResult(
+            success=True,
+            message=f"🍴 Cloned {source_tile.name}'s upgrades to {target_tile.name}!"
+        )
+
+    async def _handle_event_force_buy(
+        self, game: GameSession, player_id: str, payload: dict
+    ) -> ActionResult:
+        """Buy any property at multiplied price."""
+        tile_id = payload.get("tile_id")
+        
+        if not tile_id:
+            return ActionResult(success=False, message="Must specify a tile")
+        
+        player = next((p for p in game.players if p.id == player_id), None)
+        if not player:
+            return ActionResult(success=False, message="Player not found")
+        
+        tile = next((t for t in game.board if t.id == tile_id), None)
+        if not tile:
+            return ActionResult(success=False, message="Tile not found")
+        
+        if not tile.owner_id or tile.owner_id == player_id:
+            return ActionResult(success=False, message="Property must be owned by another player")
+        
+        event_data = game.pending_decision.event_data if game.pending_decision else {}
+        multiplier = event_data.get("actions", {}).get("force_buy_multiplier", 1.5)
+        cost = int(tile.price * multiplier)
+        
+        if player.cash < cost:
+            return ActionResult(success=False, message=f"Insufficient funds (need ${cost})")
+        
+        old_owner = next((p for p in game.players if p.id == tile.owner_id), None)
+        if old_owner:
+            old_owner.cash += cost
+            await self.repository.update_player_cash(old_owner.id, old_owner.cash)
+        
+        player.cash -= cost
+        await self.repository.update_player_cash(player_id, player.cash)
+        
+        tile.owner_id = player_id
+        await self.repository.update_tile_owner(tile.id, player_id)
+        
+        game.pending_decision = None
+        game.turn_phase = TurnPhase.POST_TURN
+        await self.repository.update(game)
+        
+        return ActionResult(
+            success=True,
+            message=f"⚔️ Hostile Takeover! Bought {tile.name} for ${cost}"
+        )
+
+    async def _handle_event_free_landing(
+        self, game: GameSession, player_id: str, payload: dict
+    ) -> ActionResult:
+        """Make a property free to land on for N rounds."""
+        tile_id = payload.get("tile_id")
+        
+        if not tile_id:
+            return ActionResult(success=False, message="Must specify a tile")
+        
+        player = next((p for p in game.players if p.id == player_id), None)
+        if not player:
+            return ActionResult(success=False, message="Player not found")
+        
+        tile = next((t for t in game.board if t.id == tile_id), None)
+        if not tile:
+            return ActionResult(success=False, message="Tile not found")
+        
+        if tile.owner_id != player_id:
+            return ActionResult(success=False, message="You must own the property")
+        
+        event_data = game.pending_decision.event_data if game.pending_decision else {}
+        free_rounds = event_data.get("actions", {}).get("free_rounds", 1)
+        
+        tile.free_landing_until_round = game.current_round + free_rounds
+        await self.repository.save_board(game.board)
+        
+        game.pending_decision = None
+        game.turn_phase = TurnPhase.POST_TURN
+        await self.repository.update(game)
+        
+        return ActionResult(
+            success=True,
+            message=f"🔓 Open Source! {tile.name} is free to land on for {free_rounds} round(s)"
+        )
+
     async def _handle_tile_landing_callback(
         self, game: GameSession, player: "Player", tile: "Tile"
     ) -> None:

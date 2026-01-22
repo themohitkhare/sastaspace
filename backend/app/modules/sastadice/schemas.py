@@ -110,6 +110,7 @@ class Tile(TileCreate):
     color: str | None = None
     upgrade_level: int = 0
     blocked_until_round: int | None = None
+    free_landing_until_round: int | None = None
 
 
 class PlayerCreate(BaseModel):
@@ -127,6 +128,7 @@ class Player(PlayerCreate):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     cash: int = 0
     position: int = 0
+    previous_position: int = 0
     color: str = "#888888"
     properties: list[str] = Field(default_factory=list)
     submitted_tiles: list[TileCreate] = Field(default_factory=list)
@@ -217,8 +219,11 @@ class ActionType(str, Enum):
     ACCEPT_TRADE = "ACCEPT_TRADE"
     DECLINE_TRADE = "DECLINE_TRADE"
     CANCEL_TRADE = "CANCEL_TRADE"
-    BUY_RELEASE = "BUY_RELEASE"  # Pay bribe to exit jail
-    ROLL_FOR_DOUBLES = "ROLL_FOR_DOUBLES"  # Roll dice only for jail escape
+    BUY_RELEASE = "BUY_RELEASE"
+    ROLL_FOR_DOUBLES = "ROLL_FOR_DOUBLES"
+    EVENT_CLONE_UPGRADE = "EVENT_CLONE_UPGRADE"
+    EVENT_FORCE_BUY = "EVENT_FORCE_BUY"
+    EVENT_FREE_LANDING = "EVENT_FREE_LANDING"
 
 
 class AuctionStatus(str, Enum):
