@@ -79,7 +79,6 @@ export default function GamePage() {
       })
       refetch()
     } catch (err) {
-      // TODO: debug - Bid failed
       console.error('Bid failed:', err)
     }
   }
@@ -93,8 +92,31 @@ export default function GamePage() {
       })
       refetch()
     } catch (err) {
-      // TODO: debug - Resolve failed
       console.error('Resolve failed:', err)
+    }
+  }
+
+  const handlePayBribe = async (targetPlayerId) => {
+    try {
+      await apiClient.post(`/sastadice/games/${gameId}/action?player_id=${playerId}`, {
+        type: 'BUY_RELEASE',
+        payload: {}
+      })
+      await refetch()
+    } catch (err) {
+      console.error('Pay bribe failed:', err)
+    }
+  }
+
+  const handleRollForDoubles = async (targetPlayerId) => {
+    try {
+      await apiClient.post(`/sastadice/games/${gameId}/action?player_id=${playerId}`, {
+        type: 'ROLL_FOR_DOUBLES',
+        payload: {}
+      })
+      await refetch()
+    } catch (err) {
+      console.error('Roll for doubles failed:', err)
     }
   }
 
@@ -291,6 +313,9 @@ export default function GamePage() {
             currentPlayerId={playerId}
             tiles={game.board || []}
             onTradeClick={setTradeTarget}
+            onPayBribe={handlePayBribe}
+            onRollForDoubles={handleRollForDoubles}
+            turnPhase={game.turn_phase}
           />
 
           <div className="mt-3 pt-3 border-t-2 border-sasta-black">
@@ -327,6 +352,8 @@ export default function GamePage() {
           playerId={playerId}
           onBid={handleBid}
           onExpire={handleAuctionExpire}
+          game={game}
+          onClose={() => {}} // Modal closes automatically when turn_phase changes
         />
       )}
 

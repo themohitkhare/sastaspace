@@ -3,7 +3,10 @@ export default function PlayerPanel({
   currentTurnPlayerId,
   currentPlayerId,
   tiles = [],
-  onTradeClick
+  onTradeClick,
+  onPayBribe,
+  onRollForDoubles,
+  turnPhase,
 }) {
   return (
     <div className="player-panel w-full">
@@ -77,6 +80,31 @@ export default function PlayerPanel({
                       +{ownedTiles.length - 3}
                     </div>
                   )}
+                </div>
+              )}
+
+              {/* Jail escape UI for current player */}
+              {player.in_jail && isMe && isCurrentTurn && turnPhase === 'PRE_ROLL' && (
+                <div className="mt-2 flex gap-2">
+                  <button
+                    onClick={() => onPayBribe?.(player.id)}
+                    className="flex-1 bg-yellow-500 text-black px-2 py-1 text-[10px] font-bold font-zero border-brutal-sm shadow-brutal-sm hover:shadow-none hover:translate-x-0.5 hover:translate-y-0.5 transition-all"
+                  >
+                    PAY $50 BRIBE
+                  </button>
+                  <button
+                    onClick={() => onRollForDoubles?.(player.id)}
+                    className="flex-1 bg-blue-500 text-white px-2 py-1 text-[10px] font-bold font-zero border-brutal-sm shadow-brutal-sm hover:shadow-none hover:translate-x-0.5 hover:translate-y-0.5 transition-all"
+                  >
+                    ROLL FOR DOUBLES
+                  </button>
+                </div>
+              )}
+
+              {/* Jail status indicator */}
+              {player.in_jail && (
+                <div className="mt-1 text-[9px] font-data text-red-500 font-bold">
+                  IN JAIL ({3 - (player.jail_turns || 0)} attempts left)
                 </div>
               )}
             </div>
