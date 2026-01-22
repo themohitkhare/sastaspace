@@ -168,11 +168,8 @@ class GameService:
 
             if game.turn_phase == TurnPhase.DECISION:
                 if game.pending_decision:
-                    decision = game.pending_decision
-                    
-                    if decision.type == "BUY":
-                        tile_cost = decision.price
-                        if cpu_player.cash >= tile_cost + 200:
+                    if game.pending_decision.type == "BUY":
+                        if cpu_player.cash >= game.pending_decision.price + 200:
                             result = await self.perform_action(game.id, cpu_player.id, ActionType.BUY_PROPERTY, {})
                             if result.success:
                                 turn_log.append(f"{cpu_player.name} bought property: {result.message}")
@@ -182,12 +179,12 @@ class GameService:
                         else:
                             result = await self.perform_action(game.id, cpu_player.id, ActionType.PASS_PROPERTY, {})
                             turn_log.append(f"{cpu_player.name} passed on property (insufficient funds)")
-                    elif decision.type == "MARKET" or decision.type == "BLACK_MARKET":
+                    elif game.pending_decision.type in ("MARKET", "BLACK_MARKET"):
                         result = await self.perform_action(game.id, cpu_player.id, ActionType.PASS_PROPERTY, {})
                         turn_log.append(f"{cpu_player.name} left Black Market")
                     else:
                         result = await self.perform_action(game.id, cpu_player.id, ActionType.PASS_PROPERTY, {})
-                        turn_log.append(f"{cpu_player.name} passed on decision type: {decision.type}")
+                        turn_log.append(f"{cpu_player.name} passed on decision type: {game.pending_decision.type}")
                 else:
                     turn_log.append(f"{cpu_player.name} in DECISION phase but no pending decision - transitioning to POST_TURN")
                     game = await self.get_game(game.id)
@@ -599,7 +596,6 @@ class GameService:
         elif tile.type == TileType.MARKET:
             self._handle_market_landing(game)
         else:
-             # NEUTRAL or Unknown
             game.last_event_message = f"Landed on '{tile.name}'. Nothing happens."
             game.turn_phase = TurnPhase.POST_TURN
 
@@ -1243,7 +1239,6 @@ class GameService:
                 data={"game_over": True, "winner": winner}
             )
 
-        # Refresh game state
         game = await self.get_game(game.id)
         
         active_players = [p for p in game.players if not p.is_bankrupt]

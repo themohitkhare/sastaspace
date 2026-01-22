@@ -73,8 +73,7 @@ class GameRepository(BaseRepository[GameSession]):
         game_doc = GameSessionDocument.from_game_session(entity)
         update_data = game_doc.to_dict()
         
-        # Ensure optional fields are unset in DB if None on entity
-        # (to_dict uses exclude_none=True)
+        # to_dict uses exclude_none=True, so explicitly unset None fields
         if entity.auction_state is None:
             update_data["auction_state"] = None
         if entity.pending_decision is None:

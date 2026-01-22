@@ -12,5 +12,5 @@ async def health_check(db = Depends(get_db)) -> dict[str, str]:
     try:
         await db.command("ping")
         return {"status": "healthy", "database": "connected"}
-    except Exception:
+    except Exception:  # Connection failure is expected in unhealthy state
         return {"status": "unhealthy", "database": "disconnected"}
