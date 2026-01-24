@@ -89,57 +89,58 @@ class SimulationManager:
             self._update_turn_info_post_turn(game, turn_info)
 
             game = await self._get_game(game_id)
-            # Advance if current is bankrupt (advancement can be skipped in some paths)
             await self._advance_if_bankrupt_current(game_id)
-
             game = await self._get_game(game_id)
+
+            turns_played += 1
+
+            # Run Invariant Checker (standard checks only; financial integrity disabled until
+            # _calculate_expected_cash_delta is complete for GO, rent, events, etc.)
             violations = self.invariant_checker.check_all(game)
+
             if violations:
                 critical = [v for v in violations if v.severity == "CRITICAL"]
                 if critical:
                     turn_info["invariant_violations"] = [asdict(v) for v in critical]
-                    turn_log.append(turn_info)
+                    
+                    # Capture snapshot of broken state
                     snapshot_path = self.snapshot_manager.capture(
                         game,
                         reason="invariant_violation",
                         error=f"Invariant violations: {len(critical)}",
                         violations=critical,
                     )
-
-                    raise InvariantViolationError(
-                        f"Invariant violations: {len(critical)}. Snapshot: {snapshot_path}"
-                    )
-
-            # Check economic health (if enabled)
+                    
+                    raise InvariantViolationError(critical)
+            
             if self.enable_economic_monitoring and self.inflation_monitor:
                 # Track when we move to a new round (first player)
                 if game.current_turn_player_id == game.first_player_id:
                     self.inflation_monitor.record_round_end(game)
                     economic_violations = self.inflation_monitor.check_economic_health(game)
-
+                    
                     if economic_violations:
                         turn_info["economic_violations"] = economic_violations
                         turn_log.append(turn_info)
-
+                        
                         # Generate economic report
                         report = self.inflation_monitor.generate_report(game)
-
+                        
                         # Capture snapshot
                         snapshot_path = self.snapshot_manager.capture(
                             game,
                             reason="economic_violation",
                             error=f"Economic violations: {len(economic_violations)}",
-                            violations=economic_violations
+                            violations=economic_violations,
                         )
-
+                        
                         raise EconomicViolationError(
                             f"Economic violations detected: {economic_violations}\n"
                             f"Diagnosis: {report.diagnosis}\n"
-                            f"Snapshot saved to: {snapshot_path}"
+                            f"Report: {report.game_id}"  # Just show ID to avoid giant prompt logs
                         )
-
+            
             turn_log.append(turn_info)
-            turns_played += 1
 
             game = await self._check_bankruptcy(game_id)
             if self._check_simulation_end(game):
@@ -298,11 +299,12 @@ class SimulationManager:
                 if upgradable and random.random() < 0.2:
                     t = random.choice(upgradable)
                     self._record(coverage, "UPGRADE")
-                    r = await self.action_dispatcher.dispatch(
+                    result = await self.action_dispatcher.dispatch(
                         game, current_player.id, ActionType.UPGRADE, {"tile_id": t.id}
                     )
-                    turn_info["actions"].append({"action": "UPGRADE", "result": r.message})
+                    turn_info["actions"].append({"action": "UPGRADE", "result": result.message})
                     game = await self._get_game(game_id)
+
             if current_player.active_buff == "DDOS":
                 blockable = [
                     t
@@ -318,6 +320,7 @@ class SimulationManager:
                     )
                     turn_info["actions"].append({"action": "BLOCK_TILE", "result": r.message})
                     game = await self._get_game(game_id)
+                    
             self._record(coverage, "END_TURN")
             result = await self.action_dispatcher.dispatch(
                 game, current_player.id, ActionType.END_TURN, {}
@@ -329,6 +332,78 @@ class SimulationManager:
                 return True
 
         return False
+
+    def _calculate_expected_cash_delta(self, game: GameSession, turn_info: dict) -> int:
+        """Heuristically check logs to determine expected system cash change."""
+        delta = 0
+        
+        # 1. Check moves for GO (not strictly in actions log, but inferred from position/round?)
+        # Actually EventManager handles GO cash. It should be logged as an event or action.
+        # If ActionDispatcher does it automatically on movement, we might miss it unless logged.
+        # But 'actions' list captures most things.
+        
+        for action in turn_info["actions"]:
+            msg = action["result"].lower()
+            
+            # Sinks (Money removed from system)
+            if "bought" in msg and "for $" in msg:
+                # "Bought Old Delhi for $200"
+                try:
+                    amount = int(msg.split("for $")[1].split()[0].replace(",", "").replace(".", ""))
+                    delta -= amount
+                except (IndexError, ValueError):
+                    pass
+            
+            elif "paid $" in msg and "tax" in msg:
+                 # "Paid $200 tax"
+                try:
+                    amount = int(msg.split("paid $")[1].split()[0].replace(",", "").replace(".", ""))
+                    delta -= amount
+                except:
+                    pass
+            
+            elif "paid bribe" in msg:
+                # "Paid bribe of $50"
+                 try:
+                    amount = int(msg.split("$")[1].split()[0].replace(",", "").replace(".", ""))
+                    delta -= amount
+                 except:
+                    pass
+
+            # Sources (Money added to system)
+            elif "received $" in msg and "go" in msg:
+                # "Received $200 from GO"
+                try:
+                    amount = int(msg.split("received $")[1].split()[0].replace(",", "").replace(".", ""))
+                    delta += amount
+                except:
+                    pass
+            
+            elif "mortgaged" in msg:
+                # "Mortgaged X for $100"
+                try:
+                    amount = int(msg.split("for $")[1].split()[0].replace(",", "").replace(".", ""))
+                    delta += amount
+                except:
+                    pass
+            
+            # Events (Can be source or sink)
+            # Event message style: "Event: Wealth Tax! Paid $100"
+            if "event:" in msg:
+                if "paid $" in msg and "bank" in msg: # Paid bank (sink)
+                     try:
+                        amount = int(msg.split("$")[1].split()[0].replace(",", "").replace(".", ""))
+                        delta -= amount
+                     except: 
+                         pass
+                elif "received $" in msg and "bank" in msg: # Received from bank (source)
+                     try:
+                        amount = int(msg.split("$")[1].split()[0].replace(",", "").replace(".", ""))
+                        delta += amount
+                     except:
+                         pass
+
+        return delta
 
     async def _handle_simulated_decision(
         self, game_id: str, current_player: Player, turn_info: dict, coverage: dict[str, int]
