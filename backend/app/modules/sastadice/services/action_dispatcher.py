@@ -570,6 +570,10 @@ class ActionDispatcher:
                 await self.repository.update_player_cash(winner.id, winner.cash)
                 await self.repository.update_player_properties(winner.id, winner.properties)
                 await self.repository.update_tile_owner(prop_id, winner.id)
+                
+                tile = next((t for t in game.board if t.id == prop_id), None)
+                if tile:
+                    tile.owner_id = winner.id
 
         await self.repository.update(game)
 
