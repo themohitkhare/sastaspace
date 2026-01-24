@@ -117,7 +117,8 @@ TEST_CONFIGS = [
             win_condition=WinCondition.FIRST_TO_CASH,
             target_cash=5000,
             round_limit=100
-        )
+        ),
+        "max_turns": 800,
     },
     {
         "name": "First to $10000",
@@ -126,7 +127,8 @@ TEST_CONFIGS = [
             win_condition=WinCondition.FIRST_TO_CASH,
             target_cash=10000,
             round_limit=150
-        )
+        ),
+        "max_turns": 1200,
     },
 
     # ===== ECONOMY VARIATIONS =====
@@ -425,7 +427,15 @@ async def simulate_single_game(
         if verbose:
             print(f"  Board: {len(game.board)} tiles, {board_analysis['properties']} properties")
 
-        effective_max = max_turns if settings.win_condition == WinCondition.LAST_STANDING else 300
+        effective_max = max_turns
+        if (
+            settings.win_condition == WinCondition.SUDDEN_DEATH
+            and settings.round_limit
+            and settings.round_limit > 0
+        ):
+            effective_max = max(
+                effective_max, settings.round_limit * cpu_count * 2
+            )
         logger.info(
             "Starting game simulation",
             extra={
@@ -639,6 +649,7 @@ async def main():
     parser.add_argument("--replay", type=str, default=None,
                         help="Path to snapshot JSON file to replay")
     parser.add_argument("--num-games", type=int, default=None, help="Number of games to run (default: all configs)")
+    parser.add_argument("--quiet", action="store_true", help="One-line per game; no per-game blocks")
     args = parser.parse_args()
 
     # Set seed if provided
@@ -684,12 +695,23 @@ async def main():
             print(f"   Response Delay: {args.delay_ms}ms")
     if args.enable_economic_monitoring:
         print("📊 ECONOMIC MONITORING ENABLED")
-    print(f"Testing {len(TEST_CONFIGS)} different game configurations")
+
+    total = (
+        args.num_games
+        if args.num_games is not None
+        else (len(TEST_CONFIGS) + 5)
+    )
+    n_fixed = min(total, len(TEST_CONFIGS))
+    n_random = total - n_fixed
+    if args.num_games is not None:
+        print(f"Running {total} simulations ({n_fixed} fixed + {n_random} random configs)")
+    else:
+        print(f"Testing {len(TEST_CONFIGS)} fixed + 5 random configurations ({total} total)")
     print("="*70)
 
-    # Connect to MongoDB
+    # Connect to MongoDB (default localhost for host runs; set MONGODB_URL in Docker)
     import os
-    mongo_url = os.environ.get("MONGODB_URL", "mongodb://mongodb:27017")
+    mongo_url = os.environ.get("MONGODB_URL", "mongodb://localhost:27017")
     print(f"Connecting to: {mongo_url}")
 
     client = AsyncIOMotorClient(mongo_url)
@@ -702,7 +724,9 @@ async def main():
 
         game_num = 0
 
-        semaphore = asyncio.Semaphore(10)  # Run 10 games in parallel for faster execution
+        semaphore = asyncio.Semaphore(50)  # Run 10 games in parallel for faster execution
+
+        verbose = not args.quiet
 
         async def run_game_safely(g_num, config=None, is_random=False, r_cpu=None, r_settings=None, r_name=None):
             async with semaphore:
@@ -714,7 +738,8 @@ async def main():
                         settings=r_settings,
                         stats=stats,
                         config_name=r_name,
-                        verbose=True,
+                        verbose=verbose,
+                        max_turns=500,
                         enable_economic_monitoring=args.enable_economic_monitoring,
                     )
                 else:
@@ -725,34 +750,43 @@ async def main():
                         settings=config["settings"],
                         stats=stats,
                         config_name=config["name"],
-                        verbose=True,
+                        verbose=verbose,
+                        max_turns=config.get("max_turns", 500),
                         enable_economic_monitoring=args.enable_economic_monitoring,
                     )
 
         tasks = []
 
-        # Run each configuration
-        for config in TEST_CONFIGS:
-            game_num += 1
-            tasks.append(run_game_safely(game_num, config=config))
+        def make_random_settings():
+            wc = random.choice(list(WinCondition))
+            kw: dict = {
+                "win_condition": wc,
+                "round_limit": random.choice([0, 15, 20, 25, 30, 50, 60, 80, 100, 150, 200]),
+                "go_bonus_base": random.choice([0, 150, 200, 250, 300, 500]),
+                "go_inflation_per_round": random.choice([0, 5, 10, 20, 30, 50, 100]),
+                "chaos_level": random.choice(list(ChaosLevel)),
+                "starting_cash_multiplier": random.choice([0.5, 1.0, 1.5, 2.0, 2.5, 3.0]),
+            }
+            if wc == WinCondition.FIRST_TO_CASH:
+                kw["target_cash"] = random.choice([3000, 5000, 8000, 10000, 15000])
+            return GameSettings(**kw)
 
-        # Run additional random variations
-        random.seed(42)
-        for i in range(5):
+        for i in range(n_fixed):
             game_num += 1
-            random_settings = GameSettings(
-                win_condition=random.choice(list(WinCondition)),
-                round_limit=random.choice([0, 15, 30, 50]),
-                go_bonus_base=random.choice([150, 200, 250]),
-                go_inflation_per_round=random.choice([10, 20, 30]),
-                chaos_level=random.choice(list(ChaosLevel)),
-            )
+            tasks.append(run_game_safely(game_num, config=TEST_CONFIGS[i]))
+
+        if args.num_games is None:
+            random.seed(42)
+        for i in range(n_random):
+            game_num += 1
+            r_cpu = random.randint(2, 5)
+            r_settings = make_random_settings()
             tasks.append(run_game_safely(
                 game_num,
                 is_random=True,
-                r_cpu=random.randint(2, 5),
-                r_settings=random_settings,
-                r_name=f"Random Config #{i+1}"
+                r_cpu=r_cpu,
+                r_settings=r_settings,
+                r_name=f"Random #{i+1}",
             ))
 
         print(f"\n{'='*70}")
