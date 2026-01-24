@@ -8,6 +8,8 @@
 #   - SastaHero: http://localhost:9002
 #   - Sasta: http://localhost:9003
 #   - Traefik Dashboard: http://localhost:8080
+#   - Grafana (Logs): http://localhost:3000
+#   - Loki API: http://localhost:3100
 #
 # Traefik Routing (through localhost:80):
 #   - Backend API: http://localhost/api/v1/...
@@ -151,6 +153,53 @@ services:
       - "traefik.http.services.frontend-sastadice.loadbalancer.server.port=80"
       - "traefik.http.middlewares.sastadice-stripprefix.stripprefix.prefixes=/sastadice"
       - "traefik.http.routers.frontend-sastadice.middlewares=sastadice-stripprefix"
+    restart: unless-stopped
+
+  loki:
+    image: grafana/loki:2.9.0
+    container_name: sastaspace-loki
+    ports:
+      - "3100:3100"
+    volumes:
+      - ./loki/loki-config.yml:/etc/loki/local-config.yaml
+      - ./loki/data:/loki
+    command: -config.file=/etc/loki/local-config.yaml
+    networks:
+      - sastaspace-network
+    restart: unless-stopped
+
+  promtail:
+    image: grafana/promtail:2.9.0
+    container_name: sastaspace-promtail
+    volumes:
+      - ./promtail/promtail-config.yml:/etc/promtail/config.yml
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+    command: -config.file=/etc/promtail/config.yml
+    networks:
+      - sastaspace-network
+    depends_on:
+      - loki
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:10.2.0
+    container_name: sastaspace-grafana
+    user: "472:472"
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_PATHS_DATA=/var/lib/grafana
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning
+      - ./grafana/data:/var/lib/grafana
+    networks:
+      - sastaspace-network
+    depends_on:
+      - loki
     restart: unless-stopped
 
 networks:
