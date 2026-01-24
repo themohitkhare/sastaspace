@@ -127,9 +127,34 @@ class InvariantChecker:
                     ))
         
         return violations
-    
+
+    def check_financial_integrity(
+        self, 
+        game: "GameSession", 
+        previous_system_cash: int, 
+        expected_delta: int
+    ) -> list[InvariantViolation]:
+        """Verify conservation of mass for system cash."""
+        violations = []
+        
+        current_system_cash = sum(p.cash for p in game.players if not p.is_bankrupt)
+        expected_total = previous_system_cash + expected_delta
+        
+        if current_system_cash != expected_total:
+            violations.append(InvariantViolation(
+                type="FINANCIAL_INTEGRITY_FAILURE",
+                severity="CRITICAL",
+                message=f"System cash mismatch. Expected ${expected_total:,} (Prev ${previous_system_cash:,} + Delta ${expected_delta:,}), "
+                        f"but found ${current_system_cash:,}. Variance: ${current_system_cash - expected_total}",
+                game_id=game.id,
+                round_number=game.current_round,
+                turn_phase=game.turn_phase.value
+            ))
+            
+        return violations
+
     def _check_cash_integrity(self, game: "GameSession") -> list[InvariantViolation]:
-        """Verify cash consistency."""
+        """Verify cash consistency (no negatives)."""
         violations = []
         
         for player in game.players:
