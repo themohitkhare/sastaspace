@@ -1,6 +1,6 @@
 """Economy manager for financial operations and bankruptcy logic."""
 
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from app.modules.sastadice.repository import GameRepository
@@ -18,7 +18,7 @@ class EconomyManager:
         game: "GameSession",
         player: "Player",
         amount: int,
-        creditor: Optional["Player"] = None,
+        creditor: "Player | None" = None,
     ) -> dict:
         """Charge a player amount. Returns dict with actions needed."""
         if amount <= 0:
@@ -94,7 +94,7 @@ class EconomyManager:
         self,
         game: "GameSession",
         debtor: "Player",
-        creditor: Optional["Player"] = None,
+        creditor: "Player | None" = None,
     ) -> None:
         """Handle bankruptcy: asset transfer or seizure."""
         debtor.is_bankrupt = True
@@ -162,6 +162,8 @@ class EconomyManager:
         await self.repository.update_tile_owner(tile_id, player_id)
 
         tile = next((t for t in game.board if t.id == tile_id), None)
+        if tile:
+            tile.owner_id = player_id
         tile_name = tile.name if tile else "property"
 
         game.pending_decision = None
@@ -273,3 +275,53 @@ class EconomyManager:
                 "properties": len(leader.properties),
                 "status": "in_progress",
             }
+
+
+class DynamicEconomyScaler:
+    """Scales costs and rents to match GO inflation and prevent runaway inflation."""
+    
+    RENT_SCALE_FACTOR = 0.1   # 10% increase per round
+    COST_SCALE_FACTOR = 0.05  # 5% increase per round (slower than rent)
+    GO_CAP_MULTIPLIER = 3.0   # Max GO bonus = 3x base
+    
+    @staticmethod
+    def calculate_dynamic_rent(
+        base_rent: int, 
+        upgrade_level: int, 
+        current_round: int,
+        settings: "GameSettings"
+    ) -> int:
+        """Rent scaled by round to counter GO inflation. settings: GameSettings."""
+        # Base rent with upgrades
+        upgrade_multiplier = 1.0 + (upgrade_level * 0.5)  # 1.0, 1.5, 2.0
+        upgraded_rent = int(base_rent * upgrade_multiplier)
+        
+        # Dynamic scaling based on round (starts affecting after round 10)
+        if current_round > 10:
+            round_multiplier = 1.0 + ((current_round - 10) * DynamicEconomyScaler.RENT_SCALE_FACTOR)
+            return int(upgraded_rent * round_multiplier)
+        
+        return upgraded_rent
+    
+    @staticmethod
+    def calculate_dynamic_buff_cost(
+        base_cost: int,
+        current_round: int
+    ) -> int:
+        """Scale buff cost by round so it doesn’t become trivial late-game."""
+        if current_round > 10:
+            round_multiplier = 1.0 + ((current_round - 10) * DynamicEconomyScaler.COST_SCALE_FACTOR)
+            return int(base_cost * round_multiplier)
+        
+        return base_cost
+    
+    @staticmethod
+    def calculate_capped_go_bonus(
+        base_bonus: int,
+        inflation_per_round: int,
+        current_round: int
+    ) -> int:
+        """GO bonus with cap (GO_CAP_MULTIPLIER) to prevent runaway inflation."""
+        uncapped = base_bonus + (inflation_per_round * current_round)
+        max_bonus = int(base_bonus * DynamicEconomyScaler.GO_CAP_MULTIPLIER)
+        return min(uncapped, max_bonus)
