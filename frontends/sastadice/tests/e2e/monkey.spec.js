@@ -52,7 +52,7 @@ class MonkeyTester {
         const buttons = await this.page.locator(
             'button:visible:not([disabled])'
         ).all();
-        
+
         return buttons;
     }
 
@@ -61,7 +61,7 @@ class MonkeyTester {
      */
     getActionWeight(label) {
         if (this.mode === 'DUMB') return 1;
-        
+
         const upperLabel = label.toUpperCase();
         for (const [pattern, weight] of Object.entries(ACTION_WEIGHTS)) {
             if (upperLabel.includes(pattern)) return weight;
@@ -77,7 +77,7 @@ class MonkeyTester {
             // Purely random
             return actions[Math.floor(Math.random() * actions.length)];
         }
-        
+
         // Build weighted selection pool
         const weighted = [];
         for (const action of actions) {
@@ -87,7 +87,7 @@ class MonkeyTester {
                 weighted.push({ action, label });
             }
         }
-        
+
         if (weighted.length === 0) return null;
         const selected = weighted[Math.floor(Math.random() * weighted.length)];
         return selected.action;
@@ -103,7 +103,7 @@ class MonkeyTester {
             // Try close button first
             const closeBtn = this.page.locator('button:has-text("×"), button:has-text("CLOSE"), button:has-text("✕")').first();
             if (await closeBtn.isVisible({ timeout: 100 }).catch(() => false)) {
-                await closeBtn.click().catch(() => {});
+                await closeBtn.click().catch(() => { });
                 await this.page.waitForTimeout(200);
                 return true;
             }
@@ -121,24 +121,24 @@ class MonkeyTester {
     async performRandomAction() {
         // First dismiss any modal overlays
         await this.dismissModals();
-        
+
         const actions = await this.findClickableActions();
-        
+
         if (actions.length === 0) return false;
 
         // Select action based on mode
         const chosen = await this.selectWeightedAction(actions);
         if (!chosen) return false;
-        
+
         try {
             const label = await chosen.textContent().catch(() => 'Unknown');
             const ariaLabel = await chosen.getAttribute('aria-label').catch(() => null);
             const actionName = ariaLabel || label;
-            
+
             this.actionLog.push({ time: Date.now(), action: actionName, mode: this.mode });
             await chosen.click();
             await this.page.waitForTimeout(500);
-            
+
             return true;
         } catch (e) {
             if (e.message.includes('intercepts pointer events')) {
@@ -156,7 +156,7 @@ class MonkeyTester {
     async captureVisualRegression(reason) {
         const filename = `monkey_${reason}_${Date.now()}.png`;
         const path = `test-results/${filename}`;
-        
+
         try {
             await this.page.screenshot({ path, fullPage: true });
             this.screenshots.push({ reason, filename, time: Date.now() });
@@ -171,13 +171,13 @@ class MonkeyTester {
     async checkForStuckState() {
         const startTime = Date.now();
         const timeout = 10000; // 10 seconds
-        
+
         while (Date.now() - startTime < timeout) {
             const actions = await this.findClickableActions();
             if (actions.length > 0) return false; // Not stuck
             await this.page.waitForTimeout(1000);
         }
-        
+
         // Stuck! Capture visual regression
         await this.captureVisualRegression('stuck_state');
         return true;
@@ -188,13 +188,13 @@ class MonkeyTester {
      */
     async runUntilGameEnd(maxActions = 500) {
         let actions = 0;
-        
+
         while (actions < maxActions) {
             // Check if game is over
             const gameOver = await this.page.locator('text=/GAME OVER|WINNER|VICTORY/i')
                 .isVisible({ timeout: 1000 })
                 .catch(() => false);
-            
+
             if (gameOver) break;
 
             // Check if stuck every 50 actions
@@ -207,7 +207,7 @@ class MonkeyTester {
 
             // Perform action
             const actionPerformed = await this.performRandomAction();
-            
+
             if (actionPerformed) {
                 actions++;
             } else {
@@ -252,7 +252,7 @@ class HoarderMonkey extends MonkeyTester {
 
     async performRandomAction() {
         const actions = await this.findClickableActions();
-        
+
         if (actions.length === 0) {
             return false;
         }
@@ -261,23 +261,23 @@ class HoarderMonkey extends MonkeyTester {
         for (const action of actions) {
             const label = await action.textContent().catch(() => '');
             const upperLabel = label.toUpperCase();
-            
+
             // NEVER buy - always pass/skip
             if (upperLabel.includes('BUY') && !upperLabel.includes('BUFF')) {
                 const passBtn = this.page.getByRole('button', { name: /PASS/i });
                 if (await passBtn.isVisible({ timeout: 500 }).catch(() => false)) {
                     const cash = await this.getCash();
-                    this.actionLog.push({ 
-                        time: Date.now(), 
-                        action: 'PASS (hoarder)', 
-                        cash 
+                    this.actionLog.push({
+                        time: Date.now(),
+                        action: 'PASS (hoarder)',
+                        cash
                     });
                     await passBtn.click();
                     await this.page.waitForTimeout(500);
                     return true;
                 }
             }
-            
+
             // Skip market buffs
             if (upperLabel.includes('LEAVE') || upperLabel.includes('SKIP')) {
                 const cash = await this.getCash();
@@ -287,7 +287,7 @@ class HoarderMonkey extends MonkeyTester {
                 return true;
             }
         }
-        
+
         // Fall back to first available safe action (ROLL, END TURN)
         return super.performRandomAction();
     }
@@ -305,27 +305,48 @@ class HoarderMonkey extends MonkeyTester {
 
     async runAndVerifyBankruptcy(maxRounds = 100) {
         let rounds = 0;
-        
+
         while (rounds < maxRounds) {
             const gameOver = await this.page.getByText(/GAME OVER|BANKRUPT|WINNER/i)
                 .isVisible({ timeout: 1000 }).catch(() => false);
-            
+
             if (gameOver) {
                 const isBankrupt = await this.page.getByText(/BANKRUPT/i).isVisible().catch(() => false);
                 return { bankrupt: isBankrupt, rounds, cashHistory: this.cashHistory };
             }
-            
+
             await this.performRandomAction();
-            
+
             // Track cash each round
             const currentCash = await this.getCash();
             this.cashHistory.push({ round: rounds, cash: currentCash });
-            
+
             rounds++;
         }
-        
+
         // If we get here, hoarder survived - economy may be broken!
         return { bankrupt: false, rounds, cashHistory: this.cashHistory };
+    }
+}
+
+/**
+ * ChaosMonkey - Adds page reloads and network interruptions to the mix
+ */
+class ChaosMonkey extends MonkeyTester {
+    constructor(page) {
+        super(page, 'CHAOS');
+    }
+
+    async performRandomAction() {
+        // 10% chance to reload page to test state recovery
+        if (Math.random() < 0.1) {
+            console.log('🔄 ChaosMonkey: RELOADING PAGE...');
+            await this.page.reload();
+            await this.page.waitForTimeout(2000); // Wait for reconnection
+            this.actionLog.push({ time: Date.now(), action: 'PAGE_RELOAD', mode: 'CHAOS' });
+            return true;
+        }
+        return super.performRandomAction();
     }
 }
 
@@ -335,26 +356,26 @@ test.describe('Monkey Testing - Smart/Dumb/Hoarder Modes', () => {
 
     test.beforeEach(async ({ page }) => {
         desyncErrors = [];
-        
+
         // Listen for console errors indicating desync
         page.on('console', async (msg) => {
             const text = msg.text();
-            const isDesync = 
-                text.includes('DESYNC') || 
+            const isDesync =
+                text.includes('DESYNC') ||
                 text.includes('phase mismatch') ||
                 text.includes('stale state') ||
                 text.includes('unexpected phase');
-            
+
             if (isDesync) {
                 desyncErrors.push({ time: Date.now(), message: text });
-                
+
                 // IMMEDIATE screenshot on desync detection
                 if (monkey) {
                     await monkey.captureVisualRegression('desync_detected');
                     console.error(`🚨 DESYNC DETECTED: ${text}`);
                 }
             }
-            
+
             if (msg.type() === 'error') {
                 desyncErrors.push({ time: Date.now(), message: text });
             }
@@ -376,7 +397,7 @@ test.describe('Monkey Testing - Smart/Dumb/Hoarder Modes', () => {
         monkey = new MonkeyTester(page, 'SMART');
 
         await page.goto('http://localhost:9001');
-        
+
         const cpuButton = page.getByRole('button', { name: /CPU GAME/i });
         if (await cpuButton.isVisible({ timeout: 5000 }).catch(() => false)) {
             await cpuButton.click();
@@ -394,7 +415,7 @@ test.describe('Monkey Testing - Smart/Dumb/Hoarder Modes', () => {
         monkey = new MonkeyTester(page, 'DUMB');
 
         await page.goto('http://localhost:9001');
-        
+
         const cpuButton = page.getByRole('button', { name: /CPU GAME/i });
         if (await cpuButton.isVisible({ timeout: 5000 }).catch(() => false)) {
             await cpuButton.click();
@@ -412,7 +433,7 @@ test.describe('Monkey Testing - Smart/Dumb/Hoarder Modes', () => {
         const hoarder = new HoarderMonkey(page);
 
         await page.goto('http://localhost:9001');
-        
+
         const cpuButton = page.getByRole('button', { name: /CPU GAME/i });
         if (await cpuButton.isVisible({ timeout: 5000 }).catch(() => false)) {
             await cpuButton.click();
@@ -448,7 +469,7 @@ test.describe('Monkey Testing - Smart/Dumb/Hoarder Modes', () => {
         const page = await context.newPage();
 
         await page.goto('http://localhost:9001');
-        
+
         // Create CPU game
         const cpuButton = page.getByRole('button', { name: /CPU GAME/i });
         if (await cpuButton.isVisible({ timeout: 5000 }).catch(() => false)) {
@@ -462,7 +483,7 @@ test.describe('Monkey Testing - Smart/Dumb/Hoarder Modes', () => {
             const actions = await monkey.findClickableActions();
             if (actions.length > 0) {
                 const randomAction = actions[Math.floor(Math.random() * actions.length)];
-                await randomAction.click().catch(() => {});
+                await randomAction.click().catch(() => { });
             }
             if (i % 10 === 0) await page.waitForTimeout(100);
         }
@@ -476,7 +497,7 @@ test.describe('Monkey Testing - Smart/Dumb/Hoarder Modes', () => {
         const page = await context.newPage();
 
         await page.goto('http://localhost:9001');
-        
+
         // Create game
         await page.getByRole('button', { name: /CREATE GAME/i }).click();
         await page.waitForTimeout(1000);
@@ -491,17 +512,92 @@ test.describe('Monkey Testing - Smart/Dumb/Hoarder Modes', () => {
                 // Expected to fail
             }
         }
-        await page.click('body', { position: { x: 5, y: 5 } }).catch(() => {});
+        await page.click('body', { position: { x: 5, y: 5 } }).catch(() => { });
         await page.waitForTimeout(100);
-        await page.goBack().catch(() => {});
+        await page.goBack().catch(() => { });
         await page.waitForTimeout(200);
-        await page.goForward().catch(() => {});
+        await page.goForward().catch(() => { });
         await page.waitForTimeout(200);
         expect(desyncErrors.filter(e => e.message.includes('DESYNC')).length).toBe(0);
-
-        await context.close();
     });
+
+
+    test('4-Player Chaos Game (3 Monkeys + 1 Observer)', async ({ browser }) => {
+        // Create 4 contexts
+        const hostCtx = await browser.newContext();
+        const p2Ctx = await browser.newContext();
+        const p3Ctx = await browser.newContext();
+        const p4Ctx = await browser.newContext();
+
+        const hostPage = await hostCtx.newPage();
+        const p2Page = await p2Ctx.newPage();
+        const p3Page = await p3Ctx.newPage();
+        const p4Page = await p4Ctx.newPage();
+
+        // 1. Host creates game
+        await hostPage.goto('http://localhost:9001');
+        await hostPage.getByRole('button', { name: /CREATE GAME/i }).click();
+        const gameUrl = hostPage.url();
+        await hostPage.getByPlaceholder('ENTER_NAME').fill('ObserverHost');
+        await hostPage.getByRole('button', { name: 'ENTER' }).click();
+
+        // 2. Monkeys join
+        const joinGame = async (page, name) => {
+            await page.goto(gameUrl);
+            await page.getByPlaceholder('ENTER_NAME').fill(name);
+            await page.getByRole('button', { name: 'ENTER' }).click();
+            // Ready up
+            const key = page.locator('button[aria-label*="key"], button[aria-label*="Key"], .launch-key-container').first();
+            await key.click();
+        };
+
+        await Promise.all([
+            joinGame(p2Page, 'MonkeyTwo'),
+            joinGame(p3Page, 'MonkeyThree'),
+            joinGame(p4Page, 'MonkeyFour')
+        ]);
+
+        // Host ready up
+        const hostKey = hostPage.locator('button[aria-label*="key"], button[aria-label*="Key"], .launch-key-container').first();
+        await hostKey.click();
+
+        // Wait for start
+        await expect(hostPage.getByText(/YOUR TURN|WAITING/i)).toBeVisible({ timeout: 15000 });
+
+        console.log('UNLEASHING THE MONKEYS!');
+
+        // 3. Unleash Monkeys
+        const monkey2 = new ChaosMonkey(p2Page);
+        const monkey3 = new ChaosMonkey(p3Page);
+        const monkey4 = new ChaosMonkey(p4Page);
+
+        // Run concurrently for 200 actions each or until end
+        // Host observes for crashes
+        await Promise.all([
+            monkey2.runUntilGameEnd(200),
+            monkey3.runUntilGameEnd(200),
+            monkey4.runUntilGameEnd(200),
+            // Host logic: Just wait and check for errors
+            (async () => {
+                for (let i = 0; i < 60; i++) {
+                    // Check for serious errors on host screen
+                    const error = await hostPage.locator('.error-toast, .alert-danger').textContent().catch(() => null);
+                    if (error) console.error(`HOST OBSERVED ERROR: ${error}`);
+                    await hostPage.waitForTimeout(1000);
+                }
+            })()
+        ]);
+
+        // Verify no DESYNC
+        expect(desyncErrors.filter(e => e.message.includes('DESYNC')).length).toBe(0);
+        await hostCtx.close();
+        await p2Ctx.close();
+        await p3Ctx.close();
+        await p4Ctx.close();
+    });
+
 });
+
 
 test.describe('Monkey Testing - Console Error Detection', () => {
     test('Monitor console for unexpected errors during normal gameplay', async ({ page }) => {
@@ -524,7 +620,7 @@ test.describe('Monkey Testing - Console Error Detection', () => {
             await page.waitForTimeout(2000);
         }
         const criticalErrors = errors.filter((e) =>
-            e.includes('DESYNC') || 
+            e.includes('DESYNC') ||
             e.includes('undefined') ||
             e.includes('null')
         );
