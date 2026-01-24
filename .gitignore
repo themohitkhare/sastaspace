@@ -53,6 +53,23 @@ backend/data/game_logs/
 frontends/*/playwright-report/
 frontends/*/test-results/
 
+# Hypothesis test database
+.hypothesis/
+backend/.hypothesis/
+
+# Snapshot files (keep directory structure, ignore JSON snapshots)
+backend/data/snapshots/*.json
+snapshots/*.json
+backend/snapshots/*.json
+
+# Economic reports
+reports/*.txt
+backend/reports/*.txt
+
+# Loki and Grafana data
+loki/data/
+grafana/data/
+
 # Node.js / Frontend
 node_modules/
 npm-debug.log*
