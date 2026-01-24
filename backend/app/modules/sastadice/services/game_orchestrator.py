@@ -5,10 +5,12 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from motor.motor_asyncio import AsyncIOMotorDatabase
 
+from app.modules.sastadice.events.event_manager import EventManager
 from app.modules.sastadice.repository import GameRepository
 from app.modules.sastadice.schemas import (
     ActionResult,
     ActionType,
+    ChaosConfig,
     DiceRollResult,
     GameSession,
     GameStatus,
@@ -17,7 +19,6 @@ from app.modules.sastadice.schemas import (
     TileType,
     TurnPhase,
 )
-from app.modules.sastadice.events.event_manager import EventManager
 from app.modules.sastadice.services.action_dispatcher import ActionDispatcher
 from app.modules.sastadice.services.auction_manager import AuctionManager
 from app.modules.sastadice.services.board_generation_service import BoardGenerationService
@@ -45,7 +46,7 @@ class GameOrchestrator:
         self.economy_manager = EconomyManager(self.repository)
         self.jail_manager = JailManager()
         self.event_manager = EventManager(self.repository)
-        
+
         self.lobby_manager = LobbyManager(
             self.repository, self.board_service, self.turn_manager
         )
@@ -61,10 +62,10 @@ class GameOrchestrator:
             handle_tile_landing_callback=self._handle_tile_landing,
             send_to_jail_callback=self._send_to_jail,
         )
-        
+
         # Simulation manager (will be initialized after action_dispatcher)
         self.simulation_manager = None
-        
+
         # CPU manager (needs orchestrator reference for now - will refactor later)
         self.cpu_manager = CpuManager(self)
 
@@ -189,7 +190,7 @@ class GameOrchestrator:
             game.last_event_message = f"🔍 {event['name']}: {revealed['name']} has ${revealed['cash']}"
         else:
             game.last_event_message = f"🎲 {event['name']}: {event['desc']}"
-        
+
         game.turn_phase = TurnPhase.POST_TURN
 
     async def _handle_tax_landing(
@@ -315,16 +316,17 @@ class GameOrchestrator:
         game = await self.get_game(game_id)
         return await self.action_dispatcher.dispatch(game, player_id, action_type, payload)
 
-    async def simulate_cpu_game(self, game_id: str, max_turns: int = 100) -> dict:
-        """Simulate a CPU-only game until completion or max turns."""
-        if not self.simulation_manager:
-            self.simulation_manager = SimulationManager(
-                self.repository,
-                self.action_dispatcher,
-                self.get_game,
-                self.start_game,
-            )
-        
+    async def simulate_cpu_game(
+        self, game_id: str, max_turns: int = 100, enable_economic_monitoring: bool = False, chaos_config: ChaosConfig | None = None
+    ) -> dict:
+        self.simulation_manager = SimulationManager(
+            self.repository,
+            self.action_dispatcher,
+            self.get_game,
+            self.start_game,
+            enable_economic_monitoring=enable_economic_monitoring,
+            chaos_config=chaos_config
+        )
         return await self.simulation_manager.simulate_cpu_game(game_id, max_turns)
 
     async def process_cpu_turns(self, game_id: str) -> dict:
