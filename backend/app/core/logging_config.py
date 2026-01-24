@@ -19,12 +19,8 @@ class JSONFormatter(logging.Formatter):
             "logger": record.name,
             "message": record.getMessage(),
         }
-        
-        # Add exception info if present
         if record.exc_info:
             log_data["exception"] = self.formatException(record.exc_info)
-        
-        # Add extra fields if present
         if hasattr(record, "extra_fields"):
             log_data.update(record.extra_fields)
         
