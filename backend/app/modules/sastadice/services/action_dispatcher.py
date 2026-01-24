@@ -447,17 +447,29 @@ class ActionDispatcher:
         await self.repository.update_player_cash(initiator.id, initiator.cash)
         await self.repository.update_player_cash(player.id, player.cash)
 
-        for pid in transfer_data["property_transfers"]["initiator_to_target"]:
+        initiator_to_target = transfer_data["property_transfers"]["initiator_to_target"]
+        target_to_initiator = transfer_data["property_transfers"]["target_to_initiator"]
+
+        for pid in initiator_to_target:
             tile = next((t for t in game.board if t.id == pid), None)
             if tile:
                 tile.owner_id = player.id
 
-        for pid in transfer_data["property_transfers"]["target_to_initiator"]:
+        for pid in target_to_initiator:
             tile = next((t for t in game.board if t.id == pid), None)
             if tile:
                 tile.owner_id = initiator.id
 
+        initiator.properties = [
+            p for p in initiator.properties if p not in initiator_to_target
+        ] + target_to_initiator
+        player.properties = [
+            p for p in player.properties if p not in target_to_initiator
+        ] + initiator_to_target
+
         await self.repository.save_board(game.id, game.board)
+        await self.repository.update_player_properties(initiator.id, initiator.properties)
+        await self.repository.update_player_properties(player.id, player.properties)
 
         game.active_trade_offers.remove(offer)
         game.last_event_message = (
@@ -664,13 +676,20 @@ class ActionDispatcher:
         if old_owner:
             old_owner.cash += cost
             await self.repository.update_player_cash(old_owner.id, old_owner.cash)
-        
+            if tile.id in old_owner.properties:
+                old_owner.properties = [p for p in old_owner.properties if p != tile.id]
+                await self.repository.update_player_properties(
+                    old_owner.id, old_owner.properties
+                )
+
         player.cash -= cost
         await self.repository.update_player_cash(player_id, player.cash)
-        
+        player.properties = list(player.properties) + [tile.id]
+        await self.repository.update_player_properties(player.id, player.properties)
+
         tile.owner_id = player_id
         await self.repository.update_tile_owner(tile.id, player_id)
-        
+
         game.pending_decision = None
         game.turn_phase = TurnPhase.POST_TURN
         await self.repository.update(game)

@@ -86,8 +86,12 @@ class EconomyManager:
             raised += sell_value + extra_refund
             tile.owner_id = None
             tile.upgrade_level = 0
+            if tile.id in player.properties:
+                player.properties = [p for p in player.properties if p != tile.id]
 
         await self.repository.save_board(game.id, game.board)
+        if properties:
+            await self.repository.update_player_properties(player.id, player.properties)
         return raised
 
     async def process_bankruptcy(
@@ -102,12 +106,25 @@ class EconomyManager:
         debtor.cash = 0
 
         debtor_properties = [t for t in game.board if t.owner_id == debtor.id]
+        debtor_tile_ids = [t.id for t in debtor_properties]
 
         if creditor:
             for tile in debtor_properties:
                 tile.owner_id = creditor.id
             creditor.cash += remaining_cash
+            creditor.properties = [
+                p for p in creditor.properties if p not in debtor_tile_ids
+            ] + debtor_tile_ids
+            debtor.properties = [
+                p for p in debtor.properties if p not in debtor_tile_ids
+            ]
             await self.repository.update_player_cash(creditor.id, creditor.cash)
+            await self.repository.update_player_properties(
+                creditor.id, creditor.properties
+            )
+            await self.repository.update_player_properties(
+                debtor.id, debtor.properties
+            )
             game.last_event_message = (
                 f"💀 {debtor.name} went BANKRUPT! Assets seized by {creditor.name}."
             )
@@ -115,6 +132,12 @@ class EconomyManager:
             for tile in debtor_properties:
                 tile.owner_id = None
                 tile.upgrade_level = 0
+            debtor.properties = [
+                p for p in debtor.properties if p not in debtor_tile_ids
+            ]
+            await self.repository.update_player_properties(
+                debtor.id, debtor.properties
+            )
             game.last_event_message = f"💀 {debtor.name} went BANKRUPT! Assets seized by Bank."
 
         await self.repository.update_player_bankrupt(debtor.id, True)
