@@ -66,6 +66,9 @@ backend/snapshots/*.json
 reports/*.txt
 backend/reports/*.txt
 
+# Simulation run output
+simulation_output*.txt
+
 # Loki and Grafana data
 loki/data/
 grafana/data/
