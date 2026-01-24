@@ -1,5 +1,6 @@
 """Pydantic schemas for SastaDice game models."""
 
+import random
 import uuid
 from enum import Enum
 from typing import Optional
@@ -84,6 +85,25 @@ class GameSettings(BaseModel):
 
     doubles_give_extra_turn: bool = True
     triple_doubles_jail: bool = True
+
+
+class FaultInjectionConfig(BaseModel):
+    """Infrastructure fault simulation for resilience testing."""
+    
+    drop_db_writes: float = 0.0       # 0-1: Probability of simulating DB write failure
+    delay_responses_ms: int = 0       # Milliseconds to delay all responses
+    corrupt_state_prob: float = 0.0   # Probability of injecting invalid state
+    network_partition: bool = False   # Simulate network partition mid-action
+
+
+class ChaosConfig(BaseModel):
+    """Configuration for chaos testing with reproducible randomness."""
+    
+    seed: int = Field(default_factory=lambda: random.randint(0, 2**32))
+    chaos_probability: float = 0.3    # 30% chance of "stupid" moves
+    enable_invalid_actions: bool = False  # Try invalid actions (expect failures)
+    enable_race_conditions: bool = False  # Zero delays between actions
+    fault_injection: FaultInjectionConfig = Field(default_factory=FaultInjectionConfig)
 
 
 PROPERTY_COLORS = ["RED", "BLUE", "GREEN", "PURPLE", "ORANGE", "TEAL"]

@@ -1,19 +1,23 @@
 #!/usr/bin/env python3
 """Enhanced simulation script to test all SastaDice game configurations."""
-import sys
-import random
+import argparse
 import asyncio
+import logging
+import random
+import sys
+import traceback
 from pathlib import Path
-from typing import Dict, List, Optional
+
 from motor.motor_asyncio import AsyncIOMotorClient
 
-# Add parent directory to path to import app modules
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
+from app.core.logging_config import setup_logging
+from app.modules.sastadice.schemas import ChaosConfig, ChaosLevel, GameSettings, TileType, WinCondition
 from app.modules.sastadice.services.game_service import GameService
-from app.modules.sastadice.schemas import (
-    TileType, GameSettings, WinCondition, ChaosLevel
-)
+
+setup_logging(level="INFO")
+logger = logging.getLogger(__name__)
 
 
 class SimulationStats:
@@ -28,8 +32,8 @@ class SimulationStats:
         self.sudden_deaths = 0
         self.bankruptcies = 0
         self.last_standing_wins = 0
-        self.errors: List[str] = []
-        
+        self.errors: list[str] = []
+
         # Feature tracking
         self.go_bonus_collected = 0
         self.properties_bought = 0
@@ -54,8 +58,7 @@ class SimulationStats:
         self.upgrade_to_script_kiddie = 0
         self.upgrade_to_1337_haxxor = 0
         
-        # Config tracking
-        self.configs_tested: Dict[str, int] = {}
+        self.configs_tested: dict[str, int] = {}
 
 
 # Define test configurations
@@ -299,6 +302,42 @@ TEST_CONFIGS = [
             round_limit=0
         )
     },
+    
+    # ===== ECONOMIC STRESS TESTS =====
+    {
+        "name": "Inflation_Stress_200R",
+        "players": 4,
+        "settings": GameSettings(
+            win_condition=WinCondition.LAST_STANDING,
+            round_limit=200,  # Force long game
+            enable_auctions=True,
+            enable_trading=True,
+        ),
+        "expected_end": True,  # MUST end naturally via bankruptcy
+        "max_turns": 2000,
+    },
+    {
+        "name": "Deflation_Check_NoGO",
+        "players": 4,
+        "settings": GameSettings(
+            go_bonus_base=0,  # No GO income
+            go_inflation_per_round=0,
+            round_limit=50,
+        ),
+        "expected_end": True,  # Should bankrupt quickly
+    },
+    {
+        "name": "Hyperinflation_GO",
+        "players": 3,
+        "settings": GameSettings(
+            go_bonus_base=500,
+            go_inflation_per_round=100,  # Extreme inflation
+            round_limit=0,  # No limit
+            win_condition=WinCondition.LAST_STANDING,
+        ),
+        "expected_end": False,  # Expect this to potentially FAIL (reveals inflation bug)
+        "max_turns": 1000,
+    },
 ]
 
 
@@ -324,10 +363,7 @@ async def simulate_single_game(
     stats.configs_tested[config_name] = stats.configs_tested.get(config_name, 0) + 1
     
     try:
-        # Create game with custom settings
         game = await service.create_game(cpu_count=cpu_count)
-        
-        # Apply settings (we need to update the game with settings)
         game.settings = settings
         game.max_rounds = settings.round_limit
         await service.repository.update(game)
@@ -336,20 +372,39 @@ async def simulate_single_game(
             print(f"✓ Game created: {game.id[:8]}...")
             print(f"  Players: {[p.name for p in game.players]}")
         
-        # Start game
+        logger.info(
+            "Game created for simulation",
+            extra={
+                "extra_fields": {
+                    "component": "simulation",
+                    "game_id": game.id,
+                    "config_name": config_name,
+                    "cpu_count": cpu_count,
+                    "win_condition": settings.win_condition.value,
+                    "round_limit": settings.round_limit,
+                }
+            }
+        )
+        
         if game.status.value == "LOBBY":
             game = await service.start_game(game.id, force=True)
         
-        # Analyze board
         board_analysis = analyze_board(game)
         if verbose:
             print(f"  Board: {len(game.board)} tiles, {board_analysis['properties']} properties")
         
-        # Run simulation with higher max for Last Standing
         effective_max = max_turns if settings.win_condition == WinCondition.LAST_STANDING else 300
+        logger.info(
+            "Starting game simulation",
+            extra={
+                "extra_fields": {
+                    "component": "simulation",
+                    "game_id": game.id,
+                    "max_turns": effective_max,
+                }
+            }
+        )
         result = await service.simulate_cpu_game(game.id, max_turns=effective_max)
-        
-        # Collect statistics
         stats.games_completed += 1
         stats.total_turns += result.get("turns_played", 0)
         stats.total_rounds += result.get("rounds_played", 0)
@@ -361,25 +416,20 @@ async def simulate_single_game(
             if p.get("bankrupt"):
                 stats.bankruptcies += 1
         
-        # Check for Last Standing wins
         if settings.win_condition == WinCondition.LAST_STANDING:
             active = [p for p in result.get("final_standings", []) if not p.get("bankrupt")]
             if len(active) <= 1:
                 stats.last_standing_wins += 1
         
-        # Check for blocked tiles cleared (check final game state)
         try:
             final_game = await service.get_game(game.id)
-            # Count tiles that were blocked but are now cleared (blocked_until_round <= current_round)
             cleared_count = sum(1 for t in final_game.board if t.blocked_until_round and t.blocked_until_round <= final_game.current_round)
-            # If round advanced and we had blocked tiles, they should be cleared
             if final_game.current_round > 1 and cleared_count > 0:
                 stats.blocked_tiles_cleared += cleared_count
         except Exception as e:
             if verbose:
                 print(f"  Note: Could not check blocked tiles: {e}")
-            pass
-        
+
         # Analyze turn log
         for turn in result.get("turn_log", []):
             for action in turn.get("actions", []):
@@ -424,6 +474,21 @@ async def simulate_single_game(
         
         result["success"] = result.get("status") in ["ACTIVE", "FINISHED"]
         
+        logger.info(
+            "Game simulation completed",
+            extra={
+                "extra_fields": {
+                    "component": "simulation",
+                    "game_id": game.id,
+                    "config_name": config_name,
+                    "status": result.get("status"),
+                    "turns_played": result.get("turns_played", 0),
+                    "rounds_played": result.get("rounds_played", 0),
+                    "winner": result.get("winner", {}).get("name") if result.get("winner") else None,
+                }
+            }
+        )
+        
         if verbose:
             win_type = "SUDDEN DEATH" if stats.sudden_deaths > 0 else "LAST STANDING" if stats.last_standing_wins > 0 else "?"
             print(f"\n✓ Game completed: {result['status']}")
@@ -437,9 +502,20 @@ async def simulate_single_game(
         stats.games_errored += 1
         stats.errors.append(f"[{config_name}] {str(e)}")
         
+        logger.error(
+            "Game simulation failed",
+            extra={
+                "extra_fields": {
+                    "component": "simulation",
+                    "config_name": config_name,
+                    "error": str(e),
+                }
+            },
+            exc_info=True
+        )
+        
         if verbose:
             print(f"\n✗ Game failed: {str(e)}")
-            import traceback
             traceback.print_exc()
         
         return {
@@ -468,10 +544,92 @@ def analyze_board(game) -> dict:
     }
 
 
+def save_economic_report(report, config_name: str):
+    """Save economic balance report to file."""
+    from app.modules.sastadice.services.inflation_monitor import InflationMonitor
+    
+    # Create reports directory
+    reports_dir = Path("reports")
+    reports_dir.mkdir(exist_ok=True)
+    
+    # Format report
+    monitor = InflationMonitor()
+    formatted_report = monitor.format_report(report)
+    
+    # Save to file
+    timestamp = int(asyncio.get_event_loop().time() * 1000)
+    filename = reports_dir / f"economy_balance_{config_name.replace(' ', '_')}_{timestamp}.txt"
+    
+    with open(filename, 'w') as f:
+        f.write(formatted_report)
+    
+    print(f"\n📊 Economic report saved to: {filename}")
+    print(formatted_report)
+
+
 async def main():
     """Run comprehensive game simulation across all configurations."""
+    # Parse command line arguments
+    parser = argparse.ArgumentParser(description="Run SastaDice game simulations with chaos testing")
+    parser.add_argument("--seed", type=int, default=None, help="Random seed for reproducibility")
+    parser.add_argument("--chaos-mode", action="store_true", help="Enable monkey/chaos strategy")
+    parser.add_argument("--chaos-probability", type=float, default=0.3, help="Chaos probability (0.0-1.0)")
+    parser.add_argument("--strictness", choices=["strict", "lenient"], default="strict", 
+                        help="Invariant checking mode (strict=fail fast, lenient=auto-correct)")
+    parser.add_argument("--enable-economic-monitoring", action="store_true",
+                        help="Enable economic health tracking and inflation detection")
+    parser.add_argument("--drop-db-writes", type=float, default=0.0,
+                        help="Probability of simulated DB write failures (0.0-1.0)")
+    parser.add_argument("--delay-ms", type=int, default=0,
+                        help="Milliseconds to delay all responses")
+    parser.add_argument("--replay", type=str, default=None,
+                        help="Path to snapshot JSON file to replay")
+    parser.add_argument("--num-games", type=int, default=None, help="Number of games to run (default: all configs)")
+    args = parser.parse_args()
+    
+    # Set seed if provided
+    seed = args.seed if args.seed is not None else random.randint(0, 2**32)
+    random.seed(seed)
+    print(f"SEED: {seed}")
+    
+    # Create chaos config if chaos mode enabled
+    chaos_config = None
+    if args.chaos_mode:
+        from app.modules.sastadice.schemas import FaultInjectionConfig
+        chaos_config = ChaosConfig(
+            seed=seed,
+            chaos_probability=args.chaos_probability,
+            enable_invalid_actions=False,
+            enable_race_conditions=False,
+            fault_injection=FaultInjectionConfig(
+                drop_db_writes=args.drop_db_writes,
+                delay_responses_ms=args.delay_ms,
+                corrupt_state_prob=0.0,
+                network_partition=False
+            )
+        )
+    
+    # Handle replay mode
+    if args.replay:
+        from app.modules.sastadice.services.snapshot_manager import SnapshotManager
+        snapshot_mgr = SnapshotManager()
+        print(f"\n🔄 REPLAY MODE: Loading snapshot from {args.replay}")
+        snapshot_mgr.print_snapshot_summary(args.replay)
+        print("\nTo replay programmatically, use SnapshotManager.replay_to_frame()")
+        return 0
+    
     print("="*70)
     print("SASTADICE COMPREHENSIVE CONFIGURATION TESTING")
+    if args.chaos_mode:
+        print(f"🐒 CHAOS MODE ENABLED")
+        print(f"   Chaos Probability: {args.chaos_probability}")
+        print(f"   Strictness: {args.strictness}")
+        if args.drop_db_writes > 0:
+            print(f"   DB Write Failures: {args.drop_db_writes * 100:.1f}%")
+        if args.delay_ms > 0:
+            print(f"   Response Delay: {args.delay_ms}ms")
+    if args.enable_economic_monitoring:
+        print("📊 ECONOMIC MONITORING ENABLED")
     print(f"Testing {len(TEST_CONFIGS)} different game configurations")
     print("="*70)
     

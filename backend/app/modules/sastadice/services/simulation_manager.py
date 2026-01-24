@@ -1,12 +1,16 @@
 """Simulation manager for CPU-only game testing."""
 import random
+from dataclasses import asdict
 from typing import TYPE_CHECKING
+
+from app.modules.sastadice.schemas import ActionType, GameSession, GameStatus, Player, TileType
+from app.modules.sastadice.services.inflation_monitor import EconomicViolationError, InflationMonitor
+from app.modules.sastadice.services.invariant_checker import InvariantChecker, InvariantViolationError, StrictnessMode
+from app.modules.sastadice.services.snapshot_manager import SnapshotManager
 
 if TYPE_CHECKING:
     from app.modules.sastadice.repository import GameRepository
     from app.modules.sastadice.services.action_dispatcher import ActionDispatcher
-
-from app.modules.sastadice.schemas import ActionType, GameSession, GameStatus, Player, TileType
 
 
 class SimulationManager:
@@ -18,12 +22,17 @@ class SimulationManager:
         action_dispatcher: "ActionDispatcher",
         get_game_callback,
         start_game_callback,
+        strictness_mode: StrictnessMode = StrictnessMode.STRICT,
+        enable_economic_monitoring: bool = False,
     ) -> None:
-        """Initialize simulation manager with dependencies."""
         self.repository = repository
         self.action_dispatcher = action_dispatcher
         self._get_game = get_game_callback
         self._start_game = start_game_callback
+        self.invariant_checker = InvariantChecker(mode=strictness_mode)
+        self.snapshot_manager = SnapshotManager()
+        self.inflation_monitor = InflationMonitor() if enable_economic_monitoring else None
+        self.enable_economic_monitoring = enable_economic_monitoring
 
     async def simulate_cpu_game(self, game_id: str, max_turns: int = 100) -> dict:
         """Simulate a CPU-only game until completion or max turns."""
@@ -58,6 +67,54 @@ class SimulationManager:
                 break
 
             self._update_turn_info_post_turn(game, turn_info)
+            
+            # Check invariants after turn
+            game = await self._get_game(game_id)
+            violations = self.invariant_checker.check_all(game)
+            if violations:
+                critical = [v for v in violations if v.severity == "CRITICAL"]
+                if critical:
+                    turn_info["invariant_violations"] = [asdict(v) for v in critical]
+                    turn_log.append(turn_info)
+                    snapshot_path = self.snapshot_manager.capture(
+                        game,
+                        reason="invariant_violation",
+                        error=f"Invariant violations: {len(critical)}",
+                        violations=critical,
+                    )
+                    
+                    raise InvariantViolationError(
+                        f"Invariant violations: {len(critical)}. Snapshot: {snapshot_path}"
+                    )
+            
+            # Check economic health (if enabled)
+            if self.enable_economic_monitoring and self.inflation_monitor:
+                # Track when we move to a new round (first player)
+                if game.current_turn_player_id == game.first_player_id:
+                    self.inflation_monitor.record_round_end(game)
+                    economic_violations = self.inflation_monitor.check_economic_health(game)
+                    
+                    if economic_violations:
+                        turn_info["economic_violations"] = economic_violations
+                        turn_log.append(turn_info)
+                        
+                        # Generate economic report
+                        report = self.inflation_monitor.generate_report(game)
+                        
+                        # Capture snapshot
+                        snapshot_path = self.snapshot_manager.capture(
+                            game,
+                            reason="economic_violation",
+                            error=f"Economic violations: {len(economic_violations)}",
+                            violations=economic_violations
+                        )
+                        
+                        raise EconomicViolationError(
+                            f"Economic violations detected: {economic_violations}\n"
+                            f"Diagnosis: {report.diagnosis}\n"
+                            f"Snapshot saved to: {snapshot_path}"
+                        )
+            
             turn_log.append(turn_info)
             turns_played += 1
 
@@ -66,12 +123,25 @@ class SimulationManager:
                 break
 
         game = await self._get_game(game_id)
+        
+        # Generate final economic report if monitoring enabled
+        if self.enable_economic_monitoring and self.inflation_monitor:
+            final_report = self.inflation_monitor.generate_report(game)
+            return {
+                **self._build_simulation_result(game, turns_played, turn_log),
+                "economic_report": {
+                    "diagnosis": final_report.diagnosis,
+                    "inflation_detected": final_report.inflation_detected,
+                    "stalemate_detected": final_report.stalemate_detected,
+                    "recommendations": final_report.recommendations
+                }
+            }
+        
         return self._build_simulation_result(game, turns_played, turn_log)
 
     async def _handle_stuck_state(
         self, game: GameSession, current_player: Player, stuck_state: dict
     ) -> None:
-        """Handle stuck simulation state."""
         from app.modules.sastadice.schemas import TurnPhase
 
         current_state = f"{game.turn_phase.value}:{current_player.id}:{game.pending_decision}"
@@ -89,7 +159,6 @@ class SimulationManager:
     def _init_turn_info(
         self, game: GameSession, current_player: Player, turns_played: int
     ) -> dict:
-        """Initialize turn info dict."""
         return {
             "turn": turns_played + 1,
             "round": game.current_round,
@@ -102,7 +171,6 @@ class SimulationManager:
         }
 
     def _update_turn_info_post_turn(self, game: GameSession, turn_info: dict) -> None:
-        """Update turn info after turn completes."""
         current_player = next(
             (p for p in game.players if p.id == turn_info["player_id"]), None
         )
@@ -111,7 +179,6 @@ class SimulationManager:
             turn_info["position_after"] = current_player.position
 
     def _check_simulation_end(self, game: GameSession) -> bool:
-        """Check if simulation should end."""
         active_players = [p for p in game.players if not p.is_bankrupt and p.cash >= 0]
         if len(active_players) <= 1:
             game.status = GameStatus.FINISHED
@@ -121,7 +188,6 @@ class SimulationManager:
     def _build_simulation_result(
         self, game: GameSession, turns_played: int, turn_log: list
     ) -> dict:
-        """Build simulation result dict."""
         from app.modules.sastadice.services.economy_manager import EconomyManager
 
         economy_manager = EconomyManager(self.repository)
@@ -184,7 +250,6 @@ class SimulationManager:
     async def _handle_simulated_decision(
         self, game_id: str, current_player: Player, turn_info: dict
     ) -> None:
-        """Handle decision phase in simulation."""
         game = await self._get_game(game_id)
 
         tile = game.board[current_player.position] if current_player.position < len(game.board) else None
@@ -288,7 +353,6 @@ class SimulationManager:
             await self.repository.update(game)
 
     async def _simulate_cpu_trades(self, game: GameSession, turn_info: dict) -> None:
-        """Handle CPU trading logic (Propose/Accept/Decline)."""
         await self._process_incoming_trade_offers(game, turn_info)
 
         current_player = next(
@@ -300,7 +364,6 @@ class SimulationManager:
     async def _process_incoming_trade_offers(
         self, game: GameSession, turn_info: dict
     ) -> None:
-        """Process trade offers sent to CPU players."""
         for offer in list(game.active_trade_offers):
             target = next((p for p in game.players if p.id == offer.target_id), None)
             if target:
@@ -328,7 +391,6 @@ class SimulationManager:
     async def _attempt_cpu_trade_proposal(
         self, game: GameSession, current_player: Player, turn_info: dict
     ) -> None:
-        """Attempt to propose a trade from the current CPU player."""
         if random.random() >= 0.1:
             return
 
@@ -367,7 +429,6 @@ class SimulationManager:
         turn_info["actions"].append({"action": "PROPOSE_TRADE", "result": res.message})
 
     async def _check_bankruptcy(self, game_id: str) -> GameSession:
-        """Check for bankrupt players and mark them."""
         game = await self._get_game(game_id)
 
         for player in game.players:
