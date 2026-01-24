@@ -2,6 +2,7 @@
 """Enhanced simulation script to test all SastaDice game configurations."""
 import argparse
 import asyncio
+import json
 import logging
 import random
 import sys
@@ -12,6 +13,11 @@ from motor.motor_asyncio import AsyncIOMotorClient
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
+
+import itertools
+from dataclasses import dataclass
+from typing import Iterator
+
 from app.core.logging_config import setup_logging
 from app.modules.sastadice.schemas import (
     ChaosConfig,
@@ -21,6 +27,66 @@ from app.modules.sastadice.schemas import (
     WinCondition,
 )
 from app.modules.sastadice.services.game_service import GameService
+
+
+@dataclass
+class FuzzingDimensions:
+    """Defines the search space for combinatorial fuzzing."""
+    player_counts: tuple[int, ...] = (2, 3, 4, 5)
+    starting_cash_mults: tuple[float, ...] = (0.5, 1.0, 2.0)
+    inflation_rates: tuple[int, ...] = (0, 50)
+    chaos_levels: tuple[ChaosLevel, ...] = (ChaosLevel.NORMAL, ChaosLevel.CHAOS)
+    round_limits: tuple[int, ...] = (0, 10, 50)
+    tax_rates: tuple[float, ...] = (0.0, 0.1)
+    
+
+class FuzzingConfigGenerator:
+    """Generates game configurations using combinatorial fuzzing."""
+    
+    def __init__(self, dimensions: FuzzingDimensions = None):
+        self.dims = dimensions or FuzzingDimensions()
+        
+    def generate(self) -> Iterator[dict]:
+        """Yields unique configuration dictionaries."""
+        matrix = itertools.product(
+            self.dims.player_counts,
+            self.dims.starting_cash_mults,
+            self.dims.inflation_rates,
+            self.dims.chaos_levels,
+            self.dims.round_limits,
+            self.dims.tax_rates
+        )
+        
+        for i, (pc, cash, inf, chaos, rounds, tax) in enumerate(matrix):
+            # Prune impossible combos
+            wc = WinCondition.SUDDEN_DEATH if rounds > 0 else WinCondition.LAST_STANDING
+            
+            settings = GameSettings(
+                win_condition=wc,
+                round_limit=rounds,
+                starting_cash_multiplier=cash,
+                go_inflation_per_round=inf,
+                chaos_level=chaos,
+                turn_timer_seconds=10 if chaos == ChaosLevel.CHAOS else 30,
+                # Assuming tax_rate is supported or we hack it via income_tax_rate if schema allows
+                # If not supported in schema yet, we might need to add it or skip
+            )
+            # Inject custom tax rate into settings if supported, otherwise note it
+            if hasattr(settings, "income_tax_rate"):
+                settings.income_tax_rate = tax
+            
+            chaos_override = chaos == ChaosLevel.CHAOS
+            
+            yield {
+                "name": f"Fuzz_P{pc}_{wc.value}_C{cash}_I{inf}_{chaos.value}_R{rounds}_T{tax}",
+                "players": pc,
+                "settings": settings,
+                "chaos_override": chaos_override,
+                "chaos_prob": 0.5 if chaos_override else 0.0,
+                "max_turns": 1000 if rounds == 0 else rounds * pc * 3
+            }
+
+
 
 setup_logging(level="INFO")
 logger = logging.getLogger(__name__)
@@ -489,9 +555,8 @@ async def simulate_single_game(
             cleared_count = sum(1 for t in final_game.board if t.blocked_until_round and t.blocked_until_round <= final_game.current_round)
             if final_game.current_round > 1 and cleared_count > 0:
                 stats.blocked_tiles_cleared += cleared_count
-        except Exception as e:
-            if verbose:
-                print(f"  Note: Could not check blocked tiles: {e}")
+        except Exception:
+            pass
 
         # Analyze turn log
         for turn in result.get("turn_log", []):
@@ -528,7 +593,6 @@ async def simulate_single_game(
                         stats.upgrade_to_script_kiddie += 1
                     if "1337 HAXXOR" in action_result.upper():
                         stats.upgrade_to_1337_haxxor += 1
-                    # Check if CPU (CPU names in action result)
                     cpu_names = ["ROBOCOP", "CHAD BOT", "KAREN.EXE", "STONKS", "CPU-"]
                     if any(cpu in action_result.upper() for cpu in cpu_names):
                         stats.cpu_upgrades += 1
@@ -565,28 +629,40 @@ async def simulate_single_game(
     except Exception as e:
         stats.games_errored += 1
         stats.errors.append(f"[{config_name}] {str(e)}")
-
+        
         logger.error(
             "Game simulation failed",
             extra={
-                "extra_fields": {
-                    "component": "simulation",
-                    "config_name": config_name,
-                    "error": str(e),
-                }
+                "game_num": game_num,
+                "config": config_name,
+                "error": str(e)
             },
             exc_info=True
         )
-
+        
+        dump_data = {
+            "config_name": config_name,
+            "seed": "unknown",
+            "settings": settings.model_dump() if hasattr(settings, "model_dump") else {},
+            "players": cpu_count,
+            "error": str(e),
+        }
+        safe = "".join(c if c.isalnum() or c in "._-" else "_" for c in config_name)[:50]
+        dump_file = f"CRASH_DUMP_{game_num}_{safe}.json"
+        with open(dump_file, "w") as f:
+            json.dump(dump_data, f, indent=2, default=str)
+        print(f"\n🚨 CRASH DUMP SAVED: {dump_file}")
+        
         if verbose:
             print(f"\n✗ Game failed: {str(e)}")
             traceback.print_exc()
-
+        
         return {
             "status": "ERROR",
             "turns_played": 0,
-            "errors": [str(e)],
-            "success": False
+            "rounds_played": 0,
+            "winner": "ERROR",
+            "final_standings": []
         }
 
 
@@ -612,15 +688,10 @@ def save_economic_report(report, config_name: str):
     """Save economic balance report to file."""
     from app.modules.sastadice.services.inflation_monitor import InflationMonitor
 
-    # Create reports directory
     reports_dir = Path("reports")
     reports_dir.mkdir(exist_ok=True)
-
-    # Format report
     monitor = InflationMonitor()
     formatted_report = monitor.format_report(report)
-
-    # Save to file
     timestamp = int(asyncio.get_event_loop().time() * 1000)
     filename = reports_dir / f"economy_balance_{config_name.replace(' ', '_')}_{timestamp}.txt"
 
@@ -650,31 +721,31 @@ async def main():
                         help="Path to snapshot JSON file to replay")
     parser.add_argument("--num-games", type=int, default=None, help="Number of games to run (default: all configs)")
     parser.add_argument("--quiet", action="store_true", help="One-line per game; no per-game blocks")
+    parser.add_argument("--fuzz", action="store_true", help="Use combinatorial fuzzing instead of fixed configs")
     args = parser.parse_args()
-
-    # Set seed if provided
+    
     seed = args.seed if args.seed is not None else random.randint(0, 2**32)
     random.seed(seed)
     print(f"SEED: {seed}")
-
-    # Create chaos config if chaos mode enabled
+    
     chaos_config = None
     if args.chaos_mode:
         from app.modules.sastadice.schemas import FaultInjectionConfig
         chaos_config = ChaosConfig(
             seed=seed,
             chaos_probability=args.chaos_probability,
-            enable_invalid_actions=False,
-            enable_race_conditions=False,
+            enable_invalid_actions=True,
+            enable_race_conditions=False, # Keep this as False for now
             fault_injection=FaultInjectionConfig(
                 drop_db_writes=args.drop_db_writes,
                 delay_responses_ms=args.delay_ms,
-                corrupt_state_prob=0.0,
-                network_partition=False
+                corrupt_state_prob=0.01  # Small chance of state corruption
             )
         )
 
-    # Handle replay mode
+    stats = SimulationStats()
+    stats.chaos_config_global = chaos_config
+
     if args.replay:
         from app.modules.sastadice.services.snapshot_manager import SnapshotManager
         snapshot_mgr = SnapshotManager()
@@ -682,80 +753,20 @@ async def main():
         snapshot_mgr.print_snapshot_summary(args.replay)
         print("\nTo replay programmatically, use SnapshotManager.replay_to_frame()")
         return 0
-
-    print("="*70)
-    print("SASTADICE COMPREHENSIVE CONFIGURATION TESTING")
-    if args.chaos_mode:
-        print("🐒 CHAOS MODE ENABLED")
-        print(f"   Chaos Probability: {args.chaos_probability}")
-        print(f"   Strictness: {args.strictness}")
-        if args.drop_db_writes > 0:
-            print(f"   DB Write Failures: {args.drop_db_writes * 100:.1f}%")
-        if args.delay_ms > 0:
-            print(f"   Response Delay: {args.delay_ms}ms")
-    if args.enable_economic_monitoring:
-        print("📊 ECONOMIC MONITORING ENABLED")
-
-    total = (
-        args.num_games
-        if args.num_games is not None
-        else (len(TEST_CONFIGS) + 5)
-    )
-    n_fixed = min(total, len(TEST_CONFIGS))
-    n_random = total - n_fixed
-    if args.num_games is not None:
-        print(f"Running {total} simulations ({n_fixed} fixed + {n_random} random configs)")
+    
+    # Configs to run
+    configs_to_run = []
+    
+    if args.fuzz:
+        print("🎲 FUZZING MODE ENABLED: Generating combinatorial test matrix...")
+        generator = FuzzingConfigGenerator()
+        configs_to_run = list(generator.generate())
+        # Shuffle to get a mix if we stop early
+        random.shuffle(configs_to_run)
+        if args.num_games:
+            configs_to_run = configs_to_run[:args.num_games]
     else:
-        print(f"Testing {len(TEST_CONFIGS)} fixed + 5 random configurations ({total} total)")
-    print("="*70)
-
-    # Connect to MongoDB (default localhost for host runs; set MONGODB_URL in Docker)
-    import os
-    mongo_url = os.environ.get("MONGODB_URL", "mongodb://localhost:27017")
-    print(f"Connecting to: {mongo_url}")
-
-    client = AsyncIOMotorClient(mongo_url)
-    database = client.test_simulations
-
-    try:
-        service = GameService(database)
-        stats = SimulationStats()
-        stats.chaos_config_global = chaos_config
-
-        game_num = 0
-
-        semaphore = asyncio.Semaphore(50)  # Run 10 games in parallel for faster execution
-
-        verbose = not args.quiet
-
-        async def run_game_safely(g_num, config=None, is_random=False, r_cpu=None, r_settings=None, r_name=None):
-            async with semaphore:
-                if is_random:
-                    await simulate_single_game(
-                        service=service,
-                        game_num=g_num,
-                        cpu_count=r_cpu,
-                        settings=r_settings,
-                        stats=stats,
-                        config_name=r_name,
-                        verbose=verbose,
-                        max_turns=500,
-                        enable_economic_monitoring=args.enable_economic_monitoring,
-                    )
-                else:
-                    await simulate_single_game(
-                        service=service,
-                        game_num=g_num,
-                        cpu_count=config["players"],
-                        settings=config["settings"],
-                        stats=stats,
-                        config_name=config["name"],
-                        verbose=verbose,
-                        max_turns=config.get("max_turns", 500),
-                        enable_economic_monitoring=args.enable_economic_monitoring,
-                    )
-
-        tasks = []
+        configs_to_run = TEST_CONFIGS[:]
 
         def make_random_settings():
             wc = random.choice(list(WinCondition))
@@ -771,26 +782,74 @@ async def main():
                 kw["target_cash"] = random.choice([3000, 5000, 8000, 10000, 15000])
             return GameSettings(**kw)
 
-        for i in range(n_fixed):
-            game_num += 1
-            tasks.append(run_game_safely(game_num, config=TEST_CONFIGS[i]))
-
-        if args.num_games is None:
-            random.seed(42)
-        for i in range(n_random):
-            game_num += 1
+        # Target: --num-games if set, otherwise fixed + 5 random
+        target = args.num_games if args.num_games is not None else len(configs_to_run) + 5
+        while len(configs_to_run) < target:
+            i = len(configs_to_run) - len(TEST_CONFIGS)
             r_cpu = random.randint(2, 5)
             r_settings = make_random_settings()
-            tasks.append(run_game_safely(
-                game_num,
-                is_random=True,
-                r_cpu=r_cpu,
-                r_settings=r_settings,
-                r_name=f"Random #{i+1}",
-            ))
+            configs_to_run.append({
+                "name": f"Random #{i + 1}",
+                "players": r_cpu,
+                "settings": r_settings,
+                "chaos_override": False,
+            })
+
+        if args.num_games is not None:
+            configs_to_run = configs_to_run[:args.num_games]
+
+    print("="*70)
+    print("SASTADICE COMPREHENSIVE CONFIGURATION TESTING")
+    if args.chaos_mode:
+        print("🐒 CHAOS MODE ENABLED")
+        print(f"   Chaos Probability: {args.chaos_probability}")
+        print(f"   Strictness: {args.strictness}")
+        if args.drop_db_writes > 0:
+            print(f"   DB Write Failures: {args.drop_db_writes * 100:.1f}%")
+        if args.delay_ms > 0:
+            print(f"   Response Delay: {args.delay_ms}ms")
+    if args.enable_economic_monitoring:
+        print("📊 ECONOMIC MONITORING ENABLED")
+
+    print(f"Running {len(configs_to_run)} simulations...")
+    print("="*70)
+
+    # Connect to MongoDB (default localhost for host runs; set MONGODB_URL in Docker)
+    import os
+    mongo_url = os.environ.get("MONGODB_URL", "mongodb://localhost:27017")
+    print(f"Connecting to: {mongo_url}")
+
+    client = AsyncIOMotorClient(mongo_url)
+    database = client.test_simulations
+
+    try:
+        service = GameService(database)
+        semaphore = asyncio.Semaphore(50)  # Run 50 games in parallel for faster execution
+        verbose = not args.quiet
+
+        async def run_game_safely(g_num, config):
+            async with semaphore:
+                settings = config.get("settings", GameSettings())
+                if isinstance(settings, dict):
+                    settings = GameSettings(**settings)
+                return await simulate_single_game(
+                    service=service,
+                    game_num=g_num,
+                    cpu_count=config["players"],
+                    settings=settings,
+                    stats=stats,
+                    config_name=config["name"],
+                    verbose=verbose,
+                    max_turns=config.get("max_turns", 500),
+                    enable_economic_monitoring=args.enable_economic_monitoring,
+                )
+
+        tasks = []
+        for i, config in enumerate(configs_to_run):
+            tasks.append(run_game_safely(i + 1, config))
 
         print(f"\n{'='*70}")
-        print(f"Running {len(tasks)} simulations in parallel (Concurrency: 10)...")
+        print(f"Launching {len(tasks)} simulations in parallel...")
         print(f"{'='*70}")
 
         await asyncio.gather(*tasks)
