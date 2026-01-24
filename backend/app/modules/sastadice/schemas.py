@@ -85,6 +85,9 @@ class GameSettings(BaseModel):
 
     doubles_give_extra_turn: bool = True
     triple_doubles_jail: bool = True
+    
+    income_tax_rate: float = 0.1  # 10% default
+
 
 
 class FaultInjectionConfig(BaseModel):
