@@ -122,8 +122,34 @@ class InflationMonitor:
                         f"WEALTH_IMBALANCE: Richest player has 100x+ more than poorest "
                         f"(${max_cash:,} vs ${min_cash:,})"
                     )
+
+            # Check Gini Coefficient for inequality stalemate
+            gini = self._calculate_gini(cash_values)
+            if gini > 0.9 and game.current_round > 100:
+                 violations.append(
+                     f"EXTREME_INEQUALITY_STALEMATE: Gini coefficient {gini:.2f} > 0.9 after round 100. "
+                     f"Game is likely soft-locked by a hoarder."
+                 )
         
         return violations
+
+    def _calculate_gini(self, values: list[int]) -> float:
+        """Calculate Gini coefficient for wealth inequality."""
+        if not values or all(v == 0 for v in values):
+            return 0.0
+        
+        # Ensure non-negative for standard Gini
+        values = sorted([max(0, v) for v in values])
+        n = len(values)
+        if n == 0: 
+            return 0.0
+            
+        mean = sum(values) / n
+        if mean == 0:
+            return 0.0
+            
+        sum_abs_diff = sum(abs(x - y) for x in values for y in values)
+        return sum_abs_diff / (2 * n * n * mean)
     
     def generate_report(self, game: "GameSession") -> EconomicReport:
         """Generate final economic health report."""
