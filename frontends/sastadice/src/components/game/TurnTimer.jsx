@@ -1,9 +1,11 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 
 export default function TurnTimer({ turnStartTime, timeoutSeconds = 30, onTimeout }) {
   const [timeRemaining, setTimeRemaining] = useState(timeoutSeconds)
+  const timeoutFiredRef = useRef(false)
 
   useEffect(() => {
+    timeoutFiredRef.current = false
     if (!turnStartTime || turnStartTime === 0) {
       setTimeRemaining(timeoutSeconds)
       return
@@ -14,7 +16,8 @@ export default function TurnTimer({ turnStartTime, timeoutSeconds = 30, onTimeou
       const remaining = Math.max(0, timeoutSeconds - elapsed)
       setTimeRemaining(remaining)
 
-      if (remaining <= 0 && onTimeout) {
+      if (remaining <= 0 && onTimeout && !timeoutFiredRef.current) {
+        timeoutFiredRef.current = true
         onTimeout()
       }
     }
