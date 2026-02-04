@@ -1,4 +1,5 @@
 """Node manager for Server Node (railroad) rent calculation."""
+
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -20,9 +21,7 @@ class NodeManager:
             1 node = $50, 2 = $100, 3 = $200, 4 = $400 (before multiplier)
         """
         nodes_owned = sum(
-            1
-            for t in game.board
-            if t.type == TileType.NODE and t.owner_id == owner.id
+            1 for t in game.board if t.type == TileType.NODE and t.owner_id == owner.id
         )
         if nodes_owned == 0:
             return 0

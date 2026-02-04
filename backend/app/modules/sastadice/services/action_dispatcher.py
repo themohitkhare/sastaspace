@@ -1,15 +1,18 @@
 """Action dispatcher with validation layer for all game actions."""
+
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from app.modules.sastadice.repository import GameRepository
+    from app.modules.sastadice.schemas import Player, Tile
     from app.modules.sastadice.services.auction_manager import AuctionManager
     from app.modules.sastadice.services.economy_manager import EconomyManager
+    from app.modules.sastadice.services.jail_manager import JailManager
     from app.modules.sastadice.services.trade_manager import TradeManager
     from app.modules.sastadice.services.turn_coordinator import TurnCoordinator
     from app.modules.sastadice.services.turn_manager import TurnManager
-    from app.modules.sastadice.services.jail_manager import JailManager
 
+from app.modules.sastadice.events.events_data import SASTA_EVENTS
 from app.modules.sastadice.schemas import (
     ActionResult,
     ActionType,
@@ -17,7 +20,6 @@ from app.modules.sastadice.schemas import (
     TileType,
     TurnPhase,
 )
-from app.modules.sastadice.events.events_data import SASTA_EVENTS
 
 
 class ActionDispatcher:
@@ -48,8 +50,8 @@ class ActionDispatcher:
         self.send_to_jail_callback_fn = send_to_jail_callback
 
     def _validate_payload(
-        self, action_type: ActionType, payload: dict
-    ) -> tuple[bool, dict, str | None]:
+        self, action_type: ActionType, payload: dict[str, Any]
+    ) -> tuple[bool, dict[str, Any], str | None]:
         """
         Validate payload data with Pydantic-like checks.
         Returns (is_valid, validated_payload, error_message).
@@ -98,7 +100,7 @@ class ActionDispatcher:
         game: GameSession,
         player_id: str,
         action_type: ActionType,
-        payload: dict,
+        payload: dict[str, Any],
     ) -> ActionResult:
         """
         Dispatch action to appropriate handler with validation.
@@ -155,14 +157,14 @@ class ActionDispatcher:
                 dice_result = await self.roll_dice_callback(game.id, player_id)
             else:
                 dice_result = await self.turn_coordinator.roll_dice(
-                    game, player_id, self.send_to_jail_callback_fn or self._send_to_jail_callback, 
-                    self.handle_tile_landing_callback or self._handle_tile_landing_callback
+                    game,
+                    player_id,
+                    self.send_to_jail_callback_fn or self._send_to_jail_callback,
+                    self.handle_tile_landing_callback or self._handle_tile_landing_callback,
                 )
-            
+
             updated_game = await self._get_game(game.id)
-            player_idx = next(
-                i for i, p in enumerate(updated_game.players) if p.id == player_id
-            )
+            player_idx = next(i for i, p in enumerate(updated_game.players) if p.id == player_id)
             return ActionResult(
                 success=True,
                 message=updated_game.last_event_message or "Dice rolled",
@@ -215,7 +217,7 @@ class ActionDispatcher:
             tile = next((t for t in game.board if t.id == tile_id), None)
 
             if tile and tile.type == TileType.PROPERTY and not tile.owner_id:
-                self.auction_manager.start_auction(game, tile, auction_duration=30)
+                self.auction_manager.start_auction(game, tile, auction_duration=10)
                 await self.repository.update(game)
                 return ActionResult(success=True, message=f"Auction started for {tile.name}")
 
@@ -227,7 +229,7 @@ class ActionDispatcher:
         return ActionResult(success=True, message="Passed on decision")
 
     async def _handle_bid(
-        self, game: GameSession, player_id: str, payload: dict
+        self, game: GameSession, player_id: str, payload: dict[str, Any]
     ) -> ActionResult:
         if game.turn_phase != TurnPhase.AUCTION or not game.auction_state:
             return ActionResult(success=False, message="No active auction")
@@ -245,7 +247,7 @@ class ActionDispatcher:
         return ActionResult(success=success, message=message)
 
     async def _handle_upgrade(
-        self, game: GameSession, player_id: str, payload: dict
+        self, game: GameSession, player_id: str, payload: dict[str, Any]
     ) -> ActionResult:
         success, message, level_name = await self.economy_manager.handle_upgrade(
             game, player_id, payload, self.turn_manager
@@ -256,15 +258,13 @@ class ActionDispatcher:
             tile = next((t for t in game.board if t.id == tile_id), None)
             player = next((p for p in game.players if p.id == player_id), None)
             if tile and player:
-                game.last_event_message = (
-                    f"💻 {player.name} upgraded {tile.name} to {level_name}!"
-                )
+                game.last_event_message = f"💻 {player.name} upgraded {tile.name} to {level_name}!"
             await self.repository.update(game)
 
         return ActionResult(success=success, message=message)
 
     async def _handle_downgrade(
-        self, game: GameSession, player_id: str, payload: dict
+        self, game: GameSession, player_id: str, payload: dict[str, Any]
     ) -> ActionResult:
         success, message, refund = await self.economy_manager.handle_downgrade(
             game, player_id, payload
@@ -275,9 +275,7 @@ class ActionDispatcher:
             tile = next((t for t in game.board if t.id == tile_id), None)
             player = next((p for p in game.players if p.id == player_id), None)
             if tile and player:
-                prev_level_name = (
-                    "1337 HAXXOR" if tile.upgrade_level == 0 else "SCRIPT KIDDIE"
-                )
+                prev_level_name = "1337 HAXXOR" if tile.upgrade_level == 0 else "SCRIPT KIDDIE"
                 game.last_event_message = (
                     f"💸 {player.name} sold {prev_level_name} upgrade on {tile.name} for ${refund}"
                 )
@@ -286,7 +284,7 @@ class ActionDispatcher:
         return ActionResult(success=success, message=message)
 
     async def _handle_buy_buff(
-        self, game: GameSession, player_id: str, payload: dict
+        self, game: GameSession, player_id: str, payload: dict[str, Any]
     ) -> ActionResult:
         if (
             game.turn_phase != TurnPhase.DECISION
@@ -339,15 +337,13 @@ class ActionDispatcher:
         return ActionResult(success=True, message=f"Bought {selected_buff['name']}")
 
     async def _handle_block_tile(
-        self, game: GameSession, player_id: str, payload: dict
+        self, game: GameSession, player_id: str, payload: dict[str, Any]
     ) -> ActionResult:
         if game.current_turn_player_id != player_id:
             return ActionResult(success=False, message="Not your turn")
 
         if game.turn_phase not in (TurnPhase.POST_TURN, TurnPhase.PRE_ROLL):
-            return ActionResult(
-                success=False, message="Cannot use DDoS in current phase"
-            )
+            return ActionResult(success=False, message="Cannot use DDoS in current phase")
 
         player = next((p for p in game.players if p.id == player_id), None)
         if not player:
@@ -377,12 +373,10 @@ class ActionDispatcher:
         return ActionResult(success=True, message=f"Disabled {tile.name}")
 
     async def _handle_propose_trade(
-        self, game: GameSession, player_id: str, payload: dict
+        self, game: GameSession, player_id: str, payload: dict[str, Any]
     ) -> ActionResult:
         if game.current_turn_player_id != player_id:
-            return ActionResult(
-                success=False, message="Can only propose trades on your turn"
-            )
+            return ActionResult(success=False, message="Can only propose trades on your turn")
 
         player = next((p for p in game.players if p.id == player_id), None)
         if not player:
@@ -393,20 +387,16 @@ class ActionDispatcher:
             return ActionResult(success=False, message=error)
 
         if offer:
-            target_player = next(
-                (p for p in game.players if p.id == offer.target_id), None
-            )
+            target_player = next((p for p in game.players if p.id == offer.target_id), None)
             game.active_trade_offers.append(offer)
-            game.last_event_message = (
-                f"🤝 {player.name} proposed a trade to {target_player.name if target_player else 'Unknown'}!"
-            )
+            game.last_event_message = f"🤝 {player.name} proposed a trade to {target_player.name if target_player else 'Unknown'}!"
             await self.repository.update(game)
             return ActionResult(success=True, message="Trade offered")
 
         return ActionResult(success=False, message="Failed to create trade offer")
 
     async def _handle_accept_trade(
-        self, game: GameSession, player_id: str, payload: dict
+        self, game: GameSession, player_id: str, payload: dict[str, Any]
     ) -> ActionResult:
         trade_id = payload.get("trade_id")
         offer = next((t for t in game.active_trade_offers if t.id == trade_id), None)
@@ -414,9 +404,7 @@ class ActionDispatcher:
             return ActionResult(success=False, message="Trade offer not found")
 
         if offer.target_id != player_id:
-            return ActionResult(
-                success=False, message="Not authorized to accept this trade"
-            )
+            return ActionResult(success=False, message="Not authorized to accept this trade")
 
         initiator = next((p for p in game.players if p.id == offer.initiator_id), None)
         player = next((p for p in game.players if p.id == player_id), None)
@@ -431,15 +419,11 @@ class ActionDispatcher:
             await self.repository.update(game)
             return ActionResult(success=False, message="Player not found")
 
-        validation_error = self.trade_manager.validate_trade_assets(
-            game, offer, initiator, player
-        )
+        validation_error = self.trade_manager.validate_trade_assets(game, offer, initiator, player)
         if validation_error:
             return ActionResult(success=False, message=validation_error)
 
-        transfer_data = self.trade_manager.execute_trade_transfer(
-            game, offer, initiator, player
-        )
+        transfer_data = self.trade_manager.execute_trade_transfer(game, offer, initiator, player)
 
         initiator.cash = transfer_data["initiator_cash"]
         player.cash = transfer_data["target_cash"]
@@ -472,14 +456,12 @@ class ActionDispatcher:
         await self.repository.update_player_properties(player.id, player.properties)
 
         game.active_trade_offers.remove(offer)
-        game.last_event_message = (
-            f"🤝 Trade accepted between {initiator.name} and {player.name}!"
-        )
+        game.last_event_message = f"🤝 Trade accepted between {initiator.name} and {player.name}!"
         await self.repository.update(game)
         return ActionResult(success=True, message="Trade completed")
 
     async def _handle_decline_trade(
-        self, game: GameSession, player_id: str, payload: dict
+        self, game: GameSession, player_id: str, payload: dict[str, Any]
     ) -> ActionResult:
         trade_id = payload.get("trade_id")
         offer = next((t for t in game.active_trade_offers if t.id == trade_id), None)
@@ -497,7 +479,7 @@ class ActionDispatcher:
         return ActionResult(success=True, message="Declined")
 
     async def _handle_cancel_trade(
-        self, game: GameSession, player_id: str, payload: dict
+        self, game: GameSession, player_id: str, payload: dict[str, Any]
     ) -> ActionResult:
         trade_id = payload.get("trade_id")
         offer = next((t for t in game.active_trade_offers if t.id == trade_id), None)
@@ -511,12 +493,16 @@ class ActionDispatcher:
         await self.repository.update(game)
         return ActionResult(success=True, message="Cancelled")
 
+    async def _determine_winner_async(self, game: GameSession) -> dict[str, Any] | None:
+        """Async wrapper for sync _determine_winner (for TurnCoordinator callback)."""
+        return self._determine_winner(game)
+
     async def _handle_end_turn(self, game: GameSession, player_id: str) -> ActionResult:
         return await self.turn_coordinator.handle_end_turn(
             game,
             player_id,
             self._check_and_handle_end_conditions,
-            self._determine_winner,
+            self._determine_winner_async,
         )
 
     async def _handle_buy_release(self, game: GameSession, player_id: str) -> ActionResult:
@@ -536,9 +522,7 @@ class ActionDispatcher:
 
         return ActionResult(success=success, message=message)
 
-    async def _handle_roll_for_doubles(
-        self, game: GameSession, player_id: str
-    ) -> ActionResult:
+    async def _handle_roll_for_doubles(self, game: GameSession, player_id: str) -> ActionResult:
         if not self.jail_manager:
             return ActionResult(success=False, message="Jail manager not available")
 
@@ -567,9 +551,7 @@ class ActionDispatcher:
             )
 
     async def _resolve_auction(self, game: GameSession) -> ActionResult:
-        success, message, winner_id, amount, prop_id = self.auction_manager.resolve_auction(
-            game
-        )
+        success, message, winner_id, amount, prop_id = self.auction_manager.resolve_auction(game)
 
         if not success:
             return ActionResult(success=False, message=message)
@@ -582,10 +564,29 @@ class ActionDispatcher:
                 await self.repository.update_player_cash(winner.id, winner.cash)
                 await self.repository.update_player_properties(winner.id, winner.properties)
                 await self.repository.update_tile_owner(prop_id, winner.id)
-                
+
                 tile = next((t for t in game.board if t.id == prop_id), None)
                 if tile:
                     tile.owner_id = winner.id
+
+        if (
+            prop_id
+            and game.bankruptcy_auction_queue
+            and game.bankruptcy_auction_queue[0] == prop_id
+        ):
+            game.bankruptcy_auction_queue.pop(0)
+            if game.bankruptcy_auction_queue:
+                next_tile = next(
+                    (t for t in game.board if t.id == game.bankruptcy_auction_queue[0]),
+                    None,
+                )
+                if next_tile:
+                    self.auction_manager.start_auction(game, next_tile, auction_duration=10)
+                    game.last_event_message = (
+                        f"🔨 State auction: {next_tile.name} from bankrupt player!"
+                    )
+            else:
+                game.bankruptcy_auction_queue = []
 
         await self.repository.update(game)
 
@@ -598,89 +599,85 @@ class ActionDispatcher:
             raise ValueError(f"Game {game_id} not found")
         return game
 
-    async def _send_to_jail_callback(
-        self, game: GameSession, player: "Player"
-    ) -> None:
+    async def _send_to_jail_callback(self, game: GameSession, player: "Player") -> None:
         if self.jail_manager:
             self.jail_manager.send_to_jail(game, player)
             jail_pos = len(game.board) // 2
             await self.repository.update_player_position(player.id, jail_pos)
-    
+
     async def _handle_event_clone_upgrade(
-        self, game: GameSession, player_id: str, payload: dict
+        self, game: GameSession, player_id: str, payload: dict[str, Any]
     ) -> ActionResult:
         source_tile_id = payload.get("source_tile_id")
         target_tile_id = payload.get("target_tile_id")
-        
+
         if not source_tile_id or not target_tile_id:
             return ActionResult(success=False, message="Must specify source and target tiles")
-        
+
         player = next((p for p in game.players if p.id == player_id), None)
         if not player:
             return ActionResult(success=False, message="Player not found")
-        
+
         source_tile = next((t for t in game.board if t.id == source_tile_id), None)
         target_tile = next((t for t in game.board if t.id == target_tile_id), None)
-        
+
         if not source_tile or not target_tile:
             return ActionResult(success=False, message="Tile not found")
-        
+
         if source_tile.upgrade_level == 0:
             return ActionResult(success=False, message="Source property has no upgrades")
-        
+
         if target_tile.owner_id != player_id:
             return ActionResult(success=False, message="You don't own the target property")
-        
+
         if target_tile.type != TileType.PROPERTY:
             return ActionResult(success=False, message="Can only clone to properties")
-        
+
         target_tile.upgrade_level = source_tile.upgrade_level
         await self.repository.save_board(game.id, game.board)
-        
+
         game.pending_decision = None
         game.turn_phase = TurnPhase.POST_TURN
         await self.repository.update(game)
-        
+
         return ActionResult(
-            success=True,
-            message=f"🍴 Cloned {source_tile.name}'s upgrades to {target_tile.name}!"
+            success=True, message=f"🍴 Cloned {source_tile.name}'s upgrades to {target_tile.name}!"
         )
 
     async def _handle_event_force_buy(
-        self, game: GameSession, player_id: str, payload: dict
+        self, game: GameSession, player_id: str, payload: dict[str, Any]
     ) -> ActionResult:
         tile_id = payload.get("tile_id")
-        
+
         if not tile_id:
             return ActionResult(success=False, message="Must specify a tile")
-        
+
         player = next((p for p in game.players if p.id == player_id), None)
         if not player:
             return ActionResult(success=False, message="Player not found")
-        
+
         tile = next((t for t in game.board if t.id == tile_id), None)
         if not tile:
             return ActionResult(success=False, message="Tile not found")
-        
+
         if not tile.owner_id or tile.owner_id == player_id:
             return ActionResult(success=False, message="Property must be owned by another player")
-        
+
         event_data = game.pending_decision.event_data if game.pending_decision else {}
-        multiplier = event_data.get("actions", {}).get("force_buy_multiplier", 1.5)
+        actions_data = (event_data.get("actions") or {}) if event_data else {}
+        multiplier = actions_data.get("force_buy_multiplier", 1.5)
         cost = int(tile.price * multiplier)
-        
+
         if player.cash < cost:
             return ActionResult(success=False, message=f"Insufficient funds (need ${cost})")
-        
+
         old_owner = next((p for p in game.players if p.id == tile.owner_id), None)
         if old_owner:
             old_owner.cash += cost
             await self.repository.update_player_cash(old_owner.id, old_owner.cash)
             if tile.id in old_owner.properties:
                 old_owner.properties = [p for p in old_owner.properties if p != tile.id]
-                await self.repository.update_player_properties(
-                    old_owner.id, old_owner.properties
-                )
+                await self.repository.update_player_properties(old_owner.id, old_owner.properties)
 
         player.cash -= cost
         await self.repository.update_player_cash(player_id, player.cash)
@@ -693,44 +690,44 @@ class ActionDispatcher:
         game.pending_decision = None
         game.turn_phase = TurnPhase.POST_TURN
         await self.repository.update(game)
-        
+
         return ActionResult(
-            success=True,
-            message=f"⚔️ Hostile Takeover! Bought {tile.name} for ${cost}"
+            success=True, message=f"⚔️ Hostile Takeover! Bought {tile.name} for ${cost}"
         )
 
     async def _handle_event_free_landing(
-        self, game: GameSession, player_id: str, payload: dict
+        self, game: GameSession, player_id: str, payload: dict[str, Any]
     ) -> ActionResult:
         tile_id = payload.get("tile_id")
-        
+
         if not tile_id:
             return ActionResult(success=False, message="Must specify a tile")
-        
+
         player = next((p for p in game.players if p.id == player_id), None)
         if not player:
             return ActionResult(success=False, message="Player not found")
-        
+
         tile = next((t for t in game.board if t.id == tile_id), None)
         if not tile:
             return ActionResult(success=False, message="Tile not found")
-        
+
         if tile.owner_id != player_id:
             return ActionResult(success=False, message="You must own the property")
-        
+
         event_data = game.pending_decision.event_data if game.pending_decision else {}
-        free_rounds = event_data.get("actions", {}).get("free_rounds", 1)
-        
+        actions_data = (event_data.get("actions") or {}) if event_data else {}
+        free_rounds = actions_data.get("free_rounds", 1)
+
         tile.free_landing_until_round = game.current_round + free_rounds
         await self.repository.save_board(game.id, game.board)
-        
+
         game.pending_decision = None
         game.turn_phase = TurnPhase.POST_TURN
         await self.repository.update(game)
-        
+
         return ActionResult(
             success=True,
-            message=f"🔓 Open Source! {tile.name} is free to land on for {free_rounds} round(s)"
+            message=f"🔓 Open Source! {tile.name} is free to land on for {free_rounds} round(s)",
         )
 
     async def _handle_tile_landing_callback(
@@ -739,8 +736,8 @@ class ActionDispatcher:
         pass
 
     async def _check_and_handle_end_conditions(self, game_id: str) -> bool:
-        """Check for bankruptcy and game end. Returns True if game ended."""
-        from app.modules.sastadice.schemas import GameStatus
+        """Check for bankruptcy, FIRST_TO_CASH, and game end. Returns True if game ended."""
+        from app.modules.sastadice.schemas import GameStatus, WinCondition
 
         game = await self._get_game(game_id)
 
@@ -751,21 +748,33 @@ class ActionDispatcher:
 
         active_players = [p for p in game.players if not p.is_bankrupt]
 
+        if (
+            game.settings.win_condition == WinCondition.FIRST_TO_CASH
+            and game.settings.target_cash > 0
+        ):
+            richest = max(active_players, key=lambda p: p.cash)
+            if richest.cash >= game.settings.target_cash:
+                game = await self._get_game(game_id)
+                game.status = GameStatus.FINISHED
+                game.winner_id = richest.id
+                game.last_event_message = (
+                    f"💰 FIRST TO CASH! {richest.name} wins with ${richest.cash}!"
+                )
+                await self.repository.update(game)
+                return True
+
         if len(active_players) <= 1:
             game = await self._get_game(game_id)
             game.status = GameStatus.FINISHED
             winner = (
-                active_players[0]
-                if active_players
-                else max(game.players, key=lambda x: x.cash)
+                active_players[0] if active_players else max(game.players, key=lambda x: x.cash)
             )
-            game.last_event_message = (
-                f"🏆 GAME OVER! {winner.name} wins with ${winner.cash}!"
-            )
+            game.winner_id = winner.id
+            game.last_event_message = f"🏆 GAME OVER! {winner.name} wins with ${winner.cash}!"
             await self.repository.update(game)
             return True
 
         return False
 
-    def _determine_winner(self, game: GameSession) -> dict | None:
+    def _determine_winner(self, game: GameSession) -> dict[str, Any] | None:
         return self.economy_manager.determine_winner(game)

@@ -1,14 +1,14 @@
 """Turn manager for pure game rules - no database access."""
 
 import random
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Any, Optional
 
 if TYPE_CHECKING:
     from app.modules.sastadice.schemas import GameSession, Player, Tile
 
-from app.modules.sastadice.schemas import PendingDecision, TileType, TurnPhase
-from app.modules.sastadice.events.events_data import SASTA_EVENTS
 from app.modules.sastadice.events.event_manager import EventManager
+from app.modules.sastadice.events.events_data import SASTA_EVENTS
+from app.modules.sastadice.schemas import PendingDecision, TileType, TurnPhase
 
 
 class TurnManager:
@@ -19,7 +19,8 @@ class TurnManager:
         """Calculate GO bonus with inflation using game settings."""
         base = game.settings.go_bonus_base
         inflation = game.current_round * game.settings.go_inflation_per_round
-        return base + inflation
+        multiplier = getattr(game, "go_bonus_multiplier", 1.0)
+        return int((base + inflation) * multiplier)
 
     @staticmethod
     def owns_full_set(player: "Player", color: str, board: list["Tile"]) -> bool:
@@ -68,7 +69,7 @@ class TurnManager:
         EventManager.ensure_capacity(game, count)
 
     @staticmethod
-    def draw_event(game: "GameSession") -> dict | None:
+    def draw_event(game: "GameSession") -> dict[str, Any] | None:
         """Draw next event from deck (delegates to EventManager)."""
         return EventManager.draw_event(game)
 
@@ -80,7 +81,9 @@ class TurnManager:
         game.turn_phase = TurnPhase.POST_TURN
 
     @staticmethod
-    def handle_property_landing(game: "GameSession", player: "Player", tile: "Tile") -> dict:
+    def handle_property_landing(
+        game: "GameSession", player: "Player", tile: "Tile"
+    ) -> dict[str, Any]:
         """Handle landing on property tile - returns action dict for orchestrator."""
         if tile.owner_id is None:
             game.pending_decision = PendingDecision(type="BUY", tile_id=tile.id, price=tile.price)
@@ -95,7 +98,9 @@ class TurnManager:
             return {"action": "pay_rent", "tile_id": tile.id, "owner_id": tile.owner_id}
 
     @staticmethod
-    def handle_chance_landing(game: "GameSession", player: "Player", tile: "Tile") -> dict:
+    def handle_chance_landing(
+        game: "GameSession", player: "Player", tile: "Tile"
+    ) -> dict[str, Any]:
         """Handle landing on chance tile - returns event dict for orchestrator to apply."""
         event = TurnManager.draw_event(game)
         if not event:
@@ -176,9 +181,9 @@ class TurnManager:
         return target
 
     @staticmethod
-    def resolve_tile_landing(game: "GameSession", player: "Player", tile: "Tile") -> dict:
+    def resolve_tile_landing(game: "GameSession", player: "Player", tile: "Tile") -> dict[str, Any]:
         """Resolve tile landing - returns action dict for orchestrator."""
-        handler_map = {
+        handler_map: dict[TileType, Any] = {
             TileType.GO: lambda: TurnManager.handle_go_landing(game, tile),
             TileType.PROPERTY: lambda: TurnManager.handle_property_landing(game, player, tile),
             TileType.CHANCE: lambda: TurnManager.handle_chance_landing(game, player, tile),
@@ -200,13 +205,20 @@ class TurnManager:
             return {"type": "NEUTRAL", "result": None}
 
     @staticmethod
-    def apply_event_effect(game: "GameSession", player: "Player", event: dict) -> dict:
+    def apply_event_effect(
+        game: "GameSession", player: "Player", event: dict[str, Any]
+    ) -> dict[str, Any]:
         """
         Apply event effect - returns action dict for orchestrator.
         NOTE: This is a legacy method. For new code, use EventManager.apply_effect
         which includes repository updates. This method only returns action dicts.
         """
-        actions = {"cash_changes": {}, "position_changes": {}, "skip_buy": False, "special": None}
+        actions: dict[str, Any] = {
+            "cash_changes": {},
+            "position_changes": {},
+            "skip_buy": False,
+            "special": None,
+        }
 
         if event["type"] == "CASH_GAIN":
             actions["cash_changes"][player.id] = event["value"]

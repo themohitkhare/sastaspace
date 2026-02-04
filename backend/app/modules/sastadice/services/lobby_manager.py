@@ -1,5 +1,6 @@
 """Lobby manager for game setup and player management."""
-from typing import TYPE_CHECKING
+
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from app.modules.sastadice.repository import GameRepository
@@ -56,9 +57,7 @@ class LobbyManager:
 
         for i in range(min(count, 5)):
             cpu_name = cpu_names[i]
-            tiles = self.board_service.generate_seeded_tiles_for_player(
-                cpu_name, game.players
-            )
+            tiles = self.board_service.generate_seeded_tiles_for_player(cpu_name, game.players)
             player_create = PlayerCreate(name=cpu_name)
             player = await self.repository.add_player(game_id, player_create)
             await self.repository.submit_tiles(game_id, player.id, tiles)
@@ -66,8 +65,8 @@ class LobbyManager:
             game = await self.get_game(game_id)
 
     async def update_settings(
-        self, game_id: str, host_id: str, settings_dict: dict
-    ) -> dict:
+        self, game_id: str, host_id: str, settings_dict: dict[str, Any]
+    ) -> dict[str, Any]:
         """Update game settings. Only host can update."""
         game = await self.get_game(game_id)
 
@@ -95,9 +94,7 @@ class LobbyManager:
             raise ValueError("Cannot join game that is not in LOBBY status")
 
         if tiles is None:
-            tiles = self.board_service.generate_seeded_tiles_for_player(
-                player_name, game.players
-            )
+            tiles = self.board_service.generate_seeded_tiles_for_player(player_name, game.players)
         elif len(tiles) != 5:
             raise ValueError("Must submit exactly 5 tiles")
 
@@ -121,7 +118,7 @@ class LobbyManager:
 
     async def kick_player(
         self, game_id: str, host_id: str, target_player_id: str
-    ) -> dict:
+    ) -> dict[str, Any]:
         """Kick a player from the game. Only host can kick."""
         game = await self.get_game(game_id)
 
@@ -134,9 +131,7 @@ class LobbyManager:
         if target_player_id == host_id:
             raise ValueError("Cannot kick yourself")
 
-        target_player = next(
-            (p for p in game.players if p.id == target_player_id), None
-        )
+        target_player = next((p for p in game.players if p.id == target_player_id), None)
         if not target_player:
             raise ValueError("Player not found in this game")
 
@@ -163,9 +158,7 @@ class LobbyManager:
             if i >= len(cpu_names):
                 cpu_name = f"CPU-{i + 1}"
 
-            tiles = self.board_service.generate_seeded_tiles_for_player(
-                cpu_name, game.players
-            )
+            tiles = self.board_service.generate_seeded_tiles_for_player(cpu_name, game.players)
 
             player_create = PlayerCreate(name=cpu_name)
             player = await self.repository.add_player(game_id, player_create)
@@ -175,7 +168,7 @@ class LobbyManager:
             game = await self.get_game(game_id)
             await self.repository.update(game)
 
-    async def toggle_ready(self, game_id: str, player_id: str) -> dict:
+    async def toggle_ready(self, game_id: str, player_id: str) -> dict[str, Any]:
         """Toggle player's launch key. Auto-starts if all players ready."""
         game = await self.get_game(game_id)
 
@@ -205,6 +198,7 @@ class LobbyManager:
     async def start_game(self, game_id: str, force: bool = False) -> GameSession:
         """Start a game and generate the board."""
         import time
+
         from app.modules.sastadice.services.board_generation_service import GameConfig
 
         game = await self.get_game(game_id)
@@ -229,9 +223,7 @@ class LobbyManager:
                 )
                 all_player_tiles.append(tile)
 
-        board_size, _, padding = self.board_service.calculate_dimensions(
-            len(game.players)
-        )
+        board_size, _, padding = self.board_service.calculate_dimensions(len(game.players))
 
         min_tiles_for_good_game = max(20, board_size * 4 - 4)
         player_tile_count = len(all_player_tiles)
@@ -252,9 +244,7 @@ class LobbyManager:
         )
 
         await self.repository.save_board(game_id, board)
-        await self.repository.set_players_starting_cash(
-            game_id, game_config.starting_cash
-        )
+        await self.repository.set_players_starting_cash(game_id, game_config.starting_cash)
 
         game.status = GameStatus.ACTIVE
         game.turn_phase = TurnPhase.PRE_ROLL
@@ -266,6 +256,7 @@ class LobbyManager:
         game.turn_start_time = time.time()
 
         from app.modules.sastadice.events.event_manager import EventManager
+
         EventManager.initialize_deck(game)
 
         await self.repository.update(game)

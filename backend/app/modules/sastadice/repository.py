@@ -1,7 +1,7 @@
 """Game repository for MongoDB operations."""
 
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from app.core.db_repo import BaseRepository
 from app.modules.sastadice.models import (
@@ -41,7 +41,7 @@ class GameRepository(BaseRepository[GameSession]):
         if not game_doc:
             return None
 
-        game_document = GameSessionDocument(**game_doc)
+        game_document = GameSessionDocument.model_validate(game_doc)
         players = await self._get_players(game_document.id)
         board = await self._get_board_tiles(game_document.id)
 
@@ -104,7 +104,7 @@ class GameRepository(BaseRepository[GameSession]):
         color = PLAYER_COLORS[count % len(PLAYER_COLORS)]
 
         player_doc = PlayerDocument(
-            _id=player_id,
+            id=player_id,
             game_id=game_id,
             name=player_create.name,
             cash=0,
@@ -113,7 +113,7 @@ class GameRepository(BaseRepository[GameSession]):
             properties=[],
             ready=False,
             is_bankrupt=False,
-            created_at=datetime.now(timezone.utc),
+            created_at=datetime.now(UTC),
         )
 
         await self.database.players.insert_one(player_doc.to_dict())
@@ -233,6 +233,34 @@ class GameRepository(BaseRepository[GameSession]):
         """Update player's active buff."""
         await self.database.players.update_one({"_id": player_id}, {"$set": {"active_buff": buff}})
 
+    async def update_player_skip_next_move(self, player_id: str, skip: bool) -> None:
+        """Update player's skip_next_move flag."""
+        await self.database.players.update_one(
+            {"_id": player_id}, {"$set": {"skip_next_move": skip}}
+        )
+
+    async def update_player_double_rent_next_turn(self, player_id: str, double: bool) -> None:
+        """Update player's double_rent_next_turn flag."""
+        await self.database.players.update_one(
+            {"_id": player_id}, {"$set": {"double_rent_next_turn": double}}
+        )
+
+    async def update_player_afk(
+        self,
+        player_id: str,
+        afk_turns: int,
+        disconnected: bool,
+        disconnected_turns: int | None = None,
+    ) -> None:
+        """Update player's AFK/disconnection status."""
+        update = {"afk_turns": afk_turns, "disconnected": disconnected}
+        if disconnected_turns is not None:
+            update["disconnected_turns"] = disconnected_turns
+        await self.database.players.update_one(
+            {"_id": player_id},
+            {"$set": update},
+        )
+
     async def update_player_jail(self, player_id: str, in_jail: bool, jail_turns: int = 0) -> None:
         """Update player's jail status."""
         await self.database.players.update_one(
@@ -245,7 +273,7 @@ class GameRepository(BaseRepository[GameSession]):
         players = []
 
         async for player_doc in cursor:
-            player_document = PlayerDocument(**player_doc)
+            player_document = PlayerDocument.model_validate(player_doc)
             submitted_tiles = await self._get_submitted_tiles(game_id, player_document.id)
             players.append(player_document.to_player(submitted_tiles))
 
@@ -258,7 +286,7 @@ class GameRepository(BaseRepository[GameSession]):
         tiles = []
         async for tile_doc in cursor:
             tile_doc["type"] = TileType(tile_doc["type"])
-            tile_document = SubmittedTileDocument(**tile_doc)
+            tile_document = SubmittedTileDocument.model_validate(tile_doc)
             tiles.append(tile_document.to_tile_create())
 
         return tiles
@@ -270,7 +298,7 @@ class GameRepository(BaseRepository[GameSession]):
         tiles = []
         async for tile_doc in cursor:
             tile_doc["type"] = TileType(tile_doc["type"])
-            tile_document = TileDocument(**tile_doc)
+            tile_document = TileDocument.model_validate(tile_doc)
             tiles.append(tile_document.to_tile())
 
         return tiles

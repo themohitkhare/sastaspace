@@ -1,7 +1,7 @@
 """Trade manager for player-to-player trading with validation."""
 
 import time
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Any, Optional
 
 if TYPE_CHECKING:
     from app.modules.sastadice.schemas import GameSession, Player, TradeOffer
@@ -14,7 +14,7 @@ class TradeManager:
 
     @staticmethod
     def create_trade_offer(
-        game: "GameSession", initiator: "Player", payload: dict
+        game: "GameSession", initiator: "Player", payload: dict[str, Any]
     ) -> tuple[Optional["TradeOffer"], str | None]:
         """Create a trade offer. Returns (offer, error_message)."""
         target_id = payload.get("target_id")
@@ -89,7 +89,7 @@ class TradeManager:
         offer: "TradeOffer",
         initiator: "Player",
         target: "Player",
-    ) -> dict:
+    ) -> dict[str, Any]:
         """Execute the trade transfer. Returns dict with cash and property changes."""
         initiator_new_cash = initiator.cash - offer.offering_cash + offer.requesting_cash
         target_new_cash = target.cash + offer.offering_cash - offer.requesting_cash

@@ -1,8 +1,10 @@
 """Simulation manager for CPU-only game testing."""
+
 import random
 import time
+from collections.abc import Awaitable, Callable
 from dataclasses import asdict
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from app.modules.sastadice.schemas import (
     ActionType,
@@ -37,8 +39,8 @@ class SimulationManager:
         self,
         repository: "GameRepository",
         action_dispatcher: "ActionDispatcher",
-        get_game_callback,
-        start_game_callback,
+        get_game_callback: Callable[..., Awaitable[GameSession]],
+        start_game_callback: Callable[..., Awaitable[GameSession]],
         strictness_mode: StrictnessMode = StrictnessMode.STRICT,
         enable_economic_monitoring: bool = False,
         chaos_config: "ChaosConfig | None" = None,
@@ -53,7 +55,7 @@ class SimulationManager:
         self.enable_economic_monitoring = enable_economic_monitoring
         self.chaos_config = chaos_config
 
-    async def simulate_cpu_game(self, game_id: str, max_turns: int = 100) -> dict:
+    async def simulate_cpu_game(self, game_id: str, max_turns: int = 100) -> dict[str, Any]:
         """Simulate a CPU-only game until completion or max turns."""
         game = await self._get_game(game_id)
 
@@ -67,7 +69,7 @@ class SimulationManager:
 
         turns_played = 0
         turn_log = []
-        stuck_state = {"counter": 0, "last_state": None}
+        stuck_state: dict[str, Any] = {"counter": 0, "last_state": None}
         coverage: dict[str, int] = {}
 
         while turns_played < max_turns and game.status == GameStatus.ACTIVE:
@@ -81,7 +83,9 @@ class SimulationManager:
 
             turn_info = self._init_turn_info(game, current_player, turns_played)
 
-            game_over = await self._execute_simulated_turn(game_id, current_player, turn_info, coverage)
+            game_over = await self._execute_simulated_turn(
+                game_id, current_player, turn_info, coverage
+            )
             if game_over:
                 turn_log.append(turn_info)
                 break
@@ -102,44 +106,46 @@ class SimulationManager:
                 critical = [v for v in violations if v.severity == "CRITICAL"]
                 if critical:
                     turn_info["invariant_violations"] = [asdict(v) for v in critical]
-                    
+
                     # Capture snapshot of broken state
-                    snapshot_path = self.snapshot_manager.capture(
+                    self.snapshot_manager.capture(
                         game,
                         reason="invariant_violation",
                         error=f"Invariant violations: {len(critical)}",
-                        violations=critical,
+                        violations=[v.message for v in critical],
                     )
-                    
+
                     raise InvariantViolationError(critical)
-            
+
             if self.enable_economic_monitoring and self.inflation_monitor:
                 # Track when we move to a new round (first player)
                 if game.current_turn_player_id == game.first_player_id:
                     self.inflation_monitor.record_round_end(game)
                     economic_violations = self.inflation_monitor.check_economic_health(game)
-                    
+
                     if economic_violations:
                         turn_info["economic_violations"] = economic_violations
                         turn_log.append(turn_info)
-                        
+
                         # Generate economic report
                         report = self.inflation_monitor.generate_report(game)
-                        
+
                         # Capture snapshot
-                        snapshot_path = self.snapshot_manager.capture(
+                        self.snapshot_manager.capture(
                             game,
                             reason="economic_violation",
                             error=f"Economic violations: {len(economic_violations)}",
                             violations=economic_violations,
                         )
-                        
+
                         raise EconomicViolationError(
-                            f"Economic violations detected: {economic_violations}\n"
-                            f"Diagnosis: {report.diagnosis}\n"
-                            f"Report: {report.game_id}"  # Just show ID to avoid giant prompt logs
+                            [
+                                f"Economic violations detected: {economic_violations}\n"
+                                f"Diagnosis: {report.diagnosis}\n"
+                                f"Report: {report.game_id}"
+                            ]
                         )
-            
+
             turn_log.append(turn_info)
 
             game = await self._check_bankruptcy(game_id)
@@ -162,7 +168,7 @@ class SimulationManager:
         return result
 
     async def _handle_stuck_state(
-        self, game: GameSession, current_player: Player, stuck_state: dict
+        self, game: GameSession, current_player: Player, stuck_state: dict[str, Any]
     ) -> None:
         current_state = f"{game.turn_phase.value}:{current_player.id}:{game.pending_decision}"
         if current_state == stuck_state["last_state"]:
@@ -178,7 +184,7 @@ class SimulationManager:
 
     def _init_turn_info(
         self, game: GameSession, current_player: Player, turns_played: int
-    ) -> dict:
+    ) -> dict[str, Any]:
         return {
             "turn": turns_played + 1,
             "round": game.current_round,
@@ -190,10 +196,8 @@ class SimulationManager:
             "actions": [],
         }
 
-    def _update_turn_info_post_turn(self, game: GameSession, turn_info: dict) -> None:
-        current_player = next(
-            (p for p in game.players if p.id == turn_info["player_id"]), None
-        )
+    def _update_turn_info_post_turn(self, game: GameSession, turn_info: dict[str, Any]) -> None:
+        current_player = next((p for p in game.players if p.id == turn_info["player_id"]), None)
         if current_player:
             turn_info["cash_after"] = current_player.cash
             turn_info["position_after"] = current_player.position
@@ -206,8 +210,8 @@ class SimulationManager:
         return False
 
     def _build_simulation_result(
-        self, game: GameSession, turns_played: int, turn_log: list
-    ) -> dict:
+        self, game: GameSession, turns_played: int, turn_log: list[dict[str, Any]]
+    ) -> dict[str, Any]:
         from app.modules.sastadice.services.economy_manager import EconomyManager
 
         economy_manager = EconomyManager(self.repository)
@@ -236,7 +240,11 @@ class SimulationManager:
         coverage[key] = coverage.get(key, 0) + 1
 
     async def _execute_simulated_turn(
-        self, game_id: str, current_player: Player, turn_info: dict, coverage: dict[str, int]
+        self,
+        game_id: str,
+        current_player: Player,
+        turn_info: dict[str, Any],
+        coverage: dict[str, int],
     ) -> bool:
         game = await self._get_game(game_id)
 
@@ -258,7 +266,9 @@ class SimulationManager:
                 amt = au.highest_bid + au.min_bid_increment * random.randint(5, 20)
                 if current_player.cash >= amt:
                     self._record(coverage, "MONKEY_BID")
-                    r = await self.action_dispatcher.dispatch(game, current_player.id, ActionType.BID, {"amount": amt})
+                    r = await self.action_dispatcher.dispatch(
+                        game, current_player.id, ActionType.BID, {"amount": amt}
+                    )
                     turn_info["actions"].append({"action": "MONKEY_BID", "result": r.message})
                     game = await self._get_game(game_id)
 
@@ -320,7 +330,7 @@ class SimulationManager:
                     )
                     turn_info["actions"].append({"action": "BLOCK_TILE", "result": r.message})
                     game = await self._get_game(game_id)
-                    
+
             self._record(coverage, "END_TURN")
             result = await self.action_dispatcher.dispatch(
                 game, current_player.id, ActionType.END_TURN, {}
@@ -333,18 +343,18 @@ class SimulationManager:
 
         return False
 
-    def _calculate_expected_cash_delta(self, game: GameSession, turn_info: dict) -> int:
+    def _calculate_expected_cash_delta(self, game: GameSession, turn_info: dict[str, Any]) -> int:
         """Heuristically check logs to determine expected system cash change."""
         delta = 0
-        
+
         # 1. Check moves for GO (not strictly in actions log, but inferred from position/round?)
         # Actually EventManager handles GO cash. It should be logged as an event or action.
         # If ActionDispatcher does it automatically on movement, we might miss it unless logged.
         # But 'actions' list captures most things.
-        
+
         for action in turn_info["actions"]:
             msg = action["result"].lower()
-            
+
             # Sinks (Money removed from system)
             if "bought" in msg and "for $" in msg:
                 # "Bought Old Delhi for $200"
@@ -353,32 +363,36 @@ class SimulationManager:
                     delta -= amount
                 except (IndexError, ValueError):
                     pass
-            
+
             elif "paid $" in msg and "tax" in msg:
-                 # "Paid $200 tax"
+                # "Paid $200 tax"
                 try:
-                    amount = int(msg.split("paid $")[1].split()[0].replace(",", "").replace(".", ""))
+                    amount = int(
+                        msg.split("paid $")[1].split()[0].replace(",", "").replace(".", "")
+                    )
                     delta -= amount
                 except:
                     pass
-            
+
             elif "paid bribe" in msg:
                 # "Paid bribe of $50"
-                 try:
+                try:
                     amount = int(msg.split("$")[1].split()[0].replace(",", "").replace(".", ""))
                     delta -= amount
-                 except:
+                except:
                     pass
 
             # Sources (Money added to system)
             elif "received $" in msg and "go" in msg:
                 # "Received $200 from GO"
                 try:
-                    amount = int(msg.split("received $")[1].split()[0].replace(",", "").replace(".", ""))
+                    amount = int(
+                        msg.split("received $")[1].split()[0].replace(",", "").replace(".", "")
+                    )
                     delta += amount
                 except:
                     pass
-            
+
             elif "mortgaged" in msg:
                 # "Mortgaged X for $100"
                 try:
@@ -386,30 +400,38 @@ class SimulationManager:
                     delta += amount
                 except:
                     pass
-            
+
             # Events (Can be source or sink)
             # Event message style: "Event: Wealth Tax! Paid $100"
             if "event:" in msg:
-                if "paid $" in msg and "bank" in msg: # Paid bank (sink)
-                     try:
+                if "paid $" in msg and "bank" in msg:  # Paid bank (sink)
+                    try:
                         amount = int(msg.split("$")[1].split()[0].replace(",", "").replace(".", ""))
                         delta -= amount
-                     except: 
-                         pass
-                elif "received $" in msg and "bank" in msg: # Received from bank (source)
-                     try:
+                    except:
+                        pass
+                elif "received $" in msg and "bank" in msg:  # Received from bank (source)
+                    try:
                         amount = int(msg.split("$")[1].split()[0].replace(",", "").replace(".", ""))
                         delta += amount
-                     except:
-                         pass
+                    except:
+                        pass
 
         return delta
 
     async def _handle_simulated_decision(
-        self, game_id: str, current_player: Player, turn_info: dict, coverage: dict[str, int]
+        self,
+        game_id: str,
+        current_player: Player,
+        turn_info: dict[str, Any],
+        coverage: dict[str, int],
     ) -> None:
         game = await self._get_game(game_id)
-        tile = game.board[current_player.position] if current_player.position < len(game.board) else None
+        tile = (
+            game.board[current_player.position]
+            if current_player.position < len(game.board)
+            else None
+        )
         if tile and tile.type == TileType.NODE and not tile.owner_id:
             if current_player.cash >= tile.price + 200:
                 self._record(coverage, "BUY_PROPERTY")
@@ -460,7 +482,9 @@ class SimulationManager:
                     result = await self.action_dispatcher.dispatch(
                         game, game_current_player.id, ActionType.PASS_PROPERTY, {}
                     )
-                    turn_info["actions"].append({"action": "MONKEY_SKIP_BUY", "result": result.message})
+                    turn_info["actions"].append(
+                        {"action": "MONKEY_SKIP_BUY", "result": result.message}
+                    )
                     return
 
             if game_current_player.cash >= price * 1.5:
@@ -485,9 +509,14 @@ class SimulationManager:
                     if game_current_player.cash >= buff["cost"] + 300:
                         self._record(coverage, "BUY_BUFF")
                         result = await self.action_dispatcher.dispatch(
-                            game, game_current_player.id, ActionType.BUY_BUFF, {"buff_id": buff["id"]}
+                            game,
+                            game_current_player.id,
+                            ActionType.BUY_BUFF,
+                            {"buff_id": buff["id"]},
                         )
-                        turn_info["actions"].append({"action": "BUY_BUFF", "result": result.message})
+                        turn_info["actions"].append(
+                            {"action": "BUY_BUFF", "result": result.message}
+                        )
                         bought = True
                         break
             if not bought:
@@ -500,24 +529,40 @@ class SimulationManager:
         elif decision_type == "EVENT_CLONE_UPGRADE":
             self._record(coverage, "decision_EVENT_CLONE_UPGRADE")
             sources = [t for t in game.board if t.upgrade_level > 0]
-            targets = [t for t in game.board if t.owner_id == game_current_player.id and t.type == TileType.PROPERTY]
+            targets = [
+                t
+                for t in game.board
+                if t.owner_id == game_current_player.id and t.type == TileType.PROPERTY
+            ]
             if sources and targets:
                 src, tgt = random.choice(sources), random.choice(targets)
                 self._record(coverage, "EVENT_CLONE_UPGRADE")
                 result = await self.action_dispatcher.dispatch(
-                    game, game_current_player.id, ActionType.EVENT_CLONE_UPGRADE,
+                    game,
+                    game_current_player.id,
+                    ActionType.EVENT_CLONE_UPGRADE,
                     {"source_tile_id": src.id, "target_tile_id": tgt.id},
                 )
-                turn_info["actions"].append({"action": "EVENT_CLONE_UPGRADE", "result": result.message})
+                turn_info["actions"].append(
+                    {"action": "EVENT_CLONE_UPGRADE", "result": result.message}
+                )
             else:
-                turn_info["actions"].append({"action": "SKIP_EVENT_CLONE_UPGRADE", "result": "No valid tiles"})
+                turn_info["actions"].append(
+                    {"action": "SKIP_EVENT_CLONE_UPGRADE", "result": "No valid tiles"}
+                )
                 game.pending_decision = None
                 game.turn_phase = TurnPhase.POST_TURN
                 await self.repository.update(game)
 
         elif decision_type == "EVENT_FORCE_BUY":
             self._record(coverage, "decision_EVENT_FORCE_BUY")
-            force_tiles = [t for t in game.board if t.owner_id and t.owner_id != game_current_player.id and t.type == TileType.PROPERTY]
+            force_tiles = [
+                t
+                for t in game.board
+                if t.owner_id
+                and t.owner_id != game_current_player.id
+                and t.type == TileType.PROPERTY
+            ]
             if force_tiles and game_current_player.cash >= 100:
                 t = random.choice(force_tiles)
                 self._record(coverage, "EVENT_FORCE_BUY")
@@ -526,42 +571,64 @@ class SimulationManager:
                 )
                 turn_info["actions"].append({"action": "EVENT_FORCE_BUY", "result": result.message})
             else:
-                turn_info["actions"].append({"action": "SKIP_EVENT_FORCE_BUY", "result": "No valid target or cash"})
+                turn_info["actions"].append(
+                    {"action": "SKIP_EVENT_FORCE_BUY", "result": "No valid target or cash"}
+                )
                 game.pending_decision = None
                 game.turn_phase = TurnPhase.POST_TURN
                 await self.repository.update(game)
 
         elif decision_type == "EVENT_FREE_LANDING":
             self._record(coverage, "decision_EVENT_FREE_LANDING")
-            mine = [t for t in game.board if t.owner_id == game_current_player.id and t.type == TileType.PROPERTY]
+            mine = [
+                t
+                for t in game.board
+                if t.owner_id == game_current_player.id and t.type == TileType.PROPERTY
+            ]
             if mine:
                 t = random.choice(mine)
                 self._record(coverage, "EVENT_FREE_LANDING")
                 result = await self.action_dispatcher.dispatch(
                     game, game_current_player.id, ActionType.EVENT_FREE_LANDING, {"tile_id": t.id}
                 )
-                turn_info["actions"].append({"action": "EVENT_FREE_LANDING", "result": result.message})
+                turn_info["actions"].append(
+                    {"action": "EVENT_FREE_LANDING", "result": result.message}
+                )
             else:
-                turn_info["actions"].append({"action": "SKIP_EVENT_FREE_LANDING", "result": "No owned property"})
+                turn_info["actions"].append(
+                    {"action": "SKIP_EVENT_FREE_LANDING", "result": "No owned property"}
+                )
                 game.pending_decision = None
                 game.turn_phase = TurnPhase.POST_TURN
                 await self.repository.update(game)
 
         else:
             self._record(coverage, f"SKIP_{decision_type}")
-            turn_info["actions"].append({"action": f"SKIP_{decision_type}", "result": f"Skipped: {decision_type}"})
+            turn_info["actions"].append(
+                {"action": f"SKIP_{decision_type}", "result": f"Skipped: {decision_type}"}
+            )
             game.pending_decision = None
             game.turn_phase = TurnPhase.POST_TURN
             await self.repository.update(game)
 
-    async def _simulate_cpu_trades(self, game: GameSession, turn_info: dict, coverage: dict[str, int]) -> None:
+    async def _simulate_cpu_trades(
+        self,
+        game: GameSession,
+        turn_info: dict[str, Any],
+        coverage: dict[str, int],
+    ) -> None:
         await self._process_incoming_trade_offers(game, turn_info, coverage)
-        current_player = next((p for p in game.players if p.id == game.current_turn_player_id), None)
+        current_player = next(
+            (p for p in game.players if p.id == game.current_turn_player_id), None
+        )
         if game.turn_phase.value == "POST_TURN" and current_player:
             await self._attempt_cpu_trade_proposal(game, current_player, turn_info, coverage)
 
     async def _process_incoming_trade_offers(
-        self, game: GameSession, turn_info: dict, coverage: dict[str, int]
+        self,
+        game: GameSession,
+        turn_info: dict[str, Any],
+        coverage: dict[str, int],
     ) -> None:
         for offer in list(game.active_trade_offers):
             target = next((p for p in game.players if p.id == offer.target_id), None)
@@ -571,22 +638,32 @@ class SimulationManager:
                     res = await self.action_dispatcher.dispatch(
                         game, target.id, ActionType.ACCEPT_TRADE, {"trade_id": offer.id}
                     )
-                    turn_info["actions"].append({"action": f"ACCEPT_TRADE ({target.name})", "result": res.message})
+                    turn_info["actions"].append(
+                        {"action": f"ACCEPT_TRADE ({target.name})", "result": res.message}
+                    )
                 else:
                     self._record(coverage, "DECLINE_TRADE")
                     res = await self.action_dispatcher.dispatch(
                         game, target.id, ActionType.DECLINE_TRADE, {"trade_id": offer.id}
                     )
-                    turn_info["actions"].append({"action": f"DECLINE_TRADE ({target.name})", "result": res.message})
+                    turn_info["actions"].append(
+                        {"action": f"DECLINE_TRADE ({target.name})", "result": res.message}
+                    )
 
     async def _attempt_cpu_trade_proposal(
-        self, game: GameSession, current_player: Player, turn_info: dict, coverage: dict[str, int]
+        self,
+        game: GameSession,
+        current_player: Player,
+        turn_info: dict[str, Any],
+        coverage: dict[str, int],
     ) -> None:
         if random.random() >= 0.1:
             return
 
         if self.chaos_config and random.random() < self.chaos_config.chaos_probability:
-            potential_targets = [p for p in game.players if p.id != current_player.id and not p.is_bankrupt]
+            potential_targets = [
+                p for p in game.players if p.id != current_player.id and not p.is_bankrupt
+            ]
             if potential_targets:
                 target = random.choice(potential_targets)
                 their_props = [t.id for t in game.board if t.owner_id == target.id]
@@ -602,10 +679,14 @@ class SimulationManager:
                     res = await self.action_dispatcher.dispatch(
                         game, current_player.id, ActionType.PROPOSE_TRADE, payload
                     )
-                    turn_info["actions"].append({"action": "MONKEY_TRADE_SPAM", "result": res.message})
+                    turn_info["actions"].append(
+                        {"action": "MONKEY_TRADE_SPAM", "result": res.message}
+                    )
                     return
 
-        potential_targets = [p for p in game.players if p.id != current_player.id and not p.is_bankrupt]
+        potential_targets = [
+            p for p in game.players if p.id != current_player.id and not p.is_bankrupt
+        ]
         if not potential_targets:
             return
         target = random.choice(potential_targets)
@@ -616,9 +697,17 @@ class SimulationManager:
         offer_cash = min(current_player.cash, 100) if random.random() < 0.5 else 0
         if not offer_props and not req_props and offer_cash == 0:
             return
-        payload = {"target_id": target.id, "offer_cash": offer_cash, "req_cash": 0, "offer_props": offer_props, "req_props": req_props}
+        payload = {
+            "target_id": target.id,
+            "offer_cash": offer_cash,
+            "req_cash": 0,
+            "offer_props": offer_props,
+            "req_props": req_props,
+        }
         self._record(coverage, "PROPOSE_TRADE")
-        res = await self.action_dispatcher.dispatch(game, current_player.id, ActionType.PROPOSE_TRADE, payload)
+        res = await self.action_dispatcher.dispatch(
+            game, current_player.id, ActionType.PROPOSE_TRADE, payload
+        )
         turn_info["actions"].append({"action": "PROPOSE_TRADE", "result": res.message})
 
     async def _check_bankruptcy(self, game_id: str) -> GameSession:
@@ -629,16 +718,15 @@ class SimulationManager:
                 player.cash = -9999
                 await self.repository.update_player_cash(player.id, player.cash)
 
-        return await self._get_game(game_id)
+        result: GameSession = await self._get_game(game_id)
+        return result
 
     async def _advance_if_bankrupt_current(self, game_id: str) -> None:
         """If current_turn_player is bankrupt while game is ACTIVE, advance to next non-bankrupt and persist."""
         game = await self._get_game(game_id)
         if game.status != GameStatus.ACTIVE:
             return
-        current = next(
-            (p for p in game.players if p.id == game.current_turn_player_id), None
-        )
+        current = next((p for p in game.players if p.id == game.current_turn_player_id), None)
         if not current or not current.is_bankrupt:
             return
         active = [p for p in game.players if not p.is_bankrupt]

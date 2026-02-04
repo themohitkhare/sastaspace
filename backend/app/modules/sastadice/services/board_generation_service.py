@@ -1,10 +1,12 @@
 """Board generation service - backward compatibility wrapper."""
-from app.modules.sastadice.schemas import Tile, TileCreate
 
+from typing import Any
+
+from app.modules.sastadice.schemas import Tile, TileCreate
 from app.modules.sastadice.services.board_generator import BoardGenerator, GameConfig
 from app.modules.sastadice.services.board_layout import BoardLayout
 
-__all__ = ['BoardGenerationService', 'GameConfig']
+__all__ = ["BoardGenerationService", "GameConfig"]
 
 
 class BoardGenerationService:
@@ -20,7 +22,7 @@ class BoardGenerationService:
         return self.layout.calculate_dimensions(num_players)
 
     def generate_seeded_tiles_for_player(
-        self, player_name: str, existing_players: list
+        self, player_name: str, existing_players: list[Any]
     ) -> list[TileCreate]:
         """Generate 5 seeded tiles for a player joining the game."""
         return self.generator.generate_seeded_tiles_for_player(player_name, existing_players)
@@ -38,11 +40,11 @@ class BoardGenerationService:
     ) -> list[Tile]:
         """Generate a closed loop board from player tiles."""
         return self.generator.generate_board(player_tiles, board_size, padding, game_config)
-    
+
     def _is_on_perimeter(self, x: int, y: int, board_size: int) -> bool:
         """Check if coordinates are on the board perimeter (backward compatibility)."""
         return self.layout.is_on_perimeter(x, y, board_size)
-    
+
     def _interleave_tiles(self, player_tiles: list[Tile], padding_tiles: list[Tile]) -> list[Tile]:
         """Interleave padding tiles evenly among player tiles (backward compatibility)."""
         return self.generator._interleave_tiles(player_tiles, padding_tiles)

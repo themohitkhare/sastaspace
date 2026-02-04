@@ -17,7 +17,7 @@ app = FastAPI(
 )
 
 app.add_middleware(
-    CORSMiddleware,  # type: ignore[arg-type]
+    CORSMiddleware,
     allow_origins=[
         "http://localhost:9001",
         "http://127.0.0.1:9001",
@@ -38,7 +38,7 @@ logger = logging.getLogger(__name__)
 
 
 @app.on_event("startup")
-async def startup_event():
+async def startup_event() -> None:
     logger.info("Application starting", extra={"extra_fields": {"component": "startup"}})
     manager = _get_db_manager()
     await manager.initialize()
@@ -46,7 +46,7 @@ async def startup_event():
 
 
 @app.on_event("shutdown")
-async def shutdown_event():
+async def shutdown_event() -> None:
     logger.info("Application shutting down", extra={"extra_fields": {"component": "shutdown"}})
     manager = _get_db_manager()
     await manager.close()

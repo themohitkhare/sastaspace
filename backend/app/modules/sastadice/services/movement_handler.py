@@ -1,6 +1,8 @@
 """Movement handler - dice rolling and player movement."""
+
 import random
-from typing import TYPE_CHECKING, Callable
+from collections.abc import Awaitable, Callable
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from app.modules.sastadice.repository import GameRepository
@@ -42,10 +44,13 @@ class MovementHandler:
         return True, None, player
 
     async def execute_dice_roll(
-        self, game: "GameSession", player: "Player", send_to_jail_callback: Callable
+        self,
+        game: "GameSession",
+        player: "Player",
+        send_to_jail_callback: Callable[..., Awaitable[None]],
     ) -> tuple[int, int, int, bool, bool]:
         """Execute dice roll with stimulus check."""
-        stimulus_active = player.cash < 100
+        stimulus_active = game.settings.enable_stimulus and player.cash < 100
         if stimulus_active:
             dice_rolls = sorted([random.randint(1, 6) for _ in range(3)], reverse=True)
             dice1, dice2 = dice_rolls[0], dice_rolls[1]
@@ -87,6 +92,11 @@ class MovementHandler:
         stimulus_active: bool,
     ) -> bool:
         """Handle player movement and GO passing."""
+        if getattr(player, "skip_next_move", False):
+            player.skip_next_move = False
+            await self.repository.update_player_skip_next_move(player_id, False)
+            total = 0
+            game.last_event_message = "🚧 Traffic Jam! Stayed in place."
         player.previous_position = player.position
         old_position = player.position
         new_position = (player.position + total) % len(game.board)
@@ -114,7 +124,7 @@ class MovementHandler:
         is_doubles: bool,
         passed_go: bool,
         stimulus_active: bool,
-        handle_tile_landing_callback: Callable,
+        handle_tile_landing_callback: Callable[..., Awaitable[None]],
     ) -> DiceRollResult:
         """Finalize dice roll and trigger tile landing."""
         game.last_dice_roll = {
@@ -131,9 +141,7 @@ class MovementHandler:
         if not stimulus_active and not passed_go:
             game.last_event_message = None
 
-        landed_tile = (
-            game.board[player.position] if player.position < len(game.board) else None
-        )
+        landed_tile = game.board[player.position] if player.position < len(game.board) else None
 
         if landed_tile:
             await handle_tile_landing_callback(game, player, landed_tile)
@@ -149,13 +157,15 @@ class MovementHandler:
         self,
         game: "GameSession",
         player_id: str,
-        send_to_jail_callback: Callable,
-        handle_tile_landing_callback: Callable,
+        send_to_jail_callback: Callable[..., Awaitable[None]],
+        handle_tile_landing_callback: Callable[..., Awaitable[None]],
     ) -> DiceRollResult:
         """Roll dice for a player - main entry point."""
         is_valid, error_msg, player = await self.validate_roll_dice(game, player_id)
         if not is_valid:
-            raise ValueError(error_msg)
+            raise ValueError(error_msg or "Invalid roll")
+        if player is None:
+            raise ValueError("Player not found")
 
         if player.in_jail:
             from app.modules.sastadice.services.jail_manager import JailManager
@@ -165,7 +175,9 @@ class MovementHandler:
                 game.last_event_message = message
                 game.turn_phase = TurnPhase.POST_TURN
                 await self.repository.update(game)
-                return DiceRollResult(dice1=dice1, dice2=dice2, total=dice1 + dice2, is_doubles=dice1 == dice2)
+                return DiceRollResult(
+                    dice1=dice1, dice2=dice2, total=dice1 + dice2, is_doubles=dice1 == dice2
+                )
             else:
                 game.last_event_message = message
                 await self.repository.update(game)
@@ -175,11 +187,9 @@ class MovementHandler:
         )
 
         if went_to_jail:
-            return DiceRollResult(
-                dice1=dice1, dice2=dice2, total=total, is_doubles=is_doubles
-            )
+            return DiceRollResult(dice1=dice1, dice2=dice2, total=total, is_doubles=is_doubles)
 
-        stimulus_active = player.cash < 100
+        stimulus_active = game.settings.enable_stimulus and player.cash < 100
         passed_go = await self.handle_movement(game, player, player_id, total, stimulus_active)
 
         return await self.finalize_roll(

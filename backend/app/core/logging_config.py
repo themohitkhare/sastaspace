@@ -1,4 +1,5 @@
 """Centralized logging configuration for structured JSON output."""
+
 import json
 import logging
 import sys
@@ -23,10 +24,10 @@ class JSONFormatter(logging.Formatter):
             log_data["exception"] = self.formatException(record.exc_info)
         if hasattr(record, "extra_fields"):
             log_data.update(record.extra_fields)
-        
+
         if record.levelno >= logging.ERROR and record.exc_info is None:
             log_data["stack"] = traceback.format_stack()
-        
+
         return json.dumps(log_data, ensure_ascii=False)
 
 
@@ -39,7 +40,7 @@ def setup_logging(level: str = "INFO") -> None:
     console_handler = logging.StreamHandler(sys.stdout)  # stdout for Docker
     console_handler.setLevel(log_level)
     console_handler.setFormatter(json_formatter)
-    
+
     root_logger.addHandler(console_handler)
     logging.getLogger("uvicorn").setLevel(logging.WARNING)
     logging.getLogger("uvicorn.access").setLevel(logging.WARNING)

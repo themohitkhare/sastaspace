@@ -91,7 +91,7 @@ class AuctionManager:
         auction.end_time = time.time() + seconds
 
     @staticmethod
-    def resolve_auction(game: "GameSession") -> tuple[bool, str, str | None, int]:
+    def resolve_auction(game: "GameSession") -> tuple[bool, str, str | None, int, str | None]:
         """Resolve a finished auction. Returns (success, message, winner_id, amount, prop_id)."""
         if not game.auction_state:
             return False, "No auction state", None, 0, None

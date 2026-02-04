@@ -1,4 +1,5 @@
 """Board layout utilities - perimeter mapping and positioning."""
+
 import math
 from typing import TYPE_CHECKING
 
