@@ -26,7 +26,7 @@ class TestCPUTurnLogic:
 
         # Process CPU turns
         result = await service.process_cpu_turns(game.id)
-        
+
         # Verify turns were processed
         assert result["cpu_turns_played"] > 0, "Should have processed CPU turns"
 
@@ -46,15 +46,15 @@ class TestCPUTurnLogic:
         # Process CPU turns which will handle buy decisions
         result = await service.process_cpu_turns(game.id)
         assert result["cpu_turns_played"] >= 0, "CPU should process turns"
-        
+
         # Skip the detailed decision testing since it's now internal to cpu_turn_executor
         # Just verify the game is still playable
         game = await service.get_game(game.id)
         assert game.status == GameStatus.ACTIVE
-        
+
         # Note: Detailed CPU decision testing is now covered by integration tests
         return
-        
+
         # Original test code (now skipped):
         for _ in range(50):
             game = await service.get_game(game.id)
@@ -103,7 +103,7 @@ class TestCPUTurnLogic:
         game = await service.create_game(cpu_count=1)
         game = await service.start_game(game.id, force=True)
 
-        cpu_player = game.players[0]
+        game.players[0]
 
         # Manually set to DECISION phase without pending_decision (edge case)
         game.turn_phase = TurnPhase.DECISION
@@ -142,7 +142,7 @@ class TestCPUTurnLogic:
         game = await service.create_game(cpu_count=1)
         game = await service.start_game(game.id, force=True)
 
-        cpu_player = game.players[0]
+        game.players[0]
 
         # Create a problematic state that might cause looping
         # (e.g., set phase to something that doesn't progress)
@@ -182,7 +182,7 @@ class TestCPUTurnLogic:
         game = await service.create_game(cpu_count=1)
         game = await service.start_game(game.id, force=True)
 
-        cpu_player = game.players[0]
+        game.players[0]
 
         # Try to perform invalid action (e.g., END_TURN when not in POST_TURN)
         # This should be handled by the action validation, but CPU should recover

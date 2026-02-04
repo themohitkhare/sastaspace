@@ -565,7 +565,6 @@ class TestTrendHistory:
         """Test saving trend history."""
         with tempfile.TemporaryDirectory() as tmpdir:
             # Mock Path to return our temp directory
-            original_path = metrics.Path
             with patch("app.utils.metrics.Path") as mock_path_class:
                 # Make Path return actual Path objects for the temp dir
                 def path_side_effect(*args):

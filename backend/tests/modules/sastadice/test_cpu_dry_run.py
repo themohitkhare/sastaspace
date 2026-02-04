@@ -82,7 +82,7 @@ async def test_cpu_game_dry_run_all_scenarios(db_database):
     game4 = await service.start_game(game4.id, force=True)
 
     total_turns = 0
-    for i in range(10):
+    for _i in range(10):
         result = await service.process_cpu_turns(game4.id)
         total_turns += result["cpu_turns_played"]
         game4 = await service.get_game(game4.id)

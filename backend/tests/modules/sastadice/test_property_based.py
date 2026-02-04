@@ -1,26 +1,25 @@
 """Property-based testing using Hypothesis for edge cases."""
-import pytest
+
 import random
-from hypothesis import given, settings, strategies as st
-from hypothesis.stateful import RuleBasedStateMachine, rule, invariant, initialize
+
+import pytest
+from hypothesis import given, settings
+from hypothesis import strategies as st
+from hypothesis.stateful import RuleBasedStateMachine, initialize, invariant, rule
 
 from app.modules.sastadice.schemas import (
-    GameSettings,
-    WinCondition,
-    ChaosLevel,
     GameSession,
-    Player,
+    GameSettings,
     GameStatus,
+    Player,
     TurnPhase,
-    ActionType,
-    TileType,
 )
 from app.modules.sastadice.services.invariant_checker import InvariantChecker, StrictnessMode
 
 
 class TestPlayerCountBounds:
     """Test player count validation."""
-    
+
     @given(st.integers(min_value=-100, max_value=1))
     def test_reject_too_few_players(self, player_count):
         assert player_count < 2
@@ -36,7 +35,7 @@ class TestPlayerCountBounds:
 
 class TestEconomyEdgeCases:
     """Test economy with extreme values."""
-    
+
     @given(
         go_bonus=st.integers(min_value=-1000, max_value=10000),
         starting_cash_mult=st.floats(min_value=0.0001, max_value=100.0),
@@ -56,7 +55,7 @@ class TestEconomyEdgeCases:
             assert settings.round_limit == round_limit
         except Exception as e:
             pytest.fail(f"Settings creation crashed with: {e}")
-    
+
     @given(
         go_bonus=st.integers(min_value=0, max_value=1000),
         inflation=st.integers(min_value=0, max_value=200),
@@ -67,7 +66,7 @@ class TestEconomyEdgeCases:
         """GO bonus should never become negative with inflation."""
         current_bonus = go_bonus + (inflation * rounds)
         assert current_bonus >= 0
-    
+
     @given(st.floats(min_value=0.0, max_value=10.0))
     @settings(max_examples=30)
     def test_starting_cash_positive(self, multiplier):
@@ -80,7 +79,7 @@ class TestEconomyEdgeCases:
 
 class TestBoardSizeInvariant:
     """Test board size calculations."""
-    
+
     @given(st.integers(min_value=2, max_value=8))
     def test_board_size_formula(self, player_count):
         """Board size approximation: player_count * 5 + 4 (corners); impl may vary."""
@@ -92,7 +91,7 @@ class TestBoardSizeInvariant:
 
 class TestCashConservation:
     """Test cash never goes negative unless bankrupt."""
-    
+
     @given(
         initial_cash=st.integers(min_value=0, max_value=10000),
         expense=st.integers(min_value=0, max_value=15000),
@@ -106,7 +105,7 @@ class TestCashConservation:
             assert resulting_cash < 0  # Would need is_bankrupt=True in real game
         else:
             assert resulting_cash >= 0
-    
+
     @given(st.lists(st.integers(min_value=0, max_value=5000), min_size=2, max_size=8))
     @settings(max_examples=30)
     def test_total_cash_conservation(self, player_cash_values):
@@ -118,7 +117,7 @@ class TestCashConservation:
 
 class TestPositionBounds:
     """Test player position validation."""
-    
+
     @given(
         position=st.integers(min_value=-100, max_value=200),
         board_size=st.integers(min_value=10, max_value=48),
@@ -128,7 +127,7 @@ class TestPositionBounds:
         """Position should wrap around board correctly."""
         wrapped_position = position % board_size
         assert 0 <= wrapped_position < board_size
-    
+
     @given(
         start_pos=st.integers(min_value=0, max_value=47),
         dice_roll=st.integers(min_value=2, max_value=12),
@@ -144,12 +143,12 @@ class TestPositionBounds:
 
 class TestGameSessionInvariants:
     """Test game session invariants."""
-    
+
     @given(st.integers(min_value=0, max_value=1000))
     def test_round_never_negative(self, rounds):
         """Current round should never be negative."""
         assert rounds >= 0
-    
+
     @given(
         current_round=st.integers(min_value=0, max_value=100),
         max_rounds=st.integers(min_value=0, max_value=100),
@@ -164,7 +163,7 @@ class TestGameSessionInvariants:
 
 class TestAuctionBidding:
     """Test auction bidding edge cases."""
-    
+
     @given(
         current_bid=st.integers(min_value=0, max_value=10000),
         player_cash=st.integers(min_value=0, max_value=15000),
@@ -178,7 +177,7 @@ class TestAuctionBidding:
         if can_bid:
             assert new_bid > current_bid
             assert new_bid <= player_cash
-    
+
     @given(
         property_price=st.integers(min_value=1, max_value=5000),
         bid_amount=st.integers(min_value=0, max_value=10000),
@@ -192,7 +191,7 @@ class TestAuctionBidding:
 
 class TestTradeValidation:
     """Test trade validation."""
-    
+
     @given(
         offer_cash=st.integers(min_value=0, max_value=10000),
         request_cash=st.integers(min_value=0, max_value=10000),
@@ -204,7 +203,7 @@ class TestTradeValidation:
         can_afford_offer = player_cash >= offer_cash
         if not can_afford_offer:
             assert player_cash < offer_cash
-    
+
     @given(
         offer_props=st.lists(st.text(min_size=1, max_size=10), max_size=5),
         owned_props=st.lists(st.text(min_size=1, max_size=10), max_size=10),
@@ -221,7 +220,7 @@ class TestTradeValidation:
 
 class TestPhaseTransitions:
     """Test turn phase state machine."""
-    
+
     def test_valid_phase_sequence(self):
         """Phases should transition in valid order."""
         valid_sequences = [
@@ -232,7 +231,7 @@ class TestPhaseTransitions:
             (TurnPhase.AUCTION, TurnPhase.POST_TURN),
             (TurnPhase.POST_TURN, TurnPhase.PRE_ROLL),
         ]
-        
+
         for from_phase, to_phase in valid_sequences:
             assert from_phase is not None
             assert to_phase is not None
@@ -240,7 +239,7 @@ class TestPhaseTransitions:
 
 class TestPropertyUpgrades:
     """Test property upgrade mechanics."""
-    
+
     @given(
         base_price=st.integers(min_value=1, max_value=5000),
         upgrade_level=st.integers(min_value=0, max_value=2),
@@ -254,10 +253,10 @@ class TestPropertyUpgrades:
             upgrade_cost = base_price * 2
         else:
             upgrade_cost = base_price * 3
-        
+
         assert upgrade_cost >= base_price
         assert upgrade_cost > 0
-    
+
     @given(st.integers(min_value=0, max_value=10))
     def test_upgrade_level_bounds(self, level):
         """Upgrade level should have reasonable bounds."""
@@ -272,34 +271,34 @@ class TestPropertyUpgrades:
 class SastaDiceStateMachine(RuleBasedStateMachine):
     """
     Explore game state space with random action sequences.
-    
+
     This finds bugs that only occur after specific sequences like:
     - Buy -> Trade -> Bankruptcy -> Auction
     - Roll -> Jail -> Roll Doubles x3 (triple doubles to jail)
     - Upgrade -> Downgrade -> Upgrade -> Trade (upgrade corruption?)
     """
-    
+
     def __init__(self):
         super().__init__()
         self.game: GameSession | None = None
         self.invariant_checker = InvariantChecker(mode=StrictnessMode.STRICT)
         self.turn_count = 0
-    
+
     @initialize()
     def create_game(self):
         player_count = random.randint(2, 4)
-        
+
         players = [
             Player(
-                name=f"Player{i+1}",
+                name=f"Player{i + 1}",
                 cash=1500,
                 position=0,
                 properties=[],
-                color=f"#{''.join(random.choices('0123456789ABCDEF', k=6))}"
+                color=f"#{''.join(random.choices('0123456789ABCDEF', k=6))}",
             )
             for i in range(player_count)
         ]
-        
+
         self.game = GameSession(
             id=f"test-{random.randint(1000, 9999)}",
             status=GameStatus.ACTIVE,
@@ -316,24 +315,24 @@ class SastaDiceStateMachine(RuleBasedStateMachine):
             current_round=1,
             max_rounds=30,
         )
-    
+
     @rule()
     def advance_turn_phase(self):
         if not self.game:
             return
-        
+
         phase_transitions = {
             TurnPhase.PRE_ROLL: TurnPhase.MOVING,
             TurnPhase.MOVING: TurnPhase.DECISION,
             TurnPhase.DECISION: TurnPhase.POST_TURN,
             TurnPhase.POST_TURN: TurnPhase.PRE_ROLL,
         }
-        
+
         if self.game.turn_phase in phase_transitions:
             self.game.turn_phase = phase_transitions[self.game.turn_phase]
             if self.game.turn_phase == TurnPhase.PRE_ROLL:
                 self._advance_player()
-    
+
     @rule()
     def modify_player_cash(self):
         if not self.game or not self.game.players:
@@ -342,7 +341,7 @@ class SastaDiceStateMachine(RuleBasedStateMachine):
         player.cash += random.randint(-500, 500)
         if player.cash < 0 and not player.is_bankrupt:
             player.is_bankrupt = True
-    
+
     @rule()
     def simulate_property_transaction(self):
         if not self.game or not self.game.players:
@@ -355,66 +354,69 @@ class SastaDiceStateMachine(RuleBasedStateMachine):
         if prop_id not in player.properties:
             player.properties.append(prop_id)
             player.cash -= 100  # Deduct cost
-    
+
     @rule()
     def simulate_bankruptcy(self):
         if not self.game or not self.game.players:
             return
-        
+
         candidates = [p for p in self.game.players if p.cash < 300 and not p.is_bankrupt]
         if candidates:
             player = random.choice(candidates)
             player.is_bankrupt = True
             player.cash = 0
             player.properties = []
-    
+
     @invariant()
     def all_core_invariants_valid(self):
         """Run after every rule - ensures game state is always valid."""
         if not self.game:
             return
-        
+
         try:
             violations = self.invariant_checker.check_all(self.game)
             critical_violations = [v for v in violations if v.severity == "CRITICAL"]
-            
+
             if critical_violations:
                 violation_messages = [f"{v.type}: {v.message}" for v in critical_violations]
-                assert False, f"Critical invariant violations: {violation_messages}"
+                raise AssertionError(f"Critical invariant violations: {violation_messages}")
         except Exception as e:
             if "CRITICAL" in str(e):
                 raise
-    
+
     @invariant()
     def no_negative_cash_unless_bankrupt(self):
         """Cash integrity invariant."""
         if not self.game:
             return
-        
+
         for player in self.game.players:
             if player.cash < 0:
                 assert player.is_bankrupt, (
                     f"{player.name} has ${player.cash} but is_bankrupt={player.is_bankrupt}"
                 )
-    
+
     @invariant()
     def current_player_exists(self):
         """Current turn player must exist and be active."""
         if not self.game or self.game.status != GameStatus.ACTIVE:
             return
-        
+
         if self.game.current_turn_player_id:
             current_player = next(
-                (p for p in self.game.players if p.id == self.game.current_turn_player_id),
-                None
+                (p for p in self.game.players if p.id == self.game.current_turn_player_id), None
             )
             assert current_player is not None, "Current turn player does not exist"
-    
+
     def _advance_player(self):
         if not self.game or not self.game.players:
             return
         current_idx = next(
-            (i for i, p in enumerate(self.game.players) if p.id == self.game.current_turn_player_id),
+            (
+                i
+                for i, p in enumerate(self.game.players)
+                if p.id == self.game.current_turn_player_id
+            ),
             0,
         )
         for offset in range(1, len(self.game.players) + 1):
@@ -433,5 +435,5 @@ TestSastaDiceStateMachine = SastaDiceStateMachine.TestCase
 TestSastaDiceStateMachine.settings = settings(
     max_examples=20,  # Run 20 different game scenarios
     stateful_step_count=30,  # Up to 30 actions per scenario
-    deadline=None  # No deadline for async operations
+    deadline=None,  # No deadline for async operations
 )

@@ -1,9 +1,12 @@
 """Tests for EventManager."""
-import pytest
+
 from unittest.mock import AsyncMock
-from app.modules.sastadice.schemas import GameSession, Player, GameSettings
+
+import pytest
+
 from app.modules.sastadice.events.event_manager import EventManager
 from app.modules.sastadice.events.events_data import SASTA_EVENTS
+from app.modules.sastadice.schemas import GameSession, GameSettings, Player
 
 
 @pytest.fixture
@@ -94,9 +97,7 @@ async def test_apply_effect_cash_loss(mock_repository, sample_game, sample_playe
 
 
 @pytest.mark.asyncio
-async def test_apply_effect_collect_from_all(
-    mock_repository, sample_game, sample_player
-):
+async def test_apply_effect_collect_from_all(mock_repository, sample_game, sample_player):
     """Test applying COLLECT_FROM_ALL event."""
     manager = EventManager(mock_repository)
     player2 = Player(id="player2", name="Player2", cash=500)
@@ -158,7 +159,7 @@ async def test_apply_effect_move_back(mock_repository, sample_game, sample_playe
 def test_deck_persistence_after_full_cycle(sample_game):
     """Test deck reshuffles correctly after drawing all 36 cards."""
     EventManager.initialize_deck(sample_game)
-    initial_deck = sample_game.event_deck.copy()
+    sample_game.event_deck.copy()
 
     for _ in range(len(SASTA_EVENTS)):
         EventManager.draw_event(sample_game)
@@ -178,11 +179,11 @@ async def test_apply_effect_reveal_cash(mock_repository, sample_game, sample_pla
     manager = EventManager(mock_repository)
     player2 = Player(id="player2", name="Victim", cash=750)
     sample_game.players = [sample_player, player2]
-    
+
     event = {"name": "Whistleblower", "type": "REVEAL_CASH", "value": 0}
-    
+
     actions = await manager.apply_effect(sample_game, sample_player, event)
-    
+
     assert "revealed_player" in actions
     revealed = actions["revealed_player"]
     assert revealed["id"] == player2.id
@@ -197,11 +198,11 @@ async def test_apply_effect_all_skip_turn(mock_repository, sample_game, sample_p
     player2 = Player(id="player2", name="Player2", cash=500)
     player3 = Player(id="player3", name="Player3", cash=300)
     sample_game.players = [sample_player, player2, player3]
-    
+
     event = {"name": "System Update", "type": "ALL_SKIP_TURN", "value": 0}
-    
+
     actions = await manager.apply_effect(sample_game, sample_player, event)
-    
+
     assert actions["special"] == "ALL_SKIP_TURN"
     assert sample_player.active_buff == "SKIP_TURN"
     assert player2.active_buff == "SKIP_TURN"
@@ -216,9 +217,9 @@ async def test_apply_effect_move_to_previous(mock_repository, sample_game, sampl
     sample_player.position = 10
     sample_player.previous_position = 5
     event = {"name": "System Restore", "type": "MOVE_TO_PREVIOUS", "value": 0}
-    
+
     actions = await manager.apply_effect(sample_game, sample_player, event)
-    
+
     assert actions["position_changes"][sample_player.id] == 5
     assert sample_player.position == 5
     mock_repository.update_player_position.assert_called_once_with(sample_player.id, 5)
@@ -229,9 +230,9 @@ async def test_apply_effect_clone_upgrade_flag(mock_repository, sample_game, sam
     """Test CLONE_UPGRADE event sets requires_decision flag."""
     manager = EventManager(mock_repository)
     event = {"name": "Fork Repo", "type": "CLONE_UPGRADE", "value": 0}
-    
+
     actions = await manager.apply_effect(sample_game, sample_player, event)
-    
+
     assert actions["special"] == "CLONE_UPGRADE"
     assert actions["requires_decision"] is True
 
@@ -241,9 +242,9 @@ async def test_apply_effect_force_buy_flag(mock_repository, sample_game, sample_
     """Test FORCE_BUY event sets requires_decision and multiplier."""
     manager = EventManager(mock_repository)
     event = {"name": "Hostile Takeover", "type": "FORCE_BUY", "value": 150}
-    
+
     actions = await manager.apply_effect(sample_game, sample_player, event)
-    
+
     assert actions["special"] == "FORCE_BUY"
     assert actions["requires_decision"] is True
     assert actions["force_buy_multiplier"] == 1.5
@@ -254,9 +255,9 @@ async def test_apply_effect_free_landing_flag(mock_repository, sample_game, samp
     """Test FREE_LANDING event sets requires_decision and free_rounds."""
     manager = EventManager(mock_repository)
     event = {"name": "Open Source", "type": "FREE_LANDING", "value": 1}
-    
+
     actions = await manager.apply_effect(sample_game, sample_player, event)
-    
+
     assert actions["special"] == "FREE_LANDING"
     assert actions["requires_decision"] is True
     assert actions["free_rounds"] == 1

@@ -73,7 +73,7 @@ async def test_skip_buy_event_does_not_stuck_game(db_database):
         await service.repository.update_player_position(player.id, chance_tile.position)
         player.position = chance_tile.position
 
-        result = await service.perform_action(game.id, player.id, ActionType.ROLL_DICE, {})
+        await service.perform_action(game.id, player.id, ActionType.ROLL_DICE, {})
 
         game = await service.get_game(game.id)
 
@@ -118,7 +118,7 @@ async def test_skip_buy_clears_pending_decision(db_database):
     game = await service.create_game(cpu_count=1)
     game = await service.start_game(game.id, force=True)
 
-    player = game.players[0]
+    game.players[0]
 
     from app.modules.sastadice.schemas import PendingDecision
 
