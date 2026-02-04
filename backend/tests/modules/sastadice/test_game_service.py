@@ -28,7 +28,6 @@ class TestGameRepository:
         assert game.players == []
         assert game.board == []
 
-        # Verify in database
         result = await db_database.game_sessions.find_one({"_id": game.id})
         assert result is not None
         assert result["_id"] == game.id
@@ -62,7 +61,6 @@ class TestGameRepository:
         assert player.color is not None
         assert player.color.startswith("#")
 
-        # Verify in database
         result = await db_database.players.find_one({"_id": player.id})
         assert result is not None
         assert result["name"] == "Test Player"
@@ -81,7 +79,6 @@ class TestGameRepository:
 
         await repo.submit_tiles(game.id, player.id, tiles)
 
-        # Verify tiles in database
         count = await db_database.submitted_tiles.count_documents({"player_id": player.id})
         assert count == 5
 
@@ -116,15 +113,12 @@ class TestGameRepository:
         repo = GameRepository(db_database)
         game = await repo.create_game()
 
-        # Verify game exists
         retrieved = await repo.get_by_id(game.id)
         assert retrieved is not None
 
-        # Delete game
         deleted = await repo.delete(game.id)
         assert deleted is True
 
-        # Verify game is deleted
         retrieved_after = await repo.get_by_id(game.id)
         assert retrieved_after is None
 
@@ -137,7 +131,6 @@ class TestGameRepository:
         version = await repo.get_version(game.id)
         assert version == 0
 
-        # Update game to increment version
         await repo.update_game_status(game.id, GameStatus.ACTIVE)
         new_version = await repo.get_version(game.id)
         assert new_version == 1
@@ -168,7 +161,6 @@ class TestGameService:
         assert player.name == "Test Player"
         assert len(player.submitted_tiles) == 5
 
-        # Verify game has the player
         updated_game = await service.get_game(game.id)
         assert len(updated_game.players) == 1
 
@@ -190,7 +182,6 @@ class TestGameService:
         service = GameService(db_database)
         game = await service.create_game()
 
-        # Add 2 players
         tiles1 = [TileCreate(type=TileType.PROPERTY, name=f"P1-Property {i}") for i in range(5)]
         tiles2 = [TileCreate(type=TileType.PROPERTY, name=f"P2-Property {i}") for i in range(5)]
 
@@ -204,10 +195,8 @@ class TestGameService:
         assert len(started_game.board) > 0
         assert started_game.board_size > 0
         assert started_game.current_turn_player_id is not None
-        # Verify dynamic economy is set
         assert started_game.starting_cash > 0
         assert started_game.go_bonus > 0
-        # Verify players have starting cash
         assert all(p.cash > 0 for p in started_game.players)
 
     @pytest.mark.asyncio
@@ -216,11 +205,10 @@ class TestGameService:
         service = GameService(db_database)
         game = await service.create_game()
 
-        # Add 2 players to allow starting the game
         tiles1 = [TileCreate(type=TileType.PROPERTY, name=f"Property {i}") for i in range(5)]
         tiles2 = [TileCreate(type=TileType.PROPERTY, name=f"Property {i + 5}") for i in range(5)]
         player1 = await service.join_game(game.id, "Player 1", tiles1)
-        player2 = await service.join_game(game.id, "Player 2", tiles2)
+        await service.join_game(game.id, "Player 2", tiles2)
         await service.start_game(game.id, force=True)
 
         result = await service.roll_dice(game.id, player1.id)
@@ -288,7 +276,7 @@ class TestGameService:
 
         tiles1 = [TileCreate(type=TileType.PROPERTY, name=f"Property {i}") for i in range(5)]
         tiles2 = [TileCreate(type=TileType.PROPERTY, name=f"Property {i + 5}") for i in range(5)]
-        player1 = await service.join_game(game.id, "Player 1", tiles1)
+        await service.join_game(game.id, "Player 1", tiles1)
         player2 = await service.join_game(game.id, "Player 2", tiles2)
         await service.start_game(game.id, force=True)
 
@@ -305,7 +293,7 @@ class TestGameService:
         tiles1 = [TileCreate(type=TileType.PROPERTY, name=f"Property {i}") for i in range(5)]
         tiles2 = [TileCreate(type=TileType.PROPERTY, name=f"Property {i + 5}") for i in range(5)]
         player1 = await service.join_game(game.id, "Player 1", tiles1)
-        player2 = await service.join_game(game.id, "Player 2", tiles2)
+        await service.join_game(game.id, "Player 2", tiles2)
         await service.start_game(game.id, force=True)
 
         result = await service.perform_action(game.id, player1.id, ActionType.ROLL_DICE, {})
@@ -315,6 +303,9 @@ class TestGameService:
     @pytest.mark.asyncio
     async def test_perform_action_end_turn(self, db_database):
         """Test perform_action with END_TURN after rolling dice."""
+        import random
+
+        random.seed(42)  # Deterministic board and dice
         service = GameService(db_database)
         game = await service.create_game()
 
@@ -334,7 +325,6 @@ class TestGameService:
         roll_result = await service.perform_action(game.id, player1.id, ActionType.ROLL_DICE, {})
         assert roll_result.success is True
 
-        # Get game state to check phase
         game_state = await service.get_game(game.id)
 
         # If in DECISION phase with pending decision, pass on it
@@ -362,7 +352,6 @@ class TestGameService:
         result = await service.perform_action(game.id, player1.id, ActionType.END_TURN, {})
         assert result.success is True
 
-        # Verify turn moved to next player
         updated_game = await service.get_game(game.id)
         assert updated_game.current_turn_player_id == player2.id
         assert updated_game.turn_phase == TurnPhase.PRE_ROLL
@@ -375,7 +364,7 @@ class TestGameService:
 
         tiles1 = [TileCreate(type=TileType.PROPERTY, name=f"Property {i}") for i in range(5)]
         tiles2 = [TileCreate(type=TileType.PROPERTY, name=f"Property {i + 5}") for i in range(5)]
-        player1 = await service.join_game(game.id, "Player 1", tiles1)
+        await service.join_game(game.id, "Player 1", tiles1)
         player2 = await service.join_game(game.id, "Player 2", tiles2)
         await service.start_game(game.id, force=True)
 
@@ -392,7 +381,7 @@ class TestGameService:
         tiles1 = [TileCreate(type=TileType.PROPERTY, name=f"Property {i}") for i in range(5)]
         tiles2 = [TileCreate(type=TileType.PROPERTY, name=f"Property {i + 5}") for i in range(5)]
         player1 = await service.join_game(game.id, "Player 1", tiles1)
-        player2 = await service.join_game(game.id, "Player 2", tiles2)
+        await service.join_game(game.id, "Player 2", tiles2)
         await service.start_game(game.id, force=True)
 
         # Try to buy without rolling first - should fail
@@ -403,6 +392,9 @@ class TestGameService:
     @pytest.mark.asyncio
     async def test_turn_phase_state_machine(self, db_database):
         """Test the turn phase state machine flow."""
+        import random
+
+        random.seed(42)  # Deterministic board and dice
         service = GameService(db_database)
         game = await service.create_game()
 
@@ -467,16 +459,13 @@ class TestGameService:
         result1 = await service.perform_action(game.id, player1.id, ActionType.ROLL_DICE, {})
         assert result1.success is True
 
-        # Handle decision phase if needed
         game_state = await service.get_game(game.id)
         if game_state.turn_phase == TurnPhase.DECISION and game_state.pending_decision:
             await service.perform_action(game.id, player1.id, ActionType.PASS_PROPERTY, {})
 
-        # Test END_TURN
         result2 = await service.perform_action(game.id, player1.id, ActionType.END_TURN, {})
         assert result2.success is True
 
-        # Test BUY_PROPERTY (should fail without proper phase)
         result3 = await service.perform_action(game.id, player2.id, ActionType.BUY_PROPERTY, {})
         assert result3.success is False
 
@@ -488,10 +477,9 @@ class TestGameService:
 
         tiles = [TileCreate(type=TileType.PROPERTY, name=f"Property {i}") for i in range(5)]
         player1 = await service.join_game(game.id, "Player 1", tiles)
-        player2 = await service.join_game(game.id, "Player 2", tiles)
+        await service.join_game(game.id, "Player 2", tiles)
         await service.start_game(game.id, force=True)
 
-        # Create a mock ActionType that's not handled
         class MockActionType:
             def __eq__(self, other):
                 return False
@@ -525,7 +513,6 @@ class TestGameService:
         assert result["kicked"] is True
         assert result["player_id"] == player2.id
 
-        # Verify player is removed
         game_state = await service.get_game(game.id)
         assert len(game_state.players) == 1
 
@@ -591,7 +578,6 @@ class TestGameService:
         assert result2["ready"] is True
         assert result2["game_started"] is True
 
-        # Verify game started
         game_state = await service.get_game(game.id)
         assert game_state.status == GameStatus.ACTIVE
 
@@ -630,14 +616,12 @@ class TestGameService:
         game = await service.create_game()
 
         tiles = [TileCreate(type=TileType.PROPERTY, name=f"Property {i}") for i in range(5)]
-        player1 = await service.join_game(game.id, "Player 1", tiles)
+        await service.join_game(game.id, "Player 1", tiles)
 
-        # Add CPU players to reach 2
         await service.add_cpu_players(game.id, target_count=2)
 
         game_state = await service.get_game(game.id)
         assert len(game_state.players) == 2
-        # Check using the proper CPU detection method
         assert any(service._is_cpu_player(p) for p in game_state.players)
 
     @pytest.mark.asyncio

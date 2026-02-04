@@ -45,7 +45,7 @@ class TestBaseRepository:
         # However, in Python, abstract methods only raise when called, not on instantiation
         # So we test that abstract methods raise NotImplementedError when called
         try:
-            repo = BaseRepository(mock_db)  # type: ignore
+            BaseRepository(mock_db)  # type: ignore
             # If instantiation succeeds, abstract methods should raise NotImplementedError
             with pytest.raises(NotImplementedError):
                 # This will fail because it's abstract

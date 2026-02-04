@@ -1,7 +1,7 @@
 """Tests for TurnCoordinator and related handlers.
 
 NOTE: After modularization refactor, internal methods were moved to:
-- MovementHandler: validate_roll_dice, execute_dice_roll, handle_movement  
+- MovementHandler: validate_roll_dice, execute_dice_roll, handle_movement
 - TurnAdvancementHandler: _check_doubles_replay, _advance_to_next_player, _increment_round_if_needed, _check_sudden_death
 
 These internal methods are now tested through:

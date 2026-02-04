@@ -149,7 +149,7 @@ class TestAuctionManager:
         """Test placing a bid."""
         sample_game.players = [sample_player]
         sample_game.turn_phase = TurnPhase.AUCTION
-        auction = AuctionManager.start_auction(sample_game, sample_tile, auction_duration=30)
+        AuctionManager.start_auction(sample_game, sample_tile, auction_duration=30)
         success, message = AuctionManager.place_bid(sample_game, sample_player.id, 100)
         assert success is True
         assert sample_game.auction_state.highest_bid == 100

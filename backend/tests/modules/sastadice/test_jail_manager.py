@@ -1,6 +1,8 @@
 """Tests for JailManager."""
+
 import pytest
-from app.modules.sastadice.schemas import GameSession, Player, GameSettings
+
+from app.modules.sastadice.schemas import GameSession, GameSettings, Player
 from app.modules.sastadice.services.jail_manager import JailManager
 
 
@@ -8,8 +10,7 @@ from app.modules.sastadice.services.jail_manager import JailManager
 def sample_game():
     """Create a sample game session."""
     from app.modules.sastadice.schemas import Tile, TileType
-    
-    # Create proper tiles instead of None
+
     board = [
         Tile(
             id=f"tile{i}",
@@ -19,7 +20,7 @@ def sample_game():
         )
         for i in range(24)
     ]
-    
+
     game = GameSession(
         id="test-game",
         players=[],
@@ -74,9 +75,7 @@ def test_attempt_bribe_release_success(sample_game, sample_player):
 
 def test_roll_for_doubles_not_in_jail(sample_game, sample_player):
     """Test roll for doubles when not in jail."""
-    escaped, dice1, dice2, message = JailManager.roll_for_doubles(
-        sample_game, sample_player
-    )
+    escaped, dice1, dice2, message = JailManager.roll_for_doubles(sample_game, sample_player)
     assert escaped is False
     assert "not in jail" in message.lower()
 
@@ -95,9 +94,7 @@ def test_roll_for_doubles_escape_on_first_attempt(sample_game, sample_player):
     random.randint = mock_randint
 
     try:
-        escaped, dice1, dice2, message = JailManager.roll_for_doubles(
-            sample_game, sample_player
-        )
+        escaped, dice1, dice2, message = JailManager.roll_for_doubles(sample_game, sample_player)
         assert escaped is True
         assert dice1 == dice2
         assert sample_player.in_jail is False
@@ -125,9 +122,7 @@ def test_roll_for_doubles_third_attempt_forced_release(sample_game, sample_playe
     random.randint = mock_randint
 
     try:
-        escaped, dice1, dice2, message = JailManager.roll_for_doubles(
-            sample_game, sample_player
-        )
+        escaped, dice1, dice2, message = JailManager.roll_for_doubles(sample_game, sample_player)
         assert escaped is True  # Forced release
         assert sample_player.in_jail is False
         assert sample_player.jail_turns == 0
@@ -156,9 +151,7 @@ def test_roll_for_doubles_third_attempt_no_cash(sample_game, sample_player):
     random.randint = mock_randint
 
     try:
-        escaped, dice1, dice2, message = JailManager.roll_for_doubles(
-            sample_game, sample_player
-        )
+        escaped, dice1, dice2, message = JailManager.roll_for_doubles(sample_game, sample_player)
         assert escaped is True  # Auto-released
         assert sample_player.in_jail is False
         assert "auto-released" in message.lower()

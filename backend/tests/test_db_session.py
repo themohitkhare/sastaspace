@@ -1,6 +1,6 @@
 """Tests for database session management."""
 
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
@@ -41,14 +41,15 @@ class TestMongoDBManager:
             mock_client = AsyncMock(spec=AsyncIOMotorClient)
             mock_database = AsyncMock(spec=AsyncIOMotorDatabase)
             mock_client.__getitem__.return_value = mock_database
-            mock_client_class.return_value = mock_client
+            # Code uses AsyncIOMotorClient[Any](url): __getitem__ then call with url
+            mock_client_class.__getitem__.return_value = MagicMock(return_value=mock_client)
 
             await manager.initialize()
 
             assert manager._initialized is True
             assert manager._client is not None
             assert manager._database is not None
-            mock_client_class.assert_called_once_with(settings.mongodb_url)
+            mock_client_class.__getitem__.return_value.assert_called_once_with(settings.mongodb_url)
 
     @pytest.mark.asyncio
     async def test_initialize_idempotent(self):
@@ -65,16 +66,15 @@ class TestMongoDBManager:
             mock_client = AsyncMock(spec=AsyncIOMotorClient)
             mock_database = AsyncMock(spec=AsyncIOMotorDatabase)
             mock_client.__getitem__.return_value = mock_database
-            mock_client_class.return_value = mock_client
+            mock_client_class.__getitem__.return_value = MagicMock(return_value=mock_client)
 
             await manager.initialize()
             first_client = manager._client
 
-            # Call again - should not create new client
             await manager.initialize()
 
             assert manager._client is first_client
-            assert mock_client_class.call_count == 1
+            assert mock_client_class.__getitem__.return_value.call_count == 1
 
     @pytest.mark.asyncio
     async def test_database_property_success(self):
@@ -91,7 +91,7 @@ class TestMongoDBManager:
             mock_client = AsyncMock(spec=AsyncIOMotorClient)
             mock_database = AsyncMock(spec=AsyncIOMotorDatabase)
             mock_client.__getitem__.return_value = mock_database
-            mock_client_class.return_value = mock_client
+            mock_client_class.__getitem__.return_value = MagicMock(return_value=mock_client)
 
             await manager.initialize()
             db = manager.database
@@ -126,7 +126,7 @@ class TestMongoDBManager:
             mock_client = AsyncMock(spec=AsyncIOMotorClient)
             mock_database = AsyncMock(spec=AsyncIOMotorDatabase)
             mock_client.__getitem__.return_value = mock_database
-            mock_client_class.return_value = mock_client
+            mock_client_class.__getitem__.return_value = MagicMock(return_value=mock_client)
 
             await manager.initialize()
             await manager.close()
@@ -177,17 +177,20 @@ class TestGetDB:
     @pytest.mark.asyncio
     async def test_get_db_yields_database(self):
         """Test that get_db yields database instance."""
-        # Reset singleton
+        import app.db.session as session_module
+
+        # Reset singleton and global so _get_db_manager() returns fresh manager
         MongoDBManager._instance = None
         MongoDBManager._client = None
         MongoDBManager._database = None
         MongoDBManager._initialized = False
+        session_module._db_manager = None
 
         with patch("app.db.session.AsyncIOMotorClient") as mock_client_class:
             mock_client = AsyncMock(spec=AsyncIOMotorClient)
             mock_database = AsyncMock(spec=AsyncIOMotorDatabase)
             mock_client.__getitem__.return_value = mock_database
-            mock_client_class.return_value = mock_client
+            mock_client_class.__getitem__.return_value = MagicMock(return_value=mock_client)
 
             manager = _get_db_manager()
             await manager.initialize()
