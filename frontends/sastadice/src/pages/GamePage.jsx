@@ -12,6 +12,7 @@ import PropertyDetailsModal from '../components/game/PropertyDetailsModal'
 import PropertyManagerModal from '../components/game/PropertyManagerModal'
 import PeekEventsModal from '../components/game/PeekEventsModal'
 import TurnTimer from '../components/game/TurnTimer'
+import ContextualTooltip from '../components/game/ContextualTooltip'
 import RulesModal from '../components/RulesModal'
 import TradeModal from '../components/game/TradeModal'
 import IncomingTradeAlert from '../components/game/IncomingTradeAlert'
@@ -46,7 +47,7 @@ export default function GamePage() {
   }, [refetch])
 
   const currentPlayer = game?.players?.find((p) => p.id === game?.current_turn_player_id)
-  const isCpuTurn = currentPlayer && CPU_NAMES.has(currentPlayer.name) && game?.status === 'ACTIVE'
+  const isCpuTurn = currentPlayer && (CPU_NAMES.has(currentPlayer.name) || currentPlayer.disconnected) && game?.status === 'ACTIVE'
   const currentTurnPlayerId = game?.current_turn_player_id
   const turnPhase = game?.turn_phase
 
@@ -306,6 +307,7 @@ export default function GamePage() {
             <TurnTimer
               turnStartTime={game.turn_start_time}
               timeoutSeconds={game.settings?.turn_timer_seconds || 30}
+              onTimeout={refetch}
             />
           )}
 
@@ -383,6 +385,12 @@ export default function GamePage() {
       />
 
       <RulesModal isOpen={showRules} onClose={() => setShowRules(false)} />
+
+      <ContextualTooltip
+        game={game}
+        playerId={playerId}
+        lastEventMessage={game?.last_event_message}
+      />
 
       {tradeTarget && (
         <TradeModal
