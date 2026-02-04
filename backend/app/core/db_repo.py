@@ -1,7 +1,7 @@
 """Abstract base repository pattern for MongoDB operations."""
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Generic, TypeVar
+from typing import TYPE_CHECKING, Any, Generic, TypeVar
 
 if TYPE_CHECKING:
     from motor.motor_asyncio import AsyncIOMotorDatabase
@@ -12,7 +12,7 @@ T = TypeVar("T")
 class BaseRepository(ABC, Generic[T]):
     """Abstract base repository for database operations."""
 
-    def __init__(self, database: "AsyncIOMotorDatabase") -> None:
+    def __init__(self, database: "AsyncIOMotorDatabase[Any]") -> None:
         """Initialize repository with a MongoDB database instance."""
         self.database = database
 

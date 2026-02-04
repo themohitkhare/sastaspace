@@ -1,11 +1,9 @@
 """API router for SastaDice game endpoints."""
 
-from typing import TYPE_CHECKING
+from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-
-if TYPE_CHECKING:
-    pass
+from motor.motor_asyncio import AsyncIOMotorDatabase
 
 from app.db.session import get_db
 from app.modules.sastadice.schemas import (
@@ -24,8 +22,7 @@ GameService = GameOrchestrator
 router = APIRouter()
 
 
-async def get_game_service(db=Depends(get_db)) -> GameService:
-    """Dependency to get game service."""
+async def get_game_service(db: AsyncIOMotorDatabase[Any] = Depends(get_db)) -> GameService:
     return GameService(db)
 
 
@@ -34,13 +31,11 @@ async def create_game(
     cpu_count: int = Query(default=0, ge=0, le=4, description="Number of CPU players to add"),
     service: GameService = Depends(get_game_service),
 ) -> GameSession:
-    """Create a new game room with optional CPU players."""
     return await service.create_game(cpu_count=cpu_count)
 
 
 @router.get("/games/{game_id}", response_model=GameSession)
 async def get_game(game_id: str, service: GameService = Depends(get_game_service)) -> GameSession:
-    """Get game state by ID."""
     try:
         return await service.get_game(game_id)
     except ValueError as e:
@@ -74,7 +69,6 @@ async def join_game(
     request: JoinGameRequest,
     service: GameService = Depends(get_game_service),
 ) -> Player:
-    """Join a game and submit 5 custom tiles."""
     try:
         return await service.join_game(game_id, request.name, request.tiles)
     except ValueError as e:
@@ -86,7 +80,7 @@ async def toggle_ready(
     game_id: str,
     player_id: str,
     service: GameService = Depends(get_game_service),
-) -> dict:
+) -> dict[str, Any]:
     """Toggle player's launch key (ready status). Auto-starts if all ready."""
     try:
         return await service.toggle_ready(game_id, player_id)
@@ -100,7 +94,7 @@ async def kick_player(
     player_id: str,
     host_id: str = Query(..., description="Host player ID"),
     service: GameService = Depends(get_game_service),
-) -> dict:
+) -> dict[str, Any]:
     """Kick a player from the lobby. Only host can kick."""
     try:
         return await service.kick_player(game_id, host_id, player_id)
@@ -111,10 +105,9 @@ async def kick_player(
 @router.patch("/games/{game_id}/settings")
 async def update_settings(
     game_id: str,
-    request: dict,
+    request: dict[str, Any],
     service: GameService = Depends(get_game_service),
-) -> dict:
-    """Update game settings. Only host can update."""
+) -> dict[str, Any]:
     try:
         host_id = request.get("host_id")
         if not host_id or not isinstance(host_id, str):
@@ -141,7 +134,6 @@ async def perform_action(
     player_id: str = Query(..., description="Player ID performing the action"),
     service: GameService = Depends(get_game_service),
 ) -> ActionResult:
-    """Perform a game action (roll dice, buy property, end turn)."""
     try:
         await service.check_timeout(game_id)
 
@@ -155,7 +147,7 @@ async def simulate_game(
     game_id: str,
     max_turns: int = Query(default=100, ge=1, le=500, description="Maximum turns to simulate"),
     service: GameService = Depends(get_game_service),
-) -> dict:
+) -> dict[str, Any]:
     """Simulate CPU turns until game ends or max_turns reached. For testing."""
     try:
         return await service.simulate_cpu_game(game_id, max_turns)
@@ -167,8 +159,7 @@ async def simulate_game(
 async def process_cpu_turns(
     game_id: str,
     service: GameService = Depends(get_game_service),
-) -> dict:
-    """Process CPU turns until it's a human player's turn."""
+) -> dict[str, Any]:
     try:
         return await service.process_cpu_turns(game_id)
     except ValueError as e:

@@ -1,6 +1,7 @@
 """MongoDB document models for SastaDice."""
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
+from typing import Any
 
 from pydantic import BaseModel, Field
 
@@ -30,20 +31,23 @@ class GameSessionDocument(BaseModel):
     version: int = 0
     starting_cash: int = 0
     go_bonus: int = 0
-    last_dice_roll: dict | None = None
-    pending_decision: dict | None = None
+    last_dice_roll: dict[str, Any] | None = None
+    pending_decision: dict[str, Any] | None = None
     last_event_message: str | None = None
     created_at: datetime | None = None
     current_round: int = 0
     max_rounds: int = 30
     first_player_id: str | None = None
-    auction_state: dict | None = None
+    auction_state: dict[str, Any] | None = None
     rent_multiplier: float = 1.0
+    go_bonus_multiplier: float = 1.0
     blocked_tiles: list[str] = Field(default_factory=list)
-    settings: dict | None = None
+    settings: dict[str, Any] | None = None
     turn_start_time: float = 0.0
     event_deck: list[int] = Field(default_factory=list)
     used_event_deck: list[int] = Field(default_factory=list)
+    winner_id: str | None = None
+    bankruptcy_auction_queue: list[str] = Field(default_factory=list)
 
     model_config = {"populate_by_name": True, "arbitrary_types_allowed": True}
 
@@ -78,11 +82,14 @@ class GameSessionDocument(BaseModel):
             first_player_id=self.first_player_id,
             auction_state=auction_state,
             rent_multiplier=self.rent_multiplier,
+            go_bonus_multiplier=getattr(self, "go_bonus_multiplier", 1.0),
             blocked_tiles=self.blocked_tiles,
             settings=settings,
             turn_start_time=self.turn_start_time,
             event_deck=getattr(self, "event_deck", []),
             used_event_deck=getattr(self, "used_event_deck", []),
+            winner_id=getattr(self, "winner_id", None),
+            bankruptcy_auction_queue=getattr(self, "bankruptcy_auction_queue", []),
         )
 
     @classmethod
@@ -99,7 +106,7 @@ class GameSessionDocument(BaseModel):
             auction_state_dict = game.auction_state.model_dump()
 
         return cls(
-            _id=game.id,
+            id=game.id,
             status=game.status,
             turn_phase=game.turn_phase,
             current_turn_player_id=game.current_turn_player_id,
@@ -111,21 +118,24 @@ class GameSessionDocument(BaseModel):
             last_dice_roll=game.last_dice_roll,
             pending_decision=pending_decision_dict,
             last_event_message=game.last_event_message,
-            created_at=datetime.now(timezone.utc),
+            created_at=datetime.now(UTC),
             # Phase 1 fields
             current_round=game.current_round,
             max_rounds=game.max_rounds,
             first_player_id=game.first_player_id,
             auction_state=auction_state_dict,
             rent_multiplier=game.rent_multiplier,
+            go_bonus_multiplier=getattr(game, "go_bonus_multiplier", 1.0),
             blocked_tiles=game.blocked_tiles,
             settings=settings_dict,
             turn_start_time=getattr(game, "turn_start_time", 0.0),
             event_deck=getattr(game, "event_deck", []),
             used_event_deck=getattr(game, "used_event_deck", []),
+            winner_id=getattr(game, "winner_id", None),
+            bankruptcy_auction_queue=getattr(game, "bankruptcy_auction_queue", []),
         )
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for MongoDB operations."""
         return self.model_dump(by_alias=True, exclude_none=True)
 
@@ -147,6 +157,11 @@ class PlayerDocument(BaseModel):
     jail_turns: int = 0
     consecutive_doubles: int = 0
     active_buff: str | None = None
+    skip_next_move: bool = False
+    double_rent_next_turn: bool = False
+    disconnected: bool = False
+    afk_turns: int = 0
+    disconnected_turns: int = 0
 
     model_config = {"populate_by_name": True}
 
@@ -166,13 +181,18 @@ class PlayerDocument(BaseModel):
             jail_turns=self.jail_turns,
             consecutive_doubles=self.consecutive_doubles,
             active_buff=self.active_buff,
+            skip_next_move=getattr(self, "skip_next_move", False),
+            double_rent_next_turn=getattr(self, "double_rent_next_turn", False),
+            disconnected=getattr(self, "disconnected", False),
+            afk_turns=getattr(self, "afk_turns", 0),
+            disconnected_turns=getattr(self, "disconnected_turns", 0),
         )
 
     @classmethod
     def from_player(cls, player: Player, game_id: str) -> "PlayerDocument":
         """Create document from Player schema."""
         return cls(
-            _id=player.id,
+            id=player.id,
             game_id=game_id,
             name=player.name,
             cash=player.cash,
@@ -181,14 +201,19 @@ class PlayerDocument(BaseModel):
             properties=player.properties,
             ready=player.ready,
             is_bankrupt=player.is_bankrupt,
-            created_at=datetime.now(timezone.utc),
+            created_at=datetime.now(UTC),
             in_jail=player.in_jail,
             jail_turns=player.jail_turns,
             consecutive_doubles=player.consecutive_doubles,
             active_buff=player.active_buff,
+            skip_next_move=getattr(player, "skip_next_move", False),
+            double_rent_next_turn=getattr(player, "double_rent_next_turn", False),
+            disconnected=getattr(player, "disconnected", False),
+            afk_turns=getattr(player, "afk_turns", 0),
+            disconnected_turns=getattr(player, "disconnected_turns", 0),
         )
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for MongoDB operations."""
         return self.model_dump(by_alias=True, exclude_none=True)
 
@@ -201,7 +226,7 @@ class TileDocument(BaseModel):
     owner_id: str | None = None
     type: TileType
     name: str
-    effect_config: dict = Field(default_factory=dict)
+    effect_config: dict[str, Any] = Field(default_factory=dict)
     position: int = 0
     x: int = 0
     y: int = 0
@@ -235,7 +260,7 @@ class TileDocument(BaseModel):
     def from_tile(cls, tile: Tile, game_id: str) -> "TileDocument":
         """Create document from Tile schema."""
         return cls(
-            _id=tile.id,
+            id=tile.id,
             game_id=game_id,
             owner_id=tile.owner_id,
             type=tile.type,
@@ -251,7 +276,7 @@ class TileDocument(BaseModel):
             blocked_until_round=tile.blocked_until_round,
         )
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for MongoDB operations."""
         data = self.model_dump(by_alias=True, exclude_none=True)
         data["type"] = self.type.value
@@ -266,7 +291,7 @@ class SubmittedTileDocument(BaseModel):
     player_id: str
     type: TileType
     name: str
-    effect_config: dict = Field(default_factory=dict)
+    effect_config: dict[str, Any] = Field(default_factory=dict)
 
     model_config = {"populate_by_name": True}
 
@@ -284,7 +309,7 @@ class SubmittedTileDocument(BaseModel):
     ) -> "SubmittedTileDocument":
         """Create document from TileCreate schema."""
         return cls(
-            _id=tile_id,
+            id=tile_id,
             game_id=game_id,
             player_id=player_id,
             type=tile.type,
@@ -292,7 +317,7 @@ class SubmittedTileDocument(BaseModel):
             effect_config=tile.effect_config,
         )
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for MongoDB operations."""
         data = self.model_dump(by_alias=True, exclude_none=True)
         data["type"] = self.type.value

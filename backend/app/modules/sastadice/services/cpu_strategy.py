@@ -1,4 +1,5 @@
 """CPU strategy - decision thresholds and logic."""
+
 import random
 from typing import TYPE_CHECKING
 
@@ -10,15 +11,11 @@ class CpuStrategy:
     """Decision-making logic for CPU players."""
 
     @staticmethod
-    def should_buy_property(
-        cpu_player: "Player", price: int, cash_buffer: int = 200
-    ) -> bool:
+    def should_buy_property(cpu_player: "Player", price: int, cash_buffer: int = 200) -> bool:
         return cpu_player.cash >= price + cash_buffer
 
     @staticmethod
-    def should_bid_in_auction(
-        cpu_player: "Player", current_bid: int, property_price: int
-    ) -> bool:
+    def should_bid_in_auction(cpu_player: "Player", current_bid: int, property_price: int) -> bool:
         max_bid = int(property_price * 0.8)
         return cpu_player.cash >= current_bid + 10 and current_bid < max_bid
 
@@ -36,7 +33,11 @@ class CpuStrategy:
 
     @staticmethod
     def should_accept_trade(
-        cpu_player: "Player", offer_cash: int, request_cash: int, offer_props: list, request_props: list
+        cpu_player: "Player",
+        offer_cash: int,
+        request_cash: int,
+        offer_props: list[str],
+        request_props: list[str],
     ) -> bool:
         net_cash = offer_cash - request_cash
         if net_cash > 50:
@@ -50,8 +51,6 @@ class CpuStrategy:
         return random.random() < 0.1
 
     @staticmethod
-    def get_bid_amount(
-        cpu_player: "Player", current_bid: int, min_increment: int = 10
-    ) -> int:
+    def get_bid_amount(cpu_player: "Player", current_bid: int, min_increment: int = 10) -> int:
         max_bid = min(cpu_player.cash - 100, current_bid + min_increment)
         return max(current_bid + min_increment, max_bid)

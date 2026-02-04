@@ -1,12 +1,13 @@
 """CPU turn executor - state machine for executing CPU turns."""
+
 from enum import Enum
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from app.modules.sastadice.schemas import GameSession, Player
+    from app.modules.sastadice.services.turn_manager import TurnManager
 
 from app.modules.sastadice.schemas import ActionType, TurnPhase
-
 from app.modules.sastadice.services.cpu_strategy import CpuStrategy
 
 
@@ -29,9 +30,7 @@ class CpuTurnExecutor:
         self.orchestrator = orchestrator
         self.strategy = strategy
 
-    async def play_cpu_turn(
-        self, game: "GameSession", cpu_player: "Player"
-    ) -> list[str]:
+    async def play_cpu_turn(self, game: "GameSession", cpu_player: "Player") -> list[str]:
         """Play a full CPU turn using state machine pattern."""
         turn_log = []
         max_iterations = 20
@@ -52,23 +51,17 @@ class CpuTurnExecutor:
             game = await self.orchestrator.get_game(game.id)
 
             if game.current_turn_player_id != cpu_player.id:
-                turn_log.append(
-                    f"{cpu_player.name} turn ended (not their turn anymore)"
-                )
+                turn_log.append(f"{cpu_player.name} turn ended (not their turn anymore)")
                 break
 
-            cpu_player = next(
-                (p for p in game.players if p.id == cpu_player.id), cpu_player
-            )
+            cpu_player = next((p for p in game.players if p.id == cpu_player.id), cpu_player)
             if not cpu_player:
                 turn_log.append(f"{cpu_player.name} not found in game")
                 break
 
             handler = handlers.get(state)
             if not handler:
-                turn_log.append(
-                    f"{cpu_player.name} stuck in unexpected phase: {state.value}"
-                )
+                turn_log.append(f"{cpu_player.name} stuck in unexpected phase: {state.value}")
                 break
 
             new_state, log_entry = await handler(game, cpu_player)
@@ -81,9 +74,7 @@ class CpuTurnExecutor:
             state = new_state
 
         if iterations >= max_iterations:
-            turn_log.append(
-                f"{cpu_player.name} hit max iterations limit ({max_iterations})"
-            )
+            turn_log.append(f"{cpu_player.name} hit max iterations limit ({max_iterations})")
 
         return turn_log
 
@@ -119,10 +110,17 @@ class CpuTurnExecutor:
             )
 
         decision_type = game.pending_decision.type
+        if getattr(cpu_player, "disconnected", False):
+            result = await self.orchestrator.perform_action(
+                game.id, cpu_player.id, ActionType.PASS_PROPERTY, {}
+            )
+            updated_game = await self.orchestrator.get_game(game.id)
+            return (
+                CpuTurnState(updated_game.turn_phase.value),
+                f"{cpu_player.name} (AFK Ghost) auto-passed - assets frozen",
+            )
         if decision_type == "BUY":
-            if self.strategy.should_buy_property(
-                cpu_player, game.pending_decision.price
-            ):
+            if self.strategy.should_buy_property(cpu_player, game.pending_decision.price):
                 result = await self.orchestrator.perform_action(
                     game.id, cpu_player.id, ActionType.BUY_PROPERTY, {}
                 )
@@ -173,13 +171,18 @@ class CpuTurnExecutor:
         self, game: "GameSession", cpu_player: "Player"
     ) -> tuple[CpuTurnState, str | None]:
         """Handle CPU post-turn phase."""
+        if getattr(cpu_player, "disconnected", False):
+            result = await self.orchestrator.perform_action(
+                game.id, cpu_player.id, ActionType.END_TURN, {}
+            )
+            if result.success:
+                return CpuTurnState.COMPLETE, f"{cpu_player.name} (AFK Ghost) auto-ended turn"
+            return CpuTurnState.COMPLETE, f"{cpu_player.name} failed to end turn"
         turn_manager = self.orchestrator.turn_manager
         upgraded = await self._try_upgrade_properties(game, cpu_player, turn_manager)
         if upgraded:
             game = await self.orchestrator.get_game(game.id)
-            cpu_player = next(
-                (p for p in game.players if p.id == cpu_player.id), cpu_player
-            )
+            cpu_player = next((p for p in game.players if p.id == cpu_player.id), cpu_player)
             return CpuTurnState.POST_TURN, f"{cpu_player.name} upgraded a property"
 
         result = await self.orchestrator.perform_action(
@@ -194,7 +197,10 @@ class CpuTurnExecutor:
             )
 
     async def _try_upgrade_properties(
-        self, game: "GameSession", cpu_player: "Player", turn_manager
+        self,
+        game: "GameSession",
+        cpu_player: "Player",
+        turn_manager: "TurnManager",
     ) -> bool:
         """Try to upgrade properties using strategy."""
         from app.modules.sastadice.schemas import TileType
@@ -204,9 +210,7 @@ class CpuTurnExecutor:
                 continue
             if tile.upgrade_level >= 2:
                 continue
-            if not tile.color or not turn_manager.owns_full_set(
-                cpu_player, tile.color, game.board
-            ):
+            if not tile.color or not turn_manager.owns_full_set(cpu_player, tile.color, game.board):
                 continue
 
             upgrade_cost = self.strategy.calculate_upgrade_cost(tile)

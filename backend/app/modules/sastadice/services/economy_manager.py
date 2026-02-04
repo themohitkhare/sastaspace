@@ -1,10 +1,10 @@
 """Economy manager for financial operations and bankruptcy logic."""
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from app.modules.sastadice.repository import GameRepository
-    from app.modules.sastadice.schemas import GameSession, Player
+    from app.modules.sastadice.schemas import GameSession, GameSettings, Player
 
 
 class EconomyManager:
@@ -19,14 +19,14 @@ class EconomyManager:
         player: "Player",
         amount: int,
         creditor: "Player | None" = None,
-    ) -> dict:
+    ) -> dict[str, Any]:
         """Charge a player amount. Returns dict with actions needed."""
         if amount <= 0:
             return {"action": "none"}
 
         if player.cash >= amount:
             player.cash -= amount
-            if creditor:
+            if creditor and not getattr(creditor, "disconnected", False):
                 creditor.cash += amount
                 await self.repository.update_player_cash(creditor.id, creditor.cash)
             await self.repository.update_player_cash(player.id, player.cash)
@@ -37,7 +37,7 @@ class EconomyManager:
 
         if player.cash + raised >= amount:
             player.cash -= amount
-            if creditor:
+            if creditor and not getattr(creditor, "disconnected", False):
                 creditor.cash += amount
                 await self.repository.update_player_cash(creditor.id, creditor.cash)
             await self.repository.update_player_cash(player.id, player.cash)
@@ -100,7 +100,7 @@ class EconomyManager:
         debtor: "Player",
         creditor: "Player | None" = None,
     ) -> None:
-        """Handle bankruptcy: asset transfer or seizure."""
+        """Handle bankruptcy: creditor gets cash only, properties reset to UNOWNED, state auction queue."""
         debtor.is_bankrupt = True
         remaining_cash = max(0, debtor.cash)
         debtor.cash = 0
@@ -108,37 +108,22 @@ class EconomyManager:
         debtor_properties = [t for t in game.board if t.owner_id == debtor.id]
         debtor_tile_ids = [t.id for t in debtor_properties]
 
-        if creditor:
-            for tile in debtor_properties:
-                tile.owner_id = creditor.id
+        if creditor and not getattr(creditor, "disconnected", False):
             creditor.cash += remaining_cash
-            creditor.properties = [
-                p for p in creditor.properties if p not in debtor_tile_ids
-            ] + debtor_tile_ids
-            debtor.properties = [
-                p for p in debtor.properties if p not in debtor_tile_ids
-            ]
             await self.repository.update_player_cash(creditor.id, creditor.cash)
-            await self.repository.update_player_properties(
-                creditor.id, creditor.properties
-            )
-            await self.repository.update_player_properties(
-                debtor.id, debtor.properties
-            )
             game.last_event_message = (
-                f"💀 {debtor.name} went BANKRUPT! Assets seized by {creditor.name}."
+                f"💀 {debtor.name} went BANKRUPT! Cash to {creditor.name}. State auction!"
             )
         else:
-            for tile in debtor_properties:
-                tile.owner_id = None
-                tile.upgrade_level = 0
-            debtor.properties = [
-                p for p in debtor.properties if p not in debtor_tile_ids
-            ]
-            await self.repository.update_player_properties(
-                debtor.id, debtor.properties
-            )
-            game.last_event_message = f"💀 {debtor.name} went BANKRUPT! Assets seized by Bank."
+            game.last_event_message = f"💀 {debtor.name} went BANKRUPT! State auction!"
+
+        for tile in debtor_properties:
+            tile.owner_id = None
+            tile.upgrade_level = 0
+        debtor.properties = [p for p in debtor.properties if p not in debtor_tile_ids]
+        await self.repository.update_player_properties(debtor.id, debtor.properties)
+
+        game.bankruptcy_auction_queue = list(debtor_tile_ids)
 
         await self.repository.update_player_bankrupt(debtor.id, True)
         await self.repository.update_player_cash(debtor.id, 0)
@@ -195,7 +180,11 @@ class EconomyManager:
         return True, f"Bought '{tile_name}' for ${price}", tile_name, price
 
     async def handle_upgrade(
-        self, game: "GameSession", player_id: str, payload: dict, turn_manager
+        self,
+        game: "GameSession",
+        player_id: str,
+        payload: dict[str, Any],
+        turn_manager: Any,
     ) -> tuple[bool, str, str | None]:
         """Handle property upgrade. Returns (success, message, level_name)."""
         from app.modules.sastadice.schemas import TileType
@@ -237,7 +226,7 @@ class EconomyManager:
         return True, f"Upgraded to {level_name}", level_name
 
     async def handle_downgrade(
-        self, game: "GameSession", player_id: str, payload: dict
+        self, game: "GameSession", player_id: str, payload: dict[str, Any]
     ) -> tuple[bool, str, int | None]:
         """Handle property downgrade. Returns (success, message, refund)."""
         from app.modules.sastadice.schemas import TileType
@@ -263,7 +252,6 @@ class EconomyManager:
         original_cost = tile.price * 2 if tile.upgrade_level == 2 else tile.price
         refund = original_cost // 2
 
-        prev_level_name = "1337 HAXXOR" if tile.upgrade_level == 2 else "SCRIPT KIDDIE"
         tile.upgrade_level -= 1
         player.cash += refund
 
@@ -272,13 +260,14 @@ class EconomyManager:
 
         return True, f"Sold upgrade for ${refund}", refund
 
-    def determine_winner(self, game: "GameSession") -> dict | None:
+    def determine_winner(self, game: "GameSession") -> dict[str, Any] | None:
         """Determine the winner of the game."""
         active_players = [p for p in game.players if p.cash >= 0]
 
         if len(active_players) == 1:
             winner = active_players[0]
             return {
+                "id": winner.id,
                 "name": winner.name,
                 "cash": winner.cash,
                 "properties": len(winner.properties),
@@ -286,6 +275,7 @@ class EconomyManager:
         elif len(active_players) == 0:
             richest = max(game.players, key=lambda x: x.cash)
             return {
+                "id": richest.id,
                 "name": richest.name,
                 "cash": richest.cash,
                 "properties": len(richest.properties),
@@ -293,6 +283,7 @@ class EconomyManager:
         else:
             leader = max(active_players, key=lambda x: x.cash)
             return {
+                "id": leader.id,
                 "name": leader.name,
                 "cash": leader.cash,
                 "properties": len(leader.properties),
@@ -302,47 +293,39 @@ class EconomyManager:
 
 class DynamicEconomyScaler:
     """Scales costs and rents to match GO inflation and prevent runaway inflation."""
-    
-    RENT_SCALE_FACTOR = 0.1   # 10% increase per round
+
+    RENT_SCALE_FACTOR = 0.1  # 10% increase per round
     COST_SCALE_FACTOR = 0.05  # 5% increase per round (slower than rent)
-    GO_CAP_MULTIPLIER = 3.0   # Max GO bonus = 3x base
-    
+    GO_CAP_MULTIPLIER = 3.0  # Max GO bonus = 3x base
+
     @staticmethod
     def calculate_dynamic_rent(
-        base_rent: int, 
-        upgrade_level: int, 
-        current_round: int,
-        settings: "GameSettings"
+        base_rent: int, upgrade_level: int, current_round: int, settings: "GameSettings"
     ) -> int:
         """Rent scaled by round to counter GO inflation. settings: GameSettings."""
         # Base rent with upgrades
         upgrade_multiplier = 1.0 + (upgrade_level * 0.5)  # 1.0, 1.5, 2.0
         upgraded_rent = int(base_rent * upgrade_multiplier)
-        
+
         # Dynamic scaling based on round (starts affecting after round 10)
         if current_round > 10:
             round_multiplier = 1.0 + ((current_round - 10) * DynamicEconomyScaler.RENT_SCALE_FACTOR)
             return int(upgraded_rent * round_multiplier)
-        
+
         return upgraded_rent
-    
+
     @staticmethod
-    def calculate_dynamic_buff_cost(
-        base_cost: int,
-        current_round: int
-    ) -> int:
+    def calculate_dynamic_buff_cost(base_cost: int, current_round: int) -> int:
         """Scale buff cost by round so it doesn’t become trivial late-game."""
         if current_round > 10:
             round_multiplier = 1.0 + ((current_round - 10) * DynamicEconomyScaler.COST_SCALE_FACTOR)
             return int(base_cost * round_multiplier)
-        
+
         return base_cost
-    
+
     @staticmethod
     def calculate_capped_go_bonus(
-        base_bonus: int,
-        inflation_per_round: int,
-        current_round: int
+        base_bonus: int, inflation_per_round: int, current_round: int
     ) -> int:
         """GO bonus with cap (GO_CAP_MULTIPLIER) to prevent runaway inflation."""
         uncapped = base_bonus + (inflation_per_round * current_round)

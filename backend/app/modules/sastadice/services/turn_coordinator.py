@@ -1,5 +1,7 @@
 """Turn coordinator - backward compatibility wrapper."""
-from typing import TYPE_CHECKING, Callable
+
+from collections.abc import Awaitable, Callable
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from app.modules.sastadice.repository import GameRepository
@@ -7,7 +9,6 @@ if TYPE_CHECKING:
     from app.modules.sastadice.services.turn_manager import TurnManager
 
 from app.modules.sastadice.schemas import ActionResult, DiceRollResult
-
 from app.modules.sastadice.services.movement_handler import MovementHandler
 from app.modules.sastadice.services.turn_advancement_handler import TurnAdvancementHandler
 
@@ -30,8 +31,8 @@ class TurnCoordinator:
         self,
         game: "GameSession",
         player_id: str,
-        send_to_jail_callback: Callable,
-        handle_tile_landing_callback: Callable,
+        send_to_jail_callback: Callable[..., Awaitable[None]],
+        handle_tile_landing_callback: Callable[..., Awaitable[None]],
     ) -> DiceRollResult:
         """Roll dice for a player."""
         return await self.movement_handler.roll_dice(
@@ -42,8 +43,8 @@ class TurnCoordinator:
         self,
         game: "GameSession",
         player_id: str,
-        check_end_conditions_callback: Callable,
-        determine_winner_callback: Callable,
+        check_end_conditions_callback: Callable[..., Awaitable[bool]],
+        determine_winner_callback: Callable[..., Awaitable[dict[str, Any] | None]],
     ) -> ActionResult:
         """Handle end turn action."""
         return await self.advancement_handler.handle_end_turn(

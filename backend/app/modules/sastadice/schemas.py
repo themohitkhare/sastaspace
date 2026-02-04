@@ -3,7 +3,7 @@
 import random
 import uuid
 from enum import Enum
-from typing import Optional
+from typing import Any, Optional
 
 from pydantic import BaseModel, Field
 
@@ -85,25 +85,24 @@ class GameSettings(BaseModel):
 
     doubles_give_extra_turn: bool = True
     triple_doubles_jail: bool = True
-    
-    income_tax_rate: float = 0.1  # 10% default
 
+    income_tax_rate: float = 0.1  # 10% default
 
 
 class FaultInjectionConfig(BaseModel):
     """Infrastructure fault simulation for resilience testing."""
-    
-    drop_db_writes: float = 0.0       # 0-1: Probability of simulating DB write failure
-    delay_responses_ms: int = 0       # Milliseconds to delay all responses
-    corrupt_state_prob: float = 0.0   # Probability of injecting invalid state
-    network_partition: bool = False   # Simulate network partition mid-action
+
+    drop_db_writes: float = 0.0  # 0-1: Probability of simulating DB write failure
+    delay_responses_ms: int = 0  # Milliseconds to delay all responses
+    corrupt_state_prob: float = 0.0  # Probability of injecting invalid state
+    network_partition: bool = False  # Simulate network partition mid-action
 
 
 class ChaosConfig(BaseModel):
     """Configuration for chaos testing with reproducible randomness."""
-    
+
     seed: int = Field(default_factory=lambda: random.randint(0, 2**32))
-    chaos_probability: float = 0.3    # 30% chance of "stupid" moves
+    chaos_probability: float = 0.3  # 30% chance of "stupid" moves
     enable_invalid_actions: bool = False  # Try invalid actions (expect failures)
     enable_race_conditions: bool = False  # Zero delays between actions
     fault_injection: FaultInjectionConfig = Field(default_factory=FaultInjectionConfig)
@@ -117,7 +116,7 @@ class TileCreate(BaseModel):
 
     type: TileType
     name: str
-    effect_config: dict = Field(default_factory=dict)
+    effect_config: dict[str, Any] = Field(default_factory=dict)
 
 
 class Tile(TileCreate):
@@ -161,6 +160,11 @@ class Player(PlayerCreate):
     jail_turns: int = 0
     consecutive_doubles: int = 0
     active_buff: str | None = None
+    skip_next_move: bool = False
+    double_rent_next_turn: bool = False
+    disconnected: bool = False
+    afk_turns: int = 0
+    disconnected_turns: int = 0
 
 
 class PendingDecision(BaseModel):
@@ -169,7 +173,7 @@ class PendingDecision(BaseModel):
     type: str
     tile_id: str | None = None
     price: int = 0
-    event_data: dict | None = None
+    event_data: dict[str, Any] | None = None
 
 
 class GameSession(BaseModel):
@@ -185,7 +189,7 @@ class GameSession(BaseModel):
     board_size: int = 0
     starting_cash: int = 0
     go_bonus: int = 0
-    last_dice_roll: dict | None = None
+    last_dice_roll: dict[str, Any] | None = None
     pending_decision: PendingDecision | None = None
     last_event_message: str | None = None
     current_round: int = 0
@@ -193,12 +197,15 @@ class GameSession(BaseModel):
     first_player_id: str | None = None
     auction_state: Optional["AuctionState"] = None
     rent_multiplier: float = 1.0
+    go_bonus_multiplier: float = 1.0
     blocked_tiles: list[str] = Field(default_factory=list)
     settings: GameSettings = Field(default_factory=GameSettings)
     event_deck: list[int] = Field(default_factory=list)
     used_event_deck: list[int] = Field(default_factory=list)
     turn_start_time: float = 0.0
     active_trade_offers: list["TradeOffer"] = Field(default_factory=list)
+    winner_id: str | None = None
+    bankruptcy_auction_queue: list[str] = Field(default_factory=list)
 
 
 class GameStateResponse(BaseModel):
@@ -295,7 +302,7 @@ class GameActionRequest(BaseModel):
     """Request schema for game actions."""
 
     type: ActionType
-    payload: dict = Field(default_factory=dict)
+    payload: dict[str, Any] = Field(default_factory=dict)
 
 
 class ActionResult(BaseModel):
@@ -303,4 +310,4 @@ class ActionResult(BaseModel):
 
     success: bool
     message: str
-    data: dict | None = None
+    data: dict[str, Any] | None = None

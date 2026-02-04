@@ -1,12 +1,17 @@
 """Event manager - deck management and effect resolution with repository integration."""
+
 import random
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from app.modules.sastadice.repository import GameRepository
     from app.modules.sastadice.schemas import GameSession, Player
 
 from app.modules.sastadice.events.events_data import SASTA_EVENTS
+from app.modules.sastadice.schemas import ChaosLevel
+
+# Aggressive event indices (STEAL, SWAP, REMOVE_UPGRADE, CLONE, FORCE_BUY, ALL_SKIP)
+CHAOS_AGGRESSIVE_INDICES = {18, 19, 22, 24, 25, 34}
 
 
 class EventManager:
@@ -18,9 +23,23 @@ class EventManager:
 
     @staticmethod
     def initialize_deck(game: "GameSession") -> None:
-        """Initialize and shuffle the event deck (36 cards)."""
-        game.event_deck = list(range(len(SASTA_EVENTS)))
-        random.shuffle(game.event_deck)
+        """Initialize and shuffle the event deck. Chaos level affects composition."""
+        chaos = (
+            getattr(game.settings, "chaos_level", ChaosLevel.NORMAL)
+            if game.settings
+            else ChaosLevel.NORMAL
+        )
+
+        if chaos == ChaosLevel.CHILL:
+            deck = [i for i in range(len(SASTA_EVENTS)) if i not in CHAOS_AGGRESSIVE_INDICES]
+        elif chaos == ChaosLevel.CHAOS:
+            deck = list(range(len(SASTA_EVENTS)))
+            deck.extend([i for i in CHAOS_AGGRESSIVE_INDICES if i < len(SASTA_EVENTS)])
+        else:
+            deck = list(range(len(SASTA_EVENTS)))
+
+        random.shuffle(deck)
+        game.event_deck = deck
         game.used_event_deck = []
 
     @staticmethod
@@ -32,7 +51,7 @@ class EventManager:
             random.shuffle(game.event_deck)
 
     @staticmethod
-    def draw_event(game: "GameSession") -> Optional[dict]:
+    def draw_event(game: "GameSession") -> dict[str, Any] | None:
         """Draw next event from deck."""
         EventManager.ensure_capacity(game, 1)
         if not game.event_deck:
@@ -42,13 +61,13 @@ class EventManager:
         return SASTA_EVENTS[event_idx]
 
     async def apply_effect(
-        self, game: "GameSession", player: "Player", event: dict
-    ) -> dict:
+        self, game: "GameSession", player: "Player", event: dict[str, Any]
+    ) -> dict[str, Any]:
         """
         Apply event effect with atomic repository updates.
         Returns action dict for orchestrator.
         """
-        actions = {"cash_changes": {}, "position_changes": {}, "special": None}
+        actions: dict[str, Any] = {"cash_changes": {}, "position_changes": {}, "special": None}
         effect_type = event["type"]
         value = event.get("value", 0)
 
@@ -92,16 +111,12 @@ class EventManager:
             actions["position_changes"][player.id] = go_pos
 
         elif effect_type == "TELEPORT_UNOWNED":
-            unowned = [
-                t
-                for t in game.board
-                if t.type.value == "PROPERTY" and not t.owner_id
-            ]
+            unowned = [t for t in game.board if t.type.value == "PROPERTY" and not t.owner_id]
             if unowned:
-                target = random.choice(unowned)
-                player.position = target.position
-                await self.repository.update_player_position(player.id, target.position)
-                actions["position_changes"][player.id] = target.position
+                target_tile = random.choice(unowned)
+                player.position = target_tile.position
+                await self.repository.update_player_position(player.id, target_tile.position)
+                actions["position_changes"][player.id] = target_tile.position
 
         elif effect_type == "STEAL_FROM_RICHEST":
             richest = max(game.players, key=lambda p: p.cash)
@@ -117,12 +132,12 @@ class EventManager:
         elif effect_type == "SWAP_CASH":
             other_players = [p for p in game.players if p.id != player.id]
             if other_players:
-                target = random.choice(other_players)
-                player.cash, target.cash = target.cash, player.cash
+                target_player = random.choice(other_players)
+                player.cash, target_player.cash = target_player.cash, player.cash
                 await self.repository.update_player_cash(player.id, player.cash)
-                await self.repository.update_player_cash(target.id, target.cash)
-                actions["cash_changes"][player.id] = target.cash - player.cash
-                actions["cash_changes"][target.id] = player.cash - target.cash
+                await self.repository.update_player_cash(target_player.id, target_player.cash)
+                actions["cash_changes"][player.id] = target_player.cash - player.cash
+                actions["cash_changes"][target_player.id] = player.cash - target_player.cash
 
         elif effect_type == "MARKET_CRASH":
             game.rent_multiplier = 0.5
@@ -133,19 +148,15 @@ class EventManager:
             actions["special"] = "BULL_MARKET"
 
         elif effect_type == "HYPERINFLATION":
-            # Triple GO bonus for this round (handled in turn_manager)
             actions["special"] = "HYPERINFLATION"
 
         elif effect_type == "FREE_UPGRADE":
-            # Grant free upgrade (handled by orchestrator)
             actions["special"] = "FREE_UPGRADE"
 
         elif effect_type == "REMOVE_UPGRADE":
-            # Remove upgrade from any property (handled by orchestrator)
             actions["special"] = "REMOVE_UPGRADE"
 
         elif effect_type == "BLOCK_TILE":
-            # Block a tile for N rounds (handled by orchestrator)
             actions["special"] = "BLOCK_TILE"
             actions["block_rounds"] = value
 
@@ -153,19 +164,29 @@ class EventManager:
             actions["skip_buy"] = True
 
         elif effect_type == "SKIP_TURN":
-            actions["skip_turn"] = True
+            player.active_buff = "SKIP_TURN"
+            await self.repository.update_player_buff(player.id, "SKIP_TURN")
+            actions["special"] = "SKIP_TURN"
 
         elif effect_type == "SKIP_MOVE":
-            actions["skip_move"] = True
+            player.skip_next_move = True
+            await self.repository.update_player_skip_next_move(player.id, True)
+            actions["special"] = "SKIP_MOVE"
 
         elif effect_type == "DOUBLE_RENT":
-            actions["double_rent"] = True
+            player.double_rent_next_turn = True
+            await self.repository.update_player_double_rent_next_turn(player.id, True)
+            actions["special"] = "DOUBLE_RENT"
 
         elif effect_type == "REVEAL_CASH":
             other_players = [p for p in game.players if p.id != player.id]
             if other_players:
-                target = random.choice(other_players)
-                actions["revealed_player"] = {"id": target.id, "name": target.name, "cash": target.cash}
+                target_player = random.choice(other_players)
+                actions["revealed_player"] = {
+                    "id": target_player.id,
+                    "name": target_player.name,
+                    "cash": target_player.cash,
+                }
 
         elif effect_type == "ALL_SKIP_TURN":
             for p in game.players:
@@ -192,7 +213,6 @@ class EventManager:
             actions["free_rounds"] = value
             actions["requires_decision"] = True
 
-        # Update game state for special effects
         if actions["special"]:
             await self.repository.update(game)
 

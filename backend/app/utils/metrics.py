@@ -5,6 +5,7 @@ import re
 import subprocess
 import sys
 from pathlib import Path
+from typing import Any
 
 try:
     from lxml import etree  # type: ignore[import-untyped]
@@ -24,7 +25,7 @@ def _find_executable(name: str) -> str:
     return name
 
 
-def run_radon_complexity(path: str) -> dict:
+def run_radon_complexity(path: str) -> dict[str, Any]:
     """Run radon complexity analysis."""
     try:
         radon_exe = _find_executable("radon")
@@ -56,7 +57,7 @@ def run_radon_complexity(path: str) -> dict:
         return {"functions": [], "files": {}}
 
 
-def run_radon_maintainability(path: str) -> dict:
+def run_radon_maintainability(path: str) -> dict[str, Any]:
     """Run radon maintainability index analysis."""
     try:
         radon_exe = _find_executable("radon")
@@ -86,7 +87,7 @@ def run_radon_maintainability(path: str) -> dict:
         return {"files": {}}
 
 
-def run_vulture_analysis(path: str = "backend/app") -> dict:
+def run_vulture_analysis(path: str = "backend/app") -> dict[str, Any]:
     """Run vulture dead code analysis."""
     try:
         vulture_exe = _find_executable("vulture")
@@ -126,7 +127,7 @@ def run_vulture_analysis(path: str = "backend/app") -> dict:
         return {"unused_functions": [], "unused_classes": []}
 
 
-def find_duplicates(path: str = "backend/app") -> dict:
+def find_duplicates(path: str = "backend/app") -> dict[str, Any]:
     """Find duplicate code using pylint."""
     try:
         pylint_exe = _find_executable("pylint")
@@ -169,7 +170,7 @@ def find_duplicates(path: str = "backend/app") -> dict:
         return {"total_duplicated_lines": 0, "duplicate_blocks": []}
 
 
-def run_ty_check(path: str = "backend/app") -> dict:
+def run_ty_check(path: str = "backend/app") -> dict[str, Any]:
     """Run ty type checker with robust error handling."""
     try:
         ty_exe = _find_executable("ty")
@@ -181,7 +182,7 @@ def run_ty_check(path: str = "backend/app") -> dict:
         error_matches = re.findall(r"error[:\[]", output, re.IGNORECASE)
         error_count = len(error_matches)
 
-        errors_by_file = {}
+        errors_by_file: dict[str, int] = {}
         file_pattern = re.compile(r"-->\s*([^\s:]+\.py):\d+:\d+")
         for match in file_pattern.finditer(output):
             file_path = match.group(1)
@@ -192,15 +193,15 @@ def run_ty_check(path: str = "backend/app") -> dict:
         return {"total_errors": -1, "errors_by_file": {}, "errors": []}
 
 
-def run_tsc_check(frontend_path: str = "frontends") -> dict:
+def run_tsc_check(frontend_path: str = "frontends") -> dict[str, Any]:
     """Run TypeScript type checker for all frontend projects."""
     frontend_base = Path(frontend_path)
     if not frontend_base.exists():
         return {"total_errors": 0, "errors_by_file": {}, "errors": [], "projects": {}}
 
-    all_errors = []
-    errors_by_file = {}
-    projects = {}
+    all_errors: list[dict[str, Any]] = []
+    errors_by_file: dict[str, int] = {}
+    projects: dict[str, int] = {}
 
     for project_dir in frontend_base.iterdir():
         if not project_dir.is_dir():
@@ -252,7 +253,7 @@ def run_tsc_check(frontend_path: str = "frontends") -> dict:
     }
 
 
-def parse_coverage_xml(path: str = "htmlcov/coverage.xml") -> dict:
+def parse_coverage_xml(path: str = "htmlcov/coverage.xml") -> dict[str, Any]:
     """Parse backend coverage XML (coverage.py format)."""
     coverage_path = Path(path)
     if not coverage_path.exists():
@@ -292,7 +293,7 @@ def parse_coverage_xml(path: str = "htmlcov/coverage.xml") -> dict:
         return {"total_lines": 0, "covered_lines": 0, "coverage_percent": 0.0, "files": {}}
 
 
-def parse_frontend_coverage(frontend_path: str = "frontends") -> dict:
+def parse_frontend_coverage(frontend_path: str = "frontends") -> dict[str, Any]:
     """Parse frontend coverage from clover.xml or lcov.info."""
     frontend_base = Path(frontend_path)
     if not frontend_base.exists():
@@ -375,7 +376,11 @@ def parse_frontend_coverage(frontend_path: str = "frontends") -> dict:
     }
 
 
-def merge_coverage(backend_coverage: dict, frontend_coverage: dict, loc_data: dict) -> dict:
+def merge_coverage(
+    backend_coverage: dict[str, Any],
+    frontend_coverage: dict[str, Any],
+    loc_data: dict[str, Any],
+) -> dict[str, Any]:
     """Merge backend and frontend coverage with weighted average."""
     backend_loc = sum(
         f.get("loc", 0) for f in loc_data.get("files", {}).values() if f.get("type") == "python"
@@ -415,7 +420,7 @@ def merge_coverage(backend_coverage: dict, frontend_coverage: dict, loc_data: di
 
 def calculate_loc_stats(
     backend_path: str = "backend/app", frontend_path: str = "frontends"
-) -> dict:
+) -> dict[str, Any]:
     """Calculate LOC statistics for Python and JS/TS files."""
     backend_base = Path(backend_path)
     frontend_base = Path(frontend_path)
@@ -458,7 +463,7 @@ def calculate_loc_stats(
     }
 
 
-def _process_python_file(file_path: Path) -> dict | None:
+def _process_python_file(file_path: Path) -> dict[str, Any] | None:
     try:
         with open(file_path, encoding="utf-8", errors="ignore") as f:
             lines = f.readlines()
@@ -494,7 +499,7 @@ def _count_python_lines(lines: list[str]) -> tuple[int, int]:
     return loc, comments
 
 
-def _process_js_file(file_path: Path) -> dict | None:
+def _process_js_file(file_path: Path) -> dict[str, Any] | None:
     try:
         with open(file_path, encoding="utf-8", errors="ignore") as f:
             content = f.read()
@@ -556,7 +561,7 @@ def _get_relative_path(file_path: Path) -> str:
 
 def find_large_files(
     backend_path: str = "backend/app", frontend_path: str = "frontends", threshold: int = 300
-) -> list:
+) -> list[dict[str, Any]]:
     """Find files exceeding LOC threshold."""
     loc_data = calculate_loc_stats(backend_path, frontend_path)
     large_files = []
@@ -572,7 +577,7 @@ def find_large_files(
     return large_files
 
 
-def categorize_files() -> dict:
+def categorize_files() -> dict[str, int]:
     """Categorize files by type."""
     backend_count = 0
     frontend_count = 0
@@ -606,7 +611,9 @@ def categorize_files() -> dict:
     return {"backend": backend_count, "frontend": frontend_count, "tests": test_count}
 
 
-def correlate_type_errors_complexity(ty_data: dict, tsc_data: dict, complexity_data: dict) -> dict:
+def correlate_type_errors_complexity(
+    ty_data: dict[str, Any], tsc_data: dict[str, Any], complexity_data: dict[str, Any]
+) -> dict[str, Any]:
     """Correlate type errors with complexity for AI Hallucination Index."""
     hallucination_files = []
     complexity_by_file = complexity_data.get("files", {})
@@ -652,7 +659,7 @@ def correlate_type_errors_complexity(ty_data: dict, tsc_data: dict, complexity_d
     }
 
 
-def load_trend_history() -> list:
+def load_trend_history() -> list[Any]:
     """Load trend history from JSON file."""
     history_path = Path(".repo_health_history.json")
     if not history_path.exists():
@@ -660,12 +667,13 @@ def load_trend_history() -> list:
 
     try:
         with open(history_path) as f:
-            return json.load(f)
+            data: list[Any] = json.load(f)
+            return data
     except Exception:
         return []
 
 
-def save_trend_history(data: dict) -> None:
+def save_trend_history(data: dict[str, Any]) -> None:
     """Save trend history to JSON file (keep last 30 entries)."""
     history = load_trend_history()
 

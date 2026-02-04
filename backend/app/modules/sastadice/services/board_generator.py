@@ -1,7 +1,8 @@
 """Board generator - creates game boards with special tile placement."""
+
 import random
 import uuid
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from app.modules.sastadice.services.board_layout import BoardLayout
@@ -62,11 +63,10 @@ class BoardGenerator:
     """Generates game boards with special tile placement."""
 
     def __init__(self, board_layout: "BoardLayout") -> None:
-        """Initialize with board layout utility."""
         self.layout = board_layout
 
     def generate_seeded_tiles_for_player(
-        self, player_name: str, existing_players: list
+        self, player_name: str, existing_players: list[Any]
     ) -> list[TileCreate]:
         """Generate 5 seeded tiles for a player joining the game."""
         existing_names = set()
@@ -84,9 +84,7 @@ class BoardGenerator:
 
         return seeded_tiles
 
-    def generate_additional_tiles(
-        self, needed: int, player_tiles: list[Tile]
-    ) -> list[Tile]:
+    def generate_additional_tiles(self, needed: int, player_tiles: list[Tile]) -> list[Tile]:
         """Generate additional tiles to supplement player tiles."""
         generated_tiles = []
         player_names = {tile.name.lower() for tile in player_tiles}
@@ -176,9 +174,7 @@ class BoardGenerator:
             attempts = 0
             while name is None or name.lower() in player_names:
                 if templates and attempts < len(templates):
-                    name = (
-                        f"{templates[attempts % len(templates)]} {i // len(templates) + 1}"
-                    )
+                    name = f"{templates[attempts % len(templates)]} {i // len(templates) + 1}"
                 else:
                     name = f"{tile_type.value} Tile {i + 1}"
                 attempts += 1
@@ -315,9 +311,7 @@ class BoardGenerator:
             y=board[pos].y,
         )
 
-    def _place_node_tiles(
-        self, board: list[Tile], total_tiles: int, protected: set[int]
-    ) -> None:
+    def _place_node_tiles(self, board: list[Tile], total_tiles: int, protected: set[int]) -> None:
         """Place 4 NODE tiles at side midpoints, avoiding corners."""
         # Calculate midpoints of each side (between corners)
         midpoints = [
@@ -357,19 +351,14 @@ class BoardGenerator:
             color_index = (i // set_size) % len(PROPERTY_COLORS)
             prop.color = PROPERTY_COLORS[color_index]
 
-    def _interleave_tiles(
-        self, player_tiles: list[Tile], padding_tiles: list[Tile]
-    ) -> list[Tile]:
+    def _interleave_tiles(self, player_tiles: list[Tile], padding_tiles: list[Tile]) -> list[Tile]:
         """Interleave padding tiles evenly among player tiles."""
         result = []
         player_idx = 0
         padding_idx = 0
         total_tiles = len(player_tiles) + len(padding_tiles)
 
-        if len(padding_tiles) > 0:
-            spacing = len(player_tiles) // len(padding_tiles)
-        else:
-            spacing = total_tiles
+        spacing = len(player_tiles) // len(padding_tiles) if len(padding_tiles) > 0 else total_tiles
 
         for i in range(total_tiles):
             if padding_idx < len(padding_tiles) and i > 0 and i % (spacing + 1) == 0:

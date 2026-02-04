@@ -1,6 +1,7 @@
 """Game orchestrator - thin coordinator delegating to managers."""
+
 import time
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from motor.motor_asyncio import AsyncIOMotorDatabase
@@ -16,6 +17,7 @@ from app.modules.sastadice.schemas import (
     GameStatus,
     Player,
     Tile,
+    TileCreate,
     TileType,
     TurnPhase,
 )
@@ -35,7 +37,7 @@ from app.modules.sastadice.services.turn_manager import TurnManager
 class GameOrchestrator:
     """Single entry point for all game operations. Coordinates managers."""
 
-    def __init__(self, database: "AsyncIOMotorDatabase") -> None:
+    def __init__(self, database: "AsyncIOMotorDatabase[Any]") -> None:
         """Initialize game orchestrator with all managers."""
         self.repository = GameRepository(database)
         self.board_service = BoardGenerationService()
@@ -47,9 +49,7 @@ class GameOrchestrator:
         self.jail_manager = JailManager()
         self.event_manager = EventManager(self.repository)
 
-        self.lobby_manager = LobbyManager(
-            self.repository, self.board_service, self.turn_manager
-        )
+        self.lobby_manager = LobbyManager(self.repository, self.board_service, self.turn_manager)
         self.action_dispatcher = ActionDispatcher(
             self.repository,
             self.economy_manager,
@@ -82,9 +82,7 @@ class GameOrchestrator:
         await self.repository.update_player_position(player.id, jail_pos)
         game.last_event_message = f"🚨 {player.name} sent to SERVER DOWNTIME!"
 
-    async def _handle_tile_landing(
-        self, game: GameSession, player: Player, tile: Tile
-    ) -> None:
+    async def _handle_tile_landing(self, game: GameSession, player: Player, tile: Tile) -> None:
         """Handle what happens when a player lands on a tile."""
         if tile.type == TileType.GO:
             self.turn_manager.handle_go_landing(game, tile)
@@ -113,9 +111,7 @@ class GameOrchestrator:
             game.last_event_message = f"Landed on '{tile.name}'. Nothing happens."
             game.turn_phase = TurnPhase.POST_TURN
 
-    async def _handle_property_landing(
-        self, game: GameSession, player: Player, tile: Tile
-    ) -> None:
+    async def _handle_property_landing(self, game: GameSession, player: Player, tile: Tile) -> None:
         """Handle property landing."""
         result = self.turn_manager.handle_property_landing(game, player, tile)
         if result.get("action") == "pay_rent":
@@ -129,15 +125,19 @@ class GameOrchestrator:
         if owner:
             if tile.type == TileType.NODE:
                 from app.modules.sastadice.services.node_manager import NodeManager
+
                 rent = NodeManager.calculate_node_rent(owner, game)
             else:
                 rent = self.turn_manager.calculate_rent(tile, owner, game)
 
+            if getattr(owner, "double_rent_next_turn", False):
+                rent *= 2
+                owner.double_rent_next_turn = False
+                await self.repository.update_player_double_rent_next_turn(owner.id, False)
+
             if player.active_buff == "VPN":
                 player.active_buff = None
-                game.last_event_message = (
-                    f"🛡️ VPN activated! Blocked ${rent} rent to {owner.name}!"
-                )
+                game.last_event_message = f"🛡️ VPN activated! Blocked ${rent} rent to {owner.name}!"
             else:
                 await self._charge_player(game, player, rent, owner)
                 if not player.is_bankrupt:
@@ -147,28 +147,22 @@ class GameOrchestrator:
                     ):
                         bonus_info = " (SET BONUS!)"
                     if tile.upgrade_level > 0:
-                        level_name = (
-                            "SCRIPT KIDDIE" if tile.upgrade_level == 1 else "1337 HAXXOR"
-                        )
+                        level_name = "SCRIPT KIDDIE" if tile.upgrade_level == 1 else "1337 HAXXOR"
                         bonus_info += f" [{level_name}]"
 
-                    game.last_event_message = (
-                        f"💸 Paid ${rent} rent to {owner.name}{bonus_info}"
-                    )
+                    game.last_event_message = f"💸 Paid ${rent} rent to {owner.name}{bonus_info}"
         game.turn_phase = TurnPhase.POST_TURN
 
-    async def _handle_chance_landing(
-        self, game: GameSession, player: Player, tile: Tile
-    ) -> None:
+    async def _handle_chance_landing(self, game: GameSession, player: Player, tile: Tile) -> None:
         """Handle chance landing."""
         event = self.turn_manager.handle_chance_landing(game, player, tile)
         actions = await self.event_manager.apply_effect(game, player, event)
 
         if actions.get("requires_decision"):
             from app.modules.sastadice.schemas import PendingDecision
+
             game.pending_decision = PendingDecision(
-                type=f"EVENT_{actions['special']}",
-                event_data={"event": event, "actions": actions}
+                type=f"EVENT_{actions['special']}", event_data={"event": event, "actions": actions}
             )
             game.last_event_message = f"🎲 {event['name']}: {event['desc']}"
             game.turn_phase = TurnPhase.DECISION
@@ -180,40 +174,36 @@ class GameOrchestrator:
         elif actions.get("special") == "BULL_MARKET":
             game.rent_multiplier = 1.5
         elif actions.get("special") == "HYPERINFLATION":
-            pass
+            game.go_bonus_multiplier = 3.0
 
         if actions.get("skip_buy"):
             game.pending_decision = None
 
         if actions.get("revealed_player"):
             revealed = actions["revealed_player"]
-            game.last_event_message = f"🔍 {event['name']}: {revealed['name']} has ${revealed['cash']}"
+            game.last_event_message = (
+                f"🔍 {event['name']}: {revealed['name']} has ${revealed['cash']}"
+            )
         else:
             game.last_event_message = f"🎲 {event['name']}: {event['desc']}"
 
         game.turn_phase = TurnPhase.POST_TURN
 
-    async def _handle_tax_landing(
-        self, game: GameSession, player: Player, tile: Tile
-    ) -> None:
+    async def _handle_tax_landing(self, game: GameSession, player: Player, tile: Tile) -> None:
         """Handle tax landing."""
         tax_amount = self.turn_manager.handle_tax_landing(game, player, tile)
         await self._charge_player(game, player, tax_amount)
         if not player.is_bankrupt:
             game.last_event_message = f"💸 Paid ${tax_amount} in taxes for '{tile.name}'"
 
-    async def _handle_buff_landing(
-        self, game: GameSession, player: Player, tile: Tile
-    ) -> None:
+    async def _handle_buff_landing(self, game: GameSession, player: Player, tile: Tile) -> None:
         """Handle buff landing."""
         buff_amount = self.turn_manager.handle_buff_landing(game, player, tile)
         player.cash += buff_amount
         await self.repository.update_player_cash(player.id, player.cash)
         game.last_event_message = f"🎁 Received ${buff_amount} from '{tile.name}'!"
 
-    async def _handle_trap_landing(
-        self, game: GameSession, player: Player, tile: Tile
-    ) -> None:
+    async def _handle_trap_landing(self, game: GameSession, player: Player, tile: Tile) -> None:
         """Handle trap landing."""
         trap_amount = self.turn_manager.handle_trap_landing(game, player, tile)
         await self._charge_player(game, player, trap_amount)
@@ -226,9 +216,7 @@ class GameOrchestrator:
         if target:
             player.position = target.position
             await self.repository.update_player_position(player.id, target.position)
-            game.last_event_message = (
-                f"⚡ GLITCH! {player.name} teleported to {target.name}!"
-            )
+            game.last_event_message = f"⚡ GLITCH! {player.name} teleported to {target.name}!"
 
             if target.type in [
                 TileType.PROPERTY,
@@ -243,7 +231,7 @@ class GameOrchestrator:
 
     async def _charge_player(
         self, game: GameSession, player: Player, amount: int, creditor: Player | None = None
-    ):
+    ) -> None:
         """Charge a player amount. Trigger Fire Sale or Bankruptcy if needed."""
         result = await self.economy_manager.charge_player(game, player, amount, creditor)
 
@@ -251,13 +239,19 @@ class GameOrchestrator:
             return
         elif result["action"] == "charged_after_liquidation":
             game.last_event_message = (
-                (game.last_event_message or "")
-                + " | 📉 FIRE SALE triggered! | Survived by selling assets."
-            )
+                game.last_event_message or ""
+            ) + " | 📉 FIRE SALE triggered! | Survived by selling assets."
         elif result["action"] == "bankrupt":
-            game.last_event_message = (
-                (game.last_event_message or "") + " | 📉 FIRE SALE triggered!"
-            )
+            game.last_event_message = (game.last_event_message or "") + " | 📉 FIRE SALE triggered!"
+            if game.bankruptcy_auction_queue:
+                tile = next(
+                    (t for t in game.board if t.id == game.bankruptcy_auction_queue[0]),
+                    None,
+                )
+                if tile:
+                    self.auction_manager.start_auction(game, tile, auction_duration=10)
+                    game.last_event_message = f"🔨 State auction: {tile.name} from bankrupt player!"
+                    await self.repository.update(game)
 
     # Public API methods (delegated to managers)
 
@@ -270,20 +264,23 @@ class GameOrchestrator:
         return await self.lobby_manager.get_game(game_id)
 
     async def update_settings(
-        self, game_id: str, host_id: str, settings_dict: dict
-    ) -> dict:
+        self, game_id: str, host_id: str, settings_dict: dict[str, Any]
+    ) -> dict[str, Any]:
         """Update game settings. Only host can update."""
         return await self.lobby_manager.update_settings(game_id, host_id, settings_dict)
 
     async def join_game(
-        self, game_id: str, player_name: str, tiles: list | None = None
+        self,
+        game_id: str,
+        player_name: str,
+        tiles: list[TileCreate] | None = None,
     ) -> Player:
         """Join a game and submit tiles."""
         return await self.lobby_manager.join_game(game_id, player_name, tiles)
 
     async def kick_player(
         self, game_id: str, host_id: str, target_player_id: str
-    ) -> dict:
+    ) -> dict[str, Any]:
         """Kick a player from the game. Only host can kick."""
         return await self.lobby_manager.kick_player(game_id, host_id, target_player_id)
 
@@ -291,7 +288,7 @@ class GameOrchestrator:
         """Add CPU players to reach target count."""
         return await self.lobby_manager.add_cpu_players(game_id, target_count)
 
-    async def toggle_ready(self, game_id: str, player_id: str) -> dict:
+    async def toggle_ready(self, game_id: str, player_id: str) -> dict[str, Any]:
         """Toggle player's launch key. Auto-starts if all players ready."""
         result = await self.lobby_manager.toggle_ready(game_id, player_id)
         if result.get("game_started"):
@@ -310,26 +307,40 @@ class GameOrchestrator:
         )
 
     async def perform_action(
-        self, game_id: str, player_id: str, action_type: ActionType, payload: dict
+        self,
+        game_id: str,
+        player_id: str,
+        action_type: ActionType,
+        payload: dict[str, Any],
     ) -> ActionResult:
         """Dispatch game action to appropriate manager."""
         game = await self.get_game(game_id)
+        player = next((p for p in game.players if p.id == player_id), None)
+        if player and not self.cpu_manager.is_cpu_player(player):
+            await self.repository.update_player_afk(player_id, 0, False, 0)
+            player.afk_turns = 0
+            player.disconnected = False
+            player.disconnected_turns = 0
         return await self.action_dispatcher.dispatch(game, player_id, action_type, payload)
 
     async def simulate_cpu_game(
-        self, game_id: str, max_turns: int = 100, enable_economic_monitoring: bool = False, chaos_config: ChaosConfig | None = None
-    ) -> dict:
-        self.simulation_manager = SimulationManager(
+        self,
+        game_id: str,
+        max_turns: int = 100,
+        enable_economic_monitoring: bool = False,
+        chaos_config: ChaosConfig | None = None,
+    ) -> dict[str, Any]:
+        simulation_manager = SimulationManager(
             self.repository,
             self.action_dispatcher,
             self.get_game,
             self.start_game,
             enable_economic_monitoring=enable_economic_monitoring,
-            chaos_config=chaos_config
+            chaos_config=chaos_config,
         )
-        return await self.simulation_manager.simulate_cpu_game(game_id, max_turns)
+        return await simulation_manager.simulate_cpu_game(game_id, max_turns)
 
-    async def process_cpu_turns(self, game_id: str) -> dict:
+    async def process_cpu_turns(self, game_id: str) -> dict[str, Any]:
         """Process all consecutive CPU turns until a human player's turn."""
         return await self.cpu_manager.process_cpu_turns(game_id)
 
@@ -353,12 +364,22 @@ class GameOrchestrator:
             if not current_player:
                 return False
 
+            if not self.cpu_manager.is_cpu_player(current_player):
+                afk_turns = getattr(current_player, "afk_turns", 0) + 1
+                disconnected = afk_turns >= 3
+                await self.repository.update_player_afk(current_player.id, afk_turns, disconnected)
+                current_player.afk_turns = afk_turns
+                current_player.disconnected = disconnected
+                if disconnected:
+                    game.last_event_message = (
+                        f"👻 {current_player.name} AFK! Ghost mode — 3 turns to bankruptcy!"
+                    )
+                    await self.repository.update(game)
+
             if game.turn_phase == TurnPhase.PRE_ROLL:
                 await self.perform_action(game_id, current_player.id, ActionType.ROLL_DICE, {})
             elif game.turn_phase == TurnPhase.DECISION:
-                await self.perform_action(
-                    game_id, current_player.id, ActionType.PASS_PROPERTY, {}
-                )
+                await self.perform_action(game_id, current_player.id, ActionType.PASS_PROPERTY, {})
             elif game.turn_phase == TurnPhase.POST_TURN:
                 await self.perform_action(game_id, current_player.id, ActionType.END_TURN, {})
 

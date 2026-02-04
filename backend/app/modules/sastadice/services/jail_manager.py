@@ -1,4 +1,5 @@
 """Jail manager for jail entry, exit, and 3-turn maximum enforcement."""
+
 import random
 from typing import TYPE_CHECKING
 
@@ -21,9 +22,7 @@ class JailManager:
         player.consecutive_doubles = 0
 
     @staticmethod
-    def attempt_bribe_release(
-        game: "GameSession", player: "Player"
-    ) -> tuple[bool, str]:
+    def attempt_bribe_release(game: "GameSession", player: "Player") -> tuple[bool, str]:
         """Pay bribe to exit jail. Returns (success, message)."""
         bribe_cost = game.settings.jail_bribe_cost
 
@@ -39,9 +38,7 @@ class JailManager:
         return True, f"Paid ${bribe_cost} bribe. You are free!"
 
     @staticmethod
-    def roll_for_doubles(
-        game: "GameSession", player: "Player"
-    ) -> tuple[bool, int, int, str]:
+    def roll_for_doubles(game: "GameSession", player: "Player") -> tuple[bool, int, int, str]:
         """
         Roll dice to escape jail.
         Returns (escaped, dice1, dice2, message).
@@ -83,7 +80,9 @@ class JailManager:
 
     @staticmethod
     def can_collect_rent(
-        player: "Player", tile: "Tile", game: "GameSession"  # type: ignore
+        player: "Player",
+        tile: "Tile",
+        game: "GameSession",
     ) -> bool:
         """
         Players in jail CAN still collect rent (unless DDoS/blocked).
@@ -91,6 +90,4 @@ class JailManager:
         """
         if tile.blocked_until_round and tile.blocked_until_round > game.current_round:
             return False
-        if tile.id in game.blocked_tiles:
-            return False
-        return True
+        return tile.id not in game.blocked_tiles

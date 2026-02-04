@@ -1,7 +1,7 @@
 """MongoDB connection management - Async singleton pattern."""
 
 from collections.abc import AsyncGenerator
-from typing import Optional
+from typing import Any, Optional
 
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
 
@@ -12,8 +12,8 @@ class MongoDBManager:
     """Singleton manager for MongoDB connections."""
 
     _instance: Optional["MongoDBManager"] = None
-    _client: AsyncIOMotorClient | None = None
-    _database: AsyncIOMotorDatabase | None = None
+    _client: AsyncIOMotorClient[Any] | None = None
+    _database: AsyncIOMotorDatabase[Any] | None = None
     _initialized: bool = False
 
     def __new__(cls) -> "MongoDBManager":
@@ -30,12 +30,12 @@ class MongoDBManager:
         if self._initialized and self._client is not None:
             return
 
-        self._client = AsyncIOMotorClient(settings.mongodb_url)
+        self._client = AsyncIOMotorClient[Any](settings.mongodb_url)
         self._database = self._client[settings.mongodb_database]
         self._initialized = True
 
     @property
-    def database(self) -> AsyncIOMotorDatabase:
+    def database(self) -> AsyncIOMotorDatabase[Any]:
         """Get the MongoDB database instance."""
         if not self._initialized or self._database is None:
             raise RuntimeError("MongoDB not initialized. Call initialize() first.")
@@ -61,7 +61,7 @@ def _get_db_manager() -> MongoDBManager:
     return _db_manager
 
 
-async def get_db() -> AsyncGenerator[AsyncIOMotorDatabase, None]:
+async def get_db() -> AsyncGenerator[AsyncIOMotorDatabase[Any], None]:
     """FastAPI dependency that yields a MongoDB database instance."""
     manager = _get_db_manager()
     yield manager.database
