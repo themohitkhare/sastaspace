@@ -95,7 +95,7 @@ services:
       - sastaspace-network
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.frontend-main.rule=Host(`localhost`) && PathPrefix(`/`) && !PathPrefix(`/api`) && !PathPrefix(`/sastahero`) && !PathPrefix(`/sasta`) && !PathPrefix(`/sastadice`)"
+      - "traefik.http.routers.frontend-main.rule=Host(`localhost`) && PathPrefix(`/`) && !PathPrefix(`/api`) && !PathPrefix(`/sastahero`) && !PathPrefix(`/sasta`) && !PathPrefix(`/sastadice`) && !PathPrefix(`/sudoku`)"
       - "traefik.http.routers.frontend-main.entrypoints=web"
       - "traefik.http.services.frontend-main.loadbalancer.server.port=80"
       - "traefik.http.routers.frontend-main.priority=1"
@@ -153,6 +153,24 @@ services:
       - "traefik.http.services.frontend-sastadice.loadbalancer.server.port=80"
       - "traefik.http.middlewares.sastadice-stripprefix.stripprefix.prefixes=/sastadice"
       - "traefik.http.routers.frontend-sastadice.middlewares=sastadice-stripprefix"
+    restart: unless-stopped
+
+  frontend-sudoku:
+    build:
+      context: ./frontends
+      dockerfile: sudoku/Dockerfile
+    container_name: sastaspace-frontend-sudoku
+    ports:
+      - "9004:80"  # Direct access: http://localhost:9004
+    networks:
+      - sastaspace-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.frontend-sudoku.rule=Host(`localhost`) && PathPrefix(`/sudoku`)"
+      - "traefik.http.routers.frontend-sudoku.entrypoints=web"
+      - "traefik.http.services.frontend-sudoku.loadbalancer.server.port=80"
+      - "traefik.http.middlewares.sudoku-stripprefix.stripprefix.prefixes=/sudoku"
+      - "traefik.http.routers.frontend-sudoku.middlewares=sudoku-stripprefix"
     restart: unless-stopped
 
   loki:
