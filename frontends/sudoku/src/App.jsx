@@ -3,7 +3,7 @@ import Sudoku from './pages/Sudoku.jsx';
 
 export default function App() {
   return (
-    <BrowserRouter>
+    <BrowserRouter basename="/sudoku">
       <div className="app-header">
         <h1>SastaSpace Sudoku</h1>
         <span className="badge">GA Solver</span>
