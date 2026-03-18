@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, status
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
 from motor.motor_asyncio import AsyncIOMotorDatabase
 
 from app.db.session import get_db
@@ -84,12 +84,13 @@ async def ai_tick(
 
 
 @router.post("/extract-board", response_model=ExtractBoardResponse)
-async def extract_board(file: UploadFile) -> ExtractBoardResponse:
+async def extract_board(file: UploadFile = File(...)) -> ExtractBoardResponse:
     if not file.content_type or not file.content_type.startswith("image/"):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="File must be an image")
     try:
         content = await file.read()
-        board = extract_sudoku_board(content)
-        return ExtractBoardResponse(board=board)
+        board, confidences = extract_sudoku_board(content)
+        confidences = [min(1.0, max(0.0, float(c))) for c in confidences]
+        return ExtractBoardResponse(board=board, confidences=confidences)
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"OCR failed: {str(e)}")

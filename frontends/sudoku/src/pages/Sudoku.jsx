@@ -1,25 +1,23 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import UnifiedBoard from '../components/UnifiedBoard.jsx';
+import PlayerBoard from '../components/PlayerBoard.jsx';
+import AiBoard from '../components/AiBoard.jsx';
 import SudokuHUD from '../components/SudokuHUD.jsx';
 import EndGameModal from '../components/EndGameModal.jsx';
-import { useParams, useNavigate } from 'react-router-dom';
 import { parsePastedBoard } from '../utils/sudokuOcr.js';
 
 const API = '/api/v1/sudoku';
+const OCR_UNCERTAIN_THRESHOLD = 0.6;
 
 export default function Sudoku() {
-  const { matchId: urlMatchId } = useParams();
-  const navigate = useNavigate();
-
-  const [matchId, setMatchId] = useState(urlMatchId || null);
-  const [customBoard, setCustomBoard] = useState(new Array(81).fill(0));
+  const [matchId, setMatchId] = useState(null);
   const [startingBoard, setStartingBoard] = useState([]);
+  const [playerBoard, setPlayerBoard] = useState([]);
+  const [ocrConfidences, setOcrConfidences] = useState(new Array(81).fill(0));
+  const [showOcrReview, setShowOcrReview] = useState(false);
   const [gridSize, setGridSize] = useState(9);
   const [difficulty, setDifficulty] = useState('medium');
-  const [showAdvanced, setShowAdvanced] = useState(false);
   const [status, setStatus] = useState('idle');
   const [loading, setLoading] = useState(false);
-  const fileInputRef = useRef(null);
 
   // AI state
   const [generation, setGeneration] = useState(0);
@@ -28,27 +26,30 @@ export default function Sudoku() {
   const [bestBoard, setBestBoard] = useState([]);
 
   const timerRef = useRef(null);
+  const fileInputRef = useRef(null);
 
   // ---- API helpers ----
 
   const startMatch = async () => {
     setLoading(true);
     try {
+      const custom_board =
+        playerBoard?.length === gridSize * gridSize && playerBoard.some((c) => c !== 0)
+          ? playerBoard
+          : null;
       const res = await fetch(`${API}/matches`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-           difficulty, 
-           custom_board: customBoard.some(c => c !== 0) ? customBoard : null 
-        }),
+        body: JSON.stringify({ difficulty, grid_size: gridSize, custom_board }),
       });
       const data = await res.json();
       setMatchId(data.match_id);
-      navigate(`/${data.match_id}`);
       setStartingBoard(data.starting_board);
-      setCustomBoard([...data.starting_board]); // Lock original input
+      setPlayerBoard([...data.starting_board]);
       setGridSize(data.grid_size);
       setStatus('in_progress');
+      setShowOcrReview(false);
+      setOcrConfidences(new Array(data.grid_size * data.grid_size).fill(0));
       setGeneration(0);
       setFitness(0);
       setHeatmap(new Array(data.grid_size * data.grid_size).fill(0));
@@ -63,30 +64,18 @@ export default function Sudoku() {
   const fetchAiState = useCallback(async (id) => {
     try {
       const res = await fetch(`${API}/matches/${id}`);
-      if (!res.ok) {
-        if (res.status === 404) {
-          navigate('/');
-        }
-        return;
-      }
       const data = await res.json();
       setGeneration(data.ai.generation_count);
       setFitness(data.ai.fitness_score);
       setHeatmap(data.ai.heatmap_data);
       setBestBoard(data.ai.best_board);
-
-      if (startingBoard.length === 0) {
-          setStartingBoard(data.starting_board);
-          setCustomBoard(data.starting_board);
-          setStatus(data.status);
-          setGridSize(data.grid_size || 9);
-      } else if (data.status !== 'in_progress') {
+      if (data.status !== 'in_progress') {
         setStatus(data.status);
       }
     } catch {
       /* polling failure — ignore */
     }
-  }, [navigate, startingBoard.length]);
+  }, []);
 
   const triggerAiTick = useCallback(async (id) => {
     try {
@@ -104,15 +93,6 @@ export default function Sudoku() {
     }
   }, [fetchAiState]);
 
-  // Initialize from URL param if present
-  useEffect(() => {
-    if (urlMatchId && status === 'idle' && startingBoard.length === 0) {
-        setMatchId(urlMatchId);
-        setStatus('in_progress');
-        fetchAiState(urlMatchId);
-    }
-  }, [urlMatchId, status, startingBoard.length, fetchAiState]);
-
   // AI tick polling
   useEffect(() => {
     if (!matchId || status !== 'in_progress') {
@@ -128,81 +108,55 @@ export default function Sudoku() {
   // ---- Handlers ----
 
   const handleCellChange = (idx, val) => {
-    if (status !== 'idle') return; // Read-only while solving
-    const next = [...customBoard];
+    const next = [...playerBoard];
     next[idx] = val;
-    setCustomBoard(next);
+    setPlayerBoard(next);
+    // Save to server (fire-and-forget)
+    if (matchId) {
+      fetch(`${API}/matches/${matchId}/board`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ board: next }),
+      }).catch(() => {});
+    }
   };
 
-  const handlePaste = async (e) => {
-    if (status !== 'idle') return;
-    
-    const items = e.clipboardData.items;
-    let imageFile = null;
-    
-    for (let i = 0; i < items.length; i++) {
-        if (items[i].type.indexOf('image') !== -1) {
-            imageFile = items[i].getAsFile();
-            break;
-        }
-    }
+  const setBoardFromOcr = (board, confidences) => {
+    if (!Array.isArray(board) || board.length !== gridSize * gridSize) return;
 
-    if (imageFile) {
-        setLoading(true);
-        try {
-            const formData = new FormData();
-            formData.append('file', imageFile);
-            
-            const res = await fetch(`${API}/extract-board`, {
-                method: 'POST',
-                body: formData
-            });
-            const data = await res.json();
-            if (data.board) {
-                setCustomBoard(data.board);
-            }
-        } catch (err) {
-            console.error('OCR paste failed:', err);
-            alert("Failed to extract Sudoku board from image.");
-        } finally {
-            setLoading(false);
-        }
-        return;
-    }
+    setPlayerBoard(board);
 
-    // Fallback to basic text parsing
-    const text = e.clipboardData.getData('text');
-    const board = parsePastedBoard(text, gridSize);
-    if (board) {
-      setCustomBoard(board);
-    }
+    const conf =
+      Array.isArray(confidences) && confidences.length === board.length
+        ? confidences.map((c) => {
+            const n = Number(c);
+            if (Number.isNaN(n)) return 0;
+            return Math.max(0, Math.min(1, n));
+          })
+        : board.map((v) => (v ? 1 : 0));
+
+    setOcrConfidences(conf);
+    setShowOcrReview(true);
   };
 
   const handleUploadImage = async (file) => {
-    if (status !== 'idle') return;
     if (!file || !file.type?.startsWith('image/')) return;
-
     setLoading(true);
     try {
       const formData = new FormData();
       formData.append('file', file);
-
       const res = await fetch(`${API}/extract-board`, {
         method: 'POST',
         body: formData,
       });
-
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
         throw new Error(err?.detail || 'OCR failed');
       }
-
       const data = await res.json();
-      if (data.board) {
-        setCustomBoard(data.board);
-      }
+      setBoardFromOcr(data.board, data.confidences);
     } catch (err) {
-      console.error('OCR upload failed:', err);
+      console.error('OCR failed:', err);
       alert('Failed to extract Sudoku board from image.');
     } finally {
       setLoading(false);
@@ -212,23 +166,65 @@ export default function Sudoku() {
   const onFileChange = async (e) => {
     const file = e.target.files?.[0];
     if (file) await handleUploadImage(file);
-    // allow re-uploading same file
     e.target.value = '';
   };
 
-  // Capture paste anywhere on the page (paste is flaky if focus isn't on the board)
+  const handleClaimVictory = async () => {
+    if (!matchId) return;
+    try {
+      const res = await fetch(`${API}/matches/${matchId}/claim-victory`, { method: 'POST' });
+      const data = await res.json();
+      if (data.valid) {
+        setStatus('player_won');
+      }
+    } catch (err) {
+      console.error('Claim failed', err);
+    }
+  };
+
+  const handlePaste = useCallback(
+    async (e) => {
+      const items = e.clipboardData?.items || [];
+      let imageFile = null;
+
+      for (let i = 0; i < items.length; i++) {
+        if (items[i].type?.includes('image')) {
+          imageFile = items[i].getAsFile();
+          break;
+        }
+      }
+
+      if (imageFile) {
+        await handleUploadImage(imageFile);
+        return;
+      }
+
+      const text = e.clipboardData?.getData('text') || '';
+      const board = parsePastedBoard(text, gridSize);
+      if (board) {
+        setPlayerBoard(board);
+      }
+    },
+    [gridSize],
+  );
+
   useEffect(() => {
-    const onWindowPaste = (e) => handlePaste(e);
+    const onWindowPaste = (e) => {
+      // Only enable OCR paste before game ends; during game, keep current behavior.
+      if (status === 'player_won' || status === 'ai_won') return;
+      handlePaste(e);
+    };
     window.addEventListener('paste', onWindowPaste);
     return () => window.removeEventListener('paste', onWindowPaste);
-  }, [handlePaste]);
+  }, [handlePaste, status]);
 
   const handlePlayAgain = () => {
-    navigate('/');
     setMatchId(null);
     setStatus('idle');
     setStartingBoard([]);
-    setCustomBoard(new Array(gridSize * gridSize).fill(0));
+    setPlayerBoard([]);
+    setOcrConfidences(new Array(81).fill(0));
+    setShowOcrReview(false);
     setGeneration(0);
     setFitness(0);
     setHeatmap([]);
@@ -238,90 +234,93 @@ export default function Sudoku() {
   // ---- Render ----
 
   const isGameOver = status === 'player_won' || status === 'ai_won';
-  const displayBoard = status === 'idle' ? customBoard : bestBoard;
-  const boardKeys = status === 'idle' ? customBoard : startingBoard;
+  const uncertainCells =
+    showOcrReview && playerBoard.length
+      ? playerBoard.map(
+          (v, i) => Boolean(v) && (ocrConfidences[i] ?? 0) < OCR_UNCERTAIN_THRESHOLD,
+        )
+      : [];
+  const detectedCount = showOcrReview ? playerBoard.filter((v) => v !== 0).length : 0;
+  const uncertainCount = showOcrReview ? uncertainCells.filter(Boolean).length : 0;
 
   return (
-    <div className="page" onPaste={handlePaste}>
+    <div className="page">
       {status === 'idle' && (
         <div className="start-screen">
-          <h2>Sudoku Solver</h2>
+          <h2>Sudoku vs. Genetic Algorithm</h2>
           <p>
-            Paste an image or type numbers to set up your Sudoku puzzle.
-            Our Genetic Algorithm will solve it!
+            Race against an AI powered by a genetic algorithm with 13 mutation
+            operators, tabu dedup, and stall detection. Can you solve the puzzle
+            before evolution catches up?
           </p>
-          <div className="actions-row">
+          <p style={{ maxWidth: 520 }}>
+            Paste an image (or upload a screenshot) to autofill the puzzle. If OCR is unsure, those
+            digits will be highlighted for quick correction.
+          </p>
+          <div className="difficulty-picker">
+            {['easy', 'medium', 'hard'].map((d) => (
+              <button
+                key={d}
+                className={`difficulty-btn ${difficulty === d ? 'active' : ''}`}
+                onClick={() => setDifficulty(d)}
+              >
+                {d.charAt(0).toUpperCase() + d.slice(1)}
+              </button>
+            ))}
+          </div>
+          <div className="boards-container" style={{ gridTemplateColumns: '1fr' }}>
+            <PlayerBoard
+              board={playerBoard.length ? playerBoard : new Array(gridSize * gridSize).fill(0)}
+              startingBoard={new Array(gridSize * gridSize).fill(0)}
+              gridSize={gridSize}
+              onChange={handleCellChange}
+              disabled={loading}
+              uncertainCells={uncertainCells}
+            />
+          </div>
+
+          {showOcrReview && (
+            <div className="actions-row" style={{ gap: '0.75rem' }}>
+              <div style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
+                OCR detected <b>{detectedCount}</b> digits; <b>{uncertainCount}</b> uncertain.
+              </div>
+              <button
+                className="btn-secondary"
+                onClick={() => {
+                  const next = playerBoard.map((v, i) => (uncertainCells[i] ? 0 : v));
+                  setPlayerBoard(next);
+                }}
+                disabled={loading || uncertainCount === 0}
+              >
+                Clear uncertain
+              </button>
+              <button className="btn-secondary" onClick={() => setShowOcrReview(false)} disabled={loading}>
+                Accept OCR
+              </button>
+            </div>
+          )}
+
+          <div className="actions-row" style={{ gap: '0.75rem' }}>
+            <button
+              className="btn-secondary"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={loading}
+            >
+              Upload image
+            </button>
             <button
               className="btn-primary"
               onClick={startMatch}
               disabled={loading}
               id="start-match-btn"
             >
-              {loading ? 'Processing…' : 'Solve with GA'}
+              {loading ? 'Starting…' : 'Start Race'}
             </button>
-            <button
-              className="btn-secondary"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={loading}
-            >
-              Upload Image
-            </button>
-            <button className="btn-secondary" onClick={handlePlayAgain}>
-                Clear
+            <button className="btn-secondary" onClick={handlePlayAgain} disabled={loading}>
+              Clear
             </button>
           </div>
 
-          <div className="advanced-controls">
-            <button
-              type="button"
-              className="btn-secondary btn-advanced-toggle"
-              onClick={() => setShowAdvanced((v) => !v)}
-              aria-expanded={showAdvanced}
-              aria-controls="sudoku-advanced-panel"
-              disabled={loading}
-            >
-              Advanced {showAdvanced ? '▲' : '▼'}
-            </button>
-
-            {showAdvanced && (
-              <div
-                id="sudoku-advanced-panel"
-                className="advanced-panel"
-                role="region"
-                aria-label="Advanced Sudoku controls"
-              >
-                <div className="advanced-row">
-                  <span className="advanced-label">Difficulty</span>
-                  <div className="difficulty-picker" aria-label="Difficulty picker">
-                    <button
-                      type="button"
-                      className={`difficulty-btn ${difficulty === 'easy' ? 'active' : ''}`}
-                      onClick={() => setDifficulty('easy')}
-                      disabled={loading}
-                    >
-                      Easy
-                    </button>
-                    <button
-                      type="button"
-                      className={`difficulty-btn ${difficulty === 'medium' ? 'active' : ''}`}
-                      onClick={() => setDifficulty('medium')}
-                      disabled={loading}
-                    >
-                      Medium
-                    </button>
-                    <button
-                      type="button"
-                      className={`difficulty-btn ${difficulty === 'hard' ? 'active' : ''}`}
-                      onClick={() => setDifficulty('hard')}
-                      disabled={loading}
-                    >
-                      Hard
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
           <input
             ref={fileInputRef}
             type="file"
@@ -333,30 +332,40 @@ export default function Sudoku() {
       )}
 
       {status !== 'idle' && (
-        <SudokuHUD generation={generation} fitness={fitness} status={status} />
-      )}
+        <>
+          <SudokuHUD generation={generation} fitness={fitness} status={status} />
 
-      <div className="boards-container single-board-mode">
-          <UnifiedBoard
-              board={displayBoard}
-              startingBoard={boardKeys}
+          <div className="boards-container">
+            <PlayerBoard
+              board={playerBoard}
+              startingBoard={startingBoard}
+              gridSize={gridSize}
+              onChange={handleCellChange}
+              disabled={isGameOver}
+            />
+            <AiBoard
+              bestBoard={bestBoard}
+              startingBoard={startingBoard}
               heatmapData={heatmap}
               gridSize={gridSize}
-              status={status}
-              onChange={handleCellChange}
-          />
-      </div>
-
-       {status !== 'idle' && !isGameOver && (
-          <div className="actions-row" style={{marginTop: '1.5rem'}}>
-              <button className="btn-secondary" onClick={handlePlayAgain}>
-                  Stop & Edit
-              </button>
+            />
           </div>
-      )}
 
-      {isGameOver && (
-        <EndGameModal status={status} onPlayAgain={handlePlayAgain} />
+          {!isGameOver && (
+            <div className="actions-row">
+              <button className="btn-primary" onClick={handleClaimVictory} id="claim-victory-btn">
+                Claim Victory
+              </button>
+              <button className="btn-secondary" onClick={handlePlayAgain}>
+                New Game
+              </button>
+            </div>
+          )}
+
+          {isGameOver && (
+            <EndGameModal status={status} onPlayAgain={handlePlayAgain} />
+          )}
+        </>
       )}
     </div>
   );
