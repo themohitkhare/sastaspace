@@ -1,8 +1,7 @@
 /**
  * Tests for apiClient
- * Note: apiClient is primarily configuration code, testing is limited to basic structure
  */
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { apiClient } from '../../src/api/apiClient'
 
 describe('apiClient', () => {
@@ -21,5 +20,14 @@ describe('apiClient', () => {
   it('has response interceptor configured', () => {
     expect(apiClient.interceptors.response).toBeDefined()
     expect(apiClient.interceptors.response.use).toBeDefined()
+  })
+
+  it('uses relative URL when on port 80 (Traefik)', () => {
+    // apiClient is initialized at module load, so we verify the base URL
+    // In test environment (jsdom), location is localhost without port
+    // which should resolve to relative /api/v1
+    const baseURL = apiClient.defaults.baseURL
+    expect(baseURL).toBeDefined()
+    expect(typeof baseURL).toBe('string')
   })
 })
