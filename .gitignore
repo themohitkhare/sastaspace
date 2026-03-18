@@ -48,6 +48,9 @@ backend/data/*.db.wal
 # MongoDB / WiredTiger
 backend/data/mongodb/
 
+# Redis
+backend/data/redis/
+
 # Test artifacts
 backend/data/game_logs/
 frontends/*/playwright-report/
