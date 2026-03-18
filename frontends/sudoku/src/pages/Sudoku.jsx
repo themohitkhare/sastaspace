@@ -14,7 +14,7 @@ export default function Sudoku() {
   const [inputBoard, setInputBoard] = useState([]);
   const [ocrConfidences, setOcrConfidences] = useState([]);
   const [showOcrReview, setShowOcrReview] = useState(false);
-  const [gridSize] = useState(9);
+  const [gridSize, setGridSize] = useState(9);
   const [status, setStatus] = useState('idle'); // idle | loading | solving | solved
   const [error, setError] = useState(null);
   const [dragging, setDragging] = useState(false);
@@ -64,7 +64,7 @@ export default function Sudoku() {
       // 3. Start fast polling
       startPolling(newMatchId);
     } catch (err) {
-      setError('Failed to start solver');
+      setError(`Failed to start solver: ${err.message || err}`);
       setStatus('idle');
     }
   };
