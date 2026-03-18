@@ -839,7 +839,7 @@ class _SortableCursorMock:
         self._items = items
         self._index = 0
 
-    def sort(self, *args: Any, **kwargs: Any) -> "_SortableCursorMock":
+    def sort(self, *_args: Any, **_kwargs: Any) -> "_SortableCursorMock":
         return self
 
     def __aiter__(self) -> "_SortableCursorMock":
@@ -851,3 +851,791 @@ class _SortableCursorMock:
         item = self._items[self._index]
         self._index += 1
         return item
+
+
+# ── Helper: standard player fixture ───────────────────────────────────
+
+
+def _make_player(**overrides: Any) -> dict[str, Any]:
+    """Build a standard player dict with optional overrides."""
+    base: dict[str, Any] = {
+        "player_id": "test-player",
+        "shards": {"SOUL": 10, "SHIELD": 10, "VOID": 10, "LIGHT": 10, "FORCE": 10},
+        "collection": [],
+        "streak": {"count": 0, "last_played_date": None},
+        "stages_completed": 0,
+        "active_powerups": [],
+        "badges": [],
+        "cards_shared": 0,
+        "quiz_streak": 0,
+        "quiz_seen": [],
+    }
+    base.update(overrides)
+    return base
+
+
+def _make_deck_card(
+    card_id: str = "card-1",
+    identity_id: str = "genesis",
+    types: list[str] | None = None,
+    content_type: str = "STORY",
+    text: str = "Test text",
+    shard_yield: int = 1,
+) -> dict[str, Any]:
+    return {
+        "card_id": card_id,
+        "identity_id": identity_id,
+        "name": identity_id.title(),
+        "types": types or ["CREATION"],
+        "rarity": "COMMON",
+        "shard_yield": shard_yield,
+        "content_type": content_type,
+        "text": text,
+        "category": "science" if content_type == "KNOWLEDGE" else None,
+    }
+
+
+# ── Streak Unit Tests ─────────────────────────────────────────────────
+
+
+class TestStreakLogic:
+    def test_streak_new_player(self) -> None:
+        from app.modules.sastahero.services import _update_streak
+
+        result = _update_streak({"count": 0, "last_played_date": None})
+        assert result["count"] == 1
+        assert result["last_played_date"] is not None
+
+    def test_streak_same_day(self) -> None:
+        from datetime import UTC, datetime
+
+        from app.modules.sastahero.services import _update_streak
+
+        today = datetime.now(tz=UTC).strftime("%Y-%m-%d")
+        result = _update_streak({"count": 3, "last_played_date": today})
+        assert result["count"] == 3  # unchanged
+
+    def test_streak_consecutive_day(self) -> None:
+        from datetime import UTC, datetime, timedelta
+
+        from app.modules.sastahero.services import _update_streak
+
+        yesterday = (datetime.now(tz=UTC) - timedelta(days=1)).strftime("%Y-%m-%d")
+        result = _update_streak({"count": 5, "last_played_date": yesterday})
+        assert result["count"] == 6
+
+    def test_streak_broken(self) -> None:
+        from app.modules.sastahero.services import _update_streak
+
+        result = _update_streak({"count": 10, "last_played_date": "2020-01-01"})
+        assert result["count"] == 1  # reset
+
+
+# ── Roll Rarity Unit Tests ────────────────────────────────────────────
+
+
+class TestRollRarity:
+    def test_roll_default(self) -> None:
+        from app.modules.sastahero.services import _roll_rarity
+
+        results = {_roll_rarity() for _ in range(200)}
+        assert len(results) >= 2  # should hit multiple rarities
+
+    def test_roll_force_rare_plus(self) -> None:
+        from app.modules.sastahero.schemas import RarityTier
+        from app.modules.sastahero.services import _roll_rarity
+
+        for _ in range(50):
+            r = _roll_rarity(force_rare_plus=True)
+            assert r in (RarityTier.RARE, RarityTier.EPIC, RarityTier.LEGENDARY)
+
+    def test_roll_boost_uncommon(self) -> None:
+        from app.modules.sastahero.services import _roll_rarity
+
+        results = [_roll_rarity(boost_uncommon=True) for _ in range(200)]
+        from app.modules.sastahero.schemas import RarityTier
+
+        uncommon_count = sum(1 for r in results if r == RarityTier.UNCOMMON)
+        assert uncommon_count > 20  # should be significantly higher than default
+
+
+# ── Pick Identity Fallbacks ───────────────────────────────────────────
+
+
+class TestPickIdentity:
+    def test_fallback_to_other_rarity(self) -> None:
+        from app.modules.sastahero.constants import IDENTITIES_BY_RARITY
+        from app.modules.sastahero.schemas import RarityTier
+        from app.modules.sastahero.services import _pick_identity
+
+        # Exclude all commons — should fall back to another rarity
+        all_common_ids = {c.id for c in IDENTITIES_BY_RARITY[RarityTier.COMMON]}
+        result = _pick_identity(RarityTier.COMMON, all_common_ids)
+        assert result not in all_common_ids
+
+    def test_ultimate_fallback(self) -> None:
+        from app.modules.sastahero.constants import ALL_CARD_IDENTITIES
+        from app.modules.sastahero.schemas import RarityTier
+        from app.modules.sastahero.services import _pick_identity
+
+        # Exclude ALL identities — should still return something (duplicate)
+        all_ids = {c.id for c in ALL_CARD_IDENTITIES}
+        result = _pick_identity(RarityTier.COMMON, all_ids)
+        assert result is not None
+
+
+# ── Pick Variant Fallbacks ────────────────────────────────────────────
+
+
+class TestPickVariant:
+    def test_matching_variant(self) -> None:
+        from app.modules.sastahero.services import _pick_variant
+
+        text, cat = _pick_variant("genesis", "STORY")
+        assert text != ""
+        assert text != "A mysterious card..."
+
+    def test_fallback_to_any_variant(self) -> None:
+        from app.modules.sastahero.services import _pick_variant
+
+        text, _ = _pick_variant("genesis", "NONEXISTENT_TYPE")
+        assert text != "A mysterious card..."  # should use any variant
+
+    def test_fallback_unknown_identity(self) -> None:
+        from app.modules.sastahero.services import _pick_variant
+
+        text, cat = _pick_variant("nonexistent_card", "STORY")
+        assert text == "A mysterious card..."
+        assert cat is None
+
+
+# ── Stage Generation with Powerups ─────────────────────────────────────
+
+
+class TestStageWithPowerups:
+    def test_stage_with_lucky_draw(self, client: TestClient, mock_db: AsyncMock) -> None:
+        _override_db(mock_db)
+        mock_db.players.find_one = AsyncMock(
+            return_value=_make_player(active_powerups=[{"type": "LUCKY_DRAW"}])
+        )
+        try:
+            response = client.get("/api/v1/sastahero/stage?player_id=test-player")
+            assert response.status_code == 200
+            data = response.json()
+            assert len(data["cards"]) == 10
+        finally:
+            _clear_overrides()
+
+    def test_stage_with_magnetize(self, client: TestClient, mock_db: AsyncMock) -> None:
+        _override_db(mock_db)
+        mock_db.players.find_one = AsyncMock(
+            return_value=_make_player(
+                active_powerups=[{"type": "MAGNETIZE", "shard_type": "CREATION"}]
+            )
+        )
+        try:
+            response = client.get("/api/v1/sastahero/stage?player_id=test-player")
+            assert response.status_code == 200
+            cards = response.json()["cards"]
+            assert len(cards) == 10
+            # At least some creation-type cards in first 3
+            creation_first3 = sum(1 for c in cards[:3] if "CREATION" in c["types"])
+            assert creation_first3 >= 1
+        finally:
+            _clear_overrides()
+
+    def test_stage_with_fusion_boost(self, client: TestClient, mock_db: AsyncMock) -> None:
+        _override_db(mock_db)
+        mock_db.players.find_one = AsyncMock(
+            return_value=_make_player(active_powerups=[{"type": "FUSION_BOOST", "stages_left": 2}])
+        )
+        try:
+            response = client.get("/api/v1/sastahero/stage?player_id=test-player")
+            assert response.status_code == 200
+            assert len(response.json()["cards"]) == 10
+        finally:
+            _clear_overrides()
+
+    def test_stage_with_fusion_boost_last_stage(
+        self, client: TestClient, mock_db: AsyncMock
+    ) -> None:
+        _override_db(mock_db)
+        mock_db.players.find_one = AsyncMock(
+            return_value=_make_player(active_powerups=[{"type": "FUSION_BOOST", "stages_left": 1}])
+        )
+        try:
+            response = client.get("/api/v1/sastahero/stage?player_id=test-player")
+            assert response.status_code == 200
+        finally:
+            _clear_overrides()
+
+    def test_stage_streak_injects_rare(self, client: TestClient, mock_db: AsyncMock) -> None:
+        _override_db(mock_db)
+        mock_db.players.find_one = AsyncMock(
+            return_value=_make_player(streak={"count": 4, "last_played_date": "2020-01-01"})
+        )
+        try:
+            response = client.get("/api/v1/sastahero/stage?player_id=test-player")
+            assert response.status_code == 200
+        finally:
+            _clear_overrides()
+
+    def test_stage_streak_injects_epic(self, client: TestClient, mock_db: AsyncMock) -> None:
+        from datetime import UTC, datetime, timedelta
+
+        yesterday = (datetime.now(tz=UTC) - timedelta(days=1)).strftime("%Y-%m-%d")
+        _override_db(mock_db)
+        mock_db.players.find_one = AsyncMock(
+            return_value=_make_player(streak={"count": 8, "last_played_date": yesterday})
+        )
+        try:
+            response = client.get("/api/v1/sastahero/stage?player_id=test-player")
+            assert response.status_code == 200
+        finally:
+            _clear_overrides()
+
+    def test_stage_with_community_pool(self, client: TestClient, mock_db: AsyncMock) -> None:
+        _override_db(mock_db)
+
+        def _pool_find(*_args: Any, **_kwargs: Any) -> _AsyncCursorMock:
+            return _AsyncCursorMock([{"identity_id": "genesis", "share_count": 50}])
+
+        mock_db.card_pool.find = _pool_find
+        try:
+            response = client.get("/api/v1/sastahero/stage?player_id=test-player")
+            assert response.status_code == 200
+        finally:
+            _clear_overrides()
+
+    def test_stage_other_powerup_preserved(self, client: TestClient, mock_db: AsyncMock) -> None:
+        _override_db(mock_db)
+        mock_db.players.find_one = AsyncMock(
+            return_value=_make_player(active_powerups=[{"type": "QUIZ_SHIELD"}])
+        )
+        try:
+            response = client.get("/api/v1/sastahero/stage?player_id=test-player")
+            assert response.status_code == 200
+        finally:
+            _clear_overrides()
+
+
+# ── Swipe Edge Cases ──────────────────────────────────────────────────
+
+
+class TestSwipeEdgeCases:
+    def test_swipe_card_not_found(self, client: TestClient, mock_db: AsyncMock) -> None:
+        _override_db(mock_db)
+        mock_db.players.find_one = AsyncMock(return_value=_make_player())
+        mock_db.player_decks.find_one = AsyncMock(return_value=None)
+        try:
+            response = client.post(
+                "/api/v1/sastahero/swipe",
+                json={"player_id": "test-player", "card_id": "missing", "action": "UP"},
+            )
+            assert response.status_code == 200
+            data = response.json()
+            assert data["collection_updated"] is False
+        finally:
+            _clear_overrides()
+
+    def test_swipe_up_existing_story(self, client: TestClient, mock_db: AsyncMock) -> None:
+        """UP swipe appends to existing story fragments."""
+        _override_db(mock_db)
+        mock_db.players.find_one = AsyncMock(return_value=_make_player())
+        mock_db.player_decks.find_one = AsyncMock(
+            return_value={
+                "player_id": "test-player",
+                "cards": [_make_deck_card()],
+            }
+        )
+        mock_db.story_threads.find_one = AsyncMock(
+            return_value={
+                "player_id": "test-player",
+                "chapters": [],
+                "current_fragments": ["frag1", "frag2"],
+            }
+        )
+        try:
+            response = client.post(
+                "/api/v1/sastahero/swipe",
+                json={"player_id": "test-player", "card_id": "card-1", "action": "UP"},
+            )
+            assert response.status_code == 200
+            mock_db.story_threads.update_one.assert_called_once()
+        finally:
+            _clear_overrides()
+
+    def test_swipe_up_creates_chapter(self, client: TestClient, mock_db: AsyncMock) -> None:
+        """UP swipe creates chapter when 10 fragments accumulated."""
+        _override_db(mock_db)
+        mock_db.players.find_one = AsyncMock(return_value=_make_player())
+        mock_db.player_decks.find_one = AsyncMock(
+            return_value={
+                "player_id": "test-player",
+                "cards": [_make_deck_card()],
+            }
+        )
+        mock_db.story_threads.find_one = AsyncMock(
+            return_value={
+                "player_id": "test-player",
+                "chapters": [],
+                "current_fragments": [f"frag{i}" for i in range(9)],  # 9 + 1 = 10
+            }
+        )
+        try:
+            response = client.post(
+                "/api/v1/sastahero/swipe",
+                json={"player_id": "test-player", "card_id": "card-1", "action": "UP"},
+            )
+            assert response.status_code == 200
+            # Should have called update_one with chapters reset
+            call_args = mock_db.story_threads.update_one.call_args
+            assert call_args is not None
+            update_doc = call_args[0][1]
+            assert "chapters" in update_doc["$set"]
+            assert update_doc["$set"]["current_fragments"] == []
+        finally:
+            _clear_overrides()
+
+    def test_swipe_up_already_collected(self, client: TestClient, mock_db: AsyncMock) -> None:
+        """UP swipe when card already in collection."""
+        _override_db(mock_db)
+        mock_db.players.find_one = AsyncMock(return_value=_make_player(collection=["genesis"]))
+        mock_db.player_decks.find_one = AsyncMock(
+            return_value={"player_id": "test-player", "cards": [_make_deck_card()]}
+        )
+        try:
+            response = client.post(
+                "/api/v1/sastahero/swipe",
+                json={"player_id": "test-player", "card_id": "card-1", "action": "UP"},
+            )
+            assert response.status_code == 200
+            assert response.json()["collection_updated"] is False
+        finally:
+            _clear_overrides()
+
+    def test_swipe_right_knowledge_card(self, client: TestClient, mock_db: AsyncMock) -> None:
+        """RIGHT swipe on knowledge card saves to knowledge bank."""
+        _override_db(mock_db)
+        mock_db.players.find_one = AsyncMock(return_value=_make_player())
+        mock_db.player_decks.find_one = AsyncMock(
+            return_value={
+                "player_id": "test-player",
+                "cards": [_make_deck_card(content_type="KNOWLEDGE", text="Cool fact")],
+            }
+        )
+        try:
+            response = client.post(
+                "/api/v1/sastahero/swipe",
+                json={"player_id": "test-player", "card_id": "card-1", "action": "RIGHT"},
+            )
+            assert response.status_code == 200
+            mock_db.knowledge_bank.insert_one.assert_called_once()
+        finally:
+            _clear_overrides()
+
+    def test_swipe_down_multitype_card(self, client: TestClient, mock_db: AsyncMock) -> None:
+        """DOWN swipe on multi-type card awards multiple shard types."""
+        _override_db(mock_db)
+        mock_db.players.find_one = AsyncMock(return_value=_make_player())
+        mock_db.player_decks.find_one = AsyncMock(
+            return_value={
+                "player_id": "test-player",
+                "cards": [_make_deck_card(types=["CREATION", "DESTRUCTION"], shard_yield=2)],
+            }
+        )
+        try:
+            response = client.post(
+                "/api/v1/sastahero/swipe",
+                json={"player_id": "test-player", "card_id": "card-1", "action": "DOWN"},
+            )
+            assert response.status_code == 200
+            data = response.json()
+            assert data["shard_changes"]["SOUL"] == 2
+            assert data["shard_changes"]["VOID"] == 2
+        finally:
+            _clear_overrides()
+
+
+# ── Stage Completion & Milestones ──────────────────────────────────────
+
+
+class TestStageCompletion:
+    def test_complete_stage_no_milestone(self, client: TestClient, mock_db: AsyncMock) -> None:
+        _override_db(mock_db)
+        mock_db.players.find_one_and_update = AsyncMock(return_value={"stages_completed": 3})
+        try:
+            response = client.post("/api/v1/sastahero/stage/1/complete?player_id=test-player")
+            assert response.status_code == 200
+            data = response.json()
+            assert data["stages_completed"] == 3
+            assert data["milestone"] is None
+        finally:
+            _clear_overrides()
+
+    def test_complete_stage_milestone_5(self, client: TestClient, mock_db: AsyncMock) -> None:
+        _override_db(mock_db)
+        mock_db.players.find_one_and_update = AsyncMock(return_value={"stages_completed": 5})
+        try:
+            response = client.post("/api/v1/sastahero/stage/5/complete?player_id=test-player")
+            assert response.status_code == 200
+            data = response.json()
+            assert data["milestone"] is not None
+            assert "shards" in data["milestone"]
+        finally:
+            _clear_overrides()
+
+    def test_complete_stage_milestone_10(self, client: TestClient, mock_db: AsyncMock) -> None:
+        _override_db(mock_db)
+        mock_db.players.find_one_and_update = AsyncMock(return_value={"stages_completed": 10})
+        try:
+            response = client.post("/api/v1/sastahero/stage/10/complete?player_id=test-player")
+            data = response.json()
+            assert data["milestone"]["message"] == "10 stages! A rare card awaits next stage."
+        finally:
+            _clear_overrides()
+
+    def test_complete_stage_milestone_25_badge(
+        self, client: TestClient, mock_db: AsyncMock
+    ) -> None:
+        _override_db(mock_db)
+        mock_db.players.find_one_and_update = AsyncMock(return_value={"stages_completed": 25})
+        try:
+            response = client.post("/api/v1/sastahero/stage/25/complete?player_id=test-player")
+            data = response.json()
+            assert data["milestone"]["badge"] == "explorer_25"
+            # Badge should be applied
+            mock_db.players.update_one.assert_called()
+        finally:
+            _clear_overrides()
+
+    def test_complete_stage_milestone_50(self, client: TestClient, mock_db: AsyncMock) -> None:
+        _override_db(mock_db)
+        mock_db.players.find_one_and_update = AsyncMock(return_value={"stages_completed": 50})
+        try:
+            response = client.post("/api/v1/sastahero/stage/50/complete?player_id=test-player")
+            data = response.json()
+            assert data["milestone"] is not None
+        finally:
+            _clear_overrides()
+
+    def test_complete_stage_milestone_100(self, client: TestClient, mock_db: AsyncMock) -> None:
+        _override_db(mock_db)
+        mock_db.players.find_one_and_update = AsyncMock(return_value={"stages_completed": 100})
+        try:
+            response = client.post("/api/v1/sastahero/stage/100/complete?player_id=test-player")
+            data = response.json()
+            assert data["milestone"]["badge"] == "master_100"
+            assert "shards" in data["milestone"]
+        finally:
+            _clear_overrides()
+
+    def test_complete_stage_result_none(self, client: TestClient, mock_db: AsyncMock) -> None:
+        _override_db(mock_db)
+        mock_db.players.find_one_and_update = AsyncMock(return_value=None)
+        try:
+            response = client.post("/api/v1/sastahero/stage/1/complete?player_id=test-player")
+            data = response.json()
+            assert data["stages_completed"] == 0
+        finally:
+            _clear_overrides()
+
+
+# ── Quiz Edge Cases ────────────────────────────────────────────────────
+
+
+class TestQuizEdgeCases:
+    def test_quiz_all_seen_resets(self, client: TestClient, mock_db: AsyncMock) -> None:
+        _override_db(mock_db)
+        from app.modules.sastahero.seed.quiz_data import QUIZ_QUESTIONS
+
+        all_seen = [str(i) for i in range(len(QUIZ_QUESTIONS))]
+        mock_db.players.find_one = AsyncMock(return_value=_make_player(quiz_seen=all_seen))
+        try:
+            response = client.get("/api/v1/sastahero/quiz?player_id=test-player")
+            assert response.status_code == 200
+            # Should have reset seen list
+            mock_db.players.update_one.assert_called()
+        finally:
+            _clear_overrides()
+
+    def test_quiz_invalid_question_id(self, client: TestClient, mock_db: AsyncMock) -> None:
+        _override_db(mock_db)
+        mock_db.players.find_one = AsyncMock(return_value=_make_player())
+        try:
+            response = client.post(
+                "/api/v1/sastahero/quiz/answer",
+                json={
+                    "player_id": "test-player",
+                    "question_id": "9999",
+                    "selected_index": 0,
+                    "time_taken_ms": 5000,
+                },
+            )
+            assert response.status_code == 200
+            assert response.json()["correct"] is False
+        finally:
+            _clear_overrides()
+
+    def test_quiz_streak_bonus(self, client: TestClient, mock_db: AsyncMock) -> None:
+        """3 correct in a row triggers bonus card."""
+        _override_db(mock_db)
+        mock_db.players.find_one = AsyncMock(
+            return_value=_make_player(quiz_streak=2)  # next correct = 3
+        )
+        try:
+            quiz_resp = client.get("/api/v1/sastahero/quiz?player_id=test-player")
+            q_data = quiz_resp.json()
+            q_id = q_data["question_id"]
+
+            from app.modules.sastahero.seed.quiz_data import QUIZ_QUESTIONS
+
+            _, _, correct_idx, _, _ = QUIZ_QUESTIONS[int(q_id)]
+
+            response = client.post(
+                "/api/v1/sastahero/quiz/answer",
+                json={
+                    "player_id": "test-player",
+                    "question_id": q_id,
+                    "selected_index": correct_idx,
+                    "time_taken_ms": 10000,
+                },
+            )
+            data = response.json()
+            assert data["correct"] is True
+            assert data["streak_count"] == 3
+            assert data["bonus_card"] is True
+        finally:
+            _clear_overrides()
+
+    def test_quiz_with_shield_powerup(self, client: TestClient, mock_db: AsyncMock) -> None:
+        _override_db(mock_db)
+        mock_db.players.find_one = AsyncMock(
+            return_value=_make_player(active_powerups=[{"type": "QUIZ_SHIELD"}])
+        )
+        try:
+            quiz_resp = client.get("/api/v1/sastahero/quiz?player_id=test-player")
+            q_id = quiz_resp.json()["question_id"]
+
+            from app.modules.sastahero.seed.quiz_data import QUIZ_QUESTIONS
+
+            _, _, correct_idx, _, _ = QUIZ_QUESTIONS[int(q_id)]
+            wrong_idx = (correct_idx + 1) % 4
+
+            response = client.post(
+                "/api/v1/sastahero/quiz/answer",
+                json={
+                    "player_id": "test-player",
+                    "question_id": q_id,
+                    "selected_index": wrong_idx,
+                    "time_taken_ms": 5000,
+                },
+            )
+            assert response.status_code == 200
+            assert response.json()["correct"] is False
+        finally:
+            _clear_overrides()
+
+
+# ── All Powerup Purchases ─────────────────────────────────────────────
+
+
+class TestAllPowerups:
+    def test_purchase_peek(self, client: TestClient, mock_db: AsyncMock) -> None:
+        _override_db(mock_db)
+        mock_db.players.find_one = AsyncMock(return_value=_make_player())
+        try:
+            response = client.post(
+                "/api/v1/sastahero/powerup",
+                json={"player_id": "test-player", "powerup_type": "PEEK"},
+            )
+            data = response.json()
+            assert data["success"] is True
+            assert data["shards"]["SOUL"] == 8  # 10 - 2
+        finally:
+            _clear_overrides()
+
+    def test_purchase_magnetize(self, client: TestClient, mock_db: AsyncMock) -> None:
+        _override_db(mock_db)
+        mock_db.players.find_one = AsyncMock(return_value=_make_player())
+        try:
+            response = client.post(
+                "/api/v1/sastahero/powerup",
+                json={
+                    "player_id": "test-player",
+                    "powerup_type": "MAGNETIZE",
+                    "shard_type": "SOUL",
+                },
+            )
+            data = response.json()
+            assert data["success"] is True
+            assert data["shards"]["SOUL"] == 5  # 10 - 5
+        finally:
+            _clear_overrides()
+
+    def test_purchase_magnetize_no_type(self, client: TestClient, mock_db: AsyncMock) -> None:
+        _override_db(mock_db)
+        mock_db.players.find_one = AsyncMock(return_value=_make_player())
+        try:
+            response = client.post(
+                "/api/v1/sastahero/powerup",
+                json={"player_id": "test-player", "powerup_type": "MAGNETIZE"},
+            )
+            assert response.json()["success"] is False
+        finally:
+            _clear_overrides()
+
+    def test_purchase_quiz_shield(self, client: TestClient, mock_db: AsyncMock) -> None:
+        _override_db(mock_db)
+        mock_db.players.find_one = AsyncMock(return_value=_make_player())
+        try:
+            response = client.post(
+                "/api/v1/sastahero/powerup",
+                json={"player_id": "test-player", "powerup_type": "QUIZ_SHIELD"},
+            )
+            data = response.json()
+            assert data["success"] is True
+            assert data["shards"]["SOUL"] == 6  # 10 - 4
+        finally:
+            _clear_overrides()
+
+    def test_purchase_lucky_draw(self, client: TestClient, mock_db: AsyncMock) -> None:
+        _override_db(mock_db)
+        mock_db.players.find_one = AsyncMock(return_value=_make_player())
+        try:
+            response = client.post(
+                "/api/v1/sastahero/powerup",
+                json={"player_id": "test-player", "powerup_type": "LUCKY_DRAW"},
+            )
+            data = response.json()
+            assert data["success"] is True
+        finally:
+            _clear_overrides()
+
+    def test_purchase_lucky_draw_insufficient(self, client: TestClient, mock_db: AsyncMock) -> None:
+        _override_db(mock_db)
+        mock_db.players.find_one = AsyncMock(
+            return_value=_make_player(
+                shards={"SOUL": 3, "SHIELD": 3, "VOID": 0, "LIGHT": 0, "FORCE": 0}
+            )
+        )
+        try:
+            response = client.post(
+                "/api/v1/sastahero/powerup",
+                json={"player_id": "test-player", "powerup_type": "LUCKY_DRAW"},
+            )
+            assert response.json()["success"] is False
+        finally:
+            _clear_overrides()
+
+
+# ── Router Edge Cases ──────────────────────────────────────────────────
+
+
+class TestRouterEdgeCases:
+    def test_powerup_missing_fields(self, client: TestClient, mock_db: AsyncMock) -> None:
+        _override_db(mock_db)
+        try:
+            response = client.post("/api/v1/sastahero/powerup", json={})
+            assert response.status_code == 422
+        finally:
+            _clear_overrides()
+
+    def test_reroll_missing_fields(self, client: TestClient, mock_db: AsyncMock) -> None:
+        _override_db(mock_db)
+        try:
+            response = client.post("/api/v1/sastahero/reroll", json={})
+            assert response.status_code == 422
+        finally:
+            _clear_overrides()
+
+    def test_reroll_no_powerup(self, client: TestClient, mock_db: AsyncMock) -> None:
+        _override_db(mock_db)
+        mock_db.players.find_one = AsyncMock(return_value=_make_player())
+        try:
+            response = client.post(
+                "/api/v1/sastahero/reroll",
+                json={"player_id": "test-player", "card_id": "card-1"},
+            )
+            assert response.status_code == 400
+        finally:
+            _clear_overrides()
+
+    def test_reroll_success(self, client: TestClient, mock_db: AsyncMock) -> None:
+        _override_db(mock_db)
+        mock_db.players.find_one = AsyncMock(
+            return_value=_make_player(active_powerups=[{"type": "REROLL"}])
+        )
+        mock_db.player_decks.find_one = AsyncMock(
+            return_value={
+                "_id": "deck-id",
+                "player_id": "test-player",
+                "cards": [_make_deck_card()],
+                "completed": False,
+            }
+        )
+        try:
+            response = client.post(
+                "/api/v1/sastahero/reroll",
+                json={"player_id": "test-player", "card_id": "card-1"},
+            )
+            assert response.status_code == 200
+            data = response.json()
+            assert "card_id" in data
+            assert "name" in data
+        finally:
+            _clear_overrides()
+
+    def test_reroll_deck_not_found(self, client: TestClient, mock_db: AsyncMock) -> None:
+        _override_db(mock_db)
+        mock_db.players.find_one = AsyncMock(
+            return_value=_make_player(active_powerups=[{"type": "REROLL"}])
+        )
+        mock_db.player_decks.find_one = AsyncMock(return_value=None)
+        try:
+            response = client.post(
+                "/api/v1/sastahero/reroll",
+                json={"player_id": "test-player", "card_id": "card-1"},
+            )
+            assert response.status_code == 400
+        finally:
+            _clear_overrides()
+
+
+# ── Knowledge with Category Filter ────────────────────────────────────
+
+
+class TestKnowledgeFilter:
+    def test_knowledge_with_category(self, client: TestClient, mock_db: AsyncMock) -> None:
+        _override_db(mock_db)
+        mock_db.knowledge_bank.find = lambda *_a, **_k: _SortableCursorMock(
+            [
+                {
+                    "player_id": "test-player",
+                    "text": "Science fact",
+                    "category": "science",
+                    "saved_at": "2026-03-18T00:00:00Z",
+                }
+            ]
+        )
+        mock_db.knowledge_bank.distinct = AsyncMock(return_value=["science"])
+        try:
+            response = client.get(
+                "/api/v1/sastahero/knowledge?player_id=test-player&category=science"
+            )
+            assert response.status_code == 200
+            assert response.json()["total"] == 1
+        finally:
+            _clear_overrides()
+
+
+# ── Extend Pool TTL ───────────────────────────────────────────────────
+
+
+class TestExtendPoolTTL:
+    @pytest.mark.asyncio
+    async def test_extend_ttl(self, mock_db: AsyncMock) -> None:
+        from app.modules.sastahero.services import extend_pool_ttl
+
+        await extend_pool_ttl(mock_db, "genesis")
+        mock_db.card_pool.update_one.assert_called_once()
