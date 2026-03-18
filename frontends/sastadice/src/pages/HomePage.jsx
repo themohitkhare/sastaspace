@@ -2,6 +2,8 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { apiClient } from '../api/apiClient'
 import { useGameStore } from '../store/useGameStore'
+import { useToast } from '../hooks/useToast'
+import ToastContainer from '../components/ToastContainer'
 
 const CPU_CHARACTERS = [
   { id: 'cpu1', name: 'ROBOCOP', color: '#FF6B6B', emoji: '🤖' },
@@ -20,6 +22,7 @@ export default function HomePage() {
   const [showAdvanced, setShowAdvanced] = useState(false)
   const [isCreating, setIsCreating] = useState(false)
   const [isJoining, setIsJoining] = useState(false)
+  const { toasts, showToast, dismissToast } = useToast()
 
   const toggleCpu = (cpuId) => {
     setSelectedCpus(prev =>
@@ -39,7 +42,7 @@ export default function HomePage() {
       setGame(res.data, 0)
       navigate(`/lobby/${newGameId}`)
     } catch (err) {
-      alert('Failed to create game. Please try again.')
+      showToast('Failed to create game. Please try again.')
     } finally {
       setIsCreating(false)
     }
@@ -48,7 +51,7 @@ export default function HomePage() {
   const handleJoinGame = async () => {
     const cleanGameCode = gameCode.trim()
     if (!cleanGameCode) {
-      alert('Please enter a game code')
+      showToast('Please enter a game code', 'info')
       return
     }
 
@@ -62,9 +65,9 @@ export default function HomePage() {
       navigate(`/lobby/${joinedGameId}`)
     } catch (err) {
       if (err.response?.status === 404) {
-        alert('Game not found. Please check the game code.')
+        showToast('Game not found. Please check the game code.')
       } else {
-        alert('Failed to join game. Please try again.')
+        showToast('Failed to join game. Please try again.')
       }
     } finally {
       setIsJoining(false)
@@ -73,6 +76,8 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-sasta-white flex flex-col overflow-auto">
+      <ToastContainer toasts={toasts} onDismiss={dismissToast} />
+
       <div className="text-center py-4 px-4 shrink-0">
         <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold font-zero tracking-tight">
           SASTADICE
@@ -217,4 +222,3 @@ export default function HomePage() {
     </div>
   )
 }
-

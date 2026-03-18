@@ -4,6 +4,8 @@ import { useGameStore } from '../../store/useGameStore'
 import LaunchKey from './LaunchKey'
 import GameSettingsPanel from './GameSettingsPanel'
 import RulesModal from '../RulesModal'
+import { useToast } from '../../hooks/useToast'
+import ToastContainer from '../ToastContainer'
 
 export default function LobbyView({ onRefresh }) {
   const [playerName, setPlayerName] = useState('')
@@ -12,6 +14,7 @@ export default function LobbyView({ onRefresh }) {
   const [hasChanges, setHasChanges] = useState(false)
   const [copied, setCopied] = useState(false)
   const [showRules, setShowRules] = useState(false)
+  const { toasts, showToast, dismissToast } = useToast()
   const [settings, setSettings] = useState({
     win_condition: 'SUDDEN_DEATH',
     round_limit: 30,
@@ -48,7 +51,7 @@ export default function LobbyView({ onRefresh }) {
       setHasChanges(false)
       if (onRefresh) await onRefresh()
     } catch (err) {
-      alert('Failed to save settings')
+      showToast('Failed to save settings')
     }
   }
 
@@ -72,7 +75,7 @@ export default function LobbyView({ onRefresh }) {
 
   const handleJoin = async () => {
     if (!playerName.trim()) {
-      alert('Please enter your name')
+      showToast('Please enter your name', 'info')
       return
     }
     setIsJoining(true)
@@ -82,7 +85,7 @@ export default function LobbyView({ onRefresh }) {
       const gameRes = await apiClient.get(`/sastadice/games/${gameId}/state`)
       if (gameRes.data) setGame(gameRes.data.game, gameRes.data.version)
     } catch {
-      alert('Failed to join game')
+      showToast('Failed to join game')
     } finally {
       setIsJoining(false)
     }
@@ -99,7 +102,7 @@ export default function LobbyView({ onRefresh }) {
       await apiClient.post(`/sastadice/games/${gameId}/ready/${playerId}`)
       if (onRefresh) await onRefresh()
     } catch {
-      alert(hasChanges ? 'Failed to save settings and toggle ready' : 'Failed to toggle ready')
+      showToast(hasChanges ? 'Failed to save settings and toggle ready' : 'Failed to toggle ready')
     } finally {
       setIsToggling(false)
     }
@@ -113,7 +116,7 @@ export default function LobbyView({ onRefresh }) {
       await apiClient.delete(`/sastadice/games/${gameId}/players/${targetPlayerId}?host_id=${playerId}`)
       if (onRefresh) onRefresh()
     } catch {
-      alert('Failed to kick player')
+      showToast('Failed to kick player')
     }
   }
 
@@ -128,6 +131,7 @@ export default function LobbyView({ onRefresh }) {
 
   return (
     <div className="h-screen w-full bg-white text-black overflow-hidden flex flex-col lg:grid lg:grid-cols-12 divide-y lg:divide-y-0 lg:divide-x divide-black">
+      <ToastContainer toasts={toasts} onDismiss={dismissToast} />
 
       <div className="lg:col-span-3 p-6 flex flex-col gap-6 bg-white overflow-y-auto z-10">
         <div className="flex items-center justify-between">

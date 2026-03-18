@@ -2,6 +2,8 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useSastaPolling } from '../hooks/useSastaPolling'
 import { useGameStore } from '../store/useGameStore'
 import { apiClient } from '../api/apiClient'
+import { useToast } from '../hooks/useToast'
+import ToastContainer from '../components/ToastContainer'
 import BoardView from '../components/game/BoardView'
 import PlayerPanel from '../components/game/PlayerPanel'
 import VictoryScreen from '../components/game/VictoryScreen'
@@ -34,7 +36,7 @@ export default function GamePage() {
   const [showPropertyManager, setShowPropertyManager] = useState(false)
 
   const pollingInterval = game?.turn_phase === 'AUCTION' ? 300 : 1500
-  const { refetch } = useSastaPolling(gameId, pollingInterval)
+  const { refetch, connectionLost, retry } = useSastaPolling(gameId, pollingInterval)
   const handleActionComplete = useCallback(async (actionResult) => {
     if (actionResult?.message && actionResult.message.includes('Insider Info')) {
       const match = actionResult.message.match(/Next Events: (.+)/)
@@ -151,6 +153,7 @@ export default function GamePage() {
   const [peekEvents, setPeekEvents] = useState(null)
   const [showRules, setShowRules] = useState(false)
   const [tradeTarget, setTradeTarget] = useState(null)
+  const { toasts, showToast, dismissToast } = useToast()
 
   const currentTile = currentPlayer && game?.board
     ? game.board[currentPlayer.position] || null
@@ -173,7 +176,7 @@ export default function GamePage() {
         await refetch()
       }
     } catch (err) {
-      alert('DDoS action failed')
+      showToast('DDoS action failed')
     }
   }
 
@@ -186,7 +189,7 @@ export default function GamePage() {
       })
       refetch()
     } catch (err) {
-      alert('Failed to propose trade')
+      showToast('Failed to propose trade')
     }
   }
 
@@ -199,7 +202,7 @@ export default function GamePage() {
       })
       refetch()
     } catch (err) {
-      alert('Failed to accept trade')
+      showToast('Failed to accept trade')
     }
   }
 
@@ -211,7 +214,8 @@ export default function GamePage() {
         payload: { trade_id: tradeId }
       })
       refetch()
-    } catch {
+    } catch (err) {
+      showToast('Failed to decline trade')
     }
   }
 
@@ -238,8 +242,27 @@ export default function GamePage() {
     )
   }
 
+  const storeError = useGameStore((s) => s.error)
+
   return (
     <div className="h-screen bg-sasta-white flex flex-col overflow-hidden">
+      <ToastContainer toasts={toasts} onDismiss={dismissToast} />
+      {connectionLost && (
+        <div className="bg-red-600 text-white text-xs font-zero font-bold px-4 py-2 text-center shrink-0 flex items-center justify-center gap-3">
+          <span>⚠ CONNECTION LOST — RECONNECTING...</span>
+          <button
+            onClick={retry}
+            className="border border-white px-3 py-1 hover:bg-white hover:text-red-600 transition-colors"
+          >
+            RETRY
+          </button>
+        </div>
+      )}
+      {!connectionLost && storeError && (
+        <div className="bg-red-600 text-white text-xs font-zero font-bold px-4 py-2 text-center shrink-0">
+          ⚠ {storeError}
+        </div>
+      )}
       <header className="border-b-2 border-sasta-black bg-sasta-white shrink-0">
         <div className="max-w-7xl mx-auto px-2 py-1 flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">

@@ -1,9 +1,13 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { TILE_TYPE_COLORS } from './TileComponent'
 import { apiClient } from '../../api/apiClient'
 import { useGameStore } from '../../store/useGameStore'
+import { useToast } from '../../hooks/useToast'
+import ToastContainer from '../ToastContainer'
 
 export default function PropertyDetailsModal({ tile, onClose, onRefresh }) {
+    const { toasts, showToast, dismissToast } = useToast()
+
     if (!tile) return null
 
     const gameId = useGameStore(s => s.gameId)
@@ -48,7 +52,7 @@ export default function PropertyDetailsModal({ tile, onClose, onRefresh }) {
             onRefresh && onRefresh()
             onClose && onClose()
         } catch (err) {
-            alert(err.response?.data?.message || 'Upgrade failed')
+            showToast(err.response?.data?.message || 'Upgrade failed')
         }
     }
 
@@ -66,11 +70,13 @@ export default function PropertyDetailsModal({ tile, onClose, onRefresh }) {
             onRefresh && onRefresh()
             onClose && onClose()
         } catch (err) {
-            alert(err.response?.data?.message || 'Downgrade failed')
+            showToast(err.response?.data?.message || 'Downgrade failed')
         }
     }
 
     return (
+        <>
+        <ToastContainer toasts={toasts} onDismiss={dismissToast} />
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={onClose}>
             <div className="bg-sasta-white border-brutal-lg shadow-brutal-lg max-w-sm w-full p-0 overflow-hidden text-left" onClick={e => e.stopPropagation()}>
                 <div
@@ -173,5 +179,6 @@ export default function PropertyDetailsModal({ tile, onClose, onRefresh }) {
                 </div>
             </div>
         </div>
+        </>
     )
 }
