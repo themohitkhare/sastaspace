@@ -6,13 +6,12 @@ describe('App', () => {
   it('renders header with hub link, title, and badge', () => {
     window.history.pushState({}, 'Test page', '/sudoku/');
     render(<App />);
-    
+
     expect(
-      screen.getByRole('link', { name: /sastaspace/i }),
+      screen.getByRole('link', { name: /BACK/i }),
     ).toHaveAttribute('href', '/');
 
-    // App label + badge still present
-    expect(screen.getByText('Sudoku')).toBeInTheDocument();
-    expect(screen.getByText('GA Solver')).toBeInTheDocument();
+    expect(screen.getByText('SUDOKU')).toBeInTheDocument();
+    expect(screen.getByText('GA SOLVER')).toBeInTheDocument();
   });
 });
