@@ -33,7 +33,8 @@ PARAMS: dict[Difficulty, dict[str, Any]] = {
 STALL_EPS = 1e-5
 MAX_TABU = 4000
 # Fitness threshold above which we attempt backtracking to finish
-BACKTRACK_FITNESS_THRESHOLD = 0.75
+# Only use backtracking as a finisher when GA is very close to a solution
+BACKTRACK_FITNESS_THRESHOLD = 0.95
 
 
 def evaluate_and_sort(
