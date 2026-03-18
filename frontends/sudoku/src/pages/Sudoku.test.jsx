@@ -28,10 +28,9 @@ const makeMatchResponse = () => ({
   },
 });
 
-describe('Sudoku page end‑to‑end flow', () => {
+describe('Sudoku solver page', () => {
   beforeEach(() => {
     vi.spyOn(global, 'setInterval').mockImplementation((fn) => {
-      // Call immediately to simulate one AI tick, then no-op.
       if (typeof fn === 'function') fn();
       return 1;
     });
@@ -43,7 +42,6 @@ describe('Sudoku page end‑to‑end flow', () => {
         const method = (init.method || 'GET').toUpperCase();
         const path = String(url);
 
-        // OCR extract board
         if (path.endsWith('/api/v1/sudoku/extract-board') && method === 'POST') {
           return {
             ok: true,
@@ -54,16 +52,11 @@ describe('Sudoku page end‑to‑end flow', () => {
           };
         }
 
-        // Start match
         if (path.endsWith('/api/v1/sudoku/matches') && method === 'POST') {
-          return {
-            ok: true,
-            json: async () => makeMatchResponse(),
-          };
+          return { ok: true, json: async () => makeMatchResponse() };
         }
 
-        // Poll full AI state (GET match)
-        if (path.includes('/api/v1/sudoku/matches/') && method === 'GET' && !path.endsWith('/ai-tick')) {
+        if (path.includes('/api/v1/sudoku/matches/') && method === 'GET') {
           return {
             ok: true,
             json: async () => ({
@@ -78,7 +71,6 @@ describe('Sudoku page end‑to‑end flow', () => {
           };
         }
 
-        // Trigger AI tick
         if (path.endsWith('/ai-tick') && method === 'POST') {
           return {
             ok: true,
@@ -90,26 +82,7 @@ describe('Sudoku page end‑to‑end flow', () => {
           };
         }
 
-        // Persist player board
-        if (path.includes('/api/v1/sudoku/matches/') && path.endsWith('/board') && method === 'PUT') {
-          return {
-            ok: true,
-            json: async () => ({}),
-          };
-        }
-
-        // Claim victory
-        if (path.endsWith('/claim-victory') && method === 'POST') {
-          return {
-            ok: true,
-            json: async () => ({ valid: true }),
-          };
-        }
-
-        return {
-          ok: true,
-          json: async () => ({}),
-        };
+        return { ok: true, json: async () => ({}) };
       }),
     );
   });
@@ -119,111 +92,64 @@ describe('Sudoku page end‑to‑end flow', () => {
     vi.unstubAllGlobals();
   });
 
-  it('starts a match and shows player + AI boards with HUD', async () => {
+  it('shows the solver start screen with puzzle input', async () => {
     await act(async () => {
       renderSudokuAt('/');
     });
 
-    expect(screen.getByText(/sudoku vs\. genetic algorithm/i)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /start race/i })).toBeInTheDocument();
-
-    const user = userEvent.setup();
-    await user.click(screen.getByRole('button', { name: /start race/i }));
-
-    expect(await screen.findByTestId('sudoku-hud')).toBeInTheDocument();
-    expect(screen.getByTestId('player-board')).toBeInTheDocument();
-    expect(screen.getByTestId('ai-board')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /claim victory/i })).toBeInTheDocument();
+    expect(screen.getByText(/SUDOKU SOLVER/i)).toBeInTheDocument();
+    expect(screen.getByText(/PASTE SCREENSHOT/i)).toBeInTheDocument();
   });
 
-  it('updates HUD stats after AI tick polling', async () => {
+  it('starts solving and shows GA board with HUD', async () => {
     await act(async () => {
       renderSudokuAt('/');
     });
 
     const user = userEvent.setup();
-    await user.click(screen.getByRole('button', { name: /start race/i }));
+    await user.click(screen.getByRole('button', { name: /GENERATE & SOLVE/i }));
+
+    expect(await screen.findByTestId('sudoku-hud')).toBeInTheDocument();
+    expect(screen.getByTestId('ai-board')).toBeInTheDocument();
+  });
+
+  it('updates HUD stats after GA tick polling', async () => {
+    await act(async () => {
+      renderSudokuAt('/');
+    });
+
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: /GENERATE & SOLVE/i }));
 
     await screen.findByTestId('sudoku-hud');
-
     expect(await screen.findByText('5')).toBeInTheDocument();
     expect(screen.getByText('50.0%')).toBeInTheDocument();
   });
 
-  it('lets the player claim victory and play again', async () => {
+  it('supports OCR upload and review flow', async () => {
     await act(async () => {
       renderSudokuAt('/');
     });
 
-    const user = userEvent.setup();
-    await user.click(screen.getByRole('button', { name: /start race/i }));
-
-    await screen.findByTestId('sudoku-hud');
-
-    await user.click(screen.getByRole('button', { name: /claim victory/i }));
-
-    const modal = await screen.findByTestId('end-game-modal');
-    expect(modal).toBeInTheDocument();
-    expect(screen.getByText(/you win/i)).toBeInTheDocument();
-
-    await user.click(screen.getByRole('button', { name: /play again/i }));
-
-    expect(await screen.findByRole('button', { name: /start race/i })).toBeInTheDocument();
-    expect(screen.queryByTestId('sudoku-hud')).not.toBeInTheDocument();
-  });
-
-  it('supports OCR upload and paste review flow on the start screen', async () => {
-    await act(async () => {
-      renderSudokuAt('/');
-    });
-
-    // Mock a small image file for the hidden file input.
     const file = new File(['dummy'], 'board.png', { type: 'image/png' });
-
-    const uploadButton = screen.getByRole('button', { name: /upload image/i });
-    expect(uploadButton).toBeInTheDocument();
-
-    // Hidden file input used for uploads.
     const nativeFileInput = document.querySelector('input[type="file"]');
     expect(nativeFileInput).toBeTruthy();
 
     await act(async () => {
-      await fireEvent.change(nativeFileInput, {
-        target: { files: [file] },
-      });
+      await fireEvent.change(nativeFileInput, { target: { files: [file] } });
     });
 
-    // After OCR, review banner should appear.
-    expect(
-      await screen.findByText(/ocr detected/i),
-    ).toBeInTheDocument();
+    expect(await screen.findByText(/ocr detected/i)).toBeInTheDocument();
 
-    const clearUncertainBtn = screen.getByRole('button', { name: /clear uncertain/i });
-    const acceptOcrBtn = screen.getByRole('button', { name: /accept ocr/i });
-    expect(clearUncertainBtn).toBeInTheDocument();
-    expect(acceptOcrBtn).toBeInTheDocument();
-
-    // "Clear uncertain" should be enabled because we returned some low-confidence cells.
+    const clearUncertainBtn = screen.getByRole('button', { name: /CLEAR UNCERTAIN/i });
+    const acceptOcrBtn = screen.getByRole('button', { name: /ACCEPT OCR/i });
     expect(clearUncertainBtn).not.toBeDisabled();
 
-    // Accept OCR hides the review UI.
     const user = userEvent.setup();
     await user.click(acceptOcrBtn);
     expect(screen.queryByText(/ocr detected/i)).not.toBeInTheDocument();
 
-    // Now simulate pasting plain text board; this should update the player board.
-    const textBoard = '1'.repeat(81);
-    await act(async () => {
-      fireEvent.paste(window, {
-        clipboardData: {
-          getData: () => textBoard,
-          items: [],
-        },
-      });
-    });
-
-    // After paste, there should still be an editable player board present.
-    expect(screen.getByTestId('player-board')).toBeInTheDocument();
+    // After OCR, solve button should be visible
+    expect(screen.getByRole('button', { name: /SOLVE WITH GA/i })).toBeInTheDocument();
   });
 });
-

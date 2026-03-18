@@ -1,22 +1,18 @@
 /**
- * SudokuHUD — Heads-up display showing generation count, fitness, and status.
- *
- * Props:
- *   generation: number
- *   fitness: number (0–1)
- *   status: string
+ * SudokuHUD — Heads-up display showing GA solver progress.
  */
 export default function SudokuHUD({ generation, fitness, status }) {
   const fitnessPercent = (fitness * 100).toFixed(1);
+  const statusLabel = status === 'solved' ? 'SOLVED' : status === 'solving' ? 'SOLVING...' : status.replace(/_/g, ' ').toUpperCase();
 
   return (
     <div className="hud" data-testid="sudoku-hud">
       <div className="hud-stat">
-        <div className="label">Generation</div>
+        <div className="label">GENERATION</div>
         <div className="value generation">{generation}</div>
       </div>
       <div className="hud-stat">
-        <div className="label">AI Fitness</div>
+        <div className="label">FITNESS</div>
         <div className="value fitness">{fitnessPercent}%</div>
         <div className="fitness-bar">
           <div
@@ -26,9 +22,9 @@ export default function SudokuHUD({ generation, fitness, status }) {
         </div>
       </div>
       <div className="hud-stat">
-        <div className="label">Status</div>
-        <div className="value" style={{ fontSize: '0.85rem', textTransform: 'capitalize' }}>
-          {status.replace(/_/g, ' ')}
+        <div className="label">STATUS</div>
+        <div className="value" style={{ fontSize: '0.85rem' }}>
+          {statusLabel}
         </div>
       </div>
     </div>

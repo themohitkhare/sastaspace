@@ -2,7 +2,6 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import PlayerBoard from '../components/PlayerBoard.jsx';
 import AiBoard from '../components/AiBoard.jsx';
 import SudokuHUD from '../components/SudokuHUD.jsx';
-import EndGameModal from '../components/EndGameModal.jsx';
 import { parsePastedBoard } from '../utils/sudokuOcr.js';
 
 const API = '/api/v1/sudoku';
@@ -19,7 +18,7 @@ export default function Sudoku() {
   const [status, setStatus] = useState('idle');
   const [loading, setLoading] = useState(false);
 
-  // AI state
+  // GA solver state
   const [generation, setGeneration] = useState(0);
   const [fitness, setFitness] = useState(0);
   const [heatmap, setHeatmap] = useState([]);
@@ -30,7 +29,7 @@ export default function Sudoku() {
 
   // ---- API helpers ----
 
-  const startMatch = async () => {
+  const startSolving = async () => {
     setLoading(true);
     try {
       const custom_board =
@@ -47,7 +46,7 @@ export default function Sudoku() {
       setStartingBoard(data.starting_board);
       setPlayerBoard([...data.starting_board]);
       setGridSize(data.grid_size);
-      setStatus('in_progress');
+      setStatus('solving');
       setShowOcrReview(false);
       setOcrConfidences(new Array(data.grid_size * data.grid_size).fill(0));
       setGeneration(0);
@@ -55,7 +54,7 @@ export default function Sudoku() {
       setHeatmap(new Array(data.grid_size * data.grid_size).fill(0));
       setBestBoard(new Array(data.grid_size * data.grid_size).fill(0));
     } catch (err) {
-      console.error('Failed to start match', err);
+      console.error('Failed to start solver', err);
     } finally {
       setLoading(false);
     }
@@ -69,8 +68,8 @@ export default function Sudoku() {
       setFitness(data.ai.fitness_score);
       setHeatmap(data.ai.heatmap_data);
       setBestBoard(data.ai.best_board);
-      if (data.status !== 'in_progress') {
-        setStatus(data.status);
+      if (data.status === 'ai_won') {
+        setStatus('solved');
       }
     } catch {
       /* polling failure — ignore */
@@ -83,24 +82,22 @@ export default function Sudoku() {
       const data = await res.json();
       setGeneration(data.generation_count);
       setFitness(data.fitness_score);
-      if (data.status !== 'in_progress') {
-        setStatus(data.status);
+      if (data.status === 'ai_won') {
+        setStatus('solved');
       }
-      // Refresh full state (heatmap etc)
       await fetchAiState(id);
     } catch {
       /* tick failure — retry on next interval */
     }
   }, [fetchAiState]);
 
-  // AI tick polling
+  // GA tick polling
   useEffect(() => {
-    if (!matchId || status !== 'in_progress') {
+    if (!matchId || status !== 'solving') {
       clearInterval(timerRef.current);
       return;
     }
     timerRef.current = setInterval(() => triggerAiTick(matchId), 1200);
-    // Trigger first tick immediately
     triggerAiTick(matchId);
     return () => clearInterval(timerRef.current);
   }, [matchId, status, triggerAiTick]);
@@ -111,14 +108,6 @@ export default function Sudoku() {
     const next = [...playerBoard];
     next[idx] = val;
     setPlayerBoard(next);
-    // Save to server (fire-and-forget)
-    if (matchId) {
-      fetch(`${API}/matches/${matchId}/board`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ board: next }),
-      }).catch(() => {});
-    }
   };
 
   const setBoardFromOcr = (board, confidences) => {
@@ -157,7 +146,6 @@ export default function Sudoku() {
       setBoardFromOcr(data.board, data.confidences);
     } catch (err) {
       console.error('OCR failed:', err);
-      alert('Failed to extract Sudoku board from image.');
     } finally {
       setLoading(false);
     }
@@ -167,19 +155,6 @@ export default function Sudoku() {
     const file = e.target.files?.[0];
     if (file) await handleUploadImage(file);
     e.target.value = '';
-  };
-
-  const handleClaimVictory = async () => {
-    if (!matchId) return;
-    try {
-      const res = await fetch(`${API}/matches/${matchId}/claim-victory`, { method: 'POST' });
-      const data = await res.json();
-      if (data.valid) {
-        setStatus('player_won');
-      }
-    } catch (err) {
-      console.error('Claim failed', err);
-    }
   };
 
   const handlePaste = useCallback(
@@ -210,15 +185,14 @@ export default function Sudoku() {
 
   useEffect(() => {
     const onWindowPaste = (e) => {
-      // Only enable OCR paste before game ends; during game, keep current behavior.
-      if (status === 'player_won' || status === 'ai_won') return;
+      if (status !== 'idle') return;
       handlePaste(e);
     };
     window.addEventListener('paste', onWindowPaste);
     return () => window.removeEventListener('paste', onWindowPaste);
   }, [handlePaste, status]);
 
-  const handlePlayAgain = () => {
+  const handleReset = () => {
     setMatchId(null);
     setStatus('idle');
     setStartingBoard([]);
@@ -233,7 +207,6 @@ export default function Sudoku() {
 
   // ---- Render ----
 
-  const isGameOver = status === 'player_won' || status === 'ai_won';
   const uncertainCells =
     showOcrReview && playerBoard.length
       ? playerBoard.map(
@@ -242,42 +215,55 @@ export default function Sudoku() {
       : [];
   const detectedCount = showOcrReview ? playerBoard.filter((v) => v !== 0).length : 0;
   const uncertainCount = showOcrReview ? uncertainCells.filter(Boolean).length : 0;
+  const hasPuzzle = playerBoard.some((c) => c !== 0);
 
   return (
     <div className="page">
       {status === 'idle' && (
         <div className="start-screen">
-          <h2>Sudoku vs. Genetic Algorithm</h2>
+          <h2>SUDOKU SOLVER</h2>
           <p>
-            Race against an AI powered by a genetic algorithm with 13 mutation
-            operators, tabu dedup, and stall detection. Can you solve the puzzle
-            before evolution catches up?
+            Paste a screenshot from sudoku.com (Ctrl+V) or upload an image.
+            OCR extracts the puzzle, then a genetic algorithm solves it.
           </p>
-          <p style={{ maxWidth: 520 }}>
-            Paste an image (or upload a screenshot) to autofill the puzzle. If OCR is unsure, those
-            digits will be highlighted for quick correction.
-          </p>
-          <div className="difficulty-picker">
-            {['easy', 'medium', 'hard'].map((d) => (
-              <button
-                key={d}
-                className={`difficulty-btn ${difficulty === d ? 'active' : ''}`}
-                onClick={() => setDifficulty(d)}
-              >
-                {d.charAt(0).toUpperCase() + d.slice(1)}
-              </button>
-            ))}
-          </div>
-          <div className="boards-container" style={{ gridTemplateColumns: '1fr' }}>
-            <PlayerBoard
-              board={playerBoard.length ? playerBoard : new Array(gridSize * gridSize).fill(0)}
-              startingBoard={new Array(gridSize * gridSize).fill(0)}
-              gridSize={gridSize}
-              onChange={handleCellChange}
-              disabled={loading}
-              uncertainCells={uncertainCells}
-            />
-          </div>
+
+          {!hasPuzzle && (
+            <div
+              className="drop-zone"
+              onClick={() => fileInputRef.current?.click()}
+              style={{
+                border: '3px dashed #000',
+                padding: '2rem 3rem',
+                cursor: 'pointer',
+                textAlign: 'center',
+                boxShadow: 'var(--shadow-sm)',
+                background: 'var(--bg-secondary)',
+                maxWidth: 420,
+                width: '100%',
+              }}
+            >
+              <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>📋</div>
+              <div style={{ fontWeight: 700, fontSize: '0.85rem' }}>
+                PASTE SCREENSHOT (Ctrl+V)
+              </div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
+                or click to upload an image
+              </div>
+            </div>
+          )}
+
+          {hasPuzzle && (
+            <div className="boards-container" style={{ gridTemplateColumns: '1fr', maxWidth: 400 }}>
+              <PlayerBoard
+                board={playerBoard}
+                startingBoard={new Array(gridSize * gridSize).fill(0)}
+                gridSize={gridSize}
+                onChange={handleCellChange}
+                disabled={loading}
+                uncertainCells={uncertainCells}
+              />
+            </div>
+          )}
 
           {showOcrReview && (
             <div className="actions-row" style={{ gap: '0.75rem' }}>
@@ -292,33 +278,53 @@ export default function Sudoku() {
                 }}
                 disabled={loading || uncertainCount === 0}
               >
-                Clear uncertain
+                CLEAR UNCERTAIN
               </button>
               <button className="btn-secondary" onClick={() => setShowOcrReview(false)} disabled={loading}>
-                Accept OCR
+                ACCEPT OCR
               </button>
             </div>
           )}
 
           <div className="actions-row" style={{ gap: '0.75rem' }}>
-            <button
-              className="btn-secondary"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={loading}
-            >
-              Upload image
-            </button>
-            <button
-              className="btn-primary"
-              onClick={startMatch}
-              disabled={loading}
-              id="start-match-btn"
-            >
-              {loading ? 'Starting…' : 'Start Race'}
-            </button>
-            <button className="btn-secondary" onClick={handlePlayAgain} disabled={loading}>
-              Clear
-            </button>
+            {!hasPuzzle && (
+              <>
+                <div className="difficulty-picker">
+                  {['easy', 'medium', 'hard'].map((d) => (
+                    <button
+                      key={d}
+                      className={`difficulty-btn ${difficulty === d ? 'active' : ''}`}
+                      onClick={() => setDifficulty(d)}
+                    >
+                      {d.toUpperCase()}
+                    </button>
+                  ))}
+                </div>
+                <button
+                  className="btn-primary"
+                  onClick={startSolving}
+                  disabled={loading}
+                  id="start-match-btn"
+                >
+                  {loading ? 'GENERATING...' : 'GENERATE & SOLVE'}
+                </button>
+              </>
+            )}
+            {hasPuzzle && (
+              <>
+                <button
+                  className="btn-primary"
+                  onClick={startSolving}
+                  disabled={loading}
+                  id="start-match-btn"
+                >
+                  {loading ? 'STARTING...' : 'SOLVE WITH GA →'}
+                </button>
+                <button className="btn-secondary" onClick={handleReset} disabled={loading}>
+                  CLEAR
+                </button>
+              </>
+            )}
           </div>
 
           <input
@@ -331,18 +337,11 @@ export default function Sudoku() {
         </div>
       )}
 
-      {status !== 'idle' && (
+      {(status === 'solving' || status === 'solved') && (
         <>
           <SudokuHUD generation={generation} fitness={fitness} status={status} />
 
-          <div className="boards-container">
-            <PlayerBoard
-              board={playerBoard}
-              startingBoard={startingBoard}
-              gridSize={gridSize}
-              onChange={handleCellChange}
-              disabled={isGameOver}
-            />
+          <div className="boards-container" style={{ gridTemplateColumns: '1fr', maxWidth: 480 }}>
             <AiBoard
               bestBoard={bestBoard}
               startingBoard={startingBoard}
@@ -351,20 +350,26 @@ export default function Sudoku() {
             />
           </div>
 
-          {!isGameOver && (
-            <div className="actions-row">
-              <button className="btn-primary" onClick={handleClaimVictory} id="claim-victory-btn">
-                Claim Victory
-              </button>
-              <button className="btn-secondary" onClick={handlePlayAgain}>
-                New Game
-              </button>
+          {status === 'solved' && (
+            <div style={{
+              border: '3px solid #000',
+              background: '#000',
+              color: 'var(--success)',
+              padding: '1rem 2rem',
+              fontWeight: 700,
+              fontSize: '1.25rem',
+              boxShadow: 'var(--shadow)',
+              textAlign: 'center',
+            }}>
+              SOLVED IN {generation} GENERATIONS
             </div>
           )}
 
-          {isGameOver && (
-            <EndGameModal status={status} onPlayAgain={handlePlayAgain} />
-          )}
+          <div className="actions-row">
+            <button className="btn-secondary" onClick={handleReset}>
+              ← NEW PUZZLE
+            </button>
+          </div>
         </>
       )}
     </div>
