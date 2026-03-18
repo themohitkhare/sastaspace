@@ -7,7 +7,7 @@ import numpy as np
 import pytesseract  # type: ignore[import-untyped]
 
 MIN_IMAGE_SIDE_PX = 60
-WARP_TARGET_SIZE_PX = 900
+WARP_TARGET_SIZE_PX = 1260
 
 
 def normalize_confidence(raw_confidence: float | int) -> float:
@@ -152,7 +152,7 @@ def extract_sudoku_board(image_bytes: bytes) -> tuple[list[int], list[float]]:
             y = row * cell_size
 
             # Crop cell with margin to exclude grid lines
-            margin = int(cell_size * 0.15)
+            margin = int(cell_size * 0.12)
             cell_gray = warped[
                 y + margin : y + cell_size - margin, x + margin : x + cell_size - margin
             ]
@@ -170,32 +170,62 @@ def extract_sudoku_board(image_bytes: bytes) -> tuple[list[int], list[float]]:
                 confidences.append(0.0)
                 continue
 
+            # Use the binary thresholded image (inverted back to black-on-white)
+            cell_binary = cv2.bitwise_not(cell_thresh)
+
             # Prepare cell for OCR: resize to consistent size, add padding
             target = 80
-            resized = cv2.resize(cell_gray, (target, target), interpolation=cv2.INTER_CUBIC)
+            pad = 24
 
-            # Add white border padding for tesseract (it needs whitespace around digits)
-            pad = 20
-            padded = cv2.copyMakeBorder(resized, pad, pad, pad, pad, cv2.BORDER_CONSTANT, value=255)
+            # Try multiple image preparations and pick the best result via voting
+            candidates: list[tuple[int, float]] = []
 
-            # Use tesseract with single character mode
-            config = "--psm 10 --oem 3 -c tessedit_char_whitelist=123456789"
-            data = pytesseract.image_to_data(
-                padded,
-                config=config,
-                output_type=pytesseract.Output.DICT,
-            )
-            digit, conf = pick_best_digit_from_tesseract_data(data)
+            for source in (cell_gray, cell_binary):
+                if source.size == 0:
+                    continue
+                resized = cv2.resize(source, (target, target), interpolation=cv2.INTER_CUBIC)
+                padded = cv2.copyMakeBorder(
+                    resized, pad, pad, pad, pad, cv2.BORDER_CONSTANT, value=255
+                )
 
-            # If PSM 10 failed, try PSM 13 (raw line) as fallback
-            if digit == 0:
-                config_fallback = "--psm 13 --oem 3 -c tessedit_char_whitelist=123456789"
-                text = pytesseract.image_to_string(padded, config=config_fallback).strip()
+                # PSM 10: single character
+                config = "--psm 10 --oem 3 -c tessedit_char_whitelist=123456789"
+                data = pytesseract.image_to_data(
+                    padded,
+                    config=config,
+                    output_type=pytesseract.Output.DICT,
+                )
+                d, c = pick_best_digit_from_tesseract_data(data)
+                if d != 0:
+                    candidates.append((d, c))
+
+                # PSM 13: raw line (good fallback for thin strokes like 9)
+                config_13 = "--psm 13 --oem 3 -c tessedit_char_whitelist=123456789"
+                text = pytesseract.image_to_string(padded, config=config_13).strip()
                 if text and text[0].isdigit():
                     val = int(text[0])
                     if 1 <= val <= 9:
-                        digit = val
-                        conf = 0.5  # lower confidence for fallback
+                        candidates.append((val, 0.5))
+
+                # PSM 8: single word — another fallback
+                config_8 = "--psm 8 --oem 3 -c tessedit_char_whitelist=123456789"
+                text_8 = pytesseract.image_to_string(padded, config=config_8).strip()
+                if text_8 and text_8[0].isdigit():
+                    val_8 = int(text_8[0])
+                    if 1 <= val_8 <= 9:
+                        candidates.append((val_8, 0.4))
+
+            # Pick the digit with the most votes (majority), breaking ties by confidence
+            digit = 0
+            conf = 0.0
+            if candidates:
+                from collections import Counter
+
+                vote_counts = Counter(d for d, _ in candidates)
+                best_digit_val = vote_counts.most_common(1)[0][0]
+                best_conf_for_digit = max(c for d, c in candidates if d == best_digit_val)
+                digit = best_digit_val
+                conf = best_conf_for_digit
 
             board.append(digit)
             confidences.append(conf)
