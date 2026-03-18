@@ -123,3 +123,4 @@ traefik/letsencrypt/acme.json
 .repo_health_history.json
 dashboard.html
 dashboard_data.json
+.claude/worktrees/
