@@ -49,3 +49,8 @@ class MatchStateResponse(BaseModel):
     grid_size: int
     player_board: list[int]
     ai: AiStateResponse
+
+
+class SolveResponse(BaseModel):
+    match_id: str
+    status: str
