@@ -244,6 +244,110 @@ class BoardGenerator:
 
         return board
 
+    def generate_ugc_24_board(
+        self,
+        ugc_property_names: list[str],
+        game_config: GameConfig | None = None,
+    ) -> list[Tile]:
+        """Generate a fixed 24-tile UGC board path.
+
+        Layout (positions on perimeter after mapping):
+        - 0: GO
+        - 6: THE GLITCH (TELEPORT)
+        - 12: SERVER DOWNTIME (JAIL)
+        - 18: BLACK MARKET (MARKET)
+        - Exactly six CHANCE tiles at non-corner positions with no three consecutive
+        - Remaining 14 tiles are PROPERTY tiles using UGC names with fallback list
+        """
+        fallback_names = [
+            "ROOT ACCESS TOWERS",
+            "ZERO-DAY LOFTS",
+            "PACKET SNIFFER STREET",
+            "FIREWALL HEIGHTS",
+            "BOTNET BOULEVARD",
+            "SERVER FARM ROW",
+            "CLOUD NINE CAMPUS",
+            "QUANTUM QUARTERS",
+            "KERNEL PANIC PLAZA",
+            "DRONE DOCK DISTRICT",
+            "BACKDOOR BUNGALOWS",
+            "TERMINAL TOWERS",
+            "HEDGE FUND HARBOR",
+            "OFFSHORE OPS CENTER",
+        ]
+
+        cleaned_ugc = [name.strip() for name in ugc_property_names if name and name.strip()]
+        property_names: list[str] = cleaned_ugc[:14]
+        if len(property_names) < 14:
+            remaining = 14 - len(property_names)
+            for i in range(remaining):
+                property_names.append(fallback_names[i % len(fallback_names)])
+
+        tiles: list[Tile] = []
+        chance_positions = {2, 4, 8, 10, 14, 20}
+        property_index = 0
+
+        total_tiles = 24
+        for position in range(total_tiles):
+            if position == 0:
+                tile_type = TileType.GO
+                name = "GO"
+                bonus = game_config.go_bonus if game_config is not None else 200
+                effect_config: dict[str, Any] = {"bonus": bonus}
+            elif position == 6:
+                tile_type = TileType.TELEPORT
+                name = "THE GLITCH"
+                effect_config = {}
+            elif position == 12:
+                tile_type = TileType.JAIL
+                name = "SERVER DOWNTIME"
+                effect_config = {}
+            elif position == 18:
+                tile_type = TileType.MARKET
+                name = "BLACK MARKET"
+                effect_config = {}
+            elif position in chance_positions:
+                tile_type = TileType.CHANCE
+                name = "CHANCE"
+                effect_config = {}
+            else:
+                tile_type = TileType.PROPERTY
+                name = property_names[property_index]
+                property_index += 1
+                effect_config = {}
+
+            tiles.append(
+                Tile(
+                    type=tile_type,
+                    name=name,
+                    effect_config=effect_config,
+                    id=str(uuid.uuid4()),
+                )
+            )
+
+        board_size = 7
+        board = self.layout.map_tiles_to_perimeter(tiles, board_size)
+
+        if game_config:
+            for tile in board:
+                tile.price = game_config.get_tile_price(tile.type, tile.position)
+                tile.rent = game_config.get_tile_rent(tile.type, tile.position)
+
+        # Assign property colors in fixed groups: 2,3,3,3,3
+        properties = [t for t in board if t.type == TileType.PROPERTY]
+        set_pattern = [2, 3, 3, 3, 3]
+        set_index = 0
+        within_set = 0
+        for prop in properties:
+            if set_index < len(set_pattern) and within_set >= set_pattern[set_index]:
+                set_index += 1
+                within_set = 0
+            color_index = set_index % len(PROPERTY_COLORS) if set_pattern else 0
+            prop.color = PROPERTY_COLORS[color_index]
+            within_set += 1
+
+        return board
+
     def _place_special_tiles(self, board: list[Tile], total_tiles: int) -> None:
         """Place special tiles (Glitch, Jail, Market, GO_TO_JAIL, NODE)."""
         protected = self.layout.get_protected_positions(total_tiles)

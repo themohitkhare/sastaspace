@@ -285,6 +285,57 @@ class TestSastaDiceAPI:
         data = response.json()
         assert data["success"] is True
 
+    async def test_trade_actions_do_not_reset_turn_timer(self, db_database, client):
+        """Trade-related actions must not pause or reset the turn timer."""
+        # Create and start game
+        create_response = await client.post("/api/v1/sastadice/games")
+        game_id = create_response.json()["id"]
+
+        tiles = [
+            {"type": "PROPERTY", "name": f"Property {i}", "effect_config": {}} for i in range(5)
+        ]
+        join_response1 = await client.post(
+            f"/api/v1/sastadice/games/{game_id}/join",
+            json={"name": "Player 1", "tiles": tiles},
+        )
+        player1_id = join_response1.json()["id"]
+
+        join_response2 = await client.post(
+            f"/api/v1/sastadice/games/{game_id}/join",
+            json={"name": "Player 2", "tiles": tiles},
+        )
+        player2_id = join_response2.json()["id"]
+
+        start_response = await client.post(f"/api/v1/sastadice/games/{game_id}/start")
+        assert start_response.status_code == 200
+
+        # Fetch initial state and record turn_start_time
+        state_response = await client.get(f"/api/v1/sastadice/games/{game_id}/state")
+        initial_state = state_response.json()["game"]
+        initial_turn_start_time = initial_state["turn_start_time"]
+
+        # Propose a trade from current turn player to the other player
+        current_turn_player_id = initial_state["current_turn_player_id"]
+        target_id = player2_id if current_turn_player_id == player1_id else player1_id
+        trade_payload = {
+            "target_id": target_id,
+            "offer_cash": 10,
+            "req_cash": 0,
+            "offer_props": [],
+            "req_props": [],
+        }
+        trade_response = await client.post(
+            f"/api/v1/sastadice/games/{game_id}/action",
+            params={"player_id": current_turn_player_id},
+            json={"type": "PROPOSE_TRADE", "payload": trade_payload},
+        )
+        assert trade_response.status_code == 200
+
+        # Turn start time should be unchanged after trade
+        updated_state_response = await client.get(f"/api/v1/sastadice/games/{game_id}/state")
+        updated_state = updated_state_response.json()["game"]
+        assert updated_state["turn_start_time"] == initial_turn_start_time
+
     async def test_perform_action_buy_property(self, db_database, client):
         """Test performing buy property action requires proper phase."""
         create_response = await client.post("/api/v1/sastadice/games")
@@ -352,6 +403,77 @@ class TestSastaDiceAPI:
         data = response.json()
         assert "turn_phase" in data["game"]
         assert data["game"]["turn_phase"] == "PRE_ROLL"
+
+    async def test_timeout_cancels_trades_and_auto_advances(self, db_database, client, monkeypatch):
+        """When a turn times out, all active trades are cancelled and the turn auto-advances."""
+        create_response = await client.post("/api/v1/sastadice/games")
+        game_id = create_response.json()["id"]
+
+        tiles = [
+            {"type": "PROPERTY", "name": f"Property {i}", "effect_config": {}} for i in range(5)
+        ]
+        join_response1 = await client.post(
+            f"/api/v1/sastadice/games/{game_id}/join",
+            json={"name": "Player 1", "tiles": tiles},
+        )
+        player1_id = join_response1.json()["id"]
+
+        join_response2 = await client.post(
+            f"/api/v1/sastadice/games/{game_id}/join",
+            json={"name": "Player 2", "tiles": tiles},
+        )
+        player2_id = join_response2.json()["id"]
+
+        start_response = await client.post(f"/api/v1/sastadice/games/{game_id}/start")
+        assert start_response.status_code == 200
+        started_state = start_response.json()
+
+        # Ensure we are in PRE_ROLL with a running timer
+        assert started_state["turn_phase"] == "PRE_ROLL"
+        initial_turn_start_time = started_state["turn_start_time"]
+        current_turn_player_id = started_state["current_turn_player_id"]
+
+        # Create an active trade offer
+        target_id = player2_id if current_turn_player_id == player1_id else player1_id
+        trade_payload = {
+            "target_id": target_id,
+            "offer_cash": 10,
+            "req_cash": 0,
+            "offer_props": [],
+            "req_props": [],
+        }
+        trade_response = await client.post(
+            f"/api/v1/sastadice/games/{game_id}/action",
+            params={"player_id": current_turn_player_id},
+            json={"type": "PROPOSE_TRADE", "payload": trade_payload},
+        )
+        assert trade_response.status_code == 200
+
+        # Confirm trade exists
+        state_response = await client.get(f"/api/v1/sastadice/games/{game_id}/state")
+        state = state_response.json()["game"]
+
+        # Force timeout by advancing time beyond turn_timer_seconds
+        from app.modules.sastadice.services import game_orchestrator as go_module
+
+        timeout_seconds = state["settings"]["turn_timer_seconds"]
+        fake_now = initial_turn_start_time + timeout_seconds + 1
+        monkeypatch.setattr(go_module.time, "time", lambda: fake_now)
+
+        # Hitting state endpoint will trigger check_timeout
+        timeout_state_response = await client.get(f"/api/v1/sastadice/games/{game_id}/state")
+        timeout_state = timeout_state_response.json()["game"]
+
+        # All trades should be cleared
+        assert timeout_state["active_trade_offers"] == []
+
+        # And the game should have auto-advanced according to existing movement rules:
+        # PRE_ROLL -> ROLL_DICE, DECISION -> PASS_PROPERTY, POST_TURN -> END_TURN
+        # We only assert that either the turn_phase or current_turn_player_id changed.
+        assert (
+            timeout_state["turn_phase"] != started_state["turn_phase"]
+            or timeout_state["current_turn_player_id"] != started_state["current_turn_player_id"]
+        )
 
     async def test_dynamic_economy_in_game_state(self, db_database, client):
         """Test that dynamic economy fields are in game state."""

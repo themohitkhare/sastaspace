@@ -16,6 +16,12 @@ function App() {
       subdomain: 'sastahero',
       accentColor: '#00ff00',
     },
+    {
+      name: 'Sudoku',
+      description: 'Solve Sudoku puzzles with a powerful Genetic Algorithm.',
+      subdomain: 'sudoku',
+      accentColor: '#6366f1',
+    },
   ]
 
   return (

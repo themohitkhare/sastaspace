@@ -2,7 +2,21 @@ import React from 'react'
 
 const ProjectCard = ({ name, description, subdomain, accentColor = "#00ff00" }) => {
   const handleLaunch = () => {
-    window.open(`https://${subdomain}.sastaspace.com`, '_blank')
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+      // If you're on a direct container port (e.g. :9000), route via Traefik on :80.
+      // If you're already on Traefik (:80), keep it as a relative navigation.
+      const port = window.location.port
+      const isNonDefaultPort = port && port !== '80' && port !== '443'
+
+      if (isNonDefaultPort) {
+        window.location.assign(`${window.location.protocol}//${window.location.hostname}/${subdomain}/`)
+      } else {
+        // Use same-tab navigation so browser Back works locally (and avoid popup blockers).
+        window.location.assign(`/${subdomain}/`)
+      }
+    } else {
+      window.location.assign(`https://${subdomain}.sastaspace.com`)
+    }
   }
 
   return (

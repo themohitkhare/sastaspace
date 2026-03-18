@@ -305,6 +305,10 @@ class ActionDispatcher:
         if not player:
             return ActionResult(success=False, message="Player not found")
 
+        # Enforce single inventory buff (VPN / DDOS). PEEK is a one-shot effect.
+        if buff_id != "PEEK" and player.active_buff:
+            return ActionResult(success=False, message="You already have an active buff")
+
         if player.cash < selected_buff["cost"]:
             return ActionResult(success=False, message="Insufficient funds")
 
@@ -342,8 +346,9 @@ class ActionDispatcher:
         if game.current_turn_player_id != player_id:
             return ActionResult(success=False, message="Not your turn")
 
-        if game.turn_phase not in (TurnPhase.POST_TURN, TurnPhase.PRE_ROLL):
-            return ActionResult(success=False, message="Cannot use DDoS in current phase")
+        # DDoS can only be used during PRE_ROLL.
+        if game.turn_phase != TurnPhase.PRE_ROLL:
+            return ActionResult(success=False, message="DDoS can only be used in PRE_ROLL")
 
         player = next((p for p in game.players if p.id == player_id), None)
         if not player:

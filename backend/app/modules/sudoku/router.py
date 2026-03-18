@@ -4,12 +4,14 @@ from __future__ import annotations
 
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, status
 from motor.motor_asyncio import AsyncIOMotorDatabase
 
 from app.db.session import get_db
+from app.modules.sudoku.ocr_utils import extract_sudoku_board
 from app.modules.sudoku.schemas import (
     ClaimVictoryResponse,
+    ExtractBoardResponse,
     MatchStateResponse,
     PlayerUpdateRequest,
     StartMatchRequest,
@@ -29,7 +31,7 @@ async def start_match(
     request: StartMatchRequest,
     service: SudokuService = Depends(_get_service),
 ) -> StartMatchResponse:
-    result = await service.start_match(request.difficulty, request.grid_size)
+    result = await service.start_match(request.difficulty, request.grid_size, request.custom_board)
     return StartMatchResponse(**result)
 
 
@@ -79,3 +81,15 @@ async def ai_tick(
         return await service.ai_tick(match_id)
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
+
+@router.post("/extract-board", response_model=ExtractBoardResponse)
+async def extract_board(file: UploadFile) -> ExtractBoardResponse:
+    if not file.content_type or not file.content_type.startswith("image/"):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="File must be an image")
+    try:
+        content = await file.read()
+        board = extract_sudoku_board(content)
+        return ExtractBoardResponse(board=board)
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"OCR failed: {str(e)}")
