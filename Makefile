@@ -1,4 +1,4 @@
-.PHONY: deploy-dev deploy-prod test-backend test-frontend-sastadice test-frontend-sastaspace test-frontend-sudoku test-frontend-sastahero test-full test-e2e-sastadice test-e2e-auction test-e2e-all complexity lint typecheck test-cov audit ci install-hooks simulate-games simulate-games-quick simulate-games-fuzz
+.PHONY: deploy-dev deploy-prod test-backend test-frontend-sastadice test-frontend-sastaspace test-frontend-sudoku test-frontend-sastahero test-full test-e2e-sastadice test-e2e-auction test-e2e-all complexity lint typecheck test-cov audit ci ci-fast install-hooks simulate-games simulate-games-quick simulate-games-fuzz
 
 deploy-dev: ## Deploy all services in development mode
 	docker-compose up -d --build
@@ -48,13 +48,36 @@ typecheck: ## Run mypy type checking
 test-cov: ## Run tests with coverage (fail_under from backend/pyproject.toml)
 	cd backend && uv run pytest tests/ --cov=app --cov-branch -v
 
-audit: lint typecheck complexity test-cov ## Run all quality gates
+audit: lint typecheck complexity test-cov ## Run all quality gates (sequential)
 	@echo "All quality gates passed!"
 
-ci: audit test-full ## Full local CI: lint, typecheck, complexity, coverage, backend + frontend tests
+# ── Fast parallel CI ────────────────────────────────────────────────
+# Runs ALL checks in parallel using background jobs.
+# Usage: make ci-fast   (or: make -j8 ci for Make-native parallelism)
+ci-fast: ## Parallel CI: all quality gates + all tests in one shot
+	@echo "=== CI-FAST: launching all checks in parallel ==="
+	@fail=0; \
+	(cd backend && uv run ruff check app/ tests/ && uv run ruff format --check app/ tests/) & pid_lint=$$!; \
+	(cd backend && uv run mypy app/) & pid_type=$$!; \
+	( \
+		output=$$(cd backend && uv run radon cc app/ --min E --exclude "app/modules/sastadice/events/event_manager.py,app/modules/sastadice/services/simulation_manager.py" 2>&1); \
+		if [ -n "$$output" ]; then echo "$$output"; echo "FAIL: CC > 30"; exit 1; fi; \
+		echo "Complexity OK" \
+	) & pid_cc=$$!; \
+	(cd backend && uv run pytest tests/ --cov=app --cov-branch -q) & pid_cov=$$!; \
+	(cd frontends/sastadice && bun run test -- --run) & pid_dice=$$!; \
+	(cd frontends/sudoku && npm run test -- --run) & pid_sudoku=$$!; \
+	(cd frontends/sastahero && npm run test -- --run) & pid_hero=$$!; \
+	for pid in $$pid_lint $$pid_type $$pid_cc $$pid_cov $$pid_dice $$pid_sudoku $$pid_hero; do \
+		wait $$pid || fail=1; \
+	done; \
+	if [ $$fail -eq 1 ]; then echo "=== CI-FAST FAILED ==="; exit 1; fi; \
+	echo "=== CI-FAST PASSED ==="
+
+ci: audit test-full ## Full local CI: lint, typecheck, complexity, coverage, backend + frontend tests (sequential)
 	@echo "CI passed."
 
-install-hooks: ## Install pre-commit hook that runs 'make ci' (run once per clone)
+install-hooks: ## Install pre-commit hook that runs 'make ci-fast' (run once per clone)
 	@mkdir -p .git/hooks
 	@cp .githooks/pre-commit .git/hooks/pre-commit
 	@chmod +x .git/hooks/pre-commit
