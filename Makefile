@@ -1,4 +1,4 @@
-.PHONY: deploy-dev deploy-prod test-backend test-frontend-sastadice test-frontend-sastaspace test-full test-e2e-sastadice test-e2e-auction test-e2e-all complexity lint typecheck test-cov audit ci install-hooks simulate-games simulate-games-quick simulate-games-fuzz
+.PHONY: deploy-dev deploy-prod test-backend test-frontend-sastadice test-frontend-sastaspace test-frontend-sudoku test-frontend-sastahero test-full test-e2e-sastadice test-e2e-auction test-e2e-all complexity lint typecheck test-cov audit ci install-hooks simulate-games simulate-games-quick simulate-games-fuzz
 
 deploy-dev: ## Deploy all services in development mode
 	docker-compose up -d --build
@@ -12,8 +12,14 @@ test-backend: ## Run backend tests
 test-frontend-sastadice: ## Run sastadice frontend tests
 	cd frontends/sastadice && bun run test -- --run
 
-test-frontend-sastaspace: ## Run sastaspace frontend tests (placeholder - no tests yet)
+test-frontend-sastaspace: ## Run sastaspace frontend tests
 	@echo "No tests configured for sastaspace frontend"
+
+test-frontend-sudoku: ## Run sudoku frontend tests
+	cd frontends/sudoku && npm run test -- --run
+
+test-frontend-sastahero: ## Run sastahero frontend tests
+	cd frontends/sastahero && npm run test -- --run
 
 test-e2e-sastadice: ## Run sastadice E2E tests with Playwright
 	cd frontends/sastadice && bun run test:e2e -- tests/e2e/ --workers=2
@@ -23,7 +29,7 @@ test-e2e-auction: ## Run only auction E2E tests
 
 test-e2e-all: test-e2e-sastadice ## Run all E2E tests
 
-test-full: test-backend test-frontend-sastadice ## Run all tests
+test-full: test-backend test-frontend-sastadice test-frontend-sudoku test-frontend-sastahero ## Run all tests
 
 complexity: ## Check cyclomatic complexity (max CC=30 outside excluded modules)
 	@echo "Checking cyclomatic complexity (max CC=30; exclude event_manager, simulation_manager)..."
