@@ -116,23 +116,15 @@ describe('LobbyView', () => {
     })
   })
 
-  it('shows alert when joining without name', async () => {
-    const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => { })
-    const user = userEvent.setup()
+  it('join button is disabled when name is empty', async () => {
     render(<LobbyView />)
 
-    // Try to join without entering a name
     const joinButton = screen.getByRole('button', { name: /INIT_CONNECTION/i })
-
-    // Button should be disabled when name is empty
     expect(joinButton).toBeDisabled()
-
-    alertSpy.mockRestore()
   })
 
   it('handles join errors', async () => {
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => { })
-    window.alert = vi.fn()
     apiClient.post = vi.fn().mockRejectedValue(new Error('Join failed'))
 
     const user = userEvent.setup()
@@ -145,7 +137,7 @@ describe('LobbyView', () => {
     await user.click(joinButton)
 
     await waitFor(() => {
-      expect(window.alert).toHaveBeenCalledWith('Failed to join game')
+      expect(screen.getByText('Failed to join game')).toBeInTheDocument()
     })
 
     consoleError.mockRestore()
@@ -200,7 +192,6 @@ describe('LobbyView', () => {
   })
 
   it('handles toggle ready errors', async () => {
-    window.alert = vi.fn()
     apiClient.post = vi.fn().mockRejectedValue(new Error('Ready failed'))
 
     useGameStore.mockImplementation((selector) => {
@@ -227,7 +218,7 @@ describe('LobbyView', () => {
     await user.click(launchKey)
 
     await waitFor(() => {
-      expect(window.alert).toHaveBeenCalledWith('Failed to toggle ready')
+      expect(screen.getByText('Failed to toggle ready')).toBeInTheDocument()
     })
   })
 
