@@ -36,7 +36,7 @@ logger = logging.getLogger(__name__)
 MAX_GENS_PER_SOLVE = 1000
 BATCH_SIZE = 20
 COLLECT_TIMEOUT_S = 30
-PERSIST_EVERY_N_GENS = 10
+PERSIST_EVERY_N_GENS = 1
 
 
 class SolverCoordinator(BaseWorker):
@@ -118,25 +118,6 @@ class SolverCoordinator(BaseWorker):
         prev_stall_count: int = ai_doc.get("stall_count", 0)
 
         rng = random.Random()
-
-        # Try instant backtracking solve first (works for valid puzzles)
-        if population:
-            solved_board = try_backtrack_finish(population[0], starting_board, grid_size)
-            if solved_board is not None:
-                await self._finish_solved(
-                    repo,
-                    match_id,
-                    population,
-                    tabu_hashes,
-                    generation_count + 1,
-                    1.0,
-                    starting_board,
-                    grid_size,
-                    population[0],
-                    override_board=solved_board,
-                )
-                logger.info("INSTANT SOLVE %s via backtracking!", match_id)
-                return
 
         result_stream = f"ga:results:{match_id}"
         result_group = f"coord-{match_id}"
