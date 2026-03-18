@@ -478,6 +478,115 @@ body {
   font-family: var(--font);
 }
 
+/* ---- Drop Zone ---- */
+
+.drop-zone {
+  border: 3px dashed var(--border);
+  padding: 2.5rem 3rem;
+  cursor: pointer;
+  text-align: center;
+  background: var(--bg-secondary);
+  max-width: 420px;
+  width: 100%;
+  transition: all 0.15s;
+  box-shadow: var(--shadow-sm);
+}
+
+.drop-zone:hover {
+  background: #f0f0f0;
+  transform: translate(2px, 2px);
+  box-shadow: none;
+}
+
+.drop-zone--active {
+  border-color: var(--accent);
+  background: rgba(99, 102, 241, 0.08);
+  border-style: solid;
+}
+
+.drop-zone__icon {
+  font-size: 2.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.drop-zone__title {
+  font-weight: 700;
+  font-size: 0.9rem;
+  font-family: var(--font);
+}
+
+.drop-zone__subtitle {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-top: 0.25rem;
+  font-family: var(--font);
+}
+
+/* ---- Puzzle Preview (editable board before solving) ---- */
+
+.puzzle-preview {
+  max-width: 400px;
+  width: 100%;
+}
+
+/* ---- OCR Review ---- */
+
+.ocr-review {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.ocr-review__info {
+  font-size: 0.85rem;
+  font-family: var(--font);
+  color: var(--text-secondary);
+}
+
+/* ---- Error Banner ---- */
+
+.error-banner {
+  border: 3px solid var(--danger);
+  background: var(--danger);
+  color: white;
+  padding: 0.6rem 1.5rem;
+  font-weight: 700;
+  font-size: 0.85rem;
+  font-family: var(--font);
+  text-align: center;
+  box-shadow: var(--shadow-sm);
+}
+
+/* ---- Solve Screen ---- */
+
+.solve-screen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+  animation: fadeIn 0.3s ease-out;
+  width: 100%;
+}
+
+.solve-board {
+  max-width: 480px;
+  width: 100%;
+}
+
+.solved-banner {
+  border: 3px solid var(--border);
+  background: var(--border);
+  color: var(--success);
+  padding: 1rem 2rem;
+  font-weight: 700;
+  font-size: 1.25rem;
+  font-family: var(--font);
+  box-shadow: var(--shadow);
+  text-align: center;
+  animation: scaleIn 0.3s ease-out;
+}
+
 /* ---- Animations ---- */
 
 @keyframes fadeIn {
