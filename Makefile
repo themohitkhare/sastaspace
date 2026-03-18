@@ -1,4 +1,4 @@
-.PHONY: deploy-dev deploy-prod test-backend test-frontend-sastadice test-frontend-sastaspace test-frontend-sudoku test-frontend-sastahero test-full test-e2e-sastadice test-e2e-auction test-e2e-all complexity lint typecheck test-cov audit ci ci-fast install-hooks simulate-games simulate-games-quick simulate-games-fuzz
+.PHONY: deploy-dev deploy-prod test-backend test-frontend-sastadice test-frontend-sastaspace test-frontend-sastahero test-full test-e2e-sastadice test-e2e-auction test-e2e-all complexity lint typecheck test-cov audit ci ci-fast install-hooks simulate-games simulate-games-quick simulate-games-fuzz
 
 deploy-dev: ## Deploy all services in development mode
 	docker-compose up -d --build
@@ -15,9 +15,6 @@ test-frontend-sastadice: ## Run sastadice frontend tests
 test-frontend-sastaspace: ## Run sastaspace frontend tests
 	@echo "No tests configured for sastaspace frontend"
 
-test-frontend-sudoku: ## Run sudoku frontend tests
-	cd frontends/sudoku && npm run test -- --run
-
 test-frontend-sastahero: ## Run sastahero frontend tests
 	cd frontends/sastahero && npm run test -- --run
 
@@ -29,7 +26,7 @@ test-e2e-auction: ## Run only auction E2E tests
 
 test-e2e-all: test-e2e-sastadice ## Run all E2E tests
 
-test-full: test-backend test-frontend-sastadice test-frontend-sudoku test-frontend-sastahero ## Run all tests
+test-full: test-backend test-frontend-sastadice test-frontend-sastahero ## Run all tests
 
 complexity: ## Check cyclomatic complexity (max CC=30 outside excluded modules)
 	@echo "Checking cyclomatic complexity (max CC=30; exclude event_manager, simulation_manager)..."
@@ -66,16 +63,14 @@ ci-fast: ## Parallel CI: all quality gates + all tests in one shot
 	) & pid_cc=$$!; \
 	(cd backend && uv run pytest tests/ --cov=app --cov-branch -q) & pid_cov=$$!; \
 	(cd frontends/sastadice && bun run test -- --run) & pid_dice=$$!; \
-	(cd frontends/sudoku && npm run test -- --run) & pid_sudoku=$$!; \
 	(cd frontends/sastahero && npm run test -- --run) & pid_hero=$$!; \
-	for pid in $$pid_lint $$pid_type $$pid_cc $$pid_cov $$pid_dice $$pid_sudoku $$pid_hero; do \
+	for pid in $$pid_lint $$pid_type $$pid_cc $$pid_cov $$pid_dice $$pid_hero; do \
 		wait $$pid || fail=1; \
 	done; \
 	if [ $$fail -eq 1 ]; then echo "=== CI-FAST FAILED ==="; exit 1; fi; \
 	echo "=== CI-FAST PASSED ==="
 
-ci: audit test-full ## Full local CI: lint, typecheck, complexity, coverage, backend + frontend tests (sequential)
-	@echo "CI passed."
+ci: ci-fast ## Alias for ci-fast (parallel)
 
 install-hooks: ## Install pre-commit hook that runs 'make ci-fast' (run once per clone)
 	@mkdir -p .git/hooks

@@ -1,11 +1,12 @@
 # SastaSpace
 
-A portfolio of interactive projects — multiplayer board games, AI solvers, and RPG builders — served from a single FastAPI backend through a Traefik reverse proxy.
+A portfolio of interactive projects — multiplayer board games and RPG builders — served from a single FastAPI backend through a Traefik reverse proxy.
 
 ## Tech Stack
 
-- **Backend**: FastAPI + MongoDB (Python 3.11+, uv)
+- **Backend**: FastAPI + MongoDB + Redis (Python 3.11+, uv)
 - **Frontends**: React 18 + Vite + Tailwind CSS (brutalist design system)
+- **Worker Framework**: Redis Streams consumer groups (BaseWorker pattern)
 - **Reverse Proxy**: Traefik v2.11 (routes all sub-apps through localhost:80)
 - **Containerization**: Docker + Docker Compose (multi-stage builds)
 - **Testing**: pytest (backend), Vitest + Testing Library (frontend), Playwright (E2E)
@@ -17,7 +18,6 @@ A portfolio of interactive projects — multiplayer board games, AI solvers, and
 |---------|-----|-------------|
 | **SastaDice** | `/sastadice/` | Multiplayer board game with auctions, trading, and dynamic economy |
 | **SastaHero** | `/sastahero/` | Interactive RPG character builder — pick a class, allocate stats, export as PNG |
-| **Sudoku** | `/sudoku/` | Player vs Genetic Algorithm — upload puzzles via OCR or play manually |
 
 ## Quick Start
 
@@ -39,7 +39,6 @@ docker-compose down
 | Landing Page | http://localhost/ |
 | SastaDice | http://localhost/sastadice/ |
 | SastaHero | http://localhost/sastahero/ |
-| Sudoku | http://localhost/sudoku/ |
 | Backend API | http://localhost/api/v1/ |
 | API Docs | http://localhost:8000/docs |
 | Traefik Dashboard | http://localhost:8080 |
@@ -55,17 +54,19 @@ sastaspace/
 │   │   ├── modules/
 │   │   │   ├── common/        # Health checks
 │   │   │   ├── sastadice/     # Board game logic
-│   │   │   ├── sastahero/     # Hero builder API
-│   │   │   └── sudoku/        # Genetic algorithm solver
-│   │   ├── core/              # Config, logging
+│   │   │   └── sastahero/     # Hero builder API
+│   │   ├── worker/            # Redis Streams worker framework
+│   │   │   ├── base.py        # BaseWorker (generic consumer)
+│   │   │   ├── mutation_worker.py
+│   │   │   └── solver_coordinator.py
+│   │   ├── core/              # Config, logging, Redis
 │   │   └── db/                # MongoDB session
 │   └── tests/                 # pytest test suite
 ├── frontends/
 │   ├── shared/                # Shared React components (Navbar, assets)
 │   ├── sastaspace/            # Landing page (React/Vite)
 │   ├── sastadice/             # Board game frontend (React/Vite)
-│   ├── sastahero/             # Hero builder frontend (React/Vite)
-│   └── sudoku/                # Sudoku frontend (React/Vite)
+│   └── sastahero/             # Hero builder frontend (React/Vite)
 ├── grafana/                   # Grafana provisioning
 ├── loki/                      # Loki log aggregation config
 ├── promtail/                  # Log collection config
@@ -87,7 +88,7 @@ uv run uvicorn app.main:app --reload
 ### Frontend (any sub-app)
 
 ```bash
-cd frontends/sudoku   # or sastadice, sastahero, sastaspace
+cd frontends/sastadice   # or sastahero, sastaspace
 npm install
 npm run dev
 ```
@@ -98,11 +99,13 @@ npm run dev
 # All tests (backend + all frontends)
 make test-full
 
+# Parallel CI (~7s)
+make ci-fast
+
 # Backend only
 make test-backend
 
 # Specific frontend
-make test-frontend-sudoku
 make test-frontend-sastahero
 make test-frontend-sastadice
 
@@ -110,10 +113,21 @@ make test-frontend-sastadice
 make audit
 ```
 
+## Worker Framework
+
+The backend includes a reusable Redis Streams worker framework (`app/worker/`). Same Docker image runs different roles via `APP_MODE` env var:
+
+| `APP_MODE` | What it runs |
+|------------|-------------|
+| `SERVER` | FastAPI HTTP server (default) |
+| `CONSUMER` | Redis Streams consumer (MutationWorker) |
+| `COORDINATOR` | Task orchestrator (SolverCoordinator) |
+| `JOB` | One-shot job |
+| `CRONJOB` | Periodic tasks |
+
 ## API Endpoints
 
 - `GET /api/v1/common/health` — Health check + MongoDB connectivity
 - `GET /api/v1/sastahero/classes` — All hero class definitions
 - `POST /api/v1/sastahero/generate` — Random hero with weighted stat allocation
-- `GET /api/v1/sudoku/matches/{id}` — Get match state
 - `POST /api/v1/sastadice/games` — Create a new game
