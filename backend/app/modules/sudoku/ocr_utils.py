@@ -1,4 +1,4 @@
-"""OCR Utilities to parse uploaded Sudoku images."""
+"""OCR Utilities to parse uploaded Sudoku images (optimized for sudoku.com screenshots)."""
 
 from __future__ import annotations
 
@@ -7,35 +7,19 @@ import numpy as np
 import pytesseract  # type: ignore[import-untyped]
 
 MIN_IMAGE_SIDE_PX = 60
-MIN_CELL_SIZE_PX = 8
-OCR_TARGET_SIZE_PX = 56
-MIN_DIGIT_FG_RATIO = 0.006
 WARP_TARGET_SIZE_PX = 900
 
 
 def normalize_confidence(raw_confidence: float | int) -> float:
-    """
-    Normalize a Tesseract confidence value from [-1, 100] into [0.0, 1.0].
-    Values at or below 0 are treated as 0.0; values above 100 are clamped.
-    """
+    """Normalize Tesseract confidence from [-1, 100] into [0.0, 1.0]."""
     raw = float(raw_confidence)
     if raw <= 0:
         return 0.0
-    normalized = raw / 100.0
-    if normalized < 0.0:
-        return 0.0
-    if normalized > 1.0:
-        return 1.0
-    return normalized
+    return min(raw / 100.0, 1.0)
 
 
 def pick_best_digit_from_tesseract_data(data: dict[str, list[str]]) -> tuple[int, float]:
-    """
-    Extract the best single digit (1..9) and its normalized confidence from
-    pytesseract.image_to_data(..., output_type=DICT).
-
-    Returns (0, 0.0) when no valid digit is present.
-    """
+    """Extract the best single digit (1-9) and confidence from tesseract output."""
     texts: list[str] = data.get("text", []) or []
     confs: list[str] = data.get("conf", []) or []
 
@@ -70,16 +54,71 @@ def pick_best_digit_from_tesseract_data(data: dict[str, list[str]]) -> tuple[int
     return best_digit, best_conf
 
 
+def _find_grid_contour(thresh: np.ndarray) -> np.ndarray | None:
+    """Find the largest quadrilateral contour (the sudoku grid)."""
+    contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    if not contours:
+        return None
+
+    contours = sorted(contours, key=cv2.contourArea, reverse=True)
+    for c in contours[:5]:
+        peri = cv2.arcLength(c, True)
+        approx = cv2.approxPolyDP(c, 0.02 * peri, True)
+        if len(approx) == 4:
+            return approx
+    return None
+
+
+def _order_points(pts: np.ndarray) -> np.ndarray:
+    """Order 4 points as [top-left, top-right, bottom-right, bottom-left]."""
+    rect = np.zeros((4, 2), dtype=np.float32)
+    s = pts.sum(axis=1)
+    diff = np.diff(pts, axis=1).flatten()
+    rect[0] = pts[np.argmin(s)]
+    rect[2] = pts[np.argmax(s)]
+    rect[1] = pts[np.argmin(diff)]
+    rect[3] = pts[np.argmax(diff)]
+    return rect
+
+
+def _warp_grid(gray: np.ndarray, contour: np.ndarray | None) -> np.ndarray:
+    """Perspective-warp the grid to a square image."""
+    h, w = gray.shape
+    if contour is not None:
+        pts = contour.reshape(4, 2).astype(np.float32)
+        ordered = _order_points(pts)
+    else:
+        ordered = np.array([[0, 0], [w - 1, 0], [w - 1, h - 1], [0, h - 1]], dtype=np.float32)
+
+    dst = np.array(
+        [
+            [0, 0],
+            [WARP_TARGET_SIZE_PX - 1, 0],
+            [WARP_TARGET_SIZE_PX - 1, WARP_TARGET_SIZE_PX - 1],
+            [0, WARP_TARGET_SIZE_PX - 1],
+        ],
+        dtype=np.float32,
+    )
+    M = cv2.getPerspectiveTransform(ordered, dst)
+    return cv2.warpPerspective(gray, M, (WARP_TARGET_SIZE_PX, WARP_TARGET_SIZE_PX))
+
+
+def _cell_has_digit(cell_thresh: np.ndarray) -> bool:
+    """Check if a thresholded cell contains enough foreground pixels to be a digit."""
+    total = cell_thresh.shape[0] * cell_thresh.shape[1]
+    fg = cv2.countNonZero(cell_thresh)
+    ratio = fg / total if total > 0 else 0
+    # Digits typically have 3-40% fill ratio in the center crop
+    return 0.01 < ratio < 0.5
+
+
 def extract_sudoku_board(image_bytes: bytes) -> tuple[list[int], list[float]]:
     """
-    Best-effort OCR for a 9x9 Sudoku grid image.
+    OCR a 9x9 Sudoku grid image (optimized for sudoku.com screenshots).
 
     Returns:
       - board: 81-length list of ints (0 = empty)
       - confidences: 81-length list of floats in [0, 1]
-
-    Note: This is the baseline OCR implementation. Follow-up work will improve
-    digit isolation and confidence scoring.
     """
     nparr = np.frombuffer(image_bytes, np.uint8)
     img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
@@ -90,162 +129,78 @@ def extract_sudoku_board(image_bytes: bytes) -> tuple[list[int], list[float]]:
     h_img, w_img = gray.shape
     if min(h_img, w_img) < MIN_IMAGE_SIDE_PX:
         raise ValueError("Image too small for Sudoku OCR.")
-    blur = cv2.GaussianBlur(gray, (5, 5), 0)
-    thresh = cv2.adaptiveThreshold(
+
+    # Find grid and warp
+    blur = cv2.GaussianBlur(gray, (7, 7), 0)
+    thresh_for_contour = cv2.adaptiveThreshold(
         blur, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 11, 2
     )
+    grid_contour = _find_grid_contour(thresh_for_contour)
+    warped = _warp_grid(gray, grid_contour)
 
-    contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-    if not contours:
-        raise ValueError("No grid found in image.")
+    # Apply clean threshold to warped image
+    warped_blur = cv2.GaussianBlur(warped, (3, 3), 0)
+    _, warped_thresh = cv2.threshold(warped_blur, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
 
-    contours = sorted(contours, key=cv2.contourArea, reverse=True)
-    puzzle_contour = None
-    for c in contours:
-        peri = cv2.arcLength(c, True)
-        approx = cv2.approxPolyDP(c, 0.02 * peri, True)
-        if len(approx) == 4:
-            puzzle_contour = approx
-            break
-
-    if puzzle_contour is None:
-        h, w = gray.shape
-        puzzle_contour = np.array([[[0, 0]], [[w - 1, 0]], [[w - 1, h - 1]], [[0, h - 1]]])
-
-    pts = puzzle_contour.reshape(4, 2)
-    s = pts.sum(axis=1)
-    diff = np.diff(pts, axis=1)
-
-    tl = pts[np.argmin(s)]
-    br = pts[np.argmax(s)]
-    tr = pts[np.argmin(diff)]
-    bl = pts[np.argmax(diff)]
-
-    src_pts = np.array([tl, tr, br, bl], dtype=np.float32)
-    side_candidates = [
-        float(np.linalg.norm(br - bl)),
-        float(np.linalg.norm(tr - tl)),
-        float(np.linalg.norm(br - tr)),
-        float(np.linalg.norm(bl - tl)),
-    ]
-    side = max(side_candidates)
-    dst_pts = np.array(
-        [[0, 0], [side - 1, 0], [side - 1, side - 1], [0, side - 1]],
-        dtype=np.float32,
-    )
-    M = cv2.getPerspectiveTransform(src_pts, dst_pts)
-    warped_size = int(max(side, 1.0))
-    warped = cv2.warpPerspective(gray, M, (warped_size, warped_size))
-    if warped_size < WARP_TARGET_SIZE_PX:
-        warped = cv2.resize(warped, (WARP_TARGET_SIZE_PX, WARP_TARGET_SIZE_PX))
-        warped_size = WARP_TARGET_SIZE_PX
-
+    cell_size = WARP_TARGET_SIZE_PX // 9
     board: list[int] = []
     confidences: list[float] = []
-    cell_size = max(int(warped_size / 9), 1)
-
-    # Reject images that would produce essentially meaningless cells.
-    if warped_size < 9 * MIN_CELL_SIZE_PX or cell_size < MIN_CELL_SIZE_PX:
-        raise ValueError("Computed cell size is too small for Sudoku OCR.")
 
     for row in range(9):
         for col in range(9):
             x = col * cell_size
             y = row * cell_size
-            cell = warped[y : y + cell_size, x : x + cell_size]
 
-            margin = int(cell_size * 0.1)
-            if margin > 0:
-                cell = cell[margin : cell_size - margin, margin : cell_size - margin]
+            # Crop cell with margin to exclude grid lines
+            margin = int(cell_size * 0.15)
+            cell_gray = warped[
+                y + margin : y + cell_size - margin, x + margin : x + cell_size - margin
+            ]
+            cell_thresh = warped_thresh[
+                y + margin : y + cell_size - margin, x + margin : x + cell_size - margin
+            ]
 
-            if cell.size == 0:
+            if cell_gray.size == 0 or cell_thresh.size == 0:
                 board.append(0)
                 confidences.append(0.0)
                 continue
 
-            cell_thresh = cv2.adaptiveThreshold(
-                cell, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 11, 2
-            )
-            kernel_small = cv2.getStructuringElement(cv2.MORPH_RECT, (2, 2))
-            cell_thresh = cv2.morphologyEx(cell_thresh, cv2.MORPH_OPEN, kernel_small)
-
-            # Remove horizontal and vertical grid lines using morphology.
-            # Use moderately long kernels to detect grid lines, but avoid being
-            # so long that we erase legitimate digit strokes.
-            horizontal_kernel = cv2.getStructuringElement(
-                cv2.MORPH_RECT, (max(cell_thresh.shape[1] // 3, 1), 1)
-            )
-            vertical_kernel = cv2.getStructuringElement(
-                cv2.MORPH_RECT, (1, max(cell_thresh.shape[0] // 3, 1))
-            )
-            detected_horizontal = cv2.morphologyEx(cell_thresh, cv2.MORPH_OPEN, horizontal_kernel)
-            detected_vertical = cv2.morphologyEx(cell_thresh, cv2.MORPH_OPEN, vertical_kernel)
-            cell_no_lines = cv2.subtract(
-                cv2.subtract(cell_thresh, detected_horizontal), detected_vertical
-            )
-
-            # Thin/anti-aliased digits can have very few foreground pixels; keep
-            # this threshold low to avoid false-empties.
-            if cv2.countNonZero(cell_no_lines) < (
-                cell_no_lines.shape[0] * cell_no_lines.shape[1] * MIN_DIGIT_FG_RATIO
-            ):
+            if not _cell_has_digit(cell_thresh):
                 board.append(0)
                 confidences.append(0.0)
                 continue
 
-            # Lightly dilate to strengthen digit strokes after line removal.
-            cell_no_lines = cv2.dilate(cell_no_lines, kernel_small, iterations=2)
+            # Prepare cell for OCR: resize to consistent size, add padding
+            target = 80
+            resized = cv2.resize(cell_gray, (target, target), interpolation=cv2.INTER_CUBIC)
 
-            # Find the main digit contour and crop tightly.
-            contours_cell, _ = cv2.findContours(
-                cell_no_lines, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE
-            )
-            if not contours_cell:
-                board.append(0)
-                confidences.append(0.0)
-                continue
+            # Add white border padding for tesseract (it needs whitespace around digits)
+            pad = 20
+            padded = cv2.copyMakeBorder(resized, pad, pad, pad, pad, cv2.BORDER_CONSTANT, value=255)
 
-            contour = max(contours_cell, key=cv2.contourArea)
-            x_c, y_c, w_c, h_c = cv2.boundingRect(contour)
-
-            if w_c <= 0 or h_c <= 0:
-                board.append(0)
-                confidences.append(0.0)
-                continue
-
-            side_c = max(w_c, h_c)
-            cx = x_c + w_c // 2
-            cy = y_c + h_c // 2
-            half_side = side_c // 2
-            x_start = max(cx - half_side, 0)
-            y_start = max(cy - half_side, 0)
-            x_end = min(x_start + side_c, cell_no_lines.shape[1])
-            y_end = min(y_start + side_c, cell_no_lines.shape[0])
-
-            digit_roi = cell_no_lines[y_start:y_end, x_start:x_end]
-            if digit_roi.size == 0:
-                board.append(0)
-                confidences.append(0.0)
-                continue
-
-            # Normalize ROI to a fixed size for OCR.
-            digit_roi = cv2.resize(digit_roi, (OCR_TARGET_SIZE_PX, OCR_TARGET_SIZE_PX))
-            digit_roi_inv = cv2.bitwise_not(digit_roi)
-
+            # Use tesseract with single character mode
             config = "--psm 10 --oem 3 -c tessedit_char_whitelist=123456789"
             data = pytesseract.image_to_data(
-                digit_roi_inv,
+                padded,
                 config=config,
                 output_type=pytesseract.Output.DICT,
             )
             digit, conf = pick_best_digit_from_tesseract_data(data)
+
+            # If PSM 10 failed, try PSM 13 (raw line) as fallback
+            if digit == 0:
+                config_fallback = "--psm 13 --oem 3 -c tessedit_char_whitelist=123456789"
+                text = pytesseract.image_to_string(padded, config=config_fallback).strip()
+                if text and text[0].isdigit():
+                    val = int(text[0])
+                    if 1 <= val <= 9:
+                        digit = val
+                        conf = 0.5  # lower confidence for fallback
+
             board.append(digit)
             confidences.append(conf)
 
     if len(board) != 81 or len(confidences) != 81:
         raise ValueError("OCR extracted an unexpected number of cells.")
-
-    # Final clamp to ensure all confidences are within [0.0, 1.0].
-    confidences = [normalize_confidence(c) for c in confidences]
 
     return board, confidences
