@@ -278,9 +278,71 @@ Touch events on mobile, mouse drag on desktop. Threshold + direction detection (
 
 The current SastaHero codebase is an RPG character builder (class selector, stat allocator, hero card export). This will be **fully replaced** with the card game. The existing backend module (`backend/app/modules/sastahero/`) and frontend (`frontends/sastahero/`) will be rewritten. The Docker/Traefik/routing infrastructure remains unchanged.
 
+## Authentication Model
+
+**Approach: Anonymous / Device-ID Sessions (zero friction)**
+
+Time-to-first-swipe must be as fast as opening TikTok. No login screen.
+
+- Generate a UUID on the client, store in localStorage, use as `player_id` in MongoDB
+- All player state (collection, shards, streaks, story) keyed to this device ID
+- Future: "Link Account / Save Progress" in settings menu to tie to a permanent SastaSpace identity
+- If localStorage is cleared, player starts fresh (acceptable for MVP)
+
+## Community Pool Decay
+
+**Approach: TTL Index + Activity Multiplier**
+
+Prevents `card_pool` from growing infinitely with abandoned cards.
+
+- Every shared card gets a baseline expiration of **48 hours**
+- Every time another player interacts with that card (plays, saves, or shares it), push expiration out by **12 hours**
+- MongoDB TTL index on the `expires_at` field handles automatic cleanup
+- Popular/viral cards stay alive indefinitely through organic interaction
+- Dead cards self-prune without any cron jobs
+
+## Story Chapter Generation
+
+**Approach: Structured Concatenation (Mad-Libs Style) for MVP**
+
+No AI narrative engine — story card text is designed as modular sentence fragments.
+
+- Card content is authored to work as appendable fragments (e.g., "The earth split open," + "revealing a glowing artifact," + "which pulsed with chaotic energy.")
+- When a player swipes up, the fragment appends to their story thread
+- Every 10 played cards = one chapter (just the concatenated text with a chapter number)
+- Occasional clunkiness adds quirky charm — this is a feature, not a bug
+- AI-powered narrative smoothing deferred to future phase
+
+## Card Art & Visuals
+
+**Approach: CSS-Driven Abstract Art / Typography**
+
+No commissioned artwork. The brutalist design system carries the visuals.
+
+- Dark, minimalist card UI with intense color identity (Gold, Blue, Red, White, Purple)
+- Animated CSS mesh gradients per card type — each type has a distinct visual feel
+- Glowing borders for rarity tiers (subtle for common, intense for legendary)
+- Crisp typography for card content — the text IS the art
+- Keeps React bundle size negligible, no image assets to load
+- Card type icons (simple SVG glyphs) for quick visual identification
+
+## Optimistic UI
+
+**Critical for the swipe-to-swipe flow feeling instant.**
+
+Every `POST /swipe` cannot block the next card. The game must feel as fluid as TikTok scrolling.
+
+- Swipe registered locally in Zustand store immediately
+- Shard counts, collection state, and story thread update on the client optimistically
+- Network request fires in background (`POST /swipe`)
+- If the request fails, queue for retry (up to 3 attempts) — do not roll back UI state for transient errors
+- Batch swipe events if player is swiping faster than network can resolve (send accumulated swipes in one request at stage end as fallback)
+- Stage-end sync: `GET /stage` for next stage also returns authoritative shard/collection state, correcting any drift
+
 ## Content Model (MVP)
 
 - **Hand-craft ~100 seed cards** across all 5 types and rarity tiers — polished, balanced, set the tone
+- **Story card text authored as modular fragments** — designed to concatenate into readable narrative chunks
 - **~500 curated facts** across categories (science, history, psychology, geography, language)
 - **~200 quiz questions** with 4 options each, tagged by category and difficulty
 - **Community sharing grows the pool organically** — more players = more content
