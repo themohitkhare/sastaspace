@@ -68,7 +68,7 @@ export default function Sudoku() {
       setFitness(data.ai.fitness_score);
       setHeatmap(data.ai.heatmap_data);
       setBestBoard(data.ai.best_board);
-      if (data.status === 'ai_won') {
+      if (data.status === 'solved' || data.status === 'ai_won') {
         setStatus('solved');
       }
     } catch {
@@ -82,7 +82,7 @@ export default function Sudoku() {
       const data = await res.json();
       setGeneration(data.generation_count);
       setFitness(data.fitness_score);
-      if (data.status === 'ai_won') {
+      if (data.status === 'solved' || data.status === 'ai_won') {
         setStatus('solved');
       }
       await fetchAiState(id);

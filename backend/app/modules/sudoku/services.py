@@ -274,9 +274,9 @@ class SudokuService:
 
         # Check if AI solved it
         if best_fitness >= 1.0 - 1e-5:
-            await self.repo.update_match(match_id, {"status": MatchStatus.AI_WON.value})
+            await self.repo.update_match(match_id, {"status": MatchStatus.SOLVED.value})
             return {
-                "status": MatchStatus.AI_WON.value,
+                "status": MatchStatus.SOLVED.value,
                 "fitness_score": best_fitness,
                 "generation_count": generation_count + 1,
             }

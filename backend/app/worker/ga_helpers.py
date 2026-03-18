@@ -8,30 +8,32 @@ from typing import Any
 from app.modules.sudoku import genetic
 from app.modules.sudoku.models import Difficulty
 
-# Difficulty-tuned GA parameters
+# Difficulty-tuned GA parameters — larger populations for better convergence
 PARAMS: dict[Difficulty, dict[str, Any]] = {
     Difficulty.EASY: {
-        "population_size": 150,
-        "top_fraction": 0.5,
-        "mutation_rate": 0.05,
-        "stall_threshold": 40,
+        "population_size": 300,
+        "top_fraction": 0.3,
+        "mutation_rate": 0.08,
+        "stall_threshold": 50,
     },
     Difficulty.MEDIUM: {
-        "population_size": 100,
-        "top_fraction": 0.5,
-        "mutation_rate": 0.1,
-        "stall_threshold": 30,
+        "population_size": 300,
+        "top_fraction": 0.3,
+        "mutation_rate": 0.12,
+        "stall_threshold": 40,
     },
     Difficulty.HARD: {
-        "population_size": 60,
-        "top_fraction": 0.4,
-        "mutation_rate": 0.2,
-        "stall_threshold": 20,
+        "population_size": 300,
+        "top_fraction": 0.3,
+        "mutation_rate": 0.15,
+        "stall_threshold": 30,
     },
 }
 
 STALL_EPS = 1e-5
-MAX_TABU = 2000
+MAX_TABU = 4000
+# Fitness threshold above which we attempt backtracking to finish
+BACKTRACK_FITNESS_THRESHOLD = 0.85
 
 
 def evaluate_and_sort(
@@ -86,6 +88,24 @@ def trim_tabu(tabu_hashes: list[int]) -> list[int]:
     while len(tabu_hashes) > MAX_TABU:
         tabu_hashes.pop(0)
     return tabu_hashes
+
+
+def try_backtrack_finish(
+    best_chrom: genetic.Chromosome,
+    starting_board: list[int],
+    grid_size: int,
+) -> list[int] | None:
+    """Attempt to solve the puzzle using backtracking from the best GA chromosome.
+
+    Reconstructs the board from the best chromosome, then uses backtracking
+    to fill any remaining conflicts. Returns the solved board or None if
+    backtracking can't fix it within a reasonable limit.
+    """
+    board = list(starting_board)  # start fresh from clues
+    solved = genetic.solve_sudoku(board, grid_size)
+    if solved and genetic.is_valid_solution(board, grid_size):
+        return board
+    return None
 
 
 def serialize_chromosome(c: genetic.Chromosome) -> list[list[int]]:

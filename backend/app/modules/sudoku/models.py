@@ -15,6 +15,8 @@ class Difficulty(str, enum.Enum):
 
 class MatchStatus(str, enum.Enum):
     IN_PROGRESS = "in_progress"
+    SOLVED = "solved"
+    # Legacy aliases kept for backward compatibility with existing DB documents
     PLAYER_WON = "player_won"
     AI_WON = "ai_won"
 
@@ -31,7 +33,7 @@ class GameMatch(BaseModel):
 
 
 class AiState(BaseModel):
-    """AI evolution state stored alongside the match."""
+    """GA solver evolution state stored alongside the match."""
 
     match_id: str
     generation_count: int = 0
@@ -39,5 +41,3 @@ class AiState(BaseModel):
     fitness_score: float = 0.0
     heatmap_data: list[float] = Field(default_factory=list)
     best_board: list[int] = Field(default_factory=list)
-    # population_blob is stored as a separate field (pickled bytes)
-    # but we keep a placeholder here — actual blob lives in the DB doc
