@@ -4,10 +4,10 @@ FROM node:20-alpine AS build
 WORKDIR /app
 
 # Copy package files
-COPY sastahero/package.json sastahero/package-lock.json ./
+COPY sastahero/package.json ./
 
 # Install dependencies
-RUN npm ci
+RUN npm install --production=false
 
 # Copy source files
 COPY sastahero/ .
