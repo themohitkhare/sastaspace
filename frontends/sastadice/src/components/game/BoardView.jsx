@@ -85,8 +85,8 @@ export default function BoardView({ tiles = [], boardSize, players = [], onTileC
   return (
     <div
       ref={wrapperRef}
-      className="board-wrapper w-full h-full flex justify-center items-center p-4 overflow-hidden"
-      style={{ overflow: 'hidden' }}
+      className="board-wrapper w-full h-full flex justify-center items-center p-2 sm:p-4 overflow-auto"
+      style={{ overflow: 'auto', WebkitOverflowScrolling: 'touch' }}
     >
       <div
         ref={containerRef}

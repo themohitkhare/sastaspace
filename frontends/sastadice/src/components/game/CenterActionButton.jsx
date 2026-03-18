@@ -118,18 +118,17 @@ export default function CenterActionButton({
         )
     }
 
-    if (error) {
-        return (
-            <div className="text-center py-2 px-4 bg-red-500 text-white font-zero text-xs border-brutal-sm">
-                {error}
-            </div>
-        )
-    }
+    const errorBanner = error ? (
+        <div className="text-center py-2 px-4 bg-red-500 text-white font-zero text-xs border-brutal-sm mb-2">
+            {error}
+        </div>
+    ) : null
 
     if (turnPhase === 'PRE_ROLL') {
         const hasDdosBuff = myPlayer?.active_buff === 'DDOS'
         return (
             <div className="space-y-2">
+                {errorBanner}
                 {hasUpgradeableProperties && onManageProperties && (
                     <button
                         onClick={onManageProperties}
@@ -317,6 +316,7 @@ export default function CenterActionButton({
         const hasDdosBuff = myPlayer?.active_buff === 'DDOS'
         return (
             <div className="space-y-2">
+                {errorBanner}
                 {hasUpgradeableProperties && onManageProperties && (
                     <button
                         onClick={onManageProperties}

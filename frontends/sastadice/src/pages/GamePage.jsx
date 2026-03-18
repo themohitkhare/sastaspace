@@ -151,7 +151,13 @@ export default function GamePage() {
   const myPlayer = game?.players?.find((p) => p.id === playerId)
   const [ddosMode, setDdosMode] = useState(false)
   const [peekEvents, setPeekEvents] = useState(null)
-  const [showRules, setShowRules] = useState(false)
+  const [showRules, setShowRules] = useState(() => {
+    if (typeof window !== 'undefined' && !localStorage.getItem('sastadice_rules_seen')) {
+      localStorage.setItem('sastadice_rules_seen', '1')
+      return true
+    }
+    return false
+  })
   const [tradeTarget, setTradeTarget] = useState(null)
   const { toasts, showToast, dismissToast } = useToast()
 
