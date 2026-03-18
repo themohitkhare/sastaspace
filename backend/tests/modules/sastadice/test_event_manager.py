@@ -157,7 +157,7 @@ async def test_apply_effect_move_back(mock_repository, sample_game, sample_playe
 
 
 def test_deck_persistence_after_full_cycle(sample_game):
-    """Test deck reshuffles correctly after drawing all 36 cards."""
+    """Test deck reshuffles correctly after drawing all event cards."""
     EventManager.initialize_deck(sample_game)
     sample_game.event_deck.copy()
 

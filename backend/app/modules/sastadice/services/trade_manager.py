@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, Any, Optional
 if TYPE_CHECKING:
     from app.modules.sastadice.schemas import GameSession, Player, TradeOffer
 
-from app.modules.sastadice.schemas import TradeOffer
+from app.modules.sastadice.schemas import TileType, TradeOffer
 
 
 class TradeManager:
@@ -17,6 +17,10 @@ class TradeManager:
         game: "GameSession", initiator: "Player", payload: dict[str, Any]
     ) -> tuple[Optional["TradeOffer"], str | None]:
         """Create a trade offer. Returns (offer, error_message)."""
+        # Enforce one active trade offer per player at a time
+        if any(o.initiator_id == initiator.id for o in game.active_trade_offers):
+            return None, "You can only have one active trade offer per turn"
+
         target_id = payload.get("target_id")
         if not target_id or target_id == initiator.id:
             return None, "Invalid trade target"
@@ -40,11 +44,19 @@ class TradeManager:
             tile = next((t for t in game.board if t.id == pid), None)
             if not tile or tile.owner_id != initiator.id:
                 return None, f"You don't own property {pid}"
+            if tile.type not in {TileType.PROPERTY, TileType.NODE}:
+                return None, "Only properties can be traded"
+            if getattr(tile, "upgrade_level", 0) > 0:
+                return None, "Upgraded properties cannot be traded"
 
         for pid in req_props:
             tile = next((t for t in game.board if t.id == pid), None)
             if not tile or tile.owner_id != target_id:
                 return None, f"Target doesn't own property {pid}"
+            if tile.type not in {TileType.PROPERTY, TileType.NODE}:
+                return None, "Only properties can be traded"
+            if getattr(tile, "upgrade_level", 0) > 0:
+                return None, "Upgraded properties cannot be traded"
 
         offer = TradeOffer(
             initiator_id=initiator.id,
@@ -75,11 +87,19 @@ class TradeManager:
             tile = next((t for t in game.board if t.id == pid), None)
             if not tile or tile.owner_id != initiator.id:
                 return "Initiator lost offer properties"
+            if tile.type not in {TileType.PROPERTY, TileType.NODE}:
+                return "Only properties can be traded"
+            if getattr(tile, "upgrade_level", 0) > 0:
+                return "Upgraded properties cannot be traded"
 
         for pid in offer.requesting_properties:
             tile = next((t for t in game.board if t.id == pid), None)
             if not tile or tile.owner_id != target.id:
                 return "You lost requested properties"
+            if tile.type not in {TileType.PROPERTY, TileType.NODE}:
+                return "Only properties can be traded"
+            if getattr(tile, "upgrade_level", 0) > 0:
+                return "Upgraded properties cannot be traded"
 
         return None
 

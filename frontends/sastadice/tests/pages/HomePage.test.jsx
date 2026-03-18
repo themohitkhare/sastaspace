@@ -1,8 +1,9 @@
 /**
  * Tests for HomePage component
  */
-import { render, screen } from '@testing-library/react'
-import { BrowserRouter } from 'react-router-dom'
+import { render, screen, act } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import { MemoryRouter } from 'react-router-dom'
 import { vi } from 'vitest'
 import HomePage from '../../src/pages/HomePage'
 import { useGameStore } from '../../src/store/useGameStore'
@@ -10,7 +11,7 @@ import { useGameStore } from '../../src/store/useGameStore'
 vi.mock('../../src/store/useGameStore')
 
 const renderWithRouter = (component) => {
-  return render(<BrowserRouter>{component}</BrowserRouter>)
+  return render(<MemoryRouter initialEntries={['/']}>{component}</MemoryRouter>)
 }
 
 describe('HomePage', () => {
@@ -43,5 +44,18 @@ describe('HomePage', () => {
   it('renders join game input', () => {
     renderWithRouter(<HomePage />)
     expect(screen.getByPlaceholderText('PASTE OR TYPE CODE...')).toBeInTheDocument()
+  })
+
+  it('keeps CPU selection behind Advanced by default', async () => {
+    renderWithRouter(<HomePage />)
+
+    expect(screen.queryByText('SELECT CPU OPPONENTS:')).not.toBeInTheDocument()
+
+    const user = userEvent.setup()
+    await act(async () => {
+      await user.click(screen.getByRole('button', { name: /advanced: add cpu opponents/i }))
+    })
+
+    expect(screen.getByText('SELECT CPU OPPONENTS:')).toBeInTheDocument()
   })
 })

@@ -89,14 +89,15 @@ class CpuManager:
                     (p for p in game.players if p.id == current_player.id),
                     current_player,
                 )
+                afk_turns = getattr(disconnected_player, "afk_turns", 0) + 1
                 disconnected_turns = getattr(disconnected_player, "disconnected_turns", 0) + 1
                 await self.orchestrator.repository.update_player_afk(
                     current_player.id,
-                    getattr(disconnected_player, "afk_turns", 0),
+                    afk_turns,
                     True,
                     disconnected_turns=disconnected_turns,
                 )
-                if disconnected_turns >= 3:
+                if afk_turns >= 3:
                     from app.modules.sastadice.services.economy_manager import EconomyManager
 
                     game = await self.orchestrator.get_game(game_id)
@@ -106,8 +107,13 @@ class CpuManager:
                     )
                     econ = EconomyManager(self.orchestrator.repository)
                     await econ.process_bankruptcy(game, current_player, None)
+                    game.last_event_message = (
+                        f"💀 {current_player.name} was BANKRUPTED due to AFK_TIMEOUT!"
+                    )
                     await self.orchestrator.repository.update(game)
-                    all_logs.append(f"{current_player.name} AFK Ghost → BANKRUPT after 3 turns!")
+                    all_logs.append(
+                        f"{current_player.name} AFK Ghost → BANKRUPT after 3 AFK_TIMEOUT turns!"
+                    )
                     break
 
         return {"cpu_turns_played": turns_played, "log": all_logs}

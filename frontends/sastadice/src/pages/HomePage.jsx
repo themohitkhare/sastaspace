@@ -17,6 +17,7 @@ export default function HomePage() {
   const reset = useGameStore((s) => s.reset)
   const [gameCode, setGameCode] = useState('')
   const [selectedCpus, setSelectedCpus] = useState([])
+  const [showAdvanced, setShowAdvanced] = useState(false)
   const [isCreating, setIsCreating] = useState(false)
   const [isJoining, setIsJoining] = useState(false)
 
@@ -98,47 +99,68 @@ export default function HomePage() {
               </h2>
 
               <div className="mb-3">
-                <label className="font-zero font-bold text-xs mb-2 block opacity-70">SELECT CPU OPPONENTS:</label>
-                <div className="grid grid-cols-2 gap-2">
-                  {CPU_CHARACTERS.map((cpu) => {
-                    const isSelected = selectedCpus.includes(cpu.id)
-                    return (
-                      <button
-                        key={cpu.id}
-                        onClick={() => toggleCpu(cpu.id)}
-                        className={`p-2 border-brutal-sm transition-all text-left ${isSelected
-                            ? 'shadow-none translate-x-0.5 translate-y-0.5'
-                            : 'shadow-brutal-sm hover:translate-x-0.5 hover:translate-y-0.5'
-                          }`}
-                        style={{
-                          backgroundColor: isSelected ? cpu.color : '#FFFFFF',
-                          borderColor: cpu.color,
-                          borderWidth: '2px',
-                        }}
-                      >
-                        <div className="flex items-center gap-2">
-                          <span className="text-xl">{cpu.emoji}</span>
-                          <div>
-                            <div
-                              className="font-zero font-bold text-xs"
-                              style={{ color: isSelected ? '#000' : cpu.color }}
-                            >
-                              {cpu.name}
+                <button
+                  type="button"
+                  onClick={() => setShowAdvanced((v) => !v)}
+                  aria-expanded={showAdvanced}
+                  aria-controls="cpu-advanced-panel"
+                  className={`w-full border-brutal-sm bg-sasta-white px-3 py-2 font-zero font-bold text-xs shadow-brutal-sm transition-all hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none ${showAdvanced ? 'translate-x-0.5 translate-y-0.5 shadow-none' : ''
+                    }`}
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="opacity-80">{'> '}ADVANCED: ADD CPU OPPONENTS</span>
+                    <span className="text-sasta-black/70">{showAdvanced ? '−' : '+'}</span>
+                  </div>
+                  <div className="mt-1 text-[10px] font-zero font-bold text-sasta-black/50 text-left">
+                    {selectedCpus.length === 0
+                      ? 'NONE SELECTED (MULTIPLAYER ONLY)'
+                      : `${selectedCpus.length} CPU${selectedCpus.length > 1 ? 'S' : ''} SELECTED`}
+                  </div>
+                </button>
+
+                {showAdvanced && (
+                  <div className="mt-3" id="cpu-advanced-panel">
+                    <label className="font-zero font-bold text-xs mb-2 block opacity-70">SELECT CPU OPPONENTS:</label>
+                    <div className="grid grid-cols-2 gap-2">
+                      {CPU_CHARACTERS.map((cpu) => {
+                        const isSelected = selectedCpus.includes(cpu.id)
+                        return (
+                          <button
+                            key={cpu.id}
+                            onClick={() => toggleCpu(cpu.id)}
+                            className={`p-2 border-brutal-sm transition-all text-left ${isSelected
+                                ? 'shadow-none translate-x-0.5 translate-y-0.5'
+                                : 'shadow-brutal-sm hover:translate-x-0.5 hover:translate-y-0.5'
+                              }`}
+                            style={{
+                              backgroundColor: isSelected ? cpu.color : '#FFFFFF',
+                              borderColor: cpu.color,
+                              borderWidth: '2px',
+                            }}
+                          >
+                            <div className="flex items-center gap-2">
+                              <span className="text-xl">{cpu.emoji}</span>
+                              <div>
+                                <div
+                                  className="font-zero font-bold text-xs"
+                                  style={{ color: isSelected ? '#000' : cpu.color }}
+                                >
+                                  {cpu.name}
+                                </div>
+                                <div className="font-zero text-[9px] text-sasta-black/50">
+                                  {isSelected ? '✓ ADDED' : 'TAP TO ADD'}
+                                </div>
+                              </div>
                             </div>
-                            <div className="font-zero text-[9px] text-sasta-black/50">
-                              {isSelected ? '✓ ADDED' : 'TAP TO ADD'}
-                            </div>
-                          </div>
-                        </div>
-                      </button>
-                    )
-                  })}
-                </div>
-                <p className="font-zero text-[10px] text-sasta-black/50 mt-2 text-center">
-                  {selectedCpus.length === 0
-                    ? 'SELECT CPU OPPONENTS OR PLAY MULTIPLAYER ONLY'
-                    : `${selectedCpus.length} CPU${selectedCpus.length > 1 ? 'S' : ''} SELECTED`}
-                </p>
+                          </button>
+                        )
+                      })}
+                    </div>
+                    <p className="font-zero text-[10px] text-sasta-black/50 mt-2 text-center">
+                      TAP CPUs TO ADD / REMOVE
+                    </p>
+                  </div>
+                )}
               </div>
 
               <button

@@ -137,6 +137,7 @@ class GameOrchestrator:
 
             if player.active_buff == "VPN":
                 player.active_buff = None
+                await self.repository.update_player_buff(player.id, None)
                 game.last_event_message = f"🛡️ VPN activated! Blocked ${rent} rent to {owner.name}!"
             else:
                 await self._charge_player(game, player, rent, owner)
@@ -358,6 +359,11 @@ class GameOrchestrator:
         elapsed = time.time() - game.turn_start_time
 
         if elapsed > timeout_seconds:
+            # Cancel all outstanding trades when a turn times out
+            if game.active_trade_offers:
+                game.active_trade_offers.clear()
+                await self.repository.update(game)
+
             current_player = next(
                 (p for p in game.players if p.id == game.current_turn_player_id), None
             )
@@ -365,16 +371,18 @@ class GameOrchestrator:
                 return False
 
             if not self.cpu_manager.is_cpu_player(current_player):
-                afk_turns = getattr(current_player, "afk_turns", 0) + 1
-                disconnected = afk_turns >= 3
-                await self.repository.update_player_afk(current_player.id, afk_turns, disconnected)
-                current_player.afk_turns = afk_turns
-                current_player.disconnected = disconnected
-                if disconnected:
-                    game.last_event_message = (
-                        f"👻 {current_player.name} AFK! Ghost mode — 3 turns to bankruptcy!"
-                    )
-                    await self.repository.update(game)
+                # Mark player as disconnected; ghost turns will handle AFK counting and bankruptcy.
+                await self.repository.update_player_afk(
+                    current_player.id,
+                    getattr(current_player, "afk_turns", 0),
+                    True,
+                    disconnected_turns=getattr(current_player, "disconnected_turns", 0),
+                )
+                current_player.disconnected = True
+                game.last_event_message = (
+                    f"👻 {current_player.name} AFK! Ghost mode — 3 turns to bankruptcy!"
+                )
+                await self.repository.update(game)
 
             if game.turn_phase == TurnPhase.PRE_ROLL:
                 await self.perform_action(game_id, current_player.id, ActionType.ROLL_DICE, {})

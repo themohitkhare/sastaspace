@@ -1,19 +1,20 @@
 import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
-import PlayerBoard from '../components/PlayerBoard.jsx';
+import UnifiedBoard from './UnifiedBoard.jsx';
 
-describe('PlayerBoard', () => {
+describe('UnifiedBoard', () => {
   const board = [5, 0, 0, 0, 0, 0, 0, 0, 0, ...Array(72).fill(0)];
   const starting = [...board];
 
   it('renders clue cells as text', () => {
     render(
-      <PlayerBoard
+      <UnifiedBoard
         board={board}
         startingBoard={starting}
+        heatmapData={[]}
         gridSize={9}
+        status="idle"
         onChange={() => {}}
-        disabled={false}
       />,
     );
     // The clue "5" should be rendered as text, not an input
@@ -22,12 +23,13 @@ describe('PlayerBoard', () => {
 
   it('renders editable cells as inputs', () => {
     render(
-      <PlayerBoard
+      <UnifiedBoard
         board={board}
         startingBoard={starting}
+        heatmapData={[]}
         gridSize={9}
+        status="idle"
         onChange={() => {}}
-        disabled={false}
       />,
     );
     // There should be 80 input fields (81 - 1 clue)

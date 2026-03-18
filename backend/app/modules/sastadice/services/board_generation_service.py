@@ -41,6 +41,14 @@ class BoardGenerationService:
         """Generate a closed loop board from player tiles."""
         return self.generator.generate_board(player_tiles, board_size, padding, game_config)
 
+    def generate_ugc_24_board(
+        self,
+        ugc_property_names: list[str],
+        game_config: GameConfig | None = None,
+    ) -> list[Tile]:
+        """Generate the fixed 24-tile UGC board path."""
+        return self.generator.generate_ugc_24_board(ugc_property_names, game_config)
+
     def _is_on_perimeter(self, x: int, y: int, board_size: int) -> bool:
         """Check if coordinates are on the board perimeter (backward compatibility)."""
         return self.layout.is_on_perimeter(x, y, board_size)

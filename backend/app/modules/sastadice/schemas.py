@@ -59,6 +59,13 @@ class ChaosLevel(str, Enum):
     CHAOS = "CHAOS"
 
 
+class BoardPreset(str, Enum):
+    """Predefined board generation modes."""
+
+    CLASSIC = "CLASSIC"
+    UGC_24 = "UGC_24"
+
+
 class GameSettings(BaseModel):
     """Customizable game settings that host can configure."""
 
@@ -87,6 +94,7 @@ class GameSettings(BaseModel):
     triple_doubles_jail: bool = True
 
     income_tax_rate: float = 0.1  # 10% default
+    board_preset: BoardPreset = BoardPreset.CLASSIC
 
 
 class FaultInjectionConfig(BaseModel):

@@ -6,6 +6,25 @@ import HomePage from './pages/HomePage'
 import LobbyPage from './pages/LobbyPage'
 import GamePage from './pages/GamePage'
 
+function AppHeader() {
+  return (
+    <header className="sticky top-0 z-50 bg-sasta-white border-b-4 border-sasta-black shadow-brutal">
+      <div className="px-4 sm:px-6 py-3 flex items-center justify-between">
+        <div className="flex items-center gap-3 min-w-0">
+          <a
+            href="/"
+            className="font-zero font-bold tracking-widest border-brutal-sm bg-sasta-black text-sasta-white px-3 py-1 shadow-brutal-sm hover:bg-sasta-accent hover:text-sasta-black transition-colors shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sasta-accent focus-visible:ring-offset-2 focus-visible:ring-offset-sasta-white"
+          >
+            SASTASPACE
+          </a>
+          <div className="h-6 w-[2px] bg-sasta-black shrink-0" />
+          <span className="font-zero font-bold text-sasta-black truncate">SASTADICE</span>
+        </div>
+      </div>
+    </header>
+  )
+}
+
 function ProtectedRoute({ children }) {
   const { gameId: urlGameId } = useParams()
   const storeGameId = useGameStore((s) => s.gameId)
@@ -114,34 +133,33 @@ function GameRoute() {
 
 function App() {
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<HomePage />} />
-        <Route
-          path="/lobby/:gameId"
-          element={
-            <ProtectedRoute>
-              <GameRoute />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/game/:gameId"
-          element={
-            <ProtectedRoute>
-              <GameRoute />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/lobby"
-          element={<Navigate to="/" replace />}
-        />
-        <Route
-          path="/game"
-          element={<Navigate to="/" replace />}
-        />
-      </Routes>
+    <BrowserRouter basename="/sastadice">
+      <div className="h-screen flex flex-col">
+        <AppHeader />
+        <div className="flex-1 min-h-0 overflow-y-auto">
+          <Routes>
+            <Route path="/" element={<HomePage />} />
+            <Route
+              path="/lobby/:gameId"
+              element={
+                <ProtectedRoute>
+                  <GameRoute />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/game/:gameId"
+              element={
+                <ProtectedRoute>
+                  <GameRoute />
+                </ProtectedRoute>
+              }
+            />
+            <Route path="/lobby" element={<Navigate to="/" replace />} />
+            <Route path="/game" element={<Navigate to="/" replace />} />
+          </Routes>
+        </div>
+      </div>
     </BrowserRouter>
   )
 }

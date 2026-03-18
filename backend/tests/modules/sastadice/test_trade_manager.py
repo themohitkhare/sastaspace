@@ -103,6 +103,34 @@ class TestTradeManager:
         assert offer.initiator_id == initiator_player.id
         assert offer.target_id == target_player.id
 
+    def test_create_trade_offer_rejects_multiple_active_offers_for_initiator(
+        self, sample_game, initiator_player, target_player
+    ):
+        """Players can only have one active trade offer at a time."""
+        sample_game.players = [initiator_player, target_player]
+        existing_offer = TradeOffer(
+            initiator_id=initiator_player.id,
+            target_id=target_player.id,
+            offering_cash=50,
+            offering_properties=[],
+            requesting_cash=0,
+            requesting_properties=[],
+            created_at=0,
+        )
+        sample_game.active_trade_offers.append(existing_offer)
+
+        payload = {
+            "target_id": target_player.id,
+            "offer_cash": 10,
+            "req_cash": 0,
+            "offer_props": [],
+            "req_props": [],
+        }
+        offer, error = TradeManager.create_trade_offer(sample_game, initiator_player, payload)
+        assert offer is None
+        assert isinstance(error, str)
+        assert "one active trade" in error.lower()
+
     def test_create_trade_offer_invalid_target(self, sample_game, initiator_player):
         """Test creating trade offer with invalid target."""
         payload = {"target_id": initiator_player.id}  # Can't trade with self
@@ -163,6 +191,49 @@ class TestTradeManager:
             sample_game, offer, initiator_player, target_player
         )
         assert error is None
+
+    def test_validate_trade_assets_rejects_upgraded_properties(
+        self, sample_game, initiator_player, target_player
+    ):
+        """Upgraded properties cannot be traded."""
+        sample_game.players = [initiator_player, target_player]
+        upgraded_tile = Tile(
+            id="tile1",
+            type=TileType.PROPERTY,
+            name="Upgraded",
+            position=0,
+            price=200,
+            rent=20,
+            color="RED",
+            owner_id=initiator_player.id,
+            upgrade_level=1,
+        )
+        target_tile = Tile(
+            id="tile3",
+            type=TileType.PROPERTY,
+            name="Target",
+            position=1,
+            price=200,
+            rent=20,
+            color="RED",
+            owner_id=target_player.id,
+        )
+        sample_game.board = [upgraded_tile, target_tile]
+        offer = TradeOffer(
+            initiator_id=initiator_player.id,
+            target_id=target_player.id,
+            offering_cash=0,
+            offering_properties=["tile1"],
+            requesting_cash=0,
+            requesting_properties=["tile3"],
+            created_at=0,
+        )
+
+        error = TradeManager.validate_trade_assets(
+            sample_game, offer, initiator_player, target_player
+        )
+        assert isinstance(error, str)
+        assert "upgraded" in error.lower()
 
     def test_validate_trade_assets_initiator_cant_afford(
         self, sample_game, initiator_player, target_player

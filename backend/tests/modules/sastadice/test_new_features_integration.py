@@ -5,6 +5,7 @@ import pytest
 from app.modules.sastadice.events.events_data import SASTA_EVENTS
 from app.modules.sastadice.schemas import (
     ActionType,
+    BoardPreset,
     Tile,
     TileType,
 )
@@ -134,15 +135,16 @@ async def test_roll_for_doubles_action(db_database):
 
 @pytest.mark.asyncio
 async def test_36_events_available(db_database):
-    """Test that all 36 events are available."""
-    assert len(SASTA_EVENTS) == 36
+    """Test that all Sasta events are available and categorized."""
+    assert len(SASTA_EVENTS) == 35
 
-    # Verify event structure
+    # Verify event structure and metadata
     for event in SASTA_EVENTS:
         assert "name" in event
         assert "desc" in event
         assert "type" in event
         assert "value" in event
+        assert "category" in event
 
 
 @pytest.mark.asyncio
@@ -173,6 +175,30 @@ async def test_node_rent_calculation(db_database):
     game.rent_multiplier = 0.5
     rent = NodeManager.calculate_node_rent(player_obj, game)
     assert rent == 50  # $100 * 0.5
+
+
+@pytest.mark.asyncio
+async def test_ugc_24_board_preset_in_start_flow(db_database):
+    """Integration: UGC_24 preset uses the 24-tile board layout."""
+    orchestrator = GameOrchestrator(db_database)
+    game = await orchestrator.create_game()
+
+    # Two players so we don't auto-add CPUs here
+    await orchestrator.join_game(game.id, "Player1")
+    await orchestrator.join_game(game.id, "Player2")
+
+    # Enable the UGC_24 preset
+    game = await orchestrator.get_game(game.id)
+    game.settings.board_preset = BoardPreset.UGC_24
+    await orchestrator.repository.update(game)
+
+    game = await orchestrator.start_game(game.id, force=True)
+
+    assert len(game.board) == 24
+    assert game.board[0].type == TileType.GO
+    assert game.board[6].type == TileType.TELEPORT
+    assert game.board[12].type == TileType.JAIL
+    assert game.board[18].type == TileType.MARKET
 
 
 @pytest.mark.asyncio

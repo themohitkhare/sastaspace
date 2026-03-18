@@ -8,6 +8,7 @@ if TYPE_CHECKING:
     from app.modules.sastadice.services.turn_manager import TurnManager
 
 from app.modules.sastadice.schemas import (
+    BoardPreset,
     GameSession,
     GameSettings,
     GameStatus,
@@ -15,6 +16,7 @@ from app.modules.sastadice.schemas import (
     PlayerCreate,
     Tile,
     TileCreate,
+    TileType,
     TurnPhase,
 )
 
@@ -213,35 +215,48 @@ class LobbyManager:
             await self.add_cpu_players(game_id, target_count=2)
             game = await self.get_game(game_id)
 
-        all_player_tiles = []
-        for player in game.players:
-            for tile_create in player.submitted_tiles:
-                tile = Tile(
-                    type=tile_create.type,
-                    name=tile_create.name,
-                    effect_config=tile_create.effect_config,
+        # UGC 24-tile board preset: fixed path using player-submitted PROPERTY names.
+        if game.settings.board_preset == BoardPreset.UGC_24:
+            ugc_property_names: list[str] = []
+            for player in game.players:
+                for tile_create in player.submitted_tiles:
+                    if tile_create.type == TileType.PROPERTY:
+                        ugc_property_names.append(tile_create.name)
+
+            total_tiles = 24
+            game_config = GameConfig(total_tiles, len(game.players))
+            board = self.board_service.generate_ugc_24_board(ugc_property_names, game_config)
+            board_size = 7
+        else:
+            all_player_tiles: list[Tile] = []
+            for player in game.players:
+                for tile_create in player.submitted_tiles:
+                    tile = Tile(
+                        type=tile_create.type,
+                        name=tile_create.name,
+                        effect_config=tile_create.effect_config,
+                    )
+                    all_player_tiles.append(tile)
+
+            board_size, _, padding = self.board_service.calculate_dimensions(len(game.players))
+
+            min_tiles_for_good_game = max(20, board_size * 4 - 4)
+            player_tile_count = len(all_player_tiles)
+            additional_tiles_needed = max(0, min_tiles_for_good_game - player_tile_count)
+
+            if additional_tiles_needed > 0:
+                generated_tiles = self.board_service.generate_additional_tiles(
+                    additional_tiles_needed, all_player_tiles
                 )
-                all_player_tiles.append(tile)
+                all_player_tiles.extend(generated_tiles)
+                padding = max(0, padding - additional_tiles_needed)
 
-        board_size, _, padding = self.board_service.calculate_dimensions(len(game.players))
+            total_tiles = len(all_player_tiles) + padding + 1
+            game_config = GameConfig(total_tiles, len(game.players))
 
-        min_tiles_for_good_game = max(20, board_size * 4 - 4)
-        player_tile_count = len(all_player_tiles)
-        additional_tiles_needed = max(0, min_tiles_for_good_game - player_tile_count)
-
-        if additional_tiles_needed > 0:
-            generated_tiles = self.board_service.generate_additional_tiles(
-                additional_tiles_needed, all_player_tiles
+            board = self.board_service.generate_board(
+                all_player_tiles, board_size, padding, game_config
             )
-            all_player_tiles.extend(generated_tiles)
-            padding = max(0, padding - additional_tiles_needed)
-
-        total_tiles = len(all_player_tiles) + padding + 1
-        game_config = GameConfig(total_tiles, len(game.players))
-
-        board = self.board_service.generate_board(
-            all_player_tiles, board_size, padding, game_config
-        )
 
         await self.repository.save_board(game_id, board)
         await self.repository.set_players_starting_cash(game_id, game_config.starting_cash)
