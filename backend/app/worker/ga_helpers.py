@@ -33,7 +33,7 @@ PARAMS: dict[Difficulty, dict[str, Any]] = {
 STALL_EPS = 1e-5
 MAX_TABU = 4000
 # Fitness threshold above which we attempt backtracking to finish
-BACKTRACK_FITNESS_THRESHOLD = 0.85
+BACKTRACK_FITNESS_THRESHOLD = 0.75
 
 
 def evaluate_and_sort(
@@ -95,17 +95,66 @@ def try_backtrack_finish(
     starting_board: list[int],
     grid_size: int,
 ) -> list[int] | None:
-    """Attempt to solve the puzzle using backtracking from the best GA chromosome.
+    """Attempt to solve the puzzle using backtracking.
 
-    Reconstructs the board from the best chromosome, then uses backtracking
-    to fill any remaining conflicts. Returns the solved board or None if
-    backtracking can't fix it within a reasonable limit.
+    Strategy 1: Solve directly from clues (instant for valid puzzles).
+    Strategy 2: Use GA's best board, clear conflicting cells, backtrack from there.
+
+    Returns the solved board or None if backtracking can't fix it.
     """
-    board = list(starting_board)  # start fresh from clues
-    solved = genetic.solve_sudoku(board, grid_size)
-    if solved and genetic.is_valid_solution(board, grid_size):
+    # Strategy 1: direct backtracking from clues
+    board = list(starting_board)
+    if genetic.solve_sudoku(board, grid_size) and genetic.is_valid_solution(board, grid_size):
         return board
+
+    # Strategy 2: use GA's best effort, clear cells with conflicts, then backtrack
+    ga_board = genetic.reconstruct_grid(starting_board, best_chrom, grid_size)
+    # Find conflicting cells and clear them
+    cleaned = _clear_conflicts(ga_board, starting_board, grid_size)
+    if genetic.solve_sudoku(cleaned, grid_size) and genetic.is_valid_solution(cleaned, grid_size):
+        return cleaned
+
     return None
+
+
+def _clear_conflicts(board: list[int], starting_board: list[int], grid_size: int) -> list[int]:
+    """Clear non-clue cells that participate in row/col/box conflicts."""
+    n = grid_size
+    sub = int(n**0.5)
+    result = list(board)
+
+    for idx in range(n * n):
+        if starting_board[idx] != 0:
+            continue  # don't touch clues
+        r, c = divmod(idx, n)
+        v = result[idx]
+        if v == 0:
+            continue
+
+        # Check if this value conflicts in its row, column, or box
+        has_conflict = False
+        for i in range(n):
+            if i != c and result[r * n + i] == v:
+                has_conflict = True
+                break
+            if i != r and result[i * n + c] == v:
+                has_conflict = True
+                break
+        if not has_conflict:
+            br, bc = (r // sub) * sub, (c // sub) * sub
+            for bi in range(sub):
+                for bj in range(sub):
+                    nr, nc = br + bi, bc + bj
+                    if (nr, nc) != (r, c) and result[nr * n + nc] == v:
+                        has_conflict = True
+                        break
+                if has_conflict:
+                    break
+
+        if has_conflict:
+            result[idx] = 0
+
+    return result
 
 
 def serialize_chromosome(c: genetic.Chromosome) -> list[list[int]]:

@@ -118,6 +118,26 @@ class SolverCoordinator(BaseWorker):
         prev_stall_count: int = ai_doc.get("stall_count", 0)
 
         rng = random.Random()
+
+        # Try instant backtracking solve first (works for valid puzzles)
+        if population:
+            solved_board = try_backtrack_finish(population[0], starting_board, grid_size)
+            if solved_board is not None:
+                await self._finish_solved(
+                    repo,
+                    match_id,
+                    population,
+                    tabu_hashes,
+                    generation_count + 1,
+                    1.0,
+                    starting_board,
+                    grid_size,
+                    population[0],
+                    override_board=solved_board,
+                )
+                logger.info("INSTANT SOLVE %s via backtracking!", match_id)
+                return
+
         result_stream = f"ga:results:{match_id}"
         result_group = f"coord-{match_id}"
 
@@ -154,11 +174,7 @@ class SolverCoordinator(BaseWorker):
                 return
 
             # Hybrid: try backtracking from clues periodically once GA makes progress
-            if (
-                best_fitness >= BACKTRACK_FITNESS_THRESHOLD
-                and gen % 5 == 0
-                and best_chrom is not None
-            ):
+            if best_fitness >= BACKTRACK_FITNESS_THRESHOLD and best_chrom is not None:
                 solved_board = try_backtrack_finish(
                     best_chrom,
                     starting_board,
