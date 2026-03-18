@@ -57,7 +57,6 @@ class SudokuService:
         rng = random.Random()
         match_id = uuid.uuid4().hex[:12]
         n = grid_size
-
         if custom_board and len(custom_board) == n * n:
             starting_board = custom_board
         else:

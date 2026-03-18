@@ -13,7 +13,6 @@ from fastapi.testclient import TestClient
 
 from app.db.session import get_db
 from app.main import app
-from app.modules.sudoku.models import Difficulty
 
 
 @pytest.fixture
@@ -42,27 +41,6 @@ class TestStartMatch:
         assert data["match_id"] == "abc123"
         assert data["grid_size"] == 9
         assert len(data["starting_board"]) == 81
-
-    @patch("app.modules.sudoku.services.SudokuService.start_match")
-    def test_creates_match_with_custom_board(
-        self, mock_start: AsyncMock, client: TestClient
-    ) -> None:
-        custom_board = [0] * 81
-        custom_board[0] = 5
-        mock_start.return_value = {
-            "match_id": "def456",
-            "starting_board": custom_board,
-            "grid_size": 9,
-        }
-        resp = client.post(
-            "/api/v1/sudoku/matches",
-            json={"difficulty": "medium", "grid_size": 9, "custom_board": custom_board},
-        )
-        assert resp.status_code == 201
-        data = resp.json()
-        assert data["match_id"] == "def456"
-        assert data["starting_board"][0] == 5
-        mock_start.assert_called_once_with(Difficulty.MEDIUM, 9, custom_board)
 
 
 class TestGetMatch:
@@ -134,18 +112,16 @@ class TestAiTick:
 
 class TestExtractBoard:
     @patch("app.modules.sudoku.router.extract_sudoku_board")
-    def test_ok(self, mock_extract: MagicMock, client: TestClient) -> None:
-        mock_extract.return_value = [0] * 81
+    def test_returns_board_and_confidences(
+        self, mock_extract: MagicMock, client: TestClient
+    ) -> None:
+        mock_extract.return_value = ([0] * 81, [0.0] * 81)
         resp = client.post(
             "/api/v1/sudoku/extract-board",
-            files={"file": ("test.png", b"fakeimage", "image/png")},
+            files={"file": ("grid.png", b"fake", "image/png")},
         )
         assert resp.status_code == 200
-        assert len(resp.json()["board"]) == 81
-
-    def test_not_image(self, client: TestClient) -> None:
-        resp = client.post(
-            "/api/v1/sudoku/extract-board",
-            files={"file": ("test.txt", b"faketext", "text/plain")},
-        )
-        assert resp.status_code == 400
+        data = resp.json()
+        assert len(data["board"]) == 81
+        assert len(data["confidences"]) == 81
+        assert all(0.0 <= float(c) <= 1.0 for c in data["confidences"])

@@ -20,7 +20,8 @@ class StartMatchResponse(BaseModel):
 
 
 class ExtractBoardResponse(BaseModel):
-    board: list[int]
+    board: list[int] = Field(min_length=81, max_length=81)
+    confidences: list[float] = Field(min_length=81, max_length=81)
 
 
 class PlayerUpdateRequest(BaseModel):

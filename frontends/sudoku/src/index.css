@@ -1,38 +1,31 @@
 /* ============================================================
-   SastaSpace Sudoku — Brutalist (SastaSpace-aligned) Theme
+   SastaSpace Sudoku — Premium Dark Theme
    ============================================================ */
 
 :root {
-  /* SastaSpace-aligned palette */
-  --bg-primary: #ffffff;
-  --bg-secondary: #ffffff;
-  --bg-card: #ffffff;
-  --bg-glass: #ffffff;
-  --border-glass: #000000;
-  --text-primary: #000000;
-  --text-secondary: rgba(0, 0, 0, 0.75);
-  --text-muted: rgba(0, 0, 0, 0.55);
+  /* Palette */
+  --bg-primary: #0a0e1a;
+  --bg-secondary: #111827;
+  --bg-card: rgba(17, 24, 39, 0.85);
+  --bg-glass: rgba(30, 41, 59, 0.55);
+  --border-glass: rgba(148, 163, 184, 0.15);
+  --text-primary: #f1f5f9;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
   --accent: #6366f1;
-  --accent-light: #6366f1;
-  --accent-glow: rgba(99, 102, 241, 0.0);
-  --success: #00c853;
+  --accent-light: #818cf8;
+  --accent-glow: rgba(99, 102, 241, 0.35);
+  --success: #10b981;
   --danger: #ef4444;
   --warning: #f59e0b;
+  --heatmap-low: rgba(99, 102, 241, 0.1);
+  --heatmap-high: rgba(99, 102, 241, 0.7);
 
-  /* Typography & motion */
-  --font: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
-    Roboto, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji",
-    "Segoe UI Emoji", "Segoe UI Symbol";
-  --radius: 0px;
-  --radius-sm: 0px;
-  --transition: 0.12s ease-out;
-
-  /* Brutalist primitives */
-  --border-thick: 4px;
-  --border-med: 3px;
-  --border-thin: 2px;
-  --shadow-brutal: 4px 4px 0px 0px #000;
-  --shadow-brutal-lg: 6px 6px 0px 0px #000;
+  /* Typography */
+  --font: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --radius: 12px;
+  --radius-sm: 8px;
+  --transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 *, *::before, *::after {
@@ -49,7 +42,9 @@ body {
   color: var(--text-primary);
   min-height: 100vh;
   -webkit-font-smoothing: antialiased;
-  background-image: none;
+  background-image:
+    radial-gradient(ellipse at 20% 50%, rgba(99,102,241,0.08) 0%, transparent 60%),
+    radial-gradient(ellipse at 80% 20%, rgba(16,185,129,0.06) 0%, transparent 50%);
 }
 
 #root {
@@ -65,56 +60,32 @@ body {
   align-items: center;
   justify-content: space-between;
   padding: 1rem 2rem;
-  background: var(--bg-primary);
-  border-bottom: var(--border-thick) solid var(--border-glass);
-  box-shadow: var(--shadow-brutal);
+  background: var(--bg-glass);
+  backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--border-glass);
   position: sticky;
   top: 0;
   z-index: 50;
 }
 
-.app-header__home {
-  font-size: 0.95rem;
-  font-weight: 900;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--text-primary);
-  text-decoration: none;
-}
-
-.app-header__home:hover {
-  text-decoration: underline;
-  text-decoration-thickness: 3px;
-  text-underline-offset: 3px;
-}
-
-.app-header__home:focus-visible {
-  outline: var(--border-thin) solid var(--border-glass);
-  outline-offset: 4px;
-}
-
-.app-header__right {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-}
-
 .app-header h1 {
   font-size: 1.25rem;
-  font-weight: 900;
-  letter-spacing: -0.02em;
+  font-weight: 700;
+  background: linear-gradient(135deg, var(--accent-light), var(--success));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 .app-header .badge {
   font-size: 0.7rem;
-  font-weight: 900;
+  font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.12em;
-  border: var(--border-thin) solid var(--border-glass);
-  background: var(--accent);
-  color: #fff;
-  padding: 0.35rem 0.65rem;
-  box-shadow: var(--shadow-brutal);
+  letter-spacing: 0.08em;
+  color: var(--accent-light);
+  border: 1px solid var(--accent);
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
 }
 
 .page {
@@ -139,8 +110,11 @@ body {
 
 .start-screen h2 {
   font-size: 2rem;
-  font-weight: 900;
-  letter-spacing: -0.03em;
+  font-weight: 800;
+  background: linear-gradient(135deg, var(--text-primary), var(--accent-light));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 .start-screen p {
@@ -149,101 +123,46 @@ body {
   line-height: 1.6;
 }
 
-.advanced-controls {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.75rem;
-}
-
-.btn-advanced-toggle {
-  min-width: 180px;
-}
-
-.advanced-panel {
-  width: min(560px, 95vw);
-  background: var(--bg-card);
-  border: var(--border-med) solid var(--border-glass);
-  border-radius: var(--radius);
-  padding: 1rem 1.25rem;
-  box-shadow: var(--shadow-brutal);
-}
-
-.advanced-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  flex-wrap: wrap;
-}
-
-.advanced-label {
-  font-size: 0.75rem;
-  font-weight: 900;
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
-  color: var(--text-secondary);
-}
-
 .difficulty-picker {
   display: flex;
   gap: 0.75rem;
 }
 
-.sudoku-cell.clue-value {
-  color: var(--text-secondary);
-  font-weight: 700;
-}
-
-.sudoku-cell .ai-value {
-  color: var(--accent-light);
-  font-weight: 500;
-}
-
 .difficulty-btn {
   padding: 0.6rem 1.4rem;
   border-radius: var(--radius-sm);
-  border: var(--border-thin) solid var(--border-glass);
-  background: var(--bg-primary);
-  color: var(--text-primary);
-  font-weight: 900;
+  border: 1px solid var(--border-glass);
+  background: var(--bg-glass);
+  color: var(--text-secondary);
+  font-weight: 600;
   font-size: 0.85rem;
   cursor: pointer;
   transition: var(--transition);
-  box-shadow: var(--shadow-brutal);
-}
-
-.difficulty-btn:focus-visible {
-  outline: var(--border-thin) solid var(--border-glass);
-  outline-offset: 2px;
 }
 
 .difficulty-btn.active,
 .difficulty-btn:hover {
-  background: var(--accent);
-  color: #fff;
+  border-color: var(--accent);
+  color: var(--accent-light);
+  background: rgba(99, 102, 241, 0.1);
 }
 
 .btn-primary {
   padding: 0.75rem 2.5rem;
   border-radius: var(--radius);
-  border: var(--border-med) solid var(--border-glass);
-  background: #000;
-  color: #fff;
-  font-weight: 900;
+  border: none;
+  background: linear-gradient(135deg, var(--accent), #4f46e5);
+  color: white;
+  font-weight: 700;
   font-size: 1rem;
   cursor: pointer;
   transition: var(--transition);
-  box-shadow: var(--shadow-brutal-lg);
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
+  box-shadow: 0 4px 24px var(--accent-glow);
 }
 
 .btn-primary:hover {
-  transform: translate(1px, 1px);
-  box-shadow: none;
-  background: var(--accent);
-  color: #000;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 32px var(--accent-glow);
 }
 
 .btn-primary:active {
@@ -254,11 +173,6 @@ body {
   opacity: 0.5;
   cursor: not-allowed;
   transform: none;
-}
-
-.btn-primary:focus-visible {
-  outline: var(--border-thin) solid var(--border-glass);
-  outline-offset: 3px;
 }
 
 /* ---- Boards Container ---- */
@@ -279,10 +193,10 @@ body {
 
 .board-panel {
   background: var(--bg-card);
-  border: var(--border-thick) solid var(--border-glass);
+  border: 1px solid var(--border-glass);
   border-radius: var(--radius);
   padding: 1.25rem;
-  box-shadow: var(--shadow-brutal-lg);
+  backdrop-filter: blur(12px);
   animation: slideUp 0.5s ease-out;
 }
 
@@ -313,7 +227,7 @@ body {
 .sudoku-grid {
   display: grid;
   gap: 1px;
-  border: var(--border-thick) solid var(--border-glass);
+  border: 2px solid var(--text-muted);
   border-radius: var(--radius-sm);
   overflow: hidden;
   aspect-ratio: 1;
@@ -335,17 +249,12 @@ body {
   align-items: center;
   justify-content: center;
   background: var(--bg-secondary);
-  font-size: 1.5rem; /* Changed from 1rem */
-  font-weight: 900;
+  font-size: 1rem;
+  font-weight: 600;
   color: var(--text-primary);
   position: relative;
   transition: var(--transition);
   aspect-ratio: 1;
-  border-right: 1px solid var(--border-glass);
-  border-bottom: 1px solid var(--border-glass);
-  box-sizing: border-box;
-  font-family: var(--font);
-  overflow: hidden;
 }
 
 .sudoku-cell.clue {
@@ -358,14 +267,21 @@ body {
 }
 
 .sudoku-cell.editable:hover {
-  background: rgba(99, 102, 241, 0.18);
+  background: rgba(99, 102, 241, 0.12);
 }
 
 .sudoku-cell.editable:focus-within {
-  background: rgba(99, 102, 241, 0.22);
-  outline: var(--border-thin) solid var(--border-glass);
+  background: rgba(99, 102, 241, 0.18);
+  outline: 2px solid var(--accent);
   outline-offset: -2px;
   z-index: 1;
+}
+
+.sudoku-cell.ocr-uncertain {
+  outline: 2px solid var(--warning);
+  outline-offset: -2px;
+  box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.2);
+  z-index: 2;
 }
 
 .sudoku-cell input {
@@ -374,12 +290,12 @@ body {
   text-align: center;
   background: transparent;
   border: none;
-  color: #000;
+  color: var(--accent-light);
   font-size: inherit;
   font-weight: 700;
   font-family: var(--font);
   outline: none;
-  caret-color: #000;
+  caret-color: var(--accent);
 }
 
 .sudoku-cell input::placeholder {
@@ -388,15 +304,15 @@ body {
 }
 
 /* Sub-grid borders (9×9) */
-.sudoku-grid.size-9 .sudoku-cell:nth-child(3n) { border-right: var(--border-thin) solid var(--border-glass); }
+.sudoku-grid.size-9 .sudoku-cell:nth-child(3n) { border-right: 2px solid var(--text-muted); }
 .sudoku-grid.size-9 .sudoku-cell:nth-child(9n) { border-right: none; }
-.sudoku-grid.size-9 .sudoku-cell:nth-child(n+19):nth-child(-n+27) { border-bottom: var(--border-thin) solid var(--border-glass); }
-.sudoku-grid.size-9 .sudoku-cell:nth-child(n+46):nth-child(-n+54) { border-bottom: var(--border-thin) solid var(--border-glass); }
+.sudoku-grid.size-9 .sudoku-cell:nth-child(n+19):nth-child(-n+27) { border-bottom: 2px solid var(--text-muted); }
+.sudoku-grid.size-9 .sudoku-cell:nth-child(n+46):nth-child(-n+54) { border-bottom: 2px solid var(--text-muted); }
 
 /* Sub-grid borders (4×4) */
-.sudoku-grid.size-4 .sudoku-cell:nth-child(2n) { border-right: var(--border-thin) solid var(--border-glass); }
+.sudoku-grid.size-4 .sudoku-cell:nth-child(2n) { border-right: 2px solid var(--text-muted); }
 .sudoku-grid.size-4 .sudoku-cell:nth-child(4n) { border-right: none; }
-.sudoku-grid.size-4 .sudoku-cell:nth-child(n+5):nth-child(-n+8) { border-bottom: var(--border-thin) solid var(--border-glass); }
+.sudoku-grid.size-4 .sudoku-cell:nth-child(n+5):nth-child(-n+8) { border-bottom: 2px solid var(--text-muted); }
 
 /* Heatmap overlay */
 .sudoku-cell .heatmap-bg {
@@ -416,12 +332,12 @@ body {
 }
 
 .hud-stat {
-  background: var(--bg-primary);
-  border: var(--border-med) solid var(--border-glass);
+  background: var(--bg-glass);
+  border: 1px solid var(--border-glass);
   border-radius: var(--radius-sm);
   padding: 0.6rem 1.2rem;
   text-align: center;
-  box-shadow: var(--shadow-brutal);
+  backdrop-filter: blur(8px);
   min-width: 120px;
 }
 
@@ -440,7 +356,7 @@ body {
 }
 
 .hud-stat .value.fitness {
-  color: var(--accent);
+  color: var(--accent-light);
 }
 
 .hud-stat .value.generation {
@@ -450,7 +366,7 @@ body {
 .fitness-bar {
   width: 100%;
   height: 4px;
-  background: rgba(0, 0, 0, 0.12);
+  background: var(--bg-secondary);
   border-radius: 2px;
   margin-top: 0.4rem;
   overflow: hidden;
@@ -458,21 +374,12 @@ body {
 
 .fitness-bar-fill {
   height: 100%;
-  background: linear-gradient(90deg, #000, var(--accent));
+  background: linear-gradient(90deg, var(--accent), var(--success));
   border-radius: 2px;
   transition: width 0.4s ease;
 }
 
 /* ---- Actions ---- */
-
-/* Ensure single board centers nicely */
-.boards-container.single-board-mode {
-  justify-content: center;
-}
-
-.boards-container.single-board-mode .board-panel {
-  max-width: 500px;
-}
 
 .actions-row {
   display: flex;
@@ -484,28 +391,19 @@ body {
 .btn-secondary {
   padding: 0.6rem 1.4rem;
   border-radius: var(--radius-sm);
-  border: var(--border-med) solid var(--border-glass);
-  background: var(--bg-primary);
-  color: var(--text-primary);
-  font-weight: 900;
+  border: 1px solid var(--border-glass);
+  background: var(--bg-glass);
+  color: var(--text-secondary);
+  font-weight: 600;
   font-size: 0.85rem;
   cursor: pointer;
   transition: var(--transition);
-  box-shadow: var(--shadow-brutal);
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
+  backdrop-filter: blur(4px);
 }
 
 .btn-secondary:hover {
-  transform: translate(1px, 1px);
-  box-shadow: none;
-  background: var(--accent);
-  color: #000;
-}
-
-.btn-secondary:focus-visible {
-  outline: var(--border-thin) solid var(--border-glass);
-  outline-offset: 3px;
+  border-color: var(--accent);
+  color: var(--accent-light);
 }
 
 /* ---- End-game Modal ---- */
@@ -513,7 +411,7 @@ body {
 .modal-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.35);
+  background: rgba(0, 0, 0, 0.65);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -523,13 +421,13 @@ body {
 
 .modal {
   background: var(--bg-card);
-  border: var(--border-thick) solid var(--border-glass);
+  border: 1px solid var(--border-glass);
   border-radius: var(--radius);
   padding: 2.5rem 2rem;
   text-align: center;
   max-width: 380px;
   width: 90%;
-  box-shadow: var(--shadow-brutal-lg);
+  backdrop-filter: blur(20px);
   animation: scaleIn 0.3s ease-out;
 }
 
@@ -540,11 +438,17 @@ body {
 }
 
 .modal h2.win {
-  color: var(--success);
+  background: linear-gradient(135deg, var(--success), #34d399);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 .modal h2.lose {
-  color: var(--danger);
+  background: linear-gradient(135deg, var(--danger), #f87171);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 .modal p {
