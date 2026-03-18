@@ -108,3 +108,20 @@ class TestAiTick:
         resp = client.post("/api/v1/sudoku/matches/abc123/ai-tick")
         assert resp.status_code == 200
         assert resp.json()["fitness_score"] == 0.9
+
+
+class TestExtractBoard:
+    @patch("app.modules.sudoku.router.extract_sudoku_board")
+    def test_returns_board_and_confidences(
+        self, mock_extract: MagicMock, client: TestClient
+    ) -> None:
+        mock_extract.return_value = ([0] * 81, [0.0] * 81)
+        resp = client.post(
+            "/api/v1/sudoku/extract-board",
+            files={"file": ("grid.png", b"fake", "image/png")},
+        )
+        assert resp.status_code == 200
+        data = resp.json()
+        assert len(data["board"]) == 81
+        assert len(data["confidences"]) == 81
+        assert all(0.0 <= float(c) <= 1.0 for c in data["confidences"])

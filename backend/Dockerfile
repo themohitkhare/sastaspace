@@ -2,7 +2,13 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-# Install uv for fast dependency management
+# Install uv and system dependencies for OCR / OpenCV
+RUN apt-get update && apt-get install -y \
+    tesseract-ocr \
+    libgl1 \
+    libglib2.0-0 \
+    && rm -rf /var/lib/apt/lists/*
+
 RUN pip install --no-cache-dir uv
 
 # Copy dependency files
@@ -17,7 +23,9 @@ RUN uv pip install --system \
     "pydantic>=2.5.0" \
     "pydantic-settings>=2.1.0" \
     "jinja2>=3.1.0" \
-    "python-multipart>=0.0.6"
+    "python-multipart>=0.0.6" \
+    "opencv-python>=4.13.0" \
+    "pytesseract>=0.3.13"
 
 # Copy application code
 COPY app ./app
