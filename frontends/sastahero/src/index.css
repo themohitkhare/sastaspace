@@ -7,8 +7,14 @@
     @apply border-sasta-black;
   }
 
+  html, body, #root {
+    height: 100%;
+    overflow: hidden;
+    overscroll-behavior: none;
+  }
+
   body {
-    @apply font-zero bg-sasta-white text-sasta-black;
+    @apply font-zero bg-black text-white;
     margin: 0;
     padding: 0;
     -webkit-font-smoothing: antialiased;
