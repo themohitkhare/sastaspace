@@ -1,53 +1,47 @@
 import React from 'react';
 
-const TYPE_COLORS = {
-  CREATION: { bg: 'from-amber-500 to-yellow-600', border: 'border-amber-400', text: 'text-amber-200' },
-  PROTECTION: { bg: 'from-blue-500 to-slate-600', border: 'border-blue-400', text: 'text-blue-200' },
-  DESTRUCTION: { bg: 'from-red-600 to-gray-800', border: 'border-red-500', text: 'text-red-200' },
-  ENERGY: { bg: 'from-yellow-300 to-white', border: 'border-yellow-300', text: 'text-yellow-800' },
-  POWER: { bg: 'from-purple-600 to-indigo-900', border: 'border-purple-400', text: 'text-purple-200' },
-};
-
-const RARITY_GLOW = {
-  COMMON: '',
-  UNCOMMON: 'shadow-[0_0_15px_rgba(100,200,100,0.3)]',
-  RARE: 'shadow-[0_0_25px_rgba(50,130,250,0.5)]',
-  EPIC: 'shadow-[0_0_35px_rgba(160,50,255,0.6)]',
-  LEGENDARY: 'shadow-[0_0_50px_rgba(255,215,0,0.8)]',
+const TYPE_TEXT_COLORS = {
+  CREATION: 'text-amber-200',
+  PROTECTION: 'text-blue-200',
+  DESTRUCTION: 'text-red-200',
+  ENERGY: 'text-yellow-800',
+  POWER: 'text-purple-200',
 };
 
 const TYPE_ICONS = {
-  CREATION: '✦',
-  PROTECTION: '◆',
-  DESTRUCTION: '✕',
-  ENERGY: '☀',
-  POWER: '⬟',
+  CREATION: '\u2726',
+  PROTECTION: '\u25C6',
+  DESTRUCTION: '\u2715',
+  ENERGY: '\u2600',
+  POWER: '\u2B1F',
 };
 
-export default function CardDisplay({ card, totalCards, currentIndex }) {
+export default function CardDisplay({ card, totalCards, currentIndex, className = '' }) {
   if (!card) return null;
 
   const primaryType = card.types[0];
-  const colors = TYPE_COLORS[primaryType] || TYPE_COLORS.CREATION;
-  const glow = RARITY_GLOW[card.rarity] || '';
+  const textColor = TYPE_TEXT_COLORS[primaryType] || 'text-white';
 
   return (
     <div
       data-testid="card-display"
-      className={`w-full h-full flex flex-col items-center justify-center p-6 bg-gradient-to-br ${colors.bg} ${glow} rounded-none border-4 ${colors.border}`}
+      role="article"
+      aria-label={`${card.name} card, ${card.rarity} rarity, ${card.content_type} type`}
+      className={`w-full h-full flex flex-col items-center justify-center p-6 card-gradient-${primaryType} rarity-${card.rarity} ${className}`}
     >
       {/* Card counter */}
-      <div className="absolute top-4 right-4 text-sm font-bold opacity-60">
+      <div className="absolute top-4 right-4 text-sm font-bold opacity-60" aria-label={`Card ${currentIndex + 1} of ${totalCards}`}>
         {currentIndex + 1}/{totalCards}
       </div>
 
       {/* Type badges */}
-      <div className="flex gap-2 mb-4">
+      <div className="flex gap-2 mb-4" role="list" aria-label="Card types">
         {card.types.map((type) => (
           <span
             key={type}
+            role="listitem"
             className="text-2xl"
-            title={type}
+            aria-label={type}
             data-testid={`type-badge-${type}`}
           >
             {TYPE_ICONS[type] || '?'}
@@ -67,7 +61,7 @@ export default function CardDisplay({ card, totalCards, currentIndex }) {
 
       {/* Content */}
       {card.content_type !== 'RESOURCE' && card.text && (
-        <p className={`text-lg text-center leading-relaxed max-w-sm ${colors.text}`} data-testid="card-text">
+        <p className={`text-lg text-center leading-relaxed max-w-sm ${textColor}`} data-testid="card-text">
           {card.text}
         </p>
       )}
@@ -85,7 +79,7 @@ export default function CardDisplay({ card, totalCards, currentIndex }) {
 
       {/* Community count */}
       {card.community_count > 0 && (
-        <div className="mt-2 text-xs opacity-40">
+        <div className="mt-2 text-xs opacity-40" aria-label={`${card.community_count} players have this card`}>
           {card.community_count} players have this
         </div>
       )}

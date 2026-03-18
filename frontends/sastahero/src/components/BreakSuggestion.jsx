@@ -7,8 +7,8 @@ export default function BreakSuggestion() {
   if (!showBreak) return null;
 
   return (
-    <div data-testid="break-suggestion" className="fixed inset-0 z-40 flex items-center justify-center">
-      <div className="absolute inset-0 bg-black bg-opacity-70" />
+    <div data-testid="break-suggestion" role="dialog" aria-label="Break suggestion" className="fixed inset-0 z-40 flex items-center justify-center">
+      <div className="absolute inset-0 bg-black bg-opacity-70" aria-hidden="true" />
       <div className="relative bg-black text-white border-4 border-white p-8 max-w-sm text-center">
         <h3 className="text-xl font-bold mb-3">Nice session!</h3>
         <p className="text-sm mb-6 opacity-70">

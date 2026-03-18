@@ -24,7 +24,10 @@ test-e2e-sastadice: ## Run sastadice E2E tests with Playwright
 test-e2e-auction: ## Run only auction E2E tests
 	cd frontends/sastadice && bun run test:e2e -- tests/e2e/auction_complete.spec.js --headed
 
-test-e2e-all: test-e2e-sastadice ## Run all E2E tests
+test-e2e-sastahero: ## Run sastahero E2E tests with Playwright
+	cd frontends/sastahero && npm run test:e2e -- tests/e2e/ --workers=2
+
+test-e2e-all: test-e2e-sastadice test-e2e-sastahero ## Run all E2E tests
 
 test-full: test-backend test-frontend-sastadice test-frontend-sastahero ## Run all tests
 

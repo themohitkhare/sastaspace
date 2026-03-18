@@ -17,6 +17,10 @@
     @apply font-zero bg-black text-white;
     margin: 0;
     padding: 0;
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
@@ -53,5 +57,192 @@
 
   .border-brutal-lg {
     border: 4px solid #000;
+  }
+}
+
+/* ── Card type mesh gradient backgrounds ──────────────────────────── */
+
+.card-gradient-CREATION {
+  background:
+    radial-gradient(ellipse at 20% 50%, #f59e0b 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 20%, #d97706 0%, transparent 40%),
+    radial-gradient(ellipse at 50% 80%, #92400e 0%, transparent 60%),
+    #78350f;
+  background-size: 200% 200%;
+  animation: mesh-drift 8s ease-in-out infinite;
+}
+
+.card-gradient-PROTECTION {
+  background:
+    radial-gradient(ellipse at 30% 30%, #3b82f6 0%, transparent 50%),
+    radial-gradient(ellipse at 70% 70%, #475569 0%, transparent 40%),
+    radial-gradient(ellipse at 50% 10%, #1e40af 0%, transparent 60%),
+    #1e293b;
+  background-size: 200% 200%;
+  animation: mesh-drift 8s ease-in-out infinite;
+}
+
+.card-gradient-DESTRUCTION {
+  background:
+    radial-gradient(ellipse at 20% 80%, #dc2626 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 30%, #991b1b 0%, transparent 40%),
+    radial-gradient(ellipse at 50% 50%, #1f2937 0%, transparent 60%),
+    #111827;
+  background-size: 200% 200%;
+  animation: mesh-drift 8s ease-in-out infinite;
+}
+
+.card-gradient-ENERGY {
+  background:
+    radial-gradient(ellipse at 30% 40%, #fbbf24 0%, transparent 50%),
+    radial-gradient(ellipse at 70% 60%, #fef3c7 0%, transparent 40%),
+    radial-gradient(ellipse at 50% 20%, #f59e0b 0%, transparent 60%),
+    #fefce8;
+  background-size: 200% 200%;
+  animation: mesh-drift 8s ease-in-out infinite;
+}
+
+.card-gradient-POWER {
+  background:
+    radial-gradient(ellipse at 20% 30%, #7c3aed 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 70%, #312e81 0%, transparent 40%),
+    radial-gradient(ellipse at 50% 50%, #4c1d95 0%, transparent 60%),
+    #1e1b4b;
+  background-size: 200% 200%;
+  animation: mesh-drift 8s ease-in-out infinite;
+}
+
+@keyframes mesh-drift {
+  0%, 100% { background-position: 0% 0%; }
+  25% { background-position: 100% 50%; }
+  50% { background-position: 50% 100%; }
+  75% { background-position: 0% 50%; }
+}
+
+/* ── Rarity glow borders (animated) ──────────────────────────────── */
+
+.rarity-COMMON {
+  border: 2px solid rgba(150, 150, 150, 0.4);
+}
+
+.rarity-UNCOMMON {
+  border: 2px solid rgba(74, 222, 128, 0.6);
+  animation: glow-uncommon 3s ease-in-out infinite;
+}
+
+.rarity-RARE {
+  border: 3px solid rgba(59, 130, 246, 0.7);
+  animation: glow-rare 2.5s ease-in-out infinite;
+}
+
+.rarity-EPIC {
+  border: 3px solid rgba(168, 85, 247, 0.8);
+  animation: glow-epic 2s ease-in-out infinite;
+}
+
+.rarity-LEGENDARY {
+  border: 4px solid rgba(255, 215, 0, 0.9);
+  animation: glow-legendary 1.5s ease-in-out infinite;
+}
+
+@keyframes glow-uncommon {
+  0%, 100% { box-shadow: 0 0 8px rgba(74, 222, 128, 0.2); }
+  50% { box-shadow: 0 0 20px rgba(74, 222, 128, 0.5); }
+}
+
+@keyframes glow-rare {
+  0%, 100% { box-shadow: 0 0 12px rgba(59, 130, 246, 0.3); }
+  50% { box-shadow: 0 0 30px rgba(59, 130, 246, 0.6); }
+}
+
+@keyframes glow-epic {
+  0%, 100% { box-shadow: 0 0 18px rgba(168, 85, 247, 0.4); }
+  50% { box-shadow: 0 0 40px rgba(168, 85, 247, 0.7); }
+}
+
+@keyframes glow-legendary {
+  0%, 100% { box-shadow: 0 0 25px rgba(255, 215, 0, 0.5); }
+  50% { box-shadow: 0 0 60px rgba(255, 215, 0, 0.9), 0 0 80px rgba(255, 215, 0, 0.3); }
+}
+
+/* ── Swipe card exit animations ──────────────────────────────────── */
+
+.card-exit-UP {
+  animation: exit-up 0.3s ease-out forwards;
+}
+.card-exit-DOWN {
+  animation: exit-down 0.3s ease-out forwards;
+}
+.card-exit-LEFT {
+  animation: exit-left 0.3s ease-out forwards;
+}
+.card-exit-RIGHT {
+  animation: exit-right 0.3s ease-out forwards;
+}
+
+@keyframes exit-up {
+  to { transform: translateY(-120%) rotate(-5deg); opacity: 0; }
+}
+@keyframes exit-down {
+  to { transform: translateY(120%) rotate(5deg); opacity: 0; }
+}
+@keyframes exit-left {
+  to { transform: translateX(-120%) rotate(-10deg); opacity: 0; }
+}
+@keyframes exit-right {
+  to { transform: translateX(120%) rotate(10deg); opacity: 0; }
+}
+
+/* ── Card enter animation ────────────────────────────────────────── */
+
+.card-enter {
+  animation: card-in 0.25s ease-out;
+}
+
+@keyframes card-in {
+  from { transform: scale(0.92); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+/* ── Shard gain floating animation ───────────────────────────────── */
+
+.shard-gain {
+  animation: float-up 0.8s ease-out forwards;
+}
+
+@keyframes float-up {
+  0% { transform: translateY(0); opacity: 1; }
+  100% { transform: translateY(-30px); opacity: 0; }
+}
+
+/* ── Reduced motion ──────────────────────────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  .card-gradient-CREATION,
+  .card-gradient-PROTECTION,
+  .card-gradient-DESTRUCTION,
+  .card-gradient-ENERGY,
+  .card-gradient-POWER {
+    animation: none;
+  }
+
+  .rarity-UNCOMMON,
+  .rarity-RARE,
+  .rarity-EPIC,
+  .rarity-LEGENDARY {
+    animation: none;
+  }
+
+  .card-exit-UP,
+  .card-exit-DOWN,
+  .card-exit-LEFT,
+  .card-exit-RIGHT,
+  .card-enter,
+  .shard-gain {
+    animation: none;
+  }
+
+  .animate-pulse {
+    animation: none;
   }
 }

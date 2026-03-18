@@ -45,28 +45,28 @@ export default function QuizCard() {
 
   if (!quizQuestion) {
     return (
-      <div data-testid="quiz-loading" className="w-full h-full flex items-center justify-center bg-black text-white">
+      <div data-testid="quiz-loading" role="status" className="w-full h-full flex items-center justify-center bg-black text-white">
         <p className="text-xl font-bold">Loading quiz...</p>
       </div>
     );
   }
 
   return (
-    <div data-testid="quiz-card" className="w-full h-full flex flex-col items-center justify-center bg-black text-white p-6">
+    <div data-testid="quiz-card" role="region" aria-label="Quiz question" className="w-full h-full flex flex-col items-center justify-center bg-black text-white p-6">
       {/* Timer */}
-      <div data-testid="quiz-timer" className="mb-6">
+      <div data-testid="quiz-timer" aria-label={`${timeLeft} seconds remaining`} aria-live="polite">
         <div className={`text-4xl font-bold ${timeLeft <= 5 ? 'text-red-500 animate-pulse' : 'text-white'}`}>
           {timeLeft}
         </div>
       </div>
 
       {/* Question */}
-      <h2 className="text-xl font-bold text-center mb-8 max-w-md" data-testid="quiz-question">
+      <h2 className="text-xl font-bold text-center mb-8 max-w-md mt-6" data-testid="quiz-question">
         {quizQuestion.question}
       </h2>
 
       {/* Options */}
-      <div className="w-full max-w-md space-y-3">
+      <div className="w-full max-w-md space-y-3" role="group" aria-label="Answer options">
         {quizQuestion.options.map((option, i) => {
           let btnClass = 'w-full p-4 text-left border-2 border-white font-bold transition-colors';
           if (result) {
@@ -84,6 +84,7 @@ export default function QuizCard() {
               className={btnClass}
               onClick={() => handleAnswer(i)}
               disabled={!!result}
+              aria-label={`Option ${i + 1}: ${option}`}
             >
               {option}
             </button>
@@ -93,7 +94,7 @@ export default function QuizCard() {
 
       {/* Result */}
       {result && (
-        <div className="mt-6 text-center" data-testid="quiz-result">
+        <div className="mt-6 text-center" data-testid="quiz-result" role="alert">
           <p className={`text-lg font-bold ${result.correct ? 'text-green-400' : 'text-red-400'}`}>
             {result.correct ? 'Correct!' : 'Wrong!'}
           </p>
@@ -104,7 +105,7 @@ export default function QuizCard() {
             className="mt-4 px-6 py-3 bg-white text-black font-bold border-2 border-white hover:bg-gray-200"
             onClick={handleContinue}
           >
-            NEXT STAGE →
+            NEXT STAGE
           </button>
         </div>
       )}

@@ -4,16 +4,28 @@ import useGameStore from '../store/useGameStore';
 export default function StoryThread() {
   const { playerId } = useGameStore();
   const [data, setData] = useState(null);
+  const [error, setError] = useState(false);
 
   useEffect(() => {
     fetch(`/api/v1/sastahero/story?player_id=${playerId}`)
       .then(r => r.json())
       .then(setData)
-      .catch(() => {});
+      .catch(() => setError(true));
   }, [playerId]);
 
+  if (error) {
+    return (
+      <div data-testid="story-error" role="alert" className="flex-1 flex items-center justify-center bg-black text-white">
+        <div className="text-center">
+          <p className="text-lg font-bold text-red-400">Failed to load story</p>
+          <button className="mt-3 px-4 py-2 border-2 border-white text-sm" onClick={() => { setError(false); setData(null); }}>Retry</button>
+        </div>
+      </div>
+    );
+  }
+
   if (!data) {
-    return <div data-testid="story-loading" className="flex-1 flex items-center justify-center bg-black text-white"><p>Loading...</p></div>;
+    return <div data-testid="story-loading" role="status" className="flex-1 flex items-center justify-center bg-black text-white"><p>Loading...</p></div>;
   }
 
   return (
@@ -38,10 +50,10 @@ export default function StoryThread() {
 
       {/* Chapters */}
       {[...data.chapters].reverse().map((ch) => (
-        <div key={ch.number} className="mb-6 p-4 border-2 border-white">
+        <article key={ch.number} className="mb-6 p-4 border-2 border-white" aria-label={`Chapter ${ch.number}`}>
           <h3 className="text-sm font-bold mb-2 opacity-60">Chapter {ch.number}</h3>
           <p className="text-sm leading-relaxed">{ch.text}</p>
-        </div>
+        </article>
       ))}
     </div>
   );
