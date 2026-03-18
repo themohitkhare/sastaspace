@@ -46,7 +46,7 @@ typecheck: ## Run mypy type checking
 	cd backend && uv run mypy app/
 
 test-cov: ## Run tests with coverage (fail_under from backend/pyproject.toml)
-	cd backend && uv run pytest tests/ --cov=app --cov-branch -v
+	cd backend && uv run pytest tests/ --cov=app --cov-branch -q
 
 audit: lint typecheck complexity test-cov ## Run all quality gates (sequential)
 	@echo "All quality gates passed!"

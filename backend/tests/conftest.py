@@ -1,31 +1,17 @@
 """Pytest configuration and fixtures."""
 
-import os
-
 import pytest
-from motor.motor_asyncio import AsyncIOMotorClient
+from mongomock_motor import AsyncMongoMockClient
 
 
 @pytest.fixture
 async def db_database():
-    """MongoDB database for isolated tests."""
-    # Use test database - connect to localhost
-    test_db_name = f"test_sastaspace_{os.getpid()}"
-    mongodb_url = os.getenv("MONGODB_URL", "mongodb://localhost:27017")
-
-    client = AsyncIOMotorClient(mongodb_url)
-    database = client[test_db_name]
-
-    # Clear collections before each test
-    await database.game_sessions.delete_many({})
-    await database.players.delete_many({})
-    await database.tiles.delete_many({})
-    await database.submitted_tiles.delete_many({})
+    """In-memory MongoDB mock for fast isolated tests."""
+    client = AsyncMongoMockClient()
+    database = client["test_sastaspace"]
 
     yield database
 
-    # Cleanup - drop the test database
-    await database.client.drop_database(test_db_name)
     client.close()
 
 
