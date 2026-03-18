@@ -52,11 +52,15 @@ class SudokuService:
         self,
         difficulty: Difficulty,
         grid_size: int,
+        custom_board: list[int] | None = None,
     ) -> dict[str, Any]:
         rng = random.Random()
         match_id = uuid.uuid4().hex[:12]
-        starting_board = genetic.generate_puzzle(grid_size, rng)
         n = grid_size
+        if custom_board and len(custom_board) == n * n:
+            starting_board = custom_board
+        else:
+            starting_board = genetic.generate_puzzle(grid_size, rng)
 
         # Persist match
         doc: dict[str, Any] = {

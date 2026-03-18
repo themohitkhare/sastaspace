@@ -7,8 +7,16 @@
  *   gridSize: number         — 4, 9, or 16
  *   onChange: (idx, val) => void
  *   disabled: boolean
+ *   uncertainCells?: boolean[] — optional OCR uncertainty highlights (flat array)
  */
-export default function PlayerBoard({ board, startingBoard, gridSize, onChange, disabled }) {
+export default function PlayerBoard({
+  board,
+  startingBoard,
+  gridSize,
+  onChange,
+  disabled,
+  uncertainCells = [],
+}) {
   const sizeClass = `size-${gridSize}`;
 
   const handleInput = (idx, e) => {
@@ -23,10 +31,11 @@ export default function PlayerBoard({ board, startingBoard, gridSize, onChange, 
       <div className={`sudoku-grid ${sizeClass}`}>
         {board.map((val, idx) => {
           const isClue = startingBoard[idx] !== 0;
+          const isUncertain = Boolean(uncertainCells[idx]);
           return (
             <div
               key={idx}
-              className={`sudoku-cell ${isClue ? 'clue' : 'editable'}`}
+              className={`sudoku-cell ${isClue ? 'clue' : 'editable'} ${isUncertain ? 'ocr-uncertain' : ''}`}
             >
               {isClue ? (
                 val
