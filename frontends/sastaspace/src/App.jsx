@@ -20,7 +20,7 @@ function App() {
     },
     {
       name: 'Sudoku',
-      description: 'Player vs Genetic Algorithm. Upload puzzles via OCR or play manually against an evolving AI solver.',
+      description: 'Paste a sudoku.com screenshot, OCR extracts the puzzle, and a genetic algorithm solves it live.',
       subdomain: 'sudoku',
       accentColor: '#6366f1',
       tags: ['React', 'FastAPI', 'Genetic Algorithm', 'OCR'],
