@@ -18,13 +18,6 @@ function App() {
       accentColor: '#ff6600',
       tags: ['React', 'FastAPI', 'Canvas Export', 'Zustand'],
     },
-    {
-      name: 'Sudoku',
-      description: 'Paste a sudoku.com screenshot, OCR extracts the puzzle, and a genetic algorithm solves it live.',
-      subdomain: 'sudoku',
-      accentColor: '#6366f1',
-      tags: ['React', 'FastAPI', 'Genetic Algorithm', 'OCR'],
-    },
   ]
 
   return (
@@ -50,7 +43,7 @@ function App() {
 
       <section className="max-w-7xl mx-auto px-6 py-16">
         <h2 className="text-4xl font-bold font-zero mb-12 text-center">PROJECTS</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
           {projects.map((project) => (
             <ProjectCard
               key={project.subdomain}
