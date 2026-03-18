@@ -56,7 +56,7 @@ export default function PlayerPanel({
                   {!isMe && onTradeClick && (
                     <button
                       onClick={() => onTradeClick(player)}
-                      className="mt-1 block ml-auto bg-sasta-accent border border-black px-1.5 py-0.5 text-[9px] font-bold font-zero shadow-brutal-sm hover:shadow-none hover:translate-x-0.5 hover:translate-y-0.5 transition-all"
+                      className="mt-1 block ml-auto bg-sasta-accent border border-black px-2 py-1 min-h-[44px] min-w-[44px] text-[9px] font-bold font-zero shadow-brutal-sm hover:shadow-none hover:translate-x-0.5 hover:translate-y-0.5 transition-all"
                     >
                       TRADE
                     </button>
@@ -88,13 +88,13 @@ export default function PlayerPanel({
                 <div className="mt-2 flex gap-2">
                   <button
                     onClick={() => onPayBribe?.(player.id)}
-                    className="flex-1 bg-yellow-500 text-black px-2 py-1 text-[10px] font-bold font-zero border-brutal-sm shadow-brutal-sm hover:shadow-none hover:translate-x-0.5 hover:translate-y-0.5 transition-all"
+                    className="flex-1 bg-yellow-500 text-black px-2 py-2 min-h-[44px] text-[10px] font-bold font-zero border-brutal-sm shadow-brutal-sm hover:shadow-none hover:translate-x-0.5 hover:translate-y-0.5 transition-all"
                   >
                     PAY $50 BRIBE
                   </button>
                   <button
                     onClick={() => onRollForDoubles?.(player.id)}
-                    className="flex-1 bg-blue-500 text-white px-2 py-1 text-[10px] font-bold font-zero border-brutal-sm shadow-brutal-sm hover:shadow-none hover:translate-x-0.5 hover:translate-y-0.5 transition-all"
+                    className="flex-1 bg-blue-500 text-white px-2 py-2 min-h-[44px] text-[10px] font-bold font-zero border-brutal-sm shadow-brutal-sm hover:shadow-none hover:translate-x-0.5 hover:translate-y-0.5 transition-all"
                   >
                     ROLL FOR DOUBLES
                   </button>

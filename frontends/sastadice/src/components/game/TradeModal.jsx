@@ -51,7 +51,7 @@ export default function TradeModal({ myPlayer, targetPlayer, tiles, onClose, onP
 
     return (
         <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
-            <div className="bg-sasta-white border-brutal w-full max-w-4xl max-h-[90vh] flex flex-col shadow-brutal-lg">
+            <div className="bg-sasta-white border-brutal w-full max-w-lg md:max-w-4xl max-h-[90vh] flex flex-col shadow-brutal-lg">
                 <div className="bg-sasta-black text-white p-3 flex justify-between items-center shrink-0">
                     <h2 className="font-zero text-xl">TRADE PROPOSAL</h2>
                     <button onClick={onClose} className="text-white hover:text-sasta-accent">✕</button>
