@@ -1,25 +1,25 @@
 # SastaSpace
 
-A multi-frontend, FastAPI backend application with Traefik reverse proxy.
+A portfolio of interactive projects — multiplayer board games, AI solvers, and RPG builders — served from a single FastAPI backend through a Traefik reverse proxy.
 
-## Architecture
+## Tech Stack
 
-- **Backend**: FastAPI with DuckDB (Python 3.11)
-- **Frontends**: 
-  - `sastaspace.com` - Main frontend (React/Vite)
-  - `sastahero.sastaspace.com` - SastaHero frontend
-  - `sasta.sastaspace.com` - Sasta frontend
-- **Reverse Proxy**: Traefik v2.11
-- **API**: `api.sastaspace.com`
+- **Backend**: FastAPI + MongoDB (Python 3.11+, uv)
+- **Frontends**: React 18 + Vite + Tailwind CSS (brutalist design system)
+- **Reverse Proxy**: Traefik v2.11 (routes all sub-apps through localhost:80)
+- **Containerization**: Docker + Docker Compose (multi-stage builds)
+- **Testing**: pytest (backend), Vitest + Testing Library (frontend), Playwright (E2E)
+- **Observability**: Grafana + Loki + Promtail
+
+## Projects
+
+| Project | URL | Description |
+|---------|-----|-------------|
+| **SastaDice** | `/sastadice/` | Multiplayer board game with auctions, trading, and dynamic economy |
+| **SastaHero** | `/sastahero/` | Interactive RPG character builder — pick a class, allocate stats, export as PNG |
+| **Sudoku** | `/sudoku/` | Player vs Genetic Algorithm — upload puzzles via OCR or play manually |
 
 ## Quick Start
-
-### Prerequisites
-
-- Docker and Docker Compose installed
-- Ports 80, 443, and 8080 available
-
-### Start Services
 
 ```bash
 # Build and start all services
@@ -32,143 +32,88 @@ docker-compose logs -f
 docker-compose down
 ```
 
-### Access Services
+## Access
 
-- **Traefik Dashboard**: http://localhost:8080
-- **Backend API**: http://localhost/api/v1/ (or http://api.sastaspace.com if DNS configured)
-- **Main Frontend**: http://localhost/ (or http://sastaspace.com if DNS configured)
-- **Health Check**: http://localhost/api/v1/common/health
-
-### Development
-
-#### Backend Development
-
-```bash
-cd backend
-source .venv/bin/activate
-uvicorn app.main:app --reload
-```
-
-#### Frontend Development
-
-The main frontend (sastaspace) uses Vite. For development:
-
-```bash
-cd frontends/sastaspace
-npm install
-npm run dev
-```
-
-## Environment Variables
-
-Create a `.env` file in the root directory:
-
-```env
-ACME_EMAIL=admin@sastaspace.com
-DB_PATH=/app/data/sastaspace.db
-```
+| Service | URL |
+|---------|-----|
+| Landing Page | http://localhost/ |
+| SastaDice | http://localhost/sastadice/ |
+| SastaHero | http://localhost/sastahero/ |
+| Sudoku | http://localhost/sudoku/ |
+| Backend API | http://localhost/api/v1/ |
+| API Docs | http://localhost:8000/docs |
+| Traefik Dashboard | http://localhost:8080 |
+| Grafana (Logs) | http://localhost:3000 |
 
 ## Project Structure
 
 ```
 sastaspace/
-├── backend/           # FastAPI backend
-│   ├── app/          # Application code
-│   ├── data/         # DuckDB database files
-│   └── Dockerfile    # Backend container
-├── frontends/        # Frontend applications
-│   ├── sastaspace/   # Main React frontend
-│   ├── sastahero/    # SastaHero frontend
-│   └── sasta/        # Sasta frontend
-├── traefik/          # Traefik configuration
+├── backend/                   # FastAPI backend
+│   ├── app/
+│   │   ├── api/v1/            # API router
+│   │   ├── modules/
+│   │   │   ├── common/        # Health checks
+│   │   │   ├── sastadice/     # Board game logic
+│   │   │   ├── sastahero/     # Hero builder API
+│   │   │   └── sudoku/        # Genetic algorithm solver
+│   │   ├── core/              # Config, logging
+│   │   └── db/                # MongoDB session
+│   └── tests/                 # pytest test suite
+├── frontends/
+│   ├── shared/                # Shared React components (Navbar, assets)
+│   ├── sastaspace/            # Landing page (React/Vite)
+│   ├── sastadice/             # Board game frontend (React/Vite)
+│   ├── sastahero/             # Hero builder frontend (React/Vite)
+│   └── sudoku/                # Sudoku frontend (React/Vite)
+├── grafana/                   # Grafana provisioning
+├── loki/                      # Loki log aggregation config
+├── promtail/                  # Log collection config
+├── scripts/                   # Developer utilities
 └── docker-compose.yml
+```
+
+## Development
+
+### Backend
+
+```bash
+cd backend
+uv sync
+uv run uvicorn app.main:app --reload
+# API available at http://localhost:8000
+```
+
+### Frontend (any sub-app)
+
+```bash
+cd frontends/sudoku   # or sastadice, sastahero, sastaspace
+npm install
+npm run dev
+```
+
+### Running Tests
+
+```bash
+# All tests (backend + all frontends)
+make test-full
+
+# Backend only
+make test-backend
+
+# Specific frontend
+make test-frontend-sudoku
+make test-frontend-sastahero
+make test-frontend-sastadice
+
+# Full quality audit (lint + typecheck + complexity + coverage)
+make audit
 ```
 
 ## API Endpoints
 
-- `GET /` - Root endpoint
-- `GET /api/v1/common/health` - Health check with database connectivity
-
-## Running Backend as a Systemd Service (Non-Docker)
-
-To run the backend service in the background using systemd (instead of Docker):
-
-### Installation
-
-```bash
-# Install the systemd service
-make service-install
-
-# Enable service to start on boot (optional)
-sudo systemctl enable sastaspace-backend
-
-# Start the service
-make service-start
-```
-
-### Service Management
-
-```bash
-# Check service status
-make service-status
-
-# View logs (follow mode)
-make service-logs
-
-# Stop the service
-make service-stop
-
-# Remove the service
-make service-remove
-```
-
-The service will automatically restart if it crashes and will start on system boot if enabled.
-
-## DuckDB CLI Access
-
-DuckDB is already installed and available via the Python package. You can also access DuckDB CLI directly:
-
-### Using DuckDB CLI
-
-```bash
-# Access DuckDB CLI with project database
-make duckdb-cli
-
-# Or directly
-./backend/scripts/duckdb-cli.sh
-
-# Or use DuckDB CLI directly (without sudo)
-duckdb backend/data/sastaspace.db
-```
-
-**Note:** Don't use `sudo duckdb` - DuckDB CLI is installed in your user's local bin (`~/.local/bin/duckdb`), not in system paths accessible by sudo.
-
-### DuckDB Web UI
-
-If you want to use the DuckDB web UI:
-
-```bash
-duckdb -ui backend/data/sastaspace.db
-```
-
-This will start a local web server (usually on http://localhost:8080) for visual database interaction.
-
-## Troubleshooting
-
-### Check service status
-```bash
-docker-compose ps
-```
-
-### View logs
-```bash
-docker-compose logs [service-name]
-```
-
-### Rebuild after changes
-```bash
-docker-compose up -d --build
-```
-
-### Database location
-The DuckDB database is stored in `backend/data/sastaspace.db` and is persisted via Docker volumes.
+- `GET /api/v1/common/health` — Health check + MongoDB connectivity
+- `GET /api/v1/sastahero/classes` — All hero class definitions
+- `POST /api/v1/sastahero/generate` — Random hero with weighted stat allocation
+- `GET /api/v1/sudoku/matches/{id}` — Get match state
+- `POST /api/v1/sastadice/games` — Create a new game

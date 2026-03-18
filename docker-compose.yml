@@ -6,7 +6,7 @@
 #   - Main Frontend: http://localhost:9000
 #   - SastaDice: http://localhost:9001
 #   - SastaHero: http://localhost:9002
-#   - Sasta: http://localhost:9003
+#   - Sudoku: http://localhost:9004
 #   - Traefik Dashboard: http://localhost:8080
 #   - Grafana (Logs): http://localhost:3000
 #   - Loki API: http://localhost:3100
@@ -16,7 +16,7 @@
 #   - Main Frontend: http://localhost/
 #   - SastaDice: http://localhost/sastadice/
 #   - SastaHero: http://localhost/sastahero/
-#   - Sasta: http://localhost/sasta/
+#   - Sudoku: http://localhost/sudoku/
 #
 # Backend has hot-reload enabled (--reload flag)
 # Frontends are built images (use npm run dev locally for hot-reload)
@@ -93,17 +93,17 @@ services:
       - sastaspace-network
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.frontend-main.rule=Host(`localhost`) && PathPrefix(`/`) && !PathPrefix(`/api`) && !PathPrefix(`/sastahero`) && !PathPrefix(`/sasta`) && !PathPrefix(`/sastadice`) && !PathPrefix(`/sudoku`)"
+      - "traefik.http.routers.frontend-main.rule=Host(`localhost`) && PathPrefix(`/`) && !PathPrefix(`/api`) && !PathPrefix(`/sastahero`) && !PathPrefix(`/sastadice`) && !PathPrefix(`/sudoku`)"
       - "traefik.http.routers.frontend-main.entrypoints=web"
       - "traefik.http.services.frontend-main.loadbalancer.server.port=80"
       - "traefik.http.routers.frontend-main.priority=1"
     restart: unless-stopped
 
   frontend-sastahero:
-    image: nginx:alpine
+    build:
+      context: ./frontends
+      dockerfile: sastahero/Dockerfile
     container_name: sastaspace-frontend-sastahero
-    volumes:
-      - ./frontends/sastahero:/usr/share/nginx/html:ro
     ports:
       - "9002:80"  # Direct access: http://localhost:9002
     networks:
@@ -115,24 +115,6 @@ services:
       - "traefik.http.services.frontend-sastahero.loadbalancer.server.port=80"
       - "traefik.http.middlewares.sastahero-stripprefix.stripprefix.prefixes=/sastahero"
       - "traefik.http.routers.frontend-sastahero.middlewares=sastahero-stripprefix"
-    restart: unless-stopped
-
-  frontend-sasta:
-    image: nginx:alpine
-    container_name: sastaspace-frontend-sasta
-    volumes:
-      - ./frontends/sasta:/usr/share/nginx/html:ro
-    ports:
-      - "9003:80"  # Direct access: http://localhost:9003
-    networks:
-      - sastaspace-network
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.frontend-sasta.rule=Host(`localhost`) && PathPrefix(`/sasta`)"
-      - "traefik.http.routers.frontend-sasta.entrypoints=web"
-      - "traefik.http.services.frontend-sasta.loadbalancer.server.port=80"
-      - "traefik.http.middlewares.sasta-stripprefix.stripprefix.prefixes=/sasta"
-      - "traefik.http.routers.frontend-sasta.middlewares=sasta-stripprefix"
     restart: unless-stopped
 
   frontend-sastadice:
