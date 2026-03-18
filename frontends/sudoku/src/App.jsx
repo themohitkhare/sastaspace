@@ -6,11 +6,11 @@ export default function App() {
     <BrowserRouter basename="/sudoku">
       <div className="app-header">
         <a className="app-header__home" href="/">
-          SASTASPACE
+          ← BACK
         </a>
         <div className="app-header__right">
-          <h1>Sudoku</h1>
-          <span className="badge">GA Solver</span>
+          <h1>SUDOKU</h1>
+          <span className="badge">GA SOLVER</span>
         </div>
       </div>
       <Routes>
