@@ -51,6 +51,18 @@ services:
       - sastaspace-network
     restart: unless-stopped
 
+  redis:
+    image: redis:7-alpine
+    container_name: sastaspace-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - ./backend/data/redis:/data
+    networks:
+      - sastaspace-network
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+
   backend:
     build:
       context: ./backend
@@ -59,27 +71,69 @@ services:
     environment:
       - MONGODB_URL=mongodb://mongodb:27017
       - MONGODB_DATABASE=sastaspace
+      - REDIS_URL=redis://redis:6379/0
+      - APP_MODE=SERVER
       - DEBUG=true
       - ENVIRONMENT=development
     volumes:
-      # Mount source code for live reloading (read-write for uvicorn --reload)
       - ./backend/app:/app/app
       - ./backend/data:/app/data
       - ./backend/tests:/app/tests
       - ./backend/scripts:/app/scripts
       - ./backend/conftest.py:/app/conftest.py
     ports:
-      - "8000:8000"  # Direct access for development
+      - "8000:8000"
     networks:
       - sastaspace-network
     depends_on:
       - mongodb
+      - redis
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.backend.rule=Host(`localhost`) && PathPrefix(`/api`)"
       - "traefik.http.routers.backend.entrypoints=web"
       - "traefik.http.services.backend.loadbalancer.server.port=8000"
     command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+    restart: unless-stopped
+
+  worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: sastaspace-worker
+    environment:
+      - MONGODB_URL=mongodb://mongodb:27017
+      - MONGODB_DATABASE=sastaspace
+      - REDIS_URL=redis://redis:6379/0
+      - APP_MODE=CONSUMER
+    volumes:
+      - ./backend/app:/app/app
+    networks:
+      - sastaspace-network
+    depends_on:
+      - mongodb
+      - redis
+    command: ["python", "-m", "app.main"]
+    restart: unless-stopped
+
+  coordinator:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: sastaspace-coordinator
+    environment:
+      - MONGODB_URL=mongodb://mongodb:27017
+      - MONGODB_DATABASE=sastaspace
+      - REDIS_URL=redis://redis:6379/0
+      - APP_MODE=COORDINATOR
+    volumes:
+      - ./backend/app:/app/app
+    networks:
+      - sastaspace-network
+    depends_on:
+      - mongodb
+      - redis
+    command: ["python", "-m", "app.main"]
     restart: unless-stopped
 
   frontend-main:

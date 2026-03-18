@@ -2,18 +2,24 @@
 
 from __future__ import annotations
 
+import json
 from typing import Any
 
+import redis.asyncio as aioredis
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
 from motor.motor_asyncio import AsyncIOMotorDatabase
 
+from app.core.redis import get_redis
 from app.db.session import get_db
+from app.modules.sudoku.models import MatchStatus
 from app.modules.sudoku.ocr_utils import extract_sudoku_board
+from app.modules.sudoku.repository import SudokuRepository
 from app.modules.sudoku.schemas import (
     ClaimVictoryResponse,
     ExtractBoardResponse,
     MatchStateResponse,
     PlayerUpdateRequest,
+    SolveResponse,
     StartMatchRequest,
     StartMatchResponse,
 )
@@ -81,6 +87,26 @@ async def ai_tick(
         return await service.ai_tick(match_id)
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
+
+@router.post(
+    "/matches/{match_id}/solve", response_model=SolveResponse, status_code=status.HTTP_202_ACCEPTED
+)
+async def solve_match(
+    match_id: str,
+    db: AsyncIOMotorDatabase[Any] = Depends(get_db),
+    r: aioredis.Redis = Depends(get_redis),
+) -> SolveResponse:
+    """Queue a match for distributed GA solving via Redis Streams."""
+    repo = SudokuRepository(db)
+    match_doc = await repo.get_match(match_id)
+    if not match_doc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Match not found")
+    if match_doc["status"] != MatchStatus.IN_PROGRESS.value:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Match not in progress")
+
+    await r.xadd("sudoku:solve-requests", {"payload": json.dumps({"match_id": match_id})})
+    return SolveResponse(match_id=match_id, status="queued")
 
 
 @router.post("/extract-board", response_model=ExtractBoardResponse)

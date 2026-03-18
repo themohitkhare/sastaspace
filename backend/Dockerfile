@@ -25,7 +25,8 @@ RUN uv pip install --system \
     "jinja2>=3.1.0" \
     "python-multipart>=0.0.6" \
     "opencv-python>=4.13.0" \
-    "pytesseract>=0.3.13"
+    "pytesseract>=0.3.13" \
+    "redis[hiredis]>=5.0.0"
 
 # Copy application code
 COPY app ./app

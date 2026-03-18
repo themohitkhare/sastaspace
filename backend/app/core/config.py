@@ -13,6 +13,9 @@ class Settings(BaseSettings):
     mongodb_url: str = "mongodb://mongodb:27017"
     mongodb_database: str = "sastaspace"
 
+    redis_url: str = "redis://redis:6379/0"
+    app_mode: str = "SERVER"  # SERVER, CONSUMER, COORDINATOR, JOB, CRONJOB
+
     host: str = "0.0.0.0"
     port: int = 8000
 
