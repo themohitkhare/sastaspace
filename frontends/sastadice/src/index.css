@@ -324,6 +324,74 @@
   .animate-bankruptcy { animation: bankruptcy-flash 0.6s ease-in-out 2; }
   .animate-turn-fade { animation: turn-fade 0.3s ease-in; }
 
+  /* Flash overlays for chaos events */
+  @keyframes flash-red {
+    0% { background-color: rgba(255, 0, 0, 0.3); }
+    100% { background-color: transparent; }
+  }
+
+  @keyframes flash-green {
+    0% { background-color: rgba(0, 255, 0, 0.25); }
+    100% { background-color: transparent; }
+  }
+
+  .animate-flash-red {
+    animation: flash-red 0.3s ease-out forwards;
+  }
+
+  .animate-flash-green {
+    animation: flash-green 0.3s ease-out forwards;
+  }
+
+  /* Screen shake for negative chaos events */
+  @keyframes screen-shake {
+    0%, 100% { transform: translateX(0); }
+    10% { transform: translateX(-4px); }
+    20% { transform: translateX(4px); }
+    30% { transform: translateX(-3px); }
+    40% { transform: translateX(3px); }
+    50% { transform: translateX(-2px); }
+    60% { transform: translateX(2px); }
+    70% { transform: translateX(-1px); }
+    80% { transform: translateX(1px); }
+  }
+
+  .animate-screen-shake {
+    animation: screen-shake 0.4s ease-out;
+  }
+
+  /* Pulsing red border for last-5-rounds escalation */
+  @keyframes pulse-border {
+    0%, 100% { box-shadow: inset 0 0 0 2px rgba(239, 68, 68, 0.4); }
+    50% { box-shadow: inset 0 0 0 4px rgba(239, 68, 68, 0.8); }
+  }
+
+  .animate-pulse-border {
+    animation: pulse-border 1.5s ease-in-out infinite;
+  }
+
+  /* Stage banner enter for sudden death countdown */
+  @keyframes stage-banner-enter {
+    0% { opacity: 0; transform: translateY(-10px) scaleX(0.8); }
+    60% { opacity: 1; transform: translateY(2px) scaleX(1.02); }
+    100% { opacity: 1; transform: translateY(0) scaleX(1); }
+  }
+
+  .animate-stage-banner-enter {
+    animation: stage-banner-enter 0.4s ease-out;
+  }
+
+  /* Dice result pop — scale-up on reveal */
+  @keyframes dice-result-pop {
+    0% { transform: scale(0.7); opacity: 0.5; }
+    50% { transform: scale(1.2); }
+    100% { transform: scale(1); opacity: 1; }
+  }
+
+  .animate-dice-result-pop {
+    animation: dice-result-pop 0.3s ease-out;
+  }
+
   /* Hide scrollbar but keep scrolling */
   .scrollbar-hide {
     -ms-overflow-style: none;

@@ -2,9 +2,10 @@ import { useState, useEffect } from 'react'
 import Confetti from 'react-confetti'
 import { useNavigate } from 'react-router-dom'
 
-export default function VictoryScreen({ winner, players, onPlayAgain }) {
+export default function VictoryScreen({ winner, players, onPlayAgain, game }) {
     const { width, height } = useWindowSize()
     const [showStats, setShowStats] = useState(false)
+    const [showGameStats, setShowGameStats] = useState(false)
     const navigate = useNavigate()
 
     const sortedPlayers = [...players].sort((a, b) => b.cash - a.cash)
@@ -16,10 +17,24 @@ export default function VictoryScreen({ winner, players, onPlayAgain }) {
     }
 
     if (!winnerDetails) {
-        winnerDetails = { name: 'UNKNOWN', cash: 0, color: '#00FF00' }
+        winnerDetails = { name: 'UNKNOWN', cash: 0, color: '#00FF00', properties: [] }
     }
 
     const losers = sortedPlayers.filter((p) => p.id !== winnerDetails.id)
+
+    // Compute game stats from board + players
+    const board = game?.board || []
+    const totalTurns = game?.current_round || 0
+    const playerStats = sortedPlayers.map((p) => {
+        const ownedProperties = board.filter((t) => t.owner_id === p.id)
+        const propertyValue = ownedProperties.reduce((sum, t) => sum + (t.price || 0), 0)
+        return {
+            ...p,
+            propertyCount: ownedProperties.length,
+            netWorth: (p.cash || 0) + propertyValue,
+        }
+    })
+    const winnerStats = playerStats.find((p) => p.id === winnerDetails.id) || { propertyCount: 0, netWorth: winnerDetails.cash || 0 }
 
     return (
         <div className="h-screen w-screen bg-sasta-white overflow-hidden flex flex-col font-data text-sasta-black selection:bg-sasta-accent selection:text-sasta-black relative">
@@ -71,7 +86,43 @@ export default function VictoryScreen({ winner, players, onPlayAgain }) {
                     </div>
                 </div>
 
-                <div className="w-full max-w-xl flex flex-col min-h-0 shrink-0">
+                <div className="w-full max-w-xl flex flex-col min-h-0 shrink-0 overflow-y-auto max-h-[50vh]">
+                    <button
+                        onClick={() => setShowGameStats(!showGameStats)}
+                        className={`w-full flex items-center justify-between bg-sasta-white border-2 border-sasta-black p-3 hover:bg-sasta-accent hover:text-sasta-black transition-colors font-zero font-bold group shadow-brutal-sm ${showGameStats ? 'mb-0 border-b-0 pb-2' : 'mb-2'}`}
+                    >
+                        <div className="flex items-center gap-3">
+                            <span className="uppercase tracking-widest text-sm">GAME STATS</span>
+                        </div>
+                        <span className="text-xs">{showGameStats ? '▲' : '▼'}</span>
+                    </button>
+
+                    {showGameStats && (
+                        <div className="bg-sasta-white border-2 border-t-0 border-sasta-black p-4 shadow-brutal-sm mb-2">
+                            <div className="grid grid-cols-2 gap-2 font-data text-xs mb-3">
+                                <div className="border-brutal-sm p-2 text-center">
+                                    <div className="text-[9px] text-sasta-black/60 uppercase tracking-wider">TURNS PLAYED</div>
+                                    <div className="text-xl font-bold text-sasta-black">{totalTurns}</div>
+                                </div>
+                                <div className="border-brutal-sm p-2 text-center">
+                                    <div className="text-[9px] text-sasta-black/60 uppercase tracking-wider">WINNER NET WORTH</div>
+                                    <div className="text-xl font-bold text-sasta-black">${winnerStats.netWorth?.toLocaleString()}</div>
+                                </div>
+                            </div>
+                            <div className="flex flex-col gap-1 font-data text-xs">
+                                {playerStats.map((player) => (
+                                    <div key={player.id} className="flex justify-between items-center border-b border-dashed border-sasta-black/20 pb-1 last:border-0 px-2">
+                                        <span className="font-bold text-sasta-black uppercase">{player.name}</span>
+                                        <div className="flex items-center gap-3">
+                                            <span className="text-sasta-black/60">{player.propertyCount} PROPS</span>
+                                            <span className="font-bold text-sasta-black">${player.cash?.toLocaleString()}</span>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
                     <button
                         onClick={() => setShowStats(!showStats)}
                         className={`w-full flex items-center justify-between bg-sasta-white border-2 border-sasta-black p-3 hover:bg-sasta-accent hover:text-sasta-black transition-colors font-zero font-bold group shadow-brutal-sm ${showStats ? 'mb-0 border-b-0 pb-2' : 'mb-0'}`}

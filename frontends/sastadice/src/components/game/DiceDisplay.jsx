@@ -95,8 +95,8 @@ export default function DiceDisplay({ lastDiceRoll, size = 'small' }) {
         } ${isRolling
           ? 'animate-pulse text-sasta-black/50'
           : is_doubles
-            ? 'text-sasta-accent bg-sasta-black px-2 inline-block'
-            : ''
+            ? 'text-sasta-accent bg-sasta-black px-2 inline-block animate-dice-result-pop'
+            : 'animate-dice-result-pop'
         }`}>
         {isRolling ? 'ROLLING...' : `TOTAL: ${total}`} {!isRolling && is_doubles && '🎯 DOUBLES!'}
       </div>

@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import TileComponent from './TileComponent'
 import PlayerToken from './PlayerToken'
 
-export default function BoardView({ tiles = [], boardSize, players = [], onTileClick, children, ddosMode = false, onDdosTileSelect, currentRound = 0 }) {
+export default function BoardView({ tiles = [], boardSize, players = [], onTileClick, children, ddosMode = false, onDdosTileSelect, currentRound = 0, maxRounds = 30 }) {
   const containerRef = useRef(null)
   const wrapperRef = useRef(null)
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 })
@@ -72,6 +72,9 @@ export default function BoardView({ tiles = [], boardSize, players = [], onTileC
     return <div className="text-center p-8 font-zero animate-pulse">LOADING BOARD...</div>
   }
 
+  const isFinalRounds = maxRounds > 0 && currentRound >= maxRounds - 5 && currentRound < maxRounds
+  const roundsUntilSuddenDeath = maxRounds > 0 ? Math.max(0, maxRounds - currentRound) : 0
+
   const isOnPerimeter = (x, y) => x === 0 || x === boardSize - 1 || y === 0 || y === boardSize - 1
 
   const getTileEdge = (x, y) => {
@@ -85,12 +88,17 @@ export default function BoardView({ tiles = [], boardSize, players = [], onTileC
   return (
     <div
       ref={wrapperRef}
-      className="board-wrapper w-full h-full flex justify-center items-center p-2 sm:p-4 overflow-auto"
+      className={`board-wrapper w-full h-full flex flex-col justify-center items-center p-2 sm:p-4 overflow-auto ${isFinalRounds ? 'animate-pulse-border' : ''}`}
       style={{ overflow: 'auto', WebkitOverflowScrolling: 'touch' }}
     >
+      {isFinalRounds && (
+        <div className="animate-stage-banner-enter w-full max-w-md mb-2 bg-red-600 border-brutal-sm text-white text-center py-2 px-4 font-zero font-bold text-sm tracking-widest uppercase shrink-0">
+          SUDDEN DEATH IN {roundsUntilSuddenDeath} ROUND{roundsUntilSuddenDeath !== 1 ? 'S' : ''}
+        </div>
+      )}
       <div
         ref={containerRef}
-        className="board-container relative border-brutal bg-black grid"
+        className={`board-container relative border-brutal bg-black grid ${isFinalRounds ? 'border-red-500 border-4' : ''}`}
         style={{
           display: 'grid',
           gridTemplateColumns: `repeat(${boardSize}, 1fr)`,
