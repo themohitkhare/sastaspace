@@ -3,6 +3,7 @@ import { apiClient } from '../../api/apiClient'
 import { useGameStore } from '../../store/useGameStore'
 import LaunchKey from './LaunchKey'
 import GameSettingsPanel from './GameSettingsPanel'
+import TileSubmissionForm from './TileSubmissionForm'
 import RulesModal from '../RulesModal'
 import { useToast } from '../../hooks/useToast'
 import ToastContainer from '../ToastContainer'
@@ -15,6 +16,13 @@ export default function LobbyView({ onRefresh }) {
   const [copied, setCopied] = useState(false)
   const [showRules, setShowRules] = useState(false)
   const { toasts, showToast, dismissToast } = useToast()
+  const [tiles, setTiles] = useState([
+    { type: 'PROPERTY', name: '', effect_config: {} },
+    { type: 'PROPERTY', name: '', effect_config: {} },
+    { type: 'CHANCE', name: '', effect_config: {} },
+    { type: 'TAX', name: '', effect_config: {} },
+    { type: 'BUFF', name: '', effect_config: {} },
+  ])
   const [settings, setSettings] = useState({
     win_condition: 'SUDDEN_DEATH',
     round_limit: 30,
@@ -84,7 +92,11 @@ export default function LobbyView({ onRefresh }) {
     }
     setIsJoining(true)
     try {
-      const res = await apiClient.post(`/sastadice/games/${gameId}/join`, { name: playerName })
+      const joinPayload = { name: playerName.trim() }
+      if (game?.settings?.board_preset === 'UGC_24') {
+        joinPayload.tiles = tiles.filter(t => t.name.trim() !== '')
+      }
+      const res = await apiClient.post(`/sastadice/games/${gameId}/join`, joinPayload)
       setPlayerId(res.data.id)
       const gameRes = await apiClient.get(`/sastadice/games/${gameId}/state`)
       if (gameRes.data) setGame(gameRes.data.game, gameRes.data.version)
@@ -132,6 +144,7 @@ export default function LobbyView({ onRefresh }) {
   const totalPlayers = game?.players?.length || 0
   const isHost = game?.host_id === playerId
   const shortCode = gameId?.slice(0, 8)?.toUpperCase() || 'LOADING'
+  const showTileForm = hasJoined && game?.settings?.board_preset === 'UGC_24'
 
   return (
     <div className="h-screen w-full bg-white text-black overflow-hidden flex flex-col lg:grid lg:grid-cols-12 divide-y lg:divide-y-0 lg:divide-x divide-black">
@@ -309,6 +322,11 @@ export default function LobbyView({ onRefresh }) {
           ) : (
             <div className="text-xs text-gray-400 font-data p-4 border border-dashed border-gray-300 text-center">
               ACCESS DISTRIBUTED AFTER AUTHENTICATION
+            </div>
+          )}
+          {showTileForm && (
+            <div className="mt-4">
+              <TileSubmissionForm tiles={tiles} setTiles={setTiles} />
             </div>
           )}
         </div>
