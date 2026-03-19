@@ -13,7 +13,7 @@ const TILE_TYPE_COLORS = {
   JAIL: '#888888',
 }
 
-export default function TileComponent({ tile, players = [], width, height, size = 72, isLandscape = false, edge = null, boardSize = 0, style = {}, isBlocked = false, isDdosTarget = false, onClick }) {
+export default function TileComponent({ tile, players = [], width, height, size = 72, isLandscape = false, edge = null, boardSize = 0, style = {}, isBlocked = false, isDdosTarget = false, onClick, blockedRoundsRemaining = null, isFreeLanding = false }) {
   const isClickable = tile.type === 'PROPERTY' && onClick
   const owner = players.find(p => p.id === tile.owner_id)
   const isUnowned = !tile.owner_id
@@ -84,7 +84,7 @@ export default function TileComponent({ tile, players = [], width, height, size 
               textShadow: '1px 1px 2px #000',
             }}
           >
-            BLOCKED
+            {'BLOCKED' + (blockedRoundsRemaining > 0 ? ` (${blockedRoundsRemaining})` : '')}
           </div>
         </div>
       )}
@@ -130,6 +130,17 @@ export default function TileComponent({ tile, players = [], width, height, size 
           style={{ fontSize: `${Math.max(6, Math.round(8 * scaleFactor))}px` }}
         >
           NODE
+        </div>
+      )}
+      {isFreeLanding && size >= 50 && (
+        <div
+          className="absolute bottom-1 left-1 font-zero font-bold text-green-400"
+          style={{
+            fontSize: `${Math.max(6, Math.round(8 * scaleFactor))}px`,
+            textShadow: '1px 1px 1px #000',
+          }}
+        >
+          FREE
         </div>
       )}
       {owner && size >= 50 && (

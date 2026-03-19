@@ -135,6 +135,8 @@ export default function BoardView({ tiles = [], boardSize, players = [], onTileC
                 boardSize={boardSize}
                 isBlocked={tile.blocked_until_round && tile.blocked_until_round > currentRound}
                 isDdosTarget={ddosMode && tile.type === 'PROPERTY'}
+                blockedRoundsRemaining={tile.blocked_until_round ? Math.max(0, tile.blocked_until_round - currentRound) : null}
+                isFreeLanding={!!(tile.free_landing_until_round && tile.free_landing_until_round >= currentRound)}
               />
             </div>
           )

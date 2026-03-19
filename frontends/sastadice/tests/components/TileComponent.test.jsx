@@ -124,3 +124,25 @@ describe('TileComponent', () => {
     expect(tileElement).toHaveStyle({ zIndex: 999 })
   })
 })
+
+describe('Blocked tile countdown', () => {
+  it('shows round count when blocked with remaining rounds', () => {
+    const tile = { id: '1', type: 'PROPERTY', name: 'Test', position: 1, price: 100, rent: 25 }
+    render(<TileComponent tile={tile} isBlocked={true} blockedRoundsRemaining={2} size={72} />)
+    expect(screen.getByText(/BLOCKED.*2/)).toBeDefined()
+  })
+})
+
+describe('Free landing indicator', () => {
+  it('shows FREE label when tile has free landing', () => {
+    const tile = { id: '1', type: 'PROPERTY', name: 'Test', position: 1, price: 100, rent: 25 }
+    render(<TileComponent tile={tile} isFreeLanding={true} size={72} />)
+    expect(screen.getByText('FREE')).toBeDefined()
+  })
+
+  it('does not show FREE label when isFreeLanding is false', () => {
+    const tile = { id: '1', type: 'PROPERTY', name: 'Test', position: 1, price: 100, rent: 25 }
+    render(<TileComponent tile={tile} isFreeLanding={false} size={72} />)
+    expect(screen.queryByText('FREE')).toBeNull()
+  })
+})
