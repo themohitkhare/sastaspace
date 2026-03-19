@@ -55,6 +55,16 @@ export default function PlayerPanel({
                         {player.active_buff}
                       </span>
                     )}
+                    {player.disconnected && (
+                      <span className="font-zero text-[8px] bg-red-600 text-white px-1 animate-pulse">
+                        DISCONNECTED
+                      </span>
+                    )}
+                    {!player.disconnected && player.afk_turns > 0 && (
+                      <span className="font-zero text-[8px] bg-orange-500 text-black px-1">
+                        AFK ({player.afk_turns}/3)
+                      </span>
+                    )}
                   </div>
                 </div>
 

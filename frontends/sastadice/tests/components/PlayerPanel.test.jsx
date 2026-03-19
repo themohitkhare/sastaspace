@@ -126,6 +126,39 @@ describe('Buff badges', () => {
   })
 })
 
+describe('AFK and disconnect indicators', () => {
+  it('shows DISCONNECTED badge when player is disconnected', () => {
+    const players = [
+      { id: 'p1', name: 'Alice', cash: 1000, properties: [], color: '#ff0000', disconnected: true, afk_turns: 0 },
+    ]
+    render(
+      <PlayerPanel players={players} currentTurnPlayerId="p1" currentPlayerId="p1" tiles={[]} turnPhase="PRE_ROLL" />
+    )
+    expect(screen.getByText('DISCONNECTED')).toBeInTheDocument()
+  })
+
+  it('shows AFK badge with turn count when player has afk_turns > 0', () => {
+    const players = [
+      { id: 'p1', name: 'Alice', cash: 1000, properties: [], color: '#ff0000', disconnected: false, afk_turns: 2 },
+    ]
+    render(
+      <PlayerPanel players={players} currentTurnPlayerId="p1" currentPlayerId="p1" tiles={[]} turnPhase="PRE_ROLL" />
+    )
+    expect(screen.getByText('AFK (2/3)')).toBeInTheDocument()
+  })
+
+  it('shows no AFK badge when afk_turns is 0 and not disconnected', () => {
+    const players = [
+      { id: 'p1', name: 'Alice', cash: 1000, properties: [], color: '#ff0000', disconnected: false, afk_turns: 0 },
+    ]
+    render(
+      <PlayerPanel players={players} currentTurnPlayerId="p1" currentPlayerId="p1" tiles={[]} turnPhase="PRE_ROLL" />
+    )
+    expect(screen.queryByText('DISCONNECTED')).not.toBeInTheDocument()
+    expect(screen.queryByText(/AFK/)).not.toBeInTheDocument()
+  })
+})
+
 describe('PlayerPanel spectator mode', () => {
   it('hides trade buttons when onTradeClick is null', () => {
     const players = [
