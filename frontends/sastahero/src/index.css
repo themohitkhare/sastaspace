@@ -369,6 +369,14 @@
   0%, 100% { transform: scale(1); } 50% { transform: scale(1.01); }
 }
 
+/* ── Lucky Draw gold glow pulse ─────────────────────────────────── */
+.lucky-draw-reveal { animation: lucky-draw-glow 1s ease-in-out; }
+@keyframes lucky-draw-glow {
+  0% { box-shadow: 0 0 10px rgba(255, 215, 0, 0.4); border-color: rgba(255, 215, 0, 0.6); }
+  50% { box-shadow: 0 0 40px rgba(255, 215, 0, 0.9), 0 0 80px rgba(255, 215, 0, 0.4); border-color: rgba(255, 215, 0, 1); }
+  100% { box-shadow: 0 0 10px rgba(255, 215, 0, 0.4); border-color: rgba(255, 215, 0, 0.6); }
+}
+
 /* ── Green/Red flash overlays ────────────────────────────────────── */
 .flash-green { animation: flash-green 0.3s ease-out; }
 .flash-red { animation: flash-red 0.3s ease-out; }
@@ -392,6 +400,6 @@
   .screen-shake, .card-shudder, .stage-banner-enter, .stage-banner-exit,
   .milestone-flash, .milestone-badge-enter, .milestone-ring,
   .streak-fire, .discovery-reveal, .page-slide-left-enter, .page-slide-right-enter,
-  .card-breathe, .flash-green, .flash-red { animation: none; }
+  .card-breathe, .flash-green, .flash-red, .lucky-draw-reveal { animation: none; }
   .animate-pulse { animation: none; }
 }
