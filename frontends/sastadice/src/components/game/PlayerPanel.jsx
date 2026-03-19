@@ -20,8 +20,7 @@ export default function PlayerPanel({
           return (
             <div
               key={player.id}
-              className={`border-brutal-sm p-2 ${isCurrentTurn ? 'bg-sasta-accent' : 'bg-sasta-white'
-                }`}
+              className={`border-brutal-sm p-2 ${isCurrentTurn ? 'bg-sasta-accent animate-turn-fade' : 'bg-sasta-white'} ${player.is_bankrupt ? 'animate-bankruptcy opacity-50' : ''}`}
             >
               <div className="flex items-center gap-2">
                 <div
@@ -47,7 +46,7 @@ export default function PlayerPanel({
                       </span>
                     )}
                     {player.active_buff && (
-                      <span className={`font-zero text-[8px] px-1 border border-black ${
+                      <span className={`font-zero text-[8px] px-1 border border-black animate-buff-shimmer ${
                         player.active_buff === 'VPN' ? 'bg-cyan-400 text-black' :
                         player.active_buff === 'DDOS' ? 'bg-fuchsia-500 text-white' :
                         'bg-yellow-300 text-black'
