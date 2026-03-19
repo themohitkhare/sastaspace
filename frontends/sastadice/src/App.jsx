@@ -62,26 +62,42 @@ function GameRoute() {
 
   const playerId = useGameStore((s) => s.playerId)
   const setPlayerId = useGameStore((s) => s.setPlayerId)
+  const lastRestoredAt = useGameStore((s) => s.lastRestoredAt)
+  const setLastRestoredAt = useGameStore((s) => s.setLastRestoredAt)
 
   useEffect(() => {
+    const controller = new AbortController()
+
+    // Debounce: skip if restored less than 2s ago (prevents React strict mode double-mount)
+    const now = Date.now()
+    if (now - lastRestoredAt < 2000) return
+
     if (gameId && !game && !isRestoring) {
       setIsRestoring(true)
       setRestoreError(null)
-      
-      apiClient.get(`/sastadice/games/${gameId}/state`)
+      setLastRestoredAt(now)
+      apiClient
+        .get(`/sastadice/games/${gameId}/state`, {
+          signal: controller.signal,
+        })
         .then((res) => {
+          if (controller.signal.aborted) return
           const restoredGame = res.data.game
           setGame(restoredGame, res.data.version)
-          
-          if (playerId) {
-            const playerExists = restoredGame.players?.some((p) => p.id === playerId)
-            if (!playerExists) {
-              setPlayerId(null)
-            }
+
+          // Clear playerId if player no longer in game
+          if (playerId && !restoredGame.players?.some((p) => p.id === playerId)) {
+            setPlayerId(null)
+          }
+
+          // Redirect to home if game is finished and we're not a participant
+          if (restoredGame.status === 'FINISHED' && !restoredGame.players?.some((p) => p.id === playerId)) {
+            reset()
           }
         })
         .catch((err) => {
-          if (err.response?.status === 404) {
+          if (controller.signal.aborted) return
+          if (err?.response?.status === 404) {
             setRestoreError('Game not found or expired')
             reset()
           } else {
@@ -89,10 +105,14 @@ function GameRoute() {
           }
         })
         .finally(() => {
-          setIsRestoring(false)
+          if (!controller.signal.aborted) {
+            setIsRestoring(false)
+          }
         })
     }
-  }, [gameId, game, isRestoring, setGame, reset, playerId, setPlayerId])
+
+    return () => controller.abort()
+  }, [gameId, game])
 
   if (isRestoring || (!game && gameId)) {
     return (
