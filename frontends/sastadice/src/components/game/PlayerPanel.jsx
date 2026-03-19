@@ -46,6 +46,15 @@ export default function PlayerPanel({
                         {'>>'}
                       </span>
                     )}
+                    {player.active_buff && (
+                      <span className={`font-zero text-[8px] px-1 border border-black ${
+                        player.active_buff === 'VPN' ? 'bg-cyan-400 text-black' :
+                        player.active_buff === 'DDOS' ? 'bg-fuchsia-500 text-white' :
+                        'bg-yellow-300 text-black'
+                      }`}>
+                        {player.active_buff}
+                      </span>
+                    )}
                   </div>
                 </div>
 

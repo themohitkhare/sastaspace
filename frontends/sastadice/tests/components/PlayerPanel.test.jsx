@@ -92,6 +92,40 @@ describe('PlayerPanel', () => {
   })
 })
 
+describe('Buff badges', () => {
+  it('shows VPN badge when player has VPN buff', () => {
+    const players = [
+      { id: 'p1', name: 'Alice', cash: 1000, properties: [], color: '#ff0000', active_buff: 'VPN' },
+    ]
+    render(
+      <PlayerPanel players={players} currentTurnPlayerId="p1" currentPlayerId="p1" tiles={[]} turnPhase="PRE_ROLL" />
+    )
+    expect(screen.getByText('VPN')).toBeInTheDocument()
+  })
+
+  it('shows DDOS badge when player has DDOS buff', () => {
+    const players = [
+      { id: 'p1', name: 'Alice', cash: 1000, properties: [], color: '#ff0000', active_buff: 'DDOS' },
+    ]
+    render(
+      <PlayerPanel players={players} currentTurnPlayerId="p1" currentPlayerId="p1" tiles={[]} turnPhase="PRE_ROLL" />
+    )
+    expect(screen.getByText('DDOS')).toBeInTheDocument()
+  })
+
+  it('shows no buff badge when active_buff is null', () => {
+    const players = [
+      { id: 'p1', name: 'Alice', cash: 1000, properties: [], color: '#ff0000', active_buff: null },
+    ]
+    render(
+      <PlayerPanel players={players} currentTurnPlayerId="p1" currentPlayerId="p1" tiles={[]} turnPhase="PRE_ROLL" />
+    )
+    expect(screen.queryByText('VPN')).not.toBeInTheDocument()
+    expect(screen.queryByText('DDOS')).not.toBeInTheDocument()
+    expect(screen.queryByText('PEEK')).not.toBeInTheDocument()
+  })
+})
+
 describe('PlayerPanel spectator mode', () => {
   it('hides trade buttons when onTradeClick is null', () => {
     const players = [
