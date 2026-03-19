@@ -8,6 +8,11 @@ const TILE_TYPE_ICONS = {
     BUFF: '✨',
     NEUTRAL: '⬜',
     GO: '🚀',
+    NODE: '🖥️',
+    GO_TO_JAIL: '🚨',
+    TELEPORT: '🌀',
+    MARKET: '🏪',
+    JAIL: '🔒',
 }
 
 export default function TileCard({ tile, owner, isVisible = true }) {
@@ -32,7 +37,7 @@ export default function TileCard({ tile, owner, isVisible = true }) {
                 className="text-center py-1 px-2 -mx-3 -mt-3 mb-2 font-zero font-bold text-xs"
                 style={{ backgroundColor: accentColor, color: '#000' }}
             >
-                {icon} {tile.type === 'CHANCE' ? 'SASTA EVENT' : tile.type}
+                <span>{icon}</span> {tile.type === 'CHANCE' ? 'SASTA EVENT' : tile.type}
             </div>
 
             <div className="font-data font-bold text-sm text-center mb-2 leading-tight">
@@ -79,6 +84,22 @@ export default function TileCard({ tile, owner, isVisible = true }) {
                     <div className="py-1 px-2 bg-sasta-accent border-brutal-sm font-bold">
                         COLLECT GO BONUS!
                     </div>
+                )}
+
+                {tile.type === 'NODE' && (
+                    <div className="text-[10px] font-zero opacity-80">SERVER NODE</div>
+                )}
+                {tile.type === 'TELEPORT' && (
+                    <div className="text-[10px] font-zero opacity-80">RANDOM TELEPORT</div>
+                )}
+                {tile.type === 'MARKET' && (
+                    <div className="text-[10px] font-zero opacity-80">BUY BUFFS</div>
+                )}
+                {tile.type === 'GO_TO_JAIL' && (
+                    <div className="text-[10px] font-zero opacity-80">GO TO JAIL</div>
+                )}
+                {tile.type === 'JAIL' && (
+                    <div className="text-[10px] font-zero opacity-80">JUST VISITING</div>
                 )}
 
                 {tile.type === 'CHANCE' && (
