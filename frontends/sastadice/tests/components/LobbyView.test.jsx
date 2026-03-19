@@ -22,6 +22,11 @@ vi.mock('../../src/components/lobby/KeyStatus', () => ({
     <div>KeyStatus: {player.name} {isMe ? '(YOU)' : ''}</div>
   ),
 }))
+vi.mock('../../src/components/lobby/TileSubmissionForm', () => ({
+  default: ({ tiles, setTiles }) => (
+    <div data-testid="tile-submission-form">TILES ({tiles?.length || 0}/5)</div>
+  ),
+}))
 
 describe('LobbyView', () => {
   let mockGameId
@@ -93,7 +98,7 @@ describe('LobbyView', () => {
     })
 
     render(<LobbyView />)
-    expect(screen.getByText('YOU')).toBeInTheDocument()
+    expect(screen.getByText(/KeyStatus: Test Player/)).toBeInTheDocument()
   })
 
   it('allows joining game with valid name', async () => {
@@ -341,6 +346,80 @@ describe('LobbyView', () => {
     })
 
     render(<LobbyView />)
-    expect(screen.getAllByText('CMD')[0]).toBeInTheDocument()
+    // KeyStatus mock renders "KeyStatus: <name>" for all players including host
+    expect(screen.getByText(/KeyStatus: Player 1/)).toBeInTheDocument()
+  })
+
+  describe('KeyStatus integration', () => {
+    it('renders KeyStatus component for each player in lobby', () => {
+      useGameStore.mockImplementation((selector) => {
+        const state = {
+          gameId: 'game-123',
+          game: {
+            id: 'game-123',
+            status: 'LOBBY',
+            host_id: 'player-123',
+            players: [
+              { id: 'player-123', name: 'Alice', ready: true, color: '#ff0000' },
+              { id: 'player-456', name: 'Bob', ready: false, color: '#00ff00' },
+            ],
+            settings: {},
+          },
+          playerId: 'player-123',
+          setPlayerId: vi.fn(),
+          setGame: vi.fn(),
+        }
+        return selector(state)
+      })
+
+      render(<LobbyView />)
+      // KeyStatus mock renders "KeyStatus: <name>" (see mock at top of file)
+      expect(screen.getByText(/KeyStatus: Alice/)).toBeInTheDocument()
+      expect(screen.getByText(/KeyStatus: Bob/)).toBeInTheDocument()
+    })
+  })
+
+  describe('TileSubmissionForm integration', () => {
+    it('shows tile submission form when board preset is UGC_24 and player has joined', () => {
+      useGameStore.mockImplementation((selector) => {
+        const state = {
+          gameId: 'game-123',
+          game: {
+            id: 'game-123',
+            status: 'LOBBY',
+            players: [{ id: 'player-123', name: 'Test Player', ready: false, color: '#00ff00' }],
+            settings: { board_preset: 'UGC_24' },
+          },
+          playerId: 'player-123',
+          setPlayerId: vi.fn(),
+          setGame: vi.fn(),
+        }
+        return selector(state)
+      })
+
+      render(<LobbyView />)
+      expect(screen.getByText(/TILES/i)).toBeInTheDocument()
+    })
+
+    it('hides tile submission form when board preset is CLASSIC', () => {
+      useGameStore.mockImplementation((selector) => {
+        const state = {
+          gameId: 'game-123',
+          game: {
+            id: 'game-123',
+            status: 'LOBBY',
+            players: [{ id: 'player-123', name: 'Test Player', ready: false, color: '#00ff00' }],
+            settings: { board_preset: 'CLASSIC' },
+          },
+          playerId: 'player-123',
+          setPlayerId: vi.fn(),
+          setGame: vi.fn(),
+        }
+        return selector(state)
+      })
+
+      render(<LobbyView />)
+      expect(screen.queryByTestId('tile-submission-form')).not.toBeInTheDocument()
+    })
   })
 })

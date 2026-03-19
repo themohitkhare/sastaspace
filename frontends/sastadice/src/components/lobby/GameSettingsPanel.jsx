@@ -19,6 +19,23 @@ const ROUND_PRESETS = [
     { value: 0, label: '∞ Unlimited' },
 ]
 
+const BOARD_PRESETS = [
+    { value: 'CLASSIC', label: 'CLASSIC' },
+    { value: 'UGC_24', label: 'UGC 24' },
+]
+
+const CASH_MULTIPLIERS = [
+    { value: 0.5, label: '0.5x' },
+    { value: 1.0, label: '1x' },
+    { value: 2.0, label: '2x' },
+]
+
+const TAX_RATES = [
+    { value: 0.05, label: '5%' },
+    { value: 0.10, label: '10%' },
+    { value: 0.15, label: '15%' },
+]
+
 export default function GameSettingsPanel({ settings, onUpdate, onSave, hasChanges, isHost, alwaysExpanded = false }) {
     const [expanded, setExpanded] = useState(false)
     const showContent = alwaysExpanded || expanded
@@ -43,7 +60,7 @@ export default function GameSettingsPanel({ settings, onUpdate, onSave, hasChang
     }
 
     const handleChange = (key, value) => {
-        onUpdate({ ...settings, [key]: value })
+        onUpdate(key, value)
     }
 
     return (
@@ -156,6 +173,69 @@ export default function GameSettingsPanel({ settings, onUpdate, onSave, hasChang
                     <div className="pt-2 border-t border-zinc-700">
                         <div className="text-xs font-data text-zinc-500 text-center">
                             {settings?.win_condition === 'FIRST_TO_CASH' && `First to $${settings?.target_cash || 10000} wins`}
+                        </div>
+                    </div>
+
+                    {/* BOARD section */}
+                    <div className="mt-4 pt-4 border-t-2 border-black">
+                        <div className="text-xs font-zero mb-2 opacity-60">BOARD</div>
+                        <div className="flex gap-1 flex-wrap">
+                            {BOARD_PRESETS.map((preset) => (
+                                <button
+                                    key={preset.value}
+                                    onClick={() => onUpdate('board_preset', preset.value)}
+                                    className={`px-3 py-1 text-xs font-zero border-2 border-black transition-all ${
+                                        settings?.board_preset === preset.value
+                                            ? 'bg-black text-white shadow-brutal-sm'
+                                            : 'bg-white hover:bg-gray-100'
+                                    }`}
+                                >
+                                    {preset.label}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* ECONOMY section */}
+                    <div className="mt-4 pt-4 border-t-2 border-black">
+                        <div className="text-xs font-zero mb-2 opacity-60">ECONOMY</div>
+
+                        <div className="mb-2">
+                            <div className="text-[10px] font-zero opacity-50 mb-1">STARTING CASH</div>
+                            <div className="flex gap-1">
+                                {CASH_MULTIPLIERS.map((mult) => (
+                                    <button
+                                        key={mult.value}
+                                        onClick={() => onUpdate('starting_cash_multiplier', mult.value)}
+                                        className={`px-3 py-1 text-xs font-zero border-2 border-black transition-all ${
+                                            settings?.starting_cash_multiplier === mult.value
+                                                ? 'bg-black text-white shadow-brutal-sm'
+                                                : 'bg-white hover:bg-gray-100'
+                                        }`}
+                                    >
+                                        {mult.label}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        <div>
+                            <div className="text-[10px] font-zero opacity-50 mb-1">TAX RATE</div>
+                            <div className="flex gap-1">
+                                {TAX_RATES.map((rate) => (
+                                    <button
+                                        key={rate.value}
+                                        onClick={() => onUpdate('income_tax_rate', rate.value)}
+                                        className={`px-3 py-1 text-xs font-zero border-2 border-black transition-all ${
+                                            settings?.income_tax_rate === rate.value
+                                                ? 'bg-black text-white shadow-brutal-sm'
+                                                : 'bg-white hover:bg-gray-100'
+                                        }`}
+                                    >
+                                        {rate.label}
+                                    </button>
+                                ))}
+                            </div>
                         </div>
                     </div>
 

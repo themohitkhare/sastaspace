@@ -2,7 +2,19 @@
  * Unit tests for TileComponent
  */
 import { render, screen } from '@testing-library/react'
-import TileComponent from '../../src/components/game/TileComponent'
+import TileComponent, { TILE_TYPE_COLORS } from '../../src/components/game/TileComponent'
+
+describe('TILE_TYPE_COLORS', () => {
+  it('includes all backend tile types', () => {
+    const requiredTypes = [
+      'PROPERTY', 'TAX', 'CHANCE', 'TRAP', 'BUFF', 'NEUTRAL', 'GO',
+      'NODE', 'GO_TO_JAIL', 'TELEPORT', 'MARKET', 'JAIL',
+    ]
+    for (const type of requiredTypes) {
+      expect(TILE_TYPE_COLORS[type]).toBeDefined()
+    }
+  })
+})
 
 describe('TileComponent', () => {
   const mockPlayers = [

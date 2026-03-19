@@ -10,12 +10,14 @@ export const useGameStore = create(
       version: 0,
       isLoading: false,
       error: null,
+      lastRestoredAt: 0,
 
       setGame: (game, version) => set({ game, version, error: null }),
       setGameId: (gameId) => set({ gameId }),
       setPlayerId: (playerId) => set({ playerId }),
       setLoading: (isLoading) => set({ isLoading }),
       setError: (error) => set({ error }),
+      setLastRestoredAt: (ts) => set({ lastRestoredAt: ts }),
 
       isMyTurn: () => {
         const { game, playerId } = get()
@@ -59,6 +61,7 @@ export const useGameStore = create(
         version: 0,
         isLoading: false,
         error: null,
+        lastRestoredAt: 0,
       }),
     }),
     {

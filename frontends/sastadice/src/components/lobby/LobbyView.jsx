@@ -2,7 +2,9 @@ import { useState, useEffect } from 'react'
 import { apiClient } from '../../api/apiClient'
 import { useGameStore } from '../../store/useGameStore'
 import LaunchKey from './LaunchKey'
+import KeyStatus from './KeyStatus'
 import GameSettingsPanel from './GameSettingsPanel'
+import TileSubmissionForm from './TileSubmissionForm'
 import RulesModal from '../RulesModal'
 import { useToast } from '../../hooks/useToast'
 import ToastContainer from '../ToastContainer'
@@ -15,6 +17,13 @@ export default function LobbyView({ onRefresh }) {
   const [copied, setCopied] = useState(false)
   const [showRules, setShowRules] = useState(false)
   const { toasts, showToast, dismissToast } = useToast()
+  const [tiles, setTiles] = useState([
+    { type: 'PROPERTY', name: '', effect_config: {} },
+    { type: 'PROPERTY', name: '', effect_config: {} },
+    { type: 'CHANCE', name: '', effect_config: {} },
+    { type: 'TAX', name: '', effect_config: {} },
+    { type: 'BUFF', name: '', effect_config: {} },
+  ])
   const [settings, setSettings] = useState({
     win_condition: 'SUDDEN_DEATH',
     round_limit: 30,
@@ -37,8 +46,12 @@ export default function LobbyView({ onRefresh }) {
     }
   }, [game?.settings, hasChanges])
 
-  const handleUpdateSettings = (newSettings) => {
-    setSettings(newSettings)
+  const handleUpdateSettings = (keyOrSettings, value) => {
+    if (typeof keyOrSettings === 'string') {
+      setSettings((prev) => ({ ...prev, [keyOrSettings]: value }))
+    } else {
+      setSettings(keyOrSettings)
+    }
     setHasChanges(true)
   }
 
@@ -80,7 +93,11 @@ export default function LobbyView({ onRefresh }) {
     }
     setIsJoining(true)
     try {
-      const res = await apiClient.post(`/sastadice/games/${gameId}/join`, { name: playerName })
+      const joinPayload = { name: playerName.trim() }
+      if (game?.settings?.board_preset === 'UGC_24') {
+        joinPayload.tiles = tiles.filter(t => t.name.trim() !== '')
+      }
+      const res = await apiClient.post(`/sastadice/games/${gameId}/join`, joinPayload)
       setPlayerId(res.data.id)
       const gameRes = await apiClient.get(`/sastadice/games/${gameId}/state`)
       if (gameRes.data) setGame(gameRes.data.game, gameRes.data.version)
@@ -128,6 +145,7 @@ export default function LobbyView({ onRefresh }) {
   const totalPlayers = game?.players?.length || 0
   const isHost = game?.host_id === playerId
   const shortCode = gameId?.slice(0, 8)?.toUpperCase() || 'LOADING'
+  const showTileForm = hasJoined && game?.settings?.board_preset === 'UGC_24'
 
   return (
     <div className="h-screen w-full bg-white text-black overflow-hidden flex flex-col lg:grid lg:grid-cols-12 divide-y lg:divide-y-0 lg:divide-x divide-black">
@@ -229,58 +247,24 @@ export default function LobbyView({ onRefresh }) {
 
         <div className="flex-1 overflow-y-auto pr-2 space-y-3 scrollbar-hide">
           {myPlayer && (
-            <div className="flex items-center gap-4 p-4 bg-white border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-1 transition-transform">
-              <div
-                className="w-12 h-12 border-2 border-black flex items-center justify-center font-data font-bold text-white text-xl shrink-0"
-                style={{ backgroundColor: myPlayer.color }}
-              >
-                {myPlayer.name?.charAt(0)?.toUpperCase()}
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <div className="font-zero font-bold text-lg leading-none truncate">
-                    {myPlayer.name?.toUpperCase()}
-                  </div>
-                  {isHost && <span className="text-[10px] bg-black text-sasta-accent px-1">CMD</span>}
-                  <span className="text-[10px] border border-black px-1">YOU</span>
-                </div>
-                <div className={`text-xs font-data mt-1 ${myPlayer.ready ? 'text-green-600 font-bold' : 'text-orange-600'}`}>
-                  {myPlayer.ready ? '● READY_FOR_DEPLOY' : '○ STANDBY'}
-                </div>
-              </div>
-            </div>
+            <KeyStatus
+              player={myPlayer}
+              isMe={true}
+              isHost={isHost}
+              canKick={false}
+              onKick={() => {}}
+            />
           )}
-
-          {otherPlayers.map((p) => (
-            <div key={p.id} className="flex items-center gap-4 p-4 bg-white border border-gray-300 hover:border-black transition-colors group">
-              <div
-                className="w-12 h-12 border-2 border-black flex items-center justify-center font-data font-bold text-white text-xl shrink-0 grayscale opacity-80"
-                style={{ backgroundColor: p.color }}
-              >
-                {p.name?.charAt(0)?.toUpperCase()}
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <div className="font-zero font-bold text-lg leading-none truncate text-gray-700">
-                    {p.name?.toUpperCase()}
-                  </div>
-                  {p.id === game?.host_id && <span className="text-[10px] bg-gray-200 px-1">CMD</span>}
-                </div>
-                <div className={`text-xs font-data mt-1 ${p.ready ? 'text-green-600 font-bold' : 'text-gray-400'}`}>
-                  {p.ready ? '● READY' : '○ STANDBY'}
-                </div>
-              </div>
-              {isHost && (
-                <button
-                  onClick={() => handleKickPlayer(p.id)}
-                  className="text-xs font-data text-red-500 hover:bg-red-50 px-3 py-2 border border-transparent hover:border-red-500 transition-all"
-                >
-                  EJECT
-                </button>
-              )}
-            </div>
+          {otherPlayers.map((player) => (
+            <KeyStatus
+              key={player.id}
+              player={player}
+              isMe={false}
+              isHost={player.id === game?.host_id}
+              canKick={isHost}
+              onKick={handleKickPlayer}
+            />
           ))}
-
           {totalPlayers === 0 && (
             <div className="h-full flex flex-col items-center justify-center opacity-30">
               <div className="text-6xl mb-4">📡</div>
@@ -305,6 +289,11 @@ export default function LobbyView({ onRefresh }) {
           ) : (
             <div className="text-xs text-gray-400 font-data p-4 border border-dashed border-gray-300 text-center">
               ACCESS DISTRIBUTED AFTER AUTHENTICATION
+            </div>
+          )}
+          {showTileForm && (
+            <div className="mt-4">
+              <TileSubmissionForm tiles={tiles} setTiles={setTiles} />
             </div>
           )}
         </div>

@@ -68,24 +68,31 @@ Max 2 levels per property!`
   {
     id: 'special-tiles',
     title: '⬛ SPECIAL TILES',
-    content: `🟢 GO (Start)
-   Pass = Collect salary
-   Salary = $200 + $20 per round
+    content: `GO (START) — Collect salary every time you pass.
+Salary = Base ($200) + ($20 × Round Number)
+Capped at 3× base to prevent runaway inflation.
 
-⚡ THE GLITCH (25%)
-   Teleport to random unowned tile!
-   All owned? Go to event tile
+THE GLITCH (25%) — Teleports you to a random unowned property or chance tile. Chaos is a feature.
 
-🔴 SERVER DOWNTIME (50%)
-   Jail! Stuck for 1 turn
-   Pay $50 = Instant release
-   Roll doubles = Free escape
+SERVER DOWNTIME (50%) — This is jail.
+• Land here = just visiting (safe)
+• Sent here by 404 or event = locked up
+• Escape: Pay $50 bribe OR roll doubles (max attempts from settings)
 
-🟣 BLACK MARKET (75%)
-   Buy 1 buff (hold max 1):
-   • VPN ($200): Block next rent
-   • DDoS ($150): Shut down a tile
-   • Peek ($100): See next 3 events`
+BLACK MARKET (75%) — Buy one-use power-ups:
+• VPN ($200) — Blocks next rent payment against you
+• DDoS ($150) — Disable any tile for 1 round
+• Insider Info ($100) — Peek at next 3 event cards
+
+SERVER NODES — Railroad equivalents.
+Rent scales exponentially: $50 × 2^(nodes_owned - 1)
+Own all 4 = $400 rent per landing.
+
+404: ACCESS DENIED — Go directly to Server Downtime (jail). Do not pass GO. Do not collect salary.
+
+TAX TILES — Pay the posted tax amount or half your GO bonus, whichever applies.
+
+SASTA EVENTS (CHANCE) — Draw from the event deck. 35 possible events ranging from cash windfalls to hostile takeovers.`
   },
   {
     id: 'events',
