@@ -82,12 +82,32 @@ describe('PlayerPanel', () => {
 
   it('highlights current turn player with accent background', () => {
     const { container } = render(
-      <PlayerPanel 
-        players={mockPlayers} 
+      <PlayerPanel
+        players={mockPlayers}
         currentTurnPlayerId="p1"
       />
     )
     const playerDiv = container.querySelector('.bg-sasta-accent')
     expect(playerDiv).toBeInTheDocument()
+  })
+})
+
+describe('PlayerPanel spectator mode', () => {
+  it('hides trade buttons when onTradeClick is null', () => {
+    const players = [
+      { id: 'p1', name: 'Alice', cash: 1000, properties: [], color: '#ff0000' },
+      { id: 'p2', name: 'Bob', cash: 500, properties: [], color: '#00ff00' },
+    ]
+    render(
+      <PlayerPanel
+        players={players}
+        currentTurnPlayerId="p1"
+        currentPlayerId="p1"
+        tiles={[]}
+        onTradeClick={null}
+        turnPhase="PRE_ROLL"
+      />
+    )
+    expect(screen.queryByText('TRADE')).toBeNull()
   })
 })

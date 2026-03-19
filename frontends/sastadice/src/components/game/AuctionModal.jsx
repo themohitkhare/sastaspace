@@ -152,6 +152,7 @@ export default function AuctionModal({ auctionState, tiles, players, playerId, o
                 )}
 
                 {/* Bid Buttons */}
+                {playerId && (
                 <div className="grid grid-cols-3 gap-3 relative z-10">
                     {quickBidIncrements.map((inc, idx) => {
                         const totalBid = startPrice + inc
@@ -162,7 +163,7 @@ export default function AuctionModal({ auctionState, tiles, players, playerId, o
                                 onClick={() => handleBid(totalBid)}
                                 disabled={isHighestBidder}
                                 className={`
-                                    py-4 px-2 border-2 
+                                    py-4 px-2 border-2
                                     ${isHighValue
                                         ? 'bg-green-500 text-black border-green-400 hover:bg-green-400'
                                         : 'bg-[#111] text-white border-white hover:bg-[#222]'
@@ -181,6 +182,10 @@ export default function AuctionModal({ auctionState, tiles, players, playerId, o
                         )
                     })}
                 </div>
+                )}
+                {!playerId && (
+                    <div className="text-center text-sm font-zero text-gray-500 py-2">SPECTATOR VIEW</div>
+                )}
             </div>
         </div>
     )

@@ -269,6 +269,11 @@ export default function GamePage() {
           ⚠ {storeError}
         </div>
       )}
+      {!playerId && (
+        <div className="w-full bg-blue-900/80 border-2 border-blue-400 text-blue-200 text-center py-2 px-4 font-zero text-sm tracking-wider">
+          SPECTATING
+        </div>
+      )}
       <header className="border-b-2 border-sasta-black bg-sasta-white shrink-0">
         <div className="max-w-7xl mx-auto px-2 py-1 flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
@@ -287,7 +292,7 @@ export default function GamePage() {
               <span className="font-data font-bold text-xs">{currentPlayer?.name?.toUpperCase() || 'N/A'}</span>
               {isMyTurn && <span className="text-[10px] font-data bg-sasta-black text-sasta-accent px-1">YOUR TURN</span>}
               {isCpuTurn && <span className="text-[10px] font-data text-blue-600 animate-pulse">THINKING...</span>}
-              {!playerId && <span className="text-[10px] font-data text-blue-600">👁️ SPECTATOR</span>}
+              {!playerId && <span className="text-[10px] font-data text-blue-600">SPECTATOR</span>}
             </div>
           </div>
         </div>
@@ -345,7 +350,7 @@ export default function GamePage() {
             currentTurnPlayerId={game.current_turn_player_id}
             currentPlayerId={playerId}
             tiles={game.board || []}
-            onTradeClick={setTradeTarget}
+            onTradeClick={playerId ? (player) => setTradeTarget(player) : null}
             onPayBribe={handlePayBribe}
             onRollForDoubles={handleRollForDoubles}
             turnPhase={game.turn_phase}
