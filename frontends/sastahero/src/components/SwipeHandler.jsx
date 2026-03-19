@@ -10,14 +10,8 @@ const DIRECTION_LABELS = {
 };
 
 const KEY_MAP = {
-  ArrowUp: 'UP',
-  ArrowDown: 'DOWN',
-  ArrowLeft: 'LEFT',
-  ArrowRight: 'RIGHT',
-  w: 'UP',
-  s: 'DOWN',
-  a: 'LEFT',
-  d: 'RIGHT',
+  ArrowUp: 'UP', ArrowDown: 'DOWN', ArrowLeft: 'LEFT', ArrowRight: 'RIGHT',
+  w: 'UP', s: 'DOWN', a: 'LEFT', d: 'RIGHT',
 };
 
 export default function SwipeHandler({ children, onSwipe, disabled }) {
@@ -25,7 +19,21 @@ export default function SwipeHandler({ children, onSwipe, disabled }) {
   const [dragDelta, setDragDelta] = useState({ x: 0, y: 0 });
   const [activeDirection, setActiveDirection] = useState(null);
   const [exitDirection, setExitDirection] = useState(null);
+  const [labelPopped, setLabelPopped] = useState(false);
+  const [isIdle, setIsIdle] = useState(false);
+  const idleTimer = useRef(null);
   const containerRef = useRef(null);
+
+  const resetIdleTimer = useCallback(() => {
+    setIsIdle(false);
+    if (idleTimer.current) clearTimeout(idleTimer.current);
+    idleTimer.current = setTimeout(() => setIsIdle(true), 3000);
+  }, []);
+
+  useEffect(() => {
+    resetIdleTimer();
+    return () => { if (idleTimer.current) clearTimeout(idleTimer.current); };
+  }, [resetIdleTimer]);
 
   const getDirection = useCallback((dx, dy) => {
     const absDx = Math.abs(dx);
@@ -37,82 +45,72 @@ export default function SwipeHandler({ children, onSwipe, disabled }) {
 
   const triggerSwipe = useCallback((dir) => {
     if (disabled || !dir) return;
+    resetIdleTimer();
     setExitDirection(dir);
+    setLabelPopped(false);
     setTimeout(() => {
       setExitDirection(null);
       if (onSwipe) onSwipe(dir);
     }, 300);
-  }, [disabled, onSwipe]);
+  }, [disabled, onSwipe, resetIdleTimer]);
 
   const handleStart = useCallback((x, y) => {
     if (exitDirection) return;
+    resetIdleTimer();
     startPos.current = { x, y };
     setDragDelta({ x: 0, y: 0 });
-  }, [exitDirection]);
+  }, [exitDirection, resetIdleTimer]);
 
   const handleMove = useCallback((x, y) => {
     if (!startPos.current) return;
     const dx = x - startPos.current.x;
     const dy = y - startPos.current.y;
     setDragDelta({ x: dx, y: dy });
-    setActiveDirection(getDirection(dx, dy));
-  }, [getDirection]);
+    const dir = getDirection(dx, dy);
+    if (dir && !activeDirection) {
+      setLabelPopped(true);
+    }
+    setActiveDirection(dir);
+  }, [getDirection, activeDirection]);
 
   const handleEnd = useCallback(() => {
     if (!startPos.current || disabled) {
       startPos.current = null;
       setDragDelta({ x: 0, y: 0 });
       setActiveDirection(null);
+      setLabelPopped(false);
       return;
     }
-
     const dir = activeDirection;
     startPos.current = null;
     setDragDelta({ x: 0, y: 0 });
     setActiveDirection(null);
-
-    if (dir) {
-      triggerSwipe(dir);
-    }
+    setLabelPopped(false);
+    if (dir) triggerSwipe(dir);
   }, [activeDirection, triggerSwipe, disabled]);
 
-  // Keyboard navigation
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (disabled || exitDirection) return;
       const dir = KEY_MAP[e.key];
-      if (dir) {
-        e.preventDefault();
-        triggerSwipe(dir);
-      }
+      if (dir) { e.preventDefault(); triggerSwipe(dir); }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [disabled, exitDirection, triggerSwipe]);
 
-  // Touch events
-  const onTouchStart = (e) => {
-    const t = e.touches[0];
-    handleStart(t.clientX, t.clientY);
-  };
-  const onTouchMove = (e) => {
-    const t = e.touches[0];
-    handleMove(t.clientX, t.clientY);
-  };
+  const onTouchStart = (e) => { const t = e.touches[0]; handleStart(t.clientX, t.clientY); };
+  const onTouchMove = (e) => { const t = e.touches[0]; handleMove(t.clientX, t.clientY); };
   const onTouchEnd = () => handleEnd();
-
-  // Mouse events
   const onMouseDown = (e) => handleStart(e.clientX, e.clientY);
-  const onMouseMove = (e) => {
-    if (startPos.current) handleMove(e.clientX, e.clientY);
-  };
+  const onMouseMove = (e) => { if (startPos.current) handleMove(e.clientX, e.clientY); };
   const onMouseUp = () => handleEnd();
 
-  const dragTransform = exitDirection
-    ? ''
-    : `translate(${dragDelta.x * 0.3}px, ${dragDelta.y * 0.3}px)`;
+  const isDragging = startPos.current !== null && (dragDelta.x !== 0 || dragDelta.y !== 0);
+  const dragTransform = exitDirection ? '' : `translate(${dragDelta.x * 0.3}px, ${dragDelta.y * 0.3}px)`;
   const exitClass = exitDirection ? `card-exit-${exitDirection}` : '';
   const enterClass = !exitDirection && dragDelta.x === 0 && dragDelta.y === 0 ? 'card-enter' : '';
+  const breatheClass = isIdle && !exitDirection && !isDragging ? 'card-breathe' : '';
 
   return (
     <div
@@ -122,16 +120,16 @@ export default function SwipeHandler({ children, onSwipe, disabled }) {
       aria-label="Card swipe area. Use arrow keys or WASD to swipe: Up to play, Down to synthesize, Left to share, Right to save"
       tabIndex={0}
       className="relative w-full h-full select-none touch-none outline-none"
-      onTouchStart={onTouchStart}
-      onTouchMove={onTouchMove}
-      onTouchEnd={onTouchEnd}
-      onMouseDown={onMouseDown}
-      onMouseMove={onMouseMove}
-      onMouseUp={onMouseUp}
-      onMouseLeave={onMouseUp}
+      onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd}
+      onMouseDown={onMouseDown} onMouseMove={onMouseMove} onMouseUp={onMouseUp} onMouseLeave={onMouseUp}
     >
+      {isDragging && !exitDirection && (
+        <div className="absolute inset-0 pointer-events-none opacity-15 z-0" aria-hidden="true">
+          {children}
+        </div>
+      )}
       <div
-        className={`${exitClass} ${enterClass}`}
+        className={`${exitClass} ${enterClass} ${breatheClass}`}
         style={{
           transform: dragTransform,
           transition: !exitDirection && dragDelta.x === 0 && dragDelta.y === 0 ? 'transform 0.2s' : 'none',
@@ -139,15 +137,9 @@ export default function SwipeHandler({ children, onSwipe, disabled }) {
       >
         {children}
       </div>
-
-      {/* Direction indicator */}
       {activeDirection && !exitDirection && (
-        <div
-          data-testid="swipe-direction"
-          className="absolute inset-0 flex items-center justify-center pointer-events-none"
-          aria-live="polite"
-        >
-          <div className="bg-black bg-opacity-70 text-white px-6 py-3 text-xl font-bold tracking-wider">
+        <div data-testid="swipe-direction" className="absolute inset-0 flex items-center justify-center pointer-events-none z-20" aria-live="polite">
+          <div className={`bg-black border-brutal-sm px-6 py-3 text-xl font-bold font-zero tracking-widest text-sasta-accent ${labelPopped ? 'label-pop' : ''}`}>
             {DIRECTION_LABELS[activeDirection]}
           </div>
         </div>

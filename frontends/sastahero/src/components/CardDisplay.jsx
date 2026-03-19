@@ -27,7 +27,7 @@ export default function CardDisplay({ card, totalCards, currentIndex, className 
       data-testid="card-display"
       role="article"
       aria-label={`${card.name} card, ${card.rarity} rarity, ${card.content_type} type`}
-      className={`w-full h-full flex flex-col items-center justify-center p-6 card-gradient-${primaryType} rarity-${card.rarity} ${className}`}
+      className={`w-full h-full flex flex-col items-center justify-center p-6 scanline-overlay border-brutal card-gradient-${primaryType} rarity-${card.rarity} ${className}`}
     >
       {/* Card counter */}
       <div className="absolute top-4 right-4 text-sm font-bold opacity-60" aria-label={`Card ${currentIndex + 1} of ${totalCards}`}>
