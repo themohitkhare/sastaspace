@@ -358,6 +358,20 @@ export default function GamePage() {
             turnPhase={game.turn_phase}
           />
 
+          {game?.bankruptcy_auction_queue?.length > 0 && (
+            <div className="mt-2 p-2 bg-amber-500 border-2 border-black">
+              <div className="text-[10px] font-zero font-bold text-black">
+                BANKRUPTCY AUCTION: {game.bankruptcy_auction_queue.length} PROPERTIES QUEUED
+              </div>
+              <div className="text-[8px] font-data text-black/70 mt-1">
+                {game.bankruptcy_auction_queue
+                  .map(tileId => game.board?.find(t => t.id === tileId)?.name || tileId)
+                  .join(', ')
+                  .toUpperCase()}
+              </div>
+            </div>
+          )}
+
           <div className="mt-3 pt-3 border-t-2 border-sasta-black">
             <h4 className="text-xs font-data font-bold mb-2">GAME INFO</h4>
             <div className="grid grid-cols-2 lg:grid-cols-1 gap-1 text-xs font-data">
