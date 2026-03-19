@@ -25,6 +25,7 @@ export default defineConfig({
     globals: true,
     environment: 'jsdom',
     setupFiles: './tests/setup.js',
+    fileParallelism: false,
     exclude: [
       '**/node_modules/**',
       '**/dist/**',

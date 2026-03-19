@@ -6,8 +6,9 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "test": "vitest",
-    "test:coverage": "vitest --coverage",
+    "test": "NODE_OPTIONS='--max-old-space-size=4096' vitest run --no-file-parallelism",
+    "test:watch": "NODE_OPTIONS='--max-old-space-size=8192' vitest --pool=forks",
+    "test:coverage": "NODE_OPTIONS='--max-old-space-size=8192' vitest --coverage --pool=forks",
     "test:e2e": "playwright test",
     "type-check": "tsc --noEmit"
   },
