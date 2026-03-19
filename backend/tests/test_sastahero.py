@@ -1409,9 +1409,10 @@ class TestQuizEdgeCases:
             _clear_overrides()
 
     def test_quiz_with_shield_powerup(self, client: TestClient, mock_db: AsyncMock) -> None:
+        """Quiz shield preserves streak and awards partial shards on wrong answer."""
         _override_db(mock_db)
         mock_db.players.find_one = AsyncMock(
-            return_value=_make_player(active_powerups=[{"type": "QUIZ_SHIELD"}])
+            return_value=_make_player(active_powerups=[{"type": "QUIZ_SHIELD"}], quiz_streak=2)
         )
         try:
             quiz_resp = client.get("/api/v1/sastahero/quiz?player_id=test-player")
@@ -1432,7 +1433,12 @@ class TestQuizEdgeCases:
                 },
             )
             assert response.status_code == 200
-            assert response.json()["correct"] is False
+            data = response.json()
+            assert data["correct"] is False
+            # Shield preserves streak
+            assert data["streak_count"] == 2
+            # 50% partial reward (1 shard)
+            assert data["reward_shards"] == 1
         finally:
             _clear_overrides()
 
@@ -1473,9 +1479,33 @@ class TestAllPowerups:
         finally:
             _clear_overrides()
 
-    def test_purchase_magnetize_no_type(self, client: TestClient, mock_db: AsyncMock) -> None:
+    def test_purchase_magnetize_no_type_fallback(
+        self, client: TestClient, mock_db: AsyncMock
+    ) -> None:
+        """MAGNETIZE without shard_type auto-picks the type with most shards."""
         _override_db(mock_db)
         mock_db.players.find_one = AsyncMock(return_value=_make_player())
+        try:
+            response = client.post(
+                "/api/v1/sastahero/powerup",
+                json={"player_id": "test-player", "powerup_type": "MAGNETIZE"},
+            )
+            data = response.json()
+            assert data["success"] is True
+            assert "MAGNETIZE" in data["active_powerups"]
+        finally:
+            _clear_overrides()
+
+    def test_purchase_magnetize_no_type_insufficient(
+        self, client: TestClient, mock_db: AsyncMock
+    ) -> None:
+        """MAGNETIZE without shard_type fails if no type has >= 5."""
+        _override_db(mock_db)
+        mock_db.players.find_one = AsyncMock(
+            return_value=_make_player(
+                shards={"SOUL": 4, "SHIELD": 4, "VOID": 4, "LIGHT": 4, "FORCE": 4}
+            )
+        )
         try:
             response = client.post(
                 "/api/v1/sastahero/powerup",
@@ -1639,3 +1669,254 @@ class TestExtendPoolTTL:
 
         await extend_pool_ttl(mock_db, "genesis")
         mock_db.card_pool.update_one.assert_called_once()
+
+
+# ── P0 Fix Tests ──────────────────────────────────────────────────────
+
+
+class TestQuizTimeoutFix:
+    """Fix 1: Quiz timeout (selected_index=-1) should award zero shards."""
+
+    def test_timeout_awards_zero_shards(self, client: TestClient, mock_db: AsyncMock) -> None:
+        _override_db(mock_db)
+        mock_db.players.find_one = AsyncMock(return_value=_make_player(quiz_streak=3))
+        try:
+            quiz_resp = client.get("/api/v1/sastahero/quiz?player_id=test-player")
+            q_id = quiz_resp.json()["question_id"]
+
+            response = client.post(
+                "/api/v1/sastahero/quiz/answer",
+                json={
+                    "player_id": "test-player",
+                    "question_id": q_id,
+                    "selected_index": -1,
+                    "time_taken_ms": 15000,
+                },
+            )
+            assert response.status_code == 200
+            data = response.json()
+            assert data["correct"] is False
+            assert data["reward_shards"] == 0
+            assert data["streak_count"] == 0
+            assert data["bonus_card"] is False
+        finally:
+            _clear_overrides()
+
+    def test_timeout_resets_streak(self, client: TestClient, mock_db: AsyncMock) -> None:
+        _override_db(mock_db)
+        mock_db.players.find_one = AsyncMock(return_value=_make_player(quiz_streak=5))
+        try:
+            quiz_resp = client.get("/api/v1/sastahero/quiz?player_id=test-player")
+            q_id = quiz_resp.json()["question_id"]
+
+            response = client.post(
+                "/api/v1/sastahero/quiz/answer",
+                json={
+                    "player_id": "test-player",
+                    "question_id": q_id,
+                    "selected_index": -1,
+                    "time_taken_ms": 16000,
+                },
+            )
+            data = response.json()
+            assert data["streak_count"] == 0
+        finally:
+            _clear_overrides()
+
+
+class TestQuizShieldFix:
+    """Fix 2: Quiz Shield should preserve streak and award partial shards."""
+
+    def test_shield_preserves_streak_on_wrong(self, client: TestClient, mock_db: AsyncMock) -> None:
+        _override_db(mock_db)
+        mock_db.players.find_one = AsyncMock(
+            return_value=_make_player(active_powerups=[{"type": "QUIZ_SHIELD"}], quiz_streak=4)
+        )
+        try:
+            quiz_resp = client.get("/api/v1/sastahero/quiz?player_id=test-player")
+            q_id = quiz_resp.json()["question_id"]
+
+            from app.modules.sastahero.seed.quiz_data import QUIZ_QUESTIONS
+
+            _, _, correct_idx, _, _ = QUIZ_QUESTIONS[int(q_id)]
+            wrong_idx = (correct_idx + 1) % 4
+
+            response = client.post(
+                "/api/v1/sastahero/quiz/answer",
+                json={
+                    "player_id": "test-player",
+                    "question_id": q_id,
+                    "selected_index": wrong_idx,
+                    "time_taken_ms": 8000,
+                },
+            )
+            data = response.json()
+            assert data["correct"] is False
+            assert data["streak_count"] == 4  # preserved
+            assert data["reward_shards"] == 1  # 50% partial
+        finally:
+            _clear_overrides()
+
+    def test_shield_consumed_after_use(self, client: TestClient, mock_db: AsyncMock) -> None:
+        """After shield absorbs a wrong answer, it should be removed from powerups."""
+        _override_db(mock_db)
+        mock_db.players.find_one = AsyncMock(
+            return_value=_make_player(active_powerups=[{"type": "QUIZ_SHIELD"}], quiz_streak=2)
+        )
+        try:
+            quiz_resp = client.get("/api/v1/sastahero/quiz?player_id=test-player")
+            q_id = quiz_resp.json()["question_id"]
+
+            from app.modules.sastahero.seed.quiz_data import QUIZ_QUESTIONS
+
+            _, _, correct_idx, _, _ = QUIZ_QUESTIONS[int(q_id)]
+            wrong_idx = (correct_idx + 1) % 4
+
+            client.post(
+                "/api/v1/sastahero/quiz/answer",
+                json={
+                    "player_id": "test-player",
+                    "question_id": q_id,
+                    "selected_index": wrong_idx,
+                    "time_taken_ms": 8000,
+                },
+            )
+            # Check the DB update removed the shield
+            update_call = mock_db.players.update_one.call_args
+            assert update_call is not None
+            set_doc = update_call[0][1]["$set"]
+            assert "active_powerups" in set_doc
+            shield_types = [p.get("type") for p in set_doc["active_powerups"]]
+            assert "QUIZ_SHIELD" not in shield_types
+        finally:
+            _clear_overrides()
+
+    def test_shield_not_consumed_on_correct(self, client: TestClient, mock_db: AsyncMock) -> None:
+        """Shield should NOT be consumed when answer is correct."""
+        _override_db(mock_db)
+        mock_db.players.find_one = AsyncMock(
+            return_value=_make_player(active_powerups=[{"type": "QUIZ_SHIELD"}], quiz_streak=0)
+        )
+        try:
+            quiz_resp = client.get("/api/v1/sastahero/quiz?player_id=test-player")
+            q_id = quiz_resp.json()["question_id"]
+
+            from app.modules.sastahero.seed.quiz_data import QUIZ_QUESTIONS
+
+            _, _, correct_idx, _, _ = QUIZ_QUESTIONS[int(q_id)]
+
+            client.post(
+                "/api/v1/sastahero/quiz/answer",
+                json={
+                    "player_id": "test-player",
+                    "question_id": q_id,
+                    "selected_index": correct_idx,
+                    "time_taken_ms": 8000,
+                },
+            )
+            update_call = mock_db.players.update_one.call_args
+            set_doc = update_call[0][1]["$set"]
+            shield_types = [p.get("type") for p in set_doc["active_powerups"]]
+            assert "QUIZ_SHIELD" in shield_types
+        finally:
+            _clear_overrides()
+
+
+class TestMagnetizeFallbackFix:
+    """Fix 3: MAGNETIZE without shard_type should auto-pick the highest balance type."""
+
+    def test_magnetize_picks_highest_shard(self, client: TestClient, mock_db: AsyncMock) -> None:
+        _override_db(mock_db)
+        mock_db.players.find_one = AsyncMock(
+            return_value=_make_player(
+                shards={"SOUL": 2, "SHIELD": 3, "VOID": 8, "LIGHT": 1, "FORCE": 0}
+            )
+        )
+        try:
+            response = client.post(
+                "/api/v1/sastahero/powerup",
+                json={"player_id": "test-player", "powerup_type": "MAGNETIZE"},
+            )
+            data = response.json()
+            assert data["success"] is True
+            # VOID had 8, should have been deducted by 5
+            assert data["shards"]["VOID"] == 3
+        finally:
+            _clear_overrides()
+
+    def test_magnetize_explicit_type_still_works(
+        self, client: TestClient, mock_db: AsyncMock
+    ) -> None:
+        _override_db(mock_db)
+        mock_db.players.find_one = AsyncMock(
+            return_value=_make_player(
+                shards={"SOUL": 10, "SHIELD": 10, "VOID": 10, "LIGHT": 10, "FORCE": 10}
+            )
+        )
+        try:
+            response = client.post(
+                "/api/v1/sastahero/powerup",
+                json={
+                    "player_id": "test-player",
+                    "powerup_type": "MAGNETIZE",
+                    "shard_type": "SHIELD",
+                },
+            )
+            data = response.json()
+            assert data["success"] is True
+            assert data["shards"]["SHIELD"] == 5
+
+        finally:
+            _clear_overrides()
+
+
+class TestPeekPreviewFix:
+    """Fix 4: PEEK should return preview cards."""
+
+    def test_peek_returns_preview(self, client: TestClient, mock_db: AsyncMock) -> None:
+        _override_db(mock_db)
+        mock_db.players.find_one = AsyncMock(return_value=_make_player())
+        try:
+            response = client.post(
+                "/api/v1/sastahero/powerup",
+                json={"player_id": "test-player", "powerup_type": "PEEK"},
+            )
+            data = response.json()
+            assert data["success"] is True
+            assert data["peek_preview"] is not None
+            assert len(data["peek_preview"]) == 3
+            for card in data["peek_preview"]:
+                assert "card_id" in card
+                assert "identity_id" in card
+                assert "name" in card
+                assert "rarity" in card
+        finally:
+            _clear_overrides()
+
+    def test_peek_preview_null_when_not_peek(self, client: TestClient, mock_db: AsyncMock) -> None:
+        _override_db(mock_db)
+        mock_db.players.find_one = AsyncMock(return_value=_make_player())
+        try:
+            response = client.post(
+                "/api/v1/sastahero/powerup",
+                json={"player_id": "test-player", "powerup_type": "REROLL"},
+            )
+            data = response.json()
+            assert data["success"] is True
+            assert data["peek_preview"] is None
+        finally:
+            _clear_overrides()
+
+    def test_peek_preview_cards_are_distinct(self, client: TestClient, mock_db: AsyncMock) -> None:
+        _override_db(mock_db)
+        mock_db.players.find_one = AsyncMock(return_value=_make_player())
+        try:
+            response = client.post(
+                "/api/v1/sastahero/powerup",
+                json={"player_id": "test-player", "powerup_type": "PEEK"},
+            )
+            data = response.json()
+            ids = [c["identity_id"] for c in data["peek_preview"]]
+            assert len(ids) == len(set(ids))  # no duplicates
+        finally:
+            _clear_overrides()

@@ -172,6 +172,7 @@ class PowerupResponse(BaseModel):
     success: bool
     shards: ShardBalance
     active_powerups: list[str]
+    peek_preview: list[CardInstance] | None = None
 
 
 # ── Collection Schemas ─────────────────────────────────────────────────

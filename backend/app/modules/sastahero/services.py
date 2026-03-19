@@ -588,11 +588,31 @@ async def submit_quiz_answer(
         return QuizAnswerResponse(correct=False, correct_index=0)
 
     _, _, correct_idx, _, _ = QUIZ_QUESTIONS[q_idx]
+
+    # Fix 1: Timeout guard — negative index means no answer was selected
+    if selected_index < 0:
+        # Mark question as seen but award nothing
+        await db.players.update_one(
+            {"player_id": player_id},
+            {"$set": {"quiz_streak": 0}, "$addToSet": {"quiz_seen": question_id}},
+        )
+        return QuizAnswerResponse(
+            correct=False,
+            correct_index=correct_idx,
+            reward_shards=0,
+            streak_count=0,
+            bonus_card=False,
+        )
+
     correct = selected_index == correct_idx
 
     quiz_streak = player.get("quiz_streak", 0)
     reward_shards = 0
     bonus_card = False
+
+    # Check quiz shield powerup
+    powerups = player.get("active_powerups", [])
+    has_shield = any(p.get("type") == "QUIZ_SHIELD" for p in powerups)
 
     if correct:
         if time_taken_ms < QUIZ_FAST_THRESHOLD_MS:
@@ -604,6 +624,13 @@ async def submit_quiz_answer(
 
         if quiz_streak >= 3:
             bonus_card = True  # rare card next stage
+    elif has_shield:
+        # Fix 2: Quiz Shield — wrong answer but shield active
+        # Don't break streak, award 50% of normal correct reward (1 shard)
+        reward_shards = 1
+        # quiz_streak preserved (not reset)
+        # Consume the shield
+        powerups = [p for p in powerups if p.get("type") != "QUIZ_SHIELD"]
     else:
         reward_shards = 1
         quiz_streak = 0
@@ -614,15 +641,11 @@ async def submit_quiz_answer(
         shard_type = random.choice(list(ShardType)).value
         shard_updates[f"shards.{shard_type}"] = shard_updates.get(f"shards.{shard_type}", 0) + 1
 
-    # Check quiz shield powerup
-    powerups = player.get("active_powerups", [])
-    has_shield = any(p.get("type") == "QUIZ_SHIELD" for p in powerups)
-    if not correct and has_shield:
-        # Don't consume shield yet — just flag it
-        pass
-
     update: dict[str, Any] = {
-        "$set": {"quiz_streak": quiz_streak},
+        "$set": {
+            "quiz_streak": quiz_streak,
+            "active_powerups": powerups,
+        },
         "$addToSet": {"quiz_seen": question_id},
     }
     if shard_updates:
@@ -701,6 +724,59 @@ async def get_profile(db: AsyncIOMotorDatabase[Any], player_id: str) -> PlayerPr
 # ── Powerups ──────────────────────────────────────────────────────────
 
 
+def _deduct_any_single(shards: dict[str, int], cost: int) -> bool:
+    """Deduct `cost` from the first shard type that has enough. Returns success."""
+    for st in ShardType:
+        if shards.get(st.value, 0) >= cost:
+            shards[st.value] -= cost
+            return True
+    return False
+
+
+def _deduct_magnetize(shards: dict[str, int], shard_type: str | None) -> tuple[bool, str | None]:
+    """Deduct 5 shards for MAGNETIZE; auto-picks highest type if none given."""
+    if not shard_type:
+        best = max(ShardType, key=lambda st: shards.get(st.value, 0))
+        if shards.get(best.value, 0) >= 5:
+            shard_type = best.value
+    if shard_type and shards.get(shard_type, 0) >= 5:
+        shards[shard_type] -= 5
+        return True, shard_type
+    return False, shard_type
+
+
+def _deduct_fusion_boost(shards: dict[str, int]) -> bool:
+    """Deduct 1 of each shard type for FUSION_BOOST."""
+    if all(shards.get(st.value, 0) >= 1 for st in ShardType):
+        for st in ShardType:
+            shards[st.value] -= 1
+        return True
+    return False
+
+
+def _deduct_lucky_draw(shards: dict[str, int]) -> bool:
+    """Deduct 3 each from 3 different shard types for LUCKY_DRAW."""
+    affordable = [st for st in ShardType if shards.get(st.value, 0) >= 3]
+    if len(affordable) >= 3:
+        for st in affordable[:3]:
+            shards[st.value] -= 3
+        return True
+    return False
+
+
+def _generate_peek_preview() -> list[CardInstance]:
+    """Generate a 3-card preview for the PEEK powerup."""
+    cards: list[CardInstance] = []
+    used: set[str] = set()
+    content_types = ["STORY", "KNOWLEDGE", "RESOURCE"]
+    for i in range(3):
+        rarity = _roll_rarity()
+        identity_id = _pick_identity(rarity, used)
+        used.add(identity_id)
+        cards.append(_build_card_instance(identity_id, content_types[i]))
+    return cards
+
+
 async def purchase_powerup(
     db: AsyncIOMotorDatabase[Any],
     player_id: str,
@@ -714,52 +790,21 @@ async def purchase_powerup(
 
     pt = PowerupType(powerup_type)
     success = False
-    shard_values = list(ShardType)
 
     if pt == PowerupType.REROLL:
-        # 3 of any single type
-        for st in shard_values:
-            if shards.get(st.value, 0) >= 3:
-                shards[st.value] -= 3
-                success = True
-                break
-
+        success = _deduct_any_single(shards, 3)
     elif pt == PowerupType.PEEK:
-        # 2 of any single type
-        for st in shard_values:
-            if shards.get(st.value, 0) >= 2:
-                shards[st.value] -= 2
-                success = True
-                break
-
+        success = _deduct_any_single(shards, 2)
     elif pt == PowerupType.MAGNETIZE:
-        # 5 of specified type
-        if shard_type and shards.get(shard_type, 0) >= 5:
-            shards[shard_type] -= 5
-            success = True
-
+        success, shard_type = _deduct_magnetize(shards, shard_type)
     elif pt == PowerupType.FUSION_BOOST:
-        # 1 of each type
-        if all(shards.get(st.value, 0) >= 1 for st in shard_values):
-            for st in shard_values:
-                shards[st.value] -= 1
-            success = True
-
+        success = _deduct_fusion_boost(shards)
     elif pt == PowerupType.QUIZ_SHIELD:
-        # 4 of any single type
-        for st in shard_values:
-            if shards.get(st.value, 0) >= 4:
-                shards[st.value] -= 4
-                success = True
-                break
-
+        success = _deduct_any_single(shards, 4)
     elif pt == PowerupType.LUCKY_DRAW:
-        # 3 of 3 different types
-        affordable = [st for st in shard_values if shards.get(st.value, 0) >= 3]
-        if len(affordable) >= 3:
-            for st in affordable[:3]:
-                shards[st.value] -= 3
-            success = True
+        success = _deduct_lucky_draw(shards)
+
+    peek_preview: list[CardInstance] | None = None
 
     if success:
         powerup_entry: dict[str, Any] = {"type": powerup_type}
@@ -768,6 +813,9 @@ async def purchase_powerup(
         if pt == PowerupType.FUSION_BOOST:
             powerup_entry["stages_left"] = 2
         powerups.append(powerup_entry)
+
+        if pt == PowerupType.PEEK:
+            peek_preview = _generate_peek_preview()
 
         await db.players.update_one(
             {"player_id": player_id},
@@ -784,6 +832,7 @@ async def purchase_powerup(
         success=success,
         shards=_build_shard_balance(shards),
         active_powerups=[p.get("type", "") for p in powerups],
+        peek_preview=peek_preview,
     )
 
 
