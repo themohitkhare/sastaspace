@@ -252,4 +252,26 @@ SASTA_EVENTS = [
         "category": "GLOBAL_CHAOS",
         "value": 0,
     },
+    # === ECONOMY BALANCING (3 events) ===
+    {
+        "name": "Wealth Tax",
+        "desc": "Players above median cash lose 10% of excess. Redistributed to those below.",
+        "type": "WEALTH_TAX",
+        "category": "GLOBAL_CHAOS",
+        "value": 10,
+    },
+    {
+        "name": "Audit Season",
+        "desc": "All property rent values are revealed on the board for 2 rounds",
+        "type": "AUDIT_SEASON",
+        "category": "GLOBAL_CHAOS",
+        "value": 2,
+    },
+    {
+        "name": "Bailout Package",
+        "desc": "The poorest non-bankrupt player receives $500",
+        "type": "BAILOUT_PACKAGE",
+        "category": "GLOBAL_CHAOS",
+        "value": 500,
+    },
 ]

@@ -59,6 +59,9 @@ class EventManager:
             "CLONE_UPGRADE": self._handle_clone_upgrade,
             "FORCE_BUY": self._handle_force_buy,
             "FREE_LANDING": self._handle_free_landing,
+            "WEALTH_TAX": self._handle_wealth_tax,
+            "AUDIT_SEASON": self._handle_audit_season,
+            "BAILOUT_PACKAGE": self._handle_bailout_package,
         }
 
     @staticmethod
@@ -203,12 +206,22 @@ class EventManager:
     async def _handle_swap_cash(
         self, game: "GameSession", player: "Player", event: dict[str, Any], actions: dict[str, Any]
     ) -> None:
+        """Swap cash with a random player: transfer 50% of the difference, capped at $500."""
+        max_transfer = 500
         other_players = [p for p in game.players if p.id != player.id]
         if other_players:
             target_player = random.choice(other_players)
             original_player_cash = player.cash
             original_target_cash = target_player.cash
-            player.cash, target_player.cash = target_player.cash, player.cash
+
+            # Calculate 50% of the difference, capped at $500 in either direction
+            difference = target_player.cash - player.cash
+            transfer = difference // 2
+            transfer = max(-max_transfer, min(max_transfer, transfer))
+
+            player.cash += transfer
+            target_player.cash -= transfer
+
             await self.repository.update_player_cash(player.id, player.cash)
             await self.repository.update_player_cash(target_player.id, target_player.cash)
             actions["cash_changes"][player.id] = player.cash - original_player_cash
@@ -322,3 +335,76 @@ class EventManager:
         actions["special"] = "FREE_LANDING"
         actions["free_rounds"] = value
         actions["requires_decision"] = True
+
+    async def _handle_wealth_tax(
+        self, game: "GameSession", player: "Player", event: dict[str, Any], actions: dict[str, Any]
+    ) -> None:
+        """Players above median cash lose 10% of excess; redistributed to those below median."""
+        import statistics
+
+        active_players = [p for p in game.players if not p.is_bankrupt]
+        if len(active_players) < 2:
+            return
+
+        cash_values = sorted([p.cash for p in active_players])
+        median_cash = statistics.median(cash_values)
+
+        total_taxed = 0
+        above_median = []
+        below_median = []
+
+        for p in active_players:
+            if p.cash > median_cash:
+                above_median.append(p)
+            elif p.cash < median_cash:
+                below_median.append(p)
+
+        # Tax those above median: 10% of excess
+        tax_rate = (event.get("value", 10)) / 100
+        for p in above_median:
+            excess = p.cash - int(median_cash)
+            tax = int(excess * tax_rate)
+            if tax > 0:
+                p.cash -= tax
+                total_taxed += tax
+                await self.repository.update_player_cash(p.id, p.cash)
+                actions["cash_changes"][p.id] = actions["cash_changes"].get(p.id, 0) - tax
+
+        # Redistribute equally to those below median
+        if below_median and total_taxed > 0:
+            per_player = total_taxed // len(below_median)
+            remainder = total_taxed - (per_player * len(below_median))
+            for i, p in enumerate(below_median):
+                bonus = per_player + (1 if i < remainder else 0)
+                p.cash += bonus
+                await self.repository.update_player_cash(p.id, p.cash)
+                actions["cash_changes"][p.id] = actions["cash_changes"].get(p.id, 0) + bonus
+
+        actions["special"] = "WEALTH_TAX"
+
+    async def _handle_audit_season(
+        self, game: "GameSession", player: "Player", event: dict[str, Any], actions: dict[str, Any]
+    ) -> None:
+        """Reveal all property rent values on the board for N rounds."""
+        rounds = event.get("value", 2)
+        actions["special"] = "AUDIT_SEASON"
+        actions["audit_until_round"] = game.current_round + rounds
+
+    async def _handle_bailout_package(
+        self, game: "GameSession", player: "Player", event: dict[str, Any], actions: dict[str, Any]
+    ) -> None:
+        """Give $500 to the poorest non-bankrupt player. Ties broken by fewer properties."""
+        bailout_amount = event.get("value", 500)
+        active_players = [p for p in game.players if not p.is_bankrupt]
+        if not active_players:
+            return
+
+        # Sort by cash ascending, then by property count ascending (fewer = poorer)
+        poorest = min(active_players, key=lambda p: (p.cash, len(p.properties)))
+        poorest.cash += bailout_amount
+        await self.repository.update_player_cash(poorest.id, poorest.cash)
+        actions["cash_changes"][poorest.id] = (
+            actions["cash_changes"].get(poorest.id, 0) + bailout_amount
+        )
+        actions["special"] = "BAILOUT_PACKAGE"
+        actions["bailout_recipient"] = {"id": poorest.id, "name": poorest.name}

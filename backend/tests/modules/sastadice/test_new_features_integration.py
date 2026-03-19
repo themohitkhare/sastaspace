@@ -136,7 +136,7 @@ async def test_roll_for_doubles_action(db_database):
 @pytest.mark.asyncio
 async def test_36_events_available(db_database):
     """Test that all Sasta events are available and categorized."""
-    assert len(SASTA_EVENTS) == 35
+    assert len(SASTA_EVENTS) == 38
 
     # Verify event structure and metadata
     for event in SASTA_EVENTS:

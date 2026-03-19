@@ -16,11 +16,18 @@ class TurnManager:
 
     @staticmethod
     def calculate_go_bonus(game: "GameSession") -> int:
-        """Calculate GO bonus with inflation using game settings."""
+        """Calculate GO bonus with inflation using game settings, capped by DynamicEconomyScaler."""
+        from app.modules.sastadice.services.economy_manager import DynamicEconomyScaler
+
         base = game.settings.go_bonus_base
-        inflation = game.current_round * game.settings.go_inflation_per_round
+        inflation_per_round = game.settings.go_inflation_per_round
         multiplier = getattr(game, "go_bonus_multiplier", 1.0)
-        return int((base + inflation) * multiplier)
+
+        # Apply the 3x cap via DynamicEconomyScaler before applying event multipliers
+        capped = DynamicEconomyScaler.calculate_capped_go_bonus(
+            base, inflation_per_round, game.current_round
+        )
+        return int(capped * multiplier)
 
     @staticmethod
     def owns_full_set(player: "Player", color: str, board: list["Tile"]) -> bool:
@@ -34,21 +41,11 @@ class TurnManager:
 
     @staticmethod
     def calculate_rent(tile: "Tile", owner: "Player", game: "GameSession") -> int:
-        """Calculate rent with set bonus and upgrades."""
+        """Calculate rent with set bonus, upgrades, and dynamic round scaling."""
+        from app.modules.sastadice.services.economy_manager import DynamicEconomyScaler
+
         if tile.type != TileType.PROPERTY:
             return 0
-
-        base_rent = tile.rent
-
-        if tile.color and TurnManager.owns_full_set(owner, tile.color, game.board):
-            base_rent *= 2
-
-        if tile.upgrade_level == 1:
-            base_rent = int(base_rent * 1.5)
-        elif tile.upgrade_level == 2:
-            base_rent = int(base_rent * 3.0)
-
-        base_rent = int(base_rent * game.rent_multiplier)
 
         if tile.blocked_until_round and tile.blocked_until_round > game.current_round:
             return 0
@@ -56,7 +53,19 @@ class TurnManager:
         if tile.id in game.blocked_tiles:
             return 0
 
-        return base_rent
+        # Use DynamicEconomyScaler for base rent + upgrade scaling + round scaling
+        scaled_rent = DynamicEconomyScaler.calculate_dynamic_rent(
+            tile.rent, tile.upgrade_level, game.current_round, game.settings
+        )
+
+        # Apply color set bonus (2x)
+        if tile.color and TurnManager.owns_full_set(owner, tile.color, game.board):
+            scaled_rent *= 2
+
+        # Apply global rent multiplier (from Market Crash / Bull Market events)
+        scaled_rent = int(scaled_rent * game.rent_multiplier)
+
+        return scaled_rent
 
     @staticmethod
     def initialize_event_deck(game: "GameSession") -> None:
