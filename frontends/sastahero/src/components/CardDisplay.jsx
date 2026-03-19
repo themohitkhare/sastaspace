@@ -4,7 +4,7 @@ const TYPE_TEXT_COLORS = {
   CREATION: 'text-amber-200',
   PROTECTION: 'text-blue-200',
   DESTRUCTION: 'text-red-200',
-  ENERGY: 'text-yellow-800',
+  ENERGY: 'text-amber-900',
   POWER: 'text-purple-200',
 };
 
@@ -61,7 +61,8 @@ export default function CardDisplay({ card, totalCards, currentIndex, className 
 
       {/* Content */}
       {card.content_type !== 'RESOURCE' && card.text && (
-        <p className={`text-lg text-center leading-relaxed max-w-sm ${textColor}`} data-testid="card-text">
+        <p className={`text-lg text-center leading-relaxed max-w-sm ${textColor}`} data-testid="card-text"
+          style={primaryType === 'ENERGY' ? { textShadow: '0 1px 2px rgba(255,255,255,0.6)' } : undefined}>
           {card.text}
         </p>
       )}

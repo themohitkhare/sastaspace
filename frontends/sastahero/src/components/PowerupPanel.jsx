@@ -10,16 +10,32 @@ const POWERUPS = [
   { type: 'LUCKY_DRAW', name: 'LUCKY', icon: '\u2605', desc: 'Force rare+', cost: '3 of 3', color: 'border-amber-400' },
 ];
 
+const SHARD_TYPES = ['SOUL', 'SHIELD', 'VOID', 'LIGHT', 'FORCE'];
+
 export default function PowerupPanel({ isOpen, onClose }) {
   const { shards, purchasePowerup } = useGameStore();
   const [buying, setBuying] = useState(null);
   const [burstType, setBurstType] = useState(null);
+  const [magnetizeSelector, setMagnetizeSelector] = useState(false);
 
   if (!isOpen) return null;
 
   const handlePurchase = async (type) => {
+    if (type === 'MAGNETIZE') {
+      setMagnetizeSelector(true);
+      return;
+    }
     setBuying(type); setBurstType(type);
     const result = await purchasePowerup(type);
+    setBuying(null);
+    setTimeout(() => setBurstType(null), 600);
+    if (result?.success) setTimeout(onClose, 300);
+  };
+
+  const handleMagnetizeSelect = async (shardType) => {
+    setMagnetizeSelector(false);
+    setBuying('MAGNETIZE'); setBurstType('MAGNETIZE');
+    const result = await purchasePowerup('MAGNETIZE', shardType);
     setBuying(null);
     setTimeout(() => setBurstType(null), 600);
     if (result?.success) setTimeout(onClose, 300);
@@ -69,6 +85,27 @@ export default function PowerupPanel({ isOpen, onClose }) {
             );
           })}
         </div>
+        {magnetizeSelector && (
+          <div data-testid="magnetize-selector" className="mt-4 p-3 border-brutal-sm border-purple-400">
+            <p className="text-xs font-bold font-zero uppercase tracking-wider mb-3 text-purple-300">CHOOSE SHARD TYPE TO SPEND</p>
+            <div className="flex gap-2 justify-center">
+              {SHARD_TYPES.map((st) => {
+                const affordable = (shards[st] || 0) >= 5;
+                return (
+                  <button key={st} data-testid={`magnetize-shard-${st}`}
+                    className={`px-3 py-2 text-xs font-bold font-zero border-brutal-sm transition-colors ${affordable ? 'bg-black text-white hover:bg-purple-500 hover:text-black' : 'bg-black text-gray-600 opacity-40 cursor-not-allowed'}`}
+                    disabled={!affordable || buying === 'MAGNETIZE'}
+                    onClick={() => handleMagnetizeSelect(st)}
+                    aria-label={`Spend ${st} shards. ${shards[st] || 0} available.`}
+                  >
+                    {st}<br /><span className="text-[10px] opacity-60">{shards[st] || 0}</span>
+                  </button>
+                );
+              })}
+            </div>
+            <button data-testid="magnetize-cancel" className="mt-2 w-full text-xs font-bold font-zero text-gray-400 hover:text-white transition-colors" onClick={() => setMagnetizeSelector(false)}>CANCEL</button>
+          </div>
+        )}
       </div>
     </div>
   );

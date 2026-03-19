@@ -16,7 +16,7 @@ const SHARD_MAP = {
 };
 
 export default function GameFeed() {
-  const { fetchStage, isLoading, showQuiz, cards, lastSwipeResult } = useGameStore();
+  const { fetchStage, isLoading, showQuiz, cards, lastSwipeResult, activePowerups } = useGameStore();
   const [showPowerups, setShowPowerups] = useState(false);
   const [burstParticles, setBurstParticles] = useState([]);
   const [combo, setCombo] = useState({ count: 0, type: null });
@@ -73,6 +73,9 @@ export default function GameFeed() {
   return (
     <div data-testid="game-feed" className="flex-1 flex flex-col overflow-hidden">
       <ShardBar />
+      {activePowerups.includes('FUSION_BOOST') && (
+        <div data-testid="fusion-active-banner" className="bg-sasta-accent text-black text-xs font-bold font-zero text-center py-1 uppercase tracking-wider">FUSION ACTIVE</div>
+      )}
       <div className="flex-1 relative">
         {showQuiz ? <QuizCard /> : <CardFeed />}
         {burstParticles.map(p => (

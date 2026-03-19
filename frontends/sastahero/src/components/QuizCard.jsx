@@ -25,7 +25,7 @@ export default function QuizCard() {
     if (result) return;
     const timeTaken = Date.now() - startTime;
     setSelectedIndex(index);
-    const res = await submitQuizAnswer(quizQuestion.question_id, Math.max(0, index), timeTaken);
+    const res = await submitQuizAnswer(quizQuestion.question_id, index, timeTaken);
     setResult(res);
     if (res?.correct) { setFlashClass('flash-green'); setShakeClass('screen-shake'); }
     else { setFlashClass('flash-red'); setShakeClass('card-shudder'); }
