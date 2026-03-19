@@ -6,6 +6,11 @@ const TILE_TYPE_COLORS = {
   BUFF: '#00ffff',
   NEUTRAL: '#666666',
   GO: '#00ff00',
+  NODE: '#ff6600',
+  GO_TO_JAIL: '#ff0000',
+  TELEPORT: '#9900ff',
+  MARKET: '#ff00ff',
+  JAIL: '#888888',
 }
 
 export default function TileComponent({ tile, players = [], width, height, size = 72, isLandscape = false, edge = null, boardSize = 0, style = {}, isBlocked = false, isDdosTarget = false, onClick }) {
