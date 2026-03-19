@@ -123,6 +123,42 @@ export default function GamePage() {
     }
   }
 
+  // Keyboard shortcuts for modals
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      // Skip if typing in input
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return
+
+      switch (e.key) {
+        case 'Escape':
+          setShowRules(false)
+          setShowPropertyManager(false)
+          setPeekEvents(null)
+          setTradeTarget(null)
+          setSelectedTile(null)
+          setDdosMode(false)
+          break
+        case 'r':
+        case 'R':
+          if (!e.ctrlKey && !e.metaKey) setShowRules(prev => !prev)
+          break
+        case 'm':
+        case 'M':
+          if (!e.ctrlKey && !e.metaKey) setShowPropertyManager(prev => !prev)
+          break
+        case 't':
+        case 'T':
+          if (!e.ctrlKey && !e.metaKey && playerId && isMyTurn) {
+            const otherPlayers = game?.players?.filter(p => p.id !== playerId && !p.is_bankrupt)
+            if (otherPlayers?.length > 0) setTradeTarget(otherPlayers[0])
+          }
+          break
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [playerId, isMyTurn, game?.players])
+
   useEffect(() => {
     if (!isCpuTurn || cpuActionRef.current || !gameId) return
 
@@ -300,7 +336,7 @@ export default function GamePage() {
 
       <div className="flex-1 min-h-0 max-w-full mx-auto w-full p-1 sm:p-2 flex flex-col lg:flex-row gap-2 overflow-hidden">
         <div
-          className="flex-1 min-h-0 min-w-0 border-brutal-sm bg-sasta-white shadow-brutal-sm overflow-hidden order-1"
+          className="flex-1 min-h-0 min-w-0 min-h-[50vh] lg:min-h-0 border-brutal-sm bg-sasta-white shadow-brutal-sm overflow-hidden order-1"
           style={{ display: 'flex', flexDirection: 'column', position: 'relative' }}
         >
           <BoardView
@@ -338,7 +374,7 @@ export default function GamePage() {
           </BoardView>
         </div>
 
-        <div className="w-full lg:w-56 lg:shrink-0 border-brutal-sm bg-sasta-white shadow-brutal-sm p-2 order-2 lg:max-h-full lg:overflow-auto">
+        <div className="w-full lg:w-56 lg:shrink-0 border-brutal-sm bg-sasta-white shadow-brutal-sm p-2 order-2 max-h-[40vh] lg:max-h-full overflow-auto">
           {game.status === 'ACTIVE' && (
             <TurnTimer
               turnStartTime={game.turn_start_time}

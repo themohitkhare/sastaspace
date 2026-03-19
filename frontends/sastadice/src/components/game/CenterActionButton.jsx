@@ -152,7 +152,7 @@ export default function CenterActionButton({
                     disabled={isLoading}
                     className="w-full py-4 px-8 bg-sasta-accent text-sasta-black font-zero font-bold text-xl border-brutal-sm shadow-brutal-sm hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all disabled:opacity-50"
                 >
-                    {isLoading ? '🎲 ROLLING...' : '🎲 ROLL DICE'}
+                    {isLoading ? '🎲 ROLLING...' : <>🎲 ROLL DICE<span className="text-[8px] opacity-50 ml-1">[SPACE]</span></>}
                 </button>
             </div>
         )
@@ -340,7 +340,7 @@ export default function CenterActionButton({
                     disabled={isLoading}
                     className="w-full py-4 px-8 bg-sasta-black text-sasta-accent font-zero font-bold text-xl border-brutal-sm shadow-brutal-sm hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all disabled:opacity-50"
                 >
-                    {isLoading ? '⏳ ENDING...' : '→ END TURN'}
+                    {isLoading ? '⏳ ENDING...' : <>→ END TURN<span className="text-[8px] opacity-50 ml-1">[SPACE]</span></>}
                 </button>
             </div>
         )
