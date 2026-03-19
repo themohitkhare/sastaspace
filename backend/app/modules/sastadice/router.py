@@ -2,7 +2,7 @@
 
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, WebSocket, WebSocketDisconnect, status
 from motor.motor_asyncio import AsyncIOMotorDatabase
 
 from app.db.session import get_db
@@ -15,6 +15,7 @@ from app.modules.sastadice.schemas import (
     Player,
 )
 from app.modules.sastadice.services.game_orchestrator import GameOrchestrator
+from app.modules.sastadice.websocket import connection_manager
 
 # Backward compatibility alias
 GameService = GameOrchestrator
@@ -164,3 +165,38 @@ async def process_cpu_turns(
         return await service.process_cpu_turns(game_id)
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
+
+@router.websocket("/games/{game_id}/ws")
+async def websocket_endpoint(
+    game_id: str,
+    websocket: WebSocket,
+    db: AsyncIOMotorDatabase[Any] = Depends(get_db),
+) -> None:
+    """WebSocket endpoint for real-time game state updates."""
+    service = GameService(db)
+
+    # Verify game exists
+    game = await service.get_game(game_id)
+    if not game:
+        await websocket.close(code=4004, reason="Game not found")
+        return
+
+    await connection_manager.connect(game_id, websocket)
+
+    # Send initial state
+    version = await service.repository.get_version(game_id)
+    await websocket.send_json(
+        {
+            "type": "STATE_UPDATE",
+            "version": version,
+            "game": game.model_dump(mode="json"),
+        }
+    )
+
+    try:
+        while True:
+            # Keep connection alive by waiting for client messages (pings)
+            await websocket.receive_text()
+    except WebSocketDisconnect:
+        connection_manager.disconnect(game_id, websocket)

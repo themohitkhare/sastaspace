@@ -1,7 +1,9 @@
 """Game repository for MongoDB operations."""
 
 import uuid
+from collections.abc import Callable
 from datetime import UTC, datetime
+from typing import Any
 
 from app.core.db_repo import BaseRepository
 from app.modules.sastadice.models import (
@@ -25,6 +27,14 @@ from app.modules.sastadice.schemas import (
 
 class GameRepository(BaseRepository[GameSession]):
     """Repository for game session operations."""
+
+    def __init__(self, database: Any) -> None:
+        super().__init__(database)
+        self._on_update_callback: Callable[..., Any] | None = None
+
+    def set_on_update(self, callback: Callable[..., Any]) -> None:
+        """Set callback to be called after every game update."""
+        self._on_update_callback = callback
 
     async def get_by_id(self, id: str) -> GameSession | None:
         """Get game session by ID or short code (first 8 chars)."""
@@ -84,6 +94,8 @@ class GameRepository(BaseRepository[GameSession]):
         await self.database.game_sessions.update_one(
             {"_id": entity.id}, {"$set": update_data, "$inc": {"version": 1}}
         )
+        if self._on_update_callback:
+            await self._on_update_callback(entity.id)
         return entity
 
     async def delete(self, id: str) -> bool:

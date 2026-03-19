@@ -40,6 +40,7 @@ class GameOrchestrator:
     def __init__(self, database: "AsyncIOMotorDatabase[Any]") -> None:
         """Initialize game orchestrator with all managers."""
         self.repository = GameRepository(database)
+        self.repository.set_on_update(self._broadcast_state)
         self.board_service = BoardGenerationService()
         self.turn_manager = TurnManager()
         self.turn_coordinator = TurnCoordinator(self.repository, self.turn_manager)
@@ -68,6 +69,25 @@ class GameOrchestrator:
 
         # CPU manager (needs orchestrator reference for now - will refactor later)
         self.cpu_manager = CpuManager(self)
+
+    async def _broadcast_state(self, game_id: str) -> None:
+        """Broadcast current game state to all WebSocket connections."""
+        from app.modules.sastadice.websocket import connection_manager
+
+        try:
+            game = await self.get_game(game_id)
+            if game:
+                version = await self.repository.get_version(game_id)
+                await connection_manager.broadcast(
+                    game_id,
+                    {
+                        "type": "STATE_UPDATE",
+                        "version": version,
+                        "game": game.model_dump(mode="json"),
+                    },
+                )
+        except Exception:
+            pass  # Don't let WS errors break game logic
 
     def _is_cpu_player(self, player: Player) -> bool:
         """Check if a player is a CPU."""
