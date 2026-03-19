@@ -98,7 +98,7 @@ describe('LobbyView', () => {
     })
 
     render(<LobbyView />)
-    expect(screen.getByText('YOU')).toBeInTheDocument()
+    expect(screen.getByText(/KeyStatus: Test Player/)).toBeInTheDocument()
   })
 
   it('allows joining game with valid name', async () => {
@@ -346,7 +346,37 @@ describe('LobbyView', () => {
     })
 
     render(<LobbyView />)
-    expect(screen.getAllByText('CMD')[0]).toBeInTheDocument()
+    // KeyStatus mock renders "KeyStatus: <name>" for all players including host
+    expect(screen.getByText(/KeyStatus: Player 1/)).toBeInTheDocument()
+  })
+
+  describe('KeyStatus integration', () => {
+    it('renders KeyStatus component for each player in lobby', () => {
+      useGameStore.mockImplementation((selector) => {
+        const state = {
+          gameId: 'game-123',
+          game: {
+            id: 'game-123',
+            status: 'LOBBY',
+            host_id: 'player-123',
+            players: [
+              { id: 'player-123', name: 'Alice', ready: true, color: '#ff0000' },
+              { id: 'player-456', name: 'Bob', ready: false, color: '#00ff00' },
+            ],
+            settings: {},
+          },
+          playerId: 'player-123',
+          setPlayerId: vi.fn(),
+          setGame: vi.fn(),
+        }
+        return selector(state)
+      })
+
+      render(<LobbyView />)
+      // KeyStatus mock renders "KeyStatus: <name>" (see mock at top of file)
+      expect(screen.getByText(/KeyStatus: Alice/)).toBeInTheDocument()
+      expect(screen.getByText(/KeyStatus: Bob/)).toBeInTheDocument()
+    })
   })
 
   describe('TileSubmissionForm integration', () => {
