@@ -37,8 +37,12 @@ export default function LobbyView({ onRefresh }) {
     }
   }, [game?.settings, hasChanges])
 
-  const handleUpdateSettings = (newSettings) => {
-    setSettings(newSettings)
+  const handleUpdateSettings = (keyOrSettings, value) => {
+    if (typeof keyOrSettings === 'string') {
+      setSettings((prev) => ({ ...prev, [keyOrSettings]: value }))
+    } else {
+      setSettings(keyOrSettings)
+    }
     setHasChanges(true)
   }
 
