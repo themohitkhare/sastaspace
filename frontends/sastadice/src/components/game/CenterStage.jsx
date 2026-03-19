@@ -23,6 +23,8 @@ export default function CenterStage({
     hasUpgradeableProperties,
     board,
     players,
+    eventDeckSize,
+    rentMultiplier,
 }) {
     return (
         <div className="w-full h-full flex flex-row">
@@ -63,12 +65,28 @@ export default function CenterStage({
                     )}
                 </div>
 
+                <div className="text-center py-1">
+                    <span className="text-[9px] font-data opacity-50 text-sasta-white">
+                        DECK: {eventDeckSize ?? 0}/35
+                    </span>
+                </div>
+
                 <div className="text-center my-auto py-4">
                     <div className="text-[10px] font-data uppercase opacity-60 text-sasta-white mb-1">Your Stash</div>
                     <div className="text-3xl font-data font-bold text-white">
                         ${myPlayerCash?.toLocaleString() || '0'}
                     </div>
                 </div>
+
+                {rentMultiplier != null && rentMultiplier !== 1.0 && (
+                    <div className={`text-center text-[9px] font-data font-bold ${
+                        rentMultiplier < 1.0 ? 'text-red-400' : 'text-green-400'
+                    }`}>
+                        {rentMultiplier < 1.0
+                            ? `MARKET CRASH: RENT -${Math.round((1 - rentMultiplier) * 100)}%`
+                            : `BULL MARKET: RENT +${Math.round((rentMultiplier - 1) * 100)}%`}
+                    </div>
+                )}
 
                 <div className="w-full">
                     <CenterActionButton

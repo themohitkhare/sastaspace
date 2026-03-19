@@ -332,6 +332,8 @@ export default function GamePage() {
               hasUpgradeableProperties={game?.board?.some(t => t.owner_id === playerId && t.type === 'PROPERTY')}
               board={game?.board}
               players={game?.players}
+              eventDeckSize={game?.event_deck?.length ?? 0}
+              rentMultiplier={game?.rent_multiplier ?? 1.0}
             />
           </BoardView>
         </div>
