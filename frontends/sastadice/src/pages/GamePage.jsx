@@ -279,6 +279,7 @@ export default function GamePage() {
         winner={game.winner_id}
         players={game.players}
         onPlayAgain={reset}
+        game={game}
       />
     )
   }
@@ -346,6 +347,7 @@ export default function GamePage() {
             ddosMode={ddosMode}
             onDdosTileSelect={handleDdosTileSelect}
             currentRound={game.current_round || 0}
+            maxRounds={game.max_rounds || 30}
           >
             <CenterStage
               lastDiceRoll={game.last_dice_roll}
@@ -431,6 +433,7 @@ export default function GamePage() {
         playerName={announcedPlayer?.name}
         isMyTurn={announcedPlayer?.id === playerId}
         show={showTurnAnnouncement}
+        urgent={game.max_rounds > 0 && (game.current_round || 0) >= (game.max_rounds || 30) - 5}
       />
 
       {game.turn_phase === 'AUCTION' && game.auction_state && (

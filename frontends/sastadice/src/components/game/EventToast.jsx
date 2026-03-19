@@ -44,26 +44,55 @@ function parseEventType(message) {
     return 'DEFAULT'
 }
 
+const CHAOS_EVENTS = new Set([
+    'MARKET_CRASH', 'BULL_MARKET', 'HYPERINFLATION', 'SYSTEM_UPDATE',
+    'RANSOMWARE', 'IDENTITY_THEFT', 'WHISTLEBLOWER', 'FORK_REPO',
+    'HOSTILE_TAKEOVER', 'OPEN_SOURCE', 'SYSTEM_RESTORE',
+])
+
+const NEGATIVE_CHAOS = new Set([
+    'MARKET_CRASH', 'RANSOMWARE', 'IDENTITY_THEFT', 'HOSTILE_TAKEOVER', 'SYSTEM_UPDATE',
+])
+
 function SingleToast({ message, type, onComplete }) {
     const [isVisible, setIsVisible] = useState(true)
+    const [showFlash, setShowFlash] = useState(false)
     const config = TOAST_TYPES[type] || TOAST_TYPES.DEFAULT
+    const isChaos = CHAOS_EVENTS.has(type)
+    const isNegativeChaos = NEGATIVE_CHAOS.has(type)
+
+    useEffect(() => {
+        if (isChaos) {
+            setShowFlash(true)
+            const flashTimer = setTimeout(() => setShowFlash(false), 300)
+            return () => clearTimeout(flashTimer)
+        }
+    }, [isChaos])
 
     useEffect(() => {
         const timer = setTimeout(() => {
             setIsVisible(false)
             setTimeout(() => onComplete?.(), 200)
-        }, 2000) // Fast dismiss
+        }, isChaos ? 3500 : 2000)
         return () => clearTimeout(timer)
-    }, [onComplete])
+    }, [onComplete, isChaos])
 
     return (
-        <div
-            className={`${config.bg} ${config.text} ${config.animate || ''} px-2 py-1 font-data text-xs flex items-center gap-1 rounded transition-all duration-200 border-2 ${type === 'MARKET_CRASH' ? 'border-red-400' : type === 'BULL_MARKET' ? 'border-green-400' : 'border-transparent'} ${isVisible ? 'animate-toast-in opacity-100' : 'animate-toast-out opacity-0'
-                }`}
-        >
-            <span>{config.icon}</span>
-            <span className="flex-1 truncate">{message}</span>
-        </div>
+        <>
+            {showFlash && (
+                <div className={`fixed inset-0 z-[100] pointer-events-none ${isNegativeChaos ? 'animate-flash-red' : 'animate-flash-green'}`} />
+            )}
+            <div
+                className={`${config.bg} ${config.text} ${config.animate || ''} font-data flex items-center gap-1 rounded transition-all duration-200 ${
+                    isChaos
+                        ? `px-3 py-2 text-sm border-brutal-lg ${isNegativeChaos ? 'border-red-400 animate-screen-shake' : 'border-sasta-accent'} shadow-brutal-sm`
+                        : `px-2 py-1 text-xs border-2 ${type === 'MARKET_CRASH' ? 'border-red-400' : type === 'BULL_MARKET' ? 'border-green-400' : 'border-transparent'}`
+                } ${isVisible ? 'animate-toast-in opacity-100' : 'animate-toast-out opacity-0'}`}
+            >
+                <span className={isChaos ? 'text-lg' : ''}>{config.icon}</span>
+                <span className={`flex-1 ${isChaos ? 'font-bold' : 'truncate'}`}>{message}</span>
+            </div>
+        </>
     )
 }
 
