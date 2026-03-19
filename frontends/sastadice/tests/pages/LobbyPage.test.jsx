@@ -5,10 +5,10 @@ import { render } from '@testing-library/react'
 import { vi } from 'vitest'
 import LobbyPage from '../../src/pages/LobbyPage'
 import { useGameStore } from '../../src/store/useGameStore'
-import { useSastaPolling } from '../../src/hooks/useSastaPolling'
+import { useWebSocket } from '../../src/hooks/useWebSocket'
 
 vi.mock('../../src/store/useGameStore')
-vi.mock('../../src/hooks/useSastaPolling')
+vi.mock('../../src/hooks/useWebSocket')
 vi.mock('../../src/components/lobby/LobbyView', () => ({
   default: () => <div>LobbyView</div>,
 }))
@@ -18,13 +18,14 @@ describe('LobbyPage', () => {
     useGameStore.mockImplementation((selector) => {
       const state = {
         gameId: 'game-123',
+        playerId: 'player-1',
         game: { id: 'game-123', status: 'LOBBY' },
       }
       return selector(state)
     })
-    
-    // Mock useSastaPolling to return refetch
-    useSastaPolling.mockReturnValue({ refetch: vi.fn() })
+
+    // Mock useWebSocket to return refetch
+    useWebSocket.mockReturnValue({ refetch: vi.fn(), connectionLost: false, retry: vi.fn() })
   })
 
   it('renders LobbyView', () => {
@@ -32,8 +33,8 @@ describe('LobbyPage', () => {
     expect(container.textContent).toContain('LobbyView')
   })
 
-  it('starts polling for game updates', () => {
+  it('connects WebSocket for game updates', () => {
     render(<LobbyPage />)
-    expect(useSastaPolling).toHaveBeenCalledWith('game-123', 2000)
+    expect(useWebSocket).toHaveBeenCalledWith('game-123', 'player-1')
   })
 })

@@ -5,10 +5,10 @@ import { render, screen } from '@testing-library/react'
 import { vi } from 'vitest'
 import GamePage from '../../src/pages/GamePage'
 import { useGameStore } from '../../src/store/useGameStore'
-import { useSastaPolling } from '../../src/hooks/useSastaPolling'
+import { useWebSocket } from '../../src/hooks/useWebSocket'
 
 vi.mock('../../src/store/useGameStore')
-vi.mock('../../src/hooks/useSastaPolling')
+vi.mock('../../src/hooks/useWebSocket')
 vi.mock('../../src/components/game/BoardView', () => ({
   default: ({ children }) => <div>BoardView{children}</div>,
 }))
@@ -82,7 +82,7 @@ describe('GamePage', () => {
       return selector(state)
     })
 
-    useSastaPolling.mockReturnValue({ refetch: vi.fn() })
+    useWebSocket.mockReturnValue({ refetch: vi.fn(), connectionLost: false, retry: vi.fn() })
   })
 
   it('renders game page with game data', () => {
@@ -115,9 +115,9 @@ describe('GamePage', () => {
     expect(screen.getByText('LOADING...')).toBeInTheDocument()
   })
 
-  it('starts polling for game updates', () => {
+  it('connects WebSocket for game updates', () => {
     render(<GamePage />)
-    expect(useSastaPolling).toHaveBeenCalledWith('game-123', 1500)
+    expect(useWebSocket).toHaveBeenCalledWith('game-123', 'player-1')
   })
 
   it('renders BoardView component', () => {

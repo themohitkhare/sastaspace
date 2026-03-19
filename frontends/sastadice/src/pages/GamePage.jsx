@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { useSastaPolling } from '../hooks/useSastaPolling'
+import { useWebSocket } from '../hooks/useWebSocket'
 import { useGameStore } from '../store/useGameStore'
 import { apiClient } from '../api/apiClient'
 import { useToast } from '../hooks/useToast'
@@ -35,8 +35,7 @@ export default function GamePage() {
   const [selectedTile, setSelectedTile] = useState(null)
   const [showPropertyManager, setShowPropertyManager] = useState(false)
 
-  const pollingInterval = game?.turn_phase === 'AUCTION' ? 300 : 1500
-  const { refetch, connectionLost, retry } = useSastaPolling(gameId, pollingInterval)
+  const { refetch, connectionLost, retry } = useWebSocket(gameId, playerId)
   const handleActionComplete = useCallback(async (actionResult) => {
     if (actionResult?.message && actionResult.message.includes('Insider Info')) {
       const match = actionResult.message.match(/Next Events: (.+)/)
