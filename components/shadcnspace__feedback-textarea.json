@@ -1,0 +1,30 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "feedback-textarea",
+  "type": "registry:component",
+  "title": "Feedback Textarea",
+  "description": "A feedback-textarea component.",
+  "dependencies": [],
+  "registryDependencies": [
+    "https://21st.dev/r/shadcn/textarea",
+    "https://21st.dev/r/shadcn/label"
+  ],
+  "files": [
+    {
+      "path": "src/components/ui/feedback-textarea.tsx",
+      "content": "\"use client\";\nimport { useState } from \"react\";\nimport { Label } from \"@/components/ui/label\";\nimport { Textarea } from \"@/components/ui/textarea\";\n\nexport const title = \"Textarea with Error\";\n\nconst FeedbackTextarea = () => {\n  const [feedback, setFeedback] = useState(\"Awesome product!\");\n  const isInvalid = feedback.length > 0 && feedback.length < 10;\n\n  return (\n    <div className=\"flex w-full max-w-md flex-col gap-2\">\n      <Label htmlFor=\"feedback\">Feedback</Label>\n      <Textarea\n        aria-invalid={isInvalid}\n        className=\"bg-background\"\n        value={feedback}\n        onChange={(e) => setFeedback(e.target.value)}\n        id=\"feedback\"\n        placeholder=\"Share your feedback here\"\n      />\n      {isInvalid ? (\n        <p className=\"text-sm text-destructive\" role=\"alert\">\n          Feedback must be at least 10 characters.\n        </p>\n      ) : (\n        feedback.length >= 10 && (\n          <p className=\"text-sm text-teal-400\">\n            Looks good!\n          </p>\n        )\n      )}\n    </div>\n  );\n};\n\nexport default FeedbackTextarea;\n",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "shadcnspace",
+    "slug": "feedback-textarea",
+    "registry_url": "https://21st.dev/r/shadcnspace/feedback-textarea",
+    "title": "Feedback Textarea",
+    "description": "Here is feedback textarea component",
+    "category": "textarea",
+    "category_group": "UI Components",
+    "downloads": 3,
+    "likes": 0
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "button",
+  "type": "registry:component",
+  "title": "Button",
+  "description": "A button component.",
+  "dependencies": [
+    "lucide-react",
+    "framer-motion"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/ui/button.tsx",
+      "content": "import React, { useState } from 'react';\nimport { Play, Sun, Moon } from 'lucide-react';\nimport { motion } from 'framer-motion';\n\nconst Button3D = ({ \n  children, \n  variant = 'primary', \n  size = 'md', \n  onClick,\n  disabled = false,\n  className = ''\n}) => {\n  const [isPressed, setIsPressed] = useState(false);\n\n  const variants = {\n    primary: {\n      base: 'bg-blue-500 text-white border-blue-600',\n      hover: 'hover:bg-blue-600'\n    },\n    secondary: {\n      base: 'bg-gray-500 text-white border-gray-600',\n      hover: 'hover:bg-gray-600'\n    },\n    success: {\n      base: 'bg-green-500 text-white border-green-600',\n      hover: 'hover:bg-green-600'\n    },\n    danger: {\n      base: 'bg-red-500 text-white border-red-600',\n      hover: 'hover:bg-red-600'\n    },\n    warning: {\n      base: 'bg-yellow-500 text-black border-yellow-600',\n      hover: 'hover:bg-yellow-600'\n    }\n  };\n\n  const sizes = {\n    sm: 'px-3 py-2 text-xs sm:px-4 sm:py-2 sm:text-sm',\n    md: 'px-4 py-2 text-sm sm:px-6 sm:py-3 sm:text-base',\n    lg: 'px-6 py-3 text-base sm:px-8 sm:py-4 sm:text-lg'\n  };\n\n  const currentVariant = variants[variant];\n  const currentSize = sizes[size];\n\n  const handleMouseDown = () => {\n    if (!disabled) {\n      setIsPressed(true);\n    }\n  };\n\n  const handleMouseUp = () => {\n    setIsPressed(false);\n  };\n\n  const handleClick = (e) => {\n    if (onClick && !disabled) {\n      onClick(e);\n    }\n  };\n\n  return (\n    <motion.button\n      className={`\n        ${currentVariant.base}\n        ${currentVariant.hover}\n        font-bold\n        rounded-lg\n        border-b-4\n        ${currentSize}\n        ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}\n        focus:outline-none\n        focus:ring-4\n        focus:ring-blue-300\n        select-none\n        flex\n        items-center\n        justify-center\n        ${className}\n      `}\n      initial={{ \n        boxShadow: '0 6px 0 0 #1d4ed8',\n        y: 0 \n      }}\n      whileHover={{ \n        scale: 1.02,\n        boxShadow: '0 8px 0 0 #1d4ed8',\n        transition: { duration: 0.1 }\n      }}\n      whileTap={{ \n        scale: 0.98,\n        y: 4,\n        boxShadow: '0 2px 0 0 #1d4ed8',\n        transition: { duration: 0.1 }\n      }}\n      animate={{\n        y: isPressed ? 4 : 0,\n        boxShadow: isPressed ? '0 2px 0 0 #1d4ed8' : '0 6px 0 0 #1d4ed8'\n      }}\n      transition={{\n        type: \"spring\",\n        stiffness: 300,\n        damping: 20\n      }}\n      onMouseDown={handleMouseDown}\n      onMouseUp={handleMouseUp}\n      onMouseLeave={handleMouseUp}\n      onClick={handleClick}\n      disabled={disabled}\n    >\n      {children}\n    </motion.button>\n  );\n};\n\n// Demo component\nconst App = () => {\n  const [isDark, setIsDark] = useState(false);\n\n  const handleClick = () => {\n    console.log('Button clicked!');\n  };\n\n  const toggleTheme = () => {\n    setIsDark(!isDark);\n  };\n\n  const theme = {\n    light: {\n      bg: 'bg-gradient-to-br from-purple-100 to-blue-100',\n      text: 'text-gray-800',\n      gridColor: '#6366f1',\n      gridOpacity: 'opacity-20'\n    },\n    dark: {\n      bg: 'bg-gradient-to-br from-black via-gray-900 to-gray-800',\n      text: 'text-gray-100',\n      gridColor: '#8b5cf6',\n      gridOpacity: 'opacity-30'\n    }\n  };\n\n  const currentTheme = isDark ? theme.dark : theme.light;\n\n  return (\n    <div className={`w-full min-h-screen ${currentTheme.bg} p-4 sm:p-8 relative overflow-hidden transition-all duration-500`}>\n      {/* Theme Toggle Button */}\n      <motion.button\n        onClick={toggleTheme}\n        className={`fixed top-4 right-4 p-3 rounded-full ${isDark ? 'bg-gray-800 text-yellow-400' : 'bg-white text-gray-800'} shadow-lg z-20`}\n        whileHover={{ scale: 1.1 }}\n        whileTap={{ scale: 0.95 }}\n        transition={{ type: \"spring\", stiffness: 300, damping: 20 }}\n      >\n        {isDark ? <Sun className=\"w-5 h-5\" /> : <Moon className=\"w-5 h-5\" />}\n      </motion.button>\n\n      {/* Orthogonal Grid Background */}\n      <div className={`absolute inset-0 ${currentTheme.gridOpacity} transition-opacity duration-500`}>\n        <svg className=\"w-full h-full\" xmlns=\"http://www.w3.org/2000/svg\">\n          <defs>\n            <pattern id=\"grid\" width=\"40\" height=\"40\" patternUnits=\"userSpaceOnUse\">\n              <path d=\"M 40 0 L 0 0 0 40\" fill=\"none\" stroke={currentTheme.gridColor} strokeWidth=\"1\"/>\n            </pattern>\n          </defs>\n          <rect width=\"100%\" height=\"100%\" fill=\"url(#grid)\" />\n        </svg>\n      </div>\n      \n      <div className=\"flex flex-col items-center justify-center min-h-screen relative z-10\">\n        <h1 className={`text-2xl sm:text-3xl lg:text-4xl font-bold text-center mb-8 ${currentTheme.text} transition-colors duration-500`}>\n          3D Button Component Demo\n        </h1>\n        \n        <Button3D variant=\"primary\" onClick={handleClick}>\n          <Play className=\"w-4 h-4 sm:w-5 sm:h-5 mr-2\" />\n          Primary Button\n        </Button3D>\n      </div>\n    </div>\n  );\n};\n\nexport default App;\n",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "avanishverma4",
+    "slug": "button",
+    "registry_url": "https://21st.dev/r/avanishverma4/button",
+    "title": "Button",
+    "description": "A reusable component for button",
+    "category": "button",
+    "category_group": "UI Components",
+    "downloads": 9,
+    "likes": 0
+  }
+}

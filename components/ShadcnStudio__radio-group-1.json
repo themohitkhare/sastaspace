@@ -1,0 +1,31 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "radio-group-1",
+  "type": "registry:component",
+  "title": "Radio Group 1",
+  "description": "A radio-group-1 component.",
+  "dependencies": [],
+  "registryDependencies": [
+    "https://21st.dev/r/shadcn/label",
+    "https://21st.dev/r/shadcn/radio-group",
+    "https://21st.dev/r/shadcn/badge"
+  ],
+  "files": [
+    {
+      "path": "src/components/ui/radio-group-1.tsx",
+      "content": "import { Label } from '@/components/ui/label'\nimport { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'\n\nconst RadioGroupDemo = () => {\n  return (\n    <RadioGroup defaultValue='higher-secondary'>\n      <div className='flex items-center gap-2'>\n        <RadioGroupItem value='higher-secondary' id='higher-secondary' />\n        <Label htmlFor='higher-secondary'>Higher Secondary</Label>\n      </div>\n      <div className='flex items-center gap-2'>\n        <RadioGroupItem value='graduation' id='graduation' />\n        <Label htmlFor='graduation'>Graduation</Label>\n      </div>\n      <div className='flex items-center gap-2'>\n        <RadioGroupItem value='post-graduation' id='post-graduation' />\n        <Label htmlFor='post-graduation'>Post Graduation</Label>\n      </div>\n    </RadioGroup>\n  )\n}\n\nexport default RadioGroupDemo\n",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "ShadcnStudio",
+    "slug": "radio-group-1",
+    "registry_url": "https://21st.dev/r/ShadcnStudio/radio-group-1",
+    "title": "Radio Group 1",
+    "description": "Here is Radio Group component",
+    "category": "radio-group",
+    "category_group": "UI Components",
+    "downloads": 29,
+    "likes": 0
+  }
+}

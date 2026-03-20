@@ -1,0 +1,47 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "spark-button",
+  "type": "registry:component",
+  "title": "Spark Button",
+  "description": "A spark-button component.",
+  "dependencies": [],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/ui/spark-button.tsx",
+      "content": "import { cn } from \"@/lib/utils\"\nimport { ElementType, ComponentPropsWithoutRef } from \"react\"\n\ninterface CosmicGlowButtonProps<T extends ElementType> {\n  as?: T\n  color?: string\n  speed?: string\n  className?: string\n  children?: React.ReactNode\n}\n\nconst CosmicGlowButton = <T extends ElementType = \"button\">({\n  as,\n  className,\n  color,\n  speed = \"5s\",\n  children,\n  ...props\n}: CosmicGlowButtonProps<T> & Omit<ComponentPropsWithoutRef<T>, keyof CosmicGlowButtonProps<T>>) => {\n  const Component = as || \"button\"\n  const glowColor = color || \"hsl(var(--foreground))\"\n  const content = children ?? \"Click me\"\n\n  return (\n    <Component\n      className={cn(\n        \"relative inline-flex items-center justify-center py-4 px-8 rounded-2xl font-semibold text-base cursor-pointer\",\n        \"bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900\",\n        \"text-white shadow-lg shadow-[rgba(0,0,0,0.4)]\",\n        \"overflow-hidden\",\n        className\n      )}\n      {...props}\n    >\n      <span\n        className=\"absolute inset-0 rounded-2xl blur-lg opacity-40 animate-glow-scale\"\n        style={{\n          background: `radial-gradient(circle at center, ${glowColor} 10%, transparent 60%)`,\n          animationDuration: speed,\n          zIndex: 0,\n        }}\n      />\n      <span\n        className=\"absolute inset-0 rounded-2xl opacity-20 animate-glow-slide\"\n        style={{\n          background: `conic-gradient(from 90deg at 50% 50%, transparent 0deg, ${glowColor} 120deg, transparent 240deg)`,\n          animationDuration: speed,\n          zIndex: 0,\n        }}\n      />\n      <span className=\"relative z-10\">{content}</span>\n    </Component>\n  )\n}\n\nexport { CosmicGlowButton }\n",
+      "type": "registry:component"
+    }
+  ],
+  "css": {
+    "@keyframes glow-scale": {
+      "0%, 100%": {
+        "transform": "scale(1)",
+        "opacity": "0.4"
+      },
+      "50%": {
+        "transform": "scale(1.15)",
+        "opacity": "0.7"
+      }
+    },
+    "@keyframes glow-slide": {
+      "0%": {
+        "transform": "rotate(0deg)"
+      },
+      "100%": {
+        "transform": "rotate(360deg)"
+      }
+    }
+  },
+  "_meta": {
+    "author": "ruixen.ui",
+    "slug": "spark-button",
+    "registry_url": "https://21st.dev/r/ruixen.ui/spark-button",
+    "title": "SparkButton",
+    "description": "Ruixen Nova is a modern, glowing UI button component designed for sleek and high-performance web interfaces. With animated radial and conic gradients, this button brings a soft, dynamic glow effect that draws user attention without being distracting. Built using React and Tailwind CSS, it supports full customization including color, speed, and element type (as prop), making it highly flexible for any design system. Perfect for call-to-actions, modals, or hero sections, Ruixen Nova blends beauty with functionality and elevates your interface with a premium, futuristic feel.",
+    "category": "button",
+    "category_group": "UI Components",
+    "downloads": 28,
+    "likes": 0
+  }
+}

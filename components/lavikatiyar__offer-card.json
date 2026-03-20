@@ -1,0 +1,29 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "offer-card",
+  "type": "registry:component",
+  "title": "Offer Card",
+  "description": "A offer-card component.",
+  "dependencies": [
+    "class-variance-authority"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/ui/offer-card.tsx",
+      "content": "import * as React from \"react\";\nimport { cn } from \"@/lib/utils\"; // Assuming you have a `cn` utility from shadcn/ui\nimport { cva, type VariantProps } from \"class-variance-authority\";\n\n// Define variants for the card using cva\nconst cardVariants = cva(\n  \"group relative flex flex-col justify-end overflow-hidden rounded-xl border bg-card p-6 shadow-sm transition-all duration-300 ease-in-out hover:shadow-lg\",\n  {\n    variants: {\n      variant: {\n        default: \"hover:-translate-y-1 hover:scale-[1.02]\",\n        faded: \"\", // Special variant for the fade effect\n      },\n    },\n    defaultVariants: {\n      variant: \"default\",\n    },\n  }\n);\n\nexport interface OfferCardProps\n  extends React.HTMLAttributes<HTMLDivElement>,\n    VariantProps<typeof cardVariants> {\n  /**\n   * The URL for the image to be displayed at the top of the card.\n   */\n  imageSrc: string;\n  /**\n   * The main title or category of the offer.\n   */\n  title: string;\n  /**\n   * The descriptive text for the offer, such as discount details.\n   */\n  offerText: string;\n  /**\n   * The URL the card should link to.\n   */\n  href: string;\n}\n\nconst OfferCard = React.forwardRef<HTMLDivElement, OfferCardProps>(\n  ({ className, variant, imageSrc, title, offerText, href, ...props }, ref) => {\n    return (\n      <div\n        ref={ref}\n        className={cn(cardVariants({ variant, className }))}\n        {...props}\n      >\n        {/* The card is a link */}\n        <a href={href} className=\"absolute inset-0 z-10\" aria-label={title}>\n          <span className=\"sr-only\">View Details</span>\n        </a>\n\n        {/* Background Image */}\n        <div\n          aria-hidden=\"true\"\n          className=\"absolute inset-0 z-0 flex items-center justify-center\"\n        >\n          <img\n            src={imageSrc}\n            alt={`${title} illustration`}\n            className=\"h-40 w-40 object-contain transition-transform duration-500 ease-in-out group-hover:scale-110\"\n          />\n        </div>\n\n        {/* Content */}\n        <div className=\"relative z-20 mt-32\">\n          <h3 className=\"text-lg font-semibold text-card-foreground\">\n            {title}\n          </h3>\n          <p className=\"mt-1 text-sm font-medium text-foreground\">\n            {offerText}\n          </p>\n        </div>\n      </div>\n    );\n  }\n);\nOfferCard.displayName = \"OfferCard\";\n\nexport { OfferCard };",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "lavikatiyar",
+    "slug": "offer-card",
+    "registry_url": "https://21st.dev/r/lavikatiyar/offer-card",
+    "title": "Offer Card",
+    "description": "Offer Card\nThis component displays an image, title, and offer text in a clean, card-style layout with a hover animation. It's designed to be easily reused with different content.",
+    "category": "card",
+    "category_group": "UI Components",
+    "downloads": 0,
+    "likes": 0
+  }
+}

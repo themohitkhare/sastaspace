@@ -1,0 +1,27 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "achievement-cards",
+  "type": "registry:component",
+  "title": "Achievement Cards",
+  "description": "A achievement-cards component.",
+  "dependencies": [],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/ui/achievement-cards.tsx",
+      "content": "import * as React from \"react\";\nimport { cn } from \"@/lib/utils\"; // Assuming 'cn' from shadcn/ui setup\n\n/**\n * Props for the AwardCard component.\n */\nexport interface AwardCardProps extends React.HTMLAttributes<HTMLDivElement> {\n  /**\n   * The icon to be displayed. Can be an SVG, <img>, or any ReactNode.\n   */\n  icon: React.ReactNode;\n  /**\n   * The small heading or category (e.g., \"1st Place\").\n   */\n  title: string;\n  /**\n   * The main description or name of the awarding entity.\n   */\n  description: string;\n}\n\nconst AwardCard = React.forwardRef<HTMLDivElement, AwardCardProps>(\n  ({ className, icon, title, description, ...props }, ref) => {\n    return (\n      <div\n        ref={ref}\n        className={cn(\n          \"flex min-w-[240px] items-center gap-4 rounded-lg border bg-card p-4 shadow-sm\",\n          // Added transition for smooth animation on hover\n          \"transition-all duration-300 ease-in-out hover:shadow-md hover:-translate-y-1\",\n          className\n        )}\n        {...props}\n      >\n        {/* Icon Slot */}\n        <div className=\"flex-shrink-0 text-foreground\">{icon}</div>\n\n        {/* Text Content */}\n        <div className=\"flex flex-col text-left\">\n          <p className=\"text-sm text-muted-foreground\">{title}</p>\n          <p className=\"font-semibold text-card-foreground\">{description}</p>\n        </div>\n      </div>\n    );\n  }\n);\nAwardCard.displayName = \"AwardCard\";\n\nexport { AwardCard };",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "ravikatiyar162",
+    "slug": "achievement-cards",
+    "registry_url": "https://21st.dev/r/ravikatiyar162/achievement-cards",
+    "title": "Achievement Cards",
+    "description": "Achievement Cards – Visual recognition component. Highlights awards, partnerships, features, and milestones with branded icons and concise labels. Ideal for startup landing pages, portfolios, or pitch decks to build trust and showcase credibility.",
+    "category": "card",
+    "category_group": "UI Components",
+    "downloads": 19,
+    "likes": 0
+  }
+}

@@ -1,0 +1,40 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "subscription-card",
+  "type": "registry:component",
+  "title": "Subscription Card",
+  "description": "A subscription-card component.",
+  "dependencies": [
+    "recharts"
+  ],
+  "registryDependencies": [
+    "https://21st.dev/r/shadcn/card"
+  ],
+  "files": [
+    {
+      "path": "src/components/ui/subscription-card.tsx",
+      "content": "\"use client\";\n\nimport { Card, CardContent, CardHeader, CardTitle } from \"@/components/ui/card\";\nimport { Bar, BarChart, ResponsiveContainer, XAxis } from \"recharts\";\n\nexport function SubscriptionCard() {\n  const data = [\n    { month: \"Jan\", value: 65 },\n    { month: \"Feb\", value: 85 },\n    { month: \"Mar\", value: 55 },\n    { month: \"Apr\", value: 75 },\n    { month: \"May\", value: 50 },\n    { month: \"Jun\", value: 65 },\n    { month: \"Jul\", value: 85 },\n    { month: \"Aug\", value: 55 },\n  ];\n\n  const color = \"hsl(var(--foreground))\";\n\n  return (\n    <Card className= \"w-full md:max-w-md\" >\n    <CardHeader className=\"pb-2\" >\n      <CardTitle className=\"text-base font-medium\" > Subscriptions < /CardTitle>\n        < /CardHeader>\n        < CardContent className = \"space-y-4\" >\n          <div>\n          <h3 className=\"text-2xl font-bold\" > +2350 < /h3>\n            < p className = \"text-sm text-muted-foreground\" >\n              +80.1 % from last month\n                < /p>\n                < /div>\n\n                < div className = \" h-32 w-full\" >\n                  <ResponsiveContainer width=\"100%\" height = \"100%\" >\n                    <BarChart data={ data }>\n                      <XAxis\n                dataKey=\"month\"\n  axisLine = { false}\n  tickLine = { false}\n  tick = {{ fontSize: 12, fill: \"#666\" }\n}\n/>\n\n  < Bar\ndataKey = \"value\"\nfill = { color }\nradius = { [2, 2, 0, 0]}\nisAnimationActive = { true}\n  />\n  </BarChart>\n  < /ResponsiveContainer>\n  < /div>\n  < /CardContent>\n  < /Card>\n  );\n}",
+      "type": "registry:component"
+    }
+  ],
+  "cssVars": {
+    "dark": {
+      "--chart-1": "359 2% 90%",
+      "--chart-2": "240 1% 74%",
+      "--chart-3": "240 1% 58%",
+      "--chart-4": "240 1% 42%",
+      "--chart-5": "240 2% 26%"
+    }
+  },
+  "_meta": {
+    "author": "beratberkayg",
+    "slug": "subscription-card",
+    "registry_url": "https://21st.dev/r/beratberkayg/subscription-card",
+    "title": "Subscription Card",
+    "description": "Subscription Card",
+    "category": "card",
+    "category_group": "UI Components",
+    "downloads": 0,
+    "likes": 0
+  }
+}

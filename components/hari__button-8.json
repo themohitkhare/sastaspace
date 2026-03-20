@@ -1,0 +1,32 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "button-8",
+  "type": "registry:component",
+  "title": "Button 8",
+  "description": "A button-8 component.",
+  "dependencies": [
+    "lucide-react",
+    "tsparticles",
+    "@tsparticles/engine",
+    "@tsparticles/react"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/ui/button-8.tsx",
+      "content": "import { useEffect, useMemo, useState } from \"react\";\nimport { Sparkle } from \"lucide-react\";\nimport { loadFull } from \"tsparticles\";\n\nimport type { ISourceOptions } from \"@tsparticles/engine\";\nimport Particles, { initParticlesEngine } from \"@tsparticles/react\";\nimport { cn } from \"@/lib/utils\";\n\nconst options: ISourceOptions = {\n  key: \"star\",\n  name: \"Star\",\n  particles: {\n    number: {\n      value: 20,\n      density: {\n        enable: false,\n      },\n    },\n    color: {\n      value: [\"#7c3aed\", \"#bae6fd\", \"#a78bfa\", \"#93c5fd\", \"#0284c7\", \"#fafafa\", \"#38bdf8\"],\n    },\n    shape: {\n      type: \"star\",\n      options: {\n        star: {\n          sides: 4,\n        },\n      },\n    },\n    opacity: {\n      value: 0.8,\n    },\n    size: {\n      value: { min: 1, max: 4 },\n    },\n    rotate: {\n      value: {\n        min: 0,\n        max: 360,\n      },\n      enable: true,\n      direction: \"clockwise\",\n      animation: {\n        enable: true,\n        speed: 10,\n        sync: false,\n      },\n    },\n    links: {\n      enable: false,\n    },\n    reduceDuplicates: true,\n    move: {\n      enable: true,\n      center: {\n        x: 120,\n        y: 45,\n      },\n    },\n  },\n  interactivity: {\n    events: {},\n  },\n  smooth: true,\n  fpsLimit: 120,\n  background: {\n    color: \"transparent\",\n    size: \"cover\",\n  },\n  fullScreen: {\n    enable: false,\n  },\n  detectRetina: true,\n  absorbers: [\n    {\n      enable: true,\n      opacity: 0,\n      size: {\n        value: 1,\n        density: 1,\n        limit: {\n          radius: 5,\n          mass: 5,\n        },\n      },\n      position: {\n        x: 110,\n        y: 45,\n      },\n    },\n  ],\n  emitters: [\n    {\n      autoPlay: true,\n      fill: true,\n      life: {\n        wait: true,\n      },\n      rate: {\n        quantity: 5,\n        delay: 0.5,\n      },\n      position: {\n        x: 110,\n        y: 45,\n      },\n    },\n  ],\n};\n\nexport const Component = () => {\n  const [particleState, setParticlesReady] = useState<\"loaded\" | \"ready\">();\n  const [isHovering, setIsHovering] = useState(false);\n\n  useEffect(() => {\n    initParticlesEngine(async (engine) => {\n      await loadFull(engine);\n    }).then(() => {\n      setParticlesReady(\"loaded\");\n    });\n  }, []);\n\n  const modifiedOptions = useMemo(() => {\n    options.autoPlay = isHovering;\n    return options;\n  }, [isHovering]);\n\n  return (\n    <button\n      className=\"group relative my-8 rounded-full bg-gradient-to-r from-blue-300/30 via-blue-500/30 via-40% to-purple-500/30 p-1 text-white transition-transform hover:scale-110 active:scale-105\"\n      onMouseEnter={() => setIsHovering(true)}\n      onMouseLeave={() => setIsHovering(false)}\n    >\n      <div className=\"relative flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-blue-300 via-blue-500 via-40% to-purple-500 px-4 py-2 text-white\">\n        <Sparkle className=\"size-6 -translate-y-0.5 animate-sparkle fill-white\" />\n        <Sparkle\n          style={{\n            animationDelay: \"1s\",\n          }}\n          className=\"absolute bottom-2.5 left-3.5 z-20 size-2 rotate-12 animate-sparkle fill-white\"\n        />\n        <Sparkle\n          style={{\n            animationDelay: \"1.5s\",\n            animationDuration: \"2.5s\",\n          }}\n          className=\"absolute left-5 top-2.5 size-1 -rotate-12 animate-sparkle fill-white\"\n        />\n        <Sparkle\n          style={{\n            animationDelay: \"0.5s\",\n            animationDuration: \"2.5s\",\n          }}\n          className=\"absolute left-3 top-3 size-1.5 animate-sparkle fill-white\"\n        />\n\n        <span className=\"font-semibold\">Generate thumbnails</span>\n      </div>\n      {!!particleState && (\n        <Particles\n          id=\"whatever\"\n          className={cn(\"pointer-events-none absolute -bottom-4 -left-4 -right-4 -top-4 z-0 opacity-0 transition-opacity\", {\n            \"group-hover:opacity-100\": particleState === \"ready\",\n          })}\n          particlesLoaded={async () => {\n            setParticlesReady(\"ready\");\n          }}\n          options={modifiedOptions}\n        />\n      )}\n    </button>\n  );\n};",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "hari",
+    "slug": "button-8",
+    "registry_url": "https://21st.dev/r/hari/button-8",
+    "title": "Button",
+    "description": "Here is magic button component",
+    "category": "button",
+    "category_group": "UI Components",
+    "downloads": 117,
+    "likes": 0
+  }
+}

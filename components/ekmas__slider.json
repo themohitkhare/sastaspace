@@ -1,0 +1,97 @@
+{
+  "name": "slider",
+  "type": "registry:ui",
+  "dependencies": [
+    "@radix-ui/react-slider"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "/components/ui/slider.tsx",
+      "content": "\"use client\"\r\n\r\nimport * as SliderPrimitive from \"@radix-ui/react-slider\"\r\n\r\nimport * as React from \"react\"\r\n\r\nimport { cn } from \"@/lib/utils\"\r\n\r\nconst Slider = React.forwardRef<\r\n  React.ElementRef<typeof SliderPrimitive.Root>,\r\n  React.ComponentPropsWithoutRef<typeof SliderPrimitive.Root>\r\n>(({ className, ...props }, ref) => (\r\n  <SliderPrimitive.Root\r\n    ref={ref}\r\n    className={cn(\r\n      \"relative flex w-full touch-none select-none items-center\",\r\n      className,\r\n    )}\r\n    {...props}\r\n  >\r\n    <SliderPrimitive.Track className=\"relative h-3 w-full grow overflow-hidden rounded-full border-2 border-border bg-bw\">\r\n      <SliderPrimitive.Range className=\"absolute h-full bg-main\" />\r\n    </SliderPrimitive.Track>\r\n    <SliderPrimitive.Thumb className=\"block h-5 w-5 rounded-full border-2 border-border bg-white ring-offset-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50\" />\r\n  </SliderPrimitive.Root>\r\n))\r\nSlider.displayName = SliderPrimitive.Root.displayName\r\n\r\nexport { Slider }",
+      "type": "registry:ui",
+      "target": ""
+    }
+  ],
+  "cssVars": {
+    "light": {
+      "--main": "#88aaee",
+      "--overlay": "rgba(0, 0, 0, 0.8)",
+      "--bg": "#dfe5f2",
+      "--bw": "#fff",
+      "--blank": "#000",
+      "--border": "#000",
+      "--text": "#000",
+      "--mtext": "#000",
+      "--ring": "#000",
+      "--ring-offset": "#fff",
+      "--border-radius": "5px",
+      "--box-shadow-x": "4px",
+      "--box-shadow-y": "4px",
+      "--reverse-box-shadow-x": "-4px",
+      "--reverse-box-shadow-y": "-4px",
+      "--base-font-weight": "500",
+      "--heading-font-weight": "700",
+      "--shadow": "var(--box-shadow-x) var(--box-shadow-y) 0px 0px var(--border)"
+    },
+    "dark": {
+      "--bg": "#272933",
+      "--bw": "#212121",
+      "--blank": "#fff",
+      "--border": "#000",
+      "--text": "#e6e6e6",
+      "--mtext": "#000",
+      "--ring": "#fff",
+      "--ring-offset": "#000",
+      "--shadow": "var(--box-shadow-x) var(--box-shadow-y) 0px 0px var(--border)"
+    }
+  },
+  "tailwind": {
+    "config": {
+      "theme": {
+        "extend": {
+          "colors": {
+            "main": "var(--main)",
+            "overlay": "var(--overlay)",
+            "bg": "var(--bg)",
+            "bw": "var(--bw)",
+            "blank": "var(--blank)",
+            "text": "var(--text)",
+            "mtext": "var(--mtext)",
+            "border": "var(--border)",
+            "ring": "var(--ring)",
+            "ringOffset": "var(--ring-offset)",
+            "secondaryBlack": "#212121"
+          },
+          "borderRadius": {
+            "base": "5px"
+          },
+          "boxShadow": {
+            "shadow": "var(--shadow)"
+          },
+          "translate": {
+            "boxShadowX": "4px",
+            "boxShadowY": "4px",
+            "reverseBoxShadowX": "-4px",
+            "reverseBoxShadowY": "-4px"
+          },
+          "fontWeight": {
+            "base": "500",
+            "heading": "700"
+          }
+        }
+      }
+    }
+  },
+  "_meta": {
+    "author": "ekmas",
+    "slug": "slider",
+    "registry_url": "https://21st.dev/r/ekmas/slider",
+    "title": "Slider",
+    "description": "Neobrutalism-styled slider component.",
+    "category": "slider",
+    "category_group": "UI Components",
+    "downloads": 20,
+    "likes": 0
+  }
+}

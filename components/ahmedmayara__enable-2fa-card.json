@@ -1,0 +1,46 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "enable-2fa-card",
+  "type": "registry:component",
+  "title": "Enable 2fa Card",
+  "description": "A enable-2fa-card component.",
+  "dependencies": [],
+  "registryDependencies": [
+    "https://21st.dev/r/shadcn/card",
+    "https://21st.dev/r/shadcn/separator",
+    "https://21st.dev/r/shadcn/input-otp"
+  ],
+  "files": [
+    {
+      "path": "src/components/ui/enable-2fa-card.tsx",
+      "content": "import {\n  Card,\n  CardHeader,\n  CardTitle,\n  CardDescription,\n  CardContent,\n} from \"@/components/ui/card\";\nimport { Separator } from \"@/components/ui/separator\";\nimport {\n  InputOTP,\n  InputOTPGroup,\n  InputOTPSlot,\n} from \"@/components/ui/input-otp\";\nimport { cn } from \"@/lib/utils\";\n\nconst STEPS: {\n  title: string;\n  description: string;\n  isCurrent?: boolean;\n  content?: React.ReactNode;\n}[] = [\n  {\n    title: \"Download app\",\n    description: \"Download a mobile authentication app.\",\n  },\n  {\n    title: \"Scan QR code\",\n    description:\n      \"Scan this QR code using a mobile authentication app. This will generate a verification code.\",\n    content: (\n      <div className=\"inline-block p-1 border rounded-lg\">\n        <img\n          src=\"https://upload.wikimedia.org/wikipedia/commons/4/41/QR_Code_Example.svg\"\n          alt=\"QR Code\"\n          className=\"size-32 dark:invert\"\n        />\n      </div>\n    ),\n  },\n  {\n    title: \"Enter code\",\n    description:\n      \"Enter the verification code provided by your mobile authentication app.\",\n    content: (\n      <InputOTP maxLength={6}>\n        <InputOTPGroup className=\"gap-2.5\">\n          <InputOTPSlot index={0} className=\"border rounded-lg\" />\n          <InputOTPSlot index={1} className=\"border rounded-lg\" />\n          <InputOTPSlot index={2} className=\"border rounded-lg\" />\n          <InputOTPSlot index={3} className=\"border rounded-lg\" />\n          <InputOTPSlot index={4} className=\"border rounded-lg\" />\n          <InputOTPSlot index={5} className=\"border rounded-lg\" />\n        </InputOTPGroup>\n      </InputOTP>\n    ),\n  },\n];\n\nexport const Component = () => {\n  return (\n    <Card className=\"flex w-full max-w-[500px] shadow-none flex-col gap-6 p-5 md:p-8\">\n      <CardHeader className=\"flex flex-col items-center gap-2\">\n        <div className=\"relative flex size-[68px] shrink-0 items-center justify-center rounded-full backdrop-blur-xl md:size-24 before:absolute before:inset-0 before:rounded-full before:bg-gradient-to-b before:from-neutral-500 before:to-transparent before:opacity-10\">\n          <div className=\"relative z-10 flex size-12 items-center justify-center rounded-full bg-background dark:bg-muted/80 shadow-xs ring-1 ring-inset ring-border md:size-16\">\n            <svg\n              xmlns=\"http://www.w3.org/2000/svg\"\n              width=\"32\"\n              height=\"32\"\n              viewBox=\"0 0 24 24\"\n              className=\"size-6 text-muted-foreground/80 md:size-8\"\n            >\n              <path\n                fill=\"currentColor\"\n                fill-rule=\"evenodd\"\n                d=\"M3.378 5.082C3 5.62 3 7.22 3 10.417v1.574c0 5.638 4.239 8.375 6.899 9.536c.721.315 1.082.473 2.101.473c1.02 0 1.38-.158 2.101-.473C16.761 20.365 21 17.63 21 11.991v-1.574c0-3.198 0-4.797-.378-5.335c-.377-.537-1.88-1.052-4.887-2.081l-.573-.196C13.595 2.268 12.812 2 12 2s-1.595.268-3.162.805L8.265 3c-3.007 1.03-4.51 1.545-4.887 2.082M13.5 15a1 1 0 0 1-1 1h-1a1 1 0 0 1-1-1v-1.401A2.999 2.999 0 0 1 12 8a3 3 0 0 1 1.5 5.599z\"\n                clip-rule=\"evenodd\"\n              />\n            </svg>\n          </div>\n        </div>\n\n        <div className=\"flex flex-col space-y-1.5 text-center\">\n          <CardTitle className=\"md:text-xl font-medium\">\n            Enable Two-Factor Authentication\n          </CardTitle>\n          <CardDescription className=\"tracking-[-0.006em]\">\n            Secure your account with an additional layer of protection.\n          </CardDescription>\n        </div>\n      </CardHeader>\n\n      <Separator />\n\n      <CardContent className=\"p-0\">\n        <div className=\"grid items-start justify-start grid-cols-1!\">\n          {STEPS.map((step, index) => (\n            <div\n              key={index}\n              className={cn(\n                \"relative flex flex-row items-start before:absolute before:start-0 gap-3 last:after:hidden after:absolute after:top-9 after:bottom-2 after:start-3.5 after:w-px after:-translate-x-[0.5px] after:bg-border\",\n                index !== STEPS.length - 1 && \"pb-6\"\n              )}\n            >\n              <div className=\"flex flex-col items-center self-stretch\">\n                <span className=\"z-10 text-xs font-semibold flex shrink-0 items-center justify-center rounded-full bg-muted ring-1 ring-inset ring-border text-foreground size-7\">\n                  {index + 1}\n                </span>\n              </div>\n              <div className=\"flex flex-col items-start\">\n                <p className=\"text-sm leading-5 tracking-[-0.006em] font-semibold text-foreground\">\n                  {step.title}\n                </p>\n                <p className=\"text-sm leading-5 tracking-[-0.006em] text-muted-foreground\">\n                  {step.description}\n                </p>\n                <div className=\"mt-2.5\">{step.content && step.content}</div>\n              </div>\n            </div>\n          ))}\n        </div>\n      </CardContent>\n    </Card>\n  );\n};\n",
+      "type": "registry:component"
+    }
+  ],
+  "cssVars": {
+    "theme": {
+      "--animate-caret-blink": "caret-blink 1.25s ease-out infinite"
+    }
+  },
+  "css": {
+    "@keyframes caret-blink": {
+      "0%,70%,100%": {
+        "opacity": "1"
+      },
+      "20%,50%": {
+        "opacity": "0"
+      }
+    }
+  },
+  "_meta": {
+    "author": "ahmedmayara",
+    "slug": "enable-2fa-card",
+    "registry_url": "https://21st.dev/r/ahmedmayara/enable-2fa-card",
+    "title": "Enable 2FA Card",
+    "description": "A structured Two-Factor Authentication Card that guides users through enabling 2FA with step-by-step instructions. Download app, scan QR code, and enter the verification code, featuring a clean layout and built-in OTP input for a secure and user-friendly experience.",
+    "category": "card",
+    "category_group": "UI Components",
+    "downloads": 0,
+    "likes": 0
+  }
+}

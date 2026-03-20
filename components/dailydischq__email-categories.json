@@ -1,0 +1,29 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "email-categories",
+  "type": "registry:component",
+  "title": "Email Categories",
+  "description": "A email-categories component.",
+  "dependencies": [
+    "lucide-react"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/ui/email-categories.tsx",
+      "content": "import React, { useState, useMemo } from 'react';\nimport { \n  Inbox,\n  SendHorizontal,\n  Trash,\n  MailX,\n  SquarePen,\n  Star,\n  Archive\n} from 'lucide-react';\n\ninterface CategoryFolder {\n  name: string;\n  icon: React.ComponentType<{ size?: number; className?: string; style?: React.CSSProperties }>;\n  folderType: string;\n  unreadCount: number;\n  color: string;\n}\n\ninterface CategoriesSectionProps {\n  onCategoryClick?: (folderType: string) => void;\n  systemUnreadCounts?: Record<string, number>;\n}\n\nconst CategoriesSection: React.FC<CategoriesSectionProps> = ({ \n  onCategoryClick,\n  systemUnreadCounts = {}\n}) => {\n  const [selectedSystemFolder, setSelectedSystemFolder] = useState<string | null>(null);\n\n  const systemFolders = useMemo(() => {\n    const systemFolderConfig = [\n      { name: 'Inbox', icon: Inbox, folderType: 'inbox' },\n      { name: 'Sent', icon: SendHorizontal, folderType: 'sent' },\n      { name: 'Drafts', icon: SquarePen, folderType: 'drafts' },\n      { name: 'Trash', icon: Trash, folderType: 'trash' },\n      { name: 'Spam', icon: MailX, folderType: 'spam' },\n      { name: 'Starred', icon: Star, folderType: 'starred' },\n      { name: 'Archive', icon: Archive, folderType: 'archive' }\n    ];\n\n    return systemFolderConfig.map(folder => {\n      // Map folder names to Gmail system label IDs\n      const systemLabelIdMap: Record<string, string> = {\n        'Inbox': 'INBOX',\n        'Sent': 'SENT', \n        'Drafts': 'DRAFT',\n        'Trash': 'TRASH',\n        'Spam': 'SPAM',\n        'Starred': 'STARRED',\n        'Archive': 'ARCHIVE'\n      };\n      \n      const systemLabelId = systemLabelIdMap[folder.name];\n      const unreadCount = systemLabelId ? (systemUnreadCounts[systemLabelId] || 0) : 0;\n\n      return {\n        ...folder,\n        unreadCount,\n        color: selectedSystemFolder === folder.folderType ? '#424242' : '#8f8f8fff'\n      };\n    });\n  }, [systemUnreadCounts, selectedSystemFolder]);\n\n  const handleSystemFolderClick = (folderType: string) => {\n    setSelectedSystemFolder(folderType);\n    onCategoryClick?.(folderType);\n  };\n\n  return (\n    <div className=\"p-2\">\n      <div className=\"mb-3\">\n        <h4 className=\"text-xs font-semibold text-gray-600 uppercase tracking-wide\">\n          Categories\n        </h4>\n      </div>\n      <div className=\"space-y-1\">\n        {systemFolders.map((folder) => {\n          const IconComponent = folder.icon;\n          return (\n            <button\n              key={folder.name}\n              onClick={() => handleSystemFolderClick(folder.folderType)}\n              className=\"w-full flex items-center justify-between px-2 py-1.5 text-sm hover:bg-gray-100 rounded-md transition-colors group\"\n            >\n              <div className=\"flex items-center space-x-2 min-w-0 flex-1\">\n                <IconComponent\n                  size={18}\n                  className=\"flex-shrink-0 transition-transform duration-200 group-hover:-rotate-12\"\n                  style={{ color: folder.color }}\n                />\n                <span className=\"text-gray-700 truncate\">{folder.name}</span>\n              </div>\n              \n              {/* Unread count badge */}\n              {folder.unreadCount > 0 && (\n                <div className=\"bg-blue-100 text-blue-700 text-xs px-1.5 py-0.5 rounded-full min-w-[18px] text-center flex-shrink-0 ml-2\">\n                  {folder.unreadCount > 99 ? '99+' : folder.unreadCount}\n                </div>\n              )}\n            </button>\n          );\n        })}\n      </div>\n    </div>\n  );\n};\n\nexport default CategoriesSection;",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "dailydischq",
+    "slug": "email-categories",
+    "registry_url": "https://21st.dev/r/dailydischq/email-categories",
+    "title": "Email Categories",
+    "description": "Email categories component for building email client app.",
+    "category": "button",
+    "category_group": "UI Components",
+    "downloads": 0,
+    "likes": 0
+  }
+}

@@ -1,0 +1,46 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "context-card-1",
+  "type": "registry:component",
+  "title": "Context Card 1",
+  "description": "A context-card-1 component.",
+  "dependencies": [
+    "react-tooltip"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/ui/context-card-1.tsx",
+      "content": "import React, { useMemo } from \"react\";\nimport { Tooltip } from \"react-tooltip\";\n\ninterface ContextCardTriggerProps {\n  content: React.ReactNode;\n  side?: \"top\" | \"bottom\" | \"left\" | \"right\";\n  children: React.ReactNode;\n}\n\nconst ContextCardTrigger = ({\n  content,\n  side = \"top\",\n  children\n}: ContextCardTriggerProps) => {\n  const id = useMemo(() => {\n    const chars = \"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ\";\n    return Array.from({ length: 6 }, () => chars[Math.floor(Math.random() * chars.length)]).join(\"\");\n  }, []);\n\n  return (\n    <div>\n      <style>\n        {`\n          :root {\n            --context-card-border: #ebebeb\n          }\n          .dark {\n            --context-card-border: #2e2e2e\n          }\n        `}\n      </style>\n      <div id={id} className=\"font-sans\">{children}</div>\n      <Tooltip\n        anchorSelect={`#${id}`}\n        place={side}\n        opacity={1}\n        border={\"1px solid var(--context-card-border)\"}\n        className={`!font-sans !text-center !text-base !rounded-lg !bg-background-100 !text-gray-1000`}\n      >\n        {content}\n      </Tooltip>\n    </div>\n  );\n};\n\nexport const ContextCard = {\n  Trigger: ContextCardTrigger\n};\n",
+      "type": "registry:component"
+    }
+  ],
+  "cssVars": {
+    "theme": {
+      "--color-context-card-border": "var(--context-card-border)",
+      "--color-gray-1000": "var(--ds-gray-1000)",
+      "--color-background-100": "var(--ds-background-100)"
+    },
+    "light": {
+      "--context-card-border": "hsla(0, 0%, 92%, 1)",
+      "--ds-gray-1000": "hsla(0, 0%, 9%, 1)",
+      "--ds-background-100": "hsla(0, 0%, 100%, 1)"
+    },
+    "dark": {
+      "--context-card-border": "hsla(0, 0%, 18%, 1)",
+      "--ds-gray-1000": "hsla(0, 0%, 93%, 1)",
+      "--ds-background-100": "hsla(0,0%,4%, 1)"
+    }
+  },
+  "_meta": {
+    "author": "shugar",
+    "slug": "context-card-1",
+    "registry_url": "https://21st.dev/r/shugar/context-card-1",
+    "title": "Context Card",
+    "description": "Tooltip.  ",
+    "category": "card",
+    "category_group": "UI Components",
+    "downloads": 10,
+    "likes": 0
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "message-design-card-list",
+  "type": "registry:component",
+  "title": "Message Design Card List",
+  "description": "A message-design-card-list component.",
+  "dependencies": [
+    "lucide-react",
+    "clsx"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/ui/message-design-card-list.tsx",
+      "content": "// src/components/ui/component.tsx\n'use client';\n\nimport React from 'react';\nimport { Search,  Star } from 'lucide-react';\nimport clsx from 'clsx';\n\nexport interface MessageProps {\n  id: string;\n  avatar: string;\n  name: string;\n  text: string;\n  date: string;\n  isFavorite?: boolean;\n  isActive?: boolean;\n}\n\ninterface ClientMessagesSidebarProps {\n  messages: MessageProps[];\n  onMessageClick?: (id: string) => void;\n  onFavoriteToggle?: (id: string) => void;\n}\n\nexport const ClientMessagesSidebar: React.FC<ClientMessagesSidebarProps> = ({\n  messages,\n  onMessageClick,\n  onFavoriteToggle,\n}) => {\n  return (\n    <div className=\"sidebar\">\n      <div className=\"sidebar-header\">\n        <h2>client messages</h2>\n        <div className=\"tools\">\n          <Search className=\"size-6\" />\n        </div>\n      </div>\n      <div className=\"messages\">\n        {messages.map((message) => (\n          <div\n            key={message.id}\n            className={clsx('message', { active: message.isActive })}\n            onClick={() => onMessageClick?.(message.id)}\n          >\n            <div className=\"message-body\">\n              <div className=\"profile-img\">\n                <img src={message.avatar} alt={message.name} />\n              </div>\n              <div className=\"profile\">\n                <div className=\"profile-name\">\n                  <h3>{message.name}</h3>\n                  <Star\n                    className={clsx('size-6', { fav: message.isFavorite })}\n                    onClick={(e) => {\n                      e.stopPropagation(); // Prevent message click from firing\n                      onFavoriteToggle?.(message.id);\n                    }}\n                  />\n                </div>\n                <div className=\"profile-text\">\n                  <p>{message.text}</p>\n                </div>\n              </div>\n            </div>\n            <div className=\"message-footer\">\n              <div className=\"date\">{message.date}</div>\n            </div>\n          </div>\n        ))}\n      </div>\n    </div>\n  );\n};",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "kristen17",
+    "slug": "message-design-card-list",
+    "registry_url": "https://21st.dev/r/kristen17/message-design-card-list",
+    "title": "Message Design Card List",
+    "description": "Here is Message Design Card List component",
+    "category": "card",
+    "category_group": "UI Components",
+    "downloads": 8,
+    "likes": 0
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "required-textarea",
+  "type": "registry:component",
+  "title": "Required Textarea",
+  "description": "A required-textarea component.",
+  "dependencies": [],
+  "registryDependencies": [
+    "https://21st.dev/r/shadcn/label",
+    "https://21st.dev/r/shadcn/textarea"
+  ],
+  "files": [
+    {
+      "path": "src/components/ui/required-textarea.tsx",
+      "content": "import { useId } from 'react'\n\nimport { Label } from '@/components/ui/label'\nimport { Textarea } from '@/components/ui/textarea'\n\nconst TextareaRequiredDemo = () => {\n  const id = useId()\n\n  return (\n    <div className='w-full max-w-xs space-y-2'>\n      <Label htmlFor={id}>\n        Feedback <span className='text-destructive'>*</span>\n      </Label>\n      <Textarea placeholder='Share your feedback here' id={id} required />\n    </div>\n  )\n}\n\nexport default TextareaRequiredDemo\n",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "shadcnspace",
+    "slug": "required-textarea",
+    "registry_url": "https://21st.dev/r/shadcnspace/required-textarea",
+    "title": "Required Textarea",
+    "description": "Here is required textarea component",
+    "category": "textarea",
+    "category_group": "UI Components",
+    "downloads": 3,
+    "likes": 0
+  }
+}

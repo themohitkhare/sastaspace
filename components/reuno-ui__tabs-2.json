@@ -1,0 +1,27 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "tabs-2",
+  "type": "registry:component",
+  "title": "Tabs 2",
+  "description": "A tabs-2 component.",
+  "dependencies": [],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/ui/tabs-2.tsx",
+      "content": "import { cn } from \"@/lib/utils\";\nimport { useState } from \"react\";\nexport default function Example() {\n    return (\n        <div className=\"flex space-x-2 bg-white p-1 border border-gray-500/50 rounded-md text-sm\">\n            <div className=\"flex items-center\">\n                <input type=\"radio\" name=\"options\" id=\"html\" className=\"hidden peer\" checked />\n                <label htmlFor=\"html\" className=\"cursor-pointer rounded py-2 px-8 text-gray-500 transition-colors duration-200 peer-checked:bg-indigo-600 peer-checked:text-white\">HTML</label>\n            </div>\n            <div className=\"flex items-center\">\n                <input type=\"radio\" name=\"options\" id=\"css\" className=\"hidden peer\" />\n                <label htmlFor=\"css\" className=\"cursor-pointer rounded py-2 px-8 text-gray-500 transition-colors duration-200 peer-checked:bg-indigo-600 peer-checked:text-white\">CSS</label>\n            </div>\n            <div className=\"flex items-center\">\n                <input type=\"radio\" name=\"options\" id=\"react\" className=\"hidden peer\" />\n                <label htmlFor=\"react\" className=\"cursor-pointer rounded py-2 px-8 text-gray-500 transition-colors duration-200 peer-checked:bg-indigo-600 peer-checked:text-white\">React</label>\n            </div>\n        </div>\n    );\n};",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "reuno-ui",
+    "slug": "tabs-2",
+    "registry_url": "https://21st.dev/r/reuno-ui/tabs-2",
+    "title": "Tabs",
+    "description": "Here is Tabs component",
+    "category": "tabs",
+    "category_group": "UI Components",
+    "downloads": 12,
+    "likes": 0
+  }
+}

@@ -1,0 +1,35 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "centered-feedback-drawer",
+  "type": "registry:component",
+  "title": "Centered Feedback Drawer",
+  "description": "A centered-feedback-drawer component.",
+  "dependencies": [
+    "lucide-react"
+  ],
+  "registryDependencies": [
+    "https://21st.dev/r/shadcn/textarea",
+    "https://21st.dev/r/shadcn/label",
+    "https://21st.dev/r/originui/input",
+    "https://21st.dev/r/shadcn/button",
+    "https://21st.dev/r/shadcn/drawer"
+  ],
+  "files": [
+    {
+      "path": "src/components/ui/centered-feedback-drawer.tsx",
+      "content": "\"use client\";\n\nimport {\n  Drawer,\n  DrawerContent,\n  DrawerHeader,\n  DrawerTitle,\n  DrawerDescription,\n  DrawerFooter,\n  DrawerTrigger,\n  DrawerClose,\n} from \"@/components/ui/drawer\";  \nimport { Button } from \"@/components/ui/button\";\nimport { Input } from \"@/components/ui/input\";\nimport { Label } from \"@/components/ui/label\";\nimport { Textarea } from \"@/components/ui/textarea\";\nimport { Star } from \"lucide-react\";\nimport { useState } from \"react\";\n\nexport default function CenteredFeedbackDrawer() {\n  const [rating, setRating] = useState(0);\n\n  return (\n    <Drawer>\n      <DrawerTrigger asChild>\n        <Button variant=\"default\">Give Feedback</Button>\n      </DrawerTrigger>\n\n      <DrawerContent>\n        <div className=\"flex flex-col items-center justify-center text-center py-8 px-4\">\n          <DrawerHeader className=\"max-w-md space-y-2\">\n            <DrawerTitle className=\"text-xl font-bold\">\n              We Value Your Feedback\n            </DrawerTitle>\n            <DrawerDescription>\n              Help us improve by sharing your thoughts.\n            </DrawerDescription>\n          </DrawerHeader>\n\n          {/* Form area */}\n          <div className=\"w-full max-w-md space-y-4 mt-4\">\n            {/* Name */}\n            <div className=\"grid gap-2 text-left\">\n              <Label htmlFor=\"name\">Name</Label>\n              <Input id=\"name\" type=\"text\" placeholder=\"Your name\" />\n            </div>\n\n            {/* Email */}\n            <div className=\"grid gap-2 text-left\">\n              <Label htmlFor=\"email\">Email</Label>\n              <Input id=\"email\" type=\"email\" placeholder=\"you@example.com\" />\n            </div>\n\n            {/* Rating */}\n            <div className=\"grid gap-2 text-left\">\n              <Label>Rate your experience</Label>\n              <div className=\"flex justify-center gap-2\">\n                {[1, 2, 3, 4, 5].map((star) => (\n                  <Star\n                    key={star}\n                    className={`h-6 w-6 cursor-pointer ${\n                      rating >= star\n                        ? \"text-yellow-500 fill-yellow-500\"\n                        : \"text-gray-400\"\n                    }`}\n                    onClick={() => setRating(star)}\n                  />\n                ))}\n              </div>\n            </div>\n\n            {/* Message */}\n            <div className=\"grid gap-2 text-left\">\n              <Label htmlFor=\"message\">Message</Label>\n              <Textarea\n                id=\"message\"\n                placeholder=\"Tell us about your experience...\"\n                className=\"min-h-[100px]\"\n              />\n            </div>\n          </div>\n\n          {/* Footer */}\n          <DrawerFooter className=\"flex flex-col sm:flex-row gap-3 w-full max-w-md mt-6\">\n            <Button className=\"w-full\">Submit Feedback</Button>\n            <DrawerClose asChild>\n              <Button variant=\"outline\" className=\"w-full\">\n                Cancel\n              </Button>\n            </DrawerClose>\n          </DrawerFooter>\n        </div>\n      </DrawerContent>\n    </Drawer>\n  );\n}\n",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "ruixen.ui",
+    "slug": "centered-feedback-drawer",
+    "registry_url": "https://21st.dev/r/ruixen.ui/centered-feedback-drawer",
+    "title": "Centered Feedback Drawer",
+    "description": "This component is a content-rich drawer that opens from the side, designed to keep the focus on the main content by centering it inside the drawer rather than stretching across the entire width. The layout uses a clean and minimal card-style container, making it ideal for displaying structured information such as profiles, product previews, or quick details without overwhelming the user. Its centered presentation balances space and readability, giving a polished and professional look for modern applications.",
+    "category": "button",
+    "category_group": "UI Components",
+    "downloads": 0,
+    "likes": 0
+  }
+}

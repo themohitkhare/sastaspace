@@ -1,0 +1,38 @@
+{
+  "name": "announcement",
+  "type": "registry:ui",
+  "dependencies": [
+    "@radix-ui/react-tooltip"
+  ],
+  "registryDependencies": [
+    "https://21st.dev/r/originui/tooltip"
+  ],
+  "files": [
+    {
+      "path": "/components/ui/announcement.tsx",
+      "content": "import {\n  Tooltip,\n  TooltipContent,\n  TooltipProvider,\n  TooltipTrigger,\n} from \"@/components/ui/tooltip\"\n\ninterface AnnouncementProps {\n  title: string\n  description: string\n  href?: string\n  onClose?: () => void\n}\n\nexport function Announcement({\n  title,\n  description,\n  href,\n  onClose,\n}: AnnouncementProps) {\n  const Content = () => (\n    <section className=\"flex flex-col gap-1.5 rounded-lg border border-border bg-card p-3 transition-all hover:-translate-y-0.5 hover:border-border/60 hover:shadow-sm\">\n      <span className=\"flex items-center justify-between text-muted-foreground\">\n        <h5 className=\"text-[13px] font-medium\">{title}</h5>\n        {onClose && (\n          <TooltipProvider>\n            <Tooltip>\n              <TooltipTrigger asChild>\n                <button\n                  onClick={onClose}\n                  className=\"inline-flex h-5 w-5 items-center justify-center rounded-sm text-xs hover:bg-accent focus:bg-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring\"\n                >\n                  <span className=\"text-lg\">×</span>\n                </button>\n              </TooltipTrigger>\n              <TooltipContent>\n                <p>Close</p>\n              </TooltipContent>\n            </Tooltip>\n          </TooltipProvider>\n        )}\n      </span>\n      <p className=\"text-sm text-card-foreground\">{description}</p>\n    </section>\n  )\n\n  return (\n    <div className=\"collapsed:hidden relative w-full\">\n      <div className=\"absolute inset-x-0 -top-8 z-10 h-8 w-full from-background to-transparent bg-gradient-to-t\" />\n      {href ? (\n        <a\n          href={href}\n          target=\"_blank\"\n          rel=\"noreferrer\"\n          className=\"relative z-20 block h-fit w-full p-2 pt-0\"\n        >\n          <Content />\n        </a>\n      ) : (\n        <div className=\"relative z-20 block h-fit w-full p-2 pt-0\">\n          <Content />\n        </div>\n      )}\n    </div>\n  )\n}\n",
+      "type": "registry:ui",
+      "target": ""
+    },
+    {
+      "path": "/components/ui/tooltip.tsx",
+      "content": "\"use client\";\n\nimport * as TooltipPrimitive from \"@radix-ui/react-tooltip\";\nimport * as React from \"react\";\n\nimport { cn } from \"@/lib/utils\";\n\nconst TooltipProvider = TooltipPrimitive.Provider;\n\nconst Tooltip = TooltipPrimitive.Root;\n\nconst TooltipTrigger = TooltipPrimitive.Trigger;\n\nconst TooltipContent = React.forwardRef<\n  React.ElementRef<typeof TooltipPrimitive.Content>,\n  React.ComponentPropsWithoutRef<typeof TooltipPrimitive.Content> & {\n    showArrow?: boolean;\n  }\n>(({ className, sideOffset = 4, showArrow = false, ...props }, ref) => (\n  <TooltipPrimitive.Portal>\n    <TooltipPrimitive.Content\n      ref={ref}\n      sideOffset={sideOffset}\n      className={cn(\n        \"relative z-50 max-w-[280px] rounded-lg border border-border bg-popover px-3 py-1.5 text-sm text-popover-foreground animate-in fade-in-0 zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2\",\n        className,\n      )}\n      {...props}\n    >\n      {props.children}\n      {showArrow && (\n        <TooltipPrimitive.Arrow className=\"-my-px fill-popover drop-shadow-[0_1px_0_hsl(var(--border))]\" />\n      )}\n    </TooltipPrimitive.Content>\n  </TooltipPrimitive.Portal>\n));\nTooltipContent.displayName = TooltipPrimitive.Content.displayName;\n\nexport { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger };\n",
+      "type": "registry:ui",
+      "target": ""
+    }
+  ],
+  "tailwind": {
+    "config": {}
+  },
+  "_meta": {
+    "author": "vercel",
+    "slug": "announcement",
+    "registry_url": "https://21st.dev/r/vercel/announcement",
+    "title": "Announcement",
+    "description": "Announcement in Sidebar",
+    "category": "sidebar",
+    "category_group": "UI Components",
+    "downloads": 67,
+    "likes": 0
+  }
+}

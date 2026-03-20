@@ -1,0 +1,30 @@
+{
+  "name": "selector-chips",
+  "type": "registry:ui",
+  "dependencies": [
+    "motion"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "/components/ui/selector-chips.tsx",
+      "content": "\"use client\";\r\n \r\nimport * as React from \"react\";\r\nimport { useState } from \"react\";\r\nimport { motion, AnimatePresence } from \"motion/react\";\r\n \r\nexport type SelectorChipsProps = {\r\n  options: string[];\r\n  onChange?: (selected: string[]) => void;\r\n};\r\n \r\nconst SelectorChips: React.FC<SelectorChipsProps> = ({ options, onChange }) => {\r\n  const [selected, setSelected] = useState<string[]>([]);\r\n\r\n  const toggleChip = (option: string) => {\r\n    const updated = selected.includes(option)\r\n      ? selected.filter((o) => o !== option)\r\n      : [...selected, option];\r\n    setSelected(updated);\r\n    onChange?.(updated);\r\n  };\r\n\r\n  return (\r\n    <div className=\"flex flex-wrap gap-2 max-w-xl w-full bg-background border border-primary/10 p-4 rounded-3xl shadow-2xl/10\">\r\n      {options.map((option) => {\r\n        const isSelected = selected.includes(option);\r\n        return (\r\n          <motion.button\r\n            key={option}\r\n            onClick={() => toggleChip(option)}\r\n            initial={false}\r\n            animate={{\r\n              backgroundColor: isSelected ? \"#FC5212\" : \"#fff\",\r\n              borderColor: isSelected ? \"#f54900\" : \"#d1d5db\",\r\n              color: isSelected ? \"#fff\" : \"#1f2937\",\r\n              width: isSelected ? 120 : 100,\r\n              transition: {\r\n                backgroundColor: { duration: 0.15 },\r\n                color: { duration: 0.15 },\r\n                borderColor: { duration: 0.15 },\r\n                width: { type: \"spring\", stiffness: 400, damping: 20 },\r\n              },\r\n            }}\r\n            className=\"flex items-center justify-center px-4 py-2 rounded-full text-sm font-medium border transition overflow-hidden grow cursor-pointer\"\r\n            style={{ minWidth: 100 }}\r\n          >\r\n            <div className=\"flex items-center w-full justify-center relative\">\r\n              <span className=\"mx-auto\">{option}</span>\r\n              <motion.span\r\n                animate={{\r\n                  width: isSelected ? 18 : 0,\r\n                  marginLeft: isSelected ? 8 : 0,\r\n                }}\r\n                transition={{ type: \"spring\", stiffness: 500, damping: 30 }}\r\n                style={{\r\n                  display: \"flex\",\r\n                  alignItems: \"center\",\r\n                  overflow: \"hidden\",\r\n                }}\r\n              >\r\n                <AnimatePresence>\r\n                  {isSelected && (\r\n                    <motion.span\r\n                      key=\"tick\"\r\n                      initial={{ scale: 0, opacity: 0 }}\r\n                      animate={{ scale: 1.2, opacity: 1 }}\r\n                      exit={{ scale: 0, opacity: 0 }}\r\n                      transition={{\r\n                        type: \"spring\",\r\n                        stiffness: 500,\r\n                        damping: 20,\r\n                      }}\r\n                      style={{ pointerEvents: \"none\" }}\r\n                    >\r\n                      {/* Tickmark SVG */}\r\n                      <svg\r\n                        width=\"18\"\r\n                        height=\"18\"\r\n                        viewBox=\"0 0 20 20\"\r\n                        fill=\"none\"\r\n                      >\r\n                        <motion.path\r\n                          d=\"M5 10.5L9 14.5L15 7.5\"\r\n                          stroke=\"#fff\"\r\n                          strokeWidth=\"2.2\"\r\n                          strokeLinecap=\"round\"\r\n                          strokeLinejoin=\"round\"\r\n                          initial={{ pathLength: 0 }}\r\n                          animate={{ pathLength: 1 }}\r\n                          transition={{ duration: 0.25 }}\r\n                        />\r\n                      </svg>\r\n                    </motion.span>\r\n                  )}\r\n                </AnimatePresence>\r\n              </motion.span>\r\n            </div>\r\n          </motion.button>\r\n        );\r\n      })}\r\n    </div>\r\n  );\r\n};\r\n \r\nexport { SelectorChips };",
+      "type": "registry:ui",
+      "target": ""
+    }
+  ],
+  "tailwind": {
+    "config": {}
+  },
+  "_meta": {
+    "author": "preetsuthar17",
+    "slug": "selector-chips",
+    "registry_url": "https://21st.dev/r/preetsuthar17/selector-chips",
+    "title": "Selector Chips",
+    "description": "Selector Chips are used to display a list of items that can be selected.",
+    "category": "chip-tag",
+    "category_group": "UI Components",
+    "downloads": 66,
+    "likes": 0
+  }
+}

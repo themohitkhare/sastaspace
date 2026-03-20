@@ -1,0 +1,27 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "menu-toggle-icon",
+  "type": "registry:component",
+  "title": "Menu Toggle Icon",
+  "description": "A menu-toggle-icon component.",
+  "dependencies": [],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/ui/menu-toggle-icon.tsx",
+      "content": "'use client';\nimport React from 'react';\nimport { cn } from '@/lib/utils';\n\ntype MenuToggleProps = React.ComponentProps<'svg'> & {\n\topen: boolean;\n\tduration?: number;\n};\n\nexport function MenuToggleIcon({\n\topen,\n\tclassName,\n\tfill = 'none',\n\tstroke = 'currentColor',\n\tstrokeWidth = 2.5,\n\tstrokeLinecap = 'round',\n\tstrokeLinejoin = 'round',\n\tduration = 500,\n\t...props\n}: MenuToggleProps) {\n\treturn (\n\t\t<svg\n\t\t\tstrokeWidth={strokeWidth}\n\t\t\tfill={fill}\n\t\t\tstroke={stroke}\n\t\t\tviewBox=\"0 0 32 32\"\n\t\t\tstrokeLinecap={strokeLinecap}\n\t\t\tstrokeLinejoin={strokeLinejoin}\n\t\t\tclassName={cn(\n\t\t\t\t'transition-transform ease-in-out',\n\t\t\t\topen && '-rotate-45',\n\t\t\t\tclassName,\n\t\t\t)}\n\t\t\tstyle={{\n\t\t\t\ttransitionDuration: `${duration}ms`,\n\t\t\t}}\n\t\t\t{...props}\n\t\t>\n\t\t\t<path\n\t\t\t\tclassName={cn(\n\t\t\t\t\t'transition-all ease-in-out',\n\t\t\t\t\topen\n\t\t\t\t\t\t? '[stroke-dasharray:20_300] [stroke-dashoffset:-32.42px]'\n\t\t\t\t\t\t: '[stroke-dasharray:12_63]',\n\t\t\t\t)}\n\t\t\t\tstyle={{\n\t\t\t\t\ttransitionDuration: `${duration}ms`,\n\t\t\t\t}}\n\t\t\t\td=\"M27 10 13 10C10.8 10 9 8.2 9 6 9 3.5 10.8 2 13 2 15.2 2 17 3.8 17 6L17 26C17 28.2 18.8 30 21 30 23.2 30 25 28.2 25 26 25 23.8 23.2 22 21 22L7 22\"\n\t\t\t/>\n\t\t\t<path d=\"M7 16 27 16\" />\n\t\t</svg>\n\t);\n}\n",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "sshahaider",
+    "slug": "menu-toggle-icon",
+    "registry_url": "https://21st.dev/r/sshahaider/menu-toggle-icon",
+    "title": "Menu Toggle Icon",
+    "description": "Animated menu toggle icon morphing smoothly between hamburger and close states.",
+    "category": "menu",
+    "category_group": "UI Components",
+    "downloads": 982,
+    "likes": 0
+  }
+}

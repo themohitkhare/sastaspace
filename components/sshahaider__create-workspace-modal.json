@@ -1,0 +1,32 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "create-workspace-modal",
+  "type": "registry:component",
+  "title": "Create Workspace Modal",
+  "description": "A create-workspace-modal component.",
+  "dependencies": [
+    "next",
+    "lucide-react"
+  ],
+  "registryDependencies": [
+    "https://21st.dev/r/sshahaider/modal"
+  ],
+  "files": [
+    {
+      "path": "src/components/ui/create-workspace-modal.tsx",
+      "content": "'use client';\nimport React from 'react';\nimport {\n\tModal,\n\tModalTrigger,\n\tModalBody,\n\tModalContent,\n\tModalHeader,\n\tModalTitle,\n} from '@/components/ui/modal';\nimport Link from 'next/link';\nimport { Button } from './button';\nimport { Input } from './input';\nimport { Grid2x2Plus, PlusIcon } from 'lucide-react';\nimport { Label } from './label';\n\nexport function CreateWorkspaceModal() {\n\tconst [open, setOpen] = React.useState(false);\n\n\treturn (\n\t\t<Modal open={open} onOpenChange={setOpen}>\n\t\t\t<ModalTrigger asChild>\n\t\t\t\t<Button>\n\t\t\t\t\t<PlusIcon className=\"mr-1 size-4\" />\n\t\t\t\t\tCreate Workspace\n\t\t\t\t</Button>\n\t\t\t</ModalTrigger>\n\n\t\t\t<ModalContent className=\"md:max-w-md\">\n\t\t\t\t<ModalHeader className=\"items-center py-10\">\n\t\t\t\t\t<Grid2x2Plus className=\"size-9\" />\n\t\t\t\t\t<div className=\"flex flex-col items-center space-y-1\">\n\t\t\t\t\t\t<ModalTitle className=\"text-2xl font-medium\">\n\t\t\t\t\t\t\tCreate a workspace\n\t\t\t\t\t\t</ModalTitle>\n\t\t\t\t\t\t<Link\n\t\t\t\t\t\t\thref=\"#\"\n\t\t\t\t\t\t\ttarget=\"_blank\"\n\t\t\t\t\t\t\tclassName=\"text-muted-foreground underline transition-colors\"\n\t\t\t\t\t\t>\n\t\t\t\t\t\t\tWhat is a workspace?\n\t\t\t\t\t\t</Link>\n\t\t\t\t\t</div>\n\t\t\t\t</ModalHeader>\n\t\t\t\t<ModalBody className=\"space-y-4 p-4 md:p-4\">\n\t\t\t\t\t<div className=\"grid gap-2\">\n\t\t\t\t\t\t<Label>Workspace Name</Label>\n\t\t\t\t\t\t<Input placeholder=\"e.g., Acme, Inc.\" />\n\t\t\t\t\t</div>\n\t\t\t\t\t<div className=\"grid gap-2\">\n\t\t\t\t\t\t<Label>Workspace Slug</Label>\n\n\t\t\t\t\t\t<div className=\"flex rounded-md shadow-xs\">\n\t\t\t\t\t\t\t<span className=\"border-input bg-input/30 text-muted-foreground inline-flex items-center rounded-s-md border px-3 text-sm\">\n\t\t\t\t\t\t\t\texample.com\n\t\t\t\t\t\t\t</span>\n\t\t\t\t\t\t\t<Input\n\t\t\t\t\t\t\t\tplaceholder=\"e.g., acme\"\n\t\t\t\t\t\t\t\tclassName=\"-ms-px rounded-s-none shadow-none\"\n\t\t\t\t\t\t\t/>\n\t\t\t\t\t\t</div>\n\t\t\t\t\t</div>\n\n\t\t\t\t\t<Button size=\"lg\" className=\"w-full\">\n\t\t\t\t\t\tCreate\n\t\t\t\t\t</Button>\n\t\t\t\t</ModalBody>\n\t\t\t</ModalContent>\n\t\t</Modal>\n\t);\n}\n",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "sshahaider",
+    "slug": "create-workspace-modal",
+    "registry_url": "https://21st.dev/r/sshahaider/create-workspace-modal",
+    "title": "CreateWorkspaceModal",
+    "description": "A clean and intuitive workspace creation modal with input fields, slug preview, and action button. Ideal for SaaS apps, team collaboration tools, and project management dashboards.",
+    "category": "form",
+    "category_group": "UI Components",
+    "downloads": 24,
+    "likes": 0
+  }
+}

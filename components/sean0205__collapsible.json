@@ -1,0 +1,42 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "collapsible",
+  "type": "registry:component",
+  "title": "Collapsible",
+  "description": "A collapsible component.",
+  "dependencies": [
+    "radix-ui"
+  ],
+  "registryDependencies": [
+    "https://21st.dev/r/sean0205/button-1"
+  ],
+  "files": [
+    {
+      "path": "src/components/ui/collapsible.tsx",
+      "content": "'use client';\n\nimport React from 'react';\nimport { cn } from '@/lib/utils';\nimport { Collapsible as CollapsiblePrimitive } from 'radix-ui';\n\nfunction Collapsible({ ...props }: React.ComponentProps<typeof CollapsiblePrimitive.Root>) {\n  return <CollapsiblePrimitive.Root data-slot=\"collapsible\" {...props} />;\n}\n\nfunction CollapsibleTrigger({ ...props }: React.ComponentProps<typeof CollapsiblePrimitive.CollapsibleTrigger>) {\n  return <CollapsiblePrimitive.CollapsibleTrigger data-slot=\"collapsible-trigger\" {...props} />;\n}\n\nfunction CollapsibleContent({\n  className,\n  children,\n  ...props\n}: React.ComponentProps<typeof CollapsiblePrimitive.CollapsibleContent>) {\n  return (\n    <CollapsiblePrimitive.CollapsibleContent\n      data-slot=\"collapsible-content\"\n      className={cn(\n        'overflow-hidden transition-all data-[state=closed]:animate-collapsible-up data-[state=open]:animate-collapsible-down',\n        className,\n      )}\n      {...props}\n    >\n      {children}\n    </CollapsiblePrimitive.CollapsibleContent>\n  );\n}\n\nexport { Collapsible, CollapsibleContent, CollapsibleTrigger };\n",
+      "type": "registry:component"
+    }
+  ],
+  "cssVars": {
+    "theme": {
+      "--color-destructive-foreground": "var(--destructive-foreground)"
+    },
+    "light": {
+      "--destructive-foreground": "oklch(1 0 0)"
+    },
+    "dark": {
+      "--destructive-foreground": "oklch(1 0 0)"
+    }
+  },
+  "_meta": {
+    "author": "sean0205",
+    "slug": "collapsible",
+    "registry_url": "https://21st.dev/r/sean0205/collapsible",
+    "title": "Collapsible",
+    "description": "An interactive component that expands/collapses a panel.",
+    "category": "toggle",
+    "category_group": "UI Components",
+    "downloads": 10,
+    "likes": 0
+  }
+}

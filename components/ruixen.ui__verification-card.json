@@ -1,0 +1,29 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "verification-card",
+  "type": "registry:component",
+  "title": "Verification Card",
+  "description": "A verification-card component.",
+  "dependencies": [
+    "framer-motion"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/ui/verification-card.tsx",
+      "content": "\"use client\";\n\nimport * as React from \"react\";\nimport { motion } from \"framer-motion\";\nimport { cn } from \"@/lib/utils\";\n\ninterface VerificationCardProps {\n  backgroundImage?: string;\n  idNumber?: string;\n  name?: string;\n  validThru?: string;\n  label?: string;\n}\n\nexport function VerificationCard({\n  backgroundImage = \"https://pub-940ccf6255b54fa799a9b01050e6c227.r2.dev/ruixen_moon.png\",\n  idNumber = \"ID **** 4590\",\n  name = \"JANE DOE\",\n  validThru = \"11/29\",\n  label = \"IDENTITY CARD\",\n}: IdentityCardProps) {\n  return (\n    <motion.div\n      initial={{ y: -20, opacity: 0 }}\n      animate={{ y: 0, opacity: 1 }}\n      transition={{ duration: 0.5, ease: \"easeOut\" }}\n      className={cn(\n        \"relative h-52 w-80 rounded-2xl p-6 shadow-2xl text-white flex flex-col justify-between bg-cover bg-center\"\n      )}\n      style={{ backgroundImage: `url(${backgroundImage})` }}\n    >\n      {/* Overlay */}\n      <div className=\"absolute inset-0 bg-black/50 rounded-2xl\" />\n\n      {/* Card Content */}\n      <div className=\"relative z-10 flex justify-between items-start text-xs tracking-wide\">\n        <span>{label}</span>\n        <span>VALID</span>\n      </div>\n\n      <div className=\"relative z-10\">\n        <p className=\"text-lg tracking-widest font-semibold\">{idNumber}</p>\n        <div className=\"flex justify-between text-sm mt-2\">\n          <span>{name}</span>\n          <span>{validThru}</span>\n        </div>\n      </div>\n    </motion.div>\n  );\n}\n",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "ruixen.ui",
+    "slug": "verification-card",
+    "registry_url": "https://21st.dev/r/ruixen.ui/verification-card",
+    "title": "Verification Card",
+    "description": "The IdentityCard component is a standalone, reusable card UI designed to replicate the clean and professional look of a modern credit or identity card. It features a customizable background image, masked ID number, cardholder name, validity date, and a top label, all laid out in a structured and minimal design. Built with Framer Motion for subtle entry animation, it feels dynamic without being distracting. Because the content is driven by props, it can easily adapt to different contexts — from an identity verification screen, to a virtual wallet, to a dashboard widget showing account or membership details. Its elegant balance of visual appeal and configurability makes it a versatile component wherever a polished, card-like presentation is needed.",
+    "category": "card",
+    "category_group": "UI Components",
+    "downloads": 21,
+    "likes": 0
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "circular-fan-speed-knob",
+  "type": "registry:component",
+  "title": "Circular Fan Speed Knob",
+  "description": "A circular-fan-speed-knob component.",
+  "dependencies": [],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/ui/circular-fan-speed-knob.tsx",
+      "content": "// components/ui/radial-selector.tsx\nimport * as React from \"react\"\nimport { cn } from \"@/lib/utils\"\n\n// Define the shape of each option\ninterface RadialSelectorOption {\n  value: string;\n  label: string;\n}\n\n// Define the component's props for reusability\nexport interface RadialSelectorProps {\n  options: RadialSelectorOption[];\n  name: string;\n  defaultValue?: string;\n  onValueChange?: (value: string) => void;\n  className?: string;\n}\n\nconst RadialSelector = React.forwardRef<HTMLDivElement, RadialSelectorProps>(\n  ({ options, name, defaultValue, onValueChange, className, ...props }, ref) => {\n    // State to manage the currently selected value\n    const [selectedValue, setSelectedValue] = React.useState(\n      defaultValue ?? (options.length > 0 ? options[0].value : \"\")\n    );\n\n    // Find the index of the selected option to calculate rotation\n    const selectedIndex = React.useMemo(() => {\n      const index = options.findIndex((opt) => opt.value === selectedValue);\n      return index === -1 ? 0 : index;\n    }, [selectedValue, options]);\n\n    // Calculate the rotation degrees for the indicator dot\n    const rotation = selectedIndex * (360 / options.length);\n\n    const handleSelect = (value: string) => {\n      setSelectedValue(value);\n      if (onValueChange) {\n        onValueChange(value);\n      }\n    };\n    \n    // Calculate the rotation for each label\n    const getLabelRotation = (index: number) => {\n      return index * (360 / options.length);\n    };\n\n    return (\n      <div\n        ref={ref}\n        className={cn(\n          \"relative w-60 h-60 rounded-full bg-background select-none\",\n          \"flex items-center justify-center\",\n          \"shadow-inner-lg dark:shadow-inner-xl\", // Custom shadow for depth\n          \"border-4 border-muted\",\n          className\n        )}\n        role=\"radiogroup\" // Accessibility improvement\n        {...props}\n      >\n        {/* Inner decorative circles for depth */}\n        <div className=\"absolute w-[92%] h-[92%] rounded-full bg-muted shadow-lg\" />\n        <div className=\"absolute w-[60%] h-[60%] rounded-full bg-background border-2 border-border shadow-inner-md\" />\n        <div className=\"absolute w-[50%] h-[50%] rounded-full bg-accent\" />\n\n\n        {/* Indicator Dot */}\n        <div\n          className=\"absolute top-1/2 left-1/2 w-1/2 h-2.5 -translate-y-1/2 origin-left transition-transform duration-500 ease-in-out\"\n          style={{ transform: `rotate(${rotation}deg)` }}\n        >\n          <div className=\"absolute left-4 top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full bg-primary\" />\n        </div>\n\n        {/* Dynamic Options */}\n        {options.map((option, index) => {\n          const labelRotation = getLabelRotation(index);\n          return (\n            <label\n              key={option.value}\n              className=\"absolute top-1/2 left-1/2 w-1/2 h-20 -translate-y-1/2 origin-left flex items-center\"\n              style={{ transform: `rotate(${labelRotation}deg)` }}\n            >\n              <input\n                type=\"radio\"\n                name={name}\n                value={option.value}\n                checked={selectedValue === option.value}\n                onChange={() => handleSelect(option.value)}\n                className=\"sr-only\" // Hide the actual radio button\n              />\n              <span\n                className=\"absolute right-4 text-sm font-medium cursor-pointer text-muted-foreground transition-colors hover:text-foreground\"\n                style={{ transform: `rotate(${-labelRotation}deg)` }}\n              >\n                {option.label}\n              </span>\n            </label>\n          );\n        })}\n      </div>\n    );\n  }\n);\n\nRadialSelector.displayName = \"RadialSelector\";\n\nexport { RadialSelector };",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "ravikatiyar162",
+    "slug": "circular-fan-speed-knob",
+    "registry_url": "https://21st.dev/r/ravikatiyar162/circular-fan-speed-knob",
+    "title": "Circular Fan Speed Knob",
+    "description": "Minimalist radial dial with numeric and \"OFF\" labels, featuring a central indicator dot for selection. Ideal for controlling fan speeds, volume, or other step-based settings in modern UI or IoT dashboards.",
+    "category": "radio-group",
+    "category_group": "UI Components",
+    "downloads": 3,
+    "likes": 0
+  }
+}

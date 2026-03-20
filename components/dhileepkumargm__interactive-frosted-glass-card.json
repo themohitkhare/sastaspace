@@ -1,0 +1,27 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "interactive-frosted-glass-card",
+  "type": "registry:component",
+  "title": "Interactive Frosted Glass Card",
+  "description": "A interactive-frosted-glass-card component.",
+  "dependencies": [],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/ui/interactive-frosted-glass-card.tsx",
+      "content": "import React, { useRef, useEffect } from 'react';\n\nexport const FrostedGlassCard = () => {\n    const cardRef = useRef(null);\n\n    useEffect(() => {\n        const card = cardRef.current;\n        if (!card) return;\n\n        const handleMouseMove = (e) => {\n            const rect = card.getBoundingClientRect();\n            const x = e.clientX - rect.left;\n            const y = e.clientY - rect.top;\n            const centerX = rect.width / 2;\n            const centerY = rect.height / 2;\n\n            const rotateY = (x - centerX) / centerX * 10;\n            const rotateX = (y - centerY) / centerY * -10;\n\n            card.style.transform = `rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;\n            card.style.setProperty('--mouse-x', `${x}px`);\n            card.style.setProperty('--mouse-y', `${y}px`);\n        };\n\n        const handleMouseLeave = () => {\n            card.style.transform = 'rotateX(0deg) rotateY(0deg)';\n        };\n\n        card.addEventListener('mousemove', handleMouseMove);\n        card.addEventListener('mouseleave', handleMouseLeave);\n\n        return () => {\n            card.removeEventListener('mousemove', handleMouseMove);\n            card.removeEventListener('mouseleave', handleMouseLeave);\n        };\n    }, []);\n\n    return (\n        <div className=\"card-container\">\n            <div ref={cardRef} className=\"card w-full max-w-md rounded-3xl p-8 text-white shadow-2xl\">\n                <div className=\"flex items-center gap-4 mb-6\">\n                    <div className=\"w-16 h-16 bg-indigo-500 rounded-full flex items-center justify-center\">\n                        <svg className=\"w-8 h-8\" xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" strokeWidth=\"2\" strokeLinecap=\"round\" strokeLinejoin=\"round\">\n                            <path d=\"M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5\"></path>\n                        </svg>\n                    </div>\n                    <div>\n                        <h2 className=\"text-2xl font-bold\">Glassmorphism UI</h2>\n                        <p className=\"text-indigo-300\">A New Design Trend</p>\n                    </div>\n                </div>\n                <p className=\"text-gray-300 leading-relaxed\">\n                    This card uses the \"glassmorphism\" effect to create a sense of depth and transparency. The 3D tilt and dynamic glare are powered by JavaScript to create a futuristic and engaging user experience.\n                </p>\n            </div>\n        </div>\n    );\n};\n",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "dhileepkumargm",
+    "slug": "interactive-frosted-glass-card",
+    "registry_url": "https://21st.dev/r/dhileepkumargm/interactive-frosted-glass-card",
+    "title": "Interactive Frosted Glass Card",
+    "description": "new version features a mesmerizing field of glowing particles that drift and shimmer behind the card. The particles also react to your cursor's movement, creating a deeper sense of interactivity and a more lively, cosmic atmosphere.",
+    "category": "card",
+    "category_group": "UI Components",
+    "downloads": 1,
+    "likes": 0
+  }
+}

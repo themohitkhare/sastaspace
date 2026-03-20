@@ -1,0 +1,30 @@
+{
+  "name": "smart-textbox",
+  "type": "registry:ui",
+  "dependencies": [
+    "@tigerabrodioss/fude"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "/components/ui/smart-textbox.tsx",
+      "content": "\"use client\"\n\nexport { SmartTextbox } from \"@tigerabrodioss/fude\"\nexport { fuzzyFilter, getPlainText } from \"@tigerabrodioss/fude\"\nexport type {\n  Segment,\n  TextSegment,\n  MentionSegment,\n  MentionItem,\n  SmartTextboxProps,\n  SmartTextboxClassNames,\n  SmartTextboxStyles,\n} from \"@tigerabrodioss/fude\"\n",
+      "type": "registry:ui",
+      "target": ""
+    }
+  ],
+  "tailwind": {
+    "config": {}
+  },
+  "_meta": {
+    "author": "tigerabrodi",
+    "slug": "smart-textbox",
+    "registry_url": "https://21st.dev/r/tigerabrodi/smart-textbox",
+    "title": "Smart Textbox",
+    "description": "Rich text input with @mentions and AI autocomplete. Inline tag chips, ghost text suggestions. Keyboard-first, fully customizable.",
+    "category": "input",
+    "category_group": "UI Components",
+    "downloads": 3,
+    "likes": 0
+  }
+}

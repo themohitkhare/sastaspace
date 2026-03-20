@@ -1,0 +1,33 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "basic-chat",
+  "type": "registry:component",
+  "title": "Basic Chat",
+  "description": "A basic-chat component.",
+  "dependencies": [
+    "lucide-react"
+  ],
+  "registryDependencies": [
+    "https://21st.dev/r/shadcn/card",
+    "https://21st.dev/r/shadcn/button",
+    "https://21st.dev/r/shadcn/input"
+  ],
+  "files": [
+    {
+      "path": "src/components/ui/basic-chat.tsx",
+      "content": "\"use client\";\n\nimport { useState, useRef, useEffect } from \"react\";\nimport { Card } from \"@/components/ui/card\";\nimport { Button } from \"@/components/ui/button\";\nimport { Input } from \"@/components/ui/input\";\nimport { Send } from \"lucide-react\";\n\ninterface Message {\n  id: string;\n  content: string;\n  sender: \"me\" | \"other\";\n}\n\ninterface ChatScreenProps {\n  userName: string;\n  userAvatar?: string;\n  userOnline?: boolean;\n}\n\nconst ChatScreen: React.FC<ChatScreenProps> = ({\n  userName,\n  userAvatar,\n  userOnline = false,\n}) => {\n  const [messages, setMessages] = useState<Message[]>([\n    { id: \"1\", content: \"Hi there!\", sender: \"other\" },\n    { id: \"2\", content: \"Hello 👋\", sender: \"me\" },\n  ]);\n  const [newMessage, setNewMessage] = useState(\"\");\n  const messagesEndRef = useRef<HTMLDivElement>(null);\n\n  // Scroll to bottom\n  useEffect(() => {\n    messagesEndRef.current?.scrollIntoView({ behavior: \"smooth\" });\n  }, [messages]);\n\n  const sendMessage = () => {\n    if (!newMessage.trim()) return;\n    const msg: Message = {\n      id: Date.now().toString(),\n      content: newMessage,\n      sender: \"me\",\n    };\n    setMessages((prev) => [...prev, msg]);\n    setNewMessage(\"\");\n  };\n\n  return (\n    <Card className=\"w-full max-w-md h-[600px] flex flex-col rounded bg-white dark:bg-gray-900\">\n      {/* Header */}\n      <div className=\"flex items-center gap-3 p-4 border-b bg-white dark:bg-gray-800\">\n        <div className=\"w-10 h-10 rounded-full bg-gray-400 dark:bg-gray-600 flex items-center justify-center text-white font-semibold overflow-hidden\">\n          {userAvatar ? (\n            <img src={userAvatar} alt={userName} className=\"w-full h-full rounded-full\" />\n          ) : (\n            (userName?.charAt(0) || \"U\")\n          )}\n        </div>\n        <div>\n          <p className=\"font-semibold text-sm text-gray-900 dark:text-gray-100\">{userName}</p>\n          {userOnline && <span className=\"text-xs text-green-500\">Online</span>}\n        </div>\n      </div>\n\n      {/* Messages */}\n      <div className=\"flex-1 p-4 space-y-3 overflow-y-auto bg-gray-50 dark:bg-gray-900\">\n        {messages.map((msg) => (\n          <div\n            key={msg.id}\n            className={`flex items-end gap-2 ${\n              msg.sender === \"me\" ? \"justify-end\" : \"justify-start\"\n            }`}\n          >\n            {msg.sender === \"other\" && (\n              <div className=\"w-6 h-6 bg-gray-400 dark:bg-gray-600 rounded-full flex items-center justify-center text-white text-xs\">\n                { (userName?.charAt(0) || \"U\")}\n              </div>\n            )}\n\n            <div\n              className={`px-3 py-2 rounded-lg text-sm max-w-xs break-words transition-all duration-200 hover:scale-105 ${\n                msg.sender === \"me\"\n                  ? \"bg-blue-500 text-white\"\n                  : \"bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 shadow\"\n              }`}\n            >\n              {msg.content}\n            </div>\n\n            {msg.sender === \"me\" && (\n              <div className=\"w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center text-white text-xs\">\n                M\n              </div>\n            )}\n          </div>\n        ))}\n\n        <div ref={messagesEndRef} />\n      </div>\n\n      {/* Input */}\n      <div className=\"p-3 border-t flex gap-2 bg-white dark:bg-gray-800\">\n        <Input\n          placeholder=\"Type a message...\"\n          value={newMessage}\n          onChange={(e) => setNewMessage(e.target.value)}\n          onKeyDown={(e) => {\n            if (e.key === \"Enter\") sendMessage();\n          }}\n          className=\"bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100\"\n        />\n        <Button\n          onClick={sendMessage}\n          className=\"shrink-0 rounded-full bg-blue-500 hover:bg-blue-600 text-white\"\n        >\n          <Send className=\"h-4 w-4\" />\n        </Button>\n      </div>\n    </Card>\n  );\n};\n\nexport default ChatScreen;\n",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "beratberkayg",
+    "slug": "basic-chat",
+    "registry_url": "https://21st.dev/r/beratberkayg/basic-chat",
+    "title": "Basic Chat",
+    "description": "basic chat with shacn",
+    "category": "card",
+    "category_group": "UI Components",
+    "downloads": 0,
+    "likes": 0
+  }
+}

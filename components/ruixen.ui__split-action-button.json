@@ -1,0 +1,32 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "split-action-button",
+  "type": "registry:component",
+  "title": "Split Action Button",
+  "description": "A split-action-button component.",
+  "dependencies": [
+    "lucide-react"
+  ],
+  "registryDependencies": [
+    "https://21st.dev/r/originui/button",
+    "https://21st.dev/r/originui/dropdown-menu"
+  ],
+  "files": [
+    {
+      "path": "src/components/ui/split-action-button.tsx",
+      "content": "import React from \"react\";\nimport { Button } from \"@/components/ui/button\";\nimport {\n  DropdownMenu,\n  DropdownMenuTrigger,\n  DropdownMenuContent,\n  DropdownMenuItem,\n} from \"@/components/ui/dropdown-menu\";\nimport { ChevronDown } from \"lucide-react\";\nimport { cn } from \"@/lib/utils\";\n\n/**\n * SplitActionButton\n *\n * A button that combines a primary action and a secondary dropdown.\n * Left side triggers main action.\n * Right side opens a dropdown with additional options.\n * Useful for actions like \"Save\" + \"Save As...\" or \"Export\" + formats.\n */\n\ninterface SplitActionButtonProps {\n  mainLabel: string;\n  mainAction: () => void;\n  secondaryActions: { label: string; onClick: () => void }[];\n  size?: \"sm\" | \"md\" | \"lg\";\n  className?: string;\n}\n\nconst sizeClasses = {\n  sm: \"px-3 py-1 text-sm\",\n  md: \"px-4 py-2 text-sm\",\n  lg: \"px-5 py-3 text-base\",\n};\n\nconst SplitActionButton: React.FC<SplitActionButtonProps> = ({\n  mainLabel,\n  mainAction,\n  secondaryActions,\n  size = \"md\",\n  className,\n}) => {\n  return (\n    <div className={cn(\"inline-flex rounded-lg overflow-hidden border border-border\", className)}>\n      {/* Main action button */}\n      <Button\n        variant=\"default\"\n        className={cn(\"rounded-none rounded-l-lg\", sizeClasses[size])}\n        onClick={mainAction}\n      >\n        {mainLabel}\n      </Button>\n\n      {/* Dropdown trigger */}\n      <DropdownMenu>\n        <DropdownMenuTrigger asChild>\n          <Button variant=\"default\" className={cn(\"rounded-none rounded-r-lg\", sizeClasses[size])}>\n            <ChevronDown className=\"w-4 h-4\" />\n          </Button>\n        </DropdownMenuTrigger>\n        <DropdownMenuContent>\n          {secondaryActions.map((action, index) => (\n            <DropdownMenuItem key={index} onClick={action.onClick}>\n              {action.label}\n            </DropdownMenuItem>\n          ))}\n        </DropdownMenuContent>\n      </DropdownMenu>\n    </div>\n  );\n};\n\nexport default SplitActionButton;",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "ruixen.ui",
+    "slug": "split-action-button",
+    "registry_url": "https://21st.dev/r/ruixen.ui/split-action-button",
+    "title": "Split Action Button",
+    "description": "The Split Action Button is a versatile shadcn/ui-based component that combines a primary action with a secondary dropdown in a single, compact interface. The left side of the button triggers the main action directly, while the right side opens a dropdown menu containing additional, related actions. This design is particularly useful for scenarios like “Save” with options for “Save As…” or “Export” with multiple formats”, allowing users to access multiple related operations without cluttering the interface. Built with accessibility, responsive sizing, and shadcn/ui primitives, it ensures a consistent look and feel while improving usability for complex workflows.",
+    "category": "button",
+    "category_group": "UI Components",
+    "downloads": 0,
+    "likes": 0
+  }
+}

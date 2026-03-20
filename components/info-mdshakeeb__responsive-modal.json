@@ -1,0 +1,37 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "responsive-modal",
+  "type": "registry:component",
+  "title": "Responsive Modal",
+  "description": "A responsive-modal component.",
+  "dependencies": [
+    "lucide-react"
+  ],
+  "registryDependencies": [
+    "https://21st.dev/r/originui/dialog",
+    "https://21st.dev/r/shadcn/button",
+    "https://21st.dev/r/shadcn/drawer",
+    "https://21st.dev/r/serafimcloud/use-media-query",
+    "https://21st.dev/r/shadcn/label",
+    "https://21st.dev/r/originui/input",
+    "https://21st.dev/r/shadcn/select"
+  ],
+  "files": [
+    {
+      "path": "src/components/ui/responsive-modal.tsx",
+      "content": "\"use client\";\n\nimport { Loader } from \"lucide-react\";\nimport * as React from \"react\";\n\nimport { Button } from \"@/components/ui/button\";\nimport {\n  Dialog,\n  DialogClose,\n  DialogContent,\n  DialogDescription,\n  DialogFooter,\n  DialogHeader,\n  DialogTitle,\n  DialogTrigger,\n} from \"@/components/ui/dialog\";\nimport {\n  Drawer,\n  DrawerClose,\n  DrawerContent,\n  DrawerDescription,\n  DrawerFooter,\n  DrawerHeader,\n  DrawerTitle,\n  DrawerTrigger,\n} from \"@/components/ui/drawer\";\nimport { useMediaQuery } from \"@/hooks/use-media-query\";\nimport { cn } from \"@/lib/utils\";\n\ninterface BaseProps {\n  children: React.ReactNode;\n}\n\ninterface RootProps extends BaseProps {\n  open?: boolean;\n  onOpenChange?: (open: boolean) => void;\n}\n\ninterface ChildProps extends BaseProps {\n  className?: string;\n  asChild?: true;\n}\n\ninterface FooterProps {\n  isPending?: boolean;\n  submitLabel: string;\n  className?: string;\n  asChild?: true;\n  /** Optional target form id when the footer is rendered outside the actual <form>. */\n  formId?: string;\n}\n\n// Context\nconst ModalContext = React.createContext<{ isDesktop: boolean }>({\n  isDesktop: false,\n});\n\nconst useModalContext = () => {\n  const context = React.useContext(ModalContext);\n  if (!context) throw new Error(\"Modal components must be inside <Modal.Root>\");\n  return context;\n};\n\n// Root\nconst ModalRoot = ({ children, ...props }: RootProps) => {\n  const isDesktop = useMediaQuery(\"(min-width: 768px)\");\n  const Component = isDesktop ? Dialog : Drawer;\n\n  return (\n    <ModalContext.Provider value={{ isDesktop }}>\n      <Component {...props} {...(!isDesktop && { autoFocus: true })}>\n        {children}\n      </Component>\n    </ModalContext.Provider>\n  );\n};\n\n// Subcomponents\nconst ModalTrigger = ({ className, children, ...props }: ChildProps) => {\n  const { isDesktop } = useModalContext();\n  const Component = isDesktop ? DialogTrigger : DrawerTrigger;\n  return (\n    <Component className={className} {...props}>\n      {children}\n    </Component>\n  );\n};\n\nconst ModalClose = ({ className, children, ...props }: ChildProps) => {\n  const { isDesktop } = useModalContext();\n  const Component = isDesktop ? DialogClose : DrawerClose;\n  return (\n    <Component className={className} {...props}>\n      {children}\n    </Component>\n  );\n};\n\nconst ModalContent = ({ className, children, ...props }: ChildProps) => {\n  const { isDesktop } = useModalContext();\n  const Component = isDesktop ? DialogContent : DrawerContent;\n\n  return (\n    <Component\n      className={cn(\"p-0 overflow-hidden gap-0\", className)}\n      {...props}\n    >\n      {children}\n    </Component>\n  );\n};\n\nconst ModalDescription = ({ className, children, ...props }: ChildProps) => {\n  const { isDesktop } = useModalContext();\n  const Component = isDesktop ? DialogDescription : DrawerDescription;\n  return (\n    <Component className={className} {...props}>\n      {children}\n    </Component>\n  );\n};\n\nconst ModalHeader = ({ className, children, ...props }: ChildProps) => {\n  const { isDesktop } = useModalContext();\n  const Component = isDesktop ? DialogHeader : DrawerHeader;\n  return (\n    <Component\n      className={cn(\n        \"px-4 pt-3\",\n        isDesktop ? \"\" : \"border-b shadow-xs\",\n        className,\n      )}\n      {...props}\n    >\n      {children}\n    </Component>\n  );\n};\n\nconst ModalTitle = ({ className, children, ...props }: ChildProps) => {\n  const { isDesktop } = useModalContext();\n  const Component = isDesktop ? DialogTitle : DrawerTitle;\n  return (\n    <Component className={className} {...props}>\n      {children}\n    </Component>\n  );\n};\n\n// Body (scrollable)\nconst ModalBody = ({\n  className,\n  bodyClassName,\n  children,\n  ...props\n}: ChildProps & {\n  bodyClassName?: string;\n}) => {\n  const { isDesktop } = useModalContext();\n  return (\n    <div\n      className={cn(\n        \"flex flex-col relative overflow-hidden\",\n        isDesktop && \"max-h-[75dvh] xl:max-h-[90dvh]\",\n        className,\n      )}\n      {...props}\n    >\n      <div\n        className={cn(\n          \"faded-bottom flex-1 overflow-auto px-4 pt-2 pb-8\",\n          bodyClassName,\n        )}\n      >\n        {children}\n      </div>\n    </div>\n  );\n};\n\nconst ModalFooter = ({ className, children, ...props }: ChildProps) => {\n  const { isDesktop } = useModalContext();\n  const Component = isDesktop ? DialogFooter : DrawerFooter;\n  return (\n    <Component\n      className={cn(\"flex gap-2 bg-background px-4\", className)}\n      {...props}\n    >\n      {children}\n    </Component>\n  );\n};\n\n// Footer with cancel + submit loader\nconst ModalFormFooter = ({\n  isPending,\n  submitLabel,\n  className,\n  formId,\n}: FooterProps) => {\n  const { isDesktop } = useModalContext();\n  const CancelWrapper = isDesktop ? DialogClose : DrawerClose;\n\n  return (\n    <div\n      className={cn(\n        \"flex justify-between gap-2  bg-background px-4 pb-3 pt-3 md:pt-0\",\n        isDesktop ? \"\" : \"border-t\",\n        className,\n      )}\n    >\n      <CancelWrapper asChild>\n        <Button type=\"button\" variant=\"destructive\">\n          Cancel\n        </Button>\n      </CancelWrapper>\n\n      <Button\n        type=\"submit\"\n        disabled={isPending}\n        className=\"gap-1.5 flex-1\"\n        {...(formId && { form: formId })}\n      >\n        {isPending && (\n          <Loader className=\"size-4 animate-spin\" aria-hidden=\"true\" />\n        )}\n        {submitLabel}\n      </Button>\n    </div>\n  );\n};\n\n// -----------------------------\n// Export grouped\n// -----------------------------\nexport const Modal = {\n  Root: ModalRoot,\n  Trigger: ModalTrigger,\n  Close: ModalClose,\n  Content: ModalContent,\n  Description: ModalDescription,\n  Header: ModalHeader,\n  Title: ModalTitle,\n  Body: ModalBody,\n  Footer: ModalFooter,\n  FormFooter: ModalFormFooter, // optional ready-made footer\n};\n",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "info-mdshakeeb",
+    "slug": "responsive-modal",
+    "registry_url": "https://21st.dev/r/info-mdshakeeb/responsive-modal",
+    "title": "responsive-modal",
+    "description": "This is a responsive modal component system that automatically switches between Dialog (desktop) and Drawer (mobile) using a media query.\nIt provides reusable subcomponents like Header, Body, Footer, Trigger, and Close for consistent structure.\nIncludes a built-in FormFooter with cancel and submit (with loader) support for common form use cases.",
+    "category": "modal-dialog",
+    "category_group": "UI Components",
+    "downloads": 10,
+    "likes": 0
+  }
+}

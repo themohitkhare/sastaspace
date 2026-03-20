@@ -1,0 +1,29 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "card-11",
+  "type": "registry:component",
+  "title": "Card 11",
+  "description": "A card-11 component.",
+  "dependencies": [
+    "framer-motion"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/ui/card-11.tsx",
+      "content": "import * as React from \"react\";\nimport { motion, Variants } from \"framer-motion\";\nimport { cn } from \"@/lib/utils\"; // Assuming you have a `cn` utility from shadcn\n\n// Define the props for the component\ninterface InteractiveCardProps extends React.HTMLAttributes<HTMLDivElement> {\n  step: string;\n  title: string;\n  description: string;\n  // The icon is now optional, as a default is provided.\n  icon?: React.ReactNode;\n}\n\n// A self-contained, animated SVG icon component.\nconst AnimatedExportIcon = () => {\n  const fileVariants: Variants = {\n    initial: { y: 0 },\n    hover: { y: -12, transition: { type: \"spring\", stiffness: 300, damping: 20 } },\n  };\n\n  const downloadIconVariants: Variants = {\n    initial: { scale: 1 },\n    hover: { scale: 1.15, transition: { type: \"spring\", stiffness: 400, damping: 15, repeat: Infinity, repeatType: \"reverse\", duration: 0.5 } },\n  };\n\n  return (\n    <div className=\"relative mb-8 flex h-40 w-full items-center justify-center\">\n      {/* This SVG combines the folder, file, and download icon into a single asset.\n        The `motion.g` tags target specific groups within the SVG for animation.\n      */}\n      <svg\n        xmlns=\"http://www.w3.org/2000/svg\"\n        viewBox=\"0 0 250 160\"\n        className=\"h-full w-auto\"\n        aria-hidden=\"true\"\n      >\n        {/* Group for Folder (static) */}\n        <g id=\"folder\">\n          <path d=\"M228.5,42.5H127.2a10,10,0,0,1-8.2-4.4L109.8,24a10,10,0,0,0-8.2-4.4H21.5a14,14,0,0,0-14,14V136a14,14,0,0,0,14,14H228.5a14,14,0,0,0,14-14V56.5A14,14,0,0,0,228.5,42.5Z\" fill=\"#e2e8f0\" />\n          <path d=\"M228.5,42.5H21.5a14,14,0,0,0-14,14V62.2a0,0,0,0,1,0,0H242.5a0,0,0,0,1,0,0V56.5A14,14,0,0,0,228.5,42.5Z\" fill=\"#cbd5e1\"/>\n        </g>\n        \n        {/* Group for File (animated) */}\n        <motion.g id=\"file\" variants={fileVariants} style={{ originX: '125px', originY: '60px' }}>\n          <path d=\"M185.3,103H64.7a12,12,0,0,1-12-12V50.3a12,12,0,0,1,12-12h83.9l28.7,28.7v24A12,12,0,0,1,185.3,103Z\" fill=\"hsl(var(--primary))\"/>\n          <path d=\"M148.6,38.3h-1.3l28.7,28.7v-1.3A12,12,0,0,0,164,53.7Z\" fill=\"hsl(var(--primary) / 0.5)\"/>\n          <text x=\"125\" y=\"80\" textAnchor=\"middle\" fill=\"#FFFFFF\" fontSize=\"18\" fontWeight=\"bold\">PPT</text>\n        </motion.g>\n\n        {/* Group for Download Circle and Icon (animated) */}\n        <motion.g id=\"download-icon\" variants={downloadIconVariants} style={{ originX: '125px', originY: '130px' }}>\n          <circle cx=\"125\" cy=\"130\" r=\"24\" fill=\"hsl(var(--primary))\" filter=\"drop-shadow(0 4px 6px hsl(var(--primary) / 0.3))\"/>\n          <path d=\"M125 138.5c-.8 0-1.5-.7-1.5-1.5v-11l-3.6 3.6c-.6.6-1.6.6-2.1 0s-.6-1.6 0-2.1l6.1-6.1c.6-.6 1.6-.6 2.1 0l6.1 6.1c.6.6.6 1.6 0 2.1s-1.6.6-2.1 0l-3.6-3.6v11c0 .8-.7 1.5-1.5 1.5z\" fill=\"#FFFFFF\"/>\n        </motion.g>\n      </svg>\n    </div>\n  );\n};\n\nexport const InteractiveCard = React.forwardRef<HTMLDivElement, InteractiveCardProps>(\n  ({ className, step, title, description, icon, ...props }, ref) => {\n    return (\n      <motion.div\n        ref={ref}\n        className={cn(\n          \"relative w-full max-w-sm overflow-hidden rounded-2xl border bg-card p-8 text-center shadow-sm\",\n          className\n        )}\n        initial=\"initial\"\n        whileHover=\"hover\"\n        aria-label={`${title}: ${description}`}\n        role=\"group\"\n        {...props}\n      >\n        {/* Render the provided icon or the default animated one */}\n        {icon || <AnimatedExportIcon />}\n\n        {/* Text Content */}\n        <div className=\"flex flex-col items-center gap-2\">\n          <p className=\"text-sm font-semibold uppercase tracking-widest text-muted-foreground\">\n            {step}\n          </p>\n          <h3 className=\"text-2xl font-bold text-card-foreground\">{title}</h3>\n          <p className=\"text-base text-muted-foreground\">{description}</p>\n        </div>\n      </motion.div>\n    );\n  }\n);\n\nInteractiveCard.displayName = \"InteractiveCard\";",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "lavikatiyar",
+    "slug": "card-11",
+    "registry_url": "https://21st.dev/r/lavikatiyar/card-11",
+    "title": "Card",
+    "description": "Interactive Card\nA visually engaging card component that features an icon group with hover animations, a step indicator, title, and description. It's designed to be reusable and adapt seamlessly to light and dark themes.",
+    "category": "card",
+    "category_group": "UI Components",
+    "downloads": 0,
+    "likes": 0
+  }
+}

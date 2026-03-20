@@ -1,0 +1,55 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "loading-dots",
+  "type": "registry:component",
+  "title": "Loading Dots",
+  "description": "A loading-dots component.",
+  "dependencies": [],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/ui/loading-dots.tsx",
+      "content": "import React from \"react\";\n\ninterface LoadingDotsProps {\n  size?: number;\n  children?: React.ReactNode;\n}\n\nconst dots = [\n  { animationDelay: \"0s\" },\n  { animationDelay: \"0.2s\", marginLeft: 1 },\n  { animationDelay: \"0.4s\", marginLeft: 1 },\n]\n\nexport const LoadingDots = ({ size = 2, children }: LoadingDotsProps) => {\n  return (\n    <span className=\"inline-flex items-center\">\n      {children && <div className=\"mr-3\">{children}</div>}\n      {dots.map((dot) => (\n        <span\n          className=\"bg-gray-900 inline-block rounded-[50%] animate-loading\"\n          style={{ height: size, width: size, ...dot }}\n        />\n      ))}\n    </span>\n  );\n};",
+      "type": "registry:component"
+    }
+  ],
+  "cssVars": {
+    "theme": {
+      "--color-context-card-border": "var(--context-card-border)",
+      "--color-gray-900": "var(--ds-gray-900)",
+      "--animate-loading": "loading 1.4s linear infinite"
+    },
+    "light": {
+      "--context-card-border": "hsla(0, 0%, 92%, 1)",
+      "--ds-gray-900": "hsla(0, 0%, 40%, 1)"
+    },
+    "dark": {
+      "--context-card-border": "hsla(0, 0%, 18%, 1)",
+      "--ds-gray-900": "hsla(0, 0%, 63%, 1)"
+    }
+  },
+  "css": {
+    "@keyframes loading": {
+      "0%": {
+        "opacity": "0.2"
+      },
+      "20%": {
+        "opacity": "1"
+      },
+      "100%": {
+        "opacity": "0.2"
+      }
+    }
+  },
+  "_meta": {
+    "author": "shugar",
+    "slug": "loading-dots",
+    "registry_url": "https://21st.dev/r/shugar/loading-dots",
+    "title": "Loading Dots",
+    "description": "Indicate an action running in the background.",
+    "category": "spinner-loader",
+    "category_group": "UI Components",
+    "downloads": 7,
+    "likes": 0
+  }
+}

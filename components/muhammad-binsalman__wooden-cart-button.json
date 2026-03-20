@@ -1,0 +1,27 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "wooden-cart-button",
+  "type": "registry:component",
+  "title": "Wooden Cart Button",
+  "description": "A wooden-cart-button component.",
+  "dependencies": [],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/ui/wooden-cart-button.tsx",
+      "content": "import React from 'react';\n\nconst WoodenCartButton = () => {\n  return (\n    <button\n      className=\"\n        relative inline-flex items-center px-7 py-3 border-none\n        bg-gradient-to-b from-[#f5deb3] to-[#deb887] rounded-full\n        shadow-[inset_0_5px_10px_rgba(255,255,255,0.5),inset_0_-5px_10px_rgba(0,0,0,0.2),0_5px_15px_rgba(0,0,0,0.3)]\n        cursor-pointer transition-all duration-400 ease-[cubic-bezier(0.175,0.885,0.32,1.275)]\n        transform perspective-500 rotate-x-5\n        before:content-[''] before:absolute before:inset-0\n        before:bg-[linear-gradient(45deg,rgba(139,90,43,0.1)_25%,transparent_25%,transparent_75%,rgba(139,90,43,0.1)_75%)]\n        before:bg-[length:10px_10px] before:opacity-50 before:rounded-full\n        before:transition-all before:duration-400 before:ease-in\n        before:-translate-z-1\n        hover:transform hover:perspective-500 hover:rotate-x-0 hover:-translate-y-[3px]\n        hover:shadow-[inset_0_6px_12px_rgba(255,255,255,0.6),inset_0_-6px_12px_rgba(0,0,0,0.25),0_8px_20px_rgba(0,0,0,0.35)]\n        hover:bg-gradient-to-b hover:from-[#f5e0c0] hover:to-[#e0c49c]\n        active:transform active:perspective-500 active:rotate-x-2 active:translate-y-2\n        active:shadow-[inset_0_3px_6px_rgba(255,255,255,0.3),inset_0_-3px_6px_rgba(0,0,0,0.15),0_2px_8px_rgba(0,0,0,0.2)]\n        active:bg-gradient-to-b active:from-[#e0c49c] active:to-[#c19a6b]\"\n    >\n      <svg\n        viewBox=\"0 0 24 24\"\n        className=\"\n          w-6 h-6 mr-2.5 fill-[#5c4033]\n          transition-all duration-400 ease-[cubic-bezier(0.175,0.885,0.32,1.275)]\n          transform translate-z-10\n          group-hover:transform group-hover:translate-z-15 group-hover:scale-110 group-hover:rotate-5\n          group-hover:drop-shadow-[0_2px_2px_rgba(0,0,0,0.3)]\n          group-active:transform group-active:translate-z-5 group-active:scale-90 group-active:-rotate-5\n          group-active:drop-shadow-[0_1px_1px_rgba(0,0,0,0.2)]\"\n      >\n        <path\n          d=\"M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zM1 2v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96 0 1.1.9 2 2 2h12v-2H7.42c-.14 0-.25-.11-.25-.25l.03-.12.9-1.63h7.45c.75 0 1.41-.41 1.75-1.03l3.58-6.49A.996.996 0 0 0 21.42 4H5.21l-.94-2H1zm16 16c-1.1 0-1.99.9-1.99 2s.89 2 1.99 2 2-.9 2-2-.9-2-2-2z\"\n        />\n      </svg>\n      <span\n        className=\"\n          relative z-10 text-[#5c4033] font-arial font-bold text-base\n          transition-all duration-400 ease-[cubic-bezier(0.175,0.885,0.32,1.275)]\n          transform translate-z-10\n          group-hover:transform group-hover:translate-z-15 group-hover:translate-x-1\n          group-hover:drop-shadow-[0_2px_4px_rgba(0,0,0,0.3)]\n          group-active:transform group-active:translate-z-5 group-active:translate-y-px\n          group-active:drop-shadow-[0_1px_2px_rgba(0,0,0,0.2)]\"\n      >\n        Add to cart\n      </span>\n    </button>\n  );\n};\n\nexport default WoodenCartButton;",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "muhammad-binsalman",
+    "slug": "wooden-cart-button",
+    "registry_url": "https://21st.dev/r/muhammad-binsalman/wooden-cart-button",
+    "title": "Wooden Cart Button",
+    "description": "A  simple minimalistic Add To Cart button for ecommerce applications, made with tailwind css ",
+    "category": "button",
+    "category_group": "UI Components",
+    "downloads": 0,
+    "likes": 0
+  }
+}

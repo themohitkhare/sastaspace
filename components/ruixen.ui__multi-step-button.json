@@ -1,0 +1,29 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "multi-step-button",
+  "type": "registry:component",
+  "title": "Multi Step Button",
+  "description": "A multi-step-button component.",
+  "dependencies": [],
+  "registryDependencies": [
+    "https://21st.dev/r/originui/button"
+  ],
+  "files": [
+    {
+      "path": "src/components/ui/multi-step-button.tsx",
+      "content": "import React, { useState } from \"react\";\nimport { Button } from \"@/components/ui/button\";\nimport { cn } from \"@/lib/utils\";\n\ninterface MultiStepButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {\n  steps: string[];\n  size?: \"sm\" | \"md\" | \"lg\";\n}\n\nconst sizeConfig = {\n  sm: \"px-3 py-1 text-sm\",\n  md: \"px-4 py-2 text-base\",\n  lg: \"px-5 py-3 text-lg\",\n};\n\nexport default function MultiStepButton({ steps, size = \"md\", className, ...props }: MultiStepButtonProps) {\n  const [currentStep, setCurrentStep] = useState(0);\n\n  const handleClick = () => {\n    setCurrentStep(prev => (prev + 1 < steps.length ? prev + 1 : prev));\n  };\n\n  return (\n    <Button\n      className={cn(sizeConfig[size], className)}\n      onClick={(e) => {\n        handleClick();\n        props.onClick?.(e);\n      }}\n      {...props}\n    >\n      {steps[currentStep]}\n    </Button>\n  );\n}",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "ruixen.ui",
+    "slug": "multi-step-button",
+    "registry_url": "https://21st.dev/r/ruixen.ui/multi-step-button",
+    "title": "MultiStep Button",
+    "description": "The Multi-Step Button is a shadcn/ui component that guides users through a sequence of actions by updating its label at each step. It’s perfect for multi-stage processes such as forms, onboarding flows, or confirmations, clearly indicating progress with labels like “Step 1: Fill Info → Step 2: Confirm → Step 3: Done.” The button supports configurable sizes (sm, md, lg) and seamlessly handles clicks to advance through steps, offering an intuitive and visually clear user experience. Its design leverages shadcn/ui primitives, ensuring accessibility, smooth transitions, and a modern, cohesive look in any interface.",
+    "category": "button",
+    "category_group": "UI Components",
+    "downloads": 0,
+    "likes": 0
+  }
+}

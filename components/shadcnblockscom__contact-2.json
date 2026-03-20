@@ -1,0 +1,32 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "contact-2",
+  "type": "registry:component",
+  "title": "Contact 2",
+  "description": "A contact-2 component.",
+  "dependencies": [],
+  "registryDependencies": [
+    "https://21st.dev/r/shadcn/button",
+    "https://21st.dev/r/shadcn/textarea",
+    "https://21st.dev/r/shadcn/input",
+    "https://21st.dev/r/shadcn/label"
+  ],
+  "files": [
+    {
+      "path": "src/components/ui/contact-2.tsx",
+      "content": "import React from \"react\";\n\nimport { Button } from \"@/components/ui/button\";\nimport { Input } from \"@/components/ui/input\";\nimport { Label } from \"@/components/ui/label\";\nimport { Textarea } from \"@/components/ui/textarea\";\n\ninterface Contact2Props {\n  title?: string;\n  description?: string;\n  phone?: string;\n  email?: string;\n  web?: { label: string; url: string };\n}\n\nexport const Contact2 = ({\n  title = \"Contact Us\",\n  description = \"We are available for questions, feedback, or collaboration opportunities. Let us know how we can help!\",\n  phone = \"(123) 34567890\",\n  email = \"email@example.com\",\n  web = { label: \"shadcnblocks.com\", url: \"https://shadcnblocks.com\" },\n}: Contact2Props) => {\n  return (\n    <section className=\"py-32\">\n      <div className=\"container\">\n        <div className=\"mx-auto flex max-w-screen-xl flex-col justify-between gap-10 lg:flex-row lg:gap-20\">\n          <div className=\"mx-auto flex max-w-sm flex-col justify-between gap-10\">\n            <div className=\"text-center lg:text-left\">\n              <h1 className=\"mb-2 text-5xl font-semibold lg:mb-1 lg:text-6xl\">\n                {title}\n              </h1>\n              <p className=\"text-muted-foreground\">{description}</p>\n            </div>\n            <div className=\"mx-auto w-fit lg:mx-0\">\n              <h3 className=\"mb-6 text-center text-2xl font-semibold lg:text-left\">\n                Contact Details\n              </h3>\n              <ul className=\"ml-4 list-disc\">\n                <li>\n                  <span className=\"font-bold\">Phone: </span>\n                  {phone}\n                </li>\n                <li>\n                  <span className=\"font-bold\">Email: </span>\n                  <a href={`mailto:${email}`} className=\"underline\">\n                    {email}\n                  </a>\n                </li>\n                <li>\n                  <span className=\"font-bold\">Web: </span>\n                  <a href={web.url} target=\"_blank\" className=\"underline\">\n                    {web.label}\n                  </a>\n                </li>\n              </ul>\n            </div>\n          </div>\n          <div className=\"mx-auto flex max-w-screen-md flex-col gap-6 rounded-lg border p-10\">\n            <div className=\"flex gap-4\">\n              <div className=\"grid w-full items-center gap-1.5\">\n                <Label htmlFor=\"firstname\">First Name</Label>\n                <Input type=\"text\" id=\"firstname\" placeholder=\"First Name\" />\n              </div>\n              <div className=\"grid w-full items-center gap-1.5\">\n                <Label htmlFor=\"lastname\">Last Name</Label>\n                <Input type=\"text\" id=\"lastname\" placeholder=\"Last Name\" />\n              </div>\n            </div>\n            <div className=\"grid w-full items-center gap-1.5\">\n              <Label htmlFor=\"email\">Email</Label>\n              <Input type=\"email\" id=\"email\" placeholder=\"Email\" />\n            </div>\n            <div className=\"grid w-full items-center gap-1.5\">\n              <Label htmlFor=\"subject\">Subject</Label>\n              <Input type=\"text\" id=\"subject\" placeholder=\"Subject\" />\n            </div>\n            <div className=\"grid w-full gap-1.5\">\n              <Label htmlFor=\"message\">Message</Label>\n              <Textarea placeholder=\"Type your message here.\" id=\"message\" />\n            </div>\n            <Button className=\"w-full\">Send Message</Button>\n          </div>\n        </div>\n      </div>\n    </section>\n  );\n};\n",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "shadcnblockscom",
+    "slug": "contact-2",
+    "registry_url": "https://21st.dev/r/shadcnblockscom/contact-2",
+    "title": "Contact 2",
+    "description": "A class contact page with contact details and form.",
+    "category": "form",
+    "category_group": "UI Components",
+    "downloads": 783,
+    "likes": 0
+  }
+}

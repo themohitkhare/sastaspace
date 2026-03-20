@@ -1,0 +1,32 @@
+{
+  "name": "checkbox-group",
+  "type": "registry:https://cdn.21st.dev/coss.com/checkbox-group/registry.1773944425670.json",
+  "dependencies": [
+    "@base-ui/react"
+  ],
+  "registryDependencies": [
+    "https://21st.dev/r/coss.com/checkbox"
+  ],
+  "files": [
+    {
+      "path": "/components/https://cdn.21st.dev/coss.com/checkbox-group/registry.1773944425670.json/checkbox-group.tsx",
+      "content": "\"use client\";\n\nimport { CheckboxGroup as CheckboxGroupPrimitive } from \"@base-ui/react/checkbox-group\";\nimport type React from \"react\";\n\nfunction cn(...inputs: (string | undefined | null | false)[]) {\n  return inputs.filter(Boolean).join(\" \");\n}\n\nexport function CheckboxGroup({\n  className,\n  ...props\n}: CheckboxGroupPrimitive.Props): React.ReactElement {\n  return (\n    <CheckboxGroupPrimitive\n      className={cn(\"flex flex-col items-start gap-3\", className)}\n      {...props}\n    />\n  );\n}\n\nexport { CheckboxGroupPrimitive };\n",
+      "type": "registry:https://cdn.21st.dev/coss.com/checkbox-group/registry.1773944425670.json",
+      "target": ""
+    }
+  ],
+  "tailwind": {
+    "config": {}
+  },
+  "_meta": {
+    "author": "coss.com",
+    "slug": "checkbox-group",
+    "registry_url": "https://21st.dev/r/coss.com/checkbox-group",
+    "title": "Checkbox Group",
+    "description": "Provides shared state for a series of checkboxes. Styled wrapper for CheckboxGroup from Base UI with support for parent checkboxes, indeterminate state, and nested groups.",
+    "category": "checkbox",
+    "category_group": "UI Components",
+    "downloads": 0,
+    "likes": 0
+  }
+}

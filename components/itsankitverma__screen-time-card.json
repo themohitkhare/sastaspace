@@ -1,0 +1,29 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "screen-time-card",
+  "type": "registry:component",
+  "title": "Screen Time Card",
+  "description": "A screen-time-card component.",
+  "dependencies": [
+    "framer-motion"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/ui/screen-time-card.tsx",
+      "content": "\"use client\";\n\nimport * as React from \"react\";\nimport { motion } from \"framer-motion\";\nimport { cn } from \"@/lib/utils\";\n\ninterface AppUsage {\n  icon: React.ReactNode;\n  name: string;\n  duration: string;\n  color?: string;\n}\n\ninterface ScreenTimeCardProps {\n  totalHours: number;\n  totalMinutes: number;\n  barData: number[]; // Array of usage values for each time period\n  timeLabels?: string[]; // e.g., [\"5 AM\", \"11 AM\", \"5 PM\"]\n  topApps: AppUsage[];\n  className?: string;\n}\n\n/**\n * A screen time card component that displays usage statistics with an animated bar graph.\n */\nexport const ScreenTimeCard = ({\n  totalHours,\n  totalMinutes,\n  barData,\n  timeLabels = [\"5 AM\", \"11 AM\", \"5 PM\"],\n  topApps,\n  className,\n}: ScreenTimeCardProps) => {\n  // Normalize bar data to 0-1 range for height calculation\n  const maxValue = Math.max(...barData);\n  const normalizedData = barData.map((value) => value / maxValue);\n\n  // Animation variants for bars\n  const barVariants = {\n    hidden: { scaleY: 0 },\n    visible: (i: number) => ({\n      scaleY: 1,\n      transition: {\n        delay: i * 0.02,\n        type: \"spring\",\n        stiffness: 100,\n        damping: 12,\n      },\n    }),\n  };\n\n  return (\n    <div\n      className={cn(\n        \"w-full max-w-md rounded-2xl border bg-gradient-to-br from-blue-50/50 via-purple-50/30 to-pink-50/50 dark:from-blue-950/20 dark:via-purple-950/10 dark:to-pink-950/20 text-card-foreground shadow-lg px-5 py-4 backdrop-blur-sm\",\n        className\n      )}\n    >\n      <div className=\"flex gap-12\">\n        {/* Left side - Main graph */}\n        <div className=\"flex-1\">\n          {/* Total time display */}\n          <div className=\"mb-3 text-3xl font-semibold\">\n            {totalHours}h {totalMinutes}m\n          </div>\n\n          {/* Bar graph */}\n          <div className=\"relative\">\n            {/* Y-axis labels */}\n            <div className=\"absolute -right-11 top-0 flex h-32 flex-col justify-between text-xs text-muted-foreground\">\n              <span>2h</span>\n              <span>1h</span>\n              <span>0</span>\n            </div>\n\n            {/* Horizontal guide lines */}\n            <div className=\"absolute inset-0 flex h-32 flex-col justify-between pointer-events-none\">\n              <div className=\"h-px border-t border-dashed border-border/50\" />\n              <div className=\"h-px border-t border-dashed border-border/50\" />\n              <div className=\"h-px border-t border-dashed border-border/50\" />\n            </div>\n\n            {/* Bars */}\n            <div className=\"mb-1.5 flex h-32 items-end gap-[3px] relative z-10\">\n              {normalizedData.map((height, index) => {\n                // Determine bar color - highlight certain bars\n                const isHighlighted = height > 0.6;\n                const barColor = isHighlighted\n                  ? \"bg-gradient-to-t from-primary to-primary/80\"\n                  : \"bg-muted dark:bg-muted/50\";\n\n                return (\n                  <motion.div\n                    key={index}\n                    custom={index}\n                    variants={barVariants}\n                    initial=\"hidden\"\n                    animate=\"visible\"\n                    className={cn(\n                      \"flex-1 rounded-t-sm origin-bottom\",\n                      barColor\n                    )}\n                    style={{ height: `${height * 100}%` }}\n                  />\n                );\n              })}\n            </div>\n\n            {/* X-axis labels */}\n            <div className=\"flex justify-between text-xs text-muted-foreground\">\n              {timeLabels.map((label, index) => (\n                <span key={index}>{label}</span>\n              ))}\n              <span>0</span>\n            </div>\n          </div>\n        </div>\n\n        {/* Vertical divider */}\n        <div className=\"w-px bg-border self-stretch relative left-6\" />\n\n        {/* Right side - Top apps */}\n        <div className=\"flex flex-col gap-3.5 justify-center\">\n          {topApps.map((app, index) => (\n            <motion.div\n              key={index}\n              initial={{ opacity: 0, x: 20 }}\n              animate={{ opacity: 1, x: 0 }}\n              transition={{ delay: index * 0.1 + 0.3 }}\n              className=\"flex items-center gap-3\"\n            >\n              <div className=\"flex h-6 w-6 items-center justify-center text-foreground\">\n                {app.icon}\n              </div>\n              <span className=\"text-sm whitespace-nowrap\">{app.duration}</span>\n            </motion.div>\n          ))}\n        </div>\n      </div>\n    </div>\n  );\n};\n",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "itsankitverma",
+    "slug": "screen-time-card",
+    "registry_url": "https://21st.dev/r/itsankitverma/screen-time-card",
+    "title": "ScreenTimeCard",
+    "description": "A beautiful, animated screen time statistics card component inspired by macOS Screen, Time widget design. Displays usage patterns with an interactive bar chart and top app breakdown.",
+    "category": "card",
+    "category_group": "UI Components",
+    "downloads": 26,
+    "likes": 0
+  }
+}

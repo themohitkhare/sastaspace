@@ -1,0 +1,32 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "audiobook-card",
+  "type": "registry:component",
+  "title": "Audiobook Card",
+  "description": "A audiobook-card component.",
+  "dependencies": [
+    "framer-motion"
+  ],
+  "registryDependencies": [
+    "https://21st.dev/r/originui/label",
+    "https://21st.dev/r/originui/slider"
+  ],
+  "files": [
+    {
+      "path": "src/components/ui/audiobook-card.tsx",
+      "content": "import * as React from \"react\";\nimport { motion } from \"framer-motion\";\nimport { cn } from \"@/lib/utils\"; // Assuming you have a 'cn' utility from shadcn\n\n// TSDoc for props documentation\nexport interface AudiobookCardProps extends React.HTMLAttributes<HTMLDivElement> {\n  /** The URL for the book cover image. */\n  imageUrl: string;\n  /** The main title of the audiobook. */\n  title: string;\n  /** The author's name. */\n  author: string;\n  /** The category or genre of the book. */\n  category: string;\n  /** The publication year. */\n  year: number;\n  /** The total number of pages or chapters. */\n  totalPages: number;\n  /** The number of pages or chapters already read. */\n  pagesRead: number;\n  /** A React node for the icon, e.g., from lucide-react. */\n  icon: React.ReactNode;\n}\n\nconst AudiobookCard = React.forwardRef<HTMLDivElement, AudiobookCardProps>(\n  (\n    {\n      className,\n      imageUrl,\n      title,\n      author,\n      category,\n      year,\n      totalPages,\n      pagesRead,\n      icon,\n      ...props\n    },\n    ref\n  ) => {\n    // Calculate progress percentage, ensuring no division by zero\n    const progressPercentage = totalPages > 0 ? (pagesRead / totalPages) * 100 : 0;\n    const pagesLeft = totalPages - pagesRead;\n\n    return (\n      <div\n        ref={ref}\n        className={cn(\n          \"relative w-full max-w-sm overflow-hidden rounded-2xl p-5 text-card-foreground shadow-lg\",\n          \"bg-gradient-to-br from-[hsl(var(--muted)/0.4)] to-[hsl(var(--card)/0.8)] backdrop-blur-sm\",\n          \"border border-white/10\",\n          className\n        )}\n        {...props}\n      >\n        {/* Main content layout */}\n        <div className=\"flex flex-col gap-4\">\n          {/* Header with Icon and Image */}\n          <div className=\"flex items-start justify-between\">\n            <div className=\"rounded-lg bg-black/20 p-2 text-white/80\">\n              {icon}\n            </div>\n            <img\n              src={imageUrl}\n              alt={title}\n              width={96}\n              height={96}\n              className=\"h-24 w-24 rounded-lg object-cover shadow-2xl\"\n            />\n          </div>\n\n          {/* Book Details */}\n          <div className=\"flex flex-col items-start\">\n            <h2 className=\"text-2xl font-bold\">{title}</h2>\n            <p className=\"text-sm text-muted-foreground\">\n              {author} &bull; {category} &bull; {year}\n            </p>\n          </div>\n\n          {/* Progress Bar Section */}\n          <div className=\"flex flex-col gap-2\">\n            <div\n              className=\"h-4 w-full rounded-full\"\n              // The segmented effect is created using a repeating gradient as a background\n              style={{\n                backgroundImage:\n                  \"repeating-linear-gradient(to right, hsl(var(--muted-foreground)/0.3), hsl(var(--muted-foreground)/0.3) 1px, transparent 1px, transparent 11.5%)\",\n                backgroundSize: \"100% 100%\",\n              }}\n            >\n              <motion.div\n                className=\"h-full rounded-full bg-primary\"\n                // Animate the width based on progress\n                initial={{ width: 0 }}\n                animate={{ width: `${progressPercentage}%` }}\n                transition={{ duration: 1.5, ease: [0.22, 1, 0.36, 1] }} // Smooth ease-out cubic bezier\n                role=\"progressbar\"\n                aria-valuenow={progressPercentage}\n                aria-valuemin={0}\n                aria-valuemax={100}\n                aria-label={`${title} reading progress`}\n              />\n            </div>\n            <p className=\"self-end text-xs font-medium text-muted-foreground\">\n              {pagesLeft} left\n            </p>\n          </div>\n        </div>\n      </div>\n    );\n  }\n);\n\nAudiobookCard.displayName = \"AudiobookCard\";\n\nexport { AudiobookCard };",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "kavikatiyar",
+    "slug": "audiobook-card",
+    "registry_url": "https://21st.dev/r/kavikatiyar/audiobook-card",
+    "title": "Audiobook Card",
+    "description": "AudiobookCard\nAn AudiobookCard is a visually rich component designed to display the progress and details of an audiobook or any reading material. It features a prominent cover image, title, author details, and an animated, segmented progress bar. The component is built to be highly reusable and customizable through props.",
+    "category": "card",
+    "category_group": "UI Components",
+    "downloads": 0,
+    "likes": 0
+  }
+}

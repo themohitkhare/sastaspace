@@ -1,0 +1,29 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "otp-input",
+  "type": "registry:component",
+  "title": "Otp Input",
+  "description": "A otp-input component.",
+  "dependencies": [
+    "@ark-ui/react"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/ui/otp-input.tsx",
+      "content": "import { PinInput } from '@ark-ui/react/pin-input'\n\nexport const Basic = () => {\n  return (\n    <div className=\"flex min-h-screen items-center justify-center bg-gray-50 dark:bg-gray-900 p-6 w-full\">\n      <div className=\"max-w-md w-full space-y-6 rounded-2xl bg-white dark:bg-gray-800 shadow-lg p-8 text-center\">\n        \n        {/* Title and Description */}\n        <div>\n          <h2 className=\"text-2xl font-bold text-gray-900 dark:text-white\">\n            Enter Your Verification Code\n          </h2>\n          <p className=\"mt-2 text-sm text-gray-600 dark:text-gray-400\">\n            We’ve sent a 4-digit code to your email. Please enter it below to continue.\n          </p>\n        </div>\n\n        {/* PIN Input */}\n        <PinInput.Root\n          onValueComplete={(e) => alert(`Entered: ${e.valueAsString}`)}\n        >\n          <PinInput.Label className=\"sr-only\">Verification Code</PinInput.Label>\n          <PinInput.Control className=\"flex justify-center gap-4\">\n            {[0, 1, 2, 3].map((id, index) => (\n              <PinInput.Input\n                key={id}\n                index={index}\n                className=\"w-12 h-14 text-center text-xl font-semibold \n                           border-b-2 border-gray-400 dark:border-gray-500 \n                           bg-transparent text-gray-900 dark:text-white \n                           focus:border-blue-500 dark:focus:border-blue-400 \n                           focus:ring-0 outline-none \n                           transition-all duration-200\"\n              />\n            ))}\n          </PinInput.Control>\n          <PinInput.HiddenInput />\n        </PinInput.Root>\n\n        {/* Extra Info */}\n        <div className=\"text-sm text-gray-500 dark:text-gray-400\">\n          Didn’t receive the code?{\" \"}\n          <span className=\"text-blue-600 dark:text-blue-400 cursor-pointer hover:underline\">\n            Resend\n          </span>\n        </div>\n      </div>\n    </div>\n  )\n}\n",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "itsankitverma",
+    "slug": "otp-input",
+    "registry_url": "https://21st.dev/r/itsankitverma/otp-input",
+    "title": "OTP Input",
+    "description": "This is an OTP input box, with light and dark themed support ",
+    "category": "input",
+    "category_group": "UI Components",
+    "downloads": 9,
+    "likes": 0
+  }
+}

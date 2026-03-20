@@ -1,0 +1,29 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "expanding-cards",
+  "type": "registry:component",
+  "title": "Expanding Cards",
+  "description": "A expanding-cards component.",
+  "dependencies": [
+    "lucide-react"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/ui/expanding-cards.tsx",
+      "content": "\"use client\";\n\nimport * as React from \"react\";\nimport {\n  Pyramid,\n  Castle,\n  Mountain,\n  TowerControl,\n  Building,\n  Landmark,\n} from \"lucide-react\";\nimport { cn } from \"@/lib/utils\"; \n\nexport interface CardItem {\n  id: string | number;\n  title: string;\n  description: string;\n  imgSrc: string;\n  icon: React.ReactNode;\n  linkHref: string;\n}\n\ninterface ExpandingCardsProps extends React.HTMLAttributes<HTMLUListElement> {\n  items: CardItem[];\n  defaultActiveIndex?: number;\n}\n\nexport const ExpandingCards = React.forwardRef<\n  HTMLUListElement,\n  ExpandingCardsProps\n>(({ className, items, defaultActiveIndex = 0, ...props }, ref) => {\n  const [activeIndex, setActiveIndex] = React.useState<number | null>(\n    defaultActiveIndex,\n  );\n  \n  const [isDesktop, setIsDesktop] = React.useState(false);\n\n  React.useEffect(() => {\n    const handleResize = () => {\n      setIsDesktop(window.innerWidth >= 768);\n    };\n    handleResize();\n    window.addEventListener('resize', handleResize);\n    return () => window.removeEventListener('resize', handleResize);\n  }, []);\n\n  const gridStyle = React.useMemo(() => {\n    if (activeIndex === null) return {};\n    \n    if (isDesktop) {\n      const columns = items\n        .map((_, index) => (index === activeIndex ? \"5fr\" : \"1fr\"))\n        .join(\" \");\n      return { gridTemplateColumns: columns };\n    } else {\n      const rows = items\n        .map((_, index) => (index === activeIndex ? \"5fr\" : \"1fr\"))\n        .join(\" \");\n      return { gridTemplateRows: rows };\n    }\n  }, [activeIndex, items.length, isDesktop]);\n\n  const handleInteraction = (index: number) => {\n    setActiveIndex(index);\n  };\n\n  return (\n    <ul\n      className={cn(\n        \"w-full max-w-6xl gap-2\",\n        \"grid\",\n        \"h-[600px] md:h-[500px]\",\n        \"transition-[grid-template-columns,grid-template-rows] duration-500 ease-out\",\n        className,\n      )}\n      style={{\n        ...gridStyle,\n        ...(isDesktop \n          ? { gridTemplateRows: '1fr' }\n          : { gridTemplateColumns: '1fr' }\n        )\n      }}\n      ref={ref}\n      {...props}\n    >\n      {items.map((item, index) => (\n        <li\n          key={item.id}\n          className={cn(\n            \"group relative cursor-pointer overflow-hidden rounded-lg border bg-card text-card-foreground shadow-sm\",\n            \"md:min-w-[80px]\",\n            \"min-h-0 min-w-0\"\n          )}\n          onMouseEnter={() => handleInteraction(index)}\n          onFocus={() => handleInteraction(index)}\n          onClick={() => handleInteraction(index)}\n          tabIndex={0}\n          data-active={activeIndex === index}\n        >\n          <img\n            src={item.imgSrc}\n            alt={item.title}\n            className=\"absolute inset-0 h-full w-full object-cover transition-all duration-300 ease-out group-data-[active=true]:scale-100 group-data-[active=true]:grayscale-0 scale-110 grayscale\"\n          />\n          <div className=\"absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent\" />\n\n          <article\n            className=\"absolute inset-0 flex flex-col justify-end gap-2 p-4\"\n          >\n            <h3 className=\"hidden origin-left rotate-90 text-sm font-light uppercase tracking-wider text-white/80 opacity-100 transition-all duration-300 ease-out md:block group-data-[active=true]:opacity-0\">\n              {item.title}\n            </h3>\n\n            <div className=\"text-white/90 opacity-0 transition-all duration-300 delay-75 ease-out group-data-[active=true]:opacity-100\">\n              {item.icon}\n            </div>\n\n            <h3 className=\"text-xl font-bold text-white opacity-0 transition-all duration-300 delay-150 ease-out group-data-[active=true]:opacity-100\">\n              {item.title}\n            </h3>\n\n            <p className=\"w-full max-w-xs text-sm text-white/80 opacity-0 transition-all duration-300 delay-225 ease-out group-data-[active=true]:opacity-100\">\n              {item.description}\n            </p>\n          </article>\n        </li>\n      ))}\n    </ul>\n  );\n});\nExpandingCards.displayName = \"ExpandingCards\";",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "vaib215",
+    "slug": "expanding-cards",
+    "registry_url": "https://21st.dev/r/vaib215/expanding-cards",
+    "title": "Expanding Cards",
+    "description": "An interactive, responsive card grid where one card expands on hover, focus, or click to reveal its content, while the others collapse. It is fully responsive, transitioning from a vertical layout on mobile to a horizontal grid on desktops.",
+    "category": "card",
+    "category_group": "UI Components",
+    "downloads": 22,
+    "likes": 0
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "name": "number-flow",
+  "type": "registry:ui",
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "/components/ui/number-flow.tsx",
+      "content": "https://number-flow.barvian.me/",
+      "type": "registry:ui",
+      "target": ""
+    }
+  ],
+  "tailwind": {
+    "config": {}
+  },
+  "_meta": {
+    "author": "barvian",
+    "slug": "number-flow",
+    "registry_url": "https://21st.dev/r/barvian/number-flow",
+    "title": "Number Flow",
+    "description": "A React component to transition, localize, and format numbers. Dependency-free. Accessible. Customizable.",
+    "category": "number",
+    "category_group": "UI Components",
+    "downloads": 399,
+    "likes": 24
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "checkbox-group-1",
+  "type": "registry:component",
+  "title": "Checkbox Group 1",
+  "description": "A checkbox-group-1 component.",
+  "dependencies": [],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/ui/checkbox-group-1.tsx",
+      "content": "\"use client\";\n\nimport * as React from \"react\";\n\n/**\n * IMPORTANT: Local SubframeUtils lives INSIDE this component file.\n * Provides createTwClassNames() and twClassNames instance.\n */\nnamespace SubframeUtils {\n  export type ClassValue =\n    | string\n    | null\n    | undefined\n    | false\n    | Record<string, boolean>;\n\n  export function createTwClassNames() {\n    return (...classes: ClassValue[]) =>\n      classes\n        .flatMap((c) => {\n          if (!c) return [];\n          if (typeof c === \"string\") return [c];\n          return Object.entries(c)\n            .filter(([, ok]) => !!ok)\n            .map(([k]) => k);\n        })\n        .join(\" \");\n  }\n\n  export const twClassNames = createTwClassNames();\n}\n\n/* -------------------- Types -------------------- */\n\nexport interface ComponentProps extends React.HTMLAttributes<HTMLDivElement> {\n  label?: React.ReactNode;\n  helpText?: React.ReactNode;\n  error?: boolean;\n  horizontal?: boolean;\n  children?: React.ReactNode;\n  className?: string;\n}\n\n/* -------------------- Component -------------------- */\n\nexport const Component = React.forwardRef<HTMLDivElement, ComponentProps>(\n  function Component(\n    { label, helpText, error = false, horizontal = false, children, className, ...otherProps },\n    ref\n  ) {\n    return (\n      <div\n        ref={ref}\n        {...otherProps}\n        className={SubframeUtils.twClassNames(\n          \"flex flex-col items-start gap-2\",\n          className\n        )}\n      >\n        {label ? (\n          <span\n            className={SubframeUtils.twClassNames(\n              \"text-sm font-medium\",\n              error ? \"text-red-700\" : \"text-zinc-900 dark:text-zinc-100\"\n            )}\n          >\n            {label}\n          </span>\n        ) : null}\n\n        {children ? (\n          <div\n            className={SubframeUtils.twClassNames(\n              // items wrapper switches layout when horizontal\n              horizontal\n                ? \"flex flex-row flex-wrap items-center gap-4\"\n                : \"flex flex-col items-start gap-2\"\n            )}\n          >\n            {children}\n          </div>\n        ) : null}\n\n        {helpText ? (\n          <span\n            className={SubframeUtils.twClassNames(\n              \"text-xs\",\n              error ? \"text-red-700\" : \"text-zinc-600 dark:text-zinc-400\"\n            )}\n          >\n            {helpText}\n          </span>\n        ) : null}\n      </div>\n    );\n  }\n);\n\n// Named + default export\nexport default Component;\n",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "SubframeApp",
+    "slug": "checkbox-group-1",
+    "registry_url": "https://21st.dev/r/SubframeApp/checkbox-group-1",
+    "title": "Checkbox Group",
+    "description": "Here is Checkbox Group component",
+    "category": "checkbox",
+    "category_group": "UI Components",
+    "downloads": 3,
+    "likes": 0
+  }
+}

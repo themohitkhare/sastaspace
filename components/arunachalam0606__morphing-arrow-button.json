@@ -1,0 +1,30 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "morphing-arrow-button",
+  "type": "registry:component",
+  "title": "Morphing Arrow Button",
+  "description": "A morphing-arrow-button component.",
+  "dependencies": [
+    "framer-motion",
+    "lucide-react"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/ui/morphing-arrow-button.tsx",
+      "content": "'use client';\n\nimport { useState } from 'react';\nimport { motion } from 'framer-motion';\nimport { ChevronLeft, ChevronRight } from 'lucide-react';\n\nimport { cn } from '@/lib/utils';\n\ntype MorphingArrowButtonProps = {\n  direction: 'left' | 'right';\n};\n\nconst MorphingArrowButton = ({ direction }: MorphingArrowButtonProps) => {\n  const [isHovered, setIsHovered] = useState(false);\n  const isLeft = direction === 'left';\n\n  const containerVariants = {\n    initial: { width: '64px', x: 0 },\n    hover: {\n      width: '120px',\n      x: isLeft ? '-56px' : 0,\n    },\n  };\n\n  const buttonVariants = {\n    initial: {\n      borderRadius: '50%',\n      height: '64px',\n      padding: '0',\n    },\n\n    hover: {\n      borderRadius: isLeft ? '50px 14px 14px 50px' : '14px 50px 50px 14px',\n      height: '64px',\n      padding: '0 10px',\n    },\n  };\n\n  const lineVariants = {\n    initial: { width: 0 },\n    hover: { width: 'calc(100% - 50px)' },\n  };\n\n  const arrowVariants = {\n    initial: { x: '-50%' },\n    hover: { x: isLeft ? '-120%' : '20%' },\n  };\n\n  const Icon = isLeft ? ChevronLeft : ChevronRight;\n\n  return (\n    <div className='inline-block w-[120px] overflow-visible'>\n      <motion.div\n        className={cn(\n          'flex items-center',\n          isLeft ? 'justify-end' : 'justify-start'\n        )}\n        variants={containerVariants}\n        initial='initial'\n        animate={isHovered ? 'hover' : 'initial'}\n        transition={{ duration: 0.3, ease: 'easeInOut' }}\n        onHoverStart={() => setIsHovered(true)}\n        onHoverEnd={() => setIsHovered(false)}\n      >\n        <motion.button\n          className={cn(\n            'w-full flex items-center justify-center border border-black dark:border-white',\n            'relative overflow-hidden cursor-pointer bg-transparent'\n          )}\n          variants={buttonVariants}\n          initial='initial'\n          animate={isHovered ? 'hover' : 'initial'}\n          transition={{ duration: 0.3, ease: 'easeInOut' }}\n        >\n          <div className='relative w-full h-full flex items-center'>\n            <motion.div\n              className={cn(\n                'h-0.5 bg-black dark:bg-white absolute top-1/2 -translate-y-1/2',\n                isLeft ? 'right-5' : 'left-5'\n              )}\n              variants={lineVariants}\n              initial='initial'\n              animate={isHovered ? 'hover' : 'initial'}\n              transition={{ duration: 0.3, ease: 'easeInOut' }}\n            />\n\n            <motion.div\n              className='absolute top-1/2 left-1/2 -translate-y-1/2'\n              variants={arrowVariants}\n              initial='initial'\n              animate={isHovered ? 'hover' : 'initial'}\n              transition={{ duration: 0.3, ease: 'easeInOut' }}\n            >\n              <Icon className='w-6 h-6 text-black dark:text-white' />\n            </motion.div>\n          </div>\n        </motion.button>\n      </motion.div>\n    </div>\n  );\n};\n\nexport default MorphingArrowButton;\n",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "arunachalam0606",
+    "slug": "morphing-arrow-button",
+    "registry_url": "https://21st.dev/r/arunachalam0606/morphing-arrow-button",
+    "title": "Morphing Arrow Button",
+    "description": " A directional button that smoothly morphs on hover:\n - Starts as a circular icon\n - Expands outward in the given direction (left or right)\n - Adds a subtle animated line and arrow shift for a modern touch\n\nIdeal for carousels, sliders, or navigation UIs where you want subtle motion without being intrusive.",
+    "category": "button",
+    "category_group": "UI Components",
+    "downloads": 14,
+    "likes": 0
+  }
+}

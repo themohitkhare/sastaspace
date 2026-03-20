@@ -1,0 +1,31 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "logo-carousel",
+  "type": "registry:component",
+  "title": "Logo Carousel",
+  "description": "A logo-carousel component.",
+  "dependencies": [],
+  "registryDependencies": [
+    "https://21st.dev/r/originui/avatar",
+    "https://21st.dev/r/shadcn/carousel",
+    "https://21st.dev/r/ibelick/text-roll"
+  ],
+  "files": [
+    {
+      "path": "src/components/ui/logo-carousel.tsx",
+      "content": "\"use client\";\n\nimport { useEffect, useState } from \"react\";\nimport {\n  Carousel,\n  CarouselApi,\n  CarouselContent,\n  CarouselItem,\n} from \"@/components/ui/carousel\";\nimport { TextRoll } from \"./text-roll\"; // Assuming text-roll.tsx is in the same directory\n\nexport const AnimatedCarousel = ({\n  title = \"Trusted by thousands of businesses worldwide\",\n  logoCount = 15,\n  autoPlay = true,\n  autoPlayInterval = 1000,\n  logos = null, // Array of image URLs\n  containerClassName = \"\",\n  titleClassName = \"\",\n  carouselClassName = \"\",\n  logoClassName = \"\",\n  itemsPerViewMobile = 4,\n  itemsPerViewDesktop = 6,\n  spacing = \"gap-10\",\n  padding = \"py-20 lg:py-40\",\n  // New logo size customization props\n  logoContainerWidth = \"w-48\",\n  logoContainerHeight = \"h-24\",\n  logoImageWidth = \"w-full\",\n  logoImageHeight = \"h-full\",\n  logoMaxWidth = \"\",\n  logoMaxHeight = \"\",\n}) => {\n  const [api, setApi] = useState<CarouselApi>();\n  const [current, setCurrent] = useState(0);\n\n  useEffect(() => {\n    if (!api || !autoPlay) {\n      return;\n    }\n\n    const timer = setTimeout(() => {\n      if (api.selectedScrollSnap() + 1 === api.scrollSnapList().length) {\n        setCurrent(0);\n        api.scrollTo(0);\n      } else {\n        api.scrollNext();\n        setCurrent(current + 1);\n      }\n    }, autoPlayInterval);\n\n    return () => clearTimeout(timer);\n  }, [api, current, autoPlay, autoPlayInterval]);\n\n  const logoItems = logos || Array.from({ length: logoCount }, (_, i) => `https://th.bing.com/th/id/R.4aa108082e7d3cbd55add79f84612aaa?rik=I4dbPhSe%2fbHHSg&riu=http%3a%2f%2fpurepng.com%2fpublic%2fuploads%2flarge%2fpurepng.com-google-logo-2015brandlogobrand-logoiconssymbolslogosgoogle-6815229372333mqrr.png&ehk=ewmaCOvP0Ji4QViEJnxSdlrYUrTSTWhi8nZ9XdyCgAI%3d&risl=&pid=ImgRaw&r=0100x100?text=Logo+${i + 1}`);\n\n  // Combine logo image size classes\n  const logoImageSizeClasses = `${logoImageWidth} ${logoImageHeight} ${logoMaxWidth} ${logoMaxHeight}`.trim();\n\n  return (\n    <div className={`w-full ${padding} bg-background ${containerClassName}`}>\n      <div className=\"container mx-auto\">\n        <div className={`flex flex-col ${spacing}`}>\n          <h2 className={`text-xl md:text-3xl md:text-5xl tracking-tighter lg:max-w-xl font-regular text-left ml-2 text-foreground ${titleClassName}`}>\n            <TextRoll>{title}</TextRoll>\n          </h2>\n          \n          <div>\n            <Carousel setApi={setApi} className={`w-full ${carouselClassName}`}>\n              <CarouselContent>\n                {logoItems.map((logo, index) => (\n                  <CarouselItem className={`basis-1/${itemsPerViewMobile} lg:basis-1/${itemsPerViewDesktop}`} key={index}>\n                    <div className={`flex rounded-md ${logoContainerWidth} ${logoContainerHeight} items-center justify-center p-4 hover:bg-accent transition-colors ${logoClassName}`}>\n                      <img \n                        src={typeof logo === 'string' ? logo : logo}\n                        alt={`Logo ${index + 1}`}\n                        className={`${logoImageSizeClasses} object-contain filter brightness-0 dark:brightness-0 dark:invert`}\n                      />\n                    </div>\n                  </CarouselItem>\n                ))}\n              </CarouselContent>\n            </Carousel>\n          </div>\n        </div>\n      </div>\n    </div>\n  );\n};\n\nexport const Case1 = (props) => {\n  return <AnimatedCarousel {...props} />;\n};",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "easemize",
+    "slug": "logo-carousel",
+    "registry_url": "https://21st.dev/r/easemize/logo-carousel",
+    "title": "Logo Carousel",
+    "description": "Showcase your partners and build social proof with the Infinite Logo Carousel. This component is designed to be a flexible, plug-and-play solution for displaying a seamless, looping reel of brand logos.\nKey Features:\nEffortless Integration: Drop it into any React project. Works perfectly with the shadcn/ui ecosystem.\nSmooth Autoplay: Set it and forget it. The carousel loops infinitely with a configurable interval.\nAnimated Title: Features a built-in TextRoll animation to give your section title a touch of modern flair.\nHighly Customizable: Easily adjust the number of logos, sizing, spacing, and animation speed directly through props. You can use the reliable default logos or pass in your own array.\nPerfect for \"Trusted By\" sections, client showcases, or any time you need to display a collection of brand logos in a clean and professional manner.",
+    "category": "carousel",
+    "category_group": "UI Components",
+    "downloads": 332,
+    "likes": 0
+  }
+}

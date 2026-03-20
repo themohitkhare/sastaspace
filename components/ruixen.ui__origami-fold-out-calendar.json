@@ -1,0 +1,63 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "origami-fold-out-calendar",
+  "type": "registry:component",
+  "title": "Origami Fold Out Calendar",
+  "description": "A origami-fold-out-calendar component.",
+  "dependencies": [
+    "lucide-react"
+  ],
+  "registryDependencies": [
+    "https://21st.dev/r/shadcn/card",
+    "https://21st.dev/r/originui/button",
+    "https://21st.dev/r/originui/popover",
+    "https://21st.dev/r/originui/input",
+    "https://21st.dev/r/originui/label",
+    "https://21st.dev/r/originui/calendar",
+    "https://21st.dev/r/originui/select",
+    "https://21st.dev/r/originui/slider",
+    "https://21st.dev/r/originui/accordion"
+  ],
+  "files": [
+    {
+      "path": "src/components/ui/origami-fold-out-calendar.tsx",
+      "content": "\"use client\"\n\nimport * as React from \"react\"\nimport { Card, CardContent } from \"@/components/ui/card\"\nimport { Button } from \"@/components/ui/button\"\nimport { Calendar } from \"@/components/ui/calendar\"\nimport {\n  Accordion,\n  AccordionContent,\n  AccordionItem,\n  AccordionTrigger,\n} from \"@/components/ui/accordion\"\nimport { Popover, PopoverContent, PopoverTrigger } from \"@/components/ui/popover\"\nimport { Input } from \"@/components/ui/input\"\nimport { Label } from \"@/components/ui/label\"\nimport { Plus, Trash2 } from \"lucide-react\"\n\ntype Event = {\n  id: number\n  title: string\n  date: Date\n}\n\nexport function OrigamiFoldOutCalendar() {\n  const [events, setEvents] = React.useState<Event[]>([])\n  const [selectedDate, setSelectedDate] = React.useState<Date | undefined>(new Date())\n  const [title, setTitle] = React.useState(\"\")\n  const [displayedMonth, setDisplayedMonth] = React.useState<Date>(new Date())\n\n  const addEvent = () => {\n    if (!title || !selectedDate) return\n    setEvents([...events, { id: Date.now(), title, date: selectedDate }])\n    setTitle(\"\")\n  }\n\n  const deleteEvent = (id: number) => {\n    setEvents(events.filter((e) => e.id !== id))\n  }\n\n  const eventsByDate = (date: Date) =>\n    events.filter((e) => e.date.toDateString() === date.toDateString())\n\n  // update displayed month when user picks new date\n  const handleDateSelect = (date: Date | undefined) => {\n    if (!date) return\n    setSelectedDate(date)\n    setDisplayedMonth(new Date(date.getFullYear(), date.getMonth(), 1))\n  }\n\n  // calculate days in displayed month\n  const year = displayedMonth.getFullYear()\n  const month = displayedMonth.getMonth()\n  const daysInMonth = new Date(year, month + 1, 0).getDate()\n\n  return (\n    <div className=\"flex flex-col gap-6\">\n      {/* Add Event */}\n      <Card>\n        <CardContent className=\"flex flex-wrap items-end gap-4\">\n          <div className=\"flex-1 min-w-[200px]\">\n            <Label>Event Title</Label>\n            <Input\n              placeholder=\"Enter event title\"\n              value={title}\n              onChange={(e) => setTitle(e.target.value)}\n            />\n          </div>\n\n          <div className=\"flex flex-col\">\n            <Label>Date</Label>\n            <Popover>\n              <PopoverTrigger asChild>\n                <Button variant=\"outline\" className=\"mt-1 w-[160px]\">\n                  {selectedDate ? selectedDate.toDateString() : \"Pick a date\"}\n                </Button>\n              </PopoverTrigger>\n              <PopoverContent className=\"p-0\">\n                <Calendar\n                  mode=\"single\"\n                  selected={selectedDate}\n                  onSelect={handleDateSelect}\n                  month={displayedMonth}\n                  onMonthChange={setDisplayedMonth}\n                />\n              </PopoverContent>\n            </Popover>\n          </div>\n\n          <div className=\"mt-5\">\n            <Button onClick={addEvent}>\n              <Plus className=\"w-4 h-4 mr-1\" /> Add Event\n            </Button>\n          </div>\n        </CardContent>\n      </Card>\n\n      {/* Origami Fold-Out View */}\n      <Card>\n        <CardContent className=\"p-4\">\n          <h3 className=\"font-semibold mb-2\">\n            {displayedMonth.toLocaleString(\"default\", {\n              month: \"long\",\n              year: \"numeric\",\n            })}\n          </h3>\n\n          <div className=\"h-[500px] overflow-y-auto pr-2\">\n            <Accordion type=\"single\" collapsible className=\"w-full\">\n              {Array.from({ length: daysInMonth }).map((_, i) => {\n                const day = new Date(year, month, i + 1)\n                const dayEvents = eventsByDate(day)\n\n                return (\n                  <AccordionItem\n                    key={i}\n                    value={`day-${i}`}\n                    className=\"border rounded-lg mb-2 overflow-hidden\"\n                  >\n                    <AccordionTrigger className=\"px-4 py-2 text-lg font-semibold\">\n                      Day {i + 1} — {day.toDateString()}{\" \"}\n                      {dayEvents.length > 0 && `(${dayEvents.length} events)`}\n                    </AccordionTrigger>\n                    <AccordionContent className=\"bg-muted/40 p-4 space-y-2\">\n                      {dayEvents.length === 0 ? (\n                        <p className=\"text-sm text-muted-foreground\">No events</p>\n                      ) : (\n                        dayEvents.map((ev) => (\n                          <Card\n                            key={ev.id}\n                            className=\"shadow-sm border border-dashed relative transition-transform hover:scale-[1.01]\"\n                          >\n                            <CardContent className=\"flex justify-between items-center p-3\">\n                              <span className=\"font-medium\">{ev.title}</span>\n                              <Button\n                                variant=\"ghost\"\n                                size=\"icon\"\n                                onClick={() => deleteEvent(ev.id)}\n                              >\n                                <Trash2 className=\"w-4 h-4\" />\n                              </Button>\n                            </CardContent>\n                          </Card>\n                        ))\n                      )}\n                    </AccordionContent>\n                  </AccordionItem>\n                )\n              })}\n            </Accordion>\n          </div>\n        </CardContent>\n      </Card>\n    </div>\n  )\n}\n",
+      "type": "registry:component"
+    }
+  ],
+  "cssVars": {
+    "theme": {
+      "--animate-accordion-down": "accordion-down 0.2s ease-out",
+      "--animate-accordion-up": "accordion-up 0.2s ease-out"
+    }
+  },
+  "css": {
+    "@keyframes accordion-down": {
+      "from": {
+        "height": "0"
+      },
+      "to": {
+        "height": "var(--radix-accordion-content-height)"
+      }
+    },
+    "@keyframes accordion-up": {
+      "from": {
+        "height": "var(--radix-accordion-content-height)"
+      },
+      "to": {
+        "height": "0"
+      }
+    }
+  },
+  "_meta": {
+    "author": "ruixen.ui",
+    "slug": "origami-fold-out-calendar",
+    "registry_url": "https://21st.dev/r/ruixen.ui/origami-fold-out-calendar",
+    "title": "Origami Fold Out Calendar",
+    "description": "The Origami Fold-Out Calendar is an interactive event tracker that combines creativity with utility. Each day of the selected month is displayed as a foldable accordion item, resembling origami sheets that unfold to reveal details. Users can scroll through the month, add events with a title and date, and see them neatly organized under the corresponding day. When expanded, each day shows its scheduled events, which can be removed with a single click. The month dynamically adjusts to display the correct number of days—28, 29, 30, or 31—based on the selected month and year. This design not only provides a visually engaging way to view schedules but also makes it easy to navigate across months, offering both practicality and a playful “fold-out” aesthetic.",
+    "category": "calendar",
+    "category_group": "UI Components",
+    "downloads": 3,
+    "likes": 0
+  }
+}

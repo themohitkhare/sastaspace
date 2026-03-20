@@ -1,0 +1,43 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "tooltip",
+  "type": "registry:component",
+  "title": "Tooltip",
+  "description": "A tooltip component.",
+  "dependencies": [
+    "class-variance-authority",
+    "radix-ui"
+  ],
+  "registryDependencies": [
+    "https://21st.dev/r/sean0205/button-1"
+  ],
+  "files": [
+    {
+      "path": "src/components/ui/tooltip.tsx",
+      "content": "'use client';\n\nimport * as React from 'react';\nimport { cn } from '@/lib/utils';\nimport { cva, type VariantProps } from 'class-variance-authority';\nimport { Tooltip as TooltipPrimitive } from 'radix-ui';\n\nfunction TooltipProvider({ delayDuration = 0, ...props }: React.ComponentProps<typeof TooltipPrimitive.Provider>) {\n  return <TooltipPrimitive.Provider data-slot=\"tooltip-provider\" delayDuration={delayDuration} {...props} />;\n}\n\nfunction Tooltip({ ...props }: React.ComponentProps<typeof TooltipPrimitive.Root>) {\n  return (\n    <TooltipProvider>\n      <TooltipPrimitive.Root data-slot=\"tooltip\" {...props} />\n    </TooltipProvider>\n  );\n}\n\nfunction TooltipTrigger({ ...props }: React.ComponentProps<typeof TooltipPrimitive.Trigger>) {\n  return <TooltipPrimitive.Trigger data-slot=\"tooltip-trigger\" {...props} />;\n}\n\nconst tooltipVariants = cva(\n  'z-50 overflow-hidden rounded-md px-3 py-1.5 text-xs animate-in fade-in-0 zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2',\n  {\n    variants: {\n      variant: {\n        light: 'border border-border bg-background text-foreground shadow-md shadow-black/5',\n        dark: 'dark:border dark:border-border bg-zinc-950 text-white dark:bg-zinc-300 dark:text-black shadow-md shadow-black/5',\n      },\n    },\n    defaultVariants: {\n      variant: 'dark',\n    },\n  },\n);\n\nfunction TooltipContent({\n  className,\n  sideOffset = 4,\n  variant,\n  ...props\n}: React.ComponentProps<typeof TooltipPrimitive.Content> & VariantProps<typeof tooltipVariants>) {\n  return (\n    <TooltipPrimitive.Content\n      data-slot=\"tooltip-content\"\n      sideOffset={sideOffset}\n      className={cn(tooltipVariants({ variant }), className)}\n      {...props}\n    />\n  );\n}\n\nexport { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger };\n\n",
+      "type": "registry:component"
+    }
+  ],
+  "cssVars": {
+    "theme": {
+      "--color-destructive-foreground": "var(--destructive-foreground)"
+    },
+    "light": {
+      "--destructive-foreground": "oklch(1 0 0)"
+    },
+    "dark": {
+      "--destructive-foreground": "oklch(1 0 0)"
+    }
+  },
+  "_meta": {
+    "author": "sean0205",
+    "slug": "tooltip",
+    "registry_url": "https://21st.dev/r/sean0205/tooltip",
+    "title": "Tooltip",
+    "description": "Displays brief, contextual information when hovering over or focusing on an element, improving clarity without cluttering the interface.",
+    "category": "tooltip",
+    "category_group": "UI Components",
+    "downloads": 17,
+    "likes": 0
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "card-6",
+  "type": "registry:component",
+  "title": "Card 6",
+  "description": "A card-6 component.",
+  "dependencies": [
+    "framer-motion",
+    "lucide-react"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/ui/card-6.tsx",
+      "content": "import * as React from \"react\";\nimport { motion } from \"framer-motion\";\nimport { Play } from \"lucide-react\";\n\nimport { cn } from \"@/lib/utils\";\n\n/**\n * @typedef {object} MusicCardProps\n * @property {string} imageUrl - The URL for the background image of the card.\n * @property {string} title - The main title displayed on the card (e.g., \"Now Playing\").\n * @property {string} artist - The name of the artist.\n * @property {string} songTitle - The title of the song.\n * @property {() => void} [onPlay] - Optional callback for the play button's click event.\n */\ninterface MusicCardProps extends React.HTMLAttributes<HTMLDivElement> {\n  imageUrl: string;\n  title: string;\n  artist: string;\n  songTitle: string;\n  onPlay?: () => void;\n}\n\nconst MusicCard = React.forwardRef<HTMLDivElement, MusicCardProps>(\n  ({ className, imageUrl, title, artist, songTitle, onPlay, ...props }, ref) => {\n    // Animation variants for the main card container\n    const cardVariants = {\n      initial: { scale: 1 },\n      hover: { scale: 1.03, transition: { type: \"spring\", stiffness: 300, damping: 20 } },\n    };\n\n    // Parallax effect for the background image\n    const imageVariants = {\n      initial: { scale: 1.1 },\n      hover: { scale: 1, transition: { type: \"spring\", stiffness: 300, damping: 20 } },\n    };\n\n    // Fade-in and scale animation for the play button\n    const playButtonVariants = {\n      initial: { scale: 0.8, opacity: 0 },\n      hover: { scale: 1.1, opacity: 1 },\n      tap: { scale: 0.95 },\n    };\n\n    return (\n      <motion.div\n        ref={ref}\n        className={cn(\n          \"relative h-64 w-full max-w-xs cursor-pointer overflow-hidden rounded-2xl border bg-card shadow-lg\",\n          className\n        )}\n        variants={cardVariants}\n        initial=\"initial\"\n        whileHover=\"hover\"\n        {...props}\n      >\n        {/* Background Image */}\n        <motion.img\n          src={imageUrl}\n          alt={`${artist} - ${songTitle}`}\n          className=\"absolute inset-0 h-full w-full object-cover\"\n          variants={imageVariants}\n        />\n\n        {/* Gradient overlay for text readability */}\n        <div className=\"absolute inset-0 bg-gradient-to-t from-black/70 via-black/40 to-transparent\" />\n\n        {/* Content */}\n        <div className=\"relative z-10 flex h-full flex-col justify-end p-5\">\n          <div className=\"flex items-end justify-between gap-4\">\n            <div className=\"flex flex-col\">\n              <h3 className=\"text-lg font-bold text-primary-foreground\">{title}</h3>\n              <p className=\"text-sm text-primary-foreground/80\">{`${artist} - ${songTitle}`}</p>\n            </div>\n            <motion.button\n              onClick={(e) => {\n                e.stopPropagation(); // Prevent card's onClick if button is clicked\n                onPlay?.();\n              }}\n              aria-label=\"Play song\"\n              className=\"flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg\"\n              variants={playButtonVariants}\n              whileTap=\"tap\"\n            >\n              <Play className=\"h-6 w-6 translate-x-px fill-current\" />\n            </motion.button>\n          </div>\n        </div>\n      </motion.div>\n    );\n  }\n);\n\nMusicCard.displayName = \"MusicCard\";\n\nexport { MusicCard };",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "kavikatiyar",
+    "slug": "card-6",
+    "registry_url": "https://21st.dev/r/kavikatiyar/card-6",
+    "title": "Card",
+    "description": "Music Card\nA visually engaging card component for displaying music tracks, featuring hover animations and a theme-adaptive design.",
+    "category": "card",
+    "category_group": "UI Components",
+    "downloads": 9,
+    "likes": 0
+  }
+}

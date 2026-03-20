@@ -1,0 +1,33 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "onboarding",
+  "type": "registry:component",
+  "title": "Onboarding",
+  "description": "A onboarding component.",
+  "dependencies": [
+    "framer-motion",
+    "lucide-react"
+  ],
+  "registryDependencies": [
+    "https://21st.dev/r/shadcn/button",
+    "https://21st.dev/r/originui/input"
+  ],
+  "files": [
+    {
+      "path": "src/components/ui/onboarding.tsx",
+      "content": "import * as React from \"react\";\nimport { motion, AnimatePresence } from \"framer-motion\";\nimport { Camera, AtSign, UserCircle2 } from \"lucide-react\";\nimport { cn } from \"@/lib/utils\"; // Assuming you have a cn utility\n\n// Import shadcn/ui components\nimport { Button } from \"@/components/ui/button\";\nimport { Input } from \"@/components/ui/input\";\n\n// Define the props interface for type safety and reusability\ninterface OnboardingCardProps {\n  heroImageSrc: string;\n  title: string;\n  subtitle: string;\n  displayName: string;\n  onDisplayNameChange: (e: React.ChangeEvent<HTMLInputElement>) => void;\n  onUploadClick: () => void;\n  onContinueClick: () => void;\n  isLoading?: boolean;\n  className?: string;\n}\n\n/**\n * A responsive and animated onboarding card component.\n * It follows shadcn/ui theming and best practices.\n */\nexport const OnboardingCard = React.forwardRef<HTMLDivElement, OnboardingCardProps>(\n  ({\n    heroImageSrc,\n    title,\n    subtitle,\n    displayName,\n    onDisplayNameChange,\n    onUploadClick,\n    onContinueClick,\n    isLoading = false,\n    className,\n  }, ref) => {\n\n    // CORRECTED: Variants for the parent container to orchestrate animations\n    const containerVariants = {\n      initial: { opacity: 0 },\n      animate: {\n        opacity: 1,\n        transition: {\n          staggerChildren: 0.15, // Stagger the animation of children\n        },\n      },\n      exit: { opacity: 0 },\n    };\n\n    // CORRECTED: Variants for individual child items to fade in\n    const itemVariants = {\n      initial: { opacity: 0, y: 20 },\n      animate: {\n        opacity: 1,\n        y: 0,\n        transition: {\n          duration: 0.5,\n          ease: \"easeOut\",\n        },\n      },\n      exit: { opacity: 0, y: 20 },\n    };\n\n    return (\n      <AnimatePresence>\n        <motion.div\n          ref={ref}\n          className={cn(\"w-full max-w-md overflow-hidden rounded-2xl border bg-card text-card-foreground shadow-lg\", className)}\n          variants={containerVariants}\n          initial=\"initial\"\n          animate=\"animate\"\n          exit=\"exit\"\n        >\n          {/* Hero Image Section */}\n          <motion.img\n            src={heroImageSrc}\n            alt=\"Welcome Hero Image\"\n            className=\"h-48 w-full object-cover\"\n            variants={itemVariants}\n          />\n\n          <div className=\"flex flex-col space-y-6 p-6 sm:p-8\">\n            {/* Header Text */}\n            <motion.div variants={itemVariants} className=\"space-y-1.5 text-center\">\n              <h1 className=\"text-2xl font-bold tracking-tight\">{title}</h1>\n              <p className=\"text-muted-foreground\">{subtitle}</p>\n            </motion.div>\n\n            {/* Photo Upload Section */}\n            <motion.div\n              variants={itemVariants}\n              className=\"flex items-center justify-between space-x-4 rounded-lg border p-4\"\n            >\n              <div className=\"flex items-center space-x-4\">\n                <div className=\"flex h-12 w-12 items-center justify-center rounded-full bg-muted\">\n                  <UserCircle2 className=\"h-6 w-6 text-muted-foreground\" />\n                </div>\n                <div>\n                  <p className=\"font-semibold\">Your Photo</p>\n                  <p className=\"text-xs text-muted-foreground\">PNG or JPEG, up to 5MB</p>\n                </div>\n              </div>\n              <Button variant=\"outline\" size=\"sm\" onClick={onUploadClick}>\n                <Camera className=\"mr-2 h-4 w-4\" />\n                Upload\n              </Button>\n            </motion.div>\n\n            {/* Display Name Input */}\n            <motion.div variants={itemVariants} className=\"relative flex flex-col space-y-2\">\n              <label htmlFor=\"displayName\" className=\"text-sm font-medium\">\n                Display Name\n              </label>\n              <AtSign className=\"absolute bottom-2.5 left-3 h-5 w-5 text-muted-foreground\" />\n              <Input\n                id=\"displayName\"\n                type=\"text\"\n                placeholder=\"username\"\n                value={displayName}\n                onChange={onDisplayNameChange}\n                className=\"pl-10\"\n              />\n            </motion.div>\n\n            {/* Continue Button */}\n            <motion.div variants={itemVariants}>\n              <Button\n                className=\"w-full\"\n                size=\"lg\"\n                onClick={onContinueClick}\n                disabled={isLoading}\n              >\n                {isLoading ? \"Saving...\" : \"Continue\"}\n              </Button>\n            </motion.div>\n          </div>\n        </motion.div>\n      </AnimatePresence>\n    );\n  }\n);\n\nOnboardingCard.displayName = \"OnboardingCard\";",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "ravikatiyar162",
+    "slug": "onboarding",
+    "registry_url": "https://21st.dev/r/ravikatiyar162/onboarding",
+    "title": "Onboarding",
+    "description": "Onboarding Card\nA visually engaging, animated card component for user onboarding flows. It includes fields for profile picture upload and username entry, designed to be easily integrated into any welcome or setup screen.",
+    "category": "card",
+    "category_group": "UI Components",
+    "downloads": 9,
+    "likes": 0
+  }
+}

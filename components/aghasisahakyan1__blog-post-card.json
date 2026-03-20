@@ -1,0 +1,32 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "blog-post-card",
+  "type": "registry:component",
+  "title": "Blog Post Card",
+  "description": "A blog-post-card component.",
+  "dependencies": [
+    "next"
+  ],
+  "registryDependencies": [
+    "https://21st.dev/r/shadcn/card",
+    "https://21st.dev/r/shadcn/badge"
+  ],
+  "files": [
+    {
+      "path": "src/components/ui/blog-post-card.tsx",
+      "content": "\"use client\";\n\nimport { Badge } from \"@/components/ui/badge\";\nimport {\n  Card,\n  CardHeader,\n  CardContent,\n  CardFooter,\n} from \"@/components/ui/card\";\nimport Image from \"next/image\";\nimport { cn } from \"@/lib/utils\";\n\n\nexport interface ArticleCardProps {\n  headline: string;\n  excerpt: string;\n  cover?: string;\n  tag?: string;\n  readingTime?: number; // in seconds\n  writer?: string;\n  publishedAt?: Date;\n  clampLines?: number;\n}\n\n// Human-friendly read time: seconds -> \"X min read\"\nexport function formatReadTime(seconds: number): string {\n  if (!seconds || seconds < 60) return \"Less than 1 min read\";\n  const minutes = Math.ceil(seconds / 60);\n  return `${minutes} min read`;\n}\n\n// Date -> \"Aug 15, 2025\" (localized but concise)\nexport function formatPostDate(date: Date): string {\n  if (!date) return \"\";\n  return date.toLocaleDateString(\"en-US\", {\n    year: \"numeric\",\n    month: \"short\",\n    day: \"numeric\",\n  });\n}\n\nexport const ArticleCard: React.FC<ArticleCardProps> = ({\n  cover,\n  tag,\n  readingTime,\n  headline,\n  excerpt,\n  writer,\n  publishedAt,\n  clampLines,\n}) => {\n  const hasMeta = tag || readingTime;\n  const hasFooter = writer || publishedAt;\n\n  return (\n    <Card className=\"flex w-full max-w-sm flex-col gap-3 overflow-hidden rounded-3xl border p-3 shadow-lg\">\n      {cover && (\n        <CardHeader className=\"p-0\">\n          <div className=\"relative h-56 w-full\">\n            <Image\n              src={cover}\n              alt={headline}\n              fill\n              className=\"rounded-2xl object-cover\"\n            />\n          </div>\n        </CardHeader>\n      )}\n\n      <CardContent className=\"flex-grow p-3\">\n        {hasMeta && (\n          <div className=\"mb-4 flex items-center text-sm text-muted-foreground\">\n            {tag && (\n            <Badge className=\"rounded-full bg-muted px-3 py-1 text-sm text-muted-foreground hover:text-black\">\n              {tag}\n            </Badge>\n\n            )}\n            {tag && readingTime && <span className=\"mx-2\">•</span>}\n            {readingTime && <span>{formatReadTime(readingTime)}</span>}\n          </div>\n        )}\n\n        <h2 className=\"mb-2 text-2xl font-bold leading-tight text-card-foreground\">\n          {headline}\n        </h2>\n\n        <p\n          className={cn(\"text-muted-foreground\", {\n            \"overflow-hidden text-ellipsis [-webkit-box-orient:vertical] [display:-webkit-box]\":\n              clampLines && clampLines > 0,\n          })}\n          style={{\n            WebkitLineClamp: clampLines,\n          }}\n        >\n          {excerpt}\n        </p>\n      </CardContent>\n\n      {hasFooter && (\n        <CardFooter className=\"flex items-center justify-between p-3\">\n          {writer && (\n            <div>\n              <p className=\"text-sm text-muted-foreground\">By</p>\n              <p className=\"font-semibold text-muted-foreground\">{writer}</p>\n            </div>\n          )}\n          {publishedAt && (\n            <div className={writer ? \"text-right\" : \"\"}>\n              <p className=\"text-sm text-muted-foreground\">Published</p>\n              <p className=\"font-semibold text-muted-foreground\">\n                {formatPostDate(publishedAt)}\n              </p>\n            </div>\n          )}\n        </CardFooter>\n      )}\n    </Card>\n  );\n};\n",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "aghasisahakyan1",
+    "slug": "blog-post-card",
+    "registry_url": "https://21st.dev/r/aghasisahakyan1/blog-post-card",
+    "title": "Blog Post Card",
+    "description": "Blog Post Card",
+    "category": "card",
+    "category_group": "UI Components",
+    "downloads": 138,
+    "likes": 0
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "name": "loader-one",
+  "type": "registry:ui",
+  "dependencies": [
+    "framer-motion"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "/components/ui/loader-one.tsx",
+      "content": "import React from 'react'\r\nimport { motion } from \"framer-motion\";\r\n\r\n\r\nconst LoaderOne = () => {\r\n    return (\r\n        <div className=\"flex items-center justify-center gap-1\">\r\n            {[...Array(3)].map((_, i) => (\r\n                <motion.div\r\n                    key={i}\r\n                    className=\"h-3 w-3 rounded-full bg-blue-500\"\r\n                    initial={{ x: 0 }}\r\n                    animate={{\r\n                        x: [0, 10, 0],\r\n                        opacity: [0.5, 1, 0.5],\r\n                        scale: [1, 1.2, 1],\r\n                    }}\r\n                    transition={{\r\n                        duration: 1,\r\n                        repeat: Infinity,\r\n                        delay: i * 0.2,\r\n                    }}\r\n                />\r\n            ))}\r\n        </div>\r\n    )\r\n}\r\n\r\nexport default LoaderOne",
+      "type": "registry:ui",
+      "target": ""
+    }
+  ],
+  "tailwind": {
+    "config": {}
+  },
+  "_meta": {
+    "author": "anurag-mishra22",
+    "slug": "loader-one",
+    "registry_url": "https://21st.dev/r/anurag-mishra22/loader-one",
+    "title": "Animated Loader",
+    "description": "Cool Animated Loader",
+    "category": "spinner-loader",
+    "category_group": "UI Components",
+    "downloads": 529,
+    "likes": 7
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "radio-group-colors-demo",
+  "type": "registry:component",
+  "title": "Radio Group Colors Demo",
+  "description": "A radio-group-colors-demo component.",
+  "dependencies": [],
+  "registryDependencies": [
+    "https://21st.dev/r/shadcn/label",
+    "https://21st.dev/r/shadcn/radio-group"
+  ],
+  "files": [
+    {
+      "path": "src/components/ui/radio-group-colors-demo.tsx",
+      "content": "\"use client\";\n\nimport { Label } from \"@/components/ui/label\";\nimport { RadioGroup, RadioGroupItem } from \"@/components/ui/radio-group\";\n\nconst RadioGroupColorsDemo = () => {\n  return (\n    <RadioGroup\n      defaultValue=\"destructive\"\n      className=\"flex items-center gap-6 justify-center\"\n    >\n      <div className=\"flex items-center gap-2\">\n        <RadioGroupItem\n          value=\"destructive\"\n          id=\"color-destructive\"\n          className=\"border-destructive text-destructive cursor-pointer\"\n        />\n        <Label htmlFor=\"color-destructive\" className=\"text-destructive cursor-pointer font-medium leading-none\">\n          Error\n        </Label>\n      </div>\n\n      <div className=\"flex items-center gap-2\">\n        <RadioGroupItem\n          value=\"success\"\n          id=\"color-success\"\n          className=\"border-teal-500 text-teal-500 cursor-pointer\"\n        />\n        <Label htmlFor=\"color-success\" className=\"text-teal-500 cursor-pointer font-medium leading-none\">\n          Approved\n        </Label>\n      </div>\n\n      <div className=\"flex items-center gap-2\">\n        <RadioGroupItem\n          value=\"info\"\n          id=\"color-info\"\n          className=\"border-amber-500 text-amber-500 cursor-pointer\"\n        />\n        <Label htmlFor=\"color-info\" className=\"text-amber-500 cursor-pointer font-medium leading-none\">\n          Alert\n        </Label>\n      </div>\n    </RadioGroup>\n  );\n};\n\nexport default RadioGroupColorsDemo;",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "shadcnspace",
+    "slug": "radio-group-colors-demo",
+    "registry_url": "https://21st.dev/r/shadcnspace/radio-group-colors-demo",
+    "title": "Radio Group Colors Demo",
+    "description": "Here is radio croup colors component",
+    "category": "radio-group",
+    "category_group": "UI Components",
+    "downloads": 0,
+    "likes": 0
+  }
+}

@@ -17,5 +17,16 @@
     "author": "barvian",
     "name": "number-input",
     "registry_url": "https://21st.dev/r/barvian/number-input"
+  },
+  "_meta": {
+    "author": "barvian",
+    "slug": "number-input",
+    "registry_url": "https://21st.dev/r/barvian/number-input",
+    "title": "Number Input",
+    "description": "Number Input by NumberFlow",
+    "category": "input",
+    "category_group": "UI Components",
+    "downloads": 139,
+    "likes": 3
   }
 }

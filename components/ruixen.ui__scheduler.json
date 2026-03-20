@@ -1,0 +1,36 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "scheduler",
+  "type": "registry:component",
+  "title": "Scheduler",
+  "description": "A scheduler component.",
+  "dependencies": [
+    "lucide-react"
+  ],
+  "registryDependencies": [
+    "https://21st.dev/r/originui/calendar",
+    "https://21st.dev/r/originui/input",
+    "https://21st.dev/r/originui/select",
+    "https://21st.dev/r/shadcn/popover",
+    "https://21st.dev/r/shadcn/label",
+    "https://21st.dev/r/shadcn/card"
+  ],
+  "files": [
+    {
+      "path": "src/components/ui/scheduler.tsx",
+      "content": "\"use client\"\n\nimport { useState } from \"react\"\nimport { Button } from \"@/components/ui/button\"\nimport { Popover, PopoverContent, PopoverTrigger } from \"@/components/ui/popover\"\nimport { Calendar } from \"@/components/ui/calendar\"\nimport { Card, CardContent } from \"@/components/ui/card\"\nimport { Label } from \"@/components/ui/label\"\nimport { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from \"@/components/ui/select\"\nimport { Trash2, Edit2 } from \"lucide-react\"\n\ntype Event = {\n  id: number\n  date: Date\n  time: string\n}\n\nexport default function Scheduler() {\n  const [open, setOpen] = useState(false)\n  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined)\n  const [selectedHour, setSelectedHour] = useState<string>(\"12\")\n  const [selectedMinute, setSelectedMinute] = useState<string>(\"00\")\n  const [events, setEvents] = useState<Event[]>([])\n  const [editingEvent, setEditingEvent] = useState<Event | null>(null)\n\n  const handleSave = () => {\n    if (!selectedDate) return\n    const time = `${selectedHour}:${selectedMinute}`\n\n    if (editingEvent) {\n      setEvents(events.map(ev => \n        ev.id === editingEvent.id ? { ...ev, date: selectedDate, time } : ev\n      ))\n      setEditingEvent(null)\n    } else {\n      setEvents([...events, { id: Date.now(), date: selectedDate, time }])\n    }\n\n    setSelectedDate(undefined)\n    setSelectedHour(\"12\")\n    setSelectedMinute(\"00\")\n    setOpen(false)\n  }\n\n  const handleEdit = (event: Event) => {\n    setSelectedDate(new Date(event.date))\n    const [hour, minute] = event.time.split(\":\")\n    setSelectedHour(hour)\n    setSelectedMinute(minute)\n    setEditingEvent(event)\n    setOpen(true)\n  }\n\n  const handleDelete = (id: number) => {\n    setEvents(events.filter(ev => ev.id !== id))\n  }\n\n  return (\n    <div className=\"space-y-4\">\n      <Popover open={open} onOpenChange={setOpen}>\n        <PopoverTrigger asChild>\n          <Button variant=\"outline\">\n            {editingEvent ? \"Edit Event\" : \"Schedule Event\"}\n          </Button>\n        </PopoverTrigger>\n        <PopoverContent className=\"w-auto p-4\" side=\"bottom\" align=\"start\">\n          <div className=\"space-y-4\">\n            <Calendar\n              mode=\"single\"\n              selected={selectedDate}\n              onSelect={setSelectedDate}\n            />\n\n            <div className=\"flex space-x-4\">\n              <div className=\"flex flex-col space-y-2\">\n                <Label>Hour</Label>\n                <Select value={selectedHour} onValueChange={setSelectedHour}>\n                  <SelectTrigger className=\"w-20\">\n                    <SelectValue />\n                  </SelectTrigger>\n                  <SelectContent>\n                    {Array.from({ length: 24 }).map((_, i) => (\n                      <SelectItem key={i} value={i.toString().padStart(2, \"0\")}>\n                        {i.toString().padStart(2, \"0\")}\n                      </SelectItem>\n                    ))}\n                  </SelectContent>\n                </Select>\n              </div>\n\n              <div className=\"flex flex-col space-y-2\">\n                <Label>Minute</Label>\n                <Select value={selectedMinute} onValueChange={setSelectedMinute}>\n                  <SelectTrigger className=\"w-20\">\n                    <SelectValue />\n                  </SelectTrigger>\n                  <SelectContent>\n                    {[\"00\", \"15\", \"30\", \"45\"].map(min => (\n                      <SelectItem key={min} value={min}>\n                        {min}\n                      </SelectItem>\n                    ))}\n                  </SelectContent>\n                </Select>\n              </div>\n            </div>\n\n            <Button onClick={handleSave} className=\"w-full\">\n              {editingEvent ? \"Update Event\" : \"Add Event\"}\n            </Button>\n          </div>\n        </PopoverContent>\n      </Popover>\n\n      <div className=\"grid gap-2\">\n        {events.length === 0 && (\n          <p className=\"text-sm text-muted-foreground\">No events scheduled.</p>\n        )}\n\n        {events.map(ev => (\n          <Card key={ev.id} className=\"flex items-center justify-between p-3\">\n            <CardContent className=\"p-0\">\n              <p className=\"font-medium\">{ev.date.toDateString()}</p>\n              <p className=\"text-sm text-muted-foreground\">at {ev.time}</p>\n            </CardContent>\n            <div className=\"flex items-center gap-2\">\n              <Button variant=\"ghost\" size=\"icon\" onClick={() => handleEdit(ev)}>\n                <Edit2 className=\"h-4 w-4\" />\n              </Button>\n              <Button variant=\"ghost\" size=\"icon\" onClick={() => handleDelete(ev.id)}>\n                <Trash2 className=\"h-4 w-4 text-red-500\" />\n              </Button>\n            </div>\n          </Card>\n        ))}\n      </div>\n    </div>\n  )\n}\n",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "ruixen.ui",
+    "slug": "scheduler",
+    "registry_url": "https://21st.dev/r/ruixen.ui/scheduler",
+    "title": "Scheduler",
+    "description": "This Scheduler component is a modern and interactive date and time picker built entirely with shadcn/ui. It provides a clean interface where users can schedule events by selecting a date from the calendar and choosing a time using dropdowns for hours and minutes. The scheduling interface is neatly wrapped inside a popover, making the component compact and easy to use without cluttering the page. Events are displayed in a structured card layout with options to edit or delete, ensuring flexibility and control over the schedule. By combining the Calendar, Select, Popover, and Card components from shadcn, this scheduler delivers a unique and user-friendly experience that goes beyond the typical date picker — making it well-suited for dashboards, task managers, booking systems, or productivity tools.",
+    "category": "calendar",
+    "category_group": "UI Components",
+    "downloads": 6,
+    "likes": 0
+  }
+}

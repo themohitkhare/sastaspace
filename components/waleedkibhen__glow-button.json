@@ -1,0 +1,39 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "glow-button",
+  "type": "registry:component",
+  "title": "Glow Button",
+  "description": "A glow-button component.",
+  "dependencies": [
+    "lucide-react"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/ui/glow-button.tsx",
+      "content": "import React, { forwardRef, useState } from 'react';\nimport { Sparkles } from 'lucide-react';\nimport { cn } from '@/lib/utils';\n\ninterface ComponentProps {\n  label?: string;\n  onClick?(): void;\n  className?: string;\n}\n\nexport const Component = forwardRef<HTMLButtonElement, ComponentProps>(\n  ({ label = \"Generate\", onClick, className }, ref) => {\n    const [isClicked, setIsClicked] = useState(false);\n\n    const handleClick = () => {\n      setIsClicked(true);\n      setTimeout(() => setIsClicked(false), 200);\n      onClick?.();\n    };\n\n    return (\n      <button\n        ref={ref}\n        type=\"button\"\n        aria-label={label}\n        className={cn(\"glow-btn\", className)}\n        onClick={handleClick}\n        data-state={isClicked ? \"clicked\" : undefined}\n      >\n        <span className=\"flex items-center justify-center gap-1.5\">\n          {label}\n          <Sparkles size={16} className=\"ml-0.5\" />\n        </span>\n      </button>\n    );\n  }\n);\n\nComponent.displayName = \"Component\";",
+      "type": "registry:component"
+    }
+  ],
+  "cssVars": {
+    "light": {
+      "--background": "#f3f4f6",
+      "--foreground": "#1f2937"
+    },
+    "dark": {
+      "--background": "#1f1f1f",
+      "--foreground": "#f9fafb"
+    }
+  },
+  "_meta": {
+    "author": "waleedkibhen",
+    "slug": "glow-button",
+    "registry_url": "https://21st.dev/r/waleedkibhen/glow-button",
+    "title": "Glow Button",
+    "description": "A clean glowing button that pops off the screen. On hover, a subtle glare slides across the surface, giving it that shiny, futuristic vibe. It also reacts with a soft press animation when clicked, making it feel alive. Works in both light and dark mode without extra setup. Perfect for flashy CTAs like Generate, Start, or Launch.",
+    "category": "button",
+    "category_group": "UI Components",
+    "downloads": 3,
+    "likes": 0
+  }
+}

@@ -1,0 +1,68 @@
+{
+  "name": "ios-spinner",
+  "type": "registry:ui",
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "/components/ui/ios-spinner.tsx",
+      "content": "\"use client\"\n\nimport { cn } from \"@/lib/utils\"\n\ninterface SpinnerProps extends React.HTMLAttributes<HTMLDivElement> {\n  size?: \"sm\" | \"md\" | \"lg\"\n}\n\nexport function Spinner({ className, size = \"md\", ...props }: SpinnerProps) {\n  return (\n    <div\n      className={cn(\n        \"relative inline-block\",\n        size === \"sm\" && \"h-3 w-3\",\n        size === \"md\" && \"h-4 w-4\",\n        size === \"lg\" && \"h-6 w-6\",\n        className\n      )}\n      {...props}\n    >\n      {Array.from({ length: 12 }).map((_, i) => (\n        <div key={i} className=\"spinner-blade\" />\n      ))}\n    </div>\n  )\n}",
+      "type": "registry:ui",
+      "target": ""
+    }
+  ],
+  "cssVars": {
+    "light": {},
+    "dark": {},
+    "theme": {
+      "animate-spinner-blade": "spinner-blade 1s linear infinite"
+    }
+  },
+  "css": {
+    "@keyframes spinner-blade": {
+      "0%": {
+        "opacity": "0.85"
+      },
+      "50%": {
+        "opacity": "0.25"
+      },
+      "100%": {
+        "opacity": "0.25"
+      }
+    }
+  },
+  "tailwind": {
+    "config": {
+      "theme": {
+        "extend": {
+          "animation": {
+            "spinner-blade": "spinner-blade 1s linear infinite"
+          },
+          "keyframes": {
+            "spinner-blade": {
+              "0%": {
+                "opacity": "0.85"
+              },
+              "50%": {
+                "opacity": "0.25"
+              },
+              "100%": {
+                "opacity": "0.25"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "_meta": {
+    "author": "yadwinder",
+    "slug": "ios-spinner",
+    "registry_url": "https://21st.dev/r/yadwinder/ios-spinner",
+    "title": "iOS Spinner",
+    "description": "iOS Spinner",
+    "category": "spinner-loader",
+    "category_group": "UI Components",
+    "downloads": 317,
+    "likes": 2
+  }
+}

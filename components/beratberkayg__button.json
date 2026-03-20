@@ -1,0 +1,29 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "button",
+  "type": "registry:component",
+  "title": "Button",
+  "description": "A button component.",
+  "dependencies": [
+    "lucide-react"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/ui/button.tsx",
+      "content": "import React from \"react\";\nimport { Icon } from \"lucide-react\";\n\ninterface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {\n  icon: React.ReactElement<Icon>;\n  title: string;\n  subtitle?: string;\n  size?: \"sm\" | \"md\" | \"lg\";\n  gradientLight?: { from: string; via: string; to: string };\n  gradientDark?: { from: string; via: string; to: string };\n}\n\nexport const Component: React.FC<ButtonProps> = ({\n  icon,\n  title,\n  subtitle,\n  size = \"md\",\n  gradientLight = { from: \"from-indigo-500/40\", via: \"via-indigo-400/40\", to: \"to-indigo-500/60\" },\n  gradientDark = { from: \"from-indigo-800/30\", via: \"via-black/50\", to: \"to-black/70\" },\n  ...props\n}) => {\n  const sizes = {\n    sm: \"p-3 rounded-xl\",\n    md: \"p-4 rounded-2xl\",\n    lg: \"p-6 rounded-3xl\",\n  };\n\n  return (\n    <button\n      {...props}\n      className={`group relative overflow-hidden border-2 cursor-pointer transition-all duration-500 ease-out \n                  shadow-2xl hover:shadow-indigo-500/30 hover:scale-[1.02] hover:-translate-y-1 active:scale-95\n                  ${sizes[size]} \n                  border-indigo-500/40 bg-gradient-to-br ${gradientLight.from} ${gradientLight.via} ${gradientLight.to} \n                  dark:${gradientDark.from} dark:${gradientDark.via} dark:${gradientDark.to}`}\n    >\n      {/* Moving gradient layer */}\n      <div className=\"absolute inset-0 bg-gradient-to-r from-transparent via-indigo-300/40 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-out\"></div>\n\n      {/* Overlay glow */}\n      <div className=\"absolute inset-0 rounded-2xl bg-gradient-to-r from-indigo-400/20 via-indigo-300/10 to-indigo-400/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500\"></div>\n\n      {/* Content */}\n      <div className=\"relative z-10 flex items-center gap-4\">\n        {/* Icon */}\n        <div className=\"p-3 rounded-lg bg-gradient-to-br from-indigo-500/50 to-indigo-400/30 backdrop-blur-sm group-hover:from-indigo-400/60 group-hover:to-indigo-500/40 transition-all duration-300\">\n          {React.cloneElement(icon, {\n            className:\n              \"w-7 h-7 text-white group-hover:text-white/90 transition-all duration-300 group-hover:scale-110 drop-shadow-lg\",\n          })}\n        </div>\n\n        {/* Texts */}\n        <div className=\"flex-1 text-left\">\n          <p className=\"text-white font-bold text-lg group-hover:text-white/90 transition-colors duration-300 drop-shadow-sm\">\n            {title}\n          </p>\n          {subtitle && (\n            <p className=\"text-white/70 text-sm group-hover:text-white/90 transition-colors duration-300\">\n              {subtitle}\n            </p>\n          )}\n        </div>\n\n        {/* Arrow */}\n        <div className=\"opacity-40 group-hover:opacity-100 group-hover:translate-x-1 transition-all duration-300\">\n          <svg\n            viewBox=\"0 0 24 24\"\n            stroke=\"currentColor\"\n            fill=\"none\"\n            className=\"w-5 h-5 text-white\"\n          >\n            <path\n              d=\"M9 5l7 7-7 7\"\n              strokeWidth={2}\n              strokeLinejoin=\"round\"\n              strokeLinecap=\"round\"\n            ></path>\n          </svg>\n        </div>\n      </div>\n    </button>\n  );\n};\n",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "beratberkayg",
+    "slug": "button",
+    "registry_url": "https://21st.dev/r/beratberkayg/button",
+    "title": "Button",
+    "description": "animated glass button",
+    "category": "button",
+    "category_group": "UI Components",
+    "downloads": 9,
+    "likes": 0
+  }
+}

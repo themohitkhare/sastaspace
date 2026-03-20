@@ -1,0 +1,31 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "timeline-02",
+  "type": "registry:component",
+  "title": "Timeline 02",
+  "description": "A timeline-02 component.",
+  "dependencies": [
+    "framer-motion"
+  ],
+  "registryDependencies": [
+    "https://21st.dev/r/shadcn/card"
+  ],
+  "files": [
+    {
+      "path": "src/components/ui/timeline-02.tsx",
+      "content": "\"use client\";\n\nimport * as React from \"react\";\nimport { motion } from \"framer-motion\";\nimport { Card, CardContent } from \"@/components/ui/card\";\n\ntype Timeline_02 = {\n  date: string;\n  title: string;\n  content: string;\n};\n\nconst timelineData: Timeline_02[] = [\n  {\n    date: \"2018\",\n    title: \"Ruixen Founded\",\n    content:\n      \"Ruixen began as a small innovation lab focused on AI-driven automation solutions, aiming to bridge the gap between research and real-world applications.\",\n  },\n  {\n    date: \"2020\",\n    title: \"First Major Product Launch\",\n    content:\n      \"Ruixen released its flagship AI platform, empowering businesses to automate complex workflows with minimal setup. This launch marked its transition from an R&D hub to a commercial leader.\",\n  },\n  {\n    date: \"2023\",\n    title: \"Global Expansion\",\n    content:\n      \"Ruixen expanded to multiple countries, partnering with leading enterprises and tech firms. Its solutions became known for reliability, scalability, and adaptability.\",\n  },\n  {\n    date: \"2025\",\n    title: \"Ruixen AI Cloud\",\n    content:\n      \"The company launched Ruixen AI Cloud, offering a unified ecosystem for AI training, deployment, and monitoring, setting new industry benchmarks for performance.\",\n  },\n];\n\nexport default function Timeline_02() {\n  return (\n    <section className=\"bg-background py-24\">\n      <div className=\"container\">\n        <h1 className=\"text-foreground mb-16 text-center text-4xl font-bold tracking-tight sm:text-5xl\">\n          The Journey of Ruixen\n        </h1>\n\n        <div className=\"relative mx-auto max-w-3xl\">\n          {/* Subtle vertical line */}\n\n          {timelineData.map((entry, index) => (\n            <motion.div\n              key={index}\n              initial={{ opacity: 0, y: 30 }}\n              whileInView={{ opacity: 1, y: 0 }}\n              viewport={{ once: true }}\n              transition={{ duration: 0.5, delay: index * 0.15 }}\n              className=\"relative mb-12 pl-12\"\n            >\n              {/* Timeline dot */}\n              <div className=\"absolute left-2 top-5 h-3 w-3 rounded-full bg-cyan-500 ring-4 ring-background\" />\n\n              {/* Content */}\n              <h4 className=\"text-lg font-normal text-foreground\">\n                {entry.title}\n              </h4>\n              <p className=\"mb-2 text-sm text-muted-foreground\">{entry.date}</p>\n              <Card className=\"border bg-card shadow-sm hover:shadow-md transition\">\n                <CardContent className=\"px-5 py-4\">\n                  <p className=\"leading-relaxed text-muted-foreground\">\n                    {entry.content}\n                  </p>\n                </CardContent>\n              </Card>\n            </motion.div>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "ruixen.ui",
+    "slug": "timeline-02",
+    "registry_url": "https://21st.dev/r/ruixen.ui/timeline-02",
+    "title": "Timeline-02",
+    "description": "This component is a vertical timeline that highlights the key milestones in Ruixen’s journey.\nIt uses cards with clean typography to present dates, titles, and descriptions in a structured way.\nThe design is minimal, responsive, and animated, ensuring clarity and elegance without visual clutter.",
+    "category": "card",
+    "category_group": "UI Components",
+    "downloads": 2,
+    "likes": 0
+  }
+}

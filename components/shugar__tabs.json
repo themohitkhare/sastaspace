@@ -1,0 +1,81 @@
+{
+  "name": "tabs",
+  "type": "registry:ui",
+  "dependencies": [
+    "react-tooltip"
+  ],
+  "registryDependencies": [
+    "https://21st.dev/r/shugar/tooltip"
+  ],
+  "files": [
+    {
+      "path": "/components/ui/tabs.tsx",
+      "content": "import React from \"react\";\nimport { Tooltip } from \"@/components/ui/tooltip\";\n\ntype TTabVariant = \"primary\" | \"secondary\";\n\nexport interface ITab {\n  title?: string;\n  value: string;\n  disabled?: boolean;\n  icon?: string;\n  tooltip?: string;\n}\n\ninterface TabsProps {\n  selected: string;\n  setSelected: React.Dispatch<React.SetStateAction<string>>;\n  tabs: ITab[];\n  disabled?: boolean;\n  variant?: TTabVariant;\n}\n\ninterface TabProps extends ITab {\n  selected: string;\n  setSelected: React.Dispatch<React.SetStateAction<string>>;\n  variant: TTabVariant;\n}\n\nconst getClasses = (isSelected: boolean, disabled: boolean, variant: TTabVariant) => {\n  let classes = `relative overflow-visible box-border font-sans text-sm flex gap-0.5 duration-100 ${disabled ? \"cursor-not-allowed\" : \"cursor-pointer\"}`;\n  if (isSelected) {\n    if (variant === \"primary\") {\n      classes += \" border-b-2 border-gray-1000 -mb-0.5\";\n    } else if (variant === \"secondary\") {\n      classes += \" bg-gray-1000\";\n    }\n  } else {\n    if (variant === \"secondary\") {\n      if (disabled) {\n        classes += \" bg-gray-200\";\n      } else {\n        classes += \" bg-gray-alpha-200\";\n      }\n    }\n  }\n  if (variant === \"primary\") {\n    classes += \" pb-[5px] hover:text-gray-1000\";\n  } else if (variant === \"secondary\") {\n    classes += \" h-6 rounded-md text-[13px] px-1.5 items-center\";\n  }\n  if (disabled) {\n    classes += isSelected ? \" text-gray-1000\" : \" text-gray-900\";\n  } else {\n    if (variant === \"primary\") {\n      classes += isSelected ? \" text-gray-1000\" : \" text-gray-900\";\n    } else {\n      classes += isSelected ? \" text-background-100\" : \" text-gray-1000\";\n    }\n  }\n\n  return classes;\n};\n\nconst Tab = ({\n  selected,\n  setSelected,\n  title,\n  value,\n  disabled = false,\n  icon,\n  variant\n}: TabProps) => {\n  if (!title && !icon) {\n    return;\n  }\n\n  return (\n    <div\n      className={getClasses(selected === value, disabled, variant)}\n      onClick={() => {\n        if (!disabled) {\n          setSelected(value);\n        }\n      }}\n    >\n      {icon && <img src={icon} alt={title} width={16} height={16} />}\n      <div>{title}</div>\n    </div>\n  );\n};\n\nexport const Tabs = ({\n  selected,\n  setSelected,\n  tabs,\n  disabled = false,\n  variant = \"primary\"\n}: TabsProps) => {\n  return (\n    <div\n      className={`flex${disabled ? \" cursor-not-allowed\" : \"\"} ${variant === \"primary\" ? \"gap-6 pb-[1px] border-b border-accents-2\" : \"gap-2\"}`}>\n      {tabs.map((tab) => tab.tooltip ? (\n        <Tooltip text={tab.tooltip}>\n          <Tab\n            key={tab.value}\n            selected={selected}\n            setSelected={setSelected}\n            disabled={disabled || tab.disabled}\n            variant={variant}\n            {...tab}\n          />\n        </Tooltip>\n      ) : (\n        <Tab\n          key={tab.value}\n          selected={selected}\n          setSelected={setSelected}\n          disabled={disabled || tab.disabled}\n          variant={variant}\n          {...tab}\n        />\n      ))}\n    </div>\n  );\n};",
+      "type": "registry:ui",
+      "target": ""
+    },
+    {
+      "path": "/components/ui/tooltip.tsx",
+      "content": "import React, { useMemo } from \"react\";\nimport { Tooltip as ReactTooltip } from 'react-tooltip';\n\nconst types = {\n  success: \"!bg-success !text-white\",\n  warning: \"!bg-warning !text-black\",\n  error: \"!bg-error !text-white\",\n  violet: \"!bg-violet !text-white\",\n  default: \"!bg-foreground !text-background-100\",\n};\n\ninterface TooltipProps {\n  children: React.ReactNode;\n  text: React.ReactNode;\n  position?: \"top\" | \"bottom\" | \"left\" | \"right\";\n  delay?: boolean;\n  boxAlign?: \"left\" | \"right\" | \"center\";\n  type?: keyof typeof types;\n  tip?: boolean;\n  center?: boolean;\n}\n\nexport const Tooltip = ({\n  children,\n  text,\n  position = \"top\",\n  delay = true,\n  boxAlign = \"center\",\n  type = \"default\",\n  tip = true,\n  center = true\n}: TooltipProps) => {\n  const id = useMemo(() => {\n    const chars = \"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ\";\n    return Array.from({ length: 6 }, () => chars[Math.floor(Math.random() * chars.length)]).join(\"\");\n  }, []);\n\n  return (\n    <div>\n      <div id={id} className=\"font-sans\">{children}</div>\n      <ReactTooltip\n        anchorSelect={`#${id}`}\n        //@ts-ignore\n        place={`${position}${{ left: \"-start\", right: \"-end\", center: \"\" }[boxAlign]}`}\n        delayShow={delay ? 500 : 0}\n        opacity={1}\n        noArrow={!tip}\n        className={`!font-sans !text-[13px] !max-w-52 !rounded-lg ${types[type]}${center ? \" text-center\" : \" text-start\"}`}\n      >\n        {text}\n      </ReactTooltip>\n    </div>\n  );\n};",
+      "type": "registry:ui",
+      "target": ""
+    }
+  ],
+  "cssVars": {
+    "light": {
+      "--ds-gray-200": "hsla(0, 0%, 92%, 1)",
+      "--ds-gray-900": "hsla(0, 0%, 40%, 1)",
+      "--ds-gray-1000": "hsla(0, 0%, 9%, 1)",
+      "--ds-gray-alpha-200": "hsla(0, 0%, 0%, 0.08)",
+      "--accents-2": "#eaeaea",
+      "--ds-background-100": "hsla(0, 0%, 100%, 1)",
+      "--geist-success": "#0070f3",
+      "--geist-error": "#ee0000",
+      "--geist-warning": "#f5a623",
+      "--geist-violet": "#7928ca",
+      "--geist-foreground": "#000"
+    },
+    "dark": {
+      "--ds-gray-200": "hsla(0, 0%, 12%, 1)",
+      "--ds-gray-900": "hsla(0, 0%, 63%, 1)",
+      "--ds-gray-1000": "hsla(0, 0%, 93%, 1)",
+      "--ds-gray-alpha-200": "hsla(0, 0%, 100%, 0.09)",
+      "--accents-2": "#333333",
+      "--ds-background-100": "hsla(0, 0%, 4%, 1)",
+      "--geist-error": "#ff0000",
+      "--geist-foreground": "#fff"
+    }
+  },
+  "tailwind": {
+    "config": {
+      "theme": {
+        "extend": {
+          "colors": {
+            "gray-200": "var(--ds-gray-200)",
+            "gray-900": "var(--ds-gray-900)",
+            "gray-1000": "var(--ds-gray-1000)",
+            "gray-alpha-200": "var(--ds-gray-alpha-200)",
+            "accents-2": "var(--accents-2)",
+            "background-100": "var(--ds-background-100)",
+            "success": "var(--geist-success)",
+            "error": "var(--geist-error)",
+            "warning": "var(--geist-warning)",
+            "violet": "var(--geist-violet)",
+            "foreground": "var(--geist-foreground)"
+          }
+        }
+      }
+    }
+  },
+  "_meta": {
+    "author": "shugar",
+    "slug": "tabs",
+    "registry_url": "https://21st.dev/r/shugar/tabs",
+    "title": "Tabs",
+    "description": "Display tab content.",
+    "category": "tabs",
+    "category_group": "UI Components",
+    "downloads": 41,
+    "likes": 0
+  }
+}

@@ -1,0 +1,35 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "area-chart-analytics-card",
+  "type": "registry:component",
+  "title": "Area Chart Analytics Card",
+  "description": "A area-chart-analytics-card component.",
+  "dependencies": [
+    "recharts"
+  ],
+  "registryDependencies": [
+    "https://21st.dev/r/shadcn/chart",
+    "https://21st.dev/r/shadcn/badge",
+    "https://21st.dev/r/shadcn/button",
+    "https://21st.dev/r/originui/tooltip",
+    "https://21st.dev/r/shadcn/card"
+  ],
+  "files": [
+    {
+      "path": "src/components/ui/area-chart-analytics-card.tsx",
+      "content": "import { Area, AreaChart, XAxis, YAxis } from \"recharts\";\n\nimport { Badge } from \"@/components/ui/badge\";\nimport { Button } from \"@/components/ui/button\";\nimport { Card, CardContent, CardHeader, CardTitle } from \"@/components/ui/card\";\nimport {\n  ChartContainer,\n  ChartTooltip,\n  ChartTooltipContent,\n  type ChartConfig,\n} from \"@/components/ui/chart\";\nimport {\n  Tooltip,\n  TooltipContent,\n  TooltipProvider,\n  TooltipTrigger,\n} from \"@/components/ui/tooltip\";\n\nconst generateCampaignData = () => {\n  const days = 28;\n  return Array.from({ length: days }, (_, i) => ({\n    day: `Day ${i + 1}`,\n    spend: 1500 + (Math.random() - 0.5) * 400,\n  }));\n};\n\nconst chartConfig: ChartConfig = {\n  spend: {\n    label: \"Ad Spend\",\n    color: \"var(--color-cyan-600)\",\n  },\n};\n\nexport const Component = () => {\n  const campaignData = generateCampaignData();\n  return (\n    <Card className=\"flex h-full w-full max-w-[450px] flex-col gap-0 overflow-hidden p-0 shadow-none\">\n      <CardHeader className=\"flex flex-row items-center justify-between px-5 pt-4.5 pb-0\">\n        <div className=\"flex flex-row items-center gap-1\">\n          <CardTitle className=\"text-base font-medium text-muted-foreground\">\n            Campaign Data\n          </CardTitle>\n          <TooltipProvider>\n            <Tooltip>\n              <TooltipTrigger>\n                <svg\n                  width={20}\n                  height={20}\n                  viewBox=\"0 0 20 20\"\n                  fill=\"none\"\n                  xmlns=\"http://www.w3.org/2000/svg\"\n                  className=\"size-5 text-muted-foreground/50\"\n                >\n                  <path\n                    fillRule=\"evenodd\"\n                    clipRule=\"evenodd\"\n                    d=\"M10 16.25a6.25 6.25 0 100-12.5 6.25 6.25 0 000 12.5zm1.116-3.041l.1-.408a1.709 1.709 0 01-.25.083 1.176 1.176 0 01-.308.048c-.193 0-.329-.032-.407-.095-.079-.064-.118-.184-.118-.359a3.514 3.514 0 01.118-.672l.373-1.318c.037-.121.062-.255.075-.4a3.73 3.73 0 00.02-.304.866.866 0 00-.292-.678c-.195-.174-.473-.26-.833-.26-.2 0-.412.035-.636.106-.224.07-.459.156-.704.256l-.1.409c.073-.028.16-.057.262-.087.101-.03.2-.045.297-.045.198 0 .331.034.4.1.07.066.105.185.105.354 0 .093-.01.197-.034.31a6.216 6.216 0 01-.084.36l-.374 1.325c-.033.14-.058.264-.073.374-.015.11-.022.22-.022.325 0 .272.1.496.301.673.201.177.483.265.846.265.236 0 .443-.03.621-.092s.417-.152.717-.27zM11.05 7.85a.772.772 0 00.26-.587.78.78 0 00-.26-.59.885.885 0 00-.628-.244.893.893 0 00-.63.244.778.778 0 00-.264.59c0 .23.088.426.263.587a.897.897 0 00.63.243.888.888 0 00.629-.243z\"\n                    fill=\"currentColor\"\n                  />\n                </svg>\n              </TooltipTrigger>\n              <TooltipContent showArrow className=\"max-w-70\">\n                <p className=\"text-xs\">\n                  This chart shows your ad spend for the last 28 days. Hover over each point\n                  to see the exact daily spend. Use this data to track trends and optimize\n                  your campaign performance.\n                </p>\n              </TooltipContent>\n            </Tooltip>\n          </TooltipProvider>\n        </div>\n        <Button variant=\"outline\" size=\"sm\" className=\"h-8 px-3 text-sm\">\n          Details\n        </Button>\n      </CardHeader>\n\n      <CardContent className=\"flex flex-col gap-4 p-0\">\n        <div className=\"flex items-center gap-3 px-5\">\n          <span className=\"text-2xl font-medium tracking-tight tabular-nums\">\n            {new Intl.NumberFormat(\"en-US\", {\n              style: \"currency\",\n              currency: \"USD\",\n            }).format(17.5e2)}\n          </span>\n          <Badge className=\"rounded-full bg-green-100 text-xs text-green-800 dark:bg-green-950 dark:text-green-600\">\n            Last 28 days\n          </Badge>\n        </div>\n\n        <div className=\"grid h-[95px] grid-cols-[1fr_150px] border-t border-border\">\n          <ChartContainer\n            config={chartConfig}\n            className=\"aspect-auto h-auto w-full\"\n          >\n            <AreaChart\n              accessibilityLayer\n              data={campaignData}\n              margin={{\n                right: -5,\n              }}\n            >\n              <XAxis hide />\n              <YAxis hide domain={[\"dataMin - 200\", \"dataMax + 200\"]} />\n              <ChartTooltip\n                content={\n                  <ChartTooltipContent\n                    formatter={(value) =>\n                      new Intl.NumberFormat(\"en-US\", {\n                        style: \"currency\",\n                        currency: \"USD\",\n                      }).format(value as number)\n                    }\n                  />\n                }\n                cursor={{ stroke: \"var(--color-border)\", strokeWidth: 1 }}\n              />\n              <Area\n                type=\"linear\"\n                dataKey=\"spend\"\n                stroke={chartConfig.spend.color}\n                fill={chartConfig.spend.color}\n                fillOpacity={0.2}\n                strokeWidth={2}\n                dot={false}\n                activeDot={{\n                  r: 4,\n                  fill: chartConfig.spend.color,\n                  stroke: \"#ffffff\",\n                  strokeWidth: 2,\n                }}\n              />\n            </AreaChart>\n          </ChartContainer>\n          <div className=\"flex flex-col items-start justify-end border-l-2 border-cyan-600 px-4 pb-4\">\n            <div className=\"text-sm font-semibold tracking-[-0.006em] text-foreground\">\n              45%\n            </div>\n            <div className=\"text-xs font-medium tracking-[-0.006em] text-muted-foreground\">\n              $32.9K used\n            </div>\n          </div>\n        </div>\n      </CardContent>\n    </Card>\n  );\n};\n",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "ahmedmayara",
+    "slug": "area-chart-analytics-card",
+    "registry_url": "https://21st.dev/r/ahmedmayara/area-chart-analytics-card",
+    "title": "Area Chart Analytics Card",
+    "description": "A compact card component that displays ad spend over the last 28 days with a mini area chart. Perfect for dashboards and marketing analytics.",
+    "category": "card",
+    "category_group": "UI Components",
+    "downloads": 3,
+    "likes": 0
+  }
+}

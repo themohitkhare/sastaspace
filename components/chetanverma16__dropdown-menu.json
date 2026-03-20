@@ -1,0 +1,41 @@
+{
+  "name": "dropdown-menu",
+  "type": "registry:ui",
+  "dependencies": [
+    "lucide-react",
+    "framer-motion",
+    "@radix-ui/react-slot",
+    "class-variance-authority"
+  ],
+  "registryDependencies": [
+    "https://21st.dev/r/shadcn/button"
+  ],
+  "files": [
+    {
+      "path": "/components/ui/dropdown-menu.tsx",
+      "content": "\"use client\";\n\nimport { Button } from \"@/components/ui/button\";\nimport { ChevronDown } from \"lucide-react\";\nimport React, { useState } from \"react\";\nimport { motion, AnimatePresence } from \"framer-motion\";\n\ntype DropdownMenuProps = {\n  options: {\n    label: string;\n    onClick: () => void;\n    Icon?: React.ReactNode;\n  }[];\n  children: React.ReactNode;\n};\n\nconst DropdownMenu = ({ options, children }: DropdownMenuProps) => {\n  const [isOpen, setIsOpen] = useState(false);\n\n  const toggleDropdown = () => {\n    setIsOpen(!isOpen);\n  };\n\n  return (\n    <div className=\"relative\">\n      <Button\n        onClick={toggleDropdown}\n        className=\"px-4 py-2 bg-[#11111198] hover:bg-[#111111d1] shadow-[0_0_20px_rgba(0,0,0,0.2)] border-none rounded-xl backdrop-blur-sm\"\n      >\n        {children ?? \"Menu\"}\n        <>\n          <motion.span\n            className=\"ml-2\"\n            animate={{ rotate: isOpen ? 180 : 0 }}\n            transition={{ duration: 0.4, ease: \"easeInOut\", type: \"spring\" }}\n          >\n            <ChevronDown className=\"h-4 w-4\" />\n          </motion.span>\n        </>\n      </Button>\n\n      <AnimatePresence>\n        {isOpen && (\n          <motion.div\n            initial={{ y: -5, scale: 0.95, filter: \"blur(10px)\" }}\n            animate={{ y: 0, scale: 1, filter: \"blur(0px)\" }}\n            exit={{ y: -5, scale: 0.95, opacity: 0, filter: \"blur(10px)\" }}\n            transition={{ duration: 0.6, ease: \"circInOut\", type: \"spring\" }}\n            className=\"absolute z-10 w-48 mt-2 p-1 bg-[#11111198] rounded-xl shadow-[0_0_20px_rgba(0,0,0,0.2)] backdrop-blur-sm flex flex-col gap-2\"\n          >\n            {options && options.length > 0 ? (\n              options.map((option, index) => (\n                <motion.button\n                  initial={{\n                    opacity: 0,\n                    x: 10,\n                    scale: 0.95,\n                    filter: \"blur(10px)\",\n                  }}\n                  animate={{ opacity: 1, x: 0, scale: 1, filter: \"blur(0px)\" }}\n                  exit={{\n                    opacity: 0,\n                    x: 10,\n                    scale: 0.95,\n                    filter: \"blur(10px)\",\n                  }}\n                  transition={{\n                    duration: 0.4,\n                    delay: index * 0.1,\n                    ease: \"easeInOut\",\n                    type: \"spring\",\n                  }}\n                  whileHover={{\n                    backgroundColor: \"#11111140\",\n                    transition: {\n                      duration: 0.4,\n                      ease: \"easeInOut\",\n                    },\n                  }}\n                  whileTap={{\n                    scale: 0.95,\n                    transition: {\n                      duration: 0.2,\n                      ease: \"easeInOut\",\n                    },\n                  }}\n                  key={option.label}\n                  onClick={option.onClick}\n                  className=\"px-2 py-3 cursor-pointer text-white text-sm rounded-lg w-full text-left flex items-center gap-x-2\"\n                >\n                  {option.Icon}\n                  {option.label}\n                </motion.button>\n              ))\n            ) : (\n              <div className=\"px-4 py-2 text-white text-xs\">No options</div>\n            )}\n          </motion.div>\n        )}\n      </AnimatePresence>\n    </div>\n  );\n};\n\nexport { DropdownMenu };\n",
+      "type": "registry:ui",
+      "target": ""
+    },
+    {
+      "path": "/components/ui/button.tsx",
+      "content": "import * as React from \"react\"\nimport { Slot } from \"@radix-ui/react-slot\"\nimport { cva, type VariantProps } from \"class-variance-authority\"\n\nimport { cn } from \"@/lib/utils\"\n\nconst buttonVariants = cva(\n  \"inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50\",\n  {\n    variants: {\n      variant: {\n        default: \"bg-primary text-primary-foreground hover:bg-primary/90\",\n        destructive:\n          \"bg-destructive text-destructive-foreground hover:bg-destructive/90\",\n        outline:\n          \"border border-input bg-background hover:bg-accent hover:text-accent-foreground\",\n        secondary:\n          \"bg-secondary text-secondary-foreground hover:bg-secondary/80\",\n        ghost: \"hover:bg-accent hover:text-accent-foreground\",\n        link: \"text-primary underline-offset-4 hover:underline\",\n      },\n      size: {\n        default: \"h-10 px-4 py-2\",\n        sm: \"h-9 rounded-md px-3\",\n        lg: \"h-11 rounded-md px-8\",\n        icon: \"h-10 w-10\",\n      },\n    },\n    defaultVariants: {\n      variant: \"default\",\n      size: \"default\",\n    },\n  },\n)\n\nexport interface ButtonProps\n  extends React.ButtonHTMLAttributes<HTMLButtonElement>,\n    VariantProps<typeof buttonVariants> {\n  asChild?: boolean\n}\n\nconst Button = React.forwardRef<HTMLButtonElement, ButtonProps>(\n  ({ className, variant, size, asChild = false, ...props }, ref) => {\n    const Comp = asChild ? Slot : \"button\"\n    return (\n      <Comp\n        className={cn(buttonVariants({ variant, size, className }))}\n        ref={ref}\n        {...props}\n      />\n    )\n  },\n)\nButton.displayName = \"Button\"\n\nexport { Button, buttonVariants }\n",
+      "type": "registry:ui",
+      "target": ""
+    }
+  ],
+  "tailwind": {
+    "config": {}
+  },
+  "_meta": {
+    "author": "chetanverma16",
+    "slug": "dropdown-menu",
+    "registry_url": "https://21st.dev/r/chetanverma16/dropdown-menu",
+    "title": "Dropdowm Menu",
+    "description": "Dropdown menu component with framer motion and tailwind css.",
+    "category": "dropdown",
+    "category_group": "UI Components",
+    "downloads": 513,
+    "likes": 8
+  }
+}

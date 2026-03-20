@@ -1,0 +1,29 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "social-icon",
+  "type": "registry:component",
+  "title": "Social Icon",
+  "description": "A social-icon component.",
+  "dependencies": [],
+  "registryDependencies": [
+    "https://21st.dev/r/shadcn/button"
+  ],
+  "files": [
+    {
+      "path": "src/components/ui/social-icon.tsx",
+      "content": "import { Button } from \"@/components/ui/button\";\n\nconst ButtonSocialIconDemo = () => {\n  return (\n    <div className=\"flex items-center justify-center gap-4 flex-wrap\">\n      {/* google */}\n      <Button\n        variant=\"outline\"\n        type=\"button\"\n        className=\"rounded-lg hover:scale-120 transition-all duration-300 cursor-pointer\"\n      >\n        <img\n          src=\"https://images.shadcnspace.com/assets/svgs/icon-google.svg\"\n          alt=\"google icon\"\n          className=\"h-4 w-4\"\n        />\n      </Button>\n      {/* github */}\n      <Button\n        variant=\"outline\"\n        type=\"button\"\n        className=\"rounded-lg hover:scale-120 transition-all duration-300 cursor-pointer\"\n      >\n        <img\n          src=\"https://images.shadcnspace.com/assets/svgs/icon-github.svg\"\n          alt=\"github icon\"\n          className=\"dark:hidden h-4 w-4\"\n        />\n        <img\n          src=\"https://images.shadcnspace.com/assets/svgs/icon-github-white.svg\"\n          alt=\"github icon\"\n          className=\"hidden dark:block h-4 w-4\"\n        />\n      </Button>\n      {/* linkedin */}\n      <Button\n        variant=\"outline\"\n        type=\"button\"\n        className=\"rounded-lg hover:scale-120 transition-all duration-300 cursor-pointer\"\n      >\n        <img\n          src=\"https://images.shadcnspace.com/assets/svgs/icon-linkedin.svg\"\n          alt=\"linkedin icon\"\n          className=\"h-4 w-4\"\n        />\n      </Button>\n      {/* facebook */}\n      <Button\n        variant=\"outline\"\n        type=\"button\"\n        className=\"rounded-lg hover:scale-120 transition-all duration-300 cursor-pointer\"\n      >\n        <img\n          src=\"https://images.shadcnspace.com/assets/svgs/icon-facebook.svg\"\n          alt=\"facebook icon\"\n          className=\"h-4 w-4\"\n        />\n      </Button>\n    </div>\n  );\n};\n\nexport default ButtonSocialIconDemo;\n",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "shadcnspace",
+    "slug": "social-icon",
+    "registry_url": "https://21st.dev/r/shadcnspace/social-icon",
+    "title": "Social Icon",
+    "description": "Here is social icon button",
+    "category": "button",
+    "category_group": "UI Components",
+    "downloads": 6,
+    "likes": 0
+  }
+}

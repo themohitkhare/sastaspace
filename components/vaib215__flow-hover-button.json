@@ -1,0 +1,27 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "flow-hover-button",
+  "type": "registry:component",
+  "title": "Flow Hover Button",
+  "description": "A flow-hover-button component.",
+  "dependencies": [],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/ui/flow-hover-button.tsx",
+      "content": "import {cn} from '@/lib/utils'\n\nexport const Button: React.FC<{\n  icon?: React.ReactNode\n  children?: React.ReactNode\n}> = ({ icon, children, ...props }) => (\n  <button\n    className={cn(`relative cursor-pointer z-0 flex items-center justify-center gap-2 overflow-hidden rounded-md \n    border border-zinc-300 dark:border-zinc-700 bg-zinc-100 dark:bg-zinc-800 \n    px-4 py-2 font-semibold text-zinc-800 dark:text-zinc-200 transition-all duration-500\n    before:absolute before:inset-0 before:-z-10 before:translate-x-[150%] before:translate-y-[150%] before:scale-[2.5]\n    before:rounded-[100%] before:bg-zinc-800 dark:before:bg-zinc-200 before:transition-transform before:duration-1000 before:content-[\"\"]\n    hover:scale-105 hover:text-zinc-100 dark:hover:text-zinc-900 hover:before:translate-x-[0%] hover:before:translate-y-[0%] active:scale-95`, props.className)}\n    {...props}\n  >\n    {icon}\n    <span>{children}</span>\n  </button>\n)\n",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "vaib215",
+    "slug": "flow-hover-button",
+    "registry_url": "https://21st.dev/r/vaib215/flow-hover-button",
+    "title": "Flow Hover Button",
+    "description": "Add some smooth sleek button hover animation to your site without any external dependencies, just pure tailwind css.",
+    "category": "button",
+    "category_group": "UI Components",
+    "downloads": 17,
+    "likes": 0
+  }
+}

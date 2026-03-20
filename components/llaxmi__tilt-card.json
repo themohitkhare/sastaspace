@@ -1,0 +1,27 @@
+{
+  "name": "tilt-card",
+  "type": "registry:ui",
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "/components/ui/tilt-card.tsx",
+      "content": "import { cn } from \"@/lib/utils\";\n\ninterface TiltCardProps extends React.HTMLAttributes<HTMLDivElement> {\n  title: string;\n  hoverColor?: string;\n}\n\nexport function TiltCard({ title, className, hoverColor = \"hover:bg-primary\", ...props }: TiltCardProps) {\n  return (\n    <div\n      className={cn(\n        \"max-h-fit transform rounded-full border-2 border-muted bg-muted p-2 px-6 transition-all duration-500 ease-out hover:-rotate-2 hover:scale-110 hover:text-white hover:shadow-xl\",\n        hoverColor,\n        className\n      )}\n      {...props}\n    >\n      <a className=\"text-xl\">{title}</a>\n    </div>\n  );\n}",
+      "type": "registry:ui",
+      "target": ""
+    }
+  ],
+  "tailwind": {
+    "config": {}
+  },
+  "_meta": {
+    "author": "llaxmi",
+    "slug": "tilt-card",
+    "registry_url": "https://21st.dev/r/llaxmi/tilt-card",
+    "title": "Tilt Card",
+    "description": "The TiltCard component is a stylish, interactive card that tilts and scales when hovered over, providing a dynamic visual effect. It's perfect for highlighting important information or adding a touch of interactivity to your UI.\n\nFeatures\n- Interactive Hover Effect: Tilts and scales on hover for a dynamic look.\n- Customizable Hover Color: Easily change the hover background color using Tailwind CSS classes.\n- Theming Support: Integrated with shadcn theme for consistent styling.\n- Responsive Design: Adapts to different screen sizes and layouts.\n\nProps\n- title: string - The text displayed on the card.\n- hoverColor: string - Tailwind CSS class for the hover background color (e.g., hover:bg-blue-500).\n- className: string - Additional classes for custom styling.",
+    "category": "card",
+    "category_group": "UI Components",
+    "downloads": 44,
+    "likes": 5
+  }
+}

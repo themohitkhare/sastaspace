@@ -1,0 +1,30 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "auto-growing-textarea",
+  "type": "registry:component",
+  "title": "Auto Growing Textarea",
+  "description": "A auto-growing-textarea component.",
+  "dependencies": [],
+  "registryDependencies": [
+    "https://21st.dev/r/shadcn/label",
+    "https://21st.dev/r/shadcn/textarea"
+  ],
+  "files": [
+    {
+      "path": "src/components/ui/auto-growing-textarea.tsx",
+      "content": "import { useId } from 'react'\n\nimport { Label } from '@/components/ui/label'\nimport { Textarea } from '@/components/ui/textarea'\n\nconst TextareaAutoGrowDemo = () => {\n  const id = useId()\n\n  return (\n    <div className='w-full max-w-xs space-y-2'>\n      <Label htmlFor={id}>Feedback</Label>\n      <Textarea\n        id={id}\n        placeholder='Share your feedback here'\n        className='field-sizing-content max-h-30 min-h-0 resize-none py-1.75'\n      />\n    </div>\n  )\n}\n\nexport default TextareaAutoGrowDemo\n",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "shadcnspace",
+    "slug": "auto-growing-textarea",
+    "registry_url": "https://21st.dev/r/shadcnspace/auto-growing-textarea",
+    "title": "Auto growing textarea",
+    "description": "Here is auto growing textarea component",
+    "category": "textarea",
+    "category_group": "UI Components",
+    "downloads": 0,
+    "likes": 0
+  }
+}

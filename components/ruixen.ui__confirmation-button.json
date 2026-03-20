@@ -1,0 +1,29 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "confirmation-button",
+  "type": "registry:component",
+  "title": "Confirmation Button",
+  "description": "A confirmation-button component.",
+  "dependencies": [],
+  "registryDependencies": [
+    "https://21st.dev/r/originui/button"
+  ],
+  "files": [
+    {
+      "path": "src/components/ui/confirmation-button.tsx",
+      "content": "import React, { useState } from \"react\";\nimport { Button } from \"@/components/ui/button\";\nimport { cn } from \"@/lib/utils\";\n\n/**\n * ConfirmationButton\n *\n * A button that requires confirmation before performing an action.\n * First click changes text to \"Are you sure?\" and shows ✅ / ❌ choices.\n * Prevents accidental actions like \"Delete\".\n */\n\ninterface ConfirmationButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {\n  label: string;\n  confirmLabel?: string;\n  onConfirm: () => void;\n  size?: \"sm\" | \"md\" | \"lg\";\n  className?: string;\n}\n\nconst sizeConfig = {\n  sm: \"px-3 py-1 text-sm\",\n  md: \"px-4 py-2 text-sm\",\n  lg: \"px-5 py-3 text-base\",\n};\n\nconst ConfirmationButton: React.FC<ConfirmationButtonProps> = ({\n  label,\n  confirmLabel = \"Are you sure?\",\n  onConfirm,\n  size = \"md\",\n  className,\n  ...props\n}) => {\n  const [confirming, setConfirming] = useState(false);\n\n  const handleClick = () => {\n    if (!confirming) {\n      setConfirming(true);\n      setTimeout(() => setConfirming(false), 3000); // reset after 3s\n    } else {\n      onConfirm();\n      setConfirming(false);\n    }\n  };\n\n  return (\n    <div className=\"inline-flex gap-2\">\n      {!confirming ? (\n        <Button className={cn(sizeConfig[size], className)} onClick={handleClick} {...props}>\n          {label}\n        </Button>\n      ) : (\n        <>\n          <Button\n            className={cn(sizeConfig[size], className, \"bg-red-600 text-white\")}\n            onClick={handleClick}\n          >\n            ✅ {confirmLabel}\n          </Button>\n          <Button\n            className={cn(sizeConfig[size], className, \"bg-gray-300 text-black\")}\n            onClick={() => setConfirming(false)}\n          >\n            ❌\n          </Button>\n        </>\n      )}\n    </div>\n  );\n};\n\nexport default ConfirmationButton;",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "ruixen.ui",
+    "slug": "confirmation-button",
+    "registry_url": "https://21st.dev/r/ruixen.ui/confirmation-button",
+    "title": "Confirmation Button",
+    "description": "The Confirmation Button is a shadcn/ui-based component designed to prevent accidental actions by requiring explicit user confirmation. On the first click, the button changes its state to display a confirmation prompt along with ✅ (confirm) and ❌ (cancel) options, giving users a clear choice before proceeding. This is particularly useful for destructive or critical actions like Delete, Archive, or Submit final changes, where mistakes can have significant consequences. The component supports multiple sizes (sm, md, lg) and integrates seamlessly with Tailwind styling, making it visually consistent while improving safety and usability in interactive workflows.",
+    "category": "button",
+    "category_group": "UI Components",
+    "downloads": 0,
+    "likes": 0
+  }
+}

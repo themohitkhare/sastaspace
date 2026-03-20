@@ -1,0 +1,29 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "ultra-quality-tabs",
+  "type": "registry:component",
+  "title": "Ultra Quality Tabs",
+  "description": "A ultra-quality-tabs component.",
+  "dependencies": [
+    "@headlessui/react"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/ui/ultra-quality-tabs.tsx",
+      "content": "\"use client\";\n\nimport React, { ReactNode } from \"react\";\nimport { Tab } from \"@headlessui/react\";\n\ninterface TabItem {\n  label: string;\n  content: ReactNode;\n}\n\ninterface UltraQualityTabsProps {\n  tabs: TabItem[];\n}\n\nfunction classNames(...classes: string[]) {\n  return classes.filter(Boolean).join(\" \");\n}\n\nexport function UltraQualityTabs({ tabs }: UltraQualityTabsProps) {\n  return (\n    <div className=\"w-full max-w-3xl mx-auto\">\n      <Tab.Group>\n        <Tab.List className=\"flex space-x-1 rounded-xl bg-gray-200 dark:bg-gray-700 p-1\">\n          {tabs.map((tab, idx) => (\n            <Tab\n              key={idx}\n              className={({ selected }) =>\n                classNames(\n                  \"w-full py-2.5 text-sm font-medium leading-5 text-gray-700 dark:text-gray-300 rounded-lg\",\n                  selected\n                    ? \"bg-white dark:bg-gray-800 shadow\"\n                    : \"hover:bg-white/[0.12] dark:hover:bg-gray-600\"\n                )\n              }\n            >\n              {tab.label}\n            </Tab>\n          ))}\n        </Tab.List>\n        <Tab.Panels className=\"mt-4\">\n          {tabs.map((tab, idx) => (\n            <Tab.Panel\n              key={idx}\n              className=\"rounded-xl bg-white dark:bg-gray-800 p-4 shadow\"\n            >\n              {tab.content}\n            </Tab.Panel>\n          ))}\n        </Tab.Panels>\n      </Tab.Group>\n    </div>\n  );\n}\n",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "dhileepkumargm",
+    "slug": "ultra-quality-tabs",
+    "registry_url": "https://21st.dev/r/dhileepkumargm/ultra-quality-tabs",
+    "title": "UltraQualityTabs",
+    "description": "An accessible, responsive React tabs component built with Tailwind CSS and Headless UI. Features keyboard navigation, smooth transitions, and customizable styling for any content sections.",
+    "category": "tabs",
+    "category_group": "UI Components",
+    "downloads": 6,
+    "likes": 0
+  }
+}

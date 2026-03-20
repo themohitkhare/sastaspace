@@ -1,0 +1,58 @@
+{
+  "name": "tooltip",
+  "type": "registry:ui",
+  "dependencies": [
+    "react-tooltip"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "/components/ui/tooltip.tsx",
+      "content": "import React, { useMemo } from \"react\";\nimport { Tooltip as ReactTooltip } from 'react-tooltip';\n\nconst types = {\n  success: \"!bg-success !text-white\",\n  warning: \"!bg-warning !text-black\",\n  error: \"!bg-error !text-white\",\n  violet: \"!bg-violet !text-white\",\n  default: \"!bg-foreground !text-background-100\",\n};\n\ninterface TooltipProps {\n  children: React.ReactNode;\n  text: React.ReactNode;\n  position?: \"top\" | \"bottom\" | \"left\" | \"right\";\n  delay?: boolean;\n  boxAlign?: \"left\" | \"right\" | \"center\";\n  type?: keyof typeof types;\n  tip?: boolean;\n  center?: boolean;\n}\n\nexport const Tooltip = ({\n  children,\n  text,\n  position = \"top\",\n  delay = true,\n  boxAlign = \"center\",\n  type = \"default\",\n  tip = true,\n  center = true\n}: TooltipProps) => {\n  const id = useMemo(() => {\n    const chars = \"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ\";\n    return Array.from({ length: 6 }, () => chars[Math.floor(Math.random() * chars.length)]).join(\"\");\n  }, []);\n\n  return (\n    <div>\n      <div id={id} className=\"font-sans\">{children}</div>\n      <ReactTooltip\n        anchorSelect={`#${id}`}\n        //@ts-ignore\n        place={`${position}${{ left: \"-start\", right: \"-end\", center: \"\" }[boxAlign]}`}\n        delayShow={delay ? 500 : 0}\n        opacity={1}\n        noArrow={!tip}\n        className={`!font-sans !text-[13px] !max-w-52 !rounded-lg ${types[type]}${center ? \" text-center\" : \" text-start\"}`}\n      >\n        {text}\n      </ReactTooltip>\n    </div>\n  );\n};",
+      "type": "registry:ui",
+      "target": ""
+    }
+  ],
+  "cssVars": {
+    "light": {
+      "--ds-background-100": "hsla(0, 0%, 100%, 1)",
+      "--geist-success": "#0070f3",
+      "--geist-error": "#ee0000",
+      "--geist-warning": "#f5a623",
+      "--geist-violet": "#7928ca",
+      "--geist-foreground": "#000"
+    },
+    "dark": {
+      "--ds-background-100": "hsla(0, 0%, 4%, 1)",
+      "--geist-error": "#ff0000",
+      "--geist-foreground": "#fff"
+    }
+  },
+  "tailwind": {
+    "config": {
+      "theme": {
+        "extend": {
+          "colors": {
+            "background-100": "var(--ds-background-100)",
+            "success": "var(--geist-success)",
+            "error": "var(--geist-error)",
+            "warning": "var(--geist-warning)",
+            "violet": "var(--geist-violet)",
+            "foreground": "var(--geist-foreground)"
+          }
+        }
+      }
+    }
+  },
+  "_meta": {
+    "author": "shugar",
+    "slug": "tooltip",
+    "registry_url": "https://21st.dev/r/shugar/tooltip",
+    "title": "Tooltip",
+    "description": "A set of headings, vertically stacked, that each reveal an related section of content. Commonly referred to as an accordion.",
+    "category": "tooltip",
+    "category_group": "UI Components",
+    "downloads": 58,
+    "likes": 0
+  }
+}

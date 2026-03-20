@@ -1,0 +1,29 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "checkbox-1",
+  "type": "registry:component",
+  "title": "Checkbox 1",
+  "description": "A checkbox-1 component.",
+  "dependencies": [
+    "@subframe/core"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/ui/checkbox-1.tsx",
+      "content": "\"use client\";\n\nimport * as React from \"react\";\nimport * as SubframeCore from \"@subframe/core\";\nimport { FeatherCheck } from \"@subframe/core\";\n\n/**\n * IMPORTANT: Local SubframeUtils lives INSIDE this component file.\n * Provides createTwClassNames() and twClassNames instance.\n */\nnamespace SubframeUtils {\n  export type ClassValue =\n    | string\n    | null\n    | undefined\n    | false\n    | Record<string, boolean>;\n\n  export function createTwClassNames() {\n    return (...classes: ClassValue[]) =>\n      classes\n        .flatMap((c) => {\n          if (!c) return [];\n          if (typeof c === \"string\") return [c];\n          return Object.entries(c)\n            .filter(([, ok]) => !!ok)\n            .map(([k]) => k);\n        })\n        .join(\" \");\n  }\n\n  export const twClassNames = createTwClassNames();\n}\n\n/* -------------------- Types -------------------- */\n\nexport interface ComponentProps\n  extends React.ComponentProps<typeof SubframeCore.Checkbox.Root> {\n  label?: React.ReactNode;\n  checked?: boolean;\n  onCheckedChange?: (checked: boolean) => void;\n  className?: string;\n}\n\n/* -------------------- Component -------------------- */\n\nexport const Component = React.forwardRef<HTMLButtonElement, ComponentProps>(\n  function Component({ label, className, ...otherProps }, ref) {\n    return (\n      <SubframeCore.Checkbox.Root asChild {...otherProps}>\n        <button\n          ref={ref}\n          className={SubframeUtils.twClassNames(\n            \"group flex cursor-pointer items-center gap-2 text-left\",\n            // disabled text color\n            \"enabled:text-zinc-900 dark:enabled:text-zinc-100 disabled:text-zinc-400\",\n            className\n          )}\n        >\n          <div\n            className={SubframeUtils.twClassNames(\n              // base box\n              \"flex h-4 w-4 flex-none items-center justify-center rounded-[2px] border-2\",\n              // default (unchecked)\n              \"border-zinc-300 bg-white dark:bg-zinc-900\",\n              // hover/active/focus rings\n              \"focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-zinc-900\",\n              // active/focus border accent\n              \"group-active:border-indigo-600 group-focus-within:border-indigo-600\",\n              // checked styles\n              \"group-aria-[checked=true]:border-indigo-600 group-aria-[checked=true]:bg-indigo-600\",\n              // disabled styles\n              \"group-disabled:border-zinc-200 group-disabled:bg-zinc-100 dark:group-disabled:bg-zinc-800\"\n            )}\n          >\n            <FeatherCheck\n              className={SubframeUtils.twClassNames(\n                // hidden unless checked\n                \"hidden group-aria-[checked=true]:inline-flex\",\n                // icon sizing and color\n                \"text-[14px] leading-[14px] text-white\"\n              )}\n            />\n          </div>\n\n          {label ? (\n            <span\n              className={SubframeUtils.twClassNames(\n                \"text-sm font-medium\",\n                \"text-zinc-900 dark:text-zinc-100\",\n                \"group-disabled:text-zinc-400\"\n              )}\n            >\n              {label}\n            </span>\n          ) : null}\n        </button>\n      </SubframeCore.Checkbox.Root>\n    );\n  }\n);\n\n// Named + default export\nexport default Component;\n",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "SubframeApp",
+    "slug": "checkbox-1",
+    "registry_url": "https://21st.dev/r/SubframeApp/checkbox-1",
+    "title": "Checkbox",
+    "description": "Here is Checkbox component",
+    "category": "checkbox",
+    "category_group": "UI Components",
+    "downloads": 0,
+    "likes": 0
+  }
+}

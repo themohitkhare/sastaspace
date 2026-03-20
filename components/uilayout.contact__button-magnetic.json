@@ -1,0 +1,29 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "button-magnetic",
+  "type": "registry:component",
+  "title": "Button Magnetic",
+  "description": "A button-magnetic component.",
+  "dependencies": [
+    "motion"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/ui/button-magnetic.tsx",
+      "content": "\n'use client'; \n\nimport React, { useRef, useEffect, useState } from 'react';\nimport { motion, useMotionValue, useSpring } from 'motion/react'; \nexport const Component = () => {\n  const buttonRef = useRef(null);\n  const x = useMotionValue(0);\n  const y = useMotionValue(0);\n\n  \n  const springConfig = { stiffness: 200, damping: 20 };\n  const springX = useSpring(x, springConfig);\n  const springY = useSpring(y, springConfig);\n\n  const [isHovering, setIsHovering] = useState(false);\n\n  useEffect(() => {\n    const handleMouseMove = (e: MouseEvent) => {\n      if (buttonRef.current) {\n        const button = buttonRef.current.getBoundingClientRect();\n        const centerX = button.left + button.width / 2;\n        const centerY = button.top + button.height / 2;\n\n        const deltaX = e.pageX - centerX;\n        const deltaY = e.pageY - centerY;\n\n        const distance = Math.sqrt(deltaX ** 2 + deltaY ** 2);\n        const magneticDistance = 120; \n        const attractionStrength = 0.45; \n\n        if (distance < magneticDistance) {\n          const strength = 1 - distance / magneticDistance; \n          x.set(deltaX * strength * attractionStrength);\n          y.set(deltaY * strength * attractionStrength);\n          setIsHovering(true);\n        } else {\n          x.set(0);\n          y.set(0);\n          setIsHovering(false);\n        }\n      }\n    };\n\n    window.addEventListener('mousemove', handleMouseMove);\n\n    return () => {\n      window.removeEventListener('mousemove', handleMouseMove);\n    };\n  }, [x, y]); \n\n  return (\n    <div className=\"relative w-full h-full flex items-center justify-center\">\n      <motion.button\n        ref={buttonRef}\n        className={`px-6 py-3 rounded-lg text-white font-semibold transition-colors duration-300 ${isHovering ? 'bg-green-500' : 'bg-green-600'}`}\n        style={{\n          x: springX,\n          y: springY,\n        }}\n      >\n        Hover on me!\n      </motion.button>\n    </div>\n  );\n};",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "uilayout.contact",
+    "slug": "button-magnetic",
+    "registry_url": "https://21st.dev/r/uilayout.contact/button-magnetic",
+    "title": "Button Magnetic",
+    "description": "Here is hover magnetic button component",
+    "category": "button",
+    "category_group": "UI Components",
+    "downloads": 1,
+    "likes": 0
+  }
+}

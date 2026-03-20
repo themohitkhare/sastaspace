@@ -1,0 +1,30 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "card-3",
+  "type": "registry:component",
+  "title": "Card 3",
+  "description": "A card-3 component.",
+  "dependencies": [
+    "framer-motion",
+    "lucide-react"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/ui/card-3.tsx",
+      "content": "// components/ui/property-card.tsx\nimport * as React from \"react\";\nimport { motion } from \"framer-motion\";\nimport { MapPin, Star } from \"lucide-react\";\nimport { cn } from \"@/lib/utils\"; // Assuming you have a cn utility from shadcn\n\n// Define the props for the component\ninterface PropertyCardProps extends React.HTMLAttributes<HTMLDivElement> {\n  imageUrl: string;\n  name: string;\n  location: string;\n  price: number;\n  rating: number;\n  reviews: number;\n  imageAlt?: string;\n}\n\n// Animation variants for Framer Motion\nconst cardVariants = {\n  hidden: { opacity: 0, y: 20 },\n  visible: {\n    opacity: 1,\n    y: 0,\n    transition: {\n      duration: 0.4,\n      ease: \"easeInOut\",\n    },\n  },\n};\n\nconst textVariants = {\n  hidden: { opacity: 0, y: 10 },\n  visible: {\n    opacity: 1,\n    y: 0,\n    transition: {\n      duration: 0.3,\n      ease: \"easeOut\",\n    },\n  },\n};\n\nconst PropertyCard = React.forwardRef<HTMLDivElement, PropertyCardProps>(\n  (\n    {\n      className,\n      imageUrl,\n      name,\n      location,\n      price,\n      rating,\n      reviews,\n      imageAlt = \"Property Image\",\n      ...props\n    },\n    ref\n  ) => {\n    return (\n      <motion.div\n        ref={ref}\n        className={cn(\n          \"group w-full max-w-sm overflow-hidden rounded-xl border border-border bg-card text-card-foreground shadow-sm transition-all duration-300 ease-in-out hover:shadow-lg\",\n          className\n        )}\n        variants={cardVariants}\n        initial=\"hidden\"\n        animate=\"visible\"\n        whileHover={{ scale: 1.03, y: -5 }}\n        {...props}\n      >\n        {/* Image Section */}\n        <div className=\"overflow-hidden\">\n          <img\n            src={imageUrl}\n            alt={imageAlt}\n            className=\"h-60 w-full object-cover transition-transform duration-500 ease-in-out group-hover:scale-110\"\n          />\n        </div>\n\n        {/* Content Section */}\n        <div className=\"space-y-3 p-4\">\n          <div className=\"flex flex-wrap items-start justify-between gap-2\">\n            <motion.h3\n              variants={textVariants}\n              initial=\"hidden\"\n              animate=\"visible\"\n              className=\"text-lg font-semibold tracking-tight\"\n            >\n              {name}\n            </motion.h3>\n            <motion.p\n              variants={textVariants}\n              initial=\"hidden\"\n              animate=\"visible\"\n              style={{ transitionDelay: '0.1s' }} // Stagger animation\n              className=\"text-lg font-bold text-primary\"\n            >\n              ${price}\n              <span className=\"text-sm font-normal text-muted-foreground\"> /Night</span>\n            </motion.p>\n          </div>\n\n          <div className=\"flex flex-wrap items-center justify-between gap-2 text-sm text-muted-foreground\">\n            <motion.div\n              variants={textVariants}\n              initial=\"hidden\"\n              animate=\"visible\"\n              style={{ transitionDelay: '0.2s' }} // Stagger animation\n              className=\"flex items-center gap-1.5\"\n            >\n              <MapPin className=\"h-4 w-4\" />\n              <span>{location}</span>\n            </motion.div>\n            <motion.div\n              variants={textVariants}\n              initial=\"hidden\"\n              animate=\"visible\"\n              style={{ transitionDelay: '0.3s' }} // Stagger animation\n              className=\"flex items-center gap-1.5\"\n            >\n              <Star className=\"h-4 w-4 fill-yellow-400 text-yellow-500\" />\n              <span className=\"font-medium text-foreground\">{rating}</span>\n              <span>({reviews.toLocaleString()} Reviews)</span>\n            </motion.div>\n          </div>\n        </div>\n      </motion.div>\n    );\n  }\n);\n\nPropertyCard.displayName = \"PropertyCard\";\n\nexport { PropertyCard };",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "lavikatiyar",
+    "slug": "card-3",
+    "registry_url": "https://21st.dev/r/lavikatiyar/card-3",
+    "title": "Card",
+    "description": "Property Card\nA visually polished card component designed to showcase properties, rentals, or listings. It features a responsive layout, theme support for light and dark modes, and subtle animations on hover and load.",
+    "category": "card",
+    "category_group": "UI Components",
+    "downloads": 8,
+    "likes": 0
+  }
+}

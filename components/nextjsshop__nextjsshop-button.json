@@ -1,0 +1,27 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "nextjsshop-button",
+  "type": "registry:component",
+  "title": "Nextjsshop Button",
+  "description": "A nextjsshop-button component.",
+  "dependencies": [],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/ui/nextjsshop-button.tsx",
+      "content": "import React from 'react';\n\nexport const Button01 = () => {\n  return (\n    <a href=\"#\" className=\"button01\">\n      <span className=\"button01_bg\">\n        <span className=\"button01_bg-mid\"></span>\n        <span className=\"button01_bg-right\">\n          {[...Array(25)].map((_, index) => (\n            <span\n              key={`pixel-${index}`}\n              style={{ '--index': Math.floor(Math.random() * 4) } as React.CSSProperties}\n              className=\"button01_bg-pixel\"\n            ></span>\n          ))}\n        </span>\n        <span className=\"button01_bg-right-overlay\">\n          {[...Array(11)].map((_, index) => (\n            <span\n              key={`overlay-${index}`}\n              style={{ '--index': 4 + Math.floor(Math.random() * 4) }as React.CSSProperties}\n              className=\"button01_bg-pixel\"\n            ></span>\n          ))}\n        </span>\n      </span>\n      <span data-text=\"Nextjsshop\" className=\"button01_inner\">\n        <span className=\"button01_text\">Nextjsshop</span>\n      </span>\n    </a>\n  );\n};\n",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "nextjsshop",
+    "slug": "nextjsshop-button",
+    "registry_url": "https://21st.dev/r/nextjsshop/nextjsshop-button",
+    "title": "Nextjsshop Button",
+    "description": "A versatile button component that supports different styles, sizes, and states. It can be used for primary actions, secondary actions, and interactive UI elements while maintaining consistent design across your application.",
+    "category": "button",
+    "category_group": "UI Components",
+    "downloads": 20,
+    "likes": 0
+  }
+}

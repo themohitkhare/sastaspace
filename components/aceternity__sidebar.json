@@ -20,5 +20,16 @@
     "author": "aceternity",
     "name": "sidebar",
     "registry_url": "https://21st.dev/r/aceternity/sidebar"
+  },
+  "_meta": {
+    "author": "aceternity",
+    "slug": "sidebar",
+    "registry_url": "https://21st.dev/r/aceternity/sidebar",
+    "title": "Sidebar",
+    "description": "Expandable sidebar that expands on hover, mobile responsive and dark mode support",
+    "category": "sidebar",
+    "category_group": "UI Components",
+    "downloads": 20237,
+    "likes": 193
   }
 }

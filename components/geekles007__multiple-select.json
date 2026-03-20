@@ -1,0 +1,38 @@
+{
+  "name": "multiple-select",
+  "type": "registry:ui",
+  "dependencies": [
+    "lucide-react",
+    "framer-motion"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "/components/ui/multiple-select.tsx",
+      "content": "'use client';\n\nimport {\n  HTMLAttributes,\n  PropsWithChildren,\n  ReactNode,\n  useEffect,\n  useRef,\n  useState,\n} from 'react';\nimport { AnimatePresence, motion } from 'framer-motion';\nimport { X } from 'lucide-react';\nimport * as React from 'react';\n\nexport type TTag = {\n  key: string;\n  name: string;\n};\n\ntype MultipleSelectProps = {\n  tags: TTag[];\n  customTag?: (item: TTag) => ReactNode | string;\n  onChange?: (value: TTag[]) => void;\n  defaultValue?: TTag[];\n};\n\nexport const MultipleSelect = ({\n  tags,\n  customTag,\n  onChange,\n  defaultValue,\n}: MultipleSelectProps) => {\n  const [selected, setSelected] = useState<TTag[]>(defaultValue ?? []);\n  const containerRef = useRef<HTMLDivElement>(null);\n\n  useEffect(() => {\n    if (containerRef?.current) {\n      containerRef.current.scrollBy({\n        left: containerRef.current?.scrollWidth,\n        behavior: 'smooth',\n      });\n    }\n    onValueChange(selected);\n  }, [selected]);\n\n  const onValueChange = (value: TTag[]) => {\n    onChange?.(value);\n  };\n\n  const onSelect = (item: TTag) => {\n    setSelected((prev) => [...prev, item]);\n  };\n\n  const onDeselect = (item: TTag) => {\n    setSelected((prev) => prev.filter((i) => i !== item));\n  };\n\n  return (\n    <AnimatePresence mode={'popLayout'}>\n      <div className={'flex w-[450px] flex-col gap-2'}>\n        <strong>TAGS</strong>\n        <motion.div\n          layout\n          ref={containerRef}\n          className='selected no-scrollbar flex h-12 w-full items-center overflow-x-scroll scroll-smooth rounded-md border border-solid border-gray-200 bg-gray-50 p-2'\n        >\n          <motion.div layout className='flex items-center gap-2'>\n            {selected?.map((item) => (\n              <Tag\n                name={item?.key}\n                key={item?.key}\n                className={'bg-white shadow'}\n              >\n                <div className='flex items-center gap-2'>\n                  <motion.span layout className={'text-nowrap'}>\n                    {item?.name}\n                  </motion.span>\n                  <button className={''} onClick={() => onDeselect(item)}>\n                    <X size={14} />\n                  </button>\n                </div>\n              </Tag>\n            ))}\n          </motion.div>\n        </motion.div>\n        {tags?.length > selected?.length && (\n          <div className='flex w-full flex-wrap gap-2 rounded-md border border-solid border-gray-200 p-2'>\n            {tags\n              ?.filter((item) => !selected?.some((i) => i.key === item.key))\n              .map((item) => (\n                <Tag\n                  name={item?.key}\n                  onClick={() => onSelect(item)}\n                  key={item?.key}\n                >\n                  {customTag ? (\n                    customTag(item)\n                  ) : (\n                    <motion.span layout className={'text-nowrap'}>\n                      {item?.name}\n                    </motion.span>\n                  )}\n                </Tag>\n              ))}\n          </div>\n        )}\n      </div>\n    </AnimatePresence>\n  );\n};\n\ntype TagProps = PropsWithChildren &\n  Pick<HTMLAttributes<HTMLDivElement>, 'onClick'> & {\n    name?: string;\n    className?: string;\n  };\n\nexport const Tag = ({ children, className, name, onClick }: TagProps) => {\n  return (\n    <motion.div\n      layout\n      layoutId={name}\n      onClick={onClick}\n      className={(\n        `cursor-pointer rounded-md bg-gray-200 px-2 py-1 text-sm ${className}`\n      )}\n    >\n      {children}\n    </motion.div>\n  );\n};\n",
+      "type": "registry:ui",
+      "target": ""
+    }
+  ],
+  "cssVars": {
+    "light": {
+      "--background": "#ffffff",
+      "--foreground": "#171717"
+    },
+    "dark": {}
+  },
+  "tailwind": {
+    "config": {}
+  },
+  "_meta": {
+    "author": "geekles007",
+    "slug": "multiple-select",
+    "registry_url": "https://21st.dev/r/geekles007/multiple-select",
+    "title": "Multiple select",
+    "description": "Select option with multiple choices",
+    "category": "input",
+    "category_group": "UI Components",
+    "downloads": 348,
+    "likes": 3
+  }
+}

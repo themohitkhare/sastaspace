@@ -1,0 +1,31 @@
+{
+  "name": "animated-menu",
+  "type": "registry:ui",
+  "dependencies": [
+    "framer-motion",
+    "@rive-app/react-canvas"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "/components/ui/animated-menu.tsx",
+      "content": "\"use client\"\n\nimport * as React from \"react\"\nimport { useRive, Layout, Fit, Alignment } from '@rive-app/react-canvas'\nimport { motion } from \"framer-motion\"\nimport { cn } from \"@/lib/utils\"\n\ninterface MenuItem {\n  riveIcon: {\n    src: string\n    stateMachine: string\n  }\n  label: string\n  hotkey: string\n  onClick?: () => void\n}\n\ninterface AnimatedMenuProps extends React.HTMLAttributes<HTMLDivElement> {\n  items: MenuItem[]\n}\n\nfunction RiveIcon({ \n  src, \n  stateMachine,\n  index,\n  activeIndex\n}: { \n  src: string\n  stateMachine: string\n  index: number\n  activeIndex: number | null\n}) {\n  const { RiveComponent, rive } = useRive({\n    src,\n    stateMachines: stateMachine,\n    layout: new Layout({\n      fit: Fit.Contain,\n      alignment: Alignment.Center\n    }),\n    autoplay: false\n  })\n\n  React.useEffect(() => {\n    if (!rive) return\n\n    if (activeIndex === index) {\n      rive.play(stateMachine)\n    } else {\n      rive.reset()\n    }\n  }, [activeIndex, index, rive, stateMachine])\n\n  return <RiveComponent className=\"size-6\" />\n}\n\nexport function AnimatedMenu({ items, className, ...props }: AnimatedMenuProps) {\n  const [hoveredIndex, setHoveredIndex] = React.useState<number | null>(null)\n\n  return (\n    <div \n      className={cn(\n        \"relative w-[210px] bg-[#2A2A27] shadow-lg rounded-lg p-0.5\",\n        \"after:content-[''] after:absolute after:inset-0 after:bg-gradient-to-br after:from-white/10 after:to-transparent\",\n        \"after:rounded-lg after:border after:border-transparent after:pointer-events-none\",\n        className\n      )}\n      {...props}\n    >\n      <menu className=\"relative\">\n        {items.map((item, index) => (\n          <li key={index}>\n            <button\n              className={cn(\n                \"h-[34px] rounded-md flex gap-2 w-full items-center px-2.5 py-1.5\",\n                \"text-sm font-medium text-[#DFDFDC]\",\n                \"focus-visible:outline-none focus-visible:ring-1.5 focus-visible:ring-[#7A8FF7]\",\n                \"relative z-10 select-none\",\n                \"active:bg-[#3D3D38]\"\n              )}\n              onMouseEnter={() => setHoveredIndex(index)}\n              onMouseLeave={() => setHoveredIndex(null)}\n              onClick={item.onClick}\n            >\n              <RiveIcon \n                src={item.riveIcon.src} \n                stateMachine={item.riveIcon.stateMachine}\n                index={index}\n                activeIndex={hoveredIndex}\n              />\n              <span>{item.label}</span>\n              <span className=\"ml-auto text-[#5E5E55]\">\n                <span className=\"sr-only\">Hotkey: </span>\n                {item.hotkey}\n              </span>\n            </button>\n          </li>\n        ))}\n        \n        <motion.div\n          className=\"absolute inset-x-0 h-[34px] bg-[#353531] rounded-md\"\n          initial={{ opacity: 0, scale: 0.75 }}\n          animate={{\n            opacity: hoveredIndex !== null ? 1 : 0,\n            scale: hoveredIndex !== null ? 1 : 0.75,\n            top: hoveredIndex !== null ? hoveredIndex * 34 : 0,\n          }}\n          transition={{ duration: 0.1 }}\n        />\n      </menu>\n    </div>\n  )\n}",
+      "type": "registry:ui",
+      "target": ""
+    }
+  ],
+  "tailwind": {
+    "config": {}
+  },
+  "_meta": {
+    "author": "serafimcloud",
+    "slug": "animated-menu",
+    "registry_url": "https://21st.dev/r/serafimcloud/animated-menu",
+    "title": "Animated Menu",
+    "description": "A React component featuring an animated menu with Rive icons, inspired by @guerriero_se's UI experiment.",
+    "category": "menu",
+    "category_group": "UI Components",
+    "downloads": 95,
+    "likes": 16
+  }
+}

@@ -1,0 +1,39 @@
+{
+  "name": "link",
+  "type": "registry:ui",
+  "dependencies": [
+    "react-aria-components",
+    "class-variance-authority"
+  ],
+  "registryDependencies": [
+    "https://21st.dev/r/jolbol1/button"
+  ],
+  "files": [
+    {
+      "path": "/components/ui/link.tsx",
+      "content": "\"use client\"\n\nimport * as React from \"react\"\nimport { type VariantProps } from \"class-variance-authority\"\nimport {\n  Link as AriaLink,\n  LinkProps as AriaLinkProps,\n  composeRenderProps,\n} from \"react-aria-components\"\n\nimport { cn } from \"@/lib/utils\"\n\nimport { buttonVariants } from \"@/components/ui/button\"\n\ninterface LinkProps\n  extends AriaLinkProps,\n    VariantProps<typeof buttonVariants> {}\n\nconst Link = ({ className, variant, size, ...props }: LinkProps) => {\n  return (\n    <AriaLink\n      className={composeRenderProps(className, (className) =>\n        cn(\n          buttonVariants({\n            variant,\n            size,\n            className,\n          })\n        )\n      )}\n      {...props}\n    />\n  )\n}\n\nexport { Link }\nexport type { LinkProps }\n",
+      "type": "registry:ui",
+      "target": ""
+    },
+    {
+      "path": "/components/ui/button.tsx",
+      "content": "\"use client\"\n\nimport * as React from \"react\"\nimport { cva, type VariantProps } from \"class-variance-authority\"\nimport {\n  Button as AriaButton,\n  composeRenderProps,\n  type ButtonProps as AriaButtonProps,\n} from \"react-aria-components\"\n\nimport { cn } from \"@/lib/utils\"\n\nconst buttonVariants = cva(\n  [\n    \"inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors\",\n    /* Disabled */\n    \"data-[disabled]:pointer-events-none data-[disabled]:opacity-50 \",\n    /* Focus Visible */\n    \"data-[focus-visible]:outline-none data-[focus-visible]:ring-2 data-[focus-visible]:ring-ring data-[focus-visible]:ring-offset-2\",\n    /* Resets */\n    \"focus-visible:outline-none\",\n  ],\n  {\n    variants: {\n      variant: {\n        default:\n          \"bg-primary text-primary-foreground data-[hovered]:bg-primary/90\",\n        destructive:\n          \"bg-destructive text-destructive-foreground data-[hovered]:bg-destructive/90\",\n        outline:\n          \"border border-input bg-background data-[hovered]:bg-accent data-[hovered]:text-accent-foreground\",\n        secondary:\n          \"bg-secondary text-secondary-foreground data-[hovered]:bg-secondary/80\",\n        ghost: \"data-[hovered]:bg-accent data-[hovered]:text-accent-foreground\",\n        link: \"text-primary underline-offset-4 data-[hovered]:underline\",\n      },\n      size: {\n        default: \"h-10 px-4 py-2\",\n        sm: \"h-9 rounded-md px-3\",\n        lg: \"h-11 rounded-md px-8\",\n        icon: \"size-10\",\n      },\n    },\n    defaultVariants: {\n      variant: \"default\",\n      size: \"default\",\n    },\n  }\n)\n\ninterface ButtonProps\n  extends AriaButtonProps,\n    VariantProps<typeof buttonVariants> {}\n\nconst Button = ({ className, variant, size, ...props }: ButtonProps) => {\n  return (\n    <AriaButton\n      className={composeRenderProps(className, (className) =>\n        cn(\n          buttonVariants({\n            variant,\n            size,\n            className,\n          })\n        )\n      )}\n      {...props}\n    />\n  )\n}\n\nexport { Button, buttonVariants }\nexport type { ButtonProps }\n",
+      "type": "registry:ui",
+      "target": ""
+    }
+  ],
+  "tailwind": {
+    "config": {}
+  },
+  "_meta": {
+    "author": "jolbol1",
+    "slug": "link",
+    "registry_url": "https://21st.dev/r/jolbol1/link",
+    "title": "Link [react-aria-components]",
+    "description": "A link allows a user to navigate to another page or resource within a web page or application.\n\nLinks can be created in HTML with the <a> element with an href attribute. However, if the link does not have an href, and is handled client side with JavaScript instead, it will not be exposed to assistive technology properly. Link helps achieve accessible links with either native HTML elements or custom element types.",
+    "category": "button",
+    "category_group": "UI Components",
+    "downloads": 52,
+    "likes": 0
+  }
+}

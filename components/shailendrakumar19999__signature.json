@@ -1,0 +1,29 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "signature",
+  "type": "registry:component",
+  "title": "Signature",
+  "description": "A signature component.",
+  "dependencies": [
+    "@ark-ui/react"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/ui/signature.tsx",
+      "content": "import { Carousel } from \"@ark-ui/react/carousel\";\n\nexport function ThumbnailsCarousel() {\n  const images = Array.from({ length: 6 }, (_, i) => ({\n    full: `https://picsum.photos/seed/${i + 40}/600/400`,\n    thumb: `https://picsum.photos/seed/${i + 40}/120/80`,\n  }));\n\n  return (\n    <Carousel.Root\n      defaultPage={0}\n      slideCount={images.length}\n      className=\"max-w-2xl p-2 mx-auto\"\n    >\n      <Carousel.ItemGroup className=\"overflow-hidden rounded-lg shadow-lg mb-4\">\n        {images.map((image, index) => (\n          <Carousel.Item key={index} index={index}>\n            <img\n              src={image.full}\n              alt={`Slide ${index + 1}`}\n              className=\"w-full h-80 object-cover\"\n            />\n          </Carousel.Item>\n        ))}\n      </Carousel.ItemGroup>\n\n      <div className=\"flex items-center gap-4\">\n        <Carousel.PrevTrigger className=\"p-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 rounded-lg transition-colors shrink-0\">\n          ←\n        </Carousel.PrevTrigger>\n\n        <div className=\"flex gap-2 overflow-x-auto scrollbar-hide flex-1 px-2\">\n          {images.map((image, index) => (\n            <Carousel.Indicator\n              key={index}\n              index={index}\n              className=\"shrink-0 border-2 border-transparent data-current:border-blue-500 rounded-md overflow-hidden cursor-pointer transition-all hover:border-gray-300\"\n            >\n              <img\n                src={image.thumb}\n                alt={`Thumbnail ${index + 1}`}\n                className=\"w-16 h-12 object-cover\"\n              />\n            </Carousel.Indicator>\n          ))}\n        </div>\n\n        <Carousel.NextTrigger className=\"p-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 rounded-lg transition-colors shrink-0\">\n          →\n        </Carousel.NextTrigger>\n      </div>\n    </Carousel.Root>\n  );\n}\n",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "shailendrakumar19999",
+    "slug": "signature",
+    "registry_url": "https://21st.dev/r/shailendrakumar19999/signature",
+    "title": "Carousel",
+    "description": "This is Carousel",
+    "category": "carousel",
+    "category_group": "UI Components",
+    "downloads": 48,
+    "likes": 0
+  }
+}

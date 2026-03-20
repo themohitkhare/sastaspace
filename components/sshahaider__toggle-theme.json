@@ -1,0 +1,31 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "toggle-theme",
+  "type": "registry:component",
+  "title": "Toggle Theme",
+  "description": "A toggle-theme component.",
+  "dependencies": [
+    "lucide-react",
+    "framer-motion",
+    "next-themes"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/ui/toggle-theme.tsx",
+      "content": "'use client';\n\nimport React from 'react';\nimport { MonitorCogIcon, MoonStarIcon, SunIcon } from 'lucide-react';\nimport { motion } from 'framer-motion';\nimport { useTheme } from 'next-themes';\nimport { cn } from '@/lib/utils';\n\nconst THEME_OPTIONS = [\n\t{\n\t\ticon: MonitorCogIcon,\n\t\tvalue: 'system',\n\t},\n\t{\n\t\ticon: SunIcon,\n\t\tvalue: 'light',\n\t},\n\t{\n\t\ticon: MoonStarIcon,\n\t\tvalue: 'dark',\n\t},\n];\n\nexport function ToggleTheme() {\n\tconst { theme, setTheme } = useTheme();\n\n\tconst [isMounted, setIsMounted] = React.useState(false);\n\n\tReact.useEffect(() => {\n\t\tsetIsMounted(true);\n\t}, []);\n\n\tif (!isMounted) {\n\t\treturn <div className=\"flex h-8 w-24\" />;\n\t}\n\n\treturn (\n\t\t<motion.div\n\t\t\tkey={String(isMounted)}\n\t\t\tinitial={{ opacity: 0 }}\n\t\t\tanimate={{ opacity: 1 }}\n\t\t\ttransition={{ duration: 0.3 }}\n\t\t\tclassName=\"bg-muted/80 inline-flex items-center overflow-hidden rounded-md border\"\n\t\t\trole=\"radiogroup\"\n\t\t>\n\t\t\t{THEME_OPTIONS.map((option) => (\n\t\t\t\t<button\n\t\t\t\t\tclassName={cn(\n\t\t\t\t\t\t'relative flex size-7 cursor-pointer items-center justify-center rounded-md transition-all',\n\t\t\t\t\t\ttheme === option.value\n\t\t\t\t\t\t\t? 'text-foreground'\n\t\t\t\t\t\t\t: 'text-muted-foreground hover:text-foreground',\n\t\t\t\t\t)}\n\t\t\t\t\trole=\"radio\"\n\t\t\t\t\taria-checked={theme === option.value}\n\t\t\t\t\taria-label={`Switch to ${option.value} theme`}\n\t\t\t\t\tonClick={() => setTheme(option.value)}\n\t\t\t\t>\n\t\t\t\t\t{theme === option.value && (\n\t\t\t\t\t\t<motion.div\n\t\t\t\t\t\t\tlayoutId=\"theme-option\"\n\t\t\t\t\t\t\ttransition={{ type: 'spring', bounce: 0.1, duration: 0.75 }}\n\t\t\t\t\t\t\tclassName=\"border-muted-foreground/50 absolute inset-0 rounded-md border\"\n\t\t\t\t\t\t/>\n\t\t\t\t\t)}\n\t\t\t\t\t<option.icon className=\"size-3.5\" />\n\t\t\t\t</button>\n\t\t\t))}\n\t\t</motion.div>\n\t);\n}\n",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "sshahaider",
+    "slug": "toggle-theme",
+    "registry_url": "https://21st.dev/r/sshahaider/toggle-theme",
+    "title": "Toggle Theme",
+    "description": "Animated Theme Switcher Component - Offer users seamless, visually engaging control over light, dark, and system themes.\n\nBuilt with next-themes and framer-motion, this component enhances UI personalization with elegant transitions.",
+    "category": "toggle",
+    "category_group": "UI Components",
+    "downloads": 222,
+    "likes": 0
+  }
+}

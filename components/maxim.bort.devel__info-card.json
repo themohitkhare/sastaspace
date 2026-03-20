@@ -1,0 +1,61 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "info-card",
+  "type": "registry:component",
+  "title": "Info Card",
+  "description": "A info-card component.",
+  "dependencies": [],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/ui/info-card.tsx",
+      "content": "import React, { useRef, useState } from \"react\";\n\n// RTL detection for Hebrew/Arabic\nfunction isRTL(text: string) {\n  return /[\\u0590-\\u05FF\\u0600-\\u06FF\\u0700-\\u074F]/.test(text);\n}\n\nexport interface InfoCardProps {\n  image: string;\n  title: string;\n  description: string;\n  width?: number;\n  height?: number;\n  borderColor?: string;\n  borderBgColor?: string;\n  borderWidth?: number;\n  borderPadding?: number;\n  cardBgColor?: string;\n  shadowColor?: string;\n  patternColor1?: string;\n  patternColor2?: string;\n  textColor?: string;\n  hoverTextColor?: string;\n  fontFamily?: string;\n  rtlFontFamily?: string;\n  effectBgColor?: string;\n  contentPadding?: string;\n}\n\nexport const InfoCard: React.FC<InfoCardProps> = ({\n  image,\n  title,\n  description,\n  width = 388,\n  height = 378,\n  borderColor = \"#DAFF3E\",\n  borderBgColor = \"#242424\",\n  borderWidth = 3,\n  borderPadding = 14,\n  cardBgColor = \"#000\",\n  shadowColor = \"#242424\",\n  patternColor1 = \"rgba(230,230,230,0.15)\",\n  patternColor2 = \"rgba(240,240,240,0.15)\",\n  textColor = \"#f5f5f5\",\n  hoverTextColor = \"#242424\",\n  fontFamily = \"'Roboto Mono', monospace\",\n  rtlFontFamily = \"'Montserrat', sans-serif\",\n  effectBgColor = \"#DAFF3E\",\n  contentPadding = \"10px 16px\",\n}) => {\n  const [hovered, setHovered] = useState(false);\n  const borderRef = useRef<HTMLDivElement>(null);\n\n  // Mouse movement for rotating border\n  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {\n    const border = borderRef.current;\n    if (!border) return;\n    const rect = border.getBoundingClientRect();\n    const x = e.clientX - rect.left - rect.width / 2;\n    const y = e.clientY - rect.top - rect.height / 2;\n    const angle = Math.atan2(y, x);\n    border.style.setProperty(\"--rotation\", `${angle}rad`);\n  };\n\n  // RTL logic\n  const rtl = isRTL(title) || isRTL(description);\n  const effectiveFont = rtl ? rtlFontFamily : fontFamily;\n  const titleDirection = isRTL(title) ? \"rtl\" : \"ltr\";\n  const descDirection = isRTL(description) ? \"rtl\" : \"ltr\";\n\n  // Sizes for inner card (matches .inner-container: 354x344)\n  const innerWidth = 354;\n  const innerHeight = 344;\n\n  // Pattern background (unchanged, just colors are props)\n  const pattern =\n    `linear-gradient(45deg, ${patternColor1} 25%, transparent 25%, transparent 75%, ${patternColor2} 75%),` +\n    `linear-gradient(-45deg, ${patternColor2} 25%, transparent 25%, transparent 75%, ${patternColor1} 75%)`;\n\n  // Border gradient\n  const borderGradient = `conic-gradient(from var(--rotation,0deg), ${borderColor} 0deg, ${borderColor} 90deg, ${borderBgColor} 90deg, ${borderBgColor} 360deg)`;\n\n  return (\n    <div\n      ref={borderRef}\n      onMouseMove={handleMouseMove}\n      onMouseEnter={() => setHovered(true)}\n      onMouseLeave={() => {\n        setHovered(false);\n        if (borderRef.current)\n          borderRef.current.style.setProperty(\"--rotation\", \"0deg\");\n      }}\n      style={{\n        width,\n        height,\n        border: `${borderWidth}px solid transparent`,\n        borderRadius: \"1em\",\n        backgroundOrigin: \"border-box\",\n        backgroundClip: \"padding-box, border-box\",\n        backgroundImage: `linear-gradient(${cardBgColor}, ${cardBgColor}), ${borderGradient}`,\n        padding: borderPadding,\n        boxSizing: \"border-box\",\n        display: \"flex\",\n        alignItems: \"center\",\n        justifyContent: \"center\",\n        cursor: \"pointer\",\n        userSelect: \"none\",\n        transition: \"box-shadow 0.3s\",\n        position: \"relative\",\n        fontFamily: effectiveFont,\n      } as React.CSSProperties}\n    >\n      <div\n        style={{\n          width: innerWidth,\n          height: innerHeight,\n          borderRadius: \"1em\",\n          background: cardBgColor,\n          overflow: \"hidden\",\n          display: \"flex\",\n          flexDirection: \"column\",\n          boxSizing: \"border-box\",\n          backgroundImage: pattern,\n          backgroundSize: \"20.84px 20.84px\",\n          padding: \"0 0 8px 0\",\n        }}\n      >\n        <div style={{ width: \"100%\", position: \"relative\", overflow: \"hidden\" }}>\n          <img\n            src={image}\n            alt={title}\n            style={{\n              width: \"100%\",\n              height: \"100%\",\n              objectFit: \"cover\",\n              display: \"block\",\n            }}\n          />\n        </div>\n        <div\n          style={{\n            flexGrow: 1,\n            display: \"flex\",\n            flexDirection: \"column\",\n            justifyContent: \"space-between\",\n            padding: contentPadding,\n            minHeight: 0,\n          }}\n        >\n          <h1\n            style={{\n              fontSize: 21,\n              fontWeight: \"bold\",\n              letterSpacing: \"-.01em\",\n              lineHeight: \"normal\",\n              marginBottom: 5,\n              color: hovered ? hoverTextColor : textColor,\n              transition: \"color 0.3s ease\",\n              position: \"relative\",\n              overflow: \"hidden\",\n              direction: titleDirection,\n              width: \"auto\",\n            }}\n          >\n            <span\n              style={{\n                position: \"relative\",\n                zIndex: 10,\n                padding: \"2px 4px\",\n                display: \"flex\",\n                justifyContent: \"center\",\n                alignItems: \"center\",\n                textAlign: \"center\",\n                width: \"100%\",\n                height: \"100%\",\n              }}\n            >\n              {title}\n            </span>\n            <span\n              style={{\n                clipPath: hovered\n                  ? \"polygon(0 0, 100% 0, 100% 100%, 0% 100%)\"\n                  : \"polygon(0 50%, 100% 50%, 100% 50%, 0 50%)\",\n                transformOrigin: \"center\",\n                transition: \"all cubic-bezier(.1,.5,.5,1) 0.4s\",\n                position: \"absolute\",\n                left: -4,\n                right: -4,\n                top: -4,\n                bottom: -4,\n                zIndex: 0,\n                backgroundColor: effectBgColor,\n              }}\n            />\n          </h1>\n          <p\n            style={{\n              fontSize: 14,\n              color: textColor,\n              display: \"-webkit-box\",\n              WebkitLineClamp: 3,\n              WebkitBoxOrient: \"vertical\",\n              overflow: \"hidden\",\n              direction: descDirection,\n              marginBottom: 0,\n              paddingBottom: 0,\n              minHeight: 0,\n            }}\n          >\n            {description}\n          </p>\n        </div>\n      </div>\n    </div>\n  );\n};\n",
+      "type": "registry:component"
+    }
+  ],
+  "cssVars": {
+    "light": {
+      "--border-color-1": "#FF5613",
+      "--border-color-2": "#9F4EFF",
+      "--border-color-3": "#2196F3",
+      "--border-bg-color": "#f5f5f5",
+      "--card-bg-color": "#fff",
+      "--shadow-color": "#e0e0e0",
+      "--text-color": "#242424",
+      "--hover-text-color-1": "#000",
+      "--hover-text-color-2": "#fff",
+      "--hover-text-color-3": "#fff",
+      "--font-family": "'Roboto Mono', monospace",
+      "--rtl-font-family": "'Montserrat', sans-serif",
+      "--pattern-color1": "rgba(200,200,200,0.10)",
+      "--pattern-color2": "rgba(220,220,220,0.10)"
+    },
+    "dark": {
+      "--border-color-1": "#DAFF3E",
+      "--border-color-2": "#9F4EFF",
+      "--border-color-3": "#2196F3",
+      "--border-bg-color": "#242424",
+      "--card-bg-color": "#000",
+      "--shadow-color": "#242424",
+      "--text-color": "#f5f5f5",
+      "--hover-text-color-1": "#242424",
+      "--hover-text-color-2": "#000",
+      "--hover-text-color-3": "#242424",
+      "--font-family": "'Roboto Mono', monospace",
+      "--rtl-font-family": "'Montserrat', sans-serif",
+      "--pattern-color1": "rgba(230,230,230,0.15)",
+      "--pattern-color2": "rgba(240,240,240,0.15)"
+    }
+  },
+  "_meta": {
+    "author": "maxim.bort.devel",
+    "slug": "info-card",
+    "registry_url": "https://21st.dev/r/maxim.bort.devel/info-card",
+    "title": "Info Card",
+    "description": "A simple card with interactive border.\n\nFor the credit information, and the Vanilla HTML/CSS/JS version, please visit https://codepen.io/Northstrix/pen/EaYbRxG\n",
+    "category": "card",
+    "category_group": "UI Components",
+    "downloads": 75,
+    "likes": 0
+  }
+}

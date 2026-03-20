@@ -1,0 +1,29 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "product-card",
+  "type": "registry:component",
+  "title": "Product Card",
+  "description": "A product-card component.",
+  "dependencies": [
+    "framer-motion"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/ui/product-card.tsx",
+      "content": "\"use client\";\n\nimport * as React from \"react\";\nimport { motion, useMotionValue, useSpring, useTransform } from \"framer-motion\";\nimport { cn } from \"@/lib/utils\"; // Assuming you have a `cn` utility\n\n// Define the properties for the ProductHighlightCard component\ninterface ProductHighlightCardProps extends React.HTMLAttributes<HTMLDivElement> {\n  categoryIcon: React.ReactNode;\n  category: string;\n  title: string;\n  description: string;\n  imageSrc: string;\n  imageAlt: string;\n}\n\nexport const ProductHighlightCard = React.forwardRef<HTMLDivElement, ProductHighlightCardProps>(\n  ({ className, categoryIcon, category, title, description, imageSrc, imageAlt, ...props }, ref) => {\n    \n    // --- Animation Logic for 3D Tilt Effect ---\n    const mouseX = useMotionValue(0);\n    const mouseY = useMotionValue(0);\n\n    const handleMouseMove = ({ clientX, clientY, currentTarget }: React.MouseEvent) => {\n      const { left, top } = currentTarget.getBoundingClientRect();\n      mouseX.set(clientX - left);\n      mouseY.set(clientY - top);\n    };\n\n    // Transform mouse position into a rotation value\n    const rotateX = useTransform(mouseY, [0, 350], [10, -10]);\n    const rotateY = useTransform(mouseX, [0, 350], [-10, 10]);\n    \n    // Apply spring physics for a smoother animation\n    const springConfig = { stiffness: 300, damping: 20 };\n    const springRotateX = useSpring(rotateX, springConfig);\n    const springRotateY = useSpring(rotateY, springConfig);\n    \n    // --- Animation Logic for Glow Effect ---\n    const glowX = useTransform(mouseX, [0, 350], [0, 100]);\n    const glowY = useTransform(mouseY, [0, 350], [0, 100]);\n    const glowOpacity = useTransform(mouseX, [0, 350], [0, 0.5]);\n\n    return (\n      <motion.div\n        ref={ref}\n        onMouseMove={handleMouseMove}\n        onMouseLeave={() => {\n          mouseX.set(0);\n          mouseY.set(0);\n        }}\n        style={{\n          rotateX: springRotateX,\n          rotateY: springRotateY,\n          transformStyle: \"preserve-3d\",\n        }}\n        className={cn(\n          \"relative h-[350px] w-[350px] rounded-2xl bg-card shadow-lg transition-shadow duration-300 hover:shadow-2xl\",\n          className\n        )}\n        {...props}\n      >\n        <div style={{ transform: \"translateZ(20px)\", transformStyle: \"preserve-d\" }} className=\"absolute inset-4 rounded-xl bg-card-foreground/5 shadow-inner\">\n          \n          {/* Diagonal line texture */}\n          <div className=\"absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:32px_32px] [mask-image:radial-gradient(ellipse_50%_50%_at_50%_50%,#000_70%,transparent_100%)]\"></div>\n\n          {/* Glow effect that follows the mouse */}\n          <motion.div\n            className=\"pointer-events-none absolute -inset-px rounded-xl opacity-0\"\n            style={{\n              opacity: glowOpacity,\n              background: `radial-gradient(80px at ${glowX}% ${glowY}%, hsl(var(--primary)), transparent 40%)`,\n            }}\n          />\n\n          <div className=\"relative z-10 flex h-full flex-col justify-between p-6\">\n            {/* CORRECTED THIS LINE */}\n            <div className=\"flex items-center space-x-2 text-card-foreground\">\n              {categoryIcon}\n              <span className=\"text-sm font-medium\">{category}</span>\n            </div>\n            \n            {/* CORRECTED THIS LINE */}\n            <div className=\"text-card-foreground\">\n              <h2 className=\"text-4xl font-bold tracking-tight\">{title}</h2>\n              <p className=\"mt-2 max-w-[60%] text-xs text-muted-foreground\">\n                {description}\n              </p>\n            </div>\n          </div>\n          \n          {/* Product Image */}\n          <motion.img\n            src={imageSrc}\n            alt={imageAlt}\n            style={{ transform: \"translateZ(50px)\" }}\n            whileHover={{ scale: 1.1, y: -20, x: 10 }}\n            transition={{ type: \"spring\", stiffness: 300, damping: 20 }}\n            className=\"absolute -right-12 -bottom-12 h-56 w-56 object-contain\"\n          />\n        </div>\n      </motion.div>\n    );\n  }\n);\n\nProductHighlightCard.displayName = \"ProductHighlightCard\";",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "ravikatiyar162",
+    "slug": "product-card",
+    "registry_url": "https://21st.dev/r/ravikatiyar162/product-card",
+    "title": "Product Card",
+    "description": "Product Highlight Card\nThis card uses a combination of CSS gradients and framer-motion to create a visually engaging experience. On hover, the card tilts, a subtle glow follows the cursor, and the product image animates smoothly.",
+    "category": "card",
+    "category_group": "UI Components",
+    "downloads": 15,
+    "likes": 0
+  }
+}

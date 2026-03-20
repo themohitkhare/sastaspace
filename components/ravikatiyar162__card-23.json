@@ -1,0 +1,30 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "card-23",
+  "type": "registry:component",
+  "title": "Card 23",
+  "description": "A card-23 component.",
+  "dependencies": [
+    "framer-motion",
+    "lucide-react"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/ui/card-23.tsx",
+      "content": "// 1. Install dependencies:\n// npm install framer-motion lucide-react\n\n\"use client\";\n\nimport * as React from \"react\";\nimport { motion } from \"framer-motion\";\nimport { MapPin } from \"lucide-react\";\nimport { cn } from \"@/lib/utils\"; // Your shadcn/ui utility for merging classes\n\n// Define the types for the component props for type-safety and clarity\nexport interface ArticleCardProps extends React.HTMLAttributes<HTMLDivElement> {\n  tag: string;\n  date: {\n    month: string;\n    day: number;\n  };\n  title: string;\n  description: string;\n  imageUrl: string;\n  imageAlt: string;\n  location: {\n    city: string;\n    country: string;\n  };\n}\n\nconst ArticleCard = React.forwardRef<HTMLDivElement, ArticleCardProps>(\n  (\n    {\n      className,\n      tag,\n      date,\n      title,\n      description,\n      imageUrl,\n      imageAlt,\n      location,\n      ...props\n    },\n    ref\n  ) => {\n    // Animation variants for Framer Motion\n    const cardVariants = {\n      initial: { opacity: 0, y: 20 },\n      animate: { opacity: 1, y: 0, transition: { duration: 0.5, ease: \"easeOut\" } },\n      hover: { y: -5, scale: 1.02, boxShadow: \"0 25px 50px -12px rgb(0 0 0 / 0.15)\" },\n    };\n\n    const imageVariants = {\n      hover: { scale: 1.1 },\n    };\n    \n    return (\n      <motion.div\n        ref={ref}\n        className={cn(\n          \"w-full max-w-sm overflow-hidden rounded-2xl border bg-card text-card-foreground shadow-sm\",\n          className\n        )}\n        variants={cardVariants}\n        initial=\"initial\"\n        animate=\"animate\"\n        whileHover=\"hover\"\n        transition={{ duration: 0.3, ease: \"easeInOut\" }}\n        {...props}\n      >\n        <div className=\"p-6\">\n          {/* Header section with tag and date */}\n          <header className=\"mb-4 flex items-center justify-between\">\n            <span className=\"rounded-full bg-secondary px-3 py-1 text-xs font-medium text-secondary-foreground\">\n              {tag}\n            </span>\n            <div className=\"flex items-center text-xs font-semibold\">\n              <span className=\"rounded-l-md bg-secondary px-2.5 py-1.5 text-secondary-foreground\">\n                {date.month.toUpperCase()}\n              </span>\n              <span className=\"rounded-r-md bg-primary px-2.5 py-1.5 text-primary-foreground\">\n                {date.day}\n              </span>\n            </div>\n          </header>\n\n          {/* Main content section */}\n          <main className=\"space-y-2\">\n            <h3 className=\"text-2xl font-bold tracking-tight\">{title}</h3>\n            <p className=\"text-sm text-muted-foreground\">{description}</p>\n          </main>\n        </div>\n\n        {/* Image section with location overlay */}\n        <div className=\"relative mt-2 aspect-[16/10] overflow-hidden rounded-b-2xl rounded-t-lg\">\n          <motion.img\n            src={imageUrl}\n            alt={imageAlt}\n            className=\"h-full w-full object-cover\"\n            variants={imageVariants}\n            transition={{ duration: 0.4, ease: \"easeOut\" }}\n          />\n          <div className=\"absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent\" />\n          <div className=\"absolute bottom-0 left-0 flex items-center gap-2 p-4 text-white\">\n            <MapPin className=\"h-4 w-4\" />\n            <div>\n              <p className=\"text-sm font-semibold\">{location.city}</p>\n              <p className=\"text-xs\">{location.country}</p>\n            </div>\n          </div>\n        </div>\n      </motion.div>\n    );\n  }\n);\nArticleCard.displayName = \"ArticleCard\";\n\nexport { ArticleCard };",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "ravikatiyar162",
+    "slug": "card-23",
+    "registry_url": "https://21st.dev/r/ravikatiyar162/card-23",
+    "title": "Card",
+    "description": "Article Card\nThis card component is designed to showcase an article, event, or location in a visually appealing and structured format. It's fully responsive and uses shadcn/ui theme variables for seamless light/dark mode integration.",
+    "category": "card",
+    "category_group": "UI Components",
+    "downloads": 41,
+    "likes": 0
+  }
+}

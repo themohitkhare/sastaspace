@@ -1,0 +1,27 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "sign-up",
+  "type": "registry:component",
+  "title": "Sign Up",
+  "description": "A sign-up component.",
+  "dependencies": [],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/ui/sign-up.tsx",
+      "content": "import React, { useState } from 'react';\n\nexport default function HextaStudioSignup() {\n  const [email, setEmail] = useState('hello@creativestudio.com');\n  const [password, setPassword] = useState('');\n\n  const handleCreateAccount = () => {\n    console.log('Creating account with:', { email, password });\n    // Handle account creation logic here\n  };\n\n  const handleLogin = () => {\n    console.log('Redirecting to login');\n    // Handle login redirect logic here\n  };\n\n  return (\n    <div className=\"flex min-h-screen\">\n      {/* Left Side - Dark Section */}\n      <div className=\"flex-1 bg-gradient-to-br from-gray-900 via-gray-800 to-orange-900 flex items-center justify-center p-12\">\n        <div className=\"max-w-md\">\n          <h1 className=\"text-4xl md:text-5xl font-bold text-white leading-tight\">\n            Build amazing products with our creative team.\n          </h1>\n        </div>\n      </div>\n\n      {/* Right Side - Form Section */}\n      <div className=\"flex-1 bg-gray-50 flex items-center justify-center p-12\">\n        <div className=\"w-full max-w-md\">\n          {/* Rocket Icon */}\n          <div className=\"mb-8\">\n            <div className=\"w-12 h-12 relative\">\n              {/* Rocket body */}\n              <div className=\"w-4 h-8 bg-blue-500 rounded-t-full absolute top-1 left-4\"></div>\n              <div className=\"w-2 h-6 bg-blue-600 rounded-t-full absolute top-1 left-5\"></div>\n              {/* Rocket fins */}\n              <div className=\"w-2 h-3 bg-blue-400 absolute top-6 left-2 transform rotate-45\"></div>\n              <div className=\"w-2 h-3 bg-blue-400 absolute top-6 right-2 transform -rotate-45\"></div>\n              {/* Rocket flames */}\n              <div className=\"w-1 h-2 bg-orange-500 absolute bottom-1 left-4\"></div>\n              <div className=\"w-1 h-3 bg-red-500 absolute bottom-0 left-5\"></div>\n              <div className=\"w-1 h-2 bg-yellow-500 absolute bottom-1 right-4\"></div>\n            </div>\n          </div>\n\n          {/* Header */}\n          <div className=\"mb-8\">\n            <h2 className=\"text-3xl font-bold text-gray-900 mb-2\">Join Us Today</h2>\n            <p className=\"text-gray-600\">Welcome to CreativeStudio — Start your journey</p>\n          </div>\n\n          {/* Form */}\n          <div className=\"space-y-6\">\n            {/* Email Field */}\n            <div>\n              <label htmlFor=\"email\" className=\"block text-sm font-medium text-gray-700 mb-2\">\n                Your email\n              </label>\n              <input\n                type=\"email\"\n                id=\"email\"\n                value={email}\n                onChange={(e) => setEmail(e.target.value)}\n                className=\"w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-colors\"\n                placeholder=\"hello@creativestudio.com\"\n              />\n            </div>\n\n            {/* Password Field */}\n            <div>\n              <label htmlFor=\"password\" className=\"block text-sm font-medium text-gray-700 mb-2\">\n                Create new password\n              </label>\n              <input\n                type=\"password\"\n                id=\"password\"\n                value={password}\n                onChange={(e) => setPassword(e.target.value)}\n                className=\"w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-colors\"\n                placeholder=\"Enter your password\"\n              />\n            </div>\n\n            {/* Create Account Button */}\n            <button\n              onClick={handleCreateAccount}\n              className=\"w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold py-3 px-4 rounded-lg transition-colors duration-200\"\n            >\n              Create a new account\n            </button>\n\n            {/* Login Link */}\n            <div className=\"text-center\">\n              <span className=\"text-gray-600\">Already have account? </span>\n              <button\n                onClick={handleLogin}\n                className=\"text-gray-900 font-semibold hover:text-orange-500 transition-colors duration-200\"\n              >\n                Login\n              </button>\n            </div>\n          </div>\n        </div>\n      </div>\n    </div>\n  );\n}\n",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "avanishverma4",
+    "slug": "sign-up",
+    "registry_url": "https://21st.dev/r/avanishverma4/sign-up",
+    "title": "Sign Up",
+    "description": "A reusable sign-up component",
+    "category": "form",
+    "category_group": "UI Components",
+    "downloads": 38,
+    "likes": 0
+  }
+}

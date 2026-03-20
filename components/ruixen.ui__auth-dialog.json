@@ -1,0 +1,35 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "auth-dialog",
+  "type": "registry:component",
+  "title": "Auth Dialog",
+  "description": "A auth-dialog component.",
+  "dependencies": [
+    "lucide-react"
+  ],
+  "registryDependencies": [
+    "https://21st.dev/r/originui/input",
+    "https://21st.dev/r/shadcn/button",
+    "https://21st.dev/r/originui/button",
+    "https://21st.dev/r/originui/dialog",
+    "https://21st.dev/r/shadcn/label"
+  ],
+  "files": [
+    {
+      "path": "src/components/ui/auth-dialog.tsx",
+      "content": "\"use client\"\n\nimport { useState, useId } from \"react\"\nimport { Button } from \"@/components/ui/button\"\nimport {\n  Dialog,\n  DialogContent,\n  DialogHeader,\n  DialogTitle,\n  DialogDescription,\n  DialogTrigger,\n} from \"@/components/ui/dialog\"\nimport { Input } from \"@/components/ui/input\"\nimport { Label } from \"@/components/ui/label\"\nimport { Eye, EyeOff } from \"lucide-react\"\n\nexport default function AuthDialog() {\n  const [mode, setMode] = useState<\"signup\" | \"login\">(\"signup\")\n  const [showPassword, setShowPassword] = useState(false)\n  const id = useId()\n\n  const toggleMode = () => setMode(mode === \"signup\" ? \"login\" : \"signup\")\n  const togglePassword = () => setShowPassword(!showPassword)\n\n  return (\n    <Dialog>\n      <DialogTrigger asChild>\n        <Button variant=\"outline\" className=\"rounded-lg\">Sign up / Login</Button>\n      </DialogTrigger>\n      <DialogContent className=\"sm:max-w-md !rounded-2xl\">\n        <div className=\"flex flex-col items-center gap-2\">\n          <DialogHeader>\n            <DialogTitle className=\"sm:text-center\">\n              {mode === \"signup\" ? \"Sign Up\" : \"Login\"}\n            </DialogTitle>\n            <DialogDescription className=\"sm:text-center\">\n              {mode === \"signup\"\n                ? \"We just need a few details to get you started.\"\n                : \"Enter your credentials to log in.\"}\n            </DialogDescription>\n          </DialogHeader>\n        </div>\n\n        <form className=\"space-y-4\">\n          {mode === \"signup\" && (\n            <div className=\"space-y-4\">\n              <div className=\"*:not-first:mt-2\">\n                <Label htmlFor={`${id}-name`}>Full name</Label>\n                <Input\n                  id={`${id}-name`}\n                  placeholder=\"Matt Welsh\"\n                  type=\"text\"\n                  required\n                  className=\"rounded-lg\"\n                />\n              </div>\n            </div>\n          )}\n\n          <div className=\"space-y-4\">\n            <div className=\"*:not-first:mt-2\">\n              <Label htmlFor={`${id}-email`}>Email</Label>\n              <Input\n                id={`${id}-email`}\n                placeholder=\"hi@yourcompany.com\"\n                type=\"email\"\n                required\n                className=\"rounded-lg\"\n              />\n            </div>\n            <div className=\"relative\">\n              <Label htmlFor={`${id}-password`}>Password</Label>\n              <Input\n                id={`${id}-password`}\n                placeholder=\"Enter your password\"\n                type={showPassword ? \"text\" : \"password\"}\n                required\n                className=\"rounded-lg pr-10\"\n              />\n              <button\n                type=\"button\"\n                onClick={togglePassword}\n                className=\"absolute right-3 top-[38px] text-muted-foreground\"\n              >\n                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}\n              </button>\n            </div>\n          </div>\n\n          <Button type=\"button\" className=\"w-full rounded-lg\">\n            {mode === \"signup\" ? \"Sign Up\" : \"Login\"}\n          </Button>\n        </form>\n\n        <div className=\"mt-2 text-center text-sm text-muted-foreground\">\n          {mode === \"signup\" ? (\n            <>\n              Already have an account?{\" \"}\n              <button className=\"underline\" onClick={toggleMode}>\n                Login\n              </button>\n            </>\n          ) : (\n            <>\n              Don't have an account?{\" \"}\n              <button className=\"underline\" onClick={toggleMode}>\n                Sign Up\n              </button>\n            </>\n          )}\n        </div>\n\n        {mode === \"signup\" && (\n          <>\n            <div className=\"before:bg-border after:bg-border flex items-center gap-3 before:h-px before:flex-1 after:h-px after:flex-1 my-4\">\n              <span className=\"text-muted-foreground text-xs\">Or</span>\n            </div>\n            <Button variant=\"outline\" className=\"w-full rounded-lg\">\n              Continue with Google\n            </Button>\n            <p className=\"text-muted-foreground text-center text-xs mt-2\">\n              By signing up you agree to our{\" \"}\n              <a className=\"underline hover:no-underline\" href=\"#\">\n                Terms\n              </a>\n              .\n            </p>\n          </>\n        )}\n      </DialogContent>\n    </Dialog>\n  )\n}\n",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "ruixen.ui",
+    "slug": "auth-dialog",
+    "registry_url": "https://21st.dev/r/ruixen.ui/auth-dialog",
+    "title": "Auth Dialog",
+    "description": "This component is a combined Sign Up and Login modal built with ShadCN UI and React. It allows users to toggle between signing up and logging in without opening separate dialogs, providing a seamless authentication experience. The form dynamically adjusts its fields based on the mode, showing the Full Name input only during Sign Up. The password field includes a show/hide toggle using Lucide Eye and EyeOff icons for better usability. Additional features include a Google sign-in button, responsive layout, and a terms acknowledgment for Sign Up.",
+    "category": "modal-dialog",
+    "category_group": "UI Components",
+    "downloads": 0,
+    "likes": 0
+  }
+}

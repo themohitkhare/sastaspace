@@ -1,0 +1,29 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "preloader",
+  "type": "registry:component",
+  "title": "Preloader",
+  "description": "A preloader component.",
+  "dependencies": [
+    "framer-motion"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/ui/preloader.tsx",
+      "content": "\n\"use client\"\n\nimport { useEffect, useState } from \"react\"\nimport { motion } from \"framer-motion\"\n\nconst words = [\"Hello\", \"Bonjour\", \"Ciao\", \"Olà\", \"やあ\", \"Hallå\", \"Guten tag\", \"হ্যালো\"]\n\nconst opacity = {\n  initial: {\n    opacity: 0,\n  },\n  enter: {\n    opacity: 0.75,\n    transition: { duration: 1, delay: 0.2 },\n  },\n}\nconst slideUp = {\n  initial: {\n    top: 0,\n  },\n  exit: {\n    top: \"-100vh\",\n    transition: { duration: 0.8, ease: [0.76, 0, 0.24, 1], delay: 0.2 },\n  },\n}\n\ninterface PreloaderProps {\n  onComplete?: () => void\n}\n\nexport default function Preloader({ onComplete }: PreloaderProps) {\n \n  const [index, setIndex] = useState(0)\n  const [dimension, setDimension] = useState({ width: 0, height: 0 })\n  const [isExiting, setIsExiting] = useState(false)\n\n  useEffect(() => {\n    setDimension({ width: window.innerWidth, height: window.innerHeight })\n  }, [])\n\n  useEffect(() => {\n    if (index === words.length - 1) {\n      // Start exit animation after showing the last word\n      setTimeout(() => {\n        setIsExiting(true)\n        // Call onComplete after exit animation\n        setTimeout(() => {\n          onComplete?.()\n        }, 1000)\n      }, 1000)\n      return\n    }\n\n    setTimeout(\n      () => {\n        setIndex(index + 1)\n      },\n      index === 0 ? 1000 : 150,\n    )\n  }, [index, onComplete])\n\n  const initialPath = `M0 0 L${dimension.width} 0 L${dimension.width} ${dimension.height} Q${dimension.width / 2} ${dimension.height + 300} 0 ${dimension.height} L0 0`\n  const targetPath = `M0 0 L${dimension.width} 0 L${dimension.width} ${dimension.height} Q${dimension.width / 2} ${dimension.height} 0 ${dimension.height} L0 0`\n\n  const curve = {\n    initial: {\n      d: initialPath,\n      transition: { duration: 0.7, ease: [0.76, 0, 0.24, 1] },\n    },\n    exit: {\n      d: targetPath,\n      transition: { duration: 0.7, ease: [0.76, 0, 0.24, 1], delay: 0.3 },\n    },\n  }\n\n\n  return (\n      <motion.div\n      variants={slideUp}\n      initial=\"initial\"\n      animate={isExiting ? \"exit\" : \"initial\"}\n      className=\"fixed inset-0 w-screen h-screen flex items-center justify-center bg-black z-[99999999999]\"\n    >\n      {dimension.width > 0 && (\n        <>\n          <motion.p\n            variants={opacity}\n            initial=\"initial\"\n            animate=\"enter\"\n            className=\"flex items-center text-white text-4xl md:text-5xl lg:text-6xl absolute z-10 font-medium\"\n          >\n            <span className=\"block w-2.5 h-2.5 bg-white rounded-full mr-2.5\"></span>\n            {words[index]}\n          </motion.p>\n          <svg className=\"absolute top-0 w-full h-[calc(100%+300px)]\">\n            <motion.path variants={curve} initial=\"initial\" animate={isExiting ? \"exit\" : \"initial\"} fill=\"#070b13\" />\n          </svg>\n        </>\n      )}\n    </motion.div>\n  );\n};\n\n",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "info-mdshakeeb",
+    "slug": "preloader",
+    "registry_url": "https://21st.dev/r/info-mdshakeeb/preloader",
+    "title": "Preloader",
+    "description": "he Preloader React component creates an animated loading screen using Framer Motion and React hooks. It cycles through greeting words in various languages (\"Hello\", \"Bonjour\", etc.) with a fade-in effect and a small animated dot. A morphing SVG path animates at the end, sliding up to reveal content. The component is responsive, adjusting to window size changes, and supports an optional onComplete callback triggered after the exit animation. It features a full-screen black background with centered, responsive text.",
+    "category": "spinner-loader",
+    "category_group": "UI Components",
+    "downloads": 306,
+    "likes": 0
+  }
+}

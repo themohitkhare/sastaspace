@@ -1,0 +1,27 @@
+{
+  "name": "select",
+  "type": "registry:ui",
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "/components/ui/select.tsx",
+      "content": "import React from \"react\";\n\nconst sizes = [\n  {\n    xsmall: \"h-6 text-xs pl-1.5 pr-[22px]\",\n    small: \"h-8 text-sm pl-3 pr-9\",\n    medium: \"h-10 text-sm pl-3 pr-9\",\n    large: \"h-12 text-base pl-3 pr-9 rounded-lg\"\n  },\n  {\n    xsmall: \"h-6 text-xs px-[22px]\",\n    small: \"h-8 text-sm px-9\",\n    medium: \"h-10 text-sm px-9\",\n    large: \"h-12 text-base px-9 rounded-lg\"\n  }\n];\n\nexport interface Option {\n  value: string;\n  label: string;\n}\n\ninterface SelectProps {\n  options?: Option[];\n  label?: string;\n  value?: string;\n  placeholder?: string;\n  size?: keyof typeof sizes[0];\n  prefix?: React.ReactNode;\n  suffix?: React.ReactNode;\n  disabled?: boolean;\n  error?: string;\n  onChange?: React.ChangeEventHandler<HTMLSelectElement>;\n}\n\nconst ArrowBottom = () => (\n  <svg\n    height=\"16\"\n    strokeLinejoin=\"round\"\n    viewBox=\"0 0 16 16\"\n    width=\"16\"\n  >\n    <path\n      fillRule=\"evenodd\"\n      clipRule=\"evenodd\"\n      d=\"M14.0607 5.49999L13.5303 6.03032L8.7071 10.8535C8.31658 11.2441 7.68341 11.2441 7.29289 10.8535L2.46966 6.03032L1.93933 5.49999L2.99999 4.43933L3.53032 4.96966L7.99999 9.43933L12.4697 4.96966L13 4.43933L14.0607 5.49999Z\"\n    />\n  </svg>\n);\n\nconst Error = () => (\n  <svg\n    height=\"16\"\n    strokeLinejoin=\"round\"\n    viewBox=\"0 0 16 16\"\n    width=\"16\"\n  >\n    <path\n      fillRule=\"evenodd\"\n      clipRule=\"evenodd\"\n      d=\"M5.30761 1.5L1.5 5.30761L1.5 10.6924L5.30761 14.5H10.6924L14.5 10.6924V5.30761L10.6924 1.5H5.30761ZM5.10051 0C4.83529 0 4.58094 0.105357 4.3934 0.292893L0.292893 4.3934C0.105357 4.58094 0 4.83529 0 5.10051V10.8995C0 11.1647 0.105357 11.4191 0.292894 11.6066L4.3934 15.7071C4.58094 15.8946 4.83529 16 5.10051 16H10.8995C11.1647 16 11.4191 15.8946 11.6066 15.7071L15.7071 11.6066C15.8946 11.4191 16 11.1647 16 10.8995V5.10051C16 4.83529 15.8946 4.58093 15.7071 4.3934L11.6066 0.292893C11.4191 0.105357 11.1647 0 10.8995 0H5.10051ZM8.75 3.75V4.5V8L8.75 8.75H7.25V8V4.5V3.75H8.75ZM8 12C8.55229 12 9 11.5523 9 11C9 10.4477 8.55229 10 8 10C7.44772 10 7 10.4477 7 11C7 11.5523 7.44772 12 8 12Z\"\n    />\n  </svg>\n);\n\nexport const Select = ({\n  options,\n  label,\n  value,\n  placeholder,\n  size = \"medium\",\n  suffix,\n  prefix,\n  disabled = false,\n  error,\n  onChange\n}: SelectProps) => {\n  return (\n    <div>\n      {label && (\n        <label\n          htmlFor=\"select\"\n          className=\"cursor-text block font-sans text-[13px] text-[#666666] dark:text-[#a1a1a1] capitalize mb-2\"\n        >\n          {label}\n        </label>\n      )}\n      <div\n        className={`relative flex items-center ${disabled ? \"fill-[#8f8f8f]\" : \"fill-[#666666] dark:fill-[#a1a1a1] hover:fill-[#171717] hover:dark:fill-[#ededed]\"}`}>\n        <style>\n          {`\n          .xsmallIconContainer svg {\n              width: 16px;\n              height: 12px;\n          }\n          .smallIconContainer, .mediumIconContainer, .largeIconContainer svg {\n              width: 16px;\n              height: 16px;\n          }\n        `}\n        </style>\n        <select\n          id=\"select\"\n          disabled={disabled}\n          value={value}\n          onChange={onChange}\n          className={`font-sans  appearance-none w-full border rounded-[5px] duration-200 outline-none ${sizes[prefix ? 1 : 0][size]} ${disabled ? \"cursor-not-allowed bg-[#f2f2f2] dark:bg-[#1a1a1a] text-[#8f8f8f]\" : \"text-[#171717] dark:text-[#ededed] bg-white dark:bg-[#0a0a0a] cursor-pointer\"} ${error ? \"border-[#ee0000] dark:border-[#ff0000] ring-[#cb2a2f29] dark:ring-[#ff616629] ring-opacity-100 ring-[3px]\" : \"border-[#00000014] dark:border-[#ffffff24] ring-[#d7d7d7] dark:ring-[#555555] ring-opacity-100 focus:ring-[3px]\"}`}\n        >\n          {placeholder && <option value=\"\" disabled selected>{placeholder}</option>}\n          {options && options.map((option) => (\n            <option key={option.value} value={option.value}>\n              {option.label}\n            </option>\n          ))}\n        </select>\n        {prefix && (\n          <span\n            className={`inline-flex absolute ${size === \"xsmall\" ? \"left-[5px]\" : \"left-3\"} pointer-events-none duration-150 ${size}IconContainer`}>\n            {prefix}\n          </span>\n        )}\n        <span\n          className={`inline-flex absolute ${size === \"xsmall\" ? \"right-[5px]\" : \"right-3\"} pointer-events-none duration-150 ${size}IconContainer`}>\n          {suffix ? suffix : <ArrowBottom />}\n        </span>\n      </div>\n      {error && (\n        <div\n          className={`mt-2 flex items-center gap-2 text-[#d8001b] dark:text-[#ff565f] fill-[#d8001b] dark:fill-[#ff565f] ${size === \"large\" ? \"text-base\" : \"text-[13px]\"}`}>\n          <Error />\n          {error}\n        </div>\n      )}\n    </div>\n  );\n};",
+      "type": "registry:ui",
+      "target": ""
+    }
+  ],
+  "tailwind": {
+    "config": {}
+  },
+  "_meta": {
+    "author": "shugar",
+    "slug": "select",
+    "registry_url": "https://21st.dev/r/shugar/select",
+    "title": "Select",
+    "description": "Display a dropdown list of items.\n\nA recreation of Vercel's Geist design system.",
+    "category": "select",
+    "category_group": "UI Components",
+    "downloads": 5,
+    "likes": 0
+  }
+}

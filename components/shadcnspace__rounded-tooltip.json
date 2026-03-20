@@ -1,0 +1,30 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "rounded-tooltip",
+  "type": "registry:component",
+  "title": "Rounded Tooltip",
+  "description": "A rounded-tooltip component.",
+  "dependencies": [],
+  "registryDependencies": [
+    "https://21st.dev/r/shadcn/button",
+    "https://21st.dev/r/shadcn/tooltip"
+  ],
+  "files": [
+    {
+      "path": "src/components/ui/rounded-tooltip.tsx",
+      "content": "import { Button } from \"@/components/ui/button\";\nimport {\n  Tooltip,\n  TooltipContent,\n  TooltipTrigger,\n} from \"@/components/ui/tooltip\";\n\nconst RoundedTooltipDemo = () => {\n  return (\n    <Tooltip>\n      <TooltipTrigger>\n        <Button variant=\"outline\">Rounded</Button>\n      </TooltipTrigger>\n      <TooltipContent className=\"rounded-full\">\n        <p>This tooltip is rounded</p>\n      </TooltipContent>\n    </Tooltip>\n  );\n};\n\nexport default RoundedTooltipDemo;\n",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "shadcnspace",
+    "slug": "rounded-tooltip",
+    "registry_url": "https://21st.dev/r/shadcnspace/rounded-tooltip",
+    "title": "Rounded Tooltip",
+    "description": "Here is a  rounded tooltip component",
+    "category": "button",
+    "category_group": "UI Components",
+    "downloads": 0,
+    "likes": 0
+  }
+}

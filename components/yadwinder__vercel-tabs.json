@@ -1,0 +1,27 @@
+{
+  "name": "vercel-tabs",
+  "type": "registry:ui",
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "/components/ui/vercel-tabs.tsx",
+      "content": "\"use client\"\n\nimport * as React from \"react\"\nimport { useState, useRef, useEffect } from \"react\"\nimport { cn } from \"@/lib/utils\"\n\ninterface Tab {\n  id: string\n  label: string\n}\n\ninterface TabsProps extends React.HTMLAttributes<HTMLDivElement> {\n  tabs: Tab[]\n  activeTab?: string\n  onTabChange?: (tabId: string) => void\n}\n\nconst Tabs = React.forwardRef<HTMLDivElement, TabsProps>(\n  ({ className, tabs, activeTab, onTabChange, ...props }, ref) => {\n    const [hoveredIndex, setHoveredIndex] = useState<number | null>(null)\n    const [activeIndex, setActiveIndex] = useState(0)\n    const [hoverStyle, setHoverStyle] = useState({})\n    const [activeStyle, setActiveStyle] = useState({ left: \"0px\", width: \"0px\" })\n    const tabRefs = useRef<(HTMLDivElement | null)[]>([])\n\n    useEffect(() => {\n      if (hoveredIndex !== null) {\n        const hoveredElement = tabRefs.current[hoveredIndex]\n        if (hoveredElement) {\n          const { offsetLeft, offsetWidth } = hoveredElement\n          setHoverStyle({\n            left: `${offsetLeft}px`,\n            width: `${offsetWidth}px`,\n          })\n        }\n      }\n    }, [hoveredIndex])\n\n    useEffect(() => {\n      const activeElement = tabRefs.current[activeIndex]\n      if (activeElement) {\n        const { offsetLeft, offsetWidth } = activeElement\n        setActiveStyle({\n          left: `${offsetLeft}px`,\n          width: `${offsetWidth}px`,\n        })\n      }\n    }, [activeIndex])\n\n    useEffect(() => {\n      requestAnimationFrame(() => {\n        const firstElement = tabRefs.current[0]\n        if (firstElement) {\n          const { offsetLeft, offsetWidth } = firstElement\n          setActiveStyle({\n            left: `${offsetLeft}px`,\n            width: `${offsetWidth}px`,\n          })\n        }\n      })\n    }, [])\n\n    return (\n      <div \n        ref={ref} \n        className={cn(\"relative\", className)} \n        {...props}\n      >\n        <div className=\"relative\">\n          {/* Hover Highlight */}\n          <div\n            className=\"absolute h-[30px] transition-all duration-300 ease-out bg-[#0e0f1114] dark:bg-[#ffffff1a] rounded-[6px] flex items-center\"\n            style={{\n              ...hoverStyle,\n              opacity: hoveredIndex !== null ? 1 : 0,\n            }}\n          />\n\n          {/* Active Indicator */}\n          <div\n            className=\"absolute bottom-[-6px] h-[2px] bg-[#0e0f11] dark:bg-white transition-all duration-300 ease-out\"\n            style={activeStyle}\n          />\n\n          {/* Tabs */}\n          <div className=\"relative flex space-x-[6px] items-center\">\n            {tabs.map((tab, index) => (\n              <div\n                key={tab.id}\n                ref={(el) => (tabRefs.current[index] = el)}\n                className={cn(\n                  \"px-3 py-2 cursor-pointer transition-colors duration-300 h-[30px]\",\n                  index === activeIndex \n                    ? \"text-[#0e0e10] dark:text-white\" \n                    : \"text-[#0e0f1199] dark:text-[#ffffff99]\"\n                )}\n                onMouseEnter={() => setHoveredIndex(index)}\n                onMouseLeave={() => setHoveredIndex(null)}\n                onClick={() => {\n                  setActiveIndex(index)\n                  onTabChange?.(tab.id)\n                }}\n              >\n                <div className=\"text-sm font-medium leading-5 whitespace-nowrap flex items-center justify-center h-full\">\n                  {tab.label}\n                </div>\n              </div>\n            ))}\n          </div>\n        </div>\n      </div>\n    )\n  }\n)\nTabs.displayName = \"Tabs\"\n\nexport { Tabs }",
+      "type": "registry:ui",
+      "target": ""
+    }
+  ],
+  "tailwind": {
+    "config": {}
+  },
+  "_meta": {
+    "author": "yadwinder",
+    "slug": "vercel-tabs",
+    "registry_url": "https://21st.dev/r/yadwinder/vercel-tabs",
+    "title": "Vercel Tabs",
+    "description": "Tabs in Vercel style",
+    "category": "tabs",
+    "category_group": "UI Components",
+    "downloads": 897,
+    "likes": 3
+  }
+}

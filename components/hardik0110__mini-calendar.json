@@ -1,0 +1,41 @@
+{
+  "name": "mini-calendar",
+  "type": "registry:ui",
+  "dependencies": [
+    "date-fns",
+    "iconsax-react",
+    "@radix-ui/react-slot",
+    "class-variance-authority"
+  ],
+  "registryDependencies": [
+    "https://21st.dev/r/originui/button"
+  ],
+  "files": [
+    {
+      "path": "/components/ui/mini-calendar.tsx",
+      "content": "\"use client\";\r\n\r\nimport * as React from \"react\";\r\nimport {\r\n  format,\r\n  addWeeks,\r\n  subWeeks,\r\n  eachDayOfInterval,\r\n  startOfWeek,\r\n  endOfWeek,\r\n} from \"date-fns\";\r\nimport { ChevronLeft, ChevronRight } from \"lucide-react\";\r\nimport { cn } from \"@/lib/utils\";\r\nimport { Button } from \"@/components/ui/button\";\r\n\r\nconst DAYS_OF_WEEK = [\r\n  { key: \"sun\", label: \"Sun\" },\r\n  { key: \"mon\", label: \"Mon\" },\r\n  { key: \"tue\", label: \"Tue\" },\r\n  { key: \"wed\", label: \"Wed\" },\r\n  { key: \"thu\", label: \"Thu\" },\r\n  { key: \"fri\", label: \"Fri\" },\r\n  { key: \"sat\", label: \"Sat\" },\r\n];\r\n\r\nexport const Calendar: React.FC = () => {\r\n  const [selectedDate, setSelectedDate] = React.useState<Date>(new Date());\r\n  const [currentWeek, setCurrentWeek] = React.useState<Date>(new Date());\r\n\r\n  const weekDays = eachDayOfInterval({\r\n    start: startOfWeek(currentWeek, { weekStartsOn: 0 }),\r\n    end: endOfWeek(currentWeek, { weekStartsOn: 0 }),\r\n  });\r\n\r\n  return (\r\n    <div className=\"w-full overflow-hidden rounded-lg border bg-card text-card-foreground shadow\">\r\n      <div className=\"flex items-center justify-between p-4\">\r\n        <Button\r\n          variant=\"ghost\"\r\n          size=\"icon\"\r\n          onClick={() => setCurrentWeek(subWeeks(currentWeek, 1))}\r\n        >\r\n          <ChevronLeft className=\"h-4 w-4\" />\r\n        </Button>\r\n        <h2 className=\"text-sm font-medium\">\r\n          {format(currentWeek, \"MMMM yyyy\")}\r\n        </h2>\r\n        <Button\r\n          variant=\"ghost\"\r\n          size=\"icon\"\r\n          onClick={() => setCurrentWeek(addWeeks(currentWeek, 1))}\r\n        >\r\n          <ChevronRight className=\"h-4 w-4\" />\r\n        </Button>\r\n      </div>\r\n\r\n      <div className=\"grid grid-cols-7 text-center mb-2 px-4\">\r\n        {DAYS_OF_WEEK.map((day) => (\r\n          <div\r\n            key={day.key}\r\n            className=\"text-xs font-medium text-muted-foreground\"\r\n          >\r\n            {day.label}\r\n          </div>\r\n        ))}\r\n      </div>\r\n\r\n      <div className=\"grid grid-cols-7 gap-1 p-4 pt-0\">\r\n        {weekDays.map((day) => {\r\n          const isSelected =\r\n            format(day, \"yyyy-MM-dd\") === format(selectedDate, \"yyyy-MM-dd\");\r\n\r\n          return (\r\n            <Button\r\n              key={day.toString()}\r\n              variant={isSelected ? \"default\" : \"ghost\"}\r\n              className={cn(\r\n                \"h-9 w-9 p-0 font-normal\",\r\n                isSelected && \"bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground\"\r\n              )}\r\n              onClick={() => setSelectedDate(day)}\r\n            >\r\n              <time dateTime={format(day, \"yyyy-MM-dd\")}>\r\n                {format(day, \"d\")}\r\n              </time>\r\n            </Button>\r\n          );\r\n        })}\r\n      </div>\r\n    </div>\r\n  );\r\n};",
+      "type": "registry:ui",
+      "target": ""
+    },
+    {
+      "path": "/components/ui/button.tsx",
+      "content": "import { Slot } from \"@radix-ui/react-slot\";\nimport { cva, type VariantProps } from \"class-variance-authority\";\nimport * as React from \"react\";\n\nimport { cn } from \"@/lib/utils\";\n\nconst buttonVariants = cva(\n  \"inline-flex items-center justify-center whitespace-nowrap rounded-lg text-sm font-medium transition-colors outline-offset-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring/70 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0\",\n  {\n    variants: {\n      variant: {\n        default: \"bg-primary text-primary-foreground shadow-sm shadow-black/5 hover:bg-primary/90\",\n        destructive:\n          \"bg-destructive text-destructive-foreground shadow-sm shadow-black/5 hover:bg-destructive/90\",\n        outline:\n          \"border border-input bg-background shadow-sm shadow-black/5 hover:bg-accent hover:text-accent-foreground\",\n        secondary:\n          \"bg-secondary text-secondary-foreground shadow-sm shadow-black/5 hover:bg-secondary/80\",\n        ghost: \"hover:bg-accent hover:text-accent-foreground\",\n        link: \"text-primary underline-offset-4 hover:underline\",\n      },\n      size: {\n        default: \"h-9 px-4 py-2\",\n        sm: \"h-8 rounded-lg px-3 text-xs\",\n        lg: \"h-10 rounded-lg px-8\",\n        icon: \"h-9 w-9\",\n      },\n    },\n    defaultVariants: {\n      variant: \"default\",\n      size: \"default\",\n    },\n  },\n);\n\nexport interface ButtonProps\n  extends React.ButtonHTMLAttributes<HTMLButtonElement>,\n    VariantProps<typeof buttonVariants> {\n  asChild?: boolean;\n}\n\nconst Button = React.forwardRef<HTMLButtonElement, ButtonProps>(\n  ({ className, variant, size, asChild = false, ...props }, ref) => {\n    const Comp = asChild ? Slot : \"button\";\n    return (\n      <Comp className={cn(buttonVariants({ variant, size, className }))} ref={ref} {...props} />\n    );\n  },\n);\nButton.displayName = \"Button\";\n\nexport { Button, buttonVariants };\n",
+      "type": "registry:ui",
+      "target": ""
+    }
+  ],
+  "tailwind": {
+    "config": {}
+  },
+  "_meta": {
+    "author": "hardik0110",
+    "slug": "mini-calendar",
+    "registry_url": "https://21st.dev/r/hardik0110/mini-calendar",
+    "title": "Mini Calendar",
+    "description": "This is a sleek and responsive mini calendar component built using React and TailwindCSS, designed to display weekly views with a focus on minimalism and clarity. The selected day is highlighted with a bold background and primary accent color (blue-600), while adjacent dates remain subtle for visual hierarchy. Navigation arrows allow users to switch between months smoothly. The component is ideal for dashboards, schedulers, or date-picking interfaces.",
+    "category": "calendar",
+    "category_group": "UI Components",
+    "downloads": 167,
+    "likes": 0
+  }
+}

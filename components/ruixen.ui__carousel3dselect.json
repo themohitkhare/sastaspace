@@ -1,0 +1,31 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "carousel3dselect",
+  "type": "registry:component",
+  "title": "Carousel3dselect",
+  "description": "A carousel3dselect component.",
+  "dependencies": [
+    "lucide-react"
+  ],
+  "registryDependencies": [
+    "https://21st.dev/r/originui/select"
+  ],
+  "files": [
+    {
+      "path": "src/components/ui/carousel3dselect.tsx",
+      "content": "\"use client\";\n\nimport * as React from \"react\";\nimport {\n  Select,\n  SelectTrigger,\n  SelectValue,\n  SelectContent,\n  SelectGroup,\n  SelectItem,\n} from \"@/components/ui/select\";\nimport { cn } from \"@/lib/utils\";\nimport { ArrowLeft, ArrowRight } from \"lucide-react\";\n\nexport interface CarouselOption {\n  value: string;\n  label: string;\n  color?: string;\n}\n\ninterface Carousel3DSelectProps {\n  options: CarouselOption[];\n  label?: string;\n  placeholder?: string;\n  radius?: number; // 3D radius\n  itemWidth?: number;\n  itemHeight?: number;\n  onChange?: (value: string) => void;\n  defaultValue?: string;\n  selectWidth?: string | number;\n}\n\nexport const Carousel3DSelect: React.FC<Carousel3DSelectProps> = ({\n  options,\n  label,\n  placeholder = \"Select...\",\n  radius = 150,\n  itemWidth = 80,\n  itemHeight = 50,\n  onChange,\n  defaultValue,\n  selectWidth = \"200px\",\n}) => {\n  const [selected, setSelected] = React.useState(defaultValue || \"\");\n  const [rotation, setRotation] = React.useState(0);\n  const [currentIndex, setCurrentIndex] = React.useState(0);\n\n  const angleStep = 360 / options.length;\n\n  const handleSelect = (value: string, idx: number) => {\n    setSelected(value);\n    onChange?.(value);\n    setCurrentIndex(idx);\n    setRotation(-idx * angleStep);\n  };\n\n  const handlePrev = () => {\n    const newIndex = (currentIndex - 1 + options.length) % options.length;\n    handleSelect(options[newIndex].value, newIndex);\n  };\n\n  const handleNext = () => {\n    const newIndex = (currentIndex + 1) % options.length;\n    handleSelect(options[newIndex].value, newIndex);\n  };\n\n  return (\n    <div className=\"flex flex-col items-center gap-4\">\n      {/* Hidden shadcn Select for accessibility */}\n      <Select defaultValue={defaultValue} onValueChange={setSelected}>\n        <SelectTrigger className=\"w-[1px] h-[1px] p-0 overflow-hidden\">\n          <SelectValue placeholder={placeholder} />\n        </SelectTrigger>\n        <SelectContent style={{ width: selectWidth }}>\n          <SelectGroup>\n            {label && <span className=\"font-semibold\">{label}</span>}\n            {options.map((opt) => (\n              <SelectItem key={opt.value} value={opt.value}>\n                {opt.label}\n              </SelectItem>\n            ))}\n          </SelectGroup>\n        </SelectContent>\n      </Select>\n\n      {/* Arrows */}\n      <div className=\"flex items-center gap-6\">\n        <button\n          onClick={handlePrev}\n          className=\"p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition\"\n        >\n          <ArrowLeft size={20} />\n        </button>\n\n        {/* Carousel container */}\n        <div\n          className=\"relative w-[300px] h-[200px] perspective-[1000px]\"\n          style={{ perspective: 800 }}\n        >\n          <div\n            className=\"absolute inset-0 flex items-center justify-center transition-transform duration-500\"\n            style={{\n              transform: `rotateY(${rotation}deg)`,\n              transformStyle: \"preserve-3d\",\n            }}\n          >\n            {options.map((opt, idx) => {\n              const angle = idx * angleStep;\n              return (\n                <div\n                  key={opt.value}\n                  onClick={() => handleSelect(opt.value, idx)}\n                  className={cn(\n                    \"absolute flex items-center justify-center cursor-pointer rounded-lg shadow-md\",\n                    selected === opt.value ? \"ring-2 ring-blue-500\" : \"opacity-70\"\n                  )}\n                  style={{\n                    width: itemWidth,\n                    height: itemHeight,\n                    backgroundColor: opt.color || \"#f3f4f6\",\n                    transform: `rotateY(${angle}deg) translateZ(${radius}px)`,\n                  }}\n                >\n                  {opt.label}\n                </div>\n              );\n            })}\n          </div>\n        </div>\n\n        <button\n          onClick={handleNext}\n          className=\"p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition\"\n        >\n          <ArrowRight size={20} />\n        </button>\n      </div>\n\n      {selected && (\n        <p className=\"mt-2\">\n          Selected: <strong>{selected}</strong>\n        </p>\n      )}\n    </div>\n  );\n};\n",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "ruixen.ui",
+    "slug": "carousel3dselect",
+    "registry_url": "https://21st.dev/r/ruixen.ui/carousel3dselect",
+    "title": "Carousel3DSelect",
+    "description": "The 3D Depth Carousel Select is an interactive and visually engaging selection component built with shadcn UI. It arranges options in a 3D circular carousel, allowing users to rotate through items using clicks, arrows, or potentially swipe gestures. Each option can be styled individually with colors, shadows, and highlights, and the currently selected item is prominently centered with a clear visual indicator. The component maintains accessibility through an underlying shadcn Select, ensuring keyboard and form integration, while offering configurable settings such as carousel radius, item size, and rotation behavior. Ideal for media previews, templates, product selections, or any 3D-style picker, this component transforms a standard dropdown into a dynamic, reusable, and highly interactive UI element.",
+    "category": "select",
+    "category_group": "UI Components",
+    "downloads": 6,
+    "likes": 0
+  }
+}

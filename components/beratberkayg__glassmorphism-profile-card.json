@@ -1,0 +1,34 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "glassmorphism-profile-card",
+  "type": "registry:component",
+  "title": "Glassmorphism Profile Card",
+  "description": "A glassmorphism-profile-card component.",
+  "dependencies": [
+    "framer-motion",
+    "next",
+    "lucide-react"
+  ],
+  "registryDependencies": [
+    "https://21st.dev/r/shadcn/card",
+    "https://21st.dev/r/shadcn/button"
+  ],
+  "files": [
+    {
+      "path": "src/components/ui/glassmorphism-profile-card.tsx",
+      "content": "\"use client\";\n\nimport { useMemo, useState } from \"react\";\nimport { motion } from \"framer-motion\";\nimport Image from \"next/image\";\nimport { Card, CardContent } from \"@/components/ui/card\";\nimport { Button } from \"@/components/ui/button\";\nimport { cn } from \"@/lib/utils\";\nimport { Clock, Plus, Copy, Zap } from \"lucide-react\";\n\ninterface ComponentProps {\n  name?: string;\n  role?: string;\n  email?: string;\n  avatarSrc?: string;\n  statusText?: string;\n  statusColor?: string; \n  glowText?: string; \n  className?: string;\n}\n\nexport default function Component({\n  name = \"Berat Berkay\",\n  role = \"Developer\",\n  email = \"beratberkaygokdemir@gmail.com\",\n  avatarSrc = \"https://img.clerk.com/eyJ0eXBlIjoicHJveHkiLCJzcmMiOiJodHRwczovL2ltYWdlcy5jbGVyay5kZXYvb2F1dGhfZ2l0aHViL2ltZ18yc2pLdFl5STR0MkZMcUNKaVNMQVJXRmNBSXIifQ\",\n  statusText = \"Available for work\",\n  statusColor = \"bg-lime-500\",\n  glowText = \"Currently High on Creativity\",\n  className,\n}: ComponentProps) {\n  const [copied, setCopied] = useState(false);\n\n  // Derive a local clock text once per minute\n  const timeText = useMemo(() => {\n    const now = new Date();\n    const h = now.getHours();\n    const m = now.getMinutes().toString().padStart(2, \"0\");\n    const hour12 = ((h + 11) % 12) + 1;\n    const ampm = h >= 12 ? \"PM\" : \"AM\";\n    return `${hour12}:${m}${ampm}`;\n  }, []);\n\n  const handleCopy = async () => {\n    try {\n      await navigator.clipboard.writeText(email);\n      setCopied(true);\n      setTimeout(() => setCopied(false), 1500);\n    } catch {}\n  };\n\n  return (\n    <motion.div\n      initial={{ opacity: 0, y: 8 }}\n      animate={{ opacity: 1, y: 0 }}\n      transition={{ duration: 0.4, ease: \"easeOut\" }}\n      className={cn(\"relative w-sm \", className)}\n    >\n     \n      <div className=\"pointer-events-none absolute inset-x-3 -bottom-10 top-[90%] rounded-[28px] bg-lime-400/90 blur-0 shadow-[0_40px_80px_-16px_rgba(163,230,53,0.8)] z-0 \" />\n\n      \n      <div className=\"absolute inset-x-0 -bottom-10 mx-auto w-full z-0\">\n        <div className=\"flex items-center justify-center gap-2 bg-transparent py-3 text-center text-sm font-medium text-black\">\n          <Zap className=\"h-4 w-4\" /> {glowText}\n        </div>\n      </div>\n\n      <Card className={cn(\n    \"relative z-10 mx-auto w-full max-w-3xl overflow-visible rounded-[20px]\",\n    \"bg-white/10 dark:bg-white/5 backdrop-blur-xl\",\n    \"border border-black/20 border-b-none dark:border-white/10\",\n    \"shadow-lg shadow-black/20 light:text-white hover:shadow-black/10 \"\n  )}>\n        <CardContent className=\"p-6 sm:p-8\">\n          <div className=\"mb-6 flex items-center justify-between text-sm text-neutral-500\">\n            <div className=\"flex items-center gap-2\">\n              <span className={cn(\"inline-block h-2.5 w-2.5 rounded-full animate-pulse\", statusColor)} />\n              <span className=\"select-none\">{statusText}</span>\n            </div>\n            <div className=\"flex items-center gap-2 opacity-80\">\n              <Clock className=\"h-4 w-4\" />\n              <span className=\"tabular-nums\">{timeText}</span>\n            </div>\n          </div>\n\n        \n          <div className=\"flex flex-col justify-center items-center gap-5\">\n            <div className=\"relative h-52 w-52 shrink-0 overflow-hidden rounded-[20px] ring-2 ring-white/10\">\n              <Image\n                src={avatarSrc}\n                alt={`${name} avatar`}\n                fill\n                sizes=\"56px\"\n                className=\"object-cover\"\n              />\n            </div>\n            <div className=\"min-w-0 text-center\">\n              <h3 className=\"truncate text-xl font-semibold tracking-tight sm:text-3xl\">\n                {name}\n              </h3>\n              <p className=\"mt-0.5 text-sm text-neutral-400\">{role}</p>\n            </div>\n          </div>\n\n       \n          <div className=\"mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2\">\n            <Button\n              variant=\"outline\"\n              className=\"h-12 justify-start gap-3 rounded-2xl bg-white/50  hover:bg-white/15\"\n            >\n              <Plus className=\"h-4 w-4\" /> Hire Me\n            </Button>\n\n            <Button\n              variant=\"outline\"\n              onClick={handleCopy}\n              className=\"h-12 justify-start gap-3 rounded-2xl bg-white/50  hover:bg-white/15\"\n            >\n              <Copy className=\"h-4 w-4\" /> {copied ? \"Copied\" : \"Copy Email\"}\n            </Button>\n          </div>\n        </CardContent>\n      </Card>\n    </motion.div>\n  );\n}\n",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "beratberkayg",
+    "slug": "glassmorphism-profile-card",
+    "registry_url": "https://21st.dev/r/beratberkayg/glassmorphism-profile-card",
+    "title": "Glassmorphism Profile Card",
+    "description": "Glassmorphism profile Card",
+    "category": "card",
+    "category_group": "UI Components",
+    "downloads": 7,
+    "likes": 0
+  }
+}

@@ -1,0 +1,82 @@
+{
+  "name": "amazing-card",
+  "type": "registry:ui",
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "/components/ui/amazing-card.tsx",
+      "content": "\r\n\"use client\"\r\n\r\nimport * as React from \"react\"\r\nimport { cn } from \"@/lib/utils\"\r\n\r\nexport interface FashionCardProps extends React.HTMLAttributes<HTMLDivElement> {\r\n  image: string\r\n  title: string\r\n  description?: string\r\n  price: string\r\n  badge?: string\r\n  badgeColor?: \"sale\" | \"new\" | \"exclusive\" | \"limited\"\r\n  aspect?: \"portrait\" | \"landscape\" | \"square\"\r\n  glowEffect?: boolean\r\n}\r\n\r\nexport function AmazingCard({\r\n  image,\r\n  title,\r\n  description,\r\n  price,\r\n  badge,\r\n  badgeColor = \"new\",\r\n  aspect = \"portrait\",\r\n  glowEffect = true,\r\n  className,\r\n  ...props\r\n}: FashionCardProps) {\r\n  const [rotation, setRotation] = React.useState({ x: 0, y: 0 });\r\n  const cardRef = React.useRef<HTMLDivElement>(null);\r\n\r\n  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {\r\n    if (cardRef.current) {\r\n      const rect = cardRef.current.getBoundingClientRect();\r\n      const x = e.clientX - rect.left;\r\n      const y = e.clientY - rect.top;\r\n      \r\n      // Calculate rotation based on mouse position\r\n      // This creates a natural feeling 3D tilt effect\r\n      const centerX = rect.width / 2;\r\n      const centerY = rect.height / 2;\r\n      const rotationX = (y - centerY) / 20;\r\n      const rotationY = -(x - centerX) / 20;\r\n      \r\n      setRotation({ x: rotationX, y: rotationY });\r\n    }\r\n  };\r\n\r\n  const handleMouseLeave = () => {\r\n    // Return to neutral position when mouse leaves\r\n    setRotation({ x: 0, y: 0 });\r\n  };\r\n\r\n  // Determine badge style based on type\r\n  const badgeStyles = {\r\n    sale: \"bg-fashion-accent text-white\",\r\n    new: \"bg-fashion-highlight text-fashion-charcoal\",\r\n    exclusive: \"bg-fashion-charcoal text-fashion-cream\",\r\n    limited: \"bg-gradient-to-r from-fashion-accent to-fashion-highlight text-white\",\r\n  };\r\n\r\n  // Define aspect ratio classes\r\n  const aspectClasses = {\r\n    portrait: \"aspect-[3/4]\",\r\n    landscape: \"aspect-[4/3]\",\r\n    square: \"aspect-square\",\r\n  };\r\n\r\n  return (\r\n    <div \r\n      className={cn(\"fashion-card-container group\", className)}\r\n      {...props}\r\n    >\r\n      <div\r\n        ref={cardRef}\r\n        className={cn(\r\n          \"fashion-card relative overflow-hidden rounded-xl\",\r\n          glowEffect && \"animate-glow-pulse\",\r\n          \"transition-all duration-300\"\r\n        )}\r\n        style={{ \r\n          transform: `rotateX(${rotation.x}deg) rotateY(${rotation.y}deg)`,\r\n        }}\r\n        onMouseMove={handleMouseMove}\r\n        onMouseLeave={handleMouseLeave}\r\n      >\r\n        {/* The glass effect overlay */}\r\n        <div className=\"fashion-card-glass absolute inset-0 z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-300\"></div>\r\n        \r\n        {/* Card main content */}\r\n        <div className=\"fashion-card-content relative z-20 flex flex-col overflow-hidden rounded-xl\">\r\n          {/* Image section with parallax */}\r\n          <div className={cn(\"parallax-image-container w-full\", aspectClasses[aspect])}>\r\n            <img\r\n              src={image}\r\n              alt={title}\r\n              className=\"parallax-image w-full h-full object-cover\"\r\n            />\r\n          </div>\r\n\r\n          {/* Content section */}\r\n          <div className=\"p-5 bg-white dark:bg-gray-900 flex flex-col space-y-2 flex-grow transition-all duration-300 group-hover:bg-opacity-80 dark:group-hover:bg-opacity-90 backdrop-blur-sm\">\r\n            <h3 className=\"font-serif text-lg md:text-xl font-medium leading-none tracking-tight gradient-text animate-fadeIn\">\r\n              {title}\r\n            </h3>\r\n            \r\n            {description && (\r\n              <p className=\"font-sans text-sm text-muted-foreground line-clamp-2 animate-fadeIn\" style={{ animationDelay: '0.1s' }}>\r\n                {description}\r\n              </p>\r\n            )}\r\n            \r\n            <div className=\"flex items-center justify-between mt-auto pt-3 animate-fadeIn\" style={{ animationDelay: '0.2s' }}>\r\n              <p className=\"font-serif font-semibold text-lg md:text-xl\">\r\n                {price}\r\n              </p>\r\n              \r\n              <button className=\"shine-effect relative rounded-full px-4 py-1.5 text-xs font-medium bg-fashion-charcoal text-white overflow-hidden hover:animate-shine transition transform duration-300 hover:scale-105\">\r\n                Shop now\r\n              </button>\r\n            </div>\r\n          </div>\r\n        </div>\r\n        \r\n        {/* Badge if provided */}\r\n        {badge && (\r\n          <div className={cn(\r\n            \"fashion-card-badge px-2.5 py-1 rounded-full text-xs font-medium capitalize animate-float\",\r\n            badgeStyles[badgeColor]\r\n          )}>\r\n            {badge}\r\n          </div>\r\n        )}\r\n      </div>\r\n    </div>\r\n  );\r\n}\r\n\r\n// Demo component for displaying various card styles\r\nexport function FashionCardDemo() {\r\n  return (\r\n    <div className=\"p-8 bg-gradient-to-br from-fashion-cream to-fashion-beige min-h-screen\">\r\n      <h2 className=\"text-3xl md:text-4xl font-serif font-bold text-fashion-charcoal mb-8 text-center\">New Arrivals</h2>\r\n      \r\n      <div className=\"grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8\">\r\n        <AmazingCard\r\n          image=\"https://images.unsplash.com/photo-1539109136881-3be0616acf4b?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=774&q=80\"\r\n          title=\"Cashmere Blend Coat\"\r\n          description=\"Luxurious camel coat crafted from premium cashmere blend for ultimate warmth and style.\"\r\n          price=\"$349.99\"\r\n          badge=\"new\"\r\n          badgeColor=\"new\"\r\n        />\r\n        <AmazingCard\r\n          image=\"https://images.unsplash.com/photo-1551488831-00ddcb6c6bd3?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1470&q=80\"\r\n          title=\"Designer Handbag\"\r\n          description=\"Elegant structured handbag with gold hardware and adjustable strap.\"\r\n          price=\"$189.99\"\r\n          badge=\"sale\"\r\n          badgeColor=\"sale\"\r\n          aspect=\"square\"\r\n        />\r\n        <AmazingCard\r\n          image=\"https://images.unsplash.com/photo-1543076447-215ad9ba6923?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1374&q=80\"\r\n          title=\"Leather Chelsea Boots\"\r\n          description=\"Classic Chelsea boots crafted from genuine leather with durable rubber sole.\"\r\n          price=\"$129.99\"\r\n          badge=\"exclusive\"\r\n          badgeColor=\"exclusive\"\r\n        />\r\n      </div>\r\n    </div>\r\n  );\r\n}\r\n\r\n// Export variants for examples and documentation\r\nexport { AmazingCard as FashionCard };",
+      "type": "registry:ui",
+      "target": ""
+    }
+  ],
+  "cssVars": {
+    "light": {
+      "--background": "0 0% 100%",
+      "--foreground": "222.2 84% 4.9%",
+      "--card": "0 0% 100%",
+      "--card-foreground": "222.2 84% 4.9%",
+      "--popover": "0 0% 100%",
+      "--popover-foreground": "222.2 84% 4.9%",
+      "--primary": "222.2 47.4% 11.2%",
+      "--primary-foreground": "210 40% 98%",
+      "--secondary": "210 40% 96.1%",
+      "--secondary-foreground": "222.2 47.4% 11.2%",
+      "--muted": "210 40% 96.1%",
+      "--muted-foreground": "215.4 16.3% 46.9%",
+      "--accent": "210 40% 96.1%",
+      "--accent-foreground": "222.2 47.4% 11.2%",
+      "--destructive": "0 84.2% 60.2%",
+      "--destructive-foreground": "210 40% 98%",
+      "--border": "214.3 31.8% 91.4%",
+      "--input": "214.3 31.8% 91.4%",
+      "--ring": "222.2 84% 4.9%",
+      "--radius": "0.5rem",
+      "--fashion-cream": "37 67% 94%",
+      "--fashion-beige": "36 33% 90%",
+      "--fashion-charcoal": "220 26% 18%",
+      "--fashion-accent": "350 80% 60%",
+      "--fashion-highlight": "39 100% 67%"
+    },
+    "dark": {
+      "--background": "222.2 84% 4.9%",
+      "--foreground": "210 40% 98%",
+      "--card": "222.2 84% 4.9%",
+      "--card-foreground": "210 40% 98%",
+      "--popover": "222.2 84% 4.9%",
+      "--popover-foreground": "210 40% 98%",
+      "--primary": "210 40% 98%",
+      "--primary-foreground": "222.2 47.4% 11.2%",
+      "--secondary": "217.2 32.6% 17.5%",
+      "--secondary-foreground": "210 40% 98%",
+      "--muted": "217.2 32.6% 17.5%",
+      "--muted-foreground": "215 20.2% 65.1%",
+      "--accent": "217.2 32.6% 17.5%",
+      "--accent-foreground": "210 40% 98%",
+      "--destructive": "0 62.8% 30.6%",
+      "--destructive-foreground": "210 40% 98%",
+      "--border": "217.2 32.6% 17.5%",
+      "--input": "217.2 32.6% 17.5%",
+      "--ring": "212.7 26.8% 83.9%",
+      "--fashion-cream": "36 20% 85%",
+      "--fashion-beige": "36 12% 75%",
+      "--fashion-charcoal": "220 15% 15%",
+      "--fashion-accent": "350 70% 50%",
+      "--fashion-highlight": "39 80% 60%"
+    }
+  },
+  "tailwind": {
+    "config": {}
+  },
+  "_meta": {
+    "author": "nakulgupta2004",
+    "slug": "amazing-card",
+    "registry_url": "https://21st.dev/r/nakulgupta2004/amazing-card",
+    "title": "Amazing Card",
+    "description": "Glassmorphism Background\nA sleek, frosted-glass effect with soft blurring and light transparency to create a modern, layered look.\n\n3D Tilt on Hover\nAdds depth and motion to the card using subtle perspective shifts, mimicking real-world interaction.\n\nGlow Effects\nA faint, elegant glow accentuates edges and calls to action, making the component feel alive and interactive.\n\nSmooth Transitions\nAll hover and layout animations use cubic-bezier timing for a fluid and polished experience.\n\nParallax Image Layering\nThe featured image subtly shifts as users move the cursor, creating a premium feel.\n\nBadging System\nStylish corner tags like \"New\", \"Sale\", or \"Exclusive\" to highlight special product statuses.\n\nInteractive Hover States\nButtons and elements react with sleek animations and color shifts to guide user action.\n\nTypography Focused on Fashion\nA curated blend of elegant serif titles and clean sans-serif text creates contrast and hierarchy, aligning with modern fashion design trends.",
+    "category": "card",
+    "category_group": "UI Components",
+    "downloads": 16,
+    "likes": 0
+  }
+}

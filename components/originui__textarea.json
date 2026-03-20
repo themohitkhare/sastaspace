@@ -1,0 +1,27 @@
+{
+  "name": "textarea",
+  "type": "registry:ui",
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "/components/ui/textarea.tsx",
+      "content": "import * as React from \"react\";\n\nimport { cn } from \"@/lib/utils\";\n\nconst Textarea = React.forwardRef<HTMLTextAreaElement, React.ComponentProps<\"textarea\">>(\n  ({ className, ...props }, ref) => {\n    return (\n      <textarea\n        className={cn(\n          \"flex min-h-[80px] w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground shadow-sm shadow-black/5 transition-shadow placeholder:text-muted-foreground/70 focus-visible:border-ring focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/20 disabled:cursor-not-allowed disabled:opacity-50\",\n          className,\n        )}\n        ref={ref}\n        {...props}\n      />\n    );\n  },\n);\nTextarea.displayName = \"Textarea\";\n\nexport { Textarea };\n",
+      "type": "registry:ui",
+      "target": ""
+    }
+  ],
+  "tailwind": {
+    "config": {}
+  },
+  "_meta": {
+    "author": "originui",
+    "slug": "textarea",
+    "registry_url": "https://21st.dev/r/originui/textarea",
+    "title": "Textarea",
+    "description": "Enhanced shadcn/ui textarea",
+    "category": "button",
+    "category_group": "UI Components",
+    "downloads": 584,
+    "likes": 6
+  }
+}

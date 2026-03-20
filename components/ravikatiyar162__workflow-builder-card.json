@@ -1,0 +1,34 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "workflow-builder-card",
+  "type": "registry:component",
+  "title": "Workflow Builder Card",
+  "description": "A workflow-builder-card component.",
+  "dependencies": [
+    "framer-motion",
+    "lucide-react"
+  ],
+  "registryDependencies": [
+    "https://21st.dev/r/shadcn/card",
+    "https://21st.dev/r/shadcn/avatar",
+    "https://21st.dev/r/shadcn/badge"
+  ],
+  "files": [
+    {
+      "path": "src/components/ui/workflow-builder-card.tsx",
+      "content": "import * as React from \"react\";\nimport { motion, AnimatePresence } from \"framer-motion\";\nimport { MoreHorizontal } from \"lucide-react\";\n\nimport { cn } from \"@/lib/utils\";\nimport { Card } from \"@/components/ui/card\";\nimport { Avatar, AvatarFallback, AvatarImage } from \"@/components/ui/avatar\";\nimport { Badge } from \"@/components/ui/badge\";\n\n// Define the types for the component props for type-safety and reusability\ninterface User {\n  src: string;\n  fallback: string;\n}\n\ninterface Action {\n  Icon: React.ElementType;\n  bgColor: string;\n}\n\ninterface WorkflowBuilderCardProps {\n  imageUrl: string;\n  status: \"Active\" | \"Inactive\";\n  lastUpdated: string;\n  title: string;\n  description: string;\n  tags: string[];\n  users: User[];\n  actions: Action[];\n  className?: string;\n}\n\nexport const WorkflowBuilderCard = ({\n  imageUrl,\n  status,\n  lastUpdated,\n  title,\n  description,\n  tags,\n  users,\n  actions,\n  className,\n}: WorkflowBuilderCardProps) => {\n  const [isHovered, setIsHovered] = React.useState(false);\n\n  // Animation variants for the details section\n  const detailVariants = {\n    hidden: { opacity: 0, height: 0, marginTop: 0 },\n    visible: {\n      opacity: 1,\n      height: \"auto\",\n      marginTop: \"1rem\",\n      transition: { duration: 0.3, ease: \"easeInOut\" },\n    },\n  };\n\n  return (\n    <motion.div\n      onHoverStart={() => setIsHovered(true)}\n      onHoverEnd={() => setIsHovered(false)}\n      whileHover={{ y: -6 }}\n      transition={{ duration: 0.3, ease: [0.25, 1, 0.5, 1] }}\n      className={cn(\"w-full max-w-sm cursor-pointer\", className)}\n    >\n      <Card className=\"overflow-hidden rounded-xl shadow-md transition-shadow duration-300 hover:shadow-xl\">\n        {/* Card Image */}\n        <div className=\"relative h-36 w-full\">\n          <img\n            src={imageUrl}\n            alt={title}\n            className=\"h-full w-full object-cover\"\n          />\n          <div className=\"absolute inset-0 bg-gradient-to-t from-black/20 to-transparent\"></div>\n        </div>\n\n        <div className=\"p-4\">\n          {/* Always-visible header content */}\n          <div className=\"flex items-start justify-between\">\n            <div className=\"flex flex-col\">\n              <div className=\"flex items-center gap-2 text-xs text-muted-foreground\">\n                <span>{lastUpdated}</span>\n                <span>•</span>\n                <div className=\"flex items-center gap-1.5\">\n                  <span\n                    className={cn(\n                      \"h-2 w-2 rounded-full\",\n                      status === \"Active\" ? \"bg-green-500\" : \"bg-red-500\"\n                    )}\n                    aria-label={status}\n                  />\n                  <span>{status}</span>\n                </div>\n              </div>\n              <h3 className=\"mt-1 text-lg font-semibold text-card-foreground\">\n                {title}\n              </h3>\n            </div>\n            <button\n              aria-label=\"More options\"\n              className=\"text-muted-foreground transition-colors hover:text-foreground\"\n            >\n              <MoreHorizontal size={20} />\n            </button>\n          </div>\n\n          {/* Animated description and tags section */}\n          <AnimatePresence>\n            {isHovered && (\n              <motion.div\n                key=\"details\"\n                initial=\"hidden\"\n                animate=\"visible\"\n                exit=\"hidden\"\n                variants={detailVariants}\n                className=\"overflow-hidden\"\n              >\n                <p className=\"text-sm text-muted-foreground\">{description}</p>\n                <div className=\"mt-3 flex flex-wrap gap-2\">\n                  {tags.map((tag) => (\n                    <Badge key={tag} variant=\"secondary\">\n                      {tag}\n                    </Badge>\n                  ))}\n                </div>\n              </motion.div>\n            )}\n          </AnimatePresence>\n        </div>\n\n        {/* Card Footer */}\n        <div className=\"flex items-center justify-between border-t border-border p-4\">\n          <div className=\"flex -space-x-2\">\n            {users.map((user, index) => (\n              <Avatar\n                key={index}\n                className=\"h-7 w-7 border-2 border-card\"\n                aria-label={user.fallback}\n              >\n                <AvatarImage src={user.src} />\n                <AvatarFallback>{user.fallback}</AvatarFallback>\n              </Avatar>\n            ))}\n          </div>\n          <div className=\"flex items-center -space-x-2\">\n            {actions.map(({ Icon, bgColor }, index) => (\n              <div\n                key={index}\n                className={cn(\n                  \"flex h-7 w-7 items-center justify-center rounded-full border-2 border-card text-white\",\n                  bgColor\n                )}\n              >\n                <Icon size={14} />\n              </div>\n            ))}\n          </div>\n        </div>\n      </Card>\n    </motion.div>\n  );\n};",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "ravikatiyar162",
+    "slug": "workflow-builder-card",
+    "registry_url": "https://21st.dev/r/ravikatiyar162/workflow-builder-card",
+    "title": "Workflow Builder Card",
+    "description": "Workflow Builder Card\nA responsive and theme-adaptive card component designed to showcase AI workflows. It features a subtle hover animation that elegantly reveals additional details like a description and tags. The card is highly reusable, with its content, including images, user avatars, and action icons, managed through props.",
+    "category": "card",
+    "category_group": "UI Components",
+    "downloads": 69,
+    "likes": 0
+  }
+}

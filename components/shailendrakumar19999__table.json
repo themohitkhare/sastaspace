@@ -1,0 +1,30 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "table",
+  "type": "registry:component",
+  "title": "Table",
+  "description": "A table component.",
+  "dependencies": [
+    "@mui/x-data-grid",
+    "@mui/material"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/ui/table.tsx",
+      "content": "import * as React from \"react\";\nimport { DataGrid, GridColDef } from \"@mui/x-data-grid\";\nimport { Paper } from \"@mui/material\";\n\nconst columns: GridColDef[] = [\n  { field: \"id\", headerName: \"ID\", width: 70 },\n  { field: \"firstName\", headerName: \"First name\", width: 130 },\n  { field: \"lastName\", headerName: \"Last name\", width: 130 },\n  { field: \"age\", headerName: \"Age\", type: \"number\", width: 90 },\n  {\n    field: \"fullName\",\n    headerName: \"Full name\",\n    description: \"This column has a value getter and is not sortable.\",\n    sortable: false,\n    width: 160,\n    valueGetter: (_, row) => `${row.firstName || \"\"} ${row.lastName || \"\"}`,\n  },\n];\n\nconst initialRows = [\n  { id: 1, lastName: \"Snow\", firstName: \"Jon\", age: 35 },\n  { id: 2, lastName: \"Lannister\", firstName: \"Cersei\", age: 42 },\n  { id: 3, lastName: \"Lannister\", firstName: \"Jaime\", age: 45 },\n  { id: 4, lastName: \"Stark\", firstName: \"Arya\", age: 16 },\n  { id: 5, lastName: \"Targaryen\", firstName: \"Daenerys\", age: null },\n  { id: 6, lastName: \"Melisandre\", firstName: null, age: 150 },\n  { id: 7, lastName: \"Clifford\", firstName: \"Ferrara\", age: 44 },\n  { id: 8, lastName: \"Frances\", firstName: \"Rossini\", age: 36 },\n  { id: 9, lastName: \"Roxie\", firstName: \"Harvey\", age: 65 },\n];\n\nconst paginationModel = { page: 0, pageSize: 5 };\n\nexport function BasicTable() {\n  const [rows] = React.useState(initialRows);\n\n  return (\n    <Paper\n      className=\"\n        bg-white dark:bg-gray-900\n        text-gray-900 dark:text-gray-100\n        rounded-xl shadow-md p-1\n      \"\n      sx={{\n        height: 420,\n        width: \"100%\",\n        position: \"relative\",\n        // let DataGrid cells inherit the Tailwind colors\n        \"& .MuiDataGrid-root\": {\n          color: \"inherit\",\n          backgroundColor: \"transparent\",\n        },\n        \"& .MuiDataGrid-cell\": {\n          borderColor: \"rgba(156,163,175,0.2)\", // gray-400/20\n        },\n      }}\n    >\n      <DataGrid\n        rows={rows}\n        columns={columns}\n        initialState={{ pagination: { paginationModel } }}\n        pageSizeOptions={[5, 10]}\n        checkboxSelection\n        sx={{\n          border: 0,\n          color: \"inherit\",\n          backgroundColor: \"transparent\",\n          \"& .MuiDataGrid-columnHeaders\": {\n            backgroundColor: \"transparent\",\n            color: \"inherit\",\n          },\n        }}\n      />\n    </Paper>\n  );\n}\n",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "shailendrakumar19999",
+    "slug": "table",
+    "registry_url": "https://21st.dev/r/shailendrakumar19999/table",
+    "title": "Table",
+    "description": "This is table with filder and sorting",
+    "category": "table",
+    "category_group": "UI Components",
+    "downloads": 6,
+    "likes": 0
+  }
+}

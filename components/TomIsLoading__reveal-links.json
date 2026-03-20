@@ -1,0 +1,29 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "reveal-links",
+  "type": "registry:component",
+  "title": "Reveal Links",
+  "description": "A reveal-links component.",
+  "dependencies": [
+    "framer-motion"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/ui/reveal-links.tsx",
+      "content": "\"use client\";\n\nimport React from \"react\";\nimport { motion } from \"framer-motion\";\n\nexport const RevealLinks = () => {\n  return (\n    <section className=\"grid place-content-center bg-white dark:bg-black text-black dark:text-white px-8 py-24 w-full h-full\">\n      <FlipLink href=\"#\">Twitter</FlipLink>\n      <FlipLink href=\"#\">Linkedin</FlipLink>\n      <FlipLink href=\"#\">Facebook</FlipLink>\n      <FlipLink href=\"#\">Instagram</FlipLink>\n    </section>\n  );\n};\n\nconst DURATION = 0.25;\nconst STAGGER = 0.025;\n\ninterface FlipLinkProps {\n  children: string;\n  href: string;\n}\n\nconst FlipLink = ({ children, href }: FlipLinkProps) => {\n  return (\n    <motion.a\n      initial=\"initial\"\n      whileHover=\"hovered\"\n      href={href}\n      // text color is inherited from parent section, so no explicit color here\n      className=\"relative block overflow-hidden whitespace-nowrap text-4xl font-black uppercase sm:text-7xl md:text-8xl lg:text-9xl\"\n      style={{\n        lineHeight: 0.75,\n      }}\n    >\n      <div>\n        {children.split(\"\").map((l, i) => (\n          <motion.span\n            variants={{\n              initial: {\n                y: 0,\n              },\n              hovered: {\n                y: \"-100%\",\n              },\n            }}\n            transition={{\n              duration: DURATION,\n              ease: \"easeInOut\",\n              delay: STAGGER * i,\n            }}\n            className=\"inline-block\"\n            key={i}\n          >\n            {l}\n          </motion.span>\n        ))}\n      </div>\n      {/* Removed text-white dark:text-black so it inherits the color from the parent <a> */}\n      <div className=\"absolute inset-0\">\n        {children.split(\"\").map((l, i) => (\n          <motion.span\n            variants={{\n              initial: {\n                y: \"100%\",\n              },\n              hovered: {\n                y: 0,\n              },\n            }}\n            transition={{\n              duration: DURATION,\n              ease: \"easeInOut\",\n              delay: STAGGER * i,\n            }}\n            className=\"inline-block\"\n            key={i}\n          >\n            {l}\n          </motion.span>\n        ))}\n      </div>\n    </motion.a>\n  );\n};",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "TomIsLoading",
+    "slug": "reveal-links",
+    "registry_url": "https://21st.dev/r/TomIsLoading/reveal-links",
+    "title": "Reveal links",
+    "description": "a reveal links interactive component",
+    "category": "link",
+    "category_group": "UI Components",
+    "downloads": 29,
+    "likes": 0
+  }
+}

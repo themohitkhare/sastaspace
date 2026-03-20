@@ -1,0 +1,29 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "card-hover-1",
+  "type": "registry:component",
+  "title": "Card Hover 1",
+  "description": "A card-hover-1 component.",
+  "dependencies": [
+    "lucide-react"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/ui/card-hover-1.tsx",
+      "content": "import React from 'react';\nimport {\n  ChevronRight,\n  MoveUpRight,\n} from 'lucide-react';\n\ntype ComponentProps = React.HTMLAttributes<HTMLDivElement>;\n\nconst Component = React.forwardRef<HTMLDivElement, ComponentProps>(\n  ({ className, ...props }, ref) => {\n    return (\n      <div\n        ref={ref}\n        className={`w-[400px] relative mt-4 h-[430px] group mx-auto dark:bg-black  bg-white dark:border-0 border rounded-md dark:text-white text-black flex flex-col ${className || ''}`}\n        {...props}\n      >\n        <div className='w-full  rounded-t-md h-[350px] group-hover:h-[410px] overflow-hidden transition-all duration-300'>\n          <img\n            src={'https://images.unsplash.com/photo-1626639900752-3ea9001925ae?q=80&w=1887&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D'}\n            alt='person'\n            width={600}\n            height={600}\n            className='h-full w-full  scale-105 group-hover:scale-100 grayscale group-hover:grayscale-0 object-cover transition-all duration-300'\n          />\n        </div>\n        <article className='relative overflow-hidden  flex-grow'>\n          <div className='info p-2 translate-y-0 group-hover:-translate-y-20 transition-all duration-300'>\n            <p className='md:text-2xl font-semibold'>Naymur Rahman</p>\n            <p className='sm:text-base text-sm'>CEO & Design Engineer</p>\n          </div>\n          <button className='absolute h-10 -bottom-8 opacity-0 group-hover:opacity-100 cursor-pointer group-hover:bottom-3  text-3xl font-medium transition-all duration-300 w-full text-center'>\n            CEO & Design Engineer\n          </button>\n        </article>\n      </div>\n    );\n  }\n);\n\nComponent.displayName = 'Component';\n\nexport default Component;",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "uilayout.contact",
+    "slug": "card-hover-1",
+    "registry_url": "https://21st.dev/r/uilayout.contact/card-hover-1",
+    "title": "Card Hover",
+    "description": "Here is hover card component",
+    "category": "card",
+    "category_group": "UI Components",
+    "downloads": 3,
+    "likes": 0
+  }
+}

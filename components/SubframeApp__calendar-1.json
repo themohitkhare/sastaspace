@@ -1,0 +1,29 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "calendar-1",
+  "type": "registry:component",
+  "title": "Calendar 1",
+  "description": "A calendar-1 component.",
+  "dependencies": [
+    "@subframe/core"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/ui/calendar-1.tsx",
+      "content": "\"use client\";\n\nimport * as React from \"react\";\nimport * as SubframeCore from \"@subframe/core\";\n\n/**\n * IMPORTANT: Local SubframeUtils lives INSIDE this component file.\n * Provides createTwClassNames() and twClassNames instance.\n */\nnamespace SubframeUtils {\n  export type ClassValue =\n    | string\n    | null\n    | undefined\n    | false\n    | Record<string, boolean>;\n\n  export function createTwClassNames() {\n    return (...classes: ClassValue[]) =>\n      classes\n        .flatMap((c) => {\n          if (!c) return [];\n          if (typeof c === \"string\") return [c];\n          return Object.entries(c)\n            .filter(([, ok]) => !!ok)\n            .map(([k]) => k);\n        })\n        .join(\" \");\n  }\n\n  export const twClassNames = createTwClassNames();\n}\n\n/* -------------------- Types -------------------- */\n\nexport type ComponentProps = React.ComponentProps<typeof SubframeCore.Calendar> & {\n  className?: string;\n};\n\n/* -------------------- Component -------------------- */\n\nexport const Component = React.forwardRef<\n  React.ElementRef<typeof SubframeCore.Calendar>,\n  ComponentProps\n>(function Component({ className, ...otherProps }, ref) {\n  return (\n    <SubframeCore.Calendar\n      ref={ref}\n      {...otherProps}\n      className={SubframeUtils.twClassNames(\"relative\", className)}\n      /**\n       * Token-free Tailwind classes (self-contained)\n       * Uses the Calendar's group state selectors (.selected, .outside, .range-*)\n       */\n      classNames={{\n        root: \"relative box-border\",\n        months: \"relative flex max-w-fit flex-wrap gap-4\",\n        month: \"flex flex-col gap-4\",\n        nav: \"absolute flex h-8 w-full items-center justify-between p-0.5\",\n        month_caption: \"flex h-8 items-center justify-center\",\n        caption_label: \"text-sm font-semibold text-zinc-900\",\n        button_previous:\n          \"inline-flex h-8 w-8 items-center justify-center rounded border border-transparent bg-transparent hover:bg-zinc-100 active:bg-zinc-200\",\n        button_next:\n          \"inline-flex h-8 w-8 items-center justify-center rounded border border-transparent bg-transparent hover:bg-zinc-100 active:bg-zinc-200\",\n        chevron: \"text-[18px] font-medium leading-[18px] text-zinc-600\",\n\n        weeks: \"flex flex-col gap-2\",\n        weekdays: \"flex pb-4\",\n        weekday: \"w-8 text-xs font-semibold text-zinc-500\",\n\n        week: \"flex overflow-hidden rounded-lg\",\n\n        day: \"group flex h-8 w-8 cursor-pointer items-center justify-center text-sm text-zinc-900\",\n\n        day_button:\n          [\n            \"flex h-8 w-8 items-center justify-center rounded-lg border-none\",\n            \"hover:bg-zinc-100\",\n            // selected\n            \"group-[.selected]:bg-indigo-600 group-[.selected]:text-white\",\n            // outside days\n            \"group-[.outside]:bg-transparent group-[.outside]:text-zinc-400 group-[.outside]:hover:bg-zinc-100\",\n            // range selection states\n            \"group-[.range-start]:rounded-l-lg group-[.range-end]:rounded-r-lg\",\n            \"group-[.range-middle]:bg-indigo-50 group-[.range-middle]:text-zinc-900\",\n          ].join(\" \"),\n\n        selected: \"selected\",\n        outside: \"outside\",\n        range_start: \"range-start bg-indigo-50\",\n        range_middle: \"range-middle\",\n        range_end: \"range-end bg-indigo-50\",\n      }}\n    />\n  );\n});\n\n// Named + default export\nexport default Component;\n",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "SubframeApp",
+    "slug": "calendar-1",
+    "registry_url": "https://21st.dev/r/SubframeApp/calendar-1",
+    "title": "Calendar",
+    "description": "here is Calendar component ",
+    "category": "calendar",
+    "category_group": "UI Components",
+    "downloads": 1,
+    "likes": 0
+  }
+}

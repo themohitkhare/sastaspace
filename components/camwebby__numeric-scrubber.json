@@ -1,0 +1,60 @@
+{
+  "name": "numeric-scrubber",
+  "type": "registry:ui",
+  "dependencies": [
+    "@radix-ui/react-slot",
+    "class-variance-authority",
+    "@radix-ui/react-label",
+    "lucide-react",
+    "@radix-ui/react-checkbox"
+  ],
+  "registryDependencies": [
+    "https://21st.dev/r/shadcn/input"
+  ],
+  "files": [
+    {
+      "path": "/components/ui/numeric-scrubber.tsx",
+      "content": "import * as React from \"react\";\nimport { cn } from \"@/lib/utils\";\nimport { Input } from \"@/components/ui/input\";\n\nexport interface NumericScrubberProps\n  extends Omit<React.HTMLAttributes<HTMLInputElement>, \"onChange\"> {\n  /**\n   * Current numeric value\n   */\n  value: number;\n  /**\n   * Callback whenever the value changes\n   */\n  onChange: (value: number) => void;\n  /**\n   * Minimum allowable value (clamped)\n   */\n  min?: number;\n  /**\n   * Maximum allowable value (clamped)\n   */\n  max?: number;\n  /**\n   * Step for increments (e.g., 1, 0.1, etc.)\n   */\n  step?: number;\n  /**\n   * Additional class names for the outer wrapper\n   */\n  className?: string;\n\n  /**\n   * Controls the number of pixels required to increase/decrease a step.\n   * A value of 1.0 means 1 pixel per step; 0.1 means 10 pixels per step\n   *\n   * * For fine-grained control (like opacity: 0-1): use a small value like 0.001\n   * * For medium control (like rotation: 0-360): use a medium value like 0.1\n   * * For coarse control (like integer counts): use a larger value like 0.5\n   */\n  scrubSensitivity?: number;\n}\n\nexport const NumericScrubber = React.forwardRef<\n  HTMLInputElement,\n  NumericScrubberProps\n>(\n  (\n    {\n      value,\n      onChange,\n      min = 0,\n      max = 100,\n      step = 1,\n      className,\n      scrubSensitivity = 0.5,\n      ...rest\n    },\n    ref\n  ) => {\n    // Internal state\n    const [internalValue, setInternalValue] = React.useState<number>(value);\n\n    // Refs to track dragging\n    const isDraggingRef = React.useRef(false);\n    const initialXRef = React.useRef(0);\n    const initialValueRef = React.useRef(value);\n\n    // Determine how many decimals to keep based on `step`\n    const decimals = React.useMemo(() => {\n      if (!Number.isFinite(step)) return 0;\n      const stepString = step.toString();\n      const decimalPart = stepString.split(\".\")[1];\n      return decimalPart ? decimalPart.length : 0;\n    }, [step]);\n\n    /**\n     * Clamp and quantize the given number\n     */\n    function clampAndQuantize(n: number) {\n      // First quantize to nearest step\n      const quantized = Math.round(n / step) * step;\n      // Then clamp between min and max\n      const clamped = Math.max(min, Math.min(quantized, max));\n      return parseFloat(clamped.toFixed(decimals));\n    }\n\n    /**\n     * On pointer down: start dragging\n     */\n    function handlePointerDown(e: React.PointerEvent) {\n      // Only left-click\n      if (e.button !== 0) return;\n\n      isDraggingRef.current = true;\n      initialXRef.current = e.clientX;\n      initialValueRef.current = internalValue;\n\n      document.addEventListener(\"pointermove\", handlePointerMove);\n      document.addEventListener(\"pointerup\", handlePointerUp);\n    }\n\n    /**\n     * On pointer move: compute distance from initial pointer down\n     * and update value accordingly\n     */\n    function handlePointerMove(e: PointerEvent) {\n      if (!isDraggingRef.current) return;\n\n      const deltaX = e.clientX - initialXRef.current;\n      // Apply sensitivity factor to make scrubbing slower\n      let newValue = initialValueRef.current + deltaX * step * scrubSensitivity;\n      newValue = clampAndQuantize(newValue);\n\n      setInternalValue(newValue);\n      onChange(newValue);\n    }\n\n    /**\n     * On pointer up: stop dragging\n     */\n    function handlePointerUp() {\n      isDraggingRef.current = false;\n      document.removeEventListener(\"pointermove\", handlePointerMove);\n      document.removeEventListener(\"pointerup\", handlePointerUp);\n    }\n\n    /**\n     * When user types in the input\n     */\n    function handleInputChange(e: React.ChangeEvent<HTMLInputElement>) {\n      const inputVal = e.target.value;\n      if (inputVal === \"\") {\n        setInternalValue(min);\n        onChange(min);\n        return;\n      }\n\n      const parsed = parseFloat(inputVal);\n      if (isNaN(parsed)) {\n        setInternalValue(min);\n        onChange(min);\n        return;\n      }\n\n      const newValue = clampAndQuantize(parsed);\n      setInternalValue(newValue);\n      onChange(newValue);\n    }\n\n    /**\n     * Sync internalValue with external `value` if it changes\n     */\n    React.useEffect(() => {\n      setInternalValue(value);\n    }, [value]);\n\n    return (\n      <div className={cn(\"relative group w-fit\")}>\n        <Input\n          ref={ref}\n          type=\"number\"\n          /**\n           * Hide the default spinners in Chrome/Edge/Safari\n           */\n          className={cn(\n            `[appearance:textfield]\n             [&::-webkit-inner-spin-button]:appearance-none\n             [&::-webkit-outer-spin-button]:appearance-none\n             pr-0\n             hover:cursor-ew-resize\n             active:cursor-none\n             `,\n            className\n          )}\n          step={step}\n          value={internalValue}\n          onChange={handleInputChange}\n          onPointerDown={handlePointerDown}\n          {...rest}\n        />\n\n        <div\n          className=\"absolute inset-y-0 right-0 flex items-center px-2 text-gray-400 cursor-ew-resize select-none\"\n          onPointerDown={handlePointerDown}\n        >\n          ↔\n        </div>\n      </div>\n    );\n  }\n);\n\nNumericScrubber.displayName = \"NumericScrubber\";\n",
+      "type": "registry:ui",
+      "target": ""
+    },
+    {
+      "path": "/components/ui/input.tsx",
+      "content": "import * as React from \"react\"\n\nimport { cn } from \"@/lib/utils\"\n\nexport interface InputProps\n  extends React.InputHTMLAttributes<HTMLInputElement> {}\n\nconst Input = React.forwardRef<HTMLInputElement, InputProps>(\n  ({ className, type, ...props }, ref) => {\n    return (\n      <input\n        type={type}\n        className={cn(\n          \"flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50\",\n          className\n        )}\n        ref={ref}\n        {...props}\n      />\n    )\n  }\n)\nInput.displayName = \"Input\"\n\nexport { Input }\n",
+      "type": "registry:ui",
+      "target": ""
+    },
+    {
+      "path": "/components/ui/button.tsx",
+      "content": "import * as React from \"react\"\nimport { Slot } from \"@radix-ui/react-slot\"\nimport { cva, type VariantProps } from \"class-variance-authority\"\n\nimport { cn } from \"@/lib/utils\"\n\nconst buttonVariants = cva(\n  \"inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50\",\n  {\n    variants: {\n      variant: {\n        default: \"bg-primary text-primary-foreground hover:bg-primary/90\",\n        destructive:\n          \"bg-destructive text-destructive-foreground hover:bg-destructive/90\",\n        outline:\n          \"border border-input bg-background hover:bg-accent hover:text-accent-foreground\",\n        secondary:\n          \"bg-secondary text-secondary-foreground hover:bg-secondary/80\",\n        ghost: \"hover:bg-accent hover:text-accent-foreground\",\n        link: \"text-primary underline-offset-4 hover:underline\",\n      },\n      size: {\n        default: \"h-10 px-4 py-2\",\n        sm: \"h-9 rounded-md px-3\",\n        lg: \"h-11 rounded-md px-8\",\n        icon: \"h-10 w-10\",\n      },\n    },\n    defaultVariants: {\n      variant: \"default\",\n      size: \"default\",\n    },\n  },\n)\n\nexport interface ButtonProps\n  extends React.ButtonHTMLAttributes<HTMLButtonElement>,\n    VariantProps<typeof buttonVariants> {\n  asChild?: boolean\n}\n\nconst Button = React.forwardRef<HTMLButtonElement, ButtonProps>(\n  ({ className, variant, size, asChild = false, ...props }, ref) => {\n    const Comp = asChild ? Slot : \"button\"\n    return (\n      <Comp\n        className={cn(buttonVariants({ variant, size, className }))}\n        ref={ref}\n        {...props}\n      />\n    )\n  },\n)\nButton.displayName = \"Button\"\n\nexport { Button, buttonVariants }\n",
+      "type": "registry:ui",
+      "target": ""
+    },
+    {
+      "path": "/components/ui/label.tsx",
+      "content": "\"use client\"\n\nimport * as React from \"react\"\nimport * as LabelPrimitive from \"@radix-ui/react-label\"\nimport { cva, type VariantProps } from \"class-variance-authority\"\n\nimport { cn } from \"@/lib/utils\"\n\nconst labelVariants = cva(\n  \"text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70\",\n)\n\nconst Label = React.forwardRef<\n  React.ElementRef<typeof LabelPrimitive.Root>,\n  React.ComponentPropsWithoutRef<typeof LabelPrimitive.Root> &\n    VariantProps<typeof labelVariants>\n>(({ className, ...props }, ref) => (\n  <LabelPrimitive.Root\n    ref={ref}\n    className={cn(labelVariants(), className)}\n    {...props}\n  />\n))\nLabel.displayName = LabelPrimitive.Root.displayName\n\nexport { Label }\n",
+      "type": "registry:ui",
+      "target": ""
+    },
+    {
+      "path": "/components/ui/checkbox.tsx",
+      "content": "\"use client\"\n\nimport * as React from \"react\"\nimport * as CheckboxPrimitive from \"@radix-ui/react-checkbox\"\nimport { Check } from \"lucide-react\"\n\nimport { cn } from \"@/lib/utils\"\n\nconst Checkbox = React.forwardRef<\n  React.ElementRef<typeof CheckboxPrimitive.Root>,\n  React.ComponentPropsWithoutRef<typeof CheckboxPrimitive.Root>\n>(({ className, ...props }, ref) => (\n  <CheckboxPrimitive.Root\n    ref={ref}\n    className={cn(\n      \"peer h-4 w-4 shrink-0 rounded-sm border border-primary ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground\",\n      className,\n    )}\n    {...props}\n  >\n    <CheckboxPrimitive.Indicator\n      className={cn(\"flex items-center justify-center text-current\")}\n    >\n      <Check className=\"h-4 w-4\" />\n    </CheckboxPrimitive.Indicator>\n  </CheckboxPrimitive.Root>\n))\nCheckbox.displayName = CheckboxPrimitive.Root.displayName\n\nexport { Checkbox }\n",
+      "type": "registry:ui",
+      "target": ""
+    }
+  ],
+  "tailwind": {
+    "config": {}
+  },
+  "_meta": {
+    "author": "camwebby",
+    "slug": "numeric-scrubber",
+    "registry_url": "https://21st.dev/r/camwebby/numeric-scrubber",
+    "title": "Numeric Scrubber",
+    "description": "A draggable numeric input component for React, built with shadcn/ui, inspired by desktop video editing software like Resolve.\n\nFeatures:\n\t•\tClick and drag horizontally to adjust values\n\t•\tConfigurable sensitivity for fine or coarse control\n\t•\tSupports minimum and maximum bounds\n\t•\tCustomizable step sizes\n\t•\tFully typed with TypeScript\n\t•\tFollows shadcn/ui styling conventions\n\n",
+    "category": "input",
+    "category_group": "UI Components",
+    "downloads": 20,
+    "likes": 2
+  }
+}

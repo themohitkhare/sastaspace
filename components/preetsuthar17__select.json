@@ -1,0 +1,80 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "select",
+  "type": "registry:component",
+  "title": "Select",
+  "description": "A select component.",
+  "dependencies": [
+    "@radix-ui/react-select",
+    "class-variance-authority",
+    "lucide-react",
+    "motion"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/ui/select.tsx",
+      "content": "\"use client\";\n\nimport * as React from \"react\";\nimport * as SelectPrimitive from \"@radix-ui/react-select\";\nimport { cva, type VariantProps } from \"class-variance-authority\";\nimport { cn } from \"@/lib/utils\";\nimport { type LucideIcon, ChevronDown, Check } from \"lucide-react\";\nimport { motion } from \"motion/react\";\n\nconst selectTriggerVariants = cva(\n  \"flex h-9 w-full items-center justify-between gap-3 rounded-ele border border-border bg-background px-3 py-2 text-sm transition-all placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1 border border-border bg-input\",\n  {\n    variants: {\n      variant: {\n        default:\n          \"hover:bg-accent hover:text-accent-foreground shadow-sm/2\",\n        outline: \"border-2 hover:border-ring shadow-sm/2\",\n        ghost:\n          \"border-transparent hover:bg-accent hover:text-accent-foreground\",\n      },\n      size: {\n        sm: \"h-8 p-2 text-xs gap-2\",\n        default: \"h-9 p-3 gap-3\",\n        lg: \"h-10 p-4 text-base gap-4\",\n      },\n    },\n    defaultVariants: {\n      variant: \"default\",\n      size: \"default\",\n    },\n  }\n);\n\nconst selectContentVariants = cva(\n  \"relative z-50 max-h-[300px] min-w-[8rem] overflow-hidden rounded-ele border border-border bg-background text-foreground shadow-lg data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2\",\n  {\n    variants: {\n      position: {\n        popper:\n          \"data-[side=bottom]:translate-y-1 data-[side=left]:-translate-x-1 data-[side=right]:translate-x-1 data-[side=top]:-translate-y-1\",\n        \"item-aligned\": \"\",\n      },\n    },\n    defaultVariants: {\n      position: \"popper\",\n    },\n  }\n);\n\nconst Select = SelectPrimitive.Root;\n\nconst SelectGroup = SelectPrimitive.Group;\n\nconst SelectValue = React.forwardRef<\n  React.ElementRef<typeof SelectPrimitive.Value>,\n  React.ComponentPropsWithoutRef<typeof SelectPrimitive.Value> & {\n    placeholder?: string;\n  }\n>(({ className, placeholder, ...props }, ref) => (\n  <SelectPrimitive.Value\n    ref={ref}\n    className={cn(\"text-sm select-none\", className)}\n    placeholder={\n      placeholder && (\n        <span className=\"text-muted-foreground select-none\">\n          {placeholder}\n        </span>\n      )\n    }\n    {...props}\n  />\n));\nSelectValue.displayName = SelectPrimitive.Value.displayName;\n\ninterface SelectTriggerProps\n  extends React.ComponentPropsWithoutRef<typeof SelectPrimitive.Trigger>,\n    VariantProps<typeof selectTriggerVariants> {\n  icon?: LucideIcon;\n  placeholder?: string;\n}\n\nconst SelectTrigger = React.forwardRef<\n  React.ElementRef<typeof SelectPrimitive.Trigger>,\n  SelectTriggerProps\n>(\n  (\n    { className, children, variant, size, icon: Icon, placeholder, ...props },\n    ref\n  ) => (\n    <SelectPrimitive.Trigger\n      ref={ref}\n      className={cn(\n        \"group\",\n        selectTriggerVariants({ variant, size }),\n        className\n      )}\n      {...props}\n    >\n      <div className=\"flex items-center gap-2 flex-1 min-w-0\">\n        {Icon && (\n          <Icon\n            size={16}\n            className=\"shrink-0 text-muted-foreground\"\n          />\n        )}\n        <span className=\"truncate\">{children}</span>\n      </div>{\" \"}\n      <SelectPrimitive.Icon asChild>\n        <ChevronDown\n          size={16}\n          className=\"opacity-50 shrink-0 transition-transform duration-200 group-data-[state=open]:rotate-180\"\n        />\n      </SelectPrimitive.Icon>\n    </SelectPrimitive.Trigger>\n  )\n);\nSelectTrigger.displayName = SelectPrimitive.Trigger.displayName;\n\ninterface SelectContentProps\n  extends React.ComponentPropsWithoutRef<typeof SelectPrimitive.Content> {\n  position?: \"popper\" | \"item-aligned\";\n}\n\nconst SelectContent = React.forwardRef<\n  React.ElementRef<typeof SelectPrimitive.Content>,\n  SelectContentProps\n>(({ className, children, position = \"popper\", ...props }, ref) => (\n  <SelectPrimitive.Portal>\n    <SelectPrimitive.Content\n      ref={ref}\n      className={cn(selectContentVariants({ position }), className)}\n      position={position}\n      {...props}\n    >\n      <motion.div\n        initial={{ opacity: 0, scale: 0.95 }}\n        animate={{ opacity: 1, scale: 1 }}\n        exit={{ opacity: 0, scale: 0.95 }}\n        transition={{ duration: 0.15 }}\n      >\n        <SelectPrimitive.Viewport\n          className={cn(\n            \"p-2 max-h-[280px] overflow-y-auto scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent\",\n            position === \"popper\" &&\n              \"h-fit w-full min-w-[var(--radix-select-trigger-width)]\"\n          )}\n        >\n          {children}\n        </SelectPrimitive.Viewport>\n      </motion.div>\n    </SelectPrimitive.Content>\n  </SelectPrimitive.Portal>\n));\nSelectContent.displayName = SelectPrimitive.Content.displayName;\n\nconst SelectLabel = React.forwardRef<\n  React.ElementRef<typeof SelectPrimitive.Label>,\n  React.ComponentPropsWithoutRef<typeof SelectPrimitive.Label>\n>(({ className, ...props }, ref) => (\n  <SelectPrimitive.Label\n    ref={ref}\n    className={cn(\n      \"px-3 py-2 text-xs font-semibold text-muted-foreground\",\n      className\n    )}\n    {...props}\n  />\n));\nSelectLabel.displayName = SelectPrimitive.Label.displayName;\n\ninterface SelectItemProps\n  extends React.ComponentPropsWithoutRef<typeof SelectPrimitive.Item> {\n  icon?: LucideIcon;\n}\n\nconst SelectItem = React.forwardRef<\n  React.ElementRef<typeof SelectPrimitive.Item>,\n  SelectItemProps\n>(({ className, children, icon: Icon, ...props }, ref) => (\n  <SelectPrimitive.Item\n    ref={ref}\n    className={cn(\n      \"relative flex w-full cursor-default select-none items-center rounded-lg py-2 pl-3 pr-8 text-sm outline-none focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 data-[disabled]:text-muted-foreground\",\n      className\n    )}\n    {...props}\n  >\n    <motion.div\n      className=\"flex w-full items-center gap-2\"\n      whileHover={{ x: 2 }}\n      transition={{ duration: 0.1 }}\n    >\n      {Icon && <Icon size={16} className=\"shrink-0\" />}\n      <SelectPrimitive.ItemText>{children}</SelectPrimitive.ItemText>\n    </motion.div>\n    <span className=\"absolute right-3 flex h-3.5 w-3.5 items-center justify-center\">\n      <SelectPrimitive.ItemIndicator>\n        <motion.div\n          initial={{ scale: 0 }}\n          animate={{ scale: 1 }}\n          transition={{ duration: 0.1 }}\n        >\n          <Check size={16} />\n        </motion.div>\n      </SelectPrimitive.ItemIndicator>\n    </span>\n  </SelectPrimitive.Item>\n));\nSelectItem.displayName = SelectPrimitive.Item.displayName;\n\nconst SelectSeparator = React.forwardRef<\n  React.ElementRef<typeof SelectPrimitive.Separator>,\n  React.ComponentPropsWithoutRef<typeof SelectPrimitive.Separator>\n>(({ className, ...props }, ref) => (\n  <SelectPrimitive.Separator\n    ref={ref}\n    className={cn(\"-mx-1 my-1 h-px bg-muted\", className)}\n    {...props}\n  />\n));\nSelectSeparator.displayName = SelectPrimitive.Separator.displayName;\n\nexport {\n  Select,\n  SelectGroup,\n  SelectValue,\n  SelectTrigger,\n  SelectContent,\n  SelectLabel,\n  SelectItem,\n  SelectSeparator,\n  selectTriggerVariants,\n};",
+      "type": "registry:component"
+    }
+  ],
+  "cssVars": {
+    "light": {
+      "--hu-font-geist": "var(--font-geist)",
+      "--hu-font-jetbrains": "var(--font-jetbrains-mono)",
+      "--radius": "0.8rem",
+      "--card-radius": "1rem",
+      "--hu-background": "0, 0%, 100%",
+      "--hu-foreground": "0, 0%, 14%",
+      "--hu-card": "0, 0%, 99%",
+      "--hu-card-foreground": "0, 0%, 14%",
+      "--hu-primary": "235, 100%, 60%",
+      "--hu-primary-foreground": "0, 0%, 98%",
+      "--hu-secondary": "0, 0%, 97%",
+      "--hu-secondary-foreground": "0, 0%, 20%",
+      "--hu-muted": "0, 0%, 97%",
+      "--hu-muted-foreground": "0, 0%, 56%",
+      "--hu-accent": "0, 0%, 96%",
+      "--hu-accent-foreground": "0, 0%, 20%",
+      "--hu-destructive": "9, 96%, 47%",
+      "--hu-destructive-foreground": "0, 0%, 98%",
+      "--hu-border": "0, 0%, 92%",
+      "--hu-input": "0, 0%, 100%",
+      "--hu-ring": "0, 0%, 71%",
+      "--color-fd-background": "hsl(var(--hu-background))",
+      "--color-fd-card": "hsl(var(--hu-background))"
+    },
+    "dark": {
+      "--hu-background": "0, 0%, 7%",
+      "--hu-foreground": "0, 0%, 100%",
+      "--hu-card": "0, 0%, 9%",
+      "--hu-card-foreground": "0, 0%, 100%",
+      "--hu-primary": "235, 100%, 60%",
+      "--hu-primary-foreground": "0, 0%, 98%",
+      "--hu-secondary": "0, 0%, 15%",
+      "--hu-secondary-foreground": "0, 0%, 100%",
+      "--hu-muted": "0, 0%, 15%",
+      "--hu-muted-foreground": "0, 0%, 71%",
+      "--hu-accent": "0, 0%, 15%",
+      "--hu-accent-foreground": "0, 0%, 100%",
+      "--hu-destructive": "0, 84%, 50%",
+      "--hu-destructive-foreground": "0, 0%, 98%",
+      "--hu-border": "0, 0%, 100%, 10%",
+      "--hu-input": "0, 0%, 100%, 5%",
+      "--hu-ring": "0, 0%, 56%",
+      "--color-fd-background": "hsl(var(--hu-background))",
+      "--color-fd-card": "hsl(var(--hu-background))"
+    }
+  },
+  "_meta": {
+    "author": "preetsuthar17",
+    "slug": "select",
+    "registry_url": "https://21st.dev/r/preetsuthar17/select",
+    "title": "Select",
+    "description": "A comprehensive select component with support for single selection, icons, and animations.",
+    "category": "select",
+    "category_group": "UI Components",
+    "downloads": 29,
+    "likes": 0
+  }
+}

@@ -1,0 +1,34 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "activity-chart-card",
+  "type": "registry:component",
+  "title": "Activity Chart Card",
+  "description": "A activity-chart-card component.",
+  "dependencies": [
+    "framer-motion",
+    "lucide-react"
+  ],
+  "registryDependencies": [
+    "https://21st.dev/r/shadcn/button",
+    "https://21st.dev/r/shadcn/card",
+    "https://21st.dev/r/originui/dropdown-menu"
+  ],
+  "files": [
+    {
+      "path": "src/components/ui/activity-chart-card.tsx",
+      "content": "import * as React from \"react\";\nimport { motion, AnimatePresence } from \"framer-motion\";\nimport { ChevronDown, TrendingUp } from \"lucide-react\";\n\nimport { cn } from \"@/lib/utils\";\nimport {\n  Card,\n  CardContent,\n  CardDescription,\n  CardHeader,\n  CardTitle,\n} from \"@/components/ui/card\";\nimport {\n  DropdownMenu,\n  DropdownMenuContent,\n  DropdownMenuItem,\n  DropdownMenuTrigger,\n} from \"@/components/ui/dropdown-menu\";\nimport { Button } from \"@/components/ui/button\";\n\n// Prop definition for individual data points\ninterface ActivityDataPoint {\n  day: string;\n  value: number;\n}\n\n// Prop definition for the component\ninterface ActivityChartCardProps {\n  title?: string;\n  totalValue: string;\n  data: ActivityDataPoint[];\n  className?: string;\n  dropdownOptions?: string[];\n}\n\n/**\n * A responsive and animated card component to display weekly activity data.\n * Features a bar chart animated with Framer Motion and supports shadcn theming.\n */\nexport const ActivityChartCard = ({\n  title = \"Activity\",\n  totalValue,\n  data,\n  className,\n  dropdownOptions = [\"Weekly\", \"Monthly\", \"Yearly\"],\n}: ActivityChartCardProps) => {\n  const [selectedRange, setSelectedRange] = React.useState(\n    dropdownOptions[0] || \"\"\n  );\n\n  // Find the maximum value in the data to normalize bar heights\n  const maxValue = React.useMemo(() => {\n    return data.reduce((max, item) => (item.value > max ? item.value : max), 0);\n  }, [data]);\n\n  // Framer Motion variants for animations\n  const chartVariants = {\n    hidden: { opacity: 0 },\n    visible: {\n      opacity: 1,\n      transition: {\n        staggerChildren: 0.1, // Animate each child (bar) with a delay\n      },\n    },\n  };\n\n  const barVariants = {\n    hidden: { scaleY: 0, opacity: 0, transformOrigin: \"bottom\" },\n    visible: {\n      scaleY: 1,\n      opacity: 1,\n      transformOrigin: \"bottom\",\n      transition: {\n        duration: 0.5,\n        ease: [0.4, 0, 0.2, 1], // Cubic bezier for a smooth bounce effect\n      },\n    },\n  };\n\n  return (\n    <Card\n      className={cn(\"w-full max-w-md\", className)}\n      aria-labelledby=\"activity-card-title\"\n    >\n      <CardHeader>\n        <div className=\"flex items-center justify-between\">\n          <CardTitle id=\"activity-card-title\">{title}</CardTitle>\n          <DropdownMenu>\n            <DropdownMenuTrigger asChild>\n              <Button\n                variant=\"ghost\"\n                size=\"sm\"\n                className=\"flex items-center gap-1 text-sm\"\n                aria-haspopup=\"true\"\n              >\n                {selectedRange}\n                <ChevronDown className=\"h-4 w-4\" />\n              </Button>\n            </DropdownMenuTrigger>\n            <DropdownMenuContent align=\"end\">\n              {dropdownOptions.map((option) => (\n                <DropdownMenuItem\n                  key={option}\n                  onSelect={() => setSelectedRange(option)}\n                >\n                  {option}\n                </DropdownMenuItem>\n              ))}\n            </DropdownMenuContent>\n          </DropdownMenu>\n        </div>\n      </CardHeader>\n      <CardContent>\n        <div className=\"flex flex-col sm:flex-row items-start sm:items-end gap-4\">\n          {/* Total Value */}\n          <div className=\"flex flex-col\">\n            <p className=\"text-5xl font-bold tracking-tighter text-foreground\">\n              {totalValue}\n            </p>\n            <CardDescription className=\"flex items-center gap-1\">\n              <TrendingUp className=\"h-4 w-4 text-emerald-500\" />\n              +12% from last week\n            </CardDescription>\n          </div>\n\n          {/* Bar Chart */}\n          <motion.div\n            key={selectedRange} // Re-trigger animation when range changes\n            className=\"flex h-28 w-full items-end justify-between gap-2\"\n            variants={chartVariants}\n            initial=\"hidden\"\n            animate=\"visible\"\n            aria-label=\"Activity chart\"\n          >\n            {data.map((item, index) => (\n              <div\n                key={index}\n                className=\"flex h-full w-full flex-col items-center justify-end gap-2\"\n                role=\"presentation\"\n              >\n                <motion.div\n                  className=\"w-full rounded-md bg-primary\"\n                  style={{\n                    height: `${maxValue > 0 ? (item.value / maxValue) * 100 : 0}%`,\n                  }}\n                  variants={barVariants}\n                  aria-label={`${item.day}: ${item.value} hours`}\n                />\n                <span className=\"text-xs text-muted-foreground\">\n                  {item.day}\n                </span>\n              </div>\n            ))}\n          </motion.div>\n        </div>\n      </CardContent>\n    </Card>\n  );\n};",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "ravikatiyar162",
+    "slug": "activity-chart-card",
+    "registry_url": "https://21st.dev/r/ravikatiyar162/activity-chart-card",
+    "title": "Activity Chart Card",
+    "description": "Activity Chart Card\nThis component displays activity data in a bar chart format. It's designed to be reusable, accepting props for the title, total value, and chart data. The bars animate into view sequentially for a polished user experience.",
+    "category": "card",
+    "category_group": "UI Components",
+    "downloads": 91,
+    "likes": 0
+  }
+}

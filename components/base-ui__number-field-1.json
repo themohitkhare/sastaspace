@@ -1,0 +1,29 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "number-field-1",
+  "type": "registry:component",
+  "title": "Number Field 1",
+  "description": "A number-field-1 component.",
+  "dependencies": [
+    "@base-ui-components/react"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/ui/number-field-1.tsx",
+      "content": "import * as React from 'react';\nimport { NumberField } from '@base-ui-components/react/number-field';\n\nexport default function ExampleNumberField() {\n  const id = React.useId();\n  return (\n    <NumberField.Root\n      id={id}\n      defaultValue={100}\n      className=\"flex flex-col items-start gap-1\"\n    >\n      <NumberField.ScrubArea className=\"cursor-ew-resize\">\n        <label\n          htmlFor={id}\n          className=\"cursor-ew-resize text-sm font-medium text-gray-900\"\n        >\n          Amount\n        </label>\n        <NumberField.ScrubAreaCursor className=\"drop-shadow-[0_1px_1px_#0008] filter\">\n          <CursorGrowIcon />\n        </NumberField.ScrubAreaCursor>\n      </NumberField.ScrubArea>\n\n      <NumberField.Group className=\"flex\">\n        <NumberField.Decrement className=\"flex size-10 items-center justify-center rounded-tl-md rounded-bl-md border border-gray-200 bg-gray-50 bg-clip-padding text-gray-900 select-none hover:bg-gray-100 active:bg-gray-100\">\n          <MinusIcon />\n        </NumberField.Decrement>\n        <NumberField.Input className=\"h-10 w-24 border-t border-b border-gray-200 text-center text-base text-gray-900 tabular-nums focus:z-1 focus:outline focus:outline-2 focus:-outline-offset-1 focus:outline-blue-800\" />\n        <NumberField.Increment className=\"flex size-10 items-center justify-center rounded-tr-md rounded-br-md border border-gray-200 bg-gray-50 bg-clip-padding text-gray-900 select-none hover:bg-gray-100 active:bg-gray-100\">\n          <PlusIcon />\n        </NumberField.Increment>\n      </NumberField.Group>\n    </NumberField.Root>\n  );\n}\n\nfunction CursorGrowIcon(props: React.ComponentProps<'svg'>) {\n  return (\n    <svg\n      width=\"26\"\n      height=\"14\"\n      viewBox=\"0 0 24 14\"\n      fill=\"black\"\n      stroke=\"white\"\n      xmlns=\"http://www.w3.org/2000/svg\"\n      {...props}\n    >\n      <path d=\"M19.5 5.5L6.49737 5.51844V2L1 6.9999L6.5 12L6.49737 8.5L19.5 8.5V12L25 6.9999L19.5 2V5.5Z\" />\n    </svg>\n  );\n}\n\nfunction PlusIcon(props: React.ComponentProps<'svg'>) {\n  return (\n    <svg\n      width=\"10\"\n      height=\"10\"\n      viewBox=\"0 0 10 10\"\n      fill=\"none\"\n      stroke=\"currentcolor\"\n      strokeWidth=\"1.6\"\n      xmlns=\"http://www.w3.org/2000/svg\"\n      {...props}\n    >\n      <path d=\"M0 5H5M10 5H5M5 5V0M5 5V10\" />\n    </svg>\n  );\n}\n\nfunction MinusIcon(props: React.ComponentProps<'svg'>) {\n  return (\n    <svg\n      width=\"10\"\n      height=\"10\"\n      viewBox=\"0 0 10 10\"\n      fill=\"none\"\n      stroke=\"currentcolor\"\n      strokeWidth=\"1.6\"\n      xmlns=\"http://www.w3.org/2000/svg\"\n      {...props}\n    >\n      <path d=\"M0 5H10\" />\n    </svg>\n  );\n}\n",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "base-ui",
+    "slug": "number-field-1",
+    "registry_url": "https://21st.dev/r/base-ui/number-field-1",
+    "title": "Number Field",
+    "description": "Here is Number Field component",
+    "category": "number",
+    "category_group": "UI Components",
+    "downloads": 6,
+    "likes": 0
+  }
+}

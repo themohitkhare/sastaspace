@@ -1,0 +1,30 @@
+{
+  "name": "win-98-button",
+  "type": "registry:ui",
+  "dependencies": [
+    "@radix-ui/react-slot"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "/components/ui/win-98-button.tsx",
+      "content": "// Disclaimer: original button at https://jdan.github.io/98.css/#button\n\nimport { Slot } from \"@radix-ui/react-slot\";\nimport * as React from \"react\";\n\nimport { cn } from \"@/lib/utils\";\n\nexport interface ButtonProps\n  extends React.ButtonHTMLAttributes<HTMLButtonElement> {\n  asChild?: boolean;\n}\n\nconst Win98Button = React.forwardRef<HTMLButtonElement, ButtonProps>(\n  ({ className, asChild = false, ...props }, ref) => {\n    const Comp = asChild ? Slot : \"button\";\n    return (\n      <Comp\n        className={cn(\n          \"inline-flex items-center justify-center whitespace-nowrap font-mono text-xs -outline-offset-4 [&_svg]:pointer-events-none [&_svg]:shrink-0\",\n          \"focus:outline-dotted focus:outline-1 focus:outline-black\",\n          \"focus-visible:outline-dotted focus-visible:outline-1 focus-visible:outline-black\",\n          \"text-black bg-[silver] text-transparent [text-shadow:0_0_#222] disabled:[text-shadow:1_1_0_#fff] disabled:text-[grey]\",\n          \"shadow-[inset_-1px_-1px_#0a0a0a,inset_1px_1px_#fff,inset_-2px_-2px_grey,inset_2px_2px_#dfdfdf]\",\n          \"active:shadow-[inset_-1px_-1px_#ffffff,inset_1px_1px_#0a0a0a,inset_-2px_-2px_#dfdfdf,inset_2px_2px_#808080]\",\n          \"disabled:shadow-[inset_-1px_-1px_#0a0a0a,inset_1px_1px_#fff,inset_-2px_-2px_grey,inset_2px_2px_#dfdfdf]\",\n          \"h-7 px-3 min-w-20\",\n          className\n        )}\n        ref={ref}\n        {...props}\n      />\n    );\n  }\n);\nWin98Button.displayName = \"Win98Button\";\n\nexport { Win98Button };\n",
+      "type": "registry:ui",
+      "target": ""
+    }
+  ],
+  "tailwind": {
+    "config": {}
+  },
+  "_meta": {
+    "author": "thefathdev",
+    "slug": "win-98-button",
+    "registry_url": "https://21st.dev/r/thefathdev/win-98-button",
+    "title": "Win 98 Button",
+    "description": "A nostalgic button from Windows 98 era",
+    "category": "button",
+    "category_group": "UI Components",
+    "downloads": 48,
+    "likes": 1
+  }
+}

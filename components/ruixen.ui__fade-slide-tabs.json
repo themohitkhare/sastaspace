@@ -1,0 +1,31 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "fade-slide-tabs",
+  "type": "registry:component",
+  "title": "Fade Slide Tabs",
+  "description": "A fade-slide-tabs component.",
+  "dependencies": [
+    "framer-motion"
+  ],
+  "registryDependencies": [
+    "https://21st.dev/r/originui/tabs"
+  ],
+  "files": [
+    {
+      "path": "src/components/ui/fade-slide-tabs.tsx",
+      "content": "\"use client\";\n\nimport * as React from \"react\";\nimport { Tabs, TabsList, TabsTrigger, TabsContent } from \"@/components/ui/tabs\";\nimport { motion, AnimatePresence } from \"framer-motion\";\nimport { cn } from \"@/lib/utils\";\n\nexport interface FadeSlideTabItem {\n  value: string;\n  label: string;\n  content?: React.ReactNode;\n}\n\ninterface FadeSlideTabsProps {\n  items?: FadeSlideTabItem[];\n  defaultValue?: string;\n  className?: string;\n}\n\nexport default function FadeSlideTabs({\n  items = [\n    { value: \"overview\", label: \"Overview\", content: \"Overview content goes here.\" },\n    { value: \"activity\", label: \"Activity\", content: \"Activity content goes here.\" },\n    { value: \"settings\", label: \"Settings\", content: \"Settings content goes here.\" },\n    { value: \"faq\", label: \"FAQ\", content: \"Frequently asked questions.\" },\n  ],\n  defaultValue = \"overview\",\n  className,\n}: FadeSlideTabsProps) {\n  const [active, setActive] = React.useState(defaultValue);\n\n  return (\n    <div className={cn(\"flex flex-col items-center justify-center min-h-[70vh]\", className)}>\n      <Tabs defaultValue={defaultValue} onValueChange={setActive} className=\"w-full max-w-lg\">\n        <TabsList className=\"flex justify-center gap-2 bg-background/60 backdrop-blur-md p-2 rounded-xl border\">\n          {items.map((item) => (\n            <TabsTrigger\n              key={item.value}\n              value={item.value}\n              className={cn(\n                \"px-3 py-2 rounded-lg transition-colors hover:bg-background/30\",\n                \"data-[state=active]:bg-primary/10 data-[state=active]:text-primary\"\n              )}\n            >\n              {item.label}\n            </TabsTrigger>\n          ))}\n        </TabsList>\n\n        <div className=\"mt-4 relative w-full max-w-lg min-h-[120px]\">\n          <AnimatePresence mode=\"wait\">\n            {items.map(\n              (item) =>\n                item.value === active && (\n                  <motion.div\n                    key={item.value}\n                    initial={{ opacity: 0, x: 20 }}\n                    animate={{ opacity: 1, x: 0 }}\n                    exit={{ opacity: 0, x: -20 }}\n                    transition={{ type: \"spring\", stiffness: 200, damping: 25 }}\n                    className=\"absolute inset-0 p-4 bg-card\"\n                  >\n                    {item.content}\n                  </motion.div>\n                )\n            )}\n          </AnimatePresence>\n        </div>\n      </Tabs>\n    </div>\n  );\n}\n",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "ruixen.ui",
+    "slug": "fade-slide-tabs",
+    "registry_url": "https://21st.dev/r/ruixen.ui/fade-slide-tabs",
+    "title": "Fade Slide Tabs",
+    "description": "The Fade + Slide Tabs component elevates traditional tab navigation by animating the tab content with smooth fade and slide effects. When switching tabs, the previous content gently fades out while the new content slides in from the right, creating a polished and fluid user experience. Built using shadcn UI Tabs and Framer Motion, this component supports fully customizable labels, content panels, and default active tabs. Its responsive design works seamlessly across light and dark themes, making it ideal for dashboards, multi-view interfaces, and applications where smooth, visually engaging transitions enhance usability and user engagement.",
+    "category": "tabs",
+    "category_group": "UI Components",
+    "downloads": 24,
+    "likes": 0
+  }
+}

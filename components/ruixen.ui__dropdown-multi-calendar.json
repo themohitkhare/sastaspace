@@ -1,0 +1,35 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "dropdown-multi-calendar",
+  "type": "registry:component",
+  "title": "Dropdown Multi Calendar",
+  "description": "A dropdown-multi-calendar component.",
+  "dependencies": [
+    "date-fns"
+  ],
+  "registryDependencies": [
+    "https://21st.dev/r/originui/calendar",
+    "https://21st.dev/r/originui/button",
+    "https://21st.dev/r/originui/badge",
+    "https://21st.dev/r/shadcn/card",
+    "https://21st.dev/r/originui/select"
+  ],
+  "files": [
+    {
+      "path": "src/components/ui/dropdown-multi-calendar.tsx",
+      "content": "\"use client\";\n\nimport * as React from \"react\";\nimport { format, setMonth, setYear } from \"date-fns\";\nimport { Calendar } from \"@/components/ui/calendar\";\nimport { Button } from \"@/components/ui/button\";\nimport { Badge } from \"@/components/ui/badge\";\nimport {\n  Card,\n  CardContent,\n  CardFooter,\n  CardHeader,\n  CardTitle,\n} from \"@/components/ui/card\";\nimport {\n  Select,\n  SelectContent,\n  SelectItem,\n  SelectTrigger,\n  SelectValue,\n} from \"@/components/ui/select\";\n\nfunction DropdownMultiCalendar() {\n  const today = new Date();\n  const [month, setMonthState] = React.useState(today.getMonth());\n  const [year, setYearState] = React.useState(today.getFullYear());\n  const [selectedDates, setSelectedDates] = React.useState<Date[]>([]);\n\n  const handleRemove = (date: Date) => {\n    setSelectedDates((prev) =>\n      prev.filter((d) => format(d, \"yyyy-MM-dd\") !== format(date, \"yyyy-MM-dd\"))\n    );\n  };\n\n  const handleMonthChange = (newMonth: number) => {\n    setMonthState(newMonth);\n  };\n\n  const handleYearChange = (newYear: number) => {\n    setYearState(newYear);\n  };\n\n  const displayMonth = setMonth(setYear(today, year), month);\n\n  return (\n    <Card className=\"w-[400px] shadow-none border-none bg-background\">\n      <CardContent className=\"flex flex-col gap-4\">\n        {/* Dropdowns */}\n        <div className=\"flex gap-2\">\n          {/* Year Select */}\n          <Select\n            value={year.toString()}\n            onValueChange={(val) => handleYearChange(Number(val))}\n          >\n            <SelectTrigger className=\"w-[140px]\">\n              <SelectValue placeholder=\"Year\" />\n            </SelectTrigger>\n            <SelectContent>\n              {Array.from({ length: 50 }, (_, i) => year - 25 + i).map((y) => (\n                <SelectItem key={y} value={y.toString()}>\n                  {y}\n                </SelectItem>\n              ))}\n            </SelectContent>\n          </Select>\n\n          {/* Month Select */}\n          <Select\n            value={month.toString()}\n            onValueChange={(val) => handleMonthChange(Number(val))}\n          >\n            <SelectTrigger className=\"w-[140px]\">\n              <SelectValue placeholder=\"Month\" />\n            </SelectTrigger>\n            <SelectContent>\n              {Array.from({ length: 12 }, (_, i) => (\n                <SelectItem key={i} value={i.toString()}>\n                  {format(new Date(2000, i, 1), \"MMMM\")}\n                </SelectItem>\n              ))}\n            </SelectContent>\n          </Select>\n        </div>\n\n        {/* Calendar */}\n        <Calendar\n          mode=\"multiple\"\n          selected={selectedDates}\n          onSelect={(dates) => setSelectedDates(dates ?? [])}\n          month={displayMonth}\n          onMonthChange={(date) => {\n            setMonthState(date.getMonth());\n            setYearState(date.getFullYear());\n          }}\n          className=\"rounded-md border\"\n        />\n\n        {/* Selected dates list */}\n        <div className=\"flex flex-wrap gap-2\">\n          {selectedDates.length === 0 && (\n            <p className=\"text-xs text-muted-foreground\">No dates selected</p>\n          )}\n          {selectedDates\n            .sort((a, b) => a.getTime() - b.getTime())\n            .map((d) => (\n              <Badge\n                key={d.toISOString()}\n                variant=\"secondary\"\n                className=\"flex items-center gap-2\"\n              >\n                {format(d, \"PPP\")}\n                <Button\n                  size=\"icon\"\n                  variant=\"ghost\"\n                  className=\"h-4 w-4 p-0 text-muted-foreground hover:text-destructive\"\n                  onClick={() => handleRemove(d)}\n                >\n                  ✕\n                </Button>\n              </Badge>\n            ))}\n        </div>\n      </CardContent>\n      <CardFooter className=\"flex justify-end\">\n        <Button\n          size=\"sm\"\n          onClick={() => console.log(\"Selected dates:\", selectedDates)}\n          disabled={selectedDates.length === 0}\n        >\n          Confirm\n        </Button>\n      </CardFooter>\n    </Card>\n  );\n}\n\nexport { DropdownMultiCalendar };\n",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "ruixen.ui",
+    "slug": "dropdown-multi-calendar",
+    "registry_url": "https://21st.dev/r/ruixen.ui/dropdown-multi-calendar",
+    "title": "Dropdown Multi Calendar",
+    "description": "The DropdownMultiCalendar is a powerful and user-friendly date selection component that enhances the traditional multi-date calendar with intuitive navigation controls. Built entirely with shadcn/ui, it features dropdown menus for quickly selecting a specific year and month, allowing users to jump instantly to any point in time without scrolling through the calendar. Once dates are chosen, they are displayed as interactive badges that can be individually removed for fine-grained control. The structured card layout, combined with a confirmation action, makes it ideal for applications like booking systems, event planners, and scheduling dashboards where efficient navigation and multi-date management are essential.",
+    "category": "calendar",
+    "category_group": "UI Components",
+    "downloads": 15,
+    "likes": 0
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "floating-label",
+  "type": "registry:component",
+  "title": "Floating Label",
+  "description": "A floating-label component.",
+  "dependencies": [],
+  "registryDependencies": [
+    "https://21st.dev/r/originui/input",
+    "https://21st.dev/r/originui/label"
+  ],
+  "files": [
+    {
+      "path": "src/components/ui/floating-label.tsx",
+      "content": "'use client';\n\nimport React from 'react';\nimport { cn } from '@/lib/utils';\nimport { Input } from '@/components/ui/input';\nimport { Label } from '@/components/ui/label';\n\nexport interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {}\n\nconst FloatingInput = React.forwardRef<HTMLInputElement, InputProps>(\n  ({ className, ...props }, ref) => {\n    return <Input placeholder=\" \" className={cn('peer', className)} ref={ref} {...props} />;\n  },\n);\nFloatingInput.displayName = 'FloatingInput';\n\nconst FloatingLabel = React.forwardRef<\n  React.ElementRef<typeof Label>,\n  React.ComponentPropsWithoutRef<typeof Label>\n>(({ className, ...props }, ref) => {\n  return (\n    <Label\n      className={cn(\n        'peer-focus:secondary peer-focus:dark:secondary absolute start-2 top-2 z-10 origin-[0] -translate-y-4 scale-75 transform bg-background px-2 text-sm text-gray-500 duration-300 peer-placeholder-shown:top-1/2 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:scale-100 peer-focus:top-2 peer-focus:-translate-y-4 peer-focus:scale-75 peer-focus:px-2 dark:bg-background rtl:peer-focus:left-auto rtl:peer-focus:translate-x-1/4 cursor-text',\n        className,\n      )}\n      ref={ref}\n      {...props}\n    />\n  );\n});\nFloatingLabel.displayName = 'FloatingLabel';\n\ntype FloatingLabelInputProps = InputProps & { label?: string };\n\nexport const Component = React.forwardRef<\n  React.ElementRef<typeof FloatingInput>,\n  React.PropsWithoutRef<FloatingLabelInputProps>\n>(({ id, label, ...props }, ref) => {\n  return (\n    <div className=\"relative\">\n      <FloatingInput ref={ref} id={id} {...props} />\n      <FloatingLabel htmlFor={id}>{label}</FloatingLabel>\n    </div>\n  );\n});\nComponent.displayName = 'Component';",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "arihantcodes_1f7b8c4d",
+    "slug": "floating-label",
+    "registry_url": "https://21st.dev/r/arihantcodes_1f7b8c4d/floating-label",
+    "title": "Floating Label",
+    "description": "Here is Floating Label component",
+    "category": "input",
+    "category_group": "UI Components",
+    "downloads": 25,
+    "likes": 0
+  }
+}

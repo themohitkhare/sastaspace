@@ -1,0 +1,27 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "holographic-card",
+  "type": "registry:component",
+  "title": "Holographic Card",
+  "description": "A holographic-card component.",
+  "dependencies": [],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/ui/holographic-card.tsx",
+      "content": "import React, { useRef } from 'react';\n\nconst HolographicCard = () => {\n    const cardRef = useRef(null);\n\n    const handleMouseMove = (e) => {\n        if (!cardRef.current) return;\n        const card = cardRef.current;\n        const rect = card.getBoundingClientRect();\n        const x = e.clientX - rect.left;\n        const y = e.clientY - rect.top;\n\n        const centerX = rect.width / 2;\n        const centerY = rect.height / 2;\n        \n        const rotateX = (y - centerY) / 10;\n        const rotateY = (centerX - x) / 10;\n\n        card.style.setProperty('--x', `${x}px`);\n        card.style.setProperty('--y', `${y}px`);\n        card.style.setProperty('--bg-x', `${(x / rect.width) * 100}%`);\n        card.style.setProperty('--bg-y', `${(y / rect.height) * 100}%`);\n        card.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;\n    };\n\n    const handleMouseLeave = () => {\n        if (!cardRef.current) return;\n        const card = cardRef.current;\n        card.style.transform = 'perspective(1000px) rotateX(0deg) rotateY(0deg)';\n        card.style.setProperty('--x', `50%`);\n        card.style.setProperty('--y', `50%`);\n        card.style.setProperty('--bg-x', '50%');\n        card.style.setProperty('--bg-y', '50%');\n    };\n\n    return (\n        <div \n            className=\"component-card holographic-card\" \n            ref={cardRef}\n            onMouseMove={handleMouseMove}\n            onMouseLeave={handleMouseLeave}\n        >\n            <div className=\"holo-content text-center\">\n                <h3 className=\"component-title\" style={{fontWeight: 700, fontSize: '1.25rem', color: '#ffffff', letterSpacing: '-0.025em'}}>\n                    Holographic Card\n                </h3>\n                <p style={{color: '#9ca3af', fontSize: '0.875rem'}}>\n                    Move your mouse over me!\n                </p>\n            </div>\n            <div className=\"holo-glow\"></div>\n        </div>\n    );\n};\n\nexport default HolographicCard;",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "dhileepkumargm",
+    "slug": "holographic-card",
+    "registry_url": "https://21st.dev/r/dhileepkumargm/holographic-card",
+    "title": "HolographicCard",
+    "description": "An interactive holographic UI card component that reacts to cursor movement with subtle 3D tilt, dynamic glow, and iridescent sheen for a futuristic, tactile micro-interaction.",
+    "category": "card",
+    "category_group": "UI Components",
+    "downloads": 90,
+    "likes": 0
+  }
+}

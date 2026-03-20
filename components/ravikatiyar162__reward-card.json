@@ -1,0 +1,29 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "reward-card",
+  "type": "registry:component",
+  "title": "Reward Card",
+  "description": "A reward-card component.",
+  "dependencies": [
+    "framer-motion"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/ui/reward-card.tsx",
+      "content": "import React, { useState, useRef, useEffect } from 'react';\nimport { motion, useMotionValue, useTransform, AnimatePresence } from 'framer-motion';\nimport { cn } from '@/lib/utils';\n\n// ---PROPS---\ninterface SlideToUnlockProps {\n  children: React.ReactNode;\n  onUnlock: () => void;\n  sliderText?: string;\n  unlockedContent: React.ReactNode;\n  className?: string;\n  shimmer?: boolean;\n}\n\n// ---COMPONENT---\nexport const SlideToUnlock = ({\n  children,\n  onUnlock,\n  sliderText = 'Swipe to open the gift',\n  unlockedContent,\n  className,\n  shimmer = true,\n}: SlideToUnlockProps) => {\n  const [unlocked, setUnlocked] = useState(false);\n  const [dragConstraint, setDragConstraint] = useState(0);\n  const x = useMotionValue(0);\n\n  const sliderRef = useRef<HTMLDivElement>(null);\n  const handleRef = useRef<HTMLDivElement>(null);\n\n  // Effect to calculate the correct drag constraint after the component mounts\n  useEffect(() => {\n    const sliderWidth = sliderRef.current?.offsetWidth || 0;\n    const handleWidth = handleRef.current?.offsetWidth || 0;\n    setDragConstraint(sliderWidth - handleWidth);\n  }, []);\n\n  // When the drag ends, check if it's past the threshold\n  const onDragEnd = (event: any, info: any) => {\n    if (info.offset.x > dragConstraint * 0.8) { // Unlock if dragged over 80%\n      setUnlocked(true);\n      onUnlock();\n    } else {\n      // Snap back to the start\n      x.set(0);\n    }\n  };\n\n  const textOpacity = useTransform(x, [0, 50], [1, 0]);\n\n  return (\n    <div className={cn(\"relative w-full max-w-xs overflow-hidden rounded-2xl border bg-card p-6 text-card-foreground shadow-sm\", className)}>\n      {children}\n      <AnimatePresence mode=\"wait\">\n        {!unlocked ? (\n          <motion.div\n            key=\"slider\"\n            initial={{ opacity: 1, y: 0 }}\n            exit={{ opacity: 0, y: 20 }}\n            transition={{ duration: 0.3 }}\n            className=\"relative mt-6\"\n          >\n            <div ref={sliderRef} className=\"relative h-14 w-full rounded-full bg-secondary\">\n              <motion.div\n                ref={handleRef}\n                drag=\"x\"\n                dragConstraints={{ left: 0, right: dragConstraint }}\n                dragElastic={0.1}\n                style={{ x }}\n                onDragEnd={onDragEnd}\n                className=\"absolute left-0 top-0 z-10 flex h-14 w-14 cursor-grab items-center justify-center rounded-full bg-foreground active:cursor-grabbing\"\n              >\n                <ChevronRightIcon className=\"h-6 w-6 text-background\" />\n              </motion.div>\n              <motion.span\n                style={{ opacity: textOpacity }}\n                className={cn(\n                  \"absolute inset-0 flex items-center justify-center text-sm font-medium text-muted-foreground\",\n                  shimmer && \"animate-shimmer bg-[linear-gradient(110deg,#9ca3af,45%,#e5e7eb,55%,#9ca3af)] bg-[length:200%_100%] bg-clip-text text-transparent\"\n                )}\n              >\n                {sliderText}\n              </motion.span>\n            </div>\n          </motion.div>\n        ) : (\n          <motion.div\n            key=\"unlocked\"\n            initial={{ opacity: 0, y: -20 }}\n            animate={{ opacity: 1, y: 0 }}\n            transition={{ duration: 0.5, delay: 0.1 }}\n          >\n            {unlockedContent}\n          </motion.div>\n        )}\n      </AnimatePresence>\n    </div>\n  );\n};\n\n// ---ICON---\nconst ChevronRightIcon = (props: React.SVGProps<SVGSVGElement>) => (\n  <svg {...props} xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" strokeWidth=\"2\" strokeLinecap=\"round\" strokeLinejoin=\"round\">\n    <path d=\"m9 18 6-6-6-6\" />\n  </svg>\n);\n",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "ravikatiyar162",
+    "slug": "reward-card",
+    "registry_url": "https://21st.dev/r/ravikatiyar162/reward-card",
+    "title": "Reward Card",
+    "description": "Gift unlock screen with themed card, confetti background, and central gift icon. Includes bold greeting, short wish, and a green “Spotify Premium 1 Year” easy to ues, slider button to claim.",
+    "category": "card",
+    "category_group": "UI Components",
+    "downloads": 12,
+    "likes": 0
+  }
+}

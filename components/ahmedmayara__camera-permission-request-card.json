@@ -1,0 +1,33 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "camera-permission-request-card",
+  "type": "registry:component",
+  "title": "Camera Permission Request Card",
+  "description": "A camera-permission-request-card component.",
+  "dependencies": [
+    "@remixicon/react"
+  ],
+  "registryDependencies": [
+    "https://21st.dev/r/shadcn/card",
+    "https://21st.dev/r/sean0205/accordion",
+    "https://21st.dev/r/shadcn/button"
+  ],
+  "files": [
+    {
+      "path": "src/components/ui/camera-permission-request-card.tsx",
+      "content": "import { RiAppleFill, RiQuestionLine } from \"@remixicon/react\";\n\nimport {\n  Accordion,\n  AccordionContent,\n  AccordionItem,\n  AccordionTrigger,\n} from \"@/components/ui/accordion\";\nimport { Button } from \"@/components/ui/button\";\nimport {\n  Card,\n  CardContent,\n  CardDescription,\n  CardTitle,\n} from \"@/components/ui/card\";\n\nexport const Component = () => {\n  return (\n    <Card className=\"flex w-full max-w-[500px] flex-col rounded-[14px] bg-muted/40 p-[4px] shadow-none\">\n      <CardContent className=\"relative flex flex-col items-center justify-center overflow-hidden rounded-[10px] bg-background p-0 ring-1 ring-border\">\n        <div className=\"z-10 flex w-full flex-col items-center justify-center gap-4.5 px-6 py-8 text-center\">\n          <img\n            src=\"https://icons-app-two.vercel.app/camera-app-icon.svg\"\n            alt=\"camera icon\"\n            className=\"size-12 rounded-xl\"\n          />\n          <div className=\"flex max-w-96 flex-col gap-1.5\">\n            <CardTitle className=\"text-lg\">Camera permission required</CardTitle>\n            <CardDescription className=\"tracking-[-0.006em]\">\n              To make video calls, please turn on the camera permission in your\n              app by clicking the notification.\n            </CardDescription>\n          </div>\n\n          <div className=\"relative w-full overflow-hidden rounded-xl bg-accent/70 p-6 ring-1 ring-border ring-inset dark:bg-popover\">\n            <div className=\"ml-8 grid w-full grid-cols-[70px_1fr] overflow-hidden rounded-xl bg-card ring-1 ring-border drop-shadow-xl\">\n              <div className=\"relative flex h-full w-full items-center justify-center overflow-hidden border-r bg-[repeating-linear-gradient(-60deg,var(--color-border)_0_0.5px,transparent_0.5px_8px)]\">\n                <img\n                  src=\"https://icons-app-two.vercel.app/camera-app-icon.svg\"\n                  alt=\"camera icon\"\n                  className=\"ml-10 size-16 rounded-xl\"\n                />\n                <span className=\"absolute top-3 left-3 size-[11px] rounded-full bg-gradient-to-b from-green-600 via-green-500 to-green-400 inset-shadow-sm inset-shadow-green-300\"></span>\n              </div>\n              <div className=\"flex flex-col gap-2 p-4\">\n                <div className=\"flex flex-col gap-0.5 text-left\">\n                  <h3 className=\"text-sm font-medium tracking-[-0.006em]\">\n                    Allow camera access\n                  </h3>\n                  <p className=\"text-xs tracking-[-0.006em] text-muted-foreground\">\n                    Allow camera access to make video calls\n                  </p>\n                </div>\n\n                <div className=\"flex items-center gap-2\">\n                  <Button\n                    variant=\"link\"\n                    size=\"sm\"\n                    className=\"p-0 text-xs text-muted-foreground\"\n                  >\n                    Deny\n                  </Button>\n                  <Button variant=\"link\" size=\"sm\" className=\"p-0 text-xs\">\n                    Allow\n                  </Button>\n                </div>\n              </div>\n            </div>\n          </div>\n\n          <Accordion\n            type=\"single\"\n            variant=\"solid\"\n            collapsible\n            className=\"w-full\"\n            defaultValue=\"item-1\"\n          >\n            <AccordionItem\n              value=\"item-1\"\n              className=\"ring-1 ring-border dark:bg-popover\"\n            >\n              <AccordionTrigger className=\"text-sm dark:bg-popover\">\n                <div className=\"flex items-center gap-1.5\">\n                  <RiQuestionLine className=\"size-4 text-muted-foreground\" />\n                  Step-by-step guide\n                </div>\n              </AccordionTrigger>\n              <AccordionContent>\n                <ol className=\"ml-9.5 list-decimal space-y-2 text-left tracking-[-0.006em]\">\n                  <li>\n                    Click the{\" \"}\n                    <span className=\"inline-flex items-center gap-1 font-bold\">\n                      Apple menu\n                      <RiAppleFill className=\"size-4\" />\n                    </span>{\" \"}\n                    in the top-left corner.\n                  </li>\n\n                  <li>\n                    Select <span className=\"font-bold\">System Settings</span>{\" \"}\n                    (or <span className=\"font-bold\">System Preferences</span>).\n                  </li>\n                  <li>\n                    In the sidebar, click{\" \"}\n                    <span className=\"font-bold\">Privacy & Security</span>.\n                  </li>\n                  <li>\n                    Scroll down and select{\" \"}\n                    <span className=\"font-bold\">Camera</span>.\n                  </li>\n                  <li>Find our app in the list and toggle it on!</li>\n                </ol>\n              </AccordionContent>\n            </AccordionItem>\n          </Accordion>\n        </div>\n        <div className=\"z-10 flex w-full items-center justify-between border-t bg-background px-6 py-4\">\n          <Button variant=\"outline\">Didn’t get a notification?</Button>\n          <Button>Continue</Button>\n        </div>\n      </CardContent>\n    </Card>\n  );\n};\n",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "ahmedmayara",
+    "slug": "camera-permission-request-card",
+    "registry_url": "https://21st.dev/r/ahmedmayara/camera-permission-request-card",
+    "title": "Camera Permission Request Card",
+    "description": "A beautifully designed card component for requesting camera permissions. Ideal for onboarding flows and video call apps.",
+    "category": "card",
+    "category_group": "UI Components",
+    "downloads": 0,
+    "likes": 0
+  }
+}

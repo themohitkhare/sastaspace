@@ -1,0 +1,56 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "marquee-card",
+  "type": "registry:component",
+  "title": "Marquee Card",
+  "description": "A marquee-card component.",
+  "dependencies": [
+    "lucide-react"
+  ],
+  "registryDependencies": [
+    "https://21st.dev/r/designali-in/marquee",
+    "https://21st.dev/r/designali-in/liquid-glass-card"
+  ],
+  "files": [
+    {
+      "path": "src/components/ui/marquee-card.tsx",
+      "content": " import { Star } from \"lucide-react\"\n\nimport { LiquidCard, CardContent } from \"@/components/ui/liquid-glass-card\"\nimport { Marquee } from \"@/components/ui/marquee\"\n\nconst testimonials = [\n  {\n    name: \"Sarah Johnson\",\n    role: \"Product Manager\",\n    content:\n      \"This component library has transformed our development workflow. Highly recommended!\",\n    avatar: \"https://raw.githubusercontent.com/dalim-in/dalim/refs/heads/main/apps/www/public/ali.jpg\",\n    rating: 5,\n  },\n  {\n    name: \"Mike Chen\",\n    role: \"Frontend Developer\",\n    content:\n      \"Clean, modern, and incredibly easy to use. Perfect for our React projects.\",\n    avatar: \"https://raw.githubusercontent.com/dalim-in/dalim/refs/heads/main/apps/www/public/ali.jpg\",\n    rating: 5,\n  },\n  {\n    name: \"Emily Davis\",\n    role: \"UI Designer\",\n    content:\n      \"The design system is consistent and beautiful. Love the attention to detail.\",\n    avatar: \"https://raw.githubusercontent.com/dalim-in/dalim/refs/heads/main/apps/www/public/ali.jpg\",\n    rating: 5,\n  },\n  {\n    name: \"Alex Rodriguez\",\n    role: \"Tech Lead\",\n    content:\n      \"Excellent documentation and great community support. A must-have toolkit.\",\n    avatar: \"https://raw.githubusercontent.com/dalim-in/dalim/refs/heads/main/apps/www/public/ali.jpg\",\n    rating: 5,\n  },\n]\n\n\nexport const Component = () => {\n   \n  return (\n    <div  >\n      <Marquee pauseOnHover>\n        {testimonials.map((testimonial, index) => (\n          <LiquidCard key={index} className=\"mx-1 rounded-3xl w-80 h-full\">\n            <CardContent className=\"p-6 py-0\">\n              <div className=\"mb-4 flex items-center space-x-3\">\n                <img\n                  src={testimonial.avatar || \"/placeholder.svg\"}\n                  alt={testimonial.name}\n                  className=\"h-10 w-10 object-cover rounded-full\"\n                />\n                <div>\n                  <h4 className=\"font-semibold\">\n                    {testimonial.name}\n                  </h4>\n                  <p className=\"text-sm text-primary/60\">{testimonial.role}</p>\n                </div>\n              </div>\n              <p className=\"mb-3\">{testimonial.content}</p>\n              <div className=\"flex space-x-1\">\n                {[...Array(testimonial.rating)].map((_, i) => (\n                  <Star\n                    key={i}\n                    className=\"h-4 w-4 fill-[#fff200] text-[#fff200]\"\n                  />\n                ))}\n              </div>\n            </CardContent>\n          </LiquidCard>\n        ))}\n      </Marquee>\n    </div>\n  );\n};\n",
+      "type": "registry:component"
+    }
+  ],
+  "cssVars": {
+    "theme": {
+      "--animate-marquee": "marquee var(--duration) infinite linear",
+      "--animate-marquee-vertical": "marquee-vertical var(--duration) linear infinite"
+    }
+  },
+  "css": {
+    "@keyframes marquee": {
+      "from": {
+        "transform": "translateX(0)"
+      },
+      "to": {
+        "transform": "translateX(calc(-100% - var(--gap)))"
+      }
+    },
+    "@keyframes marquee-vertical": {
+      "from": {
+        "transform": "translateY(0)"
+      },
+      "to": {
+        "transform": "translateY(calc(-100% - var(--gap)))"
+      }
+    }
+  },
+  "_meta": {
+    "author": "designali-in",
+    "slug": "marquee-card",
+    "registry_url": "https://21st.dev/r/designali-in/marquee-card",
+    "title": "Marquee Card",
+    "description": "Marquee Card, card, testimonials",
+    "category": "card",
+    "category_group": "UI Components",
+    "downloads": 21,
+    "likes": 0
+  }
+}

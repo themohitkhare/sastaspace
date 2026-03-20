@@ -1,0 +1,71 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "select-1",
+  "type": "registry:component",
+  "title": "Select 1",
+  "description": "A select-1 component.",
+  "dependencies": [
+    "clsx"
+  ],
+  "registryDependencies": [
+    "https://21st.dev/r/shugar/error"
+  ],
+  "files": [
+    {
+      "path": "src/components/ui/select-1.tsx",
+      "content": "import React from \"react\";\nimport { Error } from \"@/components/ui/error\";\nimport clsx from \"clsx\";\n\nconst sizes = [\n  {\n    xsmall: \"h-6 text-xs pl-1.5 pr-[22px]\",\n    small: \"h-8 text-sm pl-3 pr-9\",\n    medium: \"h-10 text-sm pl-3 pr-9\",\n    large: \"h-12 text-base pl-3 pr-9 rounded-lg\"\n  },\n  {\n    xsmall: \"h-6 text-xs px-[22px]\",\n    small: \"h-8 text-sm px-9\",\n    medium: \"h-10 text-sm px-9\",\n    large: \"h-12 text-base px-9 rounded-lg\"\n  }\n];\n\nconst variants = {\n  default: \"\",\n  ghost: \"\"\n};\n\nexport interface Option {\n  value: string;\n  label: string;\n}\n\ninterface SelectProps {\n  variant?: keyof typeof variants;\n  options?: Option[];\n  label?: string;\n  value?: string;\n  placeholder?: string;\n  size?: keyof typeof sizes[0];\n  prefix?: React.ReactNode;\n  suffix?: React.ReactNode;\n  disabled?: boolean;\n  error?: string;\n  onChange?: React.ChangeEventHandler<HTMLSelectElement>;\n}\n\nconst ArrowBottom = () => (\n  <svg\n    height=\"16\"\n    strokeLinejoin=\"round\"\n    viewBox=\"0 0 16 16\"\n    width=\"16\"\n  >\n    <path\n      fillRule=\"evenodd\"\n      clipRule=\"evenodd\"\n      d=\"M14.0607 5.49999L13.5303 6.03032L8.7071 10.8535C8.31658 11.2441 7.68341 11.2441 7.29289 10.8535L2.46966 6.03032L1.93933 5.49999L2.99999 4.43933L3.53032 4.96966L7.99999 9.43933L12.4697 4.96966L13 4.43933L14.0607 5.49999Z\"\n    />\n  </svg>\n);\n\nexport const Select = ({\n  variant = \"default\",\n  options,\n  label,\n  value,\n  placeholder,\n  size = \"medium\",\n  suffix,\n  prefix,\n  disabled = false,\n  error,\n  onChange\n}: SelectProps) => {\n  return (\n    <div>\n      {label && (\n        <label\n          htmlFor=\"select\"\n          className=\"cursor-text block font-sans text-[13px] text-gray-900 capitalize mb-2\"\n        >\n          {label}\n        </label>\n      )}\n      <div className={clsx(\n        \"relative flex items-center\",\n        disabled ? \"fill-[#8f8f8f]\" : \"fill-[#666666] dark:fill-[#a1a1a1] hover:fill-[#171717] hover:dark:fill-[#ededed]\"\n      )}>\n        <style>\n          {`\n          .xsmallIconContainer svg {\n              width: 16px;\n              height: 12px;\n          }\n          .smallIconContainer, .mediumIconContainer, .largeIconContainer svg {\n              width: 16px;\n              height: 16px;\n          }\n        `}\n        </style>\n        <select\n          id=\"select\"\n          disabled={disabled}\n          value={value}\n          onChange={onChange}\n          className={clsx(\n            \"font-sans appearance-none w-full border rounded-[5px] duration-200 outline-none\",\n            sizes[prefix ? 1 : 0][size],\n            disabled ? \"cursor-not-allowed bg-gray-100 text-gray-700\" : variant === \"default\" ? \"text-gray-1000 bg-background-100 cursor-pointer\" : \"bg-transparent text-accents-5\",\n            error ? \"border-error ring-red-900-alpha-160 ring-opacity-100 ring-[3px]\" : `ring-gray-alpha-500 ring-opacity-100 focus:ring-[3px] ${variant === \"default\" ? \"border-gray-alpha-400\" : \"border-transparent ring-none\"}`\n          )}\n        >\n          {placeholder && <option value=\"\" disabled selected>{placeholder}</option>}\n          {options && options.map((option) => (\n            <option key={option.value} value={option.value}>\n              {option.label}\n            </option>\n          ))}\n        </select>\n        {prefix && (\n          <span className={clsx(\n            `inline-flex absolute pointer-events-none duration-150 ${size}IconContainer`,\n            size === \"xsmall\" ? \"left-[5px]\" : \"left-3\"\n          )}>\n            {prefix}\n          </span>\n        )}\n        <span\n          className={clsx(\n            `inline-flex absolute pointer-events-none duration-150 ${size}IconContainer`,\n            size === \"xsmall\" ? \"right-[5px]\" : \"right-3\"\n          )}>\n          {suffix ? suffix : <ArrowBottom />}\n        </span>\n      </div>\n      {error && (\n        <div className=\"mt-2\">\n          <Error size={size === \"large\" ? \"large\" : \"small\"}>{error}</Error>\n        </div>\n      )}\n    </div>\n  );\n};",
+      "type": "registry:component"
+    }
+  ],
+  "cssVars": {
+    "theme": {
+      "--color-context-card-border": "var(--context-card-border)",
+      "--color-red-900": "var(--ds-red-900)",
+      "--color-red-900-alpha-160": "var(--ds-red-900-alpha-160)",
+      "--color-gray-100": "var(--ds-gray-100)",
+      "--color-gray-700": "var(--ds-gray-700)",
+      "--color-gray-900": "var(--ds-gray-900)",
+      "--color-gray-1000": "var(--ds-gray-1000)",
+      "--color-background-100": "var(--ds-background-100)",
+      "--color-error": "var(--geist-error)",
+      "--color-ds-background-100": "var(----ds-background-100)",
+      "--color-ds-gray-1000": "var(----ds-gray-1000)",
+      "--color-color-red-900": "var(----color-red-900)"
+    },
+    "light": {
+      "--context-card-border": "hsla(0, 0%, 92%, 1)",
+      "--ds-red-900": "oklch(54.99% 0.232 25.29)",
+      "--ds-red-900-alpha-160": "hsla(358,66%,48%,.16)",
+      "--ds-gray-100": "hsla(0, 0%, 95%, 1)",
+      "--ds-gray-700": "hsla(0, 0%, 56%, 1)",
+      "--ds-gray-900": "hsla(0, 0%, 40%, 1)",
+      "--ds-gray-1000": "hsla(0, 0%, 9%, 1)",
+      "--ds-background-100": "hsla(0, 0%, 100%, 1)",
+      "--geist-error": "#ee0000",
+      "--color-red-900": "oklch(54.99% 0.232 25.29)"
+    },
+    "dark": {
+      "--context-card-border": "hsla(0, 0%, 18%, 1)",
+      "--ds-red-900": "oklch(69.96% 0.2136 22.03)",
+      "--ds-red-900-alpha-160": "hsla(358,100%,69%,.16)",
+      "--ds-gray-100": "hsla(0, 0%, 10%, 1)",
+      "--ds-gray-700": "hsla(0, 0%, 56%, 1)",
+      "--ds-gray-900": "hsla(0, 0%, 63%, 1)",
+      "--ds-gray-1000": "hsla(0, 0%, 93%, 1)",
+      "--ds-background-100": "hsla(0, 0%, 4%, 1)",
+      "--geist-error": "#ff0000",
+      "--color-red-900": "oklch(69.96% 0.2136 22.03)"
+    }
+  },
+  "_meta": {
+    "author": "shugar",
+    "slug": "select-1",
+    "registry_url": "https://21st.dev/r/shugar/select-1",
+    "title": "Select",
+    "description": "Display a dropdown list of items.",
+    "category": "select",
+    "category_group": "UI Components",
+    "downloads": 21,
+    "likes": 0
+  }
+}

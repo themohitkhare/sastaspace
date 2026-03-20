@@ -1,0 +1,99 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "toast",
+  "type": "registry:component",
+  "title": "Toast",
+  "description": "A toast component.",
+  "dependencies": [
+    "clsx"
+  ],
+  "registryDependencies": [
+    "https://21st.dev/r/shugar/button-1"
+  ],
+  "files": [
+    {
+      "path": "src/components/ui/toast.tsx",
+      "content": "import { ReactNode, useCallback, useEffect, useState } from \"react\";\nimport { createRoot } from \"react-dom/client\";\nimport clsx from \"clsx\";\nimport { Button } from \"@/components/ui/button-1\";\n\nconst CloseIcon = ({ className }: { className: string }) => (\n  <svg height=\"16\" strokeLinejoin=\"round\" viewBox=\"0 0 16 16\" width=\"16\" className={className}>\n    <path\n      fillRule=\"evenodd\"\n      clipRule=\"evenodd\"\n      d=\"M12.4697 13.5303L13 14.0607L14.0607 13L13.5303 12.4697L9.06065 7.99999L13.5303 3.53032L14.0607 2.99999L13 1.93933L12.4697 2.46966L7.99999 6.93933L3.53032 2.46966L2.99999 1.93933L1.93933 2.99999L2.46966 3.53032L6.93933 7.99999L2.46966 12.4697L1.93933 13L2.99999 14.0607L3.53032 13.5303L7.99999 9.06065L12.4697 13.5303Z\"\n    />\n  </svg>\n);\n\nconst UndoIcon = () => (\n  <svg height=\"16\" strokeLinejoin=\"round\" viewBox=\"0 0 16 16\" width=\"16\" className=\"fill-gray-1000\">\n    <path\n      fillRule=\"evenodd\"\n      clipRule=\"evenodd\"\n      d=\"M13.5 8C13.5 4.96643 11.0257 2.5 7.96452 2.5C5.42843 2.5 3.29365 4.19393 2.63724 6.5H5.25H6V8H5.25H0.75C0.335787 8 0 7.66421 0 7.25V2.75V2H1.5V2.75V5.23347C2.57851 2.74164 5.06835 1 7.96452 1C11.8461 1 15 4.13001 15 8C15 11.87 11.8461 15 7.96452 15C5.62368 15 3.54872 13.8617 2.27046 12.1122L1.828 11.5066L3.03915 10.6217L3.48161 11.2273C4.48831 12.6051 6.12055 13.5 7.96452 13.5C11.0257 13.5 13.5 11.0336 13.5 8Z\"\n    />\n  </svg>\n);\n\ntype Toast = {\n  id: number;\n  text: string | ReactNode;\n  measuredHeight?: number;\n  timeout?: NodeJS.Timeout;\n  remaining?: number;\n  start?: number;\n  pause?: () => void;\n  resume?: () => void;\n  preserve?: boolean;\n  action?: string;\n  onAction?: () => void;\n  onUndoAction?: () => void;\n  type: \"message\" | \"success\" | \"warning\" | \"error\";\n};\n\nlet root: ReturnType<typeof createRoot> | null = null;\nlet toastId = 0;\n\nconst toastStore = {\n  toasts: [] as Toast[],\n  listeners: new Set<() => void>(),\n\n  add(\n    text: string | ReactNode,\n    type: \"message\" | \"success\" | \"warning\" | \"error\",\n    preserve?: boolean,\n    action?: string,\n    onAction?: () => void,\n    onUndoAction?: () => void\n  ) {\n    const id = toastId++;\n\n    const toast: Toast = {\n      id,\n      text,\n      preserve,\n      action,\n      onAction,\n      onUndoAction,\n      type\n    };\n\n    if (!toast.preserve) {\n      toast.remaining = 3000;\n      toast.start = Date.now();\n\n      const close = () => {\n        this.toasts = this.toasts.filter((t) => t.id !== id);\n        this.notify();\n      };\n\n      toast.timeout = setTimeout(close, toast.remaining);\n\n      toast.pause = () => {\n        if (!toast.timeout) return;\n        clearTimeout(toast.timeout);\n        toast.timeout = undefined;\n        toast.remaining! -= Date.now() - toast.start!;\n      };\n\n      toast.resume = () => {\n        if (toast.timeout) return;\n        toast.start = Date.now();\n        toast.timeout = setTimeout(close, toast.remaining);\n      };\n    }\n\n    this.toasts.push(toast);\n    this.notify();\n  },\n\n  remove(id: number) {\n    toastStore.toasts = toastStore.toasts.filter((t) => t.id !== id);\n    toastStore.notify();\n  },\n\n  subscribe(listener: () => void) {\n    toastStore.listeners.add(listener);\n    return () => {\n      toastStore.listeners.delete(listener);\n    };\n  },\n\n  notify() {\n    toastStore.listeners.forEach((fn) => fn());\n  }\n};\n\nconst ToastContainer = () => {\n  const [toasts, setToasts] = useState<Toast[]>([]);\n  const [shownIds, setShownIds] = useState<number[]>([]);\n  const [isHovered, setIsHovered] = useState<boolean>(false);\n\n  const measureRef = (toast: Toast) => (node: HTMLDivElement | null) => {\n    if (node && toast.measuredHeight == null) {\n      toast.measuredHeight = node.getBoundingClientRect().height;\n      toastStore.notify();\n    }\n  };\n\n  useEffect(() => {\n    setToasts([...toastStore.toasts]);\n\n    return toastStore.subscribe(() => {\n      setToasts([...toastStore.toasts]);\n    });\n  }, []);\n\n  useEffect(() => {\n    const unseen = toasts.filter(t => !shownIds.includes(t.id)).map(t => t.id);\n    if (unseen.length > 0) {\n      requestAnimationFrame(() => {\n        setShownIds(prev => [...prev, ...unseen]);\n      });\n    }\n  }, [toasts]);\n\n  const lastVisibleCount = 3;\n  const lastVisibleStart = Math.max(0, toasts.length - lastVisibleCount);\n\n  const getFinalTransform = (index: number, length: number) => {\n    if (index === length - 1) {\n      return \"none\";\n    }\n    const offset = length - 1 - index;\n    let translateY = toasts[length - 1]?.measuredHeight || 63;\n    for (let i = length - 1; i > index; i--) {\n      if (isHovered) {\n        translateY += (toasts[i - 1]?.measuredHeight || 63) + 10;\n      } else {\n        translateY += 20;\n      }\n    }\n    const z = -offset;\n    const scale = isHovered ? 1 : (1 - 0.05 * offset);\n    return `translate3d(0, calc(100% - ${translateY}px), ${z}px) scale(${scale})`;\n  };\n\n  const handleMouseEnter = () => {\n    setIsHovered(true);\n    toastStore.toasts.forEach((t) => t.pause?.());\n  };\n\n  const handleMouseLeave = () => {\n    setIsHovered(false);\n    toastStore.toasts.forEach((t) => t.resume?.());\n  };\n\n  const visibleToasts = toasts.slice(lastVisibleStart);\n  const containerHeight = visibleToasts.reduce((acc, toast) => {\n    return acc + (toast.measuredHeight ?? 63);\n  }, 0);\n\n\n  return (\n    <div\n      className=\"fixed bottom-4 right-4 z-[9999] pointer-events-none w-[420px]\"\n      style={{ height: containerHeight }}\n    >\n      <div\n        className=\"relative pointer-events-auto w-full\"\n        style={{ height: containerHeight }}\n        onMouseEnter={handleMouseEnter}\n        onMouseLeave={handleMouseLeave}\n      >\n        {toasts.map((toast, index) => {\n          const isVisible = index >= lastVisibleStart;\n\n          return (\n            <div\n              key={toast.id}\n              ref={measureRef(toast)}\n              className={clsx(\n                \"absolute right-0 bottom-0 shadow-menu rounded-xl leading-[21px] p-4 h-fit\",\n                {\n                  message: \"bg-geist-background text-gray-1000\",\n                  success: \"bg-blue-700 text-contrast-fg\",\n                  warning: \"bg-amber-800 text-gray-1000 dark:text-gray-100\",\n                  error: \"bg-red-800 text-contrast-fg\"\n                }[toast.type],\n                isVisible ? \"opacity-100\" : \"opacity-0\",\n                index < lastVisibleStart && \"pointer-events-none\"\n              )}\n              style={{\n                width: 420,\n                transition: \"all .35s cubic-bezier(.25,.75,.6,.98)\",\n                transform: shownIds.includes(toast.id)\n                  ? getFinalTransform(index, toasts.length)\n                  : \"translate3d(0, 100%, 150px) scale(1)\"\n              }}\n            >\n              <div className=\"flex flex-col items-center justify-between text-[.875rem]\">\n                <div className=\"w-full h-full flex items-center justify-between gap-4\">\n                  <span>{toast.text}</span>\n                  {!toast.action && (\n                    <div className=\"flex gap-1\">\n                      {toast.onUndoAction && (\n                        <Button\n                          type=\"tertiary\"\n                          svgOnly\n                          size=\"small\"\n                          onClick={() => {\n                            toast.onUndoAction?.();\n                            toastStore.remove(toast.id);\n                          }}\n                        >\n                          <UndoIcon />\n                        </Button>\n                      )}\n                      <Button\n                        type=\"tertiary\"\n                        svgOnly\n                        size=\"small\"\n                        onClick={() => toastStore.remove(toast.id)}\n                      >\n                        <CloseIcon className={{\n                          message: \"fill-gray-1000\",\n                          success: \"fill-contrast-fg\",\n                          warning: \"fill-gray-1000 dark:fill-gray-100\",\n                          error: \"fill-contrast-fg\"\n                        }[toast.type]} />\n                      </Button>\n                    </div>\n                  )}\n                </div>\n                {toast.action && (\n                  <div className=\"w-full flex items-center justify-end gap-2\">\n                    <Button\n                      type=\"tertiary\"\n                      size=\"small\"\n                      onClick={() => toastStore.remove(toast.id)}\n                    >\n                      Dismiss\n                    </Button>\n                    <Button\n                      type=\"primary\"\n                      size=\"small\"\n                      onClick={() => {\n                        if (toast?.onAction) {\n                          toast?.onAction();\n                        }\n                        toastStore.remove(toast.id);\n                      }}\n                    >\n                      {toast.action}\n                    </Button>\n                  </div>\n                )}\n              </div>\n            </div>\n          );\n        })}\n      </div>\n    </div>\n  );\n};\n\nconst mountContainer = () => {\n  if (root) return;\n  const el = document.createElement(\"div\");\n  el.className = \"fixed bottom-4 right-4 z-[9999]\";\n  document.body.appendChild(el);\n  root = createRoot(el);\n  root.render(<ToastContainer />);\n};\n\ninterface Message {\n  text: string | ReactNode;\n  preserve?: boolean;\n  action?: string;\n  onAction?: () => void;\n  onUndoAction?: () => void;\n}\n\nexport const useToasts = () => {\n  return {\n    message: useCallback(({ text, preserve, action, onAction, onUndoAction }: Message) => {\n      mountContainer();\n      toastStore.add(text, \"message\", preserve, action, onAction, onUndoAction);\n    }, []),\n    success: useCallback((text: string) => {\n      mountContainer();\n      toastStore.add(text, \"success\");\n    }, []),\n    warning: useCallback((text: string) => {\n      mountContainer();\n      toastStore.add(text, \"warning\");\n    }, []),\n    error: useCallback((text: string) => {\n      mountContainer();\n      toastStore.add(text, \"error\");\n    }, [])\n  };\n};\n\n",
+      "type": "registry:component"
+    }
+  ],
+  "cssVars": {
+    "theme": {
+      "--color-context-card-border": "var(--context-card-border)",
+      "--color-red-800": "var(--ds-red-800)",
+      "--color-red-900": "var(--ds-red-900)",
+      "--color-blue-700": "var(--ds-blue-700)",
+      "--color-amber-800": "var(--ds-amber-800)",
+      "--color-amber-850": "var(--ds-amber-850)",
+      "--color-gray-100": "var(--ds-gray-100)",
+      "--color-gray-400": "var(--ds-gray-400)",
+      "--color-gray-700": "var(--ds-gray-700)",
+      "--color-gray-1000": "var(--ds-gray-1000)",
+      "--color-gray-1000-h": "var(--ds-gray-1000-h)",
+      "--color-gray-alpha-200": "var(--ds-gray-alpha-200)",
+      "--color-gray-alpha-400": "var(--ds-gray-alpha-400)",
+      "--color-background-100": "var(--ds-background-100)",
+      "--color-contrast-fg": "var(--ds-contrast-fg)",
+      "--color-geist-background": "var(--geist-background)",
+      "--shadow-focus-ring": "var(--ds-focus-ring)",
+      "--shadow-border-small": "var(--ds-shadow-border-small)",
+      "--shadow-menu": "var(--ds-shadow-menu)",
+      "--animate-fade-spin": "fade-spin 1.2s linear infinite"
+    },
+    "light": {
+      "--context-card-border": "hsla(0, 0%, 92%, 1)",
+      "--ds-contrast-fg": "#ffffff",
+      "--geist-background": "#fff",
+      "--ds-shadow-menu": "var(--ds-shadow-border), 0px 1px 1px rgba(0, 0, 0, 0.02), 0px 4px 8px -4px rgba(0, 0, 0, 0.04), 0px 16px 24px -8px rgba(0, 0, 0, 0.06)",
+      "--ds-red-800": "oklch(58.19% 0.2482 25.15)",
+      "--ds-red-900": "oklch(54.99% 0.232 25.29)",
+      "--ds-blue-700": "oklch(57.61% 0.2508 258.23)",
+      "--ds-amber-800": "oklch(77.21% 0.1991 64.28)",
+      "--ds-amber-850": "hsl(33, 96%, 42%)",
+      "--ds-gray-100": "hsla(0, 0%, 95%, 1)",
+      "--ds-gray-400": "hsla(0, 0%, 92%, 1)",
+      "--ds-gray-700": "hsla(0, 0%, 56%, 1)",
+      "--ds-gray-1000": "hsla(0, 0%, 9%, 1)",
+      "--ds-gray-1000-h": "hsl(0, 0%, 22%)",
+      "--ds-gray-alpha-200": "hsla(0, 0%, 0%, 0.08)",
+      "--ds-gray-alpha-400": "hsla(0, 0%, 0%, 0.08)",
+      "--ds-background-100": "hsla(0, 0%, 100%, 1)",
+      "--ds-focus-color": "var(--ds-blue-700)",
+      "--ds-focus-ring": "0 0 0 2px var(--ds-background-100), 0 0 0 4px var(--ds-focus-color)",
+      "--ds-shadow-border": "0 0 0 1px rgba(0, 0, 0, 0.08)",
+      "--ds-shadow-small": "0px 2px 2px rgba(0, 0, 0, 0.04)",
+      "--ds-shadow-border-small": "var(--ds-shadow-border), var(--ds-shadow-small)"
+    },
+    "dark": {
+      "--context-card-border": "hsla(0, 0%, 18%, 1)",
+      "--geist-background": "#000",
+      "--ds-shadow-menu": "var(--ds-shadow-border), 0px 1px 1px rgba(0, 0, 0, 0.02), 0px 4px 8px -4px rgba(0, 0, 0, 0.04), 0px 16px 24px -8px rgba(0, 0, 0, 0.06)",
+      "--ds-red-800": "oklch(58.01% 0.227 25.12)",
+      "--ds-red-900": "oklch(69.96% 0.2136 22.03)",
+      "--ds-blue-700": "oklch(57.61% 0.2321 258.23)",
+      "--ds-amber-800": "oklch(77.21% 0.1991 64.28)",
+      "--ds-gray-100": "hsla(0, 0%, 10%, 1)",
+      "--ds-gray-400": "hsla(0, 0%, 18%, 1)",
+      "--ds-gray-700": "hsla(0, 0%, 56%, 1)",
+      "--ds-gray-1000": "hsla(0, 0%, 93%, 1)",
+      "--ds-gray-1000-h": "hsl(0, 0%, 80%)",
+      "--ds-gray-alpha-200": "hsla(0, 0%, 100%, 0.09)",
+      "--ds-gray-alpha-400": "hsla(0, 0%, 100%, 0.14)",
+      "--ds-background-100": "hsla(0,0%,4%, 1)",
+      "--ds-shadow-border": "0 0 0 1px rgba(255, 255, 255, 0.145)",
+      "--ds-shadow-small": "0px 1px 2px rgba(0, 0, 0, 0.16)",
+      "--ds-shadow-border-small": "var(--ds-shadow-border), 0px 1px 2px rgba(0, 0, 0, 0.16)"
+    }
+  },
+  "_meta": {
+    "author": "shugar",
+    "slug": "toast",
+    "registry_url": "https://21st.dev/r/shugar/toast",
+    "title": "Toast",
+    "description": "A succinct message that is displayed temporarily.",
+    "category": "button",
+    "category_group": "UI Components",
+    "downloads": 97,
+    "likes": 0
+  }
+}

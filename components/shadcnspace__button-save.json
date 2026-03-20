@@ -1,0 +1,31 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "button-save",
+  "type": "registry:component",
+  "title": "Button Save",
+  "description": "A button-save component.",
+  "dependencies": [
+    "lucide-react"
+  ],
+  "registryDependencies": [
+    "https://21st.dev/r/shadcn/button"
+  ],
+  "files": [
+    {
+      "path": "src/components/ui/button-save.tsx",
+      "content": "import { Button } from \"@/components/ui/button\";\nimport { CheckCheck } from \"lucide-react\";\n\nconst ButtonSaveDemo = () => {\n  return (\n    <Button className=\"flex items-center gap-2 hover:-translate-y-1 transition-transform duration-200 bg-green-500 text-white hover:bg-green-500/80 cursor-pointer\">\n      <CheckCheck className=\"size-4\" />\n      Save Changes\n    </Button>\n  );\n};\n\nexport default ButtonSaveDemo;",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "shadcnspace",
+    "slug": "button-save",
+    "registry_url": "https://21st.dev/r/shadcnspace/button-save",
+    "title": "Button Save",
+    "description": "Here is button save component.",
+    "category": "button",
+    "category_group": "UI Components",
+    "downloads": 0,
+    "likes": 0
+  }
+}

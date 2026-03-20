@@ -1,0 +1,34 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "creat-account-form",
+  "type": "registry:component",
+  "title": "Creat Account Form",
+  "description": "A creat-account-form component.",
+  "dependencies": [
+    "lucide-react"
+  ],
+  "registryDependencies": [
+    "https://21st.dev/r/shadcn/label",
+    "https://21st.dev/r/shadcn/button",
+    "https://21st.dev/r/originui/input",
+    "https://21st.dev/r/shadcn/card"
+  ],
+  "files": [
+    {
+      "path": "src/components/ui/creat-account-form.tsx",
+      "content": "\"use client\";\n\nimport { useState } from \"react\";\nimport { Card, CardContent, CardHeader, CardTitle } from \"@/components/ui/card\";\nimport { Button } from \"@/components/ui/button\";\nimport { Input } from \"@/components/ui/input\";\nimport { Label } from \"@/components/ui/label\";\nimport { Mail, User, Lock } from \"lucide-react\";\n\nexport default function UniqueForm() {\n  const [email, setEmail] = useState(\"\");\n  const [name, setName] = useState(\"\");\n  const [password, setPassword] = useState(\"\");\n\n  const handleSubmit = (e: React.FormEvent) => {\n    e.preventDefault();\n    console.log({ name, email, password });\n  };\n\n  return (\n    <div className=\"flex items-center justify-center min-h-screen\">\n      <Card className=\"w-full max-w-md shadow-lg rounded-2xl border border-gray-200\">\n        <CardHeader>\n          <CardTitle className=\"text-2xl font-semibold text-center text-gray-800\">\n            Create Your Account\n          </CardTitle>\n          <p className=\"text-center text-sm text-gray-500 mt-1\">\n            Sign up and start exploring features tailored just for you.\n          </p>\n        </CardHeader>\n        <CardContent>\n          <form onSubmit={handleSubmit} className=\"space-y-5\">\n            <div>\n              <Label htmlFor=\"name\">Full Name</Label>\n              <div className=\"flex items-center gap-2 border rounded-lg px-3 py-2 bg-white\">\n                <User className=\"w-4 h-4 text-gray-500\" />\n                <Input\n                  id=\"name\"\n                  type=\"text\"\n                  placeholder=\"John Doe\"\n                  value={name}\n                  onChange={(e) => setName(e.target.value)}\n                  className=\"border-0 focus-visible:ring-0 focus-visible:outline-none shadow-none\"\n                />\n              </div>\n            </div>\n\n            <div>\n              <Label htmlFor=\"email\">Email Address</Label>\n              <div className=\"flex items-center gap-2 border rounded-lg px-3 py-2 bg-white\">\n                <Mail className=\"w-4 h-4 text-gray-500\" />\n                <Input\n                  id=\"email\"\n                  type=\"email\"\n                  placeholder=\"you@example.com\"\n                  value={email}\n                  onChange={(e) => setEmail(e.target.value)}\n                  className=\"border-0 focus-visible:ring-0 focus-visible:outline-none shadow-none\"\n                />\n              </div>\n            </div>\n\n            <div>\n              <Label htmlFor=\"password\">Password</Label>\n              <div className=\"flex items-center gap-2 border rounded-lg px-3 py-2 bg-white\">\n                <Lock className=\"w-4 h-4 text-gray-500\" />\n                <Input\n                  id=\"password\"\n                  type=\"password\"\n                  placeholder=\"••••••••\"\n                  value={password}\n                  onChange={(e) => setPassword(e.target.value)}\n                  className=\"border-0 focus-visible:ring-0 focus-visible:outline-none shadow-none\"\n                />\n              </div>\n            </div>\n\n            <Button\n              type=\"submit\"\n              className=\"w-full rounded-xl hover:cursor-pointer text-white font-medium shadow-md\"\n            >\n              Get Started\n            </Button>\n          </form>\n\n          <p className=\"text-xs text-gray-500 text-center mt-4\">\n            By continuing, you agree to our{\" \"}\n            <span className=\"text-indigo-600 font-medium cursor-pointer hover:underline\">\n              Terms of Service\n            </span>{\" \"}\n            and{\" \"}\n            <span className=\"text-indigo-600 font-medium cursor-pointer hover:underline\">\n              Privacy Policy\n            </span>\n            .\n          </p>\n        </CardContent>\n      </Card>\n    </div>\n  );\n}\n",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "ruixen.ui",
+    "slug": "creat-account-form",
+    "registry_url": "https://21st.dev/r/ruixen.ui/creat-account-form",
+    "title": "Create Account Form",
+    "description": "This form component is designed as a clean and modern account creation interface that balances simplicity with professionalism. The use of a card layout with a subtle gradient background makes it feel lightweight and approachable, while the inclusion of icons inside the input fields (name, email, and password) improves readability and usability. The copy has been carefully chosen to guide users in a friendly yet clear manner — with a welcoming title, a concise description of purpose, and an action-driven button (\"Get Started\"). Additionally, the footer text reinforces trust by highlighting the Terms of Service and Privacy Policy.",
+    "category": "button",
+    "category_group": "UI Components",
+    "downloads": 46,
+    "likes": 0
+  }
+}

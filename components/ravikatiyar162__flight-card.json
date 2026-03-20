@@ -1,0 +1,33 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "flight-card",
+  "type": "registry:component",
+  "title": "Flight Card",
+  "description": "A flight-card component.",
+  "dependencies": [
+    "framer-motion",
+    "lucide-react"
+  ],
+  "registryDependencies": [
+    "https://21st.dev/r/shadcn/badge",
+    "https://21st.dev/r/shadcn/button"
+  ],
+  "files": [
+    {
+      "path": "src/components/ui/flight-card.tsx",
+      "content": "import * as React from \"react\";\nimport { motion } from \"framer-motion\";\nimport { ArrowRight } from \"lucide-react\";\n\nimport { cn } from \"@/lib/utils\";\nimport { Badge } from \"@/components/ui/badge\";\nimport { Button } from \"@/components/ui/button\";\n\n// Updated the props interface for the logo\ninterface FlightCardProps {\n  airline: {\n    name: string;\n    logo: string; // Changed from React.ReactNode to string for the image URL\n    flightNumber: string;\n  };\n  departureTime: string;\n  arrivalTime: string;\n  duration: string;\n  stops: number;\n  price: number;\n  currency?: string;\n  offer?: string;\n  refundableType: string;\n  onBook?: () => void;\n  onFlightDetails?: () => void;\n  className?: string;\n}\n\n// A helper for formatting currency\nconst formatCurrency = (amount: number, currency: string = 'INR') => {\n  return new Intl.NumberFormat('en-IN', {\n    style: 'currency',\n    currency: currency,\n    minimumFractionDigits: 0,\n    maximumFractionDigits: 0,\n  }).format(amount);\n};\n\nexport const FlightCard: React.FC<FlightCardProps> = ({\n  airline,\n  departureTime,\n  arrivalTime,\n  duration,\n  stops,\n  price,\n  currency = 'INR',\n  offer,\n  refundableType,\n  onBook,\n  onFlightDetails,\n  className,\n}) => {\n  const stopText = stops === 0 ? \"Non-stop\" : `${stops} stop${stops > 1 ? \"s\" : \"\"}`;\n\n  return (\n    <motion.div\n      initial={{ opacity: 0, y: 20 }}\n      animate={{ opacity: 1, y: 0 }}\n      transition={{ duration: 0.5 }}\n      className={cn(\n        \"w-full max-w-4xl rounded-xl border bg-card text-card-foreground shadow-sm hover:shadow-md transition-shadow\",\n        className\n      )}\n    >\n      <div className=\"p-6\">\n        <div className=\"flex justify-between items-start mb-4\">\n          <Badge variant=\"outline\" className=\"bg-secondary/50\">{refundableType}</Badge>\n        </div>\n\n        <div className=\"grid grid-cols-1 md:grid-cols-12 gap-y-4 md:gap-x-6 items-center\">\n          {/* Airline Info */}\n          <div className=\"md:col-span-3 flex flex-col\">\n            <div className=\"flex items-center gap-3\">\n              {/* Updated to use an <img> tag for the logo */}\n              <div className=\"w-10 h-10 flex items-center justify-center rounded-md bg-muted overflow-hidden\">\n                <img src={airline.logo} alt={`${airline.name} logo`} className=\"w-full h-full object-contain\" />\n              </div>\n              <div>\n                <p className=\"font-semibold text-foreground\">{airline.name}</p>\n                <p className=\"text-sm text-muted-foreground\">{airline.flightNumber}</p>\n              </div>\n            </div>\n             <Button \n                variant=\"link\" \n                className=\"p-0 h-auto justify-start mt-2 text-sm\" \n                onClick={onFlightDetails}\n                aria-label=\"View flight details\"\n            >\n                Flight Details\n            </Button>\n          </div>\n\n          {/* Timeline */}\n          <div className=\"md:col-span-5 flex items-center gap-2\">\n            <div className=\"text-center\">\n              <p className=\"font-bold text-lg text-foreground\">{departureTime}</p>\n            </div>\n            <div className=\"flex-grow text-center\">\n                <p className=\"text-sm text-muted-foreground\">{duration}</p>\n                <div className=\"relative w-full h-px bg-border my-1\">\n                    <div className=\"absolute top-1/2 left-0 w-full h-px flex items-center justify-center\">\n                       {stops > 0 && <div className=\"w-2 h-2 rounded-full bg-primary border-2 border-card\"></div>}\n                    </div>\n                </div>\n                <p className=\"text-xs font-medium text-primary\">{stopText}</p>\n            </div>\n            <div className=\"text-center\">\n              <p className=\"font-bold text-lg text-foreground\">{arrivalTime}</p>\n            </div>\n          </div>\n\n          {/* Pricing and Booking */}\n          <div className=\"md:col-span-4 flex flex-col md:items-end gap-2\">\n             <p className=\"text-2xl font-bold text-foreground\">{formatCurrency(price, currency)}</p>\n             {offer && <p className=\"text-sm text-green-600 dark:text-green-500 text-right\">{offer}</p>}\n             <Button onClick={onBook} className=\"w-full md:w-auto mt-2\" aria-label={`Book flight for ${formatCurrency(price, currency)}`}>\n                Book\n                <ArrowRight className=\"ml-2 h-4 w-4\" />\n             </Button>\n          </div>\n        </div>\n      </div>\n    </motion.div>\n  );\n};",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "ravikatiyar162",
+    "slug": "flight-card",
+    "registry_url": "https://21st.dev/r/ravikatiyar162/flight-card",
+    "title": "Flight Card",
+    "description": "Flight Card\nA responsive card component to display flight details, including airline information, timings, duration, price, and a call-to-action.",
+    "category": "card",
+    "category_group": "UI Components",
+    "downloads": 6,
+    "likes": 0
+  }
+}

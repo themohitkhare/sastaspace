@@ -1,0 +1,28 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "media-button",
+  "type": "registry:component",
+  "title": "Media Button",
+  "description": "A media-button component.",
+  "dependencies": [
+    "framer-motion"
+  ],
+  "files": [
+    {
+      "path": "src/components/ui/media-button.tsx",
+      "content": "'use client';\n\nimport React from 'react';\nimport { motion } from 'framer-motion';\n\ntype MediaButtonProps = {\n  label: string;\n  mediaUrl: string; // .mp4, .webm, or .gif\n};\n\nexport const MediaButton: React.FC<MediaButtonProps> = ({ label, mediaUrl }) => {\n  const isVideo = /\\.(mp4|webm)$/i.test(mediaUrl);\n\n  return (\n    <motion.button\n      className=\"relative overflow-hidden rounded-2xl px-6 py-3 text-white font-semibold text-lg bg-black group shadow-lg hover:cursor-pointer\"\n      whileHover=\"hover\"\n      initial=\"rest\"\n      animate=\"rest\"\n    >\n      {isVideo ? (\n        <motion.video\n          className=\"absolute top-0 left-0 w-full h-full object-cover z-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300\"\n          src={mediaUrl}\n          muted\n          loop\n          playsInline\n          autoPlay\n        />\n      ) : (\n        <motion.img\n          className=\"absolute top-0 left-0 w-full h-full object-cover z-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300\"\n          src={mediaUrl}\n          alt=\"Background\"\n        />\n      )}\n\n      {/* Black Overlay */}\n      <div className=\"absolute inset-0 bg-black/50 z-10 pointer-events-none group-hover:opacity-100 transition-opacity duration-300\" />\n\n      {/* Button Text */}\n      <span className=\"relative z-20 text-shadow-[0_1.2px_1.2px_rgba(0,0,0,0.8)]\">{label}</span>\n    </motion.button>\n  );\n};",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "arunachalam0606",
+    "slug": "media-button",
+    "registry_url": "https://21st.dev/r/arunachalam0606/media-button",
+    "title": "Media Button",
+    "description": "MediaButton is a reusable React component that displays a button with a smooth hover effect revealing a looping .mp4, .webm, or .gif background, with a dark overlay to keep the text readable.",
+    "category": "button",
+    "category_group": "UI Components",
+    "downloads": 121,
+    "likes": 0
+  }
+}

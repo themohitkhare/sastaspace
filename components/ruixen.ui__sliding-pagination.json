@@ -1,0 +1,31 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "sliding-pagination",
+  "type": "registry:component",
+  "title": "Sliding Pagination",
+  "description": "A sliding-pagination component.",
+  "dependencies": [
+    "framer-motion"
+  ],
+  "registryDependencies": [
+    "https://21st.dev/r/shadcn/button"
+  ],
+  "files": [
+    {
+      "path": "src/components/ui/sliding-pagination.tsx",
+      "content": "\"use client\"\n\nimport * as React from \"react\"\nimport { Button } from \"@/components/ui/button\"\nimport { cn } from \"@/lib/utils\"\nimport { motion } from \"framer-motion\"\n\ninterface PaginationProps {\n  totalPages: number\n  currentPage: number\n  onPageChange: (page: number) => void\n  className?: string\n  maxVisiblePages?: number // max number of page buttons to show before adding dots\n}\n\nexport default function SlidingPagination({\n  totalPages,\n  currentPage,\n  onPageChange,\n  className,\n  maxVisiblePages = 7,\n}: PaginationProps) {\n  const buttonRefs = React.useRef<(HTMLButtonElement | null)[]>([])\n  const [underlineStyle, setUnderlineStyle] = React.useState<{ left: number; width: number }>({\n    left: 0,\n    width: 0,\n  })\n\n  // Update underline position whenever current page changes\n  React.useEffect(() => {\n    const currentBtn = buttonRefs.current[currentPage - 1]\n    if (currentBtn) {\n      const rect = currentBtn.getBoundingClientRect()\n      const parentRect = currentBtn.parentElement!.getBoundingClientRect()\n      setUnderlineStyle({\n        left: rect.left - parentRect.left,\n        width: rect.width,\n      })\n    }\n  }, [currentPage, totalPages])\n\n  // Generate pages array with ellipsis if needed\n  const generatePages = () => {\n    if (totalPages <= maxVisiblePages) return Array.from({ length: totalPages }, (_, i) => i + 1)\n\n    const pages: (number | -1)[] = []\n    const first = 1\n    const last = totalPages\n    const sideCount = 1\n    const middleCount = maxVisiblePages - 2 * sideCount - 2\n\n    pages.push(first)\n\n    // left/right bounds around current page\n    let left = Math.max(currentPage - Math.floor(middleCount / 2), sideCount + 1)\n    let right = Math.min(currentPage + Math.floor(middleCount / 2), totalPages - sideCount)\n\n    // Add first ellipsis if needed\n    if (left > sideCount + 1) pages.push(-1)\n    else left = sideCount + 1 // include pages after first if no dots\n\n    // Add middle pages\n    for (let i = left; i <= right; i++) pages.push(i)\n\n    // Add last ellipsis if needed\n    if (right < totalPages - sideCount) pages.push(-1)\n\n    pages.push(last)\n\n    return pages\n  }\n\n  const pagesToShow = generatePages()\n\n  return (\n    <div className={cn(\"relative inline-flex items-center gap-2\", className)}>\n      {pagesToShow.map((pageNum, i) =>\n        pageNum === -1 ? (\n          <span key={`dots-${i}`} className=\"px-2 text-gray-400\">…</span>\n        ) : (\n          <Button\n            key={pageNum}\n            variant=\"ghost\"\n            ref={(el) => (buttonRefs.current[pageNum - 1] = el)}\n            onClick={() => onPageChange(pageNum)}\n            className={cn(\n              \"relative px-4 py-2 text-sm\",\n              pageNum === currentPage ? \"font-semibold\" : \"\"\n            )}\n          >\n            {pageNum}\n          </Button>\n        )\n      )}\n\n      {/* Sliding underline */}\n      <motion.div\n        layout\n        initial={false}\n        animate={{\n          left: underlineStyle.left,\n          width: underlineStyle.width,\n        }}\n        transition={{ type: \"spring\", stiffness: 300, damping: 25 }}\n        className=\"absolute bottom-0 h-0.5 bg-primary rounded\"\n      />\n    </div>\n  )\n}\n",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "ruixen.ui",
+    "slug": "sliding-pagination",
+    "registry_url": "https://21st.dev/r/ruixen.ui/sliding-pagination",
+    "title": "Sliding Pagination",
+    "description": "This Sliding Pagination component provides a modern, interactive way to navigate through large sets of pages. Instead of instantly switching between page numbers, it features a smooth, spring-animated sliding underline that moves fluidly to the currently active page, giving a responsive and natural feel. For datasets with hundreds of pages, it automatically condenses the pagination using ellipsis/dots in the middle, ensuring the layout remains compact while still showing nearby pages for context. Built with Shadcn UI and Framer Motion, it is fully responsive, works seamlessly with both dark and light themes, and allows users to quickly and visually understand their current position in a multi-page interface. The component is also highly customizable, making it ideal for dashboards, blogs, or any application that requires elegant pagination.",
+    "category": "pagination",
+    "category_group": "UI Components",
+    "downloads": 11,
+    "likes": 0
+  }
+}

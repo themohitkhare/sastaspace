@@ -1,0 +1,31 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "state",
+  "type": "registry:component",
+  "title": "State",
+  "description": "A state component.",
+  "dependencies": [
+    "framer-motion"
+  ],
+  "registryDependencies": [
+    "https://21st.dev/r/shadcn/button"
+  ],
+  "files": [
+    {
+      "path": "src/components/ui/state.tsx",
+      "content": "import * as React from \"react\";\nimport { motion } from \"framer-motion\";\nimport { Button } from \"@/components/ui/button\"; // Assuming shadcn button is in this path\n\n// Define the types for the component props for type-safety and clarity\ninterface ActionProps {\n  text: string;\n  onClick: () => void;\n  icon?: React.ReactNode;\n}\n\ninterface MailboxFullStateProps {\n  imageUrl: string;\n  title: string;\n  description: string;\n  primaryAction: ActionProps;\n  secondaryAction: ActionProps;\n}\n\n/**\n * A reusable component to display a \"full state\" or promotional message.\n * It includes an image, title, description, and two call-to-action buttons.\n * Features subtle entry animations for a polished user experience.\n */\nexport const MailboxFullState = ({\n  imageUrl,\n  title,\n  description,\n  primaryAction,\n  secondaryAction,\n}: MailboxFullStateProps) => {\n\n  // Animation variants for the container and its children\n  const containerVariants = {\n    hidden: { opacity: 0 },\n    visible: {\n      opacity: 1,\n      transition: {\n        staggerChildren: 0.1,\n      },\n    },\n  };\n\n  const itemVariants = {\n    hidden: { y: 20, opacity: 0 },\n    visible: {\n      y: 0,\n      opacity: 1,\n      transition: {\n        type: \"spring\",\n        stiffness: 100,\n        damping: 12,\n      },\n    },\n  };\n\n  return (\n    <motion.div\n      className=\"flex w-full max-w-md flex-col items-center justify-center rounded-lg border bg-card p-8 text-center\"\n      variants={containerVariants}\n      initial=\"hidden\"\n      animate=\"visible\"\n      aria-labelledby=\"state-title\"\n    >\n      {/* Image section */}\n      <motion.img\n        src={imageUrl}\n        alt=\"Mailbox illustration\"\n        className=\"mb-6 h-40 w-40 object-contain\"\n        variants={itemVariants}\n      />\n\n      {/* Text content section */}\n      <motion.h2\n        id=\"state-title\"\n        className=\"text-2xl font-semibold text-card-foreground\"\n        variants={itemVariants}\n      >\n        {title}\n      </motion.h2>\n\n      <motion.p\n        className=\"mt-2 text-muted-foreground\"\n        variants={itemVariants}\n      >\n        {description}\n      </motion.p>\n\n      {/* Action buttons section */}\n      <motion.div\n        className=\"mt-8 flex w-full flex-col gap-3 sm:flex-row sm:justify-center\"\n        variants={itemVariants}\n      >\n        <Button\n          variant=\"outline\"\n          className=\"w-full sm:w-auto\"\n          onClick={secondaryAction.onClick}\n        >\n          {secondaryAction.text}\n        </Button>\n        <Button\n          className=\"w-full sm:w-auto\"\n          onClick={primaryAction.onClick}\n        >\n          {primaryAction.icon && <span className=\"mr-2 h-4 w-4\">{primaryAction.icon}</span>}\n          {primaryAction.text}\n        </Button>\n      </motion.div>\n    </motion.div>\n  );\n};",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "kavikatiyar",
+    "slug": "state",
+    "registry_url": "https://21st.dev/r/kavikatiyar/state",
+    "title": "State",
+    "description": "Full Mailbox State\nThis component informs the user that they have reached a limit, prompting them with primary and secondary actions. It is animated to draw attention and improve user experience.",
+    "category": "card",
+    "category_group": "UI Components",
+    "downloads": 3,
+    "likes": 0
+  }
+}

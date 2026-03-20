@@ -1,0 +1,29 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "wet-paint-button",
+  "type": "registry:component",
+  "title": "Wet Paint Button",
+  "description": "A wet-paint-button component.",
+  "dependencies": [
+    "framer-motion"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/ui/wet-paint-button.tsx",
+      "content": "import React from \"react\";\nimport { motion } from \"framer-motion\";\nimport {cn} from \"@/lib/utils\"\n\n// The main component that renders the button and its drips\nconst WetPaintButton = ({children, className}: {className: string; children: React.ReactNode}) => {\n  return (\n    <button className={cn(\"group relative rounded bg-indigo-500 px-4 py-2.5 font-semibold text-white transition-colors hover:bg-indigo-600\", className)}>\n      {children}\n      <Drip left=\"10%\" height={24} delay={0.5} />\n      <Drip left=\"30%\" height={20} delay={3} />\n      <Drip left=\"57%\" height={10} delay={4.25} />\n      <Drip left=\"85%\" height={16} delay={1.5} />\n    </button>\n  );\n};\n\n// Props for the Drip component\ntype DripProps = {\n  left: string;\n  height: number;\n  delay: number;\n};\n\n// The Drip component creates the animated dripping effect\nconst Drip: React.FC<DripProps> = ({ left, height, delay }) => {\n  return (\n    <motion.div\n      className=\"absolute top-[99%] origin-top\"\n      style={{ left }}\n      initial={{ scaleY: 0.75 }}\n      animate={{ scaleY: [0.75, 1, 0.75] }}\n      transition={{\n        duration: 2,\n        times: [0, 0.25, 1],\n        delay,\n        ease: \"easeIn\",\n        repeat: Infinity,\n        repeatDelay: 2,\n      }}\n    >\n      {/* The main body of the drip */}\n      <div\n        style={{ height }}\n        className=\"w-2 rounded-b-full bg-indigo-500 transition-colors group-hover:bg-indigo-600\"\n      />\n\n      {/* SVG for the right-side curve of the drip */}\n      <svg\n        width=\"6\"\n        height=\"6\"\n        viewBox=\"0 0 6 6\"\n        fill=\"none\"\n        xmlns=\"http://www.w3.org/2000/svg\"\n        className=\"absolute left-full top-0\"\n      >\n        <g clipPath=\"url(#clip0_1077_28)\">\n          <path\n            fillRule=\"evenodd\"\n            clipRule=\"evenodd\"\n            d=\"M5.4 0H0V5.4C0 2.41765 2.41766 0 5.4 0Z\"\n            className=\"fill-indigo-500 transition-colors group-hover:fill-indigo-600\"\n          />\n          <path\n            fillRule=\"evenodd\"\n            clipRule=\"evenodd\"\n            d=\"M5.4 0H0V5.4C0 2.41765 2.41766 0 5.4 0Z\"\n            className=\"fill-indigo-500 transition-colors group-hover:fill-indigo-600\"\n          />\n        </g>\n        <defs>\n          <clipPath id=\"clip0_1077_28\">\n            <rect width=\"6\" height=\"6\" fill=\"white\" />\n          </clipPath>\n        </defs>\n      </svg>\n\n      {/* SVG for the left-side curve of the drip */}\n      <svg\n        width=\"6\"\n        height=\"6\"\n        viewBox=\"0 0 6 6\"\n        fill=\"none\"\n        xmlns=\"http://www.w3.org/2000/svg\"\n        className=\"absolute right-full top-0 rotate-90\"\n      >\n        <g clipPath=\"url(#clip0_1077_28)\">\n          <path\n            fillRule=\"evenodd\"\n            clipRule=\"evenodd\"\n            d=\"M5.4 0H0V5.4C0 2.41765 2.41766 0 5.4 0Z\"\n            className=\"fill-indigo-500 transition-colors group-hover:fill-indigo-600\"\n          />\n          <path\n            fillRule=\"evenodd\"\n            clipRule=\"evenodd\"\n            d=\"M5.4 0H0V5.4C0 2.41765 2.41766 0 5.4 0Z\"\n            className=\"fill-indigo-500 transition-colors group-hover:fill-indigo-600\"\n          />\n        </g>\n        <defs>\n          <clipPath id=\"clip0_1077_28\">\n            <rect width=\"6\" height=\"6\" fill=\"white\" />\n          </clipPath>\n        </defs>\n      </svg>\n      \n      {/* A smaller, detached droplet that falls */}\n      <motion.div\n        initial={{ y: -8, opacity: 1 }}\n        animate={{ y: [-8, 50], opacity: [1, 0] }}\n        transition={{\n          duration: 2,\n          times: [0, 1],\n          delay,\n          ease: \"easeIn\",\n          repeat: Infinity,\n          repeatDelay: 2,\n        }}\n        className=\"absolute top-full h-2 w-2 rounded-full bg-indigo-500 transition-colors group-hover:bg-indigo-600\"\n      />\n    </motion.div>\n  );\n};\n\nexport default WetPaintButton;",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "vaib215",
+    "slug": "wet-paint-button",
+    "registry_url": "https://21st.dev/r/vaib215/wet-paint-button",
+    "title": "Wet Paint Button",
+    "description": "Add some liquid (not glass) to your ui with this amazing wet paint button.",
+    "category": "button",
+    "category_group": "UI Components",
+    "downloads": 10,
+    "likes": 0
+  }
+}

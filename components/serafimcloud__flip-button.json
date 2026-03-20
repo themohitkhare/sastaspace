@@ -1,0 +1,32 @@
+{
+  "name": "flip-button",
+  "type": "registry:ui",
+  "dependencies": [
+    "framer-motion",
+    "@radix-ui/react-slot",
+    "class-variance-authority"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "/components/ui/flip-button.tsx",
+      "content": "'use client'\n\nimport * as React from \"react\"\nimport { Slot } from \"@radix-ui/react-slot\"\nimport { motion } from 'framer-motion'\nimport { cva, type VariantProps } from \"class-variance-authority\"\nimport { cn } from \"@/lib/utils\"\n\nconst baseStyles = \"inline-flex items-center justify-center whitespace-nowrap rounded-full text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50\"\n\nconst flipButtonVariants = cva(baseStyles, {\n  variants: {\n    variant: {\n      default: \"\",\n      destructive: \"\",\n      success: \"\",\n      warning: \"\",\n    },\n    size: {\n      default: \"h-10 px-6 py-3\",\n      sm: \"h-8 px-4 py-2 text-xs\",\n      lg: \"h-12 px-8 py-4 text-base\",\n    },\n  },\n  defaultVariants: {\n    variant: \"default\",\n    size: \"default\",\n  },\n})\n\nconst variantStyles = {\n  default: {\n    primary: \"bg-primary text-primary-foreground hover:bg-primary/90\",\n    flipped: \"bg-secondary text-secondary-foreground hover:bg-secondary/90\",\n  },\n  destructive: {\n    primary: \"bg-destructive text-destructive-foreground hover:bg-destructive/90\",\n    flipped: \"bg-muted text-muted-foreground hover:bg-muted/90\",\n  },\n  success: {\n    primary: \"bg-green-500 text-white hover:bg-green-500/90\",\n    flipped: \"bg-secondary text-secondary-foreground hover:bg-secondary/90\",\n  },\n  warning: {\n    primary: \"bg-yellow-500 text-white hover:bg-yellow-500/90\",\n    flipped: \"bg-muted text-muted-foreground hover:bg-muted/90\",\n  },\n} as const\n\nexport interface FlipButtonProps\n  extends React.ButtonHTMLAttributes<HTMLButtonElement>,\n    VariantProps<typeof flipButtonVariants> {\n  primaryText?: string\n  secondaryText?: string\n  onAction?: () => void\n  asChild?: boolean\n}\n\nconst FlipButton = React.forwardRef<HTMLButtonElement, FlipButtonProps>(\n  ({ \n    className, \n    variant = \"default\",\n    size,\n    primaryText = \"Confirm\",\n    secondaryText = \"Cancel\",\n    onAction,\n    asChild = false,\n    ...props \n  }, ref) => {\n    const [isFlipped, setIsFlipped] = React.useState(false)\n    const Comp = asChild ? Slot : motion.button\n\n    const handleClick = () => {\n      setIsFlipped(!isFlipped)\n      if (isFlipped && onAction) {\n        onAction()\n      }\n    }\n\n    const currentStyles = variantStyles[variant as keyof typeof variantStyles]\n    const stateStyles = isFlipped ? currentStyles.flipped : currentStyles.primary\n\n    return (\n      <Comp\n        className={cn(\n          flipButtonVariants({ variant, size }),\n          stateStyles,\n          className\n        )}\n        ref={ref}\n        onClick={handleClick}\n        animate={{\n          rotateX: isFlipped ? 180 : 0,\n        }}\n        transition={{ duration: 0.6, type: 'spring' }}\n        whileTap={{ scale: 0.95 }}\n        whileHover={{ scale: 1.05 }}\n        {...props}\n      >\n        <motion.div\n          animate={{ rotateX: isFlipped ? 180 : 0 }}\n          transition={{ duration: 0.6, type: 'spring' }}\n        >\n          {isFlipped ? secondaryText : primaryText}\n        </motion.div>\n      </Comp>\n    )\n  }\n)\nFlipButton.displayName = \"FlipButton\"\n\nexport { FlipButton, flipButtonVariants }",
+      "type": "registry:ui",
+      "target": ""
+    }
+  ],
+  "tailwind": {
+    "config": {}
+  },
+  "_meta": {
+    "author": "serafimcloud",
+    "slug": "flip-button",
+    "registry_url": "https://21st.dev/r/serafimcloud/flip-button",
+    "title": "Flip Button",
+    "description": "Flip Button with Shadcn styles and theme. \n\nInspired by @ln-dev7",
+    "category": "button",
+    "category_group": "UI Components",
+    "downloads": 33,
+    "likes": 0
+  }
+}

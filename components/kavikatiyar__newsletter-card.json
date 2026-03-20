@@ -1,0 +1,32 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "newsletter-card",
+  "type": "registry:component",
+  "title": "Newsletter Card",
+  "description": "A newsletter-card component.",
+  "dependencies": [
+    "lucide-react"
+  ],
+  "registryDependencies": [
+    "https://21st.dev/r/shadcn/button",
+    "https://21st.dev/r/originui/input"
+  ],
+  "files": [
+    {
+      "path": "src/components/ui/newsletter-card.tsx",
+      "content": "import * as React from \"react\";\nimport { ArrowRight } from \"lucide-react\";\nimport { cn } from \"@/lib/utils\";\nimport { Button } from \"@/components/ui/button\";\nimport { Input } from \"@/components/ui/input\";\n\n/**\n * @typedef {object} NewsletterSignUpProps\n * @extends React.HTMLAttributes<HTMLDivElement>\n * @property {string} title - The main title for the newsletter card.\n * @property {string} subtitle - The subtitle or description.\n * @property {string} [placeholder='Email address'] - The placeholder text for the email input.\n * @property {string} [buttonAriaLabel='Subscribe to newsletter'] - The ARIA label for the submit button for accessibility.\n * @property {(email: string) => void} onSubmit - The function to call when the form is submitted.\n */\nexport interface NewsletterSignUpProps extends React.HTMLAttributes<HTMLDivElement> {\n  title: string;\n  subtitle: string;\n  placeholder?: string;\n  buttonAriaLabel?: string;\n  onSubmit: (email: string) => void;\n}\n\nconst NewsletterSignUp = React.forwardRef<HTMLDivElement, NewsletterSignUpProps>(\n  (\n    {\n      className,\n      title,\n      subtitle,\n      placeholder = \"Email address\",\n      buttonAriaLabel = \"Subscribe to newsletter\",\n      onSubmit,\n      ...props\n    },\n    ref\n  ) => {\n    const [email, setEmail] = React.useState(\"\");\n    // Generate a unique ID for the input to link with the label\n    const inputId = React.useId();\n\n    const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {\n      e.preventDefault();\n      // Basic validation: ensure email is not empty\n      if (!email.trim()) return;\n      onSubmit(email);\n      // Reset input field after submission\n      setEmail(\"\");\n    };\n\n    return (\n      <div\n        ref={ref}\n        className={cn(\n          \"w-full max-w-md rounded-2xl border p-8\",\n          // Themed background colors inspired by the image\n          \"border-transparent bg-amber-100 text-amber-950\",\n          \"dark:border-amber-900/50 dark:bg-amber-950/20 dark:text-amber-50\",\n          className\n        )}\n        {...props}\n      >\n        <h3 className=\"text-xl font-bold\">{title}</h3>\n        <p className=\"mt-1 text-amber-800 dark:text-amber-200/80\">{subtitle}</p>\n        <form onSubmit={handleSubmit} className=\"mt-6\">\n          <div\n            className={cn(\n              \"group relative flex items-center rounded-full bg-background shadow-sm\",\n              // Advanced animation: Add a ring on focus within the group\n              \"transition-shadow duration-300 ease-in-out\",\n              \"focus-within:ring-2 focus-within:ring-primary focus-within:ring-offset-2\",\n              \"focus-within:ring-offset-amber-100 dark:focus-within:ring-offset-amber-950/20\"\n            )}\n          >\n            {/* Visually hidden label for screen readers */}\n            <label htmlFor={inputId} className=\"sr-only\">\n              {placeholder}\n            </label>\n            <Input\n              id={inputId}\n              type=\"email\"\n              placeholder={placeholder}\n              value={email}\n              onChange={(e) => setEmail(e.target.value)}\n              required\n              className={cn(\n                // Custom styling for the input\n                \"h-12 flex-grow rounded-l-full border-none bg-transparent pl-6 pr-2 text-base\",\n                \"focus-visible:ring-0 focus-visible:ring-offset-0\"\n              )}\n            />\n            <Button\n              type=\"submit\"\n              size=\"icon\"\n              aria-label={buttonAriaLabel}\n              className={cn(\n                \"mr-1.5 h-9 w-9 flex-shrink-0 rounded-full bg-foreground text-background shadow\",\n                // Advanced animation: Scale button and move icon on hover\n                \"transition-transform duration-300 ease-in-out group-hover:scale-105\"\n              )}\n            >\n              <ArrowRight className=\"h-5 w-5 transition-transform duration-300 group-hover:translate-x-1\" />\n            </Button>\n          </div>\n        </form>\n      </div>\n    );\n  }\n);\n\nNewsletterSignUp.displayName = \"NewsletterSignUp\";\n\nexport { NewsletterSignUp };",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "kavikatiyar",
+    "slug": "newsletter-card",
+    "registry_url": "https://21st.dev/r/kavikatiyar/newsletter-card",
+    "title": "Newsletter Card",
+    "description": "Newsletter Card\nA visually polished and accessible newsletter sign-up form. It features a distinct, theme-aware color palette and subtle animations on focus and hover to enhance user experience.",
+    "category": "card",
+    "category_group": "UI Components",
+    "downloads": 6,
+    "likes": 0
+  }
+}

@@ -1,0 +1,33 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "social-auth-card",
+  "type": "registry:component",
+  "title": "Social Auth Card",
+  "description": "A social-auth-card component.",
+  "dependencies": [
+    "react-icons"
+  ],
+  "registryDependencies": [
+    "https://21st.dev/r/originui/button",
+    "https://21st.dev/r/originui/input",
+    "https://21st.dev/r/originui/label"
+  ],
+  "files": [
+    {
+      "path": "src/components/ui/social-auth-card.tsx",
+      "content": "\"use client\"\n\nimport * as React from \"react\"\nimport { Button } from \"@/components/ui/button\"\nimport { Input } from \"@/components/ui/input\"\nimport { Label } from \"@/components/ui/label\"\nimport { cn } from \"@/lib/utils\"\nimport { FaGoogle, FaGithub, FaLinkedin } from \"react-icons/fa\"\n\nexport default function SocialAuthCard() {\n  return (\n    <div className=\"w-full max-w-md mx-auto bg-white dark:bg-gray-800 border rounded-lg shadow-md overflow-hidden p-6 flex flex-col gap-6\">\n      \n      {/* Social Login Buttons */}\n      <div className=\"flex flex-col gap-4\">\n        <Button className=\"w-full flex items-center justify-center gap-2 bg-red-500 hover:bg-red-600 text-white\">\n          <FaGoogle /> Continue with Google\n        </Button>\n        <Button className=\"w-full flex items-center justify-center gap-2 bg-gray-900 hover:bg-gray-700 text-white\">\n          <FaGithub /> Continue with GitHub\n        </Button>\n        <Button className=\"w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white\">\n          <FaLinkedin /> Continue with LinkedIn\n        </Button>\n      </div>\n\n      {/* Divider */}\n      <div className=\"flex items-center gap-2 text-gray-400 dark:text-gray-300 text-sm\">\n        <span className=\"flex-1 border-t border-gray-300 dark:border-gray-600\"></span>\n        <span>or</span>\n        <span className=\"flex-1 border-t border-gray-300 dark:border-gray-600\"></span>\n      </div>\n\n      {/* Traditional Login Form */}\n      <div className=\"flex flex-col gap-4\">\n        <div>\n          <Label htmlFor=\"email\">Email</Label>\n          <Input id=\"email\" type=\"email\" placeholder=\"you@example.com\" className=\"mt-1\" />\n        </div>\n        <div>\n          <Label htmlFor=\"password\">Password</Label>\n          <Input id=\"password\" type=\"password\" placeholder=\"********\" className=\"mt-1\" />\n        </div>\n        <Button className=\"w-full mt-2\">Login</Button>\n      </div>\n\n      <p className=\"text-center text-sm text-gray-500 dark:text-gray-300\">\n        Don’t have an account? <a href=\"#\" className=\"text-blue-500 hover:underline\">Sign up</a>\n      </p>\n    </div>\n  )\n}\n",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "ruixen.ui",
+    "slug": "social-auth-card",
+    "registry_url": "https://21st.dev/r/ruixen.ui/social-auth-card",
+    "title": "Social Auth Card",
+    "description": "The Social Auth First Card is a modern onboarding component built entirely with shadcn UI. It prioritizes social login buttons at the top—Google, GitHub, and LinkedIn—making it quick and easy for users to sign in. Below the social options, an optional traditional login form provides a fallback for email/password authentication. A subtle divider with “or” clearly separates the two sections, maintaining a clean and organized layout. Fully responsive and theme-aware, this card enhances the user experience with a friendly, branded look while supporting both light and dark modes, making it ideal for fast and seamless onboarding.",
+    "category": "button",
+    "category_group": "UI Components",
+    "downloads": 0,
+    "likes": 0
+  }
+}

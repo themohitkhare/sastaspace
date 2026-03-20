@@ -1,0 +1,31 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "job-card",
+  "type": "registry:component",
+  "title": "Job Card",
+  "description": "A job-card component.",
+  "dependencies": [],
+  "registryDependencies": [
+    "https://21st.dev/r/shadcn/card",
+    "https://21st.dev/r/originui/button",
+    "https://21st.dev/r/originui/avatar"
+  ],
+  "files": [
+    {
+      "path": "src/components/ui/job-card.tsx",
+      "content": "\"use client\"\n\nimport { Card, CardHeader, CardContent, CardFooter } from \"@/components/ui/card\"\nimport { Button } from \"@/components/ui/button\"\nimport { Avatar, AvatarFallback, AvatarImage } from \"@/components/ui/avatar\"\n\ninterface JobCardProps {\n  title?: string\n  company?: string\n  rate?: string\n  location?: string\n  type?: string\n  experience?: string\n  logoUrl?: string\n}\n\nexport default function JobCard({\n  title = \"Software Engineer\",\n  company = \"Tech Corp\",\n  rate = \"$80k - $100k\",\n  location = \"Remote\",\n  type = \"Full-time\",\n  experience = \"2+ years\",\n  logoUrl = \"\",\n}: JobCardProps) {\n  return (\n    <Card className=\"w-80 rounded-2xl shadow-sm border border-border bg-card text-card-foreground transition-colors\">\n      {/* Header with avatar + rate */}\n      <CardHeader className=\"flex flex-row items-center justify-between px-4 py-6\">\n        <div className=\"flex items-center gap-3\">\n          <Avatar className=\"h-10 w-10\">\n            <AvatarImage src={logoUrl} alt={company} />\n            <AvatarFallback>\n              {company.charAt(0).toUpperCase()}\n            </AvatarFallback>\n          </Avatar>\n          <div>\n            <p className=\"font-medium\">{company}</p>\n            <p className=\"text-sm text-muted-foreground\">{rate}</p>\n          </div>\n        </div>\n      </CardHeader>\n\n      {/* Main content */}\n      <CardContent className=\"px-4 py-3\">\n        <h2 className=\"text-xl font-medium leading-snug\">{title}</h2>\n        <div className=\"mt-3 space-y-2 text-sm\">\n          <p>\n            <span className=\"font-medium\">Location:</span> {location}\n          </p>\n          <p>\n            <span className=\"font-medium\">Type:</span> {type}\n          </p>\n          <p>\n            <span className=\"font-medium\">Experience:</span> {experience}\n          </p>\n        </div>\n      </CardContent>\n\n      {/* Footer with multiple buttons */}\n      <CardFooter className=\"flex justify-between gap-2 px-4 py-6 border-t\">\n        <Button\n          variant=\"outline\"\n          className=\"rounded-xl px-4\"\n        >\n          Save\n        </Button>\n        <div className=\"flex gap-2\">\n          <Button\n            variant=\"secondary\"\n            className=\"rounded-xl px-4\"\n          >\n            Share\n          </Button>\n          <Button\n            variant=\"default\"\n            className=\"rounded-xl px-6\"\n          >\n            Apply\n          </Button>\n        </div>\n      </CardFooter>\n    </Card>\n  )\n}\n",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "ruixen.ui",
+    "slug": "job-card",
+    "registry_url": "https://21st.dev/r/ruixen.ui/job-card",
+    "title": "JobCard",
+    "description": "This JobCard component is a polished, reusable UI block built with Shadcn UI and Tailwind CSS, designed to display job postings in a clean and engaging way. It features a header with a company avatar (logo or fallback initials), company name, and salary/rate information, followed by the main content section with the job title, location, type, and experience requirements. The footer provides multiple action buttons.",
+    "category": "card",
+    "category_group": "UI Components",
+    "downloads": 2,
+    "likes": 0
+  }
+}

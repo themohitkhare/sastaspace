@@ -1,0 +1,61 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "multi-select",
+  "type": "registry:component",
+  "title": "Multi Select",
+  "description": "A multi-select component.",
+  "dependencies": [
+    "@radix-ui/react-select",
+    "@radix-ui/react-icons"
+  ],
+  "registryDependencies": [
+    "https://21st.dev/r/shugar/checkbox"
+  ],
+  "files": [
+    {
+      "path": "src/components/ui/multi-select.tsx",
+      "content": "import * as React from 'react'\nimport * as SelectPrimitive from '@radix-ui/react-select'\nimport { cn } from '@/lib/utils'\nimport { CheckIcon, ChevronDownIcon, ChevronUpIcon, Cross2Icon } from '@radix-ui/react-icons'\n\ninterface MultiSelectProps extends Omit<React.ComponentPropsWithoutRef<typeof SelectPrimitive.Root>, 'value' | 'onValueChange'> {\n  value: string[]\n  onValueChange: (value: string[]) => void\n  placeholder?: string\n  className?: string\n  disabled?: boolean\n  separator?: string\n  renderSelectedValues?: (selectedValues: string[]) => React.ReactNode\n}\n\ninterface MultiSelectContextValue {\n  selectedValues: string[]\n  onValueChange: (value: string[]) => void\n  onSelect: (value: string) => void\n  onRemove: (value: string) => void\n  renderSelectedValues?: (selectedValues: string[]) => React.ReactNode\n}\n\nconst MultiSelectContext = React.createContext<MultiSelectContextValue | undefined>(undefined)\n\nfunction useMultiSelect() {\n  const context = React.useContext(MultiSelectContext)\n  if (!context) {\n    throw new Error('useMultiSelect must be used within a MultiSelectProvider')\n  }\n  return context\n}\n\nconst MultiSelect = React.forwardRef<\n  React.ElementRef<typeof SelectPrimitive.Root>,\n  MultiSelectProps\n>(({ value, onValueChange, children, separator = ',', renderSelectedValues, ...props }, ref) => {\n  const stringValue = value.join(separator)\n  \n  const handleValueChange = React.useCallback(\n    (val: string) => {\n      // if select empty value, return\n      if (!val) return\n      \n      // if select already selected value, remove it\n      if (value.includes(val)) {\n        onValueChange(value.filter((v) => v !== val))\n      } else {\n        // else add to selected values\n        onValueChange([...value, val])\n      }\n    },\n    [value, onValueChange]\n  )\n\n  const contextValue = React.useMemo(\n    () => ({\n      selectedValues: value,\n      onValueChange,\n      onSelect: (val: string) => {\n        if (!value.includes(val)) {\n          onValueChange([...value, val])\n        }\n      },\n      onRemove: (val: string) => {\n        onValueChange(value.filter((v) => v !== val))\n      },\n      renderSelectedValues,\n    }),\n    [value, onValueChange, renderSelectedValues]\n  )\n\n  return (\n    <MultiSelectContext.Provider value={contextValue}>\n      <SelectPrimitive.Root\n        {...props}\n        value={stringValue}\n        onValueChange={handleValueChange}\n      >\n        {children}\n      </SelectPrimitive.Root>\n    </MultiSelectContext.Provider>\n  )\n})\nMultiSelect.displayName = 'MultiSelect'\n\nconst MultiSelectGroup = SelectPrimitive.Group\n\nconst MultiSelectValue = SelectPrimitive.Value\n\nconst MultiSelectTrigger = React.forwardRef<\n  React.ElementRef<typeof SelectPrimitive.Trigger>,\n  React.ComponentPropsWithoutRef<typeof SelectPrimitive.Trigger>\n>(({ className, children, ...props }, ref) => (\n  <SelectPrimitive.Trigger\n    ref={ref}\n    className={cn(\n        className,\n      'text-text flex w-full items-center justify-between whitespace-nowrap rounded-md border border-input bg-transparent px-3 py-2 shadow-sm ring-offset-background data-[placeholder]:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-50 [&_span]:line-clamp-1',\n    )}\n    {...props}>\n    {children}\n    <SelectPrimitive.Icon asChild>\n      <ChevronDownIcon className=\"h-4 w-4 opacity-50\" />\n    </SelectPrimitive.Icon>\n  </SelectPrimitive.Trigger>\n))\nMultiSelectTrigger.displayName = 'MultiSelectTrigger'\n\nconst MultiSelectContent = React.forwardRef<\n  React.ElementRef<typeof SelectPrimitive.Content>,\n  React.ComponentPropsWithoutRef<typeof SelectPrimitive.Content>\n>(({ className, children, position = 'popper', ...props }, ref) => (\n  <SelectPrimitive.Portal>\n    <SelectPrimitive.Content\n      ref={ref}\n      className={cn(\n        'relative z-50 max-h-96 min-w-[8rem] overflow-hidden rounded-md border bg-popover text-popover-foreground shadow-md data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2',\n        position === 'popper' &&\n          'data-[side=bottom]:translate-y-1 data-[side=left]:-translate-x-1 data-[side=right]:translate-x-1 data-[side=top]:-translate-y-1',\n        className\n      )}\n      position={position}\n      {...props}>\n      <SelectPrimitive.ScrollUpButton className=\"flex cursor-default items-center justify-center py-1\">\n        <ChevronUpIcon className=\"h-4 w-4\" />\n      </SelectPrimitive.ScrollUpButton>\n      <SelectPrimitive.Viewport\n        className={cn(\n          'p-1',\n          position === 'popper' &&\n            'h-[var(--radix-select-trigger-height)] w-full min-w-[var(--radix-select-trigger-width)]'\n        )}>\n        {children}\n      </SelectPrimitive.Viewport>\n      <SelectPrimitive.ScrollDownButton className=\"flex cursor-default items-center justify-center py-1\">\n        <ChevronDownIcon className=\"h-4 w-4\" />\n      </SelectPrimitive.ScrollDownButton>\n    </SelectPrimitive.Content>\n  </SelectPrimitive.Portal>\n))\nMultiSelectContent.displayName = 'MultiSelectContent'\n\nconst MultiSelectLabel = React.forwardRef<\n  React.ElementRef<typeof SelectPrimitive.Label>,\n  React.ComponentPropsWithoutRef<typeof SelectPrimitive.Label>\n>(({ className, ...props }, ref) => (\n  <SelectPrimitive.Label ref={ref} className={cn('px-2 py-1.5 text-sm font-semibold', className)} {...props} />\n))\nMultiSelectLabel.displayName = 'MultiSelectLabel'\n\nconst MultiSelectItem = React.forwardRef<\n  React.ElementRef<typeof SelectPrimitive.Item>,\n  React.ComponentPropsWithoutRef<typeof SelectPrimitive.Item> & { value: string, icons?: React.ReactNode }\n>(({ className, children, value, icons, ...props }, ref) => {\n  const { selectedValues } = useMultiSelect()\n  const isSelected = selectedValues.includes(value)\n\n  return (\n    <div ref={ref}\n      className={cn(\n        'relative flex w-full cursor-default select-none items-center rounded-sm py-1.5 pl-2 pr-8 text-sm outline-none focus:bg-accent focus:text-accent-foreground data-[disabled]:opacity-50 transition-all duration-300',\n        isSelected && 'bg-accent/50',\n        className\n      )}\n      {...props}>\n      <div className=\"flex items-center justify-center mr-2\">\n        {icons}\n      </div>\n      <div>{children}</div>\n    </div>\n  )\n})\nMultiSelectItem.displayName = 'MultiSelectItem'\n\nconst MultiSelectSeparator = React.forwardRef<\n  React.ElementRef<typeof SelectPrimitive.Separator>,\n  React.ComponentPropsWithoutRef<typeof SelectPrimitive.Separator>\n>(({ className, ...props }, ref) => (\n  <SelectPrimitive.Separator ref={ref} className={cn('-mx-1 my-1 h-px bg-muted', className)} {...props} />\n))\nMultiSelectSeparator.displayName = 'MultiSelectSeparator'\n\nexport {\n  MultiSelect,\n  MultiSelectGroup,\n  MultiSelectValue,\n  MultiSelectTrigger,\n  MultiSelectContent,\n  MultiSelectLabel,\n  MultiSelectItem,\n  MultiSelectSeparator,\n} ",
+      "type": "registry:component"
+    }
+  ],
+  "cssVars": {
+    "theme": {
+      "--color-ds-background-100": "var(----ds-background-100)",
+      "--color-ds-gray-1000": "var(----ds-gray-1000)",
+      "--color-ds-gray-700": "var(----ds-gray-700)",
+      "--color-ds-gray-600": "var(----ds-gray-600)",
+      "--color-ds-gray-500": "var(----ds-gray-500)",
+      "--color-ds-gray-200": "var(----ds-gray-200)",
+      "--color-ds-gray-100": "var(----ds-gray-100)"
+    },
+    "light": {
+      "--ds-gray-100": "hsla(0, 0%, 95%, 1)",
+      "--ds-gray-200": "hsla(0, 0%, 92%, 1)",
+      "--ds-gray-500": "hsla(0, 0%, 79%, 1)",
+      "--ds-gray-600": "hsla(0, 0%, 66%, 1)",
+      "--ds-gray-700": "hsla(0, 0%, 56%, 1)",
+      "--ds-gray-1000": "hsla(0, 0%, 9%, 1)",
+      "--ds-background-100": "hsla(0, 0%, 100%, 1)"
+    },
+    "dark": {
+      "--ds-gray-100": "hsla(0, 0%, 10%, 1)",
+      "--ds-gray-200": "hsla(0, 0%, 12%, 1)",
+      "--ds-gray-500": "hsla(0, 0%, 27%, 1)",
+      "--ds-gray-600": "hsla(0, 0%, 53%, 1)",
+      "--ds-gray-700": "hsla(0, 0%, 56%, 1)",
+      "--ds-gray-1000": "hsla(0, 0%, 93%, 1)",
+      "--ds-background-100": "hsla(0,0%,4%, 1)"
+    }
+  },
+  "_meta": {
+    "author": "flower0wine",
+    "slug": "multi-select",
+    "registry_url": "https://21st.dev/r/flower0wine/multi-select",
+    "title": "MultiSelect",
+    "description": "Use the MultiSelect component to fulfill your requirement.",
+    "category": "select",
+    "category_group": "UI Components",
+    "downloads": 26,
+    "likes": 0
+  }
+}

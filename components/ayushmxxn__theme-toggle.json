@@ -20,5 +20,16 @@
     "author": "ayushmxxn",
     "name": "theme-toggle",
     "registry_url": "https://21st.dev/r/ayushmxxn/theme-toggle"
+  },
+  "_meta": {
+    "author": "ayushmxxn",
+    "slug": "theme-toggle",
+    "registry_url": "https://21st.dev/r/ayushmxxn/theme-toggle",
+    "title": "Theme Toggle",
+    "description": "Cool Toggles with framer motion animations that you can copy-paste into your apps.",
+    "category": "button",
+    "category_group": "UI Components",
+    "downloads": 3404,
+    "likes": 44
   }
 }

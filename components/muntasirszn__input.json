@@ -1,0 +1,30 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "input",
+  "type": "registry:component",
+  "title": "Input",
+  "description": "A input component.",
+  "dependencies": [
+    "@gsap/react",
+    "gsap"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/ui/input.tsx",
+      "content": "import { useGSAP } from '@gsap/react'\nimport { gsap } from 'gsap'\nimport * as React from 'react'\nimport { cn } from '@/lib/utils'\n\nexport interface InputProps\n  extends React.InputHTMLAttributes<HTMLInputElement> {}\n\nfunction Input({ ref, className, type, ...props }: InputProps & { ref?: React.RefObject<HTMLInputElement | null> }) {\n  const radius = 100 // change this to increase the radius of the hover effect\n  const containerRef = React.useRef<HTMLDivElement | null>(null)\n  const gradientRef = React.useRef(null)\n  const [mousePosition, setMousePosition] = React.useState({ x: 0, y: 0 })\n\n  useGSAP(() => {\n    gsap.set(gradientRef.current, {\n      background: `radial-gradient(0px circle at ${mousePosition.x}px ${mousePosition.y}px, #3b82f6, transparent 80%)`,\n    })\n  }, { scope: containerRef })\n\n  function handleMouseMove(e: React.MouseEvent) {\n    if (!containerRef.current)\n      return\n\n    const { left, top } = containerRef.current.getBoundingClientRect()\n    const x = e.clientX - left\n    const y = e.clientY - top\n\n    setMousePosition({ x, y })\n\n    gsap.to(gradientRef.current, {\n      background: `radial-gradient(${radius}px circle at ${x}px ${y}px, #3b82f6, transparent 80%)`,\n      duration: 0.1,\n    })\n  }\n\n  function handleMouseEnter(e: React.MouseEvent) {\n    if (!containerRef.current)\n      return\n\n    const { left, top } = containerRef.current.getBoundingClientRect()\n    const x = e.clientX - left\n    const y = e.clientY - top\n\n    setMousePosition({ x, y })\n    gsap.set(gradientRef.current, {\n      background: `radial-gradient(0px circle at ${x}px ${y}px, #3b82f6, transparent 80%)`,\n    })\n\n    gsap.to(gradientRef.current, {\n      background: `radial-gradient(${radius}px circle at ${x}px ${y}px, #3b82f6, transparent 80%)`,\n      duration: 0.3,\n    })\n  }\n\n  function handleMouseLeave() {\n    gsap.to(gradientRef.current, {\n      background: `radial-gradient(0px circle at ${mousePosition.x}px ${mousePosition.y}px, #3b82f6, transparent 80%)`,\n      duration: 0.3,\n    })\n  }\n\n  return (\n    <div\n      ref={containerRef}\n      className=\"group/input rounded-lg p-[2px] transition duration-300 relative\"\n      onMouseMove={handleMouseMove}\n      onMouseEnter={handleMouseEnter}\n      onMouseLeave={handleMouseLeave}\n    >\n      <div\n        ref={gradientRef}\n        className=\"absolute inset-0 rounded-lg\"\n      />\n\n      <input\n        type={type}\n        className={cn(\n          `relative z-10 shadow-input dark:placeholder-text-neutral-600 flex h-10 w-full rounded-md border-none bg-gray-50 px-3 py-2 text-sm text-black transition duration-400 group-hover/input:shadow-none file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-neutral-400 focus-visible:ring-[2px] focus-visible:ring-neutral-400 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 dark:bg-zinc-800 dark:text-white dark:shadow-[0px_0px_1px_1px_#404040] dark:focus-visible:ring-neutral-600`,\n          className,\n        )}\n        ref={ref}\n        {...props}\n      />\n    </div>\n  )\n}\nInput.displayName = 'Input'\n\nexport { Input }\n",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "muntasirszn",
+    "slug": "input",
+    "registry_url": "https://21st.dev/r/muntasirszn/input",
+    "title": "Input",
+    "description": "GSAP Recreation Of Aceternity UI's Signup Form Components Input Components",
+    "category": "input",
+    "category_group": "UI Components",
+    "downloads": 48,
+    "likes": 0
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "card-4",
+  "type": "registry:component",
+  "title": "Card 4",
+  "description": "A card-4 component.",
+  "dependencies": [
+    "framer-motion"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/ui/card-4.tsx",
+      "content": "\"use client\";\n\nimport * as React from \"react\";\nimport { motion, useInView, useSpring, useTransform } from \"framer-motion\";\nimport { cn } from \"@/lib/utils\"; // Assuming you have a `cn` utility\n\n// Props interface for type safety and reusability\ninterface AnimatedStatsCardProps extends React.HTMLAttributes<HTMLDivElement> {\n  title: string;\n  primaryValue: number;\n  secondaryValue: number;\n  secondaryLabel: string;\n  icon: React.ReactNode;\n}\n\nconst AnimatedStatsCard = React.forwardRef<HTMLDivElement, AnimatedStatsCardProps>(\n  (\n    {\n      title,\n      primaryValue,\n      secondaryValue,\n      secondaryLabel,\n      icon,\n      className,\n      ...props\n    },\n    ref\n  ) => {\n    const cardRef = React.useRef<HTMLDivElement>(null);\n    const isInView = useInView(cardRef, { once: true, margin: \"-100px\" });\n\n    // Spring animation for a more natural number count-up\n    const spring = useSpring(0, {\n      damping: 50,\n      stiffness: 200,\n      mass: 1,\n    });\n    \n    // Transform the motion value to format it with one decimal place\n    const displayValue = useTransform(spring, (current) => current.toFixed(1));\n\n    // Update spring value when component is in view\n    React.useEffect(() => {\n      if (isInView) {\n        spring.set(primaryValue);\n      }\n    }, [isInView, primaryValue, spring]);\n\n\n    return (\n      <div\n        ref={cardRef}\n        className={cn(\n          // CHANGE: Simplified background and text color for better contrast\n          \"relative flex w-full max-w-sm flex-col overflow-hidden rounded-2xl p-6\",\n          \"bg-primary text-primary-foreground\", // Ensures high contrast\n          \"shadow-lg transition-all hover:shadow-2xl\",\n          // Subtle dot pattern using the foreground color for visibility\n          \"before:absolute before:inset-0 before:-z-10 before:bg-[radial-gradient(circle_at_50%_50%,hsl(var(--primary-foreground)/0.05)_2%,transparent_2%)] before:bg-[length:20px_20px]\",\n          className\n        )}\n        {...props}\n      >\n        {/* Card Header */}\n        <div className=\"flex items-center justify-between\">\n          {/* Ensure child text elements use the correct foreground color */}\n          <h2 className=\"text-lg font-medium text-primary-foreground/90\">{title}</h2>\n          <div className=\"rounded-full bg-primary-foreground/10 p-2\">{icon}</div>\n        </div>\n\n        {/* Main Content */}\n        <div className=\"z-10 flex flex-1 items-end justify-between gap-4 pt-8\">\n          {/* Animated Primary Value */}\n          <div className=\"flex items-baseline\" aria-live=\"polite\">\n            <motion.h1 className=\"text-6xl font-bold tracking-tighter\">\n              {displayValue}\n            </motion.h1>\n          </div>\n          {/* Horizontal Line */}\n          <div className=\"mb-4 h-1 w-full flex-1 rounded-full bg-primary-foreground/20\" />\n          {/* Secondary Value */}\n          <div className=\"flex flex-col items-center text-right\">\n            <span className=\"text-4xl font-semibold tracking-tight\">\n              {secondaryValue}\n            </span>\n            <span className=\"text-sm font-light text-primary-foreground/80\">\n              {secondaryLabel}\n            </span>\n          </div>\n        </div>\n      </div>\n    );\n  }\n);\n\nAnimatedStatsCard.displayName = \"AnimatedStatsCard\";\n\nexport { AnimatedStatsCard };",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "lavikatiyar",
+    "slug": "card-4",
+    "registry_url": "https://21st.dev/r/lavikatiyar/card-4",
+    "title": "Card",
+    "description": "Animated Stats Card\nThis component provides a visually appealing card to display a key statistic, such as \"Fitness Age,\" against a benchmark. It features a smooth, count-up animation that triggers when the component enters the viewport, and it's fully theme-adaptive using shadcn variables.",
+    "category": "card",
+    "category_group": "UI Components",
+    "downloads": 12,
+    "likes": 0
+  }
+}

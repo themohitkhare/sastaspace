@@ -1,0 +1,29 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "glass-button",
+  "type": "registry:component",
+  "title": "Glass Button",
+  "description": "A glass-button component.",
+  "dependencies": [
+    "class-variance-authority"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/ui/glass-button.tsx",
+      "content": "import * as React from \"react\";\nimport { cva, type VariantProps } from \"class-variance-authority\";\n\nfunction cn(...inputs: (string | undefined | null | false)[]): string {\n  return inputs.filter(Boolean).join(\" \");\n}\n\nconst glassButtonVariants = cva(\n  \"relative isolate all-unset cursor-pointer rounded-full transition-all\",\n  {\n    variants: {\n      size: {\n        default: \"text-base font-medium\",\n        sm: \"text-sm font-medium\",\n        lg: \"text-lg font-medium\",\n        icon: \"h-10 w-10\",\n      },\n    },\n    defaultVariants: {\n      size: \"default\",\n    },\n  }\n);\n\nconst glassButtonTextVariants = cva(\n  \"glass-button-text relative block select-none tracking-tighter\",\n  {\n    variants: {\n      size: {\n        default: \"px-6 py-3.5\",\n        sm: \"px-4 py-2\",\n        lg: \"px-8 py-4\",\n        icon: \"flex h-10 w-10 items-center justify-center\",\n      },\n    },\n    defaultVariants: {\n      size: \"default\",\n    },\n  }\n);\n\nexport interface GlassButtonProps\n  extends React.ButtonHTMLAttributes<HTMLButtonElement>,\n    VariantProps<typeof glassButtonVariants> {\n  contentClassName?: string;\n}\n\nconst GlassButton = React.forwardRef<HTMLButtonElement, GlassButtonProps>(\n  ({ className, children, size, contentClassName, ...props }, ref) => {\n    return (\n      <div\n        className={cn(\n          \"glass-button-wrap cursor-pointer rounded-full\",\n          className\n        )}\n      >\n        <button\n          className={cn(\"glass-button\", glassButtonVariants({ size }))}\n          ref={ref}\n          {...props}\n        >\n          <span\n            className={cn(\n              glassButtonTextVariants({ size }),\n              contentClassName\n            )}\n          >\n            {children}\n          </span>\n        </button>\n        <div className=\"glass-button-shadow rounded-full\"></div>\n      </div>\n    );\n  }\n);\nGlassButton.displayName = \"GlassButton\";\n\nexport { GlassButton, glassButtonVariants };",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "easemize",
+    "slug": "glass-button",
+    "registry_url": "https://21st.dev/r/easemize/glass-button",
+    "title": "Glass Button",
+    "description": "Glass Button",
+    "category": "button",
+    "category_group": "UI Components",
+    "downloads": 130,
+    "likes": 0
+  }
+}

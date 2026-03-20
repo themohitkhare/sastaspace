@@ -1,0 +1,45 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "heartbeat-effect-button",
+  "type": "registry:component",
+  "title": "Heartbeat Effect Button",
+  "description": "A heartbeat-effect-button component.",
+  "dependencies": [],
+  "registryDependencies": [
+    "https://21st.dev/r/shadcn/button"
+  ],
+  "files": [
+    {
+      "path": "src/components/ui/heartbeat-effect-button.tsx",
+      "content": "import { Button } from \"@/components/ui/button\";\n\n\nconst ButtonHeartbeatEffectDemo = () => {\n  return (\n    <>\n      <Button variant=\"destructive\" className=\"heartbeateffect cursor-pointer\">\n        Heartbeat Effect\n      </Button>\n    </>\n  );\n};\n\nexport default ButtonHeartbeatEffectDemo;\n",
+      "type": "registry:component"
+    }
+  ],
+  "css": {
+    "@keyframes heartbeat": {
+      "0%": {
+        "box-shadow": "0 0 0 0 var(--heartbeat-color, var(--destructive))",
+        "transform": "scale(1)"
+      },
+      "50%": {
+        "box-shadow": "0 0 0 7px transparent",
+        "transform": "scale(1.05)"
+      },
+      "100%": {
+        "box-shadow": "0 0 0 0 transparent",
+        "transform": "scale(1)"
+      }
+    }
+  },
+  "_meta": {
+    "author": "shadcnspace",
+    "slug": "heartbeat-effect-button",
+    "registry_url": "https://21st.dev/r/shadcnspace/heartbeat-effect-button",
+    "title": "Heartbeat Effect Button",
+    "description": "Here is button with heartbeat effect component",
+    "category": "button",
+    "category_group": "UI Components",
+    "downloads": 0,
+    "likes": 0
+  }
+}

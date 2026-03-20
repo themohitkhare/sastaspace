@@ -1,0 +1,31 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "textarea-with-button",
+  "type": "registry:component",
+  "title": "Textarea With Button",
+  "description": "A textarea-with-button component.",
+  "dependencies": [],
+  "registryDependencies": [
+    "https://21st.dev/r/shadcn/button",
+    "https://21st.dev/r/shadcn/label",
+    "https://21st.dev/r/shadcn/textarea"
+  ],
+  "files": [
+    {
+      "path": "src/components/ui/textarea-with-button.tsx",
+      "content": "import { useId } from 'react'\n\nimport { Button } from '@/components/ui/button'\nimport { Label } from '@/components/ui/label'\nimport { Textarea } from '@/components/ui/textarea'\n\nconst TextareaWithButtonDemo = () => {\n  const id = useId()\n\n  return (\n    <div className='w-full max-w-xs space-y-2'>\n      <Label htmlFor={id}>Feedback</Label>\n      <Textarea id={id} placeholder='Share your feedback here' />\n      <Button size='sm'>Submit</Button>\n    </div>\n  )\n}\n\nexport default TextareaWithButtonDemo\n",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "shadcnspace",
+    "slug": "textarea-with-button",
+    "registry_url": "https://21st.dev/r/shadcnspace/textarea-with-button",
+    "title": "Textarea with button",
+    "description": "Here is textarea with button component",
+    "category": "button",
+    "category_group": "UI Components",
+    "downloads": 3,
+    "likes": 0
+  }
+}

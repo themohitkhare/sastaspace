@@ -1,0 +1,47 @@
+{
+  "name": "button-group-with-icons",
+  "type": "registry:ui",
+  "dependencies": [
+    "lucide-react",
+    "class-variance-authority",
+    "@radix-ui/react-slot"
+  ],
+  "registryDependencies": [
+    "https://21st.dev/r/Codehagen/button-group",
+    "https://21st.dev/r/shadcn/button"
+  ],
+  "files": [
+    {
+      "path": "/components/ui/button-group-with-icons.tsx",
+      "content": "\"use client\";\n\nimport { Button } from \"@/components/ui/button\";\nimport { ButtonGroup } from \"@/components/ui/button-group\";\nimport {\n  Copy,\n  Save,\n  Trash,\n} from \"lucide-react\";\n\nfunction ButtonGroupDemo() {\n  return (\n    <div className=\"flex min-h-[400px] w-full items-center justify-center p-4\">\n        <div className=\"space-y-3\">\n          <ButtonGroup size=\"sm\">\n            <Button variant=\"outline\">\n              <Copy className=\"mr-2 h-4 w-4\" />\n              Copy\n            </Button>\n            <Button variant=\"outline\">\n              <Save className=\"mr-2 h-4 w-4\" />\n              Save\n            </Button>\n            <Button variant=\"outline\">\n              <Trash className=\"mr-2 h-4 w-4\" />\n              Delete\n            </Button>\n          </ButtonGroup>\n        </div>\n    </div>\n  );\n}\n\nexport { ButtonGroupDemo };\n\n\n",
+      "type": "registry:ui",
+      "target": ""
+    },
+    {
+      "path": "/components/ui/button-group.tsx",
+      "content": "\"use client\";\n\nimport { cn } from \"@/lib/utils\";\nimport { cva, VariantProps } from \"class-variance-authority\";\nimport React from \"react\";\n\nconst buttonGroupVariants = cva(\n  \"flex sm:items-center max-sm:gap-1 max-sm:flex-col [&>*:focus-within]:ring-1 [&>*:focus-within]:z-10 [&>*]:ring-offset-0 sm:[&>*:not(:first-child)]:rounded-l-none sm:[&>*:not(:last-child)]:rounded-r-none\",\n  {\n    variants: {\n      size: {\n        default: \"[&>*]:h-10 [&>*]:px-4 [&>*]:py-2\",\n        sm: \"[&>*]:h-9 [&>*]:rounded-md [&>*]:px-3\",\n        lg: \"[&>*]:h-11 [&>*]:rounded-md [&>*]:px-8\",\n        icon: \"[&>*]:h-10 [&>*]:w-10\",\n      },\n      separated: {\n        true: \"[&>*]:outline [&>*]:outline-1 [&>*]:outline-zinc-500 gap-0.5 [&>*:focus-within]:ring-offset-2\",\n        false: \"[&>*:focus-within]:ring-offset-1\",\n      },\n    },\n    defaultVariants: {\n      separated: false,\n      size: \"default\",\n    },\n  }\n);\n\nexport interface ButtonGroupProps\n  extends React.HTMLAttributes<HTMLDivElement>,\n    VariantProps<typeof buttonGroupVariants> {\n  separated?: boolean;\n}\n\nconst ButtonGroup = React.forwardRef<HTMLDivElement, ButtonGroupProps>(\n  ({ children, className, size, separated = false, ...props }, ref) => {\n    return (\n      <div\n        className={cn(buttonGroupVariants({ size, className, separated }))}\n        ref={ref}\n        {...props}\n      >\n        {children}\n      </div>\n    );\n  }\n);\nButtonGroup.displayName = \"ButtonGroup\";\n\nexport { ButtonGroup };",
+      "type": "registry:ui",
+      "target": ""
+    },
+    {
+      "path": "/components/ui/button.tsx",
+      "content": "import * as React from \"react\"\nimport { Slot } from \"@radix-ui/react-slot\"\nimport { cva, type VariantProps } from \"class-variance-authority\"\n\nimport { cn } from \"@/lib/utils\"\n\nconst buttonVariants = cva(\n  \"inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50\",\n  {\n    variants: {\n      variant: {\n        default: \"bg-primary text-primary-foreground hover:bg-primary/90\",\n        destructive:\n          \"bg-destructive text-destructive-foreground hover:bg-destructive/90\",\n        outline:\n          \"border border-input bg-background hover:bg-accent hover:text-accent-foreground\",\n        secondary:\n          \"bg-secondary text-secondary-foreground hover:bg-secondary/80\",\n        ghost: \"hover:bg-accent hover:text-accent-foreground\",\n        link: \"text-primary underline-offset-4 hover:underline\",\n      },\n      size: {\n        default: \"h-10 px-4 py-2\",\n        sm: \"h-9 rounded-md px-3\",\n        lg: \"h-11 rounded-md px-8\",\n        icon: \"h-10 w-10\",\n      },\n    },\n    defaultVariants: {\n      variant: \"default\",\n      size: \"default\",\n    },\n  },\n)\n\nexport interface ButtonProps\n  extends React.ButtonHTMLAttributes<HTMLButtonElement>,\n    VariantProps<typeof buttonVariants> {\n  asChild?: boolean\n}\n\nconst Button = React.forwardRef<HTMLButtonElement, ButtonProps>(\n  ({ className, variant, size, asChild = false, ...props }, ref) => {\n    const Comp = asChild ? Slot : \"button\"\n    return (\n      <Comp\n        className={cn(buttonVariants({ variant, size, className }))}\n        ref={ref}\n        {...props}\n      />\n    )\n  },\n)\nButton.displayName = \"Button\"\n\nexport { Button, buttonVariants }\n",
+      "type": "registry:ui",
+      "target": ""
+    }
+  ],
+  "tailwind": {
+    "config": {}
+  },
+  "_meta": {
+    "author": "Codehagen",
+    "slug": "button-group-with-icons",
+    "registry_url": "https://21st.dev/r/Codehagen/button-group-with-icons",
+    "title": "Button Group with Icons",
+    "description": "A versatile button group component for organizing related actions with consistent spacing and visual connection.",
+    "category": "button",
+    "category_group": "UI Components",
+    "downloads": 55,
+    "likes": 1
+  }
+}

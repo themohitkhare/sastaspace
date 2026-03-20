@@ -1,0 +1,30 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "book-a-call-button",
+  "type": "registry:component",
+  "title": "Book A Call Button",
+  "description": "A book-a-call-button component.",
+  "dependencies": [
+    "lucide-react",
+    "framer-motion"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/ui/book-a-call-button.tsx",
+      "content": "\"use client\"\n\nimport { Phone } from \"lucide-react\"\nimport { cn } from \"@/lib/utils\"\nimport { motion } from \"framer-motion\"\nimport { useState } from \"react\"\n\ninterface BookCallButtonProps {\n  className?: string\n  onClick?: () => void\n}\n\nexport function BookCallButton({ className, onClick }: BookCallButtonProps) {\n  const [isHovered, setIsHovered] = useState(false)\n\n  return (\n    <button\n      onClick={onClick}\n      onMouseEnter={() => setIsHovered(true)}\n      onMouseLeave={() => setIsHovered(false)}\n      className={cn(\n        \"group relative overflow-hidden\",\n        \"px-6 py-3 rounded-xl\",\n        \"bg-gradient-to-r from-blue-600 to-blue-700\",\n        \"hover:from-blue-700 hover:to-blue-800\",\n        \"text-white font-semibold text-lg\",\n        \"shadow-lg hover:shadow-xl\",\n        \"transition-all duration-300 ease-out\",\n        \"transform active:scale-95\",\n        \"border border-blue-500/20\",\n        \"focus:outline-none focus:ring-4 focus:ring-blue-500/30\",\n        className,\n      )}\n    >\n      <div className=\"relative flex items-center justify-center gap-3\">\n        <span className=\"relative flex items-center justify-center\" style={{ width: 20, height: 20 }}>\n          <motion.span\n            initial={false}\n            animate={isHovered ? { y: -18, opacity: 0 } : { y: 0, opacity: 1 }}\n            transition={{ type: \"spring\", stiffness: 300, damping: 24 }}\n            style={{ position: \"absolute\", left: 0, right: 0 }}\n          >\n            <Phone className=\"w-5 h-5 text-white\" />\n          </motion.span>\n          <motion.span\n            initial={false}\n            animate={isHovered ? { y: 0, opacity: 1 } : { y: 18, opacity: 0 }}\n            transition={{ type: \"spring\", stiffness: 300, damping: 24 }}\n            style={{ position: \"absolute\", left: 0, right: 0 }}\n          >\n            <Phone className=\"w-5 h-5 text-white\" />\n          </motion.span>\n        </span>\n\n        {/* Text with subtle shift */}\n        <span className=\"transition-transform duration-300 ease-out group-hover:translate-x-1\">Book A Call</span>\n      </div>\n\n      {/* Subtle shine effect on hover */}\n      <div className=\"absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500\">\n        <div\n          className=\"absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent \n                        transform -skew-x-12 -translate-x-full group-hover:translate-x-full \n                        transition-transform duration-1000 ease-out\"\n        />\n      </div>\n    </button>\n  )\n}\n",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "jatin-yadav05",
+    "slug": "book-a-call-button",
+    "registry_url": "https://21st.dev/r/jatin-yadav05/book-a-call-button",
+    "title": "Book A Call Button",
+    "description": "A polished call-to-action button featuring smooth Framer Motion spring animations where call icons transition vertically on hover for an engaging user experience.",
+    "category": "button",
+    "category_group": "UI Components",
+    "downloads": 7,
+    "likes": 0
+  }
+}

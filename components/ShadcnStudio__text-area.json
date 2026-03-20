@@ -1,0 +1,31 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "text-area",
+  "type": "registry:component",
+  "title": "Text Area",
+  "description": "A text-area component.",
+  "dependencies": [],
+  "registryDependencies": [
+    "https://21st.dev/r/shadcn/textarea",
+    "https://21st.dev/r/shadcn/label",
+    "https://21st.dev/r/shadcn/button"
+  ],
+  "files": [
+    {
+      "path": "src/components/ui/text-area.tsx",
+      "content": "import { Textarea } from '@/components/ui/textarea'\n\nconst TextareaDemo = () => {\n  return <Textarea placeholder='Type your message here.' className='w-full max-w-xs' />\n}\n\nexport default TextareaDemo\n",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "ShadcnStudio",
+    "slug": "text-area",
+    "registry_url": "https://21st.dev/r/ShadcnStudio/text-area",
+    "title": "Text Area ",
+    "description": "Here is Textarea component",
+    "category": "textarea",
+    "category_group": "UI Components",
+    "downloads": 12,
+    "likes": 0
+  }
+}

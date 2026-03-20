@@ -1,0 +1,29 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "calendar-with-booked-days",
+  "type": "registry:component",
+  "title": "Calendar With Booked Days",
+  "description": "A calendar-with-booked-days component.",
+  "dependencies": [],
+  "registryDependencies": [
+    "https://21st.dev/r/originui/calendar"
+  ],
+  "files": [
+    {
+      "path": "src/components/ui/calendar-with-booked-days.tsx",
+      "content": "import { cn } from \"@/lib/utils\";\nimport { useState } from \"react\";\n\nexport const Component = () => {\n  const [count, setCount] = useState(0);\n\n  return (\n    <div className={cn(\"flex flex-col items-center gap-4 p-4 rounded-lg\")}>\n      <h1 className=\"text-2xl font-bold mb-2\">Component Example</h1>\n      <h2 className=\"text-xl font-semibold\">{count}</h2>\n      <div className=\"flex gap-2\">\n        <button onClick={() => setCount((prev) => prev - 1)}>-</button>\n        <button onClick={() => setCount((prev) => prev + 1)}>+</button>\n      </div>\n    </div>\n  );\n};\n",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "shadcn",
+    "slug": "calendar-with-booked-days",
+    "registry_url": "https://21st.dev/r/shadcn/calendar-with-booked-days",
+    "title": "Calendar with booked days",
+    "description": "Here is calendar component with booked days",
+    "category": "calendar",
+    "category_group": "UI Components",
+    "downloads": 8,
+    "likes": 0
+  }
+}

@@ -1,0 +1,107 @@
+{
+  "name": "pagination",
+  "type": "registry:ui",
+  "dependencies": [
+    "lucide-react",
+    "@radix-ui/react-slot",
+    "class-variance-authority"
+  ],
+  "registryDependencies": [
+    "https://21st.dev/r/ekmas/button"
+  ],
+  "files": [
+    {
+      "path": "/components/ui/pagination.tsx",
+      "content": "import { ChevronLeft, ChevronRight, MoreHorizontal } from \"lucide-react\"\r\n\r\nimport * as React from \"react\"\r\n\r\nimport { ButtonProps, buttonVariants } from \"@/components/ui/button\"\r\n\r\nimport { cn } from \"@/lib/utils\"\r\n\r\nconst Pagination = ({ className, ...props }: React.ComponentProps<\"nav\">) => (\r\n  <nav\r\n    role=\"navigation\"\r\n    aria-label=\"pagination\"\r\n    className={cn(\"mx-auto flex w-full justify-center\", className)}\r\n    {...props}\r\n  />\r\n)\r\nPagination.displayName = \"Pagination\"\r\n\r\nconst PaginationContent = React.forwardRef<\r\n  HTMLUListElement,\r\n  React.ComponentProps<\"ul\">\r\n>(({ className, ...props }, ref) => (\r\n  <ul\r\n    ref={ref}\r\n    className={cn(\"flex flex-row items-center gap-1\", className)}\r\n    {...props}\r\n  />\r\n))\r\nPaginationContent.displayName = \"PaginationContent\"\r\n\r\nconst PaginationItem = React.forwardRef<\r\n  HTMLLIElement,\r\n  React.ComponentProps<\"li\">\r\n>(({ className, ...props }, ref) => (\r\n  <li ref={ref} className={cn(\"\", className)} {...props} />\r\n))\r\nPaginationItem.displayName = \"PaginationItem\"\r\n\r\ntype PaginationLinkProps = {\r\n  isActive?: boolean\r\n} & Pick<ButtonProps, \"size\"> &\r\n  React.ComponentProps<\"a\">\r\n\r\nconst PaginationLink = ({\r\n  className,\r\n  isActive,\r\n  size = \"icon\",\r\n  ...props\r\n}: PaginationLinkProps) => (\r\n  <a\r\n    aria-current={isActive ? \"page\" : undefined}\r\n    className={cn(\r\n      buttonVariants({\r\n        variant: \"noShadow\",\r\n        size,\r\n      }),\r\n      className,\r\n      isActive && \"bg-black text-white\",\r\n    )}\r\n    {...props}\r\n  />\r\n)\r\nPaginationLink.displayName = \"PaginationLink\"\r\n\r\nconst PaginationPrevious = ({\r\n  className,\r\n  ...props\r\n}: React.ComponentProps<typeof PaginationLink>) => (\r\n  <PaginationLink\r\n    aria-label=\"Go to previous page\"\r\n    size=\"default\"\r\n    className={cn(\"gap-1 pl-2.5\", className)}\r\n    {...props}\r\n  >\r\n    <ChevronLeft className=\"h-4 w-4\" />\r\n    <span>Previous</span>\r\n  </PaginationLink>\r\n)\r\nPaginationPrevious.displayName = \"PaginationPrevious\"\r\n\r\nconst PaginationNext = ({\r\n  className,\r\n  ...props\r\n}: React.ComponentProps<typeof PaginationLink>) => (\r\n  <PaginationLink\r\n    aria-label=\"Go to next page\"\r\n    size=\"default\"\r\n    className={cn(\"gap-1 pr-2.5\", className)}\r\n    {...props}\r\n  >\r\n    <span>Next</span>\r\n    <ChevronRight className=\"h-4 w-4\" />\r\n  </PaginationLink>\r\n)\r\nPaginationNext.displayName = \"PaginationNext\"\r\n\r\nconst PaginationEllipsis = ({\r\n  className,\r\n  ...props\r\n}: React.ComponentProps<\"span\">) => (\r\n  <span\r\n    aria-hidden\r\n    className={cn(\"flex h-9 w-9 items-center justify-center\", className)}\r\n    {...props}\r\n  >\r\n    <MoreHorizontal className=\"h-4 w-4\" />\r\n    <span className=\"sr-only\">More pages</span>\r\n  </span>\r\n)\r\nPaginationEllipsis.displayName = \"PaginationEllipsis\"\r\n\r\nexport {\r\n  Pagination,\r\n  PaginationContent,\r\n  PaginationEllipsis,\r\n  PaginationItem,\r\n  PaginationLink,\r\n  PaginationNext,\r\n  PaginationPrevious,\r\n}",
+      "type": "registry:ui",
+      "target": ""
+    },
+    {
+      "path": "/components/ui/button.tsx",
+      "content": "import { Slot } from \"@radix-ui/react-slot\"\r\nimport { cva, type VariantProps } from \"class-variance-authority\"\r\n\r\nimport * as React from \"react\"\r\n\r\nimport { cn } from \"@/lib/utils\"\r\n\r\nconst buttonVariants = cva(\r\n  \"inline-flex items-center justify-center whitespace-nowrap rounded-base text-sm font-base ring-offset-white transition-all gap-2 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50\",\r\n  {\r\n    variants: {\r\n      variant: {\r\n        default:\r\n          \"text-mtext bg-main border-2 border-border shadow-shadow hover:translate-x-boxShadowX hover:translate-y-boxShadowY hover:shadow-none\",\r\n        noShadow: \"text-mtext bg-main border-2 border-border\",\r\n        neutral:\r\n          \"bg-bw text-text border-2 border-border shadow-shadow hover:translate-x-boxShadowX hover:translate-y-boxShadowY hover:shadow-none\",\r\n        reverse:\r\n          \"text-mtext bg-main border-2 border-border hover:translate-x-reverseBoxShadowX hover:translate-y-reverseBoxShadowY hover:shadow-shadow\",\r\n      },\r\n      size: {\r\n        default: \"h-10 px-4 py-2\",\r\n        sm: \"h-9 px-3\",\r\n        lg: \"h-11 px-8\",\r\n        icon: \"h-10 w-10\",\r\n      },\r\n    },\r\n    defaultVariants: {\r\n      variant: \"default\",\r\n      size: \"default\",\r\n    },\r\n  },\r\n)\r\n\r\nexport interface ButtonProps\r\n  extends React.ButtonHTMLAttributes<HTMLButtonElement>,\r\n    VariantProps<typeof buttonVariants> {\r\n  asChild?: boolean\r\n}\r\n\r\nconst Button = React.forwardRef<HTMLButtonElement, ButtonProps>(\r\n  ({ className, variant, size, asChild = false, ...props }, ref) => {\r\n    const Comp = asChild ? Slot : \"button\"\r\n    return (\r\n      <Comp\r\n        className={cn(buttonVariants({ variant, size, className }))}\r\n        ref={ref}\r\n        {...props}\r\n      />\r\n    )\r\n  },\r\n)\r\nButton.displayName = \"Button\"\r\n\r\nexport { Button, buttonVariants }",
+      "type": "registry:ui",
+      "target": ""
+    }
+  ],
+  "cssVars": {
+    "light": {
+      "--main": "#88aaee",
+      "--overlay": "rgba(0, 0, 0, 0.8)",
+      "--bg": "#dfe5f2",
+      "--bw": "#fff",
+      "--blank": "#000",
+      "--border": "#000",
+      "--text": "#000",
+      "--mtext": "#000",
+      "--ring": "#000",
+      "--ring-offset": "#fff",
+      "--border-radius": "5px",
+      "--box-shadow-x": "4px",
+      "--box-shadow-y": "4px",
+      "--reverse-box-shadow-x": "-4px",
+      "--reverse-box-shadow-y": "-4px",
+      "--base-font-weight": "500",
+      "--heading-font-weight": "700",
+      "--shadow": "var(--box-shadow-x) var(--box-shadow-y) 0px 0px var(--border)"
+    },
+    "dark": {
+      "--bg": "#272933",
+      "--bw": "#212121",
+      "--blank": "#fff",
+      "--border": "#000",
+      "--text": "#e6e6e6",
+      "--mtext": "#000",
+      "--ring": "#fff",
+      "--ring-offset": "#000",
+      "--shadow": "var(--box-shadow-x) var(--box-shadow-y) 0px 0px var(--border)"
+    }
+  },
+  "tailwind": {
+    "config": {
+      "theme": {
+        "extend": {
+          "colors": {
+            "main": "var(--main)",
+            "overlay": "var(--overlay)",
+            "bg": "var(--bg)",
+            "bw": "var(--bw)",
+            "blank": "var(--blank)",
+            "text": "var(--text)",
+            "mtext": "var(--mtext)",
+            "border": "var(--border)",
+            "ring": "var(--ring)",
+            "ringOffset": "var(--ring-offset)",
+            "secondaryBlack": "#212121"
+          },
+          "borderRadius": {
+            "base": "5px"
+          },
+          "boxShadow": {
+            "shadow": "var(--shadow)"
+          },
+          "translate": {
+            "boxShadowX": "4px",
+            "boxShadowY": "4px",
+            "reverseBoxShadowX": "-4px",
+            "reverseBoxShadowY": "-4px"
+          },
+          "fontWeight": {
+            "base": "500",
+            "heading": "700"
+          }
+        }
+      }
+    }
+  },
+  "_meta": {
+    "author": "ekmas",
+    "slug": "pagination",
+    "registry_url": "https://21st.dev/r/ekmas/pagination",
+    "title": "Pagination",
+    "description": "Neobrutalism-styled pagination component.",
+    "category": "pagination",
+    "category_group": "UI Components",
+    "downloads": 12,
+    "likes": 2
+  }
+}

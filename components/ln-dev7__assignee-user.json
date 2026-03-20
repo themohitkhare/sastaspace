@@ -1,0 +1,34 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "assignee-user",
+  "type": "registry:component",
+  "title": "Assignee User",
+  "description": "A assignee-user component.",
+  "dependencies": [
+    "lucide-react"
+  ],
+  "registryDependencies": [
+    "https://21st.dev/r/originui/avatar",
+    "https://21st.dev/r/originui/badge",
+    "https://21st.dev/r/originui/dropdown-menu",
+    "https://21st.dev/r/originui/button"
+  ],
+  "files": [
+    {
+      "path": "src/components/ui/assignee-user.tsx",
+      "content": "'use client';\n\nimport React, { forwardRef, HTMLAttributes } from 'react';\nimport { cn } from '@/lib/utils';\nimport { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';\nimport { Button } from '@/components/ui/button';\nimport {\n   DropdownMenu,\n   DropdownMenuContent,\n   DropdownMenuItem,\n   DropdownMenuLabel,\n   DropdownMenuSeparator,\n   DropdownMenuTrigger,\n} from '@/components/ui/dropdown-menu';\nimport { Check, CircleUserRound, Send, User } from 'lucide-react';\n\nexport interface User {\n   id: string;\n   name: string;\n   avatarUrl: string;\n   email: string;\n   status: 'online' | 'offline' | 'away';\n   role: 'Member' | 'Admin' | 'Guest';\n   joinedDate: string;\n   teamIds: string[];\n}\n\nconst avatarUrl = (seed: string) => `https://api.dicebear.com/9.x/glass/svg?seed=${seed}`;\n\nexport const statusUserColors = {\n   online: '#00cc66',\n   offline: '#969696',\n   away: '#ffcc00',\n};\n\nexport const users: User[] = [\n   {\n      id: 'ln',\n      name: 'leonel.ngoya',\n      avatarUrl: avatarUrl('ln'),\n      email: 'leonelngoya@gmail.com',\n      status: 'online',\n      role: 'Admin',\n      joinedDate: '2022-01-01',\n      teamIds: ['CORE', 'PERF', 'DESIGN', 'WEB'],\n   },\n   {\n      id: 'sophia',\n      name: 'sophia.reed',\n      avatarUrl: avatarUrl('sophiareed'),\n      email: 'sophiareed@gmail.com',\n      status: 'offline',\n      role: 'Admin',\n      joinedDate: '2023-06-04',\n      teamIds: ['CORE', 'PERF'],\n   },\n   {\n      id: 'mason',\n      name: 'mason.carter',\n      avatarUrl: avatarUrl('mason'),\n      email: 'masoncarter@gmail.com',\n      status: 'away',\n      role: 'Member',\n      joinedDate: '2023-11-01',\n      teamIds: ['CORE', 'DESIGN'],\n   },\n   {\n      id: 'emma',\n      name: 'emma.jones',\n      avatarUrl: avatarUrl('emmajones'),\n      email: 'emmajones@gmail.com',\n      status: 'online',\n      role: 'Member',\n      joinedDate: '2023-03-20',\n      teamIds: ['CORE'],\n   },\n];\n\ninterface AssigneeUserProps extends HTMLAttributes<HTMLDivElement> {\n   value: User | null;\n   onChange: (user: User | null) => void;\n   userList: User[];\n}\n\nconst AssigneeUser = forwardRef<HTMLDivElement, AssigneeUserProps>(\n   ({ value, onChange, userList, className, ...props }, ref) => {\n      return (\n         <div ref={ref} className={cn(className)} {...props}>\n            <DropdownMenu>\n               <DropdownMenuTrigger asChild>\n                  <Button variant=\"secondary\" className=\"h-8 w-auto rounded-full px-2\">\n                     <div className=\"flex items-center gap-2\">\n                        {value ? (\n                           <>\n                              <div className=\"relative\">\n                                 <Avatar className=\"size-6 shrink-0\">\n                                    <AvatarImage src={value.avatarUrl} alt={value.name} />\n                                    <AvatarFallback>{value.name[0]}</AvatarFallback>\n                                 </Avatar>\n                                 <span\n                                    className=\"border-background absolute -end-0.5 -bottom-0.5 size-2.5 rounded-full border-2\"\n                                    style={{ backgroundColor: statusUserColors[value.status] }}\n                                 />\n                              </div>\n                              <span className=\"font-medium\">{value.name}</span>\n                           </>\n                        ) : (\n                           <>\n                              <CircleUserRound className=\"size-5 text-muted-foreground\" />\n                              <span className=\"text-muted-foreground\">Assign to...</span>\n                           </>\n                        )}\n                     </div>\n                  </Button>\n               </DropdownMenuTrigger>\n               <DropdownMenuContent align=\"start\" className=\"w-[206px]\">\n                  <DropdownMenuLabel>Assign to...</DropdownMenuLabel>\n                  <DropdownMenuItem onSelect={() => onChange(null)}>\n                     <div className=\"flex flex-1 items-center gap-2\">\n                        <User className=\"size-5\" />\n                        <span>No assignee</span>\n                     </div>\n                     {!value && <Check className=\"ml-auto size-4\" />}\n                  </DropdownMenuItem>\n                  <DropdownMenuSeparator />\n                  {userList.map((user) => (\n                     <DropdownMenuItem key={user.id} onSelect={() => onChange(user)}>\n                        <div className=\"flex flex-1 items-center gap-2\">\n                           <Avatar className=\"size-5\">\n                              <AvatarImage src={user.avatarUrl} alt={user.name} />\n                              <AvatarFallback>{user.name[0]}</AvatarFallback>\n                           </Avatar>\n                           <span>{user.name}</span>\n                        </div>\n                        {value?.id === user.id && <Check className=\"ml-auto size-4\" />}\n                     </DropdownMenuItem>\n                  ))}\n                  <DropdownMenuSeparator />\n                  <DropdownMenuLabel>New user</DropdownMenuLabel>\n                  <DropdownMenuItem>\n                     <div className=\"flex items-center gap-2\">\n                        <Send className=\"size-4\" />\n                        <span>Invite and assign...</span>\n                     </div>\n                  </DropdownMenuItem>\n               </DropdownMenuContent>\n            </DropdownMenu>\n         </div>\n      );\n   }\n);\n\nAssigneeUser.displayName = 'AssigneeUser';\n\nexport default AssigneeUser;",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "ln-dev7",
+    "slug": "assignee-user",
+    "registry_url": "https://21st.dev/r/ln-dev7/assignee-user",
+    "title": "Assignee User",
+    "description": "Here is user assignation component by indev ui",
+    "category": "dropdown",
+    "category_group": "UI Components",
+    "downloads": 19,
+    "likes": 0
+  }
+}

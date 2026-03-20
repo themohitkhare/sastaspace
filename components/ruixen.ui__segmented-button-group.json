@@ -1,0 +1,29 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "segmented-button-group",
+  "type": "registry:component",
+  "title": "Segmented Button Group",
+  "description": "A segmented-button-group component.",
+  "dependencies": [],
+  "registryDependencies": [
+    "https://21st.dev/r/originui/button"
+  ],
+  "files": [
+    {
+      "path": "src/components/ui/segmented-button-group.tsx",
+      "content": "\"use client\"\n\nimport * as React from \"react\"\nimport { Button } from \"@/components/ui/button\"\nimport { cn } from \"@/lib/utils\"\n\ninterface SegmentedButtonGroupProps {\n  options: string[]\n  selected?: string\n  onChange?: (value: string) => void\n  className?: string\n}\n\nexport default function SegmentedButtonGroup({\n  options,\n  selected,\n  onChange,\n  className,\n}: SegmentedButtonGroupProps) {\n  const [active, setActive] = React.useState<string>(selected || options[0])\n\n  const handleClick = (value: string) => {\n    setActive(value)\n    onChange?.(value)\n  }\n\n  return (\n    <div className={cn(\"inline-flex rounded-full bg-background\", className)}>\n      {options.map((option, idx) => {\n        const isFirst = idx === 0\n        const isLast = idx === options.length - 1\n        const isActive = option === active\n\n        return (\n          <Button\n            key={option}\n            onClick={() => handleClick(option)}\n            variant={isActive ? \"default\" : \"outline\"}\n            className={cn(\n              \"rounded-none px-4 py-2\",\n              isFirst && \"rounded-l-full\",\n              isLast && \"rounded-r-full\",\n              isActive && \"bg-primary text-primary-foreground\",\n              !isActive && \"bg-background text-foreground\"\n            )}\n          >\n            {option}\n          </Button>\n        )\n      })}\n    </div>\n  )\n}\n",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "ruixen.ui",
+    "slug": "segmented-button-group",
+    "registry_url": "https://21st.dev/r/ruixen.ui/segmented-button-group",
+    "title": "Segmented Button Group",
+    "description": "The SegmentedButtonGroup component is a clean and flexible button group built entirely with shadcn UI. It visually splits a single button into multiple segments, allowing users to toggle between options like “Day / Week / Month” or priority levels. Each segment acts as an individual button, with the active segment highlighted while others remain outlined, creating a clear and intuitive selection interface. The component dynamically supports any number of segments, maintains rounded corners on the first and last buttons for a seamless appearance, and provides callbacks for handling user selection. Its simple yet elegant design makes it ideal for dashboards, filters, and interactive toggle controls in modern web applications.",
+    "category": "button",
+    "category_group": "UI Components",
+    "downloads": 14,
+    "likes": 0
+  }
+}

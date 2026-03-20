@@ -1,0 +1,27 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "plastic-button",
+  "type": "registry:component",
+  "title": "Plastic Button",
+  "description": "A plastic-button component.",
+  "dependencies": [],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/ui/plastic-button.tsx",
+      "content": "import { cn } from \"@/lib/utils\";\n\nexport function PlasticButton({ text }: { text: string; }) {\n  return (\n    <button\n      className={cn(\n        \"relative inline-block px-4 py-1.75 rounded-full text-white font-medium text-sm transition-all duration-200\",\n        \"bg-gradient-to-b from-blue-500 to-blue-600\",\n        \"active:scale-[0.98] flex justify-center items-center\"\n      )}\n      style={{\n        background: `linear-gradient(to bottom, rgb(59, 130, 246), rgb(37, 99, 235))`,\n        boxShadow: `0 2px 8px 0 rgba(37, 99, 235, 0.35), 0 1.5px 0 0 rgba(255,255,255,0.25) inset, 0 -2px 8px 0 rgba(37, 99, 235, 0.5) inset`,\n      }}\n    >\n      <span className=\"relative z-10\">{text}</span>\n      <span\n        className=\"absolute left-1/2 top-0 z-20 w-[80%] h-2/5 -translate-x-1/2 rounded-t-full pointer-events-none\"\n        style={{\n          background:\n            \"linear-gradient(180deg, rgba(255,255,255,0.25) 0%, rgba(255,255,255,0) 80%, transparent 100%)\",\n          filter: \"blur(1.5px)\",\n        }}\n      />\n      <span\n        className=\"absolute inset-0 z-0 rounded-full pointer-events-none\"\n        style={{\n          boxShadow:\n            \"0 0 0 2px rgba(255,255,255,0.10) inset, 0 1.5px 0 0 rgba(255,255,255,0.18) inset, 0 -2px 8px 0 rgba(37, 99, 235, 0.18) inset\",\n        }}\n      />\n    </button>\n  );\n}",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "axelwesselgren",
+    "slug": "plastic-button",
+    "registry_url": "https://21st.dev/r/axelwesselgren/plastic-button",
+    "title": "Plastic Button",
+    "description": "A modern looking \"plastic\" button.",
+    "category": "button",
+    "category_group": "UI Components",
+    "downloads": 216,
+    "likes": 0
+  }
+}

@@ -1,0 +1,59 @@
+{
+  "name": "numbered-pagination",
+  "type": "registry:ui",
+  "dependencies": [
+    "@radix-ui/react-icons",
+    "@radix-ui/react-slot",
+    "class-variance-authority"
+  ],
+  "registryDependencies": [
+    "https://21st.dev/r/originui/use-pagination",
+    "https://21st.dev/r/originui/pagination"
+  ],
+  "files": [
+    {
+      "path": "/components/ui/numbered-pagination.tsx",
+      "content": "import { usePagination } from \"@/components/hooks/use-pagination\";\nimport {\n  Pagination,\n  PaginationContent,\n  PaginationEllipsis,\n  PaginationItem,\n  PaginationLink,\n  PaginationNext,\n  PaginationPrevious,\n} from \"@/components/ui/pagination\";\n\ntype NumberedPaginationProps = {\n  currentPage: number;\n  totalPages: number;\n  paginationItemsToDisplay?: number;\n  onPageChange: (page: number) => void;\n};\n\nfunction NumberedPagination({\n  currentPage,\n  totalPages,\n  paginationItemsToDisplay = 5,\n  onPageChange,\n}: NumberedPaginationProps) {\n  const { pages, showLeftEllipsis, showRightEllipsis } = usePagination({\n    currentPage,\n    totalPages,\n    paginationItemsToDisplay,\n  });\n\n  const handlePageChange = (page: number) => (e: React.MouseEvent) => {\n    e.preventDefault();\n    onPageChange(page);\n  };\n\n  return (\n    <Pagination>\n      <PaginationContent>\n        <PaginationItem>\n          <PaginationPrevious\n            className=\"aria-disabled:pointer-events-none aria-disabled:opacity-50\"\n            href=\"#\"\n            onClick={handlePageChange(currentPage - 1)}\n            aria-disabled={currentPage === 1}\n          />\n        </PaginationItem>\n\n        {showLeftEllipsis && (\n          <PaginationItem>\n            <PaginationEllipsis />\n          </PaginationItem>\n        )}\n\n        {pages.map((page) => (\n          <PaginationItem key={page}>\n            <PaginationLink\n              href=\"#\"\n              onClick={handlePageChange(page)}\n              isActive={page === currentPage}\n            >\n              {page}\n            </PaginationLink>\n          </PaginationItem>\n        ))}\n\n        {showRightEllipsis && (\n          <PaginationItem>\n            <PaginationEllipsis />\n          </PaginationItem>\n        )}\n\n        <PaginationItem>\n          <PaginationNext\n            className=\"aria-disabled:pointer-events-none aria-disabled:opacity-50\"\n            href=\"#\"\n            onClick={handlePageChange(currentPage + 1)}\n            aria-disabled={currentPage === totalPages}\n          />\n        </PaginationItem>\n      </PaginationContent>\n    </Pagination>\n  );\n}\n\nexport { NumberedPagination };",
+      "type": "registry:ui",
+      "target": ""
+    },
+    {
+      "path": "/components/hooks/use-pagination.tsx",
+      "content": "type UsePaginationProps = {\n  currentPage: number;\n  totalPages: number;\n  paginationItemsToDisplay: number;\n};\n\ntype UsePaginationReturn = {\n  pages: number[];\n  showLeftEllipsis: boolean;\n  showRightEllipsis: boolean;\n};\n\nexport function usePagination({\n  currentPage,\n  totalPages,\n  paginationItemsToDisplay,\n}: UsePaginationProps): UsePaginationReturn {\n  const showLeftEllipsis = currentPage - 1 > paginationItemsToDisplay / 2;\n  const showRightEllipsis = totalPages - currentPage + 1 > paginationItemsToDisplay / 2;\n\n  function calculatePaginationRange(): number[] {\n    if (totalPages <= paginationItemsToDisplay) {\n      return Array.from({ length: totalPages }, (_, i) => i + 1);\n    }\n\n    const halfDisplay = Math.floor(paginationItemsToDisplay / 2);\n    const initialRange = {\n      start: currentPage - halfDisplay,\n      end: currentPage + halfDisplay,\n    };\n\n    const adjustedRange = {\n      start: Math.max(1, initialRange.start),\n      end: Math.min(totalPages, initialRange.end),\n    };\n\n    if (adjustedRange.start === 1) {\n      adjustedRange.end = paginationItemsToDisplay;\n    }\n    if (adjustedRange.end === totalPages) {\n      adjustedRange.start = totalPages - paginationItemsToDisplay + 1;\n    }\n\n    if (showLeftEllipsis) adjustedRange.start++;\n    if (showRightEllipsis) adjustedRange.end--;\n\n    return Array.from(\n      { length: adjustedRange.end - adjustedRange.start + 1 },\n      (_, i) => adjustedRange.start + i,\n    );\n  }\n\n  const pages = calculatePaginationRange();\n\n  return {\n    pages,\n    showLeftEllipsis,\n    showRightEllipsis,\n  };\n}",
+      "type": "registry:hook",
+      "target": ""
+    },
+    {
+      "path": "/hooks/use-pagination.tsx",
+      "content": "type UsePaginationProps = {\n  currentPage: number;\n  totalPages: number;\n  paginationItemsToDisplay: number;\n};\n\ntype UsePaginationReturn = {\n  pages: number[];\n  showLeftEllipsis: boolean;\n  showRightEllipsis: boolean;\n};\n\nexport function usePagination({\n  currentPage,\n  totalPages,\n  paginationItemsToDisplay,\n}: UsePaginationProps): UsePaginationReturn {\n  const showLeftEllipsis = currentPage - 1 > paginationItemsToDisplay / 2;\n  const showRightEllipsis = totalPages - currentPage + 1 > paginationItemsToDisplay / 2;\n\n  function calculatePaginationRange(): number[] {\n    if (totalPages <= paginationItemsToDisplay) {\n      return Array.from({ length: totalPages }, (_, i) => i + 1);\n    }\n\n    const halfDisplay = Math.floor(paginationItemsToDisplay / 2);\n    const initialRange = {\n      start: currentPage - halfDisplay,\n      end: currentPage + halfDisplay,\n    };\n\n    const adjustedRange = {\n      start: Math.max(1, initialRange.start),\n      end: Math.min(totalPages, initialRange.end),\n    };\n\n    if (adjustedRange.start === 1) {\n      adjustedRange.end = paginationItemsToDisplay;\n    }\n    if (adjustedRange.end === totalPages) {\n      adjustedRange.start = totalPages - paginationItemsToDisplay + 1;\n    }\n\n    if (showLeftEllipsis) adjustedRange.start++;\n    if (showRightEllipsis) adjustedRange.end--;\n\n    return Array.from(\n      { length: adjustedRange.end - adjustedRange.start + 1 },\n      (_, i) => adjustedRange.start + i,\n    );\n  }\n\n  const pages = calculatePaginationRange();\n\n  return {\n    pages,\n    showLeftEllipsis,\n    showRightEllipsis,\n  };\n}",
+      "type": "registry:hook",
+      "target": ""
+    },
+    {
+      "path": "/components/ui/pagination.tsx",
+      "content": "import * as React from \"react\";\n\nimport { cn } from \"@/lib/utils\";\nimport { ButtonProps, buttonVariants } from \"@/components/ui/button\";\nimport { ChevronLeftIcon, ChevronRightIcon, DotsHorizontalIcon } from \"@radix-ui/react-icons\";\n\nconst Pagination = ({ className, ...props }: React.ComponentProps<\"nav\">) => (\n  <nav\n    role=\"navigation\"\n    aria-label=\"pagination\"\n    className={cn(\"mx-auto flex w-full justify-center\", className)}\n    {...props}\n  />\n);\nPagination.displayName = \"Pagination\";\n\nconst PaginationContent = React.forwardRef<HTMLUListElement, React.ComponentProps<\"ul\">>(\n  ({ className, ...props }, ref) => (\n    <ul ref={ref} className={cn(\"flex items-center gap-1\", className)} {...props} />\n  ),\n);\nPaginationContent.displayName = \"PaginationContent\";\n\nconst PaginationItem = React.forwardRef<HTMLLIElement, React.ComponentProps<\"li\">>(\n  ({ className, ...props }, ref) => <li ref={ref} className={cn(\"\", className)} {...props} />,\n);\nPaginationItem.displayName = \"PaginationItem\";\n\ntype PaginationLinkProps = {\n  isActive?: boolean;\n  isDisabled?: boolean;\n} & Pick<ButtonProps, \"size\"> &\n  React.ComponentProps<\"a\">;\n\nconst PaginationLink = ({ className, isActive, size = \"icon\", ...props }: PaginationLinkProps) => (\n  <a\n    aria-current={isActive ? \"page\" : undefined}\n    className={cn(\n      buttonVariants({\n        variant: isActive ? \"outline\" : \"ghost\",\n        size,\n      }),\n      className,\n    )}\n    {...props}\n  />\n);\nPaginationLink.displayName = \"PaginationLink\";\n\nconst PaginationPrevious = ({\n  className,\n  ...props\n}: React.ComponentProps<typeof PaginationLink>) => (\n  <PaginationLink\n    aria-label=\"Go to previous page\"\n    size=\"default\"\n    className={cn(\"gap-1 pl-2.5\", className)}\n    {...props}\n  >\n    <ChevronLeftIcon size={16} strokeWidth={2} />\n    <span>Previous</span>\n  </PaginationLink>\n);\nPaginationPrevious.displayName = \"PaginationPrevious\";\n\nconst PaginationNext = ({ className, ...props }: React.ComponentProps<typeof PaginationLink>) => (\n  <PaginationLink\n    aria-label=\"Go to next page\"\n    size=\"default\"\n    className={cn(\"gap-1 pr-2.5\", className)}\n    {...props}\n  >\n    <span>Next</span>\n    <ChevronRightIcon size={16} strokeWidth={2} />\n  </PaginationLink>\n);\nPaginationNext.displayName = \"PaginationNext\";\n\nconst PaginationEllipsis = ({ className, ...props }: React.ComponentProps<\"span\">) => (\n  <span\n    aria-hidden\n    className={cn(\"flex h-9 w-9 items-center justify-center\", className)}\n    {...props}\n  >\n    <DotsHorizontalIcon size={16} strokeWidth={2} />\n    <span className=\"sr-only\">More pages</span>\n  </span>\n);\nPaginationEllipsis.displayName = \"PaginationEllipsis\";\n\nexport {\n  Pagination,\n  PaginationContent,\n  PaginationEllipsis,\n  PaginationItem,\n  PaginationLink,\n  PaginationNext,\n  PaginationPrevious,\n};\n",
+      "type": "registry:ui",
+      "target": ""
+    },
+    {
+      "path": "/components/ui/button.tsx",
+      "content": "import { Slot } from \"@radix-ui/react-slot\";\nimport { cva, type VariantProps } from \"class-variance-authority\";\nimport * as React from \"react\";\n\nimport { cn } from \"@/lib/utils\";\n\nconst buttonVariants = cva(\n  \"inline-flex items-center justify-center whitespace-nowrap rounded-lg text-sm font-medium transition-colors outline-offset-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring/70 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0\",\n  {\n    variants: {\n      variant: {\n        default: \"bg-primary text-primary-foreground shadow-sm shadow-black/5 hover:bg-primary/90\",\n        destructive:\n          \"bg-destructive text-destructive-foreground shadow-sm shadow-black/5 hover:bg-destructive/90\",\n        outline:\n          \"border border-input bg-background shadow-sm shadow-black/5 hover:bg-accent hover:text-accent-foreground\",\n        secondary:\n          \"bg-secondary text-secondary-foreground shadow-sm shadow-black/5 hover:bg-secondary/80\",\n        ghost: \"hover:bg-accent hover:text-accent-foreground\",\n        link: \"text-primary underline-offset-4 hover:underline\",\n      },\n      size: {\n        default: \"h-9 px-4 py-2\",\n        sm: \"h-8 rounded-lg px-3 text-xs\",\n        lg: \"h-10 rounded-lg px-8\",\n        icon: \"h-9 w-9\",\n      },\n    },\n    defaultVariants: {\n      variant: \"default\",\n      size: \"default\",\n    },\n  },\n);\n\nexport interface ButtonProps\n  extends React.ButtonHTMLAttributes<HTMLButtonElement>,\n    VariantProps<typeof buttonVariants> {\n  asChild?: boolean;\n}\n\nconst Button = React.forwardRef<HTMLButtonElement, ButtonProps>(\n  ({ className, variant, size, asChild = false, ...props }, ref) => {\n    const Comp = asChild ? Slot : \"button\";\n    return (\n      <Comp className={cn(buttonVariants({ variant, size, className }))} ref={ref} {...props} />\n    );\n  },\n);\nButton.displayName = \"Button\";\n\nexport { Button, buttonVariants };\n",
+      "type": "registry:ui",
+      "target": ""
+    }
+  ],
+  "tailwind": {
+    "config": {}
+  },
+  "_meta": {
+    "author": "originui",
+    "slug": "numbered-pagination",
+    "registry_url": "https://21st.dev/r/originui/numbered-pagination",
+    "title": "Numbered Pagination",
+    "description": " ",
+    "category": "pagination",
+    "category_group": "UI Components",
+    "downloads": 78,
+    "likes": 0
+  }
+}

@@ -1,0 +1,100 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "button-1",
+  "type": "registry:component",
+  "title": "Button 1",
+  "description": "A button-1 component.",
+  "dependencies": [
+    "clsx"
+  ],
+  "registryDependencies": [
+    "https://21st.dev/r/shugar/spinner-1"
+  ],
+  "files": [
+    {
+      "path": "src/components/ui/button-1.tsx",
+      "content": "import React from \"react\";\nimport { Spinner } from \"@/components/ui/spinner-1\";\nimport clsx from \"clsx\";\n\nconst sizes = [\n  {\n    tiny: \"px-1.5 h-6 text-sm\",\n    small: \"px-1.5 h-8 text-sm\",\n    medium: \"px-2.5 h-10 text-sm\",\n    large: \"px-3.5 h-12 text-base\"\n  },\n  {\n    tiny: \"w-6 h-6 text-sm\",\n    small: \"w-8 h-8 text-sm\",\n    medium: \"w-10 h-10 text-sm\",\n    large: \"w-12 h-12 text-base\"\n  }\n];\n\nconst types = {\n  primary: \"bg-gray-1000 hover:bg-gray-1000-h text-background-100 fill-background-100\",\n  secondary: \"bg-background-100 hover:bg-gray-alpha-200 text-gray-1000 fill-gray-1000 border border-gray-alpha-400\",\n  tertiary: \"bg-none hover:bg-gray-alpha-200 text-gray-1000 fill-gray-1000\",\n  error: \"bg-red-800 hover:bg-red-900 text-white fill-white\",\n  warning: \"bg-amber-800 hover:bg-amber-850 text-black fill-black\"\n};\n\nconst shapes = {\n  square: {\n    tiny: \"rounded\",\n    small: \"rounded-md\",\n    medium: \"rounded-md\",\n    large: \"rounded-lg\"\n  },\n  circle: {\n    tiny: \"rounded-[100%]\",\n    small: \"rounded-[100%]\",\n    medium: \"rounded-[100%]\",\n    large: \"rounded-[100%]\"\n  },\n  rounded: {\n    tiny: \"rounded-[100px]\",\n    small: \"rounded-[100px]\",\n    medium: \"rounded-[100px]\",\n    large: \"rounded-[100px]\"\n  }\n};\n\nexport interface ButtonProps {\n  size?: keyof typeof sizes[0];\n  type?: keyof typeof types;\n  variant?: \"styled\" | \"unstyled\";\n  shape?: keyof typeof shapes;\n  svgOnly?: boolean;\n  children?: React.ReactNode;\n  prefix?: React.ReactNode;\n  suffix?: React.ReactNode;\n  shadow?: boolean;\n  loading?: boolean;\n  disabled?: boolean;\n  fullWidth?: boolean;\n  onClick?: React.MouseEventHandler<HTMLButtonElement>;\n  ref?: React.Ref<HTMLButtonElement>;\n  className?: string;\n}\n\nexport const Button = ({\n  size = \"medium\",\n  type = \"primary\",\n  variant = \"styled\",\n  shape = \"square\",\n  svgOnly = false,\n  children,\n  prefix,\n  suffix,\n  shadow = false,\n  loading = false,\n  disabled = false,\n  fullWidth = false,\n  onClick,\n  ref,\n  className,\n  ...rest\n}: ButtonProps) => {\n  return (\n    <button\n      ref={ref}\n      type=\"submit\"\n      disabled={disabled}\n      onClick={onClick}\n      tabIndex={0}\n      className={clsx(\n        \"flex justify-center items-center gap-0.5 duration-150\",\n        sizes[+svgOnly][size],\n        (disabled || loading) ? \"bg-gray-100 text-gray-700 border border-gray-400 cursor-not-allowed\" : types[type],\n        shapes[shape][size],\n        shadow && \"shadow-border-small border-none\",\n        fullWidth && \"w-full\",\n        variant === \"unstyled\" ? \"outline-none px-0 h-fit bg-transparent hover:bg-transparent text-gray-1000\" : \"focus:shadow-focus-ring focus:outline-0\",\n        className\n      )}\n      {...rest}\n    >\n      {loading\n        ? <Spinner size={size === \"large\" ? 24 : 16} />\n        : prefix\n      }\n      <span className={clsx(\n        \"relative overflow-hidden whitespace-nowrap overflow-ellipsis font-sans\",\n        size !== \"tiny\" && variant !== \"unstyled\" && \"px-1.5\"\n      )}>\n        {children}\n      </span>\n      {!loading && suffix}\n    </button>\n  );\n};",
+      "type": "registry:component"
+    }
+  ],
+  "cssVars": {
+    "theme": {
+      "--color-context-card-border": "var(--context-card-border)",
+      "--color-red-800": "var(--ds-red-800)",
+      "--color-red-900": "var(--ds-red-900)",
+      "--color-amber-800": "var(--ds-amber-800)",
+      "--color-amber-850": "var(--ds-amber-850)",
+      "--color-gray-100": "var(--ds-gray-100)",
+      "--color-gray-400": "var(--ds-gray-400)",
+      "--color-gray-700": "var(--ds-gray-700)",
+      "--color-gray-1000": "var(--ds-gray-1000)",
+      "--color-gray-1000-h": "var(--ds-gray-1000-h)",
+      "--color-gray-alpha-200": "var(--ds-gray-alpha-200)",
+      "--color-gray-alpha-400": "var(--ds-gray-alpha-400)",
+      "--color-background-100": "var(--ds-background-100)",
+      "--shadow-focus-ring": "var(--ds-focus-ring)",
+      "--shadow-border-small": "var(--ds-shadow-border-small)",
+      "--animate-fade-spin": "fade-spin 1.2s linear infinite"
+    },
+    "light": {
+      "--context-card-border": "hsla(0, 0%, 92%, 1)",
+      "--ds-red-800": "oklch(58.19% 0.2482 25.15)",
+      "--ds-red-900": "oklch(54.99% 0.232 25.29)",
+      "--ds-blue-700": "oklch(57.61% 0.2508 258.23)",
+      "--ds-amber-800": "oklch(77.21% 0.1991 64.28)",
+      "--ds-amber-850": "hsl(33, 96%, 42%)",
+      "--ds-gray-100": "hsla(0, 0%, 95%, 1)",
+      "--ds-gray-400": "hsla(0, 0%, 92%, 1)",
+      "--ds-gray-700": "hsla(0, 0%, 56%, 1)",
+      "--ds-gray-1000": "hsla(0, 0%, 9%, 1)",
+      "--ds-gray-1000-h": "hsl(0, 0%, 22%)",
+      "--ds-gray-alpha-200": "hsla(0, 0%, 0%, 0.08)",
+      "--ds-gray-alpha-400": "hsla(0, 0%, 0%, 0.08)",
+      "--ds-background-100": "hsla(0, 0%, 100%, 1)",
+      "--ds-focus-color": "var(--ds-blue-700)",
+      "--ds-focus-ring": "0 0 0 2px var(--ds-background-100), 0 0 0 4px var(--ds-focus-color)",
+      "--ds-shadow-border": "0 0 0 1px rgba(0, 0, 0, 0.08)",
+      "--ds-shadow-small": "0px 2px 2px rgba(0, 0, 0, 0.04)",
+      "--ds-shadow-border-small": "var(--ds-shadow-border), var(--ds-shadow-small)"
+    },
+    "dark": {
+      "--context-card-border": "hsla(0, 0%, 18%, 1)",
+      "--ds-red-800": "oklch(58.01% 0.227 25.12)",
+      "--ds-red-900": "oklch(69.96% 0.2136 22.03)",
+      "--ds-blue-700": "oklch(57.61% 0.2321 258.23)",
+      "--ds-amber-800": "oklch(77.21% 0.1991 64.28)",
+      "--ds-gray-100": "hsla(0, 0%, 10%, 1)",
+      "--ds-gray-400": "hsla(0, 0%, 18%, 1)",
+      "--ds-gray-700": "hsla(0, 0%, 56%, 1)",
+      "--ds-gray-1000": "hsla(0, 0%, 93%, 1)",
+      "--ds-gray-1000-h": "hsl(0, 0%, 80%)",
+      "--ds-gray-alpha-200": "hsla(0, 0%, 100%, 0.09)",
+      "--ds-gray-alpha-400": "hsla(0, 0%, 100%, 0.14)",
+      "--ds-background-100": "hsla(0,0%,4%, 1)",
+      "--ds-shadow-border": "0 0 0 1px rgba(255, 255, 255, 0.145)",
+      "--ds-shadow-small": "0px 1px 2px rgba(0, 0, 0, 0.16)",
+      "--ds-shadow-border-small": "var(--ds-shadow-border), 0px 1px 2px rgba(0, 0, 0, 0.16)"
+    }
+  },
+  "css": {
+    "@keyframes fade-spin": {
+      "0%": {
+        "opacity": "0.15"
+      },
+      "100%": {
+        "opacity": "1"
+      }
+    }
+  },
+  "_meta": {
+    "author": "shugar",
+    "slug": "button-1",
+    "registry_url": "https://21st.dev/r/shugar/button-1",
+    "title": "Button",
+    "description": "Trigger an action or event, such as submitting a form or displaying a dialog.",
+    "category": "button",
+    "category_group": "UI Components",
+    "downloads": 93,
+    "likes": 0
+  }
+}

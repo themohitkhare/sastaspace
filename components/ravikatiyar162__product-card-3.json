@@ -1,0 +1,32 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "product-card-3",
+  "type": "registry:component",
+  "title": "Product Card 3",
+  "description": "A product-card-3 component.",
+  "dependencies": [
+    "lucide-react"
+  ],
+  "registryDependencies": [
+    "https://21st.dev/r/shadcn/card",
+    "https://21st.dev/r/originui/button"
+  ],
+  "files": [
+    {
+      "path": "src/components/ui/product-card-3.tsx",
+      "content": "// components/ui/product-drop-card.tsx\nimport * as React from \"react\";\nimport {\n  Card,\n  CardContent,\n  CardDescription,\n  CardHeader,\n  CardTitle,\n} from \"./card\"; // Assuming these are your shadcn Card components\nimport { Button } from \"./button\"; // Assuming shadcn Button component\nimport { ChevronLeft, ChevronRight } from \"lucide-react\";\nimport { cn } from \"@/lib/utils\"; // Your utility for merging class names\n\n// Define the type for a single drop item\nexport interface DropItem {\n  time: string;\n  name: string;\n  collection: string;\n  imageSrc: string;\n}\n\n// Define the props for the main component\nexport interface ProductDropCardProps {\n  title: string;\n  subtitle: string;\n  items: DropItem[];\n}\n\nexport const ProductDropCard = ({\n  title,\n  subtitle,\n  items,\n}: ProductDropCardProps) => {\n  const [currentIndex, setCurrentIndex] = React.useState(0);\n  const itemsToShow = 3; // Number of items visible at once\n\n  const canGoPrev = currentIndex > 0;\n  const canGoNext = currentIndex < items.length - itemsToShow;\n\n  const handlePrev = () => {\n    if (canGoPrev) {\n      setCurrentIndex((prevIndex) => prevIndex - 1);\n    }\n  };\n\n  const handleNext = () => {\n    if (canGoNext) {\n      setCurrentIndex((prevIndex) => prevIndex + 1);\n    }\n  };\n\n  return (\n    <Card className=\"w-full max-w-4xl mx-auto overflow-hidden\">\n      <CardHeader>\n        <div className=\"flex items-center justify-between\">\n          <div>\n            <CardTitle>{title}</CardTitle>\n            <CardDescription>{subtitle}</CardDescription>\n          </div>\n          <div className=\"flex items-center gap-2\">\n            <Button\n              variant=\"outline\"\n              size=\"icon\"\n              onClick={handlePrev}\n              disabled={!canGoPrev}\n              aria-label=\"Previous drop\"\n            >\n              <ChevronLeft className=\"h-4 w-4\" />\n            </Button>\n            <Button\n              variant=\"outline\"\n              size=\"icon\"\n              onClick={handleNext}\n              disabled={!canGoNext}\n              aria-label=\"Next drop\"\n            >\n              <ChevronRight className=\"h-4 w-4\" />\n            </Button>\n          </div>\n        </div>\n      </CardHeader>\n      <CardContent className=\"overflow-hidden\">\n        {/* Carousel container with smooth transition */}\n        <div\n          className=\"flex gap-4 transition-transform duration-500 ease-in-out\"\n          style={{ transform: `translateX(-${currentIndex * (100 / itemsToShow)}%)` }}\n        >\n          {items.map((item, index) => (\n            <div\n              key={index}\n              className=\"flex-shrink-0 w-full rounded-lg border bg-card p-4 text-card-foreground\"\n              style={{ flexBasis: `calc((100% / ${itemsToShow}) - (${(itemsToShow - 1) * 16}px / ${itemsToShow}))` }}\n            >\n              <div className=\"space-y-3\">\n                <p className=\"text-sm text-muted-foreground\">{item.time}</p>\n                <div className=\"aspect-video w-full overflow-hidden rounded-md bg-muted\">\n                  <img\n                    src={item.imageSrc}\n                    alt={item.name}\n                    className=\"h-full w-full object-contain object-center\"\n                  />\n                </div>\n                <div>\n                  <h3 className=\"font-semibold\">{item.name}</h3>\n                  <p className=\"text-sm text-muted-foreground\">\n                    {item.collection}\n                  </p>\n                </div>\n              </div>\n            </div>\n          ))}\n        </div>\n      </CardContent>\n    </Card>\n  );\n};",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "ravikatiyar162",
+    "slug": "product-card-3",
+    "registry_url": "https://21st.dev/r/ravikatiyar162/product-card-3",
+    "title": "Product Card",
+    "description": "Product Drop Card\nA sleek, carousel-style card component to showcase upcoming product drops or featured items. It includes navigation controls and a clean layout, perfect for highlighting new arrivals.",
+    "category": "carousel",
+    "category_group": "UI Components",
+    "downloads": 30,
+    "likes": 0
+  }
+}

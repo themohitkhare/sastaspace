@@ -1,0 +1,27 @@
+{
+  "name": "cartoon-button",
+  "type": "registry:ui",
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "/components/ui/cartoon-button.tsx",
+      "content": "interface CartoonButtonProps {\n  label: string;\n  color?: string;\n  hasHighlight?: boolean;\n  disabled?: boolean;\n  onClick?: () => void;\n}\n\nexport function CartoonButton({\n  label,\n  color = 'bg-orange-400',\n  hasHighlight = true,\n  disabled = false,\n  onClick,\n}: CartoonButtonProps) {\n  const handleClick = () => {\n    if (disabled) return;\n    onClick?.();\n  };\n\n  return (\n    <div\n      className={`inline-block ${disabled ? 'cursor-not-allowed' : 'cursor-pointer'}`}\n    >\n      <button\n        disabled={disabled}\n        onClick={handleClick}\n        className={`relative h-12 px-6 text-xl rounded-full font-bold text-neutral-800 border-2 border-neutral-800 transition-all duration-150 overflow-hidden group\n        ${color} hover:shadow-[0_4px_0_0_#262626]\n        ${disabled ? 'opacity-50 pointer-events-none' : 'hover:-translate-y-1 active:translate-y-0 active:shadow-none'}`}\n      >\n        <span className=\"relative z-10 whitespace-nowrap\">{label}</span>\n        {hasHighlight && !disabled && (\n          <div className=\"absolute top-1/2 left-[-100%] w-16 h-24 bg-white/50 -translate-y-1/2 rotate-12 transition-all duration-500 ease-in-out group-hover:left-[200%]\"></div>\n        )}\n      </button>\n    </div>\n  );\n}",
+      "type": "registry:ui",
+      "target": ""
+    }
+  ],
+  "tailwind": {
+    "config": {}
+  },
+  "_meta": {
+    "author": "oldkong88",
+    "slug": "cartoon-button",
+    "registry_url": "https://21st.dev/r/oldkong88/cartoon-button",
+    "title": "Cartoon Button",
+    "description": "Cartoon Style Button",
+    "category": "button",
+    "category_group": "UI Components",
+    "downloads": 48,
+    "likes": 0
+  }
+}

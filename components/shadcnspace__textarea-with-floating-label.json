@@ -1,0 +1,29 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "textarea-with-floating-label",
+  "type": "registry:component",
+  "title": "Textarea With Floating Label",
+  "description": "A textarea-with-floating-label component.",
+  "dependencies": [],
+  "registryDependencies": [
+    "https://21st.dev/r/shadcn/textarea"
+  ],
+  "files": [
+    {
+      "path": "src/components/ui/textarea-with-floating-label.tsx",
+      "content": "import { useId } from 'react'\nimport { Textarea } from '@/components/ui/textarea'\n\nconst TextareaWithFloatingLabelDemo = () => {\n  const id = useId()\n\n  return (\n    <div className='group relative w-full max-w-xs space-y-2'>\n      <label\n        htmlFor={id}\n        className='origin-start text-muted-foreground/70 group-focus-within:text-foreground has-[+textarea:not(:placeholder-shown)]:text-foreground has-aria-invalid:ring-destructive/20 dark:has-aria-invalid:ring-destructive/40 has-aria-invalid:border-destructive absolute top-0 block translate-y-2 cursor-text px-2 text-sm transition-all group-focus-within:pointer-events-none group-focus-within:-translate-y-1/2 group-focus-within:cursor-default group-focus-within:text-xs group-focus-within:font-medium has-[+textarea:not(:placeholder-shown)]:pointer-events-none has-[+textarea:not(:placeholder-shown)]:-translate-y-1/2 has-[+textarea:not(:placeholder-shown)]:cursor-default has-[+textarea:not(:placeholder-shown)]:text-xs has-[+textarea:not(:placeholder-shown)]:font-medium'\n      >\n        <span className='bg-background inline-flex px-1'>Message</span>\n      </label>\n      <Textarea id={id} placeholder=' ' className='!bg-background' />\n    </div>\n  )\n}\n\nexport default TextareaWithFloatingLabelDemo\n",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "shadcnspace",
+    "slug": "textarea-with-floating-label",
+    "registry_url": "https://21st.dev/r/shadcnspace/textarea-with-floating-label",
+    "title": "Textarea with floating label",
+    "description": "Here is textarea with floating label component",
+    "category": "textarea",
+    "category_group": "UI Components",
+    "downloads": 6,
+    "likes": 0
+  }
+}

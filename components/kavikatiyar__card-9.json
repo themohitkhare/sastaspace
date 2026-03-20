@@ -1,0 +1,32 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "card-9",
+  "type": "registry:component",
+  "title": "Card 9",
+  "description": "A card-9 component.",
+  "dependencies": [
+    "lucide-react",
+    "framer-motion"
+  ],
+  "registryDependencies": [
+    "https://21st.dev/r/shadcn/button"
+  ],
+  "files": [
+    {
+      "path": "src/components/ui/card-9.tsx",
+      "content": "import * as React from \"react\";\nimport { X } from \"lucide-react\";\nimport { motion } from \"framer-motion\";\n\nimport { cn } from \"@/lib/utils\";\nimport { Button, type ButtonProps } from \"@/components/ui/button\";\n\ninterface PromoCardProps extends React.HTMLAttributes<HTMLDivElement> {\n  label: string;\n  title: React.ReactNode;\n  buttonText: string;\n  buttonVariant?: ButtonProps[\"variant\"];\n  onButtonClick: () => void;\n  onClose: () => void;\n  showLoader?: boolean;\n}\n\nconst PromoCard = React.forwardRef<HTMLDivElement, PromoCardProps>(\n  (\n    {\n      className,\n      label,\n      title,\n      buttonText,\n      buttonVariant = \"secondary\",\n      onButtonClick,\n      onClose,\n      showLoader = true,\n      ...props\n    },\n    ref\n  ) => {\n    // CSS keyframes for the loader animation are embedded here.\n    const keyframes = `\n      @keyframes promo-card-loader-pulse {\n        0%, 100% { opacity: 0.3; }\n        50% { opacity: 1; }\n      }\n    `;\n\n    return (\n      <motion.div\n        ref={ref}\n        initial={{ opacity: 0, y: 20 }}\n        animate={{ opacity: 1, y: 0 }}\n        exit={{ opacity: 0, y: 20, transition: { duration: 0.3 } }}\n        transition={{ duration: 0.5, ease: \"easeInOut\" }}\n        className={cn(\n          \"relative w-full max-w-md overflow-hidden rounded-2xl border bg-card text-card-foreground shadow-lg\",\n          className\n        )}\n        aria-labelledby=\"promo-card-title\"\n        role=\"dialog\"\n        aria-modal=\"true\"\n        {...props}\n      >\n        <style>{keyframes}</style>\n\n        {/* SVG filter for the grainy texture. It's visually hidden but applied via CSS. */}\n        <svg\n          className=\"pointer-events-none absolute -z-10 h-0 w-0\"\n          aria-hidden=\"true\"\n        >\n          <filter id=\"grainy\">\n            <feTurbulence\n              type=\"fractalNoise\"\n              baseFrequency=\"0.65\"\n              numOctaves=\"3\"\n              stitchTiles=\"stitch\"\n            />\n          </filter>\n        </svg>\n\n        {/* Grainy texture overlay */}\n        <div\n          className=\"absolute inset-0 z-0 opacity-[0.03]\"\n          style={{ filter: \"url(#grainy)\" }}\n        />\n\n        {/* Close Button */}\n        <Button\n          variant=\"ghost\"\n          size=\"icon\"\n          className=\"absolute right-4 top-4 z-20 h-8 w-8 rounded-full\"\n          onClick={onClose}\n          aria-label=\"Close promotion\"\n        >\n          <X className=\"h-4 w-4\" />\n        </Button>\n\n        <div className=\"relative z-10 flex h-full flex-col p-8\">\n          {/* Animated Loader */}\n          {showLoader && (\n            <div className=\"absolute left-6 top-6 flex items-center space-x-1\">\n              <span\n                className=\"h-1.5 w-4 rounded-full bg-muted-foreground\"\n                style={{ animation: `promo-card-loader-pulse 1.5s infinite` }}\n              />\n              <span\n                className=\"h-1.5 w-1.5 rounded-full bg-muted-foreground\"\n                style={{ animation: `promo-card-loader-pulse 1.5s infinite 0.2s` }}\n              />\n              <span\n                className=\"h-1.5 w-1.5 rounded-full bg-muted-foreground\"\n                style={{ animation: `promo-card-loader-pulse 1.5s infinite 0.4s` }}\n              />\n            </div>\n          )}\n\n          <div className=\"mt-8 flex-grow\">\n            <p className=\"mb-2 text-sm font-medium text-muted-foreground\">{label}</p>\n            <h2\n              id=\"promo-card-title\"\n              className=\"text-3xl font-bold tracking-tight text-foreground\"\n            >\n              {title}\n            </h2>\n          </div>\n\n          <div className=\"mt-8 flex-shrink-0\">\n            <Button\n              className=\"w-full sm:w-auto\"\n              size=\"lg\"\n              variant={buttonVariant}\n              onClick={onButtonClick}\n            >\n              {buttonText}\n            </Button>\n          </div>\n        </div>\n      </motion.div>\n    );\n  }\n);\n\nPromoCard.displayName = \"PromoCard\";\n\nexport { PromoCard };",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "kavikatiyar",
+    "slug": "card-9",
+    "registry_url": "https://21st.dev/r/kavikatiyar/card-9",
+    "title": "Card",
+    "description": "PromoCard\nAn advanced, self-contained promotional card designed to be visually engaging and build user trust. It features an embedded animated dot-pattern background for texture, a sequential loading indicator, and smooth framer-motion transitions, all without requiring external CSS modifications.",
+    "category": "card",
+    "category_group": "UI Components",
+    "downloads": 13,
+    "likes": 0
+  }
+}

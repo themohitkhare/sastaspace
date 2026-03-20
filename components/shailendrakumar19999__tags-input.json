@@ -1,0 +1,29 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "tags-input",
+  "type": "registry:component",
+  "title": "Tags Input",
+  "description": "A tags-input component.",
+  "dependencies": [
+    "@ark-ui/react"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/ui/tags-input.tsx",
+      "content": "\"use client\"\n\nimport { TagsInput } from \"@ark-ui/react/tags-input\"\n\nexport const Basic = () => {\n  return (\n    <div className=\"w-full max-w-md mx-auto p-4\">\n      <TagsInput.Root className=\"flex flex-col gap-3\">\n        <TagsInput.Context>\n          {(tagsInput) => (\n            <>\n              <TagsInput.Label className=\"text-sm font-medium text-gray-800 dark:text-gray-200\">\n                Enter Tags\n              </TagsInput.Label>\n\n              <TagsInput.Control\n                className=\"flex flex-wrap gap-2 rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 p-2 focus-within:ring-2 focus-within:ring-blue-500 transition\"\n              >\n                {tagsInput.value.map((value, index) => (\n                  <TagsInput.Item\n                    key={index}\n                    index={index}\n                    value={value}\n                    className=\"flex items-center gap-1 rounded-xl bg-gray-100 dark:bg-gray-800 px-2 py-1 text-sm text-gray-900 dark:text-gray-100 shadow-sm\"\n                  >\n                    <TagsInput.ItemPreview className=\"flex items-center gap-1\">\n                      <TagsInput.ItemText>{value}</TagsInput.ItemText>\n                      <TagsInput.ItemDeleteTrigger className=\"ml-1 text-xs px-1 rounded hover:bg-red-500 hover:text-white transition\">\n                        ✕\n                      </TagsInput.ItemDeleteTrigger>\n                    </TagsInput.ItemPreview>\n                    <TagsInput.ItemInput className=\"outline-none bg-transparent text-sm\" />\n                  </TagsInput.Item>\n                ))}\n\n                <TagsInput.Input\n                  placeholder=\"Add Tags and press enter\"\n                  className=\"flex-1 min-w-[100px] bg-transparent outline-none text-sm text-gray-700 dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-500\"\n                />\n              </TagsInput.Control>\n\n              <TagsInput.ClearTrigger\n                className=\"self-start mt-2 text-sm text-red-600 dark:text-red-400 hover:underline cursor-pointer\"\n              >\n                Clear all\n              </TagsInput.ClearTrigger>\n            </>\n          )}\n        </TagsInput.Context>\n\n        <TagsInput.HiddenInput />\n      </TagsInput.Root>\n    </div>\n  )\n}\n",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "shailendrakumar19999",
+    "slug": "tags-input",
+    "registry_url": "https://21st.dev/r/shailendrakumar19999/tags-input",
+    "title": "Tags Input",
+    "description": "This is Tags input",
+    "category": "chip-tag",
+    "category_group": "UI Components",
+    "downloads": 33,
+    "likes": 0
+  }
+}

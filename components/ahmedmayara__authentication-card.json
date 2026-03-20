@@ -1,0 +1,37 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "authentication-card",
+  "type": "registry:component",
+  "title": "Authentication Card",
+  "description": "A authentication-card component.",
+  "dependencies": [
+    "lucide-react",
+    "@remixicon/react"
+  ],
+  "registryDependencies": [
+    "https://21st.dev/r/shadcn/card",
+    "https://21st.dev/r/shadcn/checkbox",
+    "https://21st.dev/r/shadcn/input",
+    "https://21st.dev/r/shadcn/label",
+    "https://21st.dev/r/shadcn/separator",
+    "https://21st.dev/r/shadcn/button"
+  ],
+  "files": [
+    {
+      "path": "src/components/ui/authentication-card.tsx",
+      "content": "import { cn } from \"@/lib/utils\";\nimport { useState } from \"react\";\n\nimport {\n  Card,\n  CardContent,\n  CardDescription,\n  CardHeader,\n  CardTitle,\n} from \"@/components/ui/card\";\nimport { Checkbox } from \"@/components/ui/checkbox\";\nimport { Input } from \"@/components/ui/input\";\nimport { Label } from \"@/components/ui/label\";\nimport { Separator } from \"@/components/ui/separator\";\nimport { Button } from \"@/components/ui/button\";\n\nimport { EyeIcon, EyeOffIcon } from \"lucide-react\";\nimport { RiUserFill } from \"@remixicon/react\";\n\nexport const Component = () => {\n  const [isVisible, setIsVisible] = useState<boolean>(false);\n\n  const toggleVisibility = () => setIsVisible((prevState) => !prevState);\n\n  return (\n    <Card className=\"flex w-full max-w-[440px] shadow-none flex-col gap-6 p-5 md:p-8\">\n      <CardHeader className=\"flex flex-col items-center gap-2\">\n        <div className=\"relative flex size-[68px] shrink-0 items-center justify-center rounded-full backdrop-blur-xl md:size-24 before:absolute before:inset-0 before:rounded-full before:bg-gradient-to-b before:from-neutral-500 before:to-transparent before:opacity-10\">\n          <div className=\"relative z-10 flex size-12 items-center justify-center rounded-full bg-background dark:bg-muted/80 shadow-xs ring-1 ring-inset ring-border md:size-16\">\n            <RiUserFill className=\"size-6 text-muted-foreground/80 md:size-8\" />\n          </div>\n        </div>\n\n        <div className=\"flex flex-col space-y-1.5 text-center\">\n          <CardTitle className=\"md:text-xl font-medium\">\n            Sign in to your account\n          </CardTitle>\n          <CardDescription className=\"tracking-[-0.006em]\">\n            Enter your credentials to access your account.\n          </CardDescription>\n        </div>\n      </CardHeader>\n\n      <Separator />\n\n      <CardContent className=\"p-0\">\n        <form className=\"flex flex-col gap-4\">\n          <div className=\"flex flex-col gap-2.5\">\n            <Label htmlFor=\"email\">Email</Label>\n            <Input\n              id=\"email\"\n              placeholder=\"Enter your email\"\n              className=\"rounded-lg\"\n            />\n          </div>\n\n          <div className=\"flex flex-col gap-2.5\">\n            <Label htmlFor=\"password\">Password</Label>\n            <div className=\"relative\">\n              <Input\n                id=\"password\"\n                className=\"pe-9 rounded-lg\"\n                placeholder=\"Password\"\n                type={isVisible ? \"text\" : \"password\"}\n              />\n              <button\n                className=\"text-muted-foreground/80 hover:text-foreground focus-visible:border-ring focus-visible:ring-ring/50 absolute inset-y-0 end-0 flex h-full w-9 items-center justify-center rounded-e-md transition-[color,box-shadow] outline-none focus:z-10 focus-visible:ring-[3px] disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50\"\n                type=\"button\"\n                onClick={toggleVisibility}\n                aria-label={isVisible ? \"Hide password\" : \"Show password\"}\n                aria-pressed={isVisible}\n                aria-controls=\"password\"\n              >\n                {isVisible ? (\n                  <EyeOffIcon size={16} aria-hidden=\"true\" />\n                ) : (\n                  <EyeIcon size={16} aria-hidden=\"true\" />\n                )}\n              </button>\n            </div>\n          </div>\n\n          <div className=\"flex items-center justify-between gap-4\">\n            <div className=\"flex items-start gap-2\">\n              <Checkbox id=\"keep-me-logged-in\" />\n              <Label\n                htmlFor=\"keep-me-logged-in\"\n                className=\"block cursor-pointer\"\n              >\n                Keep me logged in\n              </Label>\n            </div>\n            <Button variant=\"link\" size=\"sm\" className=\"p-0\">\n              Forgot password?\n            </Button>\n          </div>\n\n          <Button type=\"button\" className=\"w-full\">\n            Continue\n          </Button>\n        </form>\n      </CardContent>\n    </Card>\n  );\n};\n",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "ahmedmayara",
+    "slug": "authentication-card",
+    "registry_url": "https://21st.dev/r/ahmedmayara/authentication-card",
+    "title": "Authentication Card",
+    "description": "A responsive Authentication Card component. Clean, accessible, and easy to integrate into authentication flows.",
+    "category": "card",
+    "category_group": "UI Components",
+    "downloads": 0,
+    "likes": 0
+  }
+}

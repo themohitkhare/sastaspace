@@ -1,0 +1,27 @@
+{
+  "name": "activity-with-number-flow",
+  "type": "registry:ui",
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "/components/ui/activity-with-number-flow.tsx",
+      "content": "import NumberFlow, { type Format } from '@number-flow/react'\nimport clsx from 'clsx'\nimport { Bookmark, ChartNoAxesColumn, Heart, Repeat, Share } from 'lucide-react'\n\nconst format: Format = {\n\tnotation: 'compact',\n\tcompactDisplay: 'short',\n\troundingMode: 'trunc'\n}\n\ntype Props = {\n\tlikes: number\n\treposts: number\n\tviews: number\n\tbookmarks: number\n\tliked: boolean\n\treposted: boolean\n\tbookmarked: boolean\n\tonLike: () => void\n\tonBookmark: () => void\n\tonRepost: () => void\n}\n\n\nexport default function Activity({\n\tlikes,\n\treposts,\n\tviews,\n\tbookmarks,\n\tonLike,\n\tonRepost,\n\tonBookmark,\n\tliked,\n\treposted,\n\tbookmarked\n}: Props) {\n\treturn (\n\t\t<div className=\"~px-0/16 ~text-[0.8125rem]/sm flex w-full select-none items-center text-zinc-600 dark:text-zinc-300\">\n\t\t\t<div className=\"flex flex-1 items-center gap-1.5\">\n\t\t\t\t<ChartNoAxesColumn absoluteStrokeWidth className=\"~size-4/5\" />\n\t\t\t\t<NumberFlow willChange continuous value={views} format={format} />\n\t\t\t</div>\n\t\t\t<div className=\"flex-1\">\n\t\t\t\t<button\n\t\t\t\t\tclassName={clsx(\n\t\t\t\t\t\t'group flex items-center gap-1.5 pr-1.5 transition-[color] hover:text-emerald-500',\n\t\t\t\t\t\treposted && 'text-emerald-500'\n\t\t\t\t\t)}\n\t\t\t\t\tonClick={onRepost}\n\t\t\t\t>\n\t\t\t\t\t<div className=\"relative before:absolute before:-inset-2.5 before:rounded-full before:transition-[background-color] before:group-hover:bg-emerald-500/10\">\n\t\t\t\t\t\t<Repeat\n\t\t\t\t\t\t\tabsoluteStrokeWidth\n\t\t\t\t\t\t\tclassName=\"~size-4/5 group-active:spring-duration-[25] spring-bounce-50 spring-duration-300 transition-transform group-active:scale-[85%]\"\n\t\t\t\t\t\t/>\n\t\t\t\t\t</div>\n\t\t\t\t\t<NumberFlow willChange continuous value={reposts} format={format} />\n\t\t\t\t</button>\n\t\t\t</div>\n\t\t\t<div className=\"flex-1\">\n\t\t\t\t<button\n\t\t\t\t\tclassName={clsx(\n\t\t\t\t\t\t'group flex items-center gap-1.5 pr-1.5 transition-[color] hover:text-pink-500',\n\t\t\t\t\t\tliked && 'text-pink-500'\n\t\t\t\t\t)}\n\t\t\t\t\tonClick={onLike}\n\t\t\t\t>\n\t\t\t\t\t<div className=\"relative before:absolute before:-inset-2.5 before:rounded-full before:transition-[background-color] before:group-hover:bg-pink-500/10\">\n\t\t\t\t\t\t<Heart\n\t\t\t\t\t\t\tabsoluteStrokeWidth\n\t\t\t\t\t\t\tclassName={clsx(\n\t\t\t\t\t\t\t\t'~size-4/5 group-active:spring-duration-[25] spring-bounce-[65] spring-duration-300 transition-transform group-active:scale-[80%]',\n\t\t\t\t\t\t\t\tliked && 'fill-current'\n\t\t\t\t\t\t\t)}\n\t\t\t\t\t\t/>\n\t\t\t\t\t</div>\n\t\t\t\t\t<NumberFlow willChange continuous value={likes} format={format} />\n\t\t\t\t</button>\n\t\t\t</div>\n\t\t\t<div className=\"flex flex-1 items-center gap-1.5\">\n\t\t\t\t<button\n\t\t\t\t\tclassName={clsx(\n\t\t\t\t\t\t'group flex items-center gap-1.5 pr-1.5 transition-[color] hover:text-blue-500',\n\t\t\t\t\t\tbookmarked && 'text-blue-500'\n\t\t\t\t\t)}\n\t\t\t\t\tonClick={onBookmark}\n\t\t\t\t>\n\t\t\t\t\t<div className=\"relative before:absolute before:-inset-2.5 before:rounded-full before:transition-[background-color] before:group-hover:bg-blue-500/10\">\n\t\t\t\t\t\t<Bookmark\n\t\t\t\t\t\t\tabsoluteStrokeWidth\n\t\t\t\t\t\t\tclassName={clsx(\n\t\t\t\t\t\t\t\t'~size-4/5 group-active:spring-duration-[25] spring-bounce-50 spring-duration-300 transition-transform group-active:scale-[85%]',\n\t\t\t\t\t\t\t\tbookmarked && 'fill-current'\n\t\t\t\t\t\t\t)}\n\t\t\t\t\t\t/>\n\t\t\t\t\t</div>\n\t\t\t\t\t<NumberFlow willChange continuous value={bookmarks} format={format} />\n\t\t\t\t</button>\n\t\t\t</div>\n\t\t\t<Share absoluteStrokeWidth className=\"~size-4/5 shrink-0\" />\n\t\t</div>\n\t)\n}\n\nexport { Activity }",
+      "type": "registry:ui",
+      "target": ""
+    }
+  ],
+  "tailwind": {
+    "config": {}
+  },
+  "_meta": {
+    "author": "barvian",
+    "slug": "activity-with-number-flow",
+    "registry_url": "https://21st.dev/r/barvian/activity-with-number-flow",
+    "title": "Activity with Number Flow",
+    "description": "A component of social media sharing buttons with Number Flow animations",
+    "category": "button",
+    "category_group": "UI Components",
+    "downloads": 56,
+    "likes": 6
+  }
+}

@@ -1,0 +1,31 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "outline-with-icon",
+  "type": "registry:component",
+  "title": "Outline With Icon",
+  "description": "A outline-with-icon component.",
+  "dependencies": [
+    "lucide-react"
+  ],
+  "registryDependencies": [
+    "https://21st.dev/r/shadcn/button"
+  ],
+  "files": [
+    {
+      "path": "src/components/ui/outline-with-icon.tsx",
+      "content": "import { Button } from \"@/components/ui/button\";\nimport { Redo2, Undo2 } from \"lucide-react\";\n\nconst ButtonOutlineWithIconDemo = () => {\n  return (\n    <div className=\"flex items-center justify-center gap-4 flex-wrap\">\n      {/*  */}\n      <Button\n        variant=\"outline\"\n        className=\"rounded-lg hover:-translate-y-1 transition-transform duration-200 cursor-pointer\"\n      >\n        <Undo2 size={16} />\n        Undo\n      </Button>\n      {/*  */}\n      <Button\n        variant=\"outline\"\n        className=\"rounded-lg hover:-translate-y-1 transition-transform duration-200 cursor-pointer\"\n      >\n        Redo\n        <Redo2 size={16} />\n      </Button>\n    </div>\n  );\n};\n\nexport default ButtonOutlineWithIconDemo;\n",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "shadcnspace",
+    "slug": "outline-with-icon",
+    "registry_url": "https://21st.dev/r/shadcnspace/outline-with-icon",
+    "title": "Outline With Icon",
+    "description": " Here is outline with icon component.",
+    "category": "button",
+    "category_group": "UI Components",
+    "downloads": 0,
+    "likes": 0
+  }
+}

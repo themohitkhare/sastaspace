@@ -1,0 +1,29 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "theme-dropdown",
+  "type": "registry:component",
+  "title": "Theme Dropdown",
+  "description": "A theme-dropdown component.",
+  "dependencies": [],
+  "registryDependencies": [
+    "https://21st.dev/r/designali-in/theme"
+  ],
+  "files": [
+    {
+      "path": "src/components/ui/theme-dropdown.tsx",
+      "content": "import { cn } from \"@/lib/utils\";\nimport { Theme } from \"@/components/ui/theme\"\n\nexport const Component = () => {\n  return (\n    <div className=\"flex items-center gap-3\">\n      <Theme\n        size=\"sm\"\n        variant=\"dropdown\"\n        themes={[\"light\", \"dark\", \"system\"]}\n      />\n      <Theme\n        size=\"md\"\n        variant=\"dropdown\"\n        themes={[\"light\", \"dark\", \"system\"]}\n      /> \n      <Theme\n        size=\"sm\"\n        variant=\"dropdown\"\n        showLabel\n        themes={[\"light\", \"dark\", \"system\"]}\n      /> \n      <Theme\n        size=\"lg\"\n        variant=\"dropdown\"\n        showLabel\n        themes={[\"light\", \"dark\", \"system\"]}\n      />\n    </div>\n  )\n};\n",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "designali-in",
+    "slug": "theme-dropdown",
+    "registry_url": "https://21st.dev/r/designali-in/theme-dropdown",
+    "title": "Theme Dropdown",
+    "description": "Theme Dropdown",
+    "category": "dropdown",
+    "category_group": "UI Components",
+    "downloads": 56,
+    "likes": 0
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "button-1",
+  "type": "registry:component",
+  "title": "Button 1",
+  "description": "A button-1 component.",
+  "dependencies": [],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/ui/button-1.tsx",
+      "content": "\n\n\n\nexport const Component = () => {\n\n\n  return (\n\n    <div className= \"relative inline-flex items-center justify-center gap-4 group\" >\n    <div\n    className=\"absolute inset-0 duration-1000 opacity-60 transitiona-all bg-gradient-to-r from-indigo-500 via-pink-500 to-yellow-400 rounded-md blur-lg filter group-hover:opacity-100 group-hover:duration-200\"\n    > </div>\n    < a\n  role = \"button\"\n  className = \"group relative inline-flex items-center justify-center text-base rounded-md bg-gray-900 px-8 py-2 text-lg font-semibold text-white transition-all duration-200 hover:bg-gray-800 hover:shadow-lg hover:-translate-y-0.5 hover:shadow-gray-600/30\"\n  title = \"payment\"\n  href = \"https://uicat.vercel.app/\"\n  target = \"_blank\"\n    > Explore CAT UI < svg\n\n  viewBox = \"0 0 10 10\"\n  height = \"10\"\n  width = \"10\"\n  fill = \"none\"\n  className = \"mt-0.5 ml-2 -mr-1 stroke-white stroke-2\"\n    >\n    <path\n        d=\"M0 5h7\"\n  className = \"transition opacity-0 group-hover:opacity-100\"\n    > </path>\n    < path\n  d = \"M1 1l4 4-4 4\"\n  className = \"transition group-hover:translate-x-[3px]\"\n    > </path>\n    < /svg>\n    < /a>\n    < /div>\n\n  );\n};\n",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "beratberkayg",
+    "slug": "button-1",
+    "registry_url": "https://21st.dev/r/beratberkayg/button-1",
+    "title": "Button",
+    "description": "button with background blur",
+    "category": "button",
+    "category_group": "UI Components",
+    "downloads": 19,
+    "likes": 0
+  }
+}

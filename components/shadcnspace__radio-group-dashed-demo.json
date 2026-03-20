@@ -1,0 +1,30 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "radio-group-dashed-demo",
+  "type": "registry:component",
+  "title": "Radio Group Dashed Demo",
+  "description": "A radio-group-dashed-demo component.",
+  "dependencies": [],
+  "registryDependencies": [
+    "https://21st.dev/r/shadcn/label",
+    "https://21st.dev/r/shadcn/radio-group"
+  ],
+  "files": [
+    {
+      "path": "src/components/ui/radio-group-dashed-demo.tsx",
+      "content": "import { Label } from '@/components/ui/label'\nimport { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'\n\nconst RadioGroupDashedDemo = () => {\n  return (\n    <RadioGroup defaultValue='economy' className='max-w-64'>\n      <div className='flex items-center gap-2'>\n        <RadioGroupItem\n          value='economy'\n          id='economy'\n          className='border-primary data-checked:border-background border-dashed'\n        />\n        <Label htmlFor='economy'>Economy Shipping</Label>\n      </div>\n      <div className='flex items-center gap-2'>\n        <RadioGroupItem\n          value='priority'\n          id='priority'\n          className='border-primary data-checked:border-background border-dashed'\n        />\n        <Label htmlFor='priority'>Priority Shipping</Label>\n      </div>\n      <div className='flex items-center gap-2'>\n        <RadioGroupItem\n          value='next-day'\n          id='next-day'\n          className='border-primary data-checked:border-background border-dashed'\n        />\n        <Label htmlFor='next-day'>Next-Day Delivery</Label>\n      </div>\n    </RadioGroup>\n  )\n}\n\nexport default RadioGroupDashedDemo\n",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "shadcnspace",
+    "slug": "radio-group-dashed-demo",
+    "registry_url": "https://21st.dev/r/shadcnspace/radio-group-dashed-demo",
+    "title": " Radio Group Dashed Demo",
+    "description": "Here is radio group dashed ccomponent",
+    "category": "radio-group",
+    "category_group": "UI Components",
+    "downloads": 3,
+    "likes": 0
+  }
+}

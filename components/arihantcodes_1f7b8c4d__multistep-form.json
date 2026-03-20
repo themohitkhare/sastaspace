@@ -1,0 +1,39 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "multistep-form",
+  "type": "registry:component",
+  "title": "Multistep Form",
+  "description": "A multistep-form component.",
+  "dependencies": [
+    "clsx",
+    "tailwind-merge"
+  ],
+  "registryDependencies": [
+    "https://21st.dev/r/shadcn/button",
+    "https://21st.dev/r/shadcn/input",
+    "https://21st.dev/r/shadcn/label",
+    "https://21st.dev/r/shadcn/card",
+    "https://21st.dev/r/shadcn/radio-group",
+    "https://21st.dev/r/shadcn/checkbox",
+    "https://21st.dev/r/shadcn/select",
+    "https://21st.dev/r/shadcn/textarea"
+  ],
+  "files": [
+    {
+      "path": "src/components/ui/multistep-form.tsx",
+      "content": "import { type ClassValue, clsx } from \"clsx\";\nimport { twMerge } from \"tailwind-merge\";\n\nexport function cn(...inputs: ClassValue[]) {\n  return twMerge(clsx(inputs));\n}\n",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "arihantcodes_1f7b8c4d",
+    "slug": "multistep-form",
+    "registry_url": "https://21st.dev/r/arihantcodes_1f7b8c4d/multistep-form",
+    "title": "Multistep Form",
+    "description": "Here is Multistep Form component",
+    "category": "form",
+    "category_group": "UI Components",
+    "downloads": 284,
+    "likes": 0
+  }
+}

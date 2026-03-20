@@ -1,0 +1,32 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "guest-selector",
+  "type": "registry:component",
+  "title": "Guest Selector",
+  "description": "A guest-selector component.",
+  "dependencies": [
+    "framer-motion",
+    "lucide-react"
+  ],
+  "registryDependencies": [
+    "https://21st.dev/r/shadcn/button"
+  ],
+  "files": [
+    {
+      "path": "src/components/ui/guest-selector.tsx",
+      "content": "// components/ui/guest-selector.tsx\n'use client';\n\nimport * as React from 'react';\nimport { motion, AnimatePresence } from 'framer-motion';\nimport { Minus, Plus } from 'lucide-react';\nimport { cn } from '@/lib/utils';\nimport { Button } from '@/components/ui/button';\n\ninterface GuestSelectorProps {\n  // Title for the counter section\n  title: string;\n  // Description for the counter section\n  description: string;\n  // An array of image URLs to display for each guest\n  imageSources: string[];\n  // The maximum number of guests allowed\n  maxGuests: number;\n  // Callback function that triggers when the value changes\n  onValueChange: (value: number) => void;\n  // Optional initial value for the counter\n  initialValue?: number;\n  // Optional className for custom styling\n  className?: string;\n}\n\nexport const GuestSelector = React.forwardRef<HTMLDivElement, GuestSelectorProps>(\n  (\n    {\n      title,\n      description,\n      imageSources,\n      maxGuests,\n      onValueChange,\n      initialValue = 0,\n      className,\n      ...props\n    },\n    ref\n  ) => {\n    const [count, setCount] = React.useState(initialValue);\n\n    // Clamp the value between 0 and maxGuests\n    const handleSetCount = (newCount: number) => {\n      const clampedCount = Math.max(0, Math.min(newCount, maxGuests));\n      setCount(clampedCount);\n      onValueChange(clampedCount);\n    };\n\n    const handleIncrement = () => handleSetCount(count + 1);\n    const handleDecrement = () => handleSetCount(count - 1);\n\n    // Updated animation variants for a horizontal slide-in effect\n    const imageVariants = {\n      hidden: { opacity: 0, x: 20, scale: 0.9 },\n      visible: (i: number) => ({\n        opacity: 1,\n        x: 0,\n        scale: 1,\n        transition: {\n          delay: i * 0.05,\n          duration: 0.3,\n          ease: 'easeOut',\n        },\n      }),\n      exit: {\n        opacity: 0,\n        x: -20,\n        scale: 0.9,\n        transition: {\n          duration: 0.2,\n          ease: 'easeIn',\n        },\n      },\n    };\n\n    return (\n      <div\n        ref={ref}\n        className={cn('w-full max-w-sm rounded-lg p-4', className)}\n        {...props}\n      >\n        {/* Animated Images Display */}\n        <div className=\"relative flex h-48 min-h-[12rem] w-full items-center justify-center overflow-hidden\">\n          <AnimatePresence>\n            {count === 0 && (\n              <motion.div\n                initial={{ opacity: 0, scale: 0.9 }}\n                animate={{ opacity: 0.5, scale: 1 }}\n                exit={{ opacity: 0, scale: 0.9 }}\n                className=\"absolute text-sm text-muted-foreground\"\n              >\n                Select number of guests\n              </motion.div>\n            )}\n          </AnimatePresence>\n\n          {/* Flex container for side-by-side images */}\n          <motion.div className=\"flex items-center justify-center\">\n            <AnimatePresence>\n              {imageSources.slice(0, count).map((src, i) => (\n                <motion.img\n                  key={i}\n                  src={src}\n                  alt={`Guest ${i + 1}`}\n                  custom={i}\n                  initial=\"hidden\"\n                  animate=\"visible\"\n                  exit=\"exit\"\n                  variants={imageVariants}\n                  // Apply negative margin for a slight overlap effect\n                  className=\"h-28 w-28 border-background object-contain shadow-md first:ml-0 [-webkit-mask-image:-webkit-radial-gradient(white,black)]\"\n                  style={{ marginLeft: i === 0 ? 0 : -48 }}\n                />\n              ))}\n            </AnimatePresence>\n          </motion.div>\n        </div>\n\n        {/* Divider */}\n        <div className=\"my-6 h-px w-full bg-border\" />\n\n        {/* Controls Section */}\n        <div className=\"flex items-center justify-between\">\n          <div>\n            <h3 className=\"text-lg font-medium text-foreground\">{title}</h3>\n            <p className=\"text-sm text-muted-foreground\">{description}</p>\n          </div>\n          <div className=\"flex items-center gap-4\">\n            <Button\n              variant=\"outline\"\n              size=\"icon\"\n              className=\"h-9 w-9 rounded-full\"\n              onClick={handleDecrement}\n              disabled={count === 0}\n              aria-label=\"Decrement\"\n            >\n              <Minus className=\"h-4 w-4\" />\n            </Button>\n            <span\n              className=\"w-8 text-center text-lg font-semibold text-foreground\"\n              aria-live=\"polite\"\n            >\n              {count}\n            </span>\n            <Button\n              variant=\"outline\"\n              size=\"icon\"\n              className=\"h-9 w-9 rounded-full\"\n              onClick={handleIncrement}\n              disabled={count >= maxGuests}\n              aria-label=\"Increment\"\n            >\n              <Plus className=\"h-4 w-4\" />\n            </Button>\n          </div>\n        </div>\n      </div>\n    );\n  }\n);\n\nGuestSelector.displayName = 'GuestSelector';",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "ravikatiyar162",
+    "slug": "guest-selector",
+    "registry_url": "https://21st.dev/r/ravikatiyar162/guest-selector",
+    "title": "Guest Selector",
+    "description": "Guest Selector\nA dynamic and interactive counter for selecting a number of guests, with animated visuals that update with the count.",
+    "category": "card",
+    "category_group": "UI Components",
+    "downloads": 9,
+    "likes": 0
+  }
+}

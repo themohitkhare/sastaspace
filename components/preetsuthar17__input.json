@@ -1,0 +1,78 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "input",
+  "type": "registry:component",
+  "title": "Input",
+  "description": "A input component.",
+  "dependencies": [
+    "class-variance-authority",
+    "lucide-react"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/ui/input.tsx",
+      "content": "\"use client\";\n\nimport * as React from \"react\";\nimport { cva, type VariantProps } from \"class-variance-authority\";\nimport { cn } from \"@/lib/utils\";\nimport { Eye, EyeOff, X } from \"lucide-react\";\n\nconst inputVariants = cva(\n  \"flex w-full rounded-ele border border-border bg-input px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 transition-all shadow-sm/2\",\n  {\n    variants: {\n      variant: {\n        default: \"border-border\",\n        destructive:\n          \"border-destructive focus-visible:ring-destructive\",\n        ghost:\n          \"border-transparent bg-accent focus-visible:bg-input focus-visible:border-border\",\n      },\n      size: {\n        default: \"h-9 px-3 py-2\",\n        sm: \"h-8 px-2 py-1 text-xs\",\n        lg: \"h-10 px-4 py-2\",\n        xl: \"h-12 px-6 py-3 text-base\",\n      },\n    },\n    defaultVariants: {\n      variant: \"default\",\n      size: \"default\",\n    },\n  },\n);\n\nexport interface InputProps\n  extends Omit<React.InputHTMLAttributes<HTMLInputElement>, \"size\">,\n    VariantProps<typeof inputVariants> {\n  leftIcon?: React.ReactNode;\n  rightIcon?: React.ReactNode;\n  error?: boolean;\n  clearable?: boolean;\n  onClear?: () => void;\n}\n\nconst Input = React.forwardRef<HTMLInputElement, InputProps>(\n  (\n    {\n      className,\n      variant,\n      size,\n      type = \"text\",\n      leftIcon,\n      rightIcon,\n      error,\n      clearable,\n      onClear,\n      value,\n      ...props\n    },\n    ref,\n  ) => {\n    const [showPassword, setShowPassword] = React.useState(false);\n    const [internalValue, setInternalValue] = React.useState(\n      props.defaultValue || \"\",\n    );\n    \n    // Create internal ref if no ref is provided\n    const internalRef = React.useRef<HTMLInputElement>(null);\n    const inputRef = ref || internalRef;\n\n    const inputVariant = error ? \"destructive\" : variant;\n    const isPassword = type === \"password\";\n    const actualType = isPassword && showPassword ? \"text\" : type;\n\n    // Determine if this is a controlled component\n    const isControlled = value !== undefined;\n    const inputValue = isControlled ? value : internalValue;\n    const showClearButton =\n      clearable && inputValue && String(inputValue).length > 0;\n\n    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {\n      if (!isControlled) {\n        setInternalValue(e.target.value);\n      }\n      props.onChange?.(e);\n    };\n\n    const handleClear = () => {\n      // Get reference to the input element\n      const inputElement = typeof inputRef === 'function' ? null : inputRef?.current;\n      \n      if (inputElement) {\n        // Set the input's value directly\n        inputElement.value = \"\";\n        \n        // Create a proper synthetic event\n        const event = new Event('input', { bubbles: true });\n        Object.defineProperty(event, 'target', {\n          writable: false,\n          value: inputElement\n        });\n        \n        // Dispatch the event to trigger onChange handlers\n        inputElement.dispatchEvent(event);\n      }\n\n      // Update internal state for uncontrolled components\n      if (!isControlled) {\n        setInternalValue(\"\");\n      }\n      \n      // Call the onClear callback\n      onClear?.();\n      \n      // Create synthetic React event for onChange\n      if (props.onChange) {\n        const syntheticEvent = {\n          target: { value: \"\" },\n          currentTarget: { value: \"\" },\n          preventDefault: () => {},\n          stopPropagation: () => {},\n        } as React.ChangeEvent<HTMLInputElement>;\n        \n        props.onChange(syntheticEvent);\n      }\n    };\n\n    const togglePasswordVisibility = () => {\n      setShowPassword(!showPassword);\n    };\n\n    return (\n      <div className=\"relative w-full\">\n        {leftIcon && (\n          <div className=\"absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground [&_svg]:size-4 [&_svg]:shrink-0 z-10\">\n            {leftIcon}\n          </div>\n        )}\n\n        <input\n          type={actualType}\n          className={cn(\n            inputVariants({ variant: inputVariant, size, className }),\n            leftIcon && \"pl-10\",\n            (rightIcon || isPassword || showClearButton) && \"pr-10\"\n          )}\n          ref={inputRef}\n          {...(isControlled\n            ? { value: inputValue }\n            : { defaultValue: props.defaultValue })}\n          onChange={handleInputChange}\n          {...(({ defaultValue, ...rest }) => rest)(props)}\n        />\n\n        {/* Right side icons container */}\n        {(rightIcon || isPassword || showClearButton) && (\n          <div className=\"absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1 z-10\">\n            {/* Custom right icon */}\n            {rightIcon && (\n              <div className=\"text-muted-foreground [&_svg]:size-4 [&_svg]:shrink-0\">\n                {rightIcon}\n              </div>\n            )}\n\n            {/* Clear button */}\n            {showClearButton && (\n              <button\n                type=\"button\"\n                onClick={handleClear}\n                className=\"text-muted-foreground hover:text-foreground transition-colors [&_svg]:size-4 [&_svg]:shrink-0\"\n                tabIndex={-1}\n              >\n                <X />\n              </button>\n            )}\n\n            {/* Password visibility toggle */}\n            {isPassword && (\n              <button\n                type=\"button\"\n                onClick={togglePasswordVisibility}\n                className=\"text-muted-foreground hover:text-foreground transition-colors [&_svg]:size-4 [&_svg]:shrink-0\"\n                tabIndex={-1}\n              >\n                {showPassword ? <EyeOff /> : <Eye />}\n              </button>\n            )}\n          </div>\n        )}\n      </div>\n    );\n  },\n);\n\nInput.displayName = \"Input\";\n\nexport { Input, inputVariants };",
+      "type": "registry:component"
+    }
+  ],
+  "cssVars": {
+    "light": {
+      "--hu-font-geist": "var(--font-geist)",
+      "--hu-font-jetbrains": "var(--font-jetbrains-mono)",
+      "--radius": "0.8rem",
+      "--card-radius": "1rem",
+      "--hu-background": "0, 0%, 100%",
+      "--hu-foreground": "0, 0%, 14%",
+      "--hu-card": "0, 0%, 99%",
+      "--hu-card-foreground": "0, 0%, 14%",
+      "--hu-primary": "235, 100%, 60%",
+      "--hu-primary-foreground": "0, 0%, 98%",
+      "--hu-secondary": "0, 0%, 97%",
+      "--hu-secondary-foreground": "0, 0%, 20%",
+      "--hu-muted": "0, 0%, 97%",
+      "--hu-muted-foreground": "0, 0%, 56%",
+      "--hu-accent": "0, 0%, 96%",
+      "--hu-accent-foreground": "0, 0%, 20%",
+      "--hu-destructive": "9, 96%, 47%",
+      "--hu-destructive-foreground": "0, 0%, 98%",
+      "--hu-border": "0, 0%, 92%",
+      "--hu-input": "0, 0%, 100%",
+      "--hu-ring": "0, 0%, 71%",
+      "--color-fd-background": "hsl(var(--hu-background))",
+      "--color-fd-card": "hsl(var(--hu-background))"
+    },
+    "dark": {
+      "--hu-background": "0, 0%, 7%",
+      "--hu-foreground": "0, 0%, 100%",
+      "--hu-card": "0, 0%, 9%",
+      "--hu-card-foreground": "0, 0%, 100%",
+      "--hu-primary": "235, 100%, 60%",
+      "--hu-primary-foreground": "0, 0%, 98%",
+      "--hu-secondary": "0, 0%, 15%",
+      "--hu-secondary-foreground": "0, 0%, 100%",
+      "--hu-muted": "0, 0%, 15%",
+      "--hu-muted-foreground": "0, 0%, 71%",
+      "--hu-accent": "0, 0%, 15%",
+      "--hu-accent-foreground": "0, 0%, 100%",
+      "--hu-destructive": "0, 84%, 50%",
+      "--hu-destructive-foreground": "0, 0%, 98%",
+      "--hu-border": "0, 0%, 100%, 10%",
+      "--hu-input": "0, 0%, 100%, 5%",
+      "--hu-ring": "0, 0%, 56%",
+      "--color-fd-background": "hsl(var(--hu-background))",
+      "--color-fd-card": "hsl(var(--hu-background))"
+    }
+  },
+  "_meta": {
+    "author": "preetsuthar17",
+    "slug": "input",
+    "registry_url": "https://21st.dev/r/preetsuthar17/input",
+    "title": "Input",
+    "description": "Displays a form input field with enhanced features like password visibility toggle, clearable functionality, and Zod validation support.",
+    "category": "input",
+    "category_group": "UI Components",
+    "downloads": 21,
+    "likes": 0
+  }
+}

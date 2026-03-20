@@ -1,0 +1,34 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "product-card-1",
+  "type": "registry:component",
+  "title": "Product Card 1",
+  "description": "A product-card-1 component.",
+  "dependencies": [
+    "next",
+    "framer-motion",
+    "lucide-react"
+  ],
+  "registryDependencies": [
+    "https://21st.dev/r/originui/checkbox",
+    "https://21st.dev/r/shadcn/button"
+  ],
+  "files": [
+    {
+      "path": "src/components/ui/product-card-1.tsx",
+      "content": "\"use client\";\n\nimport * as React from \"react\";\nimport Image from \"next/image\";\nimport { motion } from \"framer-motion\";\nimport { Heart, Star, ShieldCheck } from \"lucide-react\";\n\nimport { cn } from \"@/lib/utils\";\nimport { Checkbox } from \"@/components/ui/checkbox\"; // Assuming you have a shadcn Checkbox component\nimport { Button } from \"@/components/ui/button\"; // Assuming you have a shadcn Button component\n\n// Define the types for the component props\ninterface ProductCardProps extends React.HTMLAttributes<HTMLDivElement> {\n  imageUrl: string;\n  title: string;\n  rating: number;\n  ratingsCount: number;\n  reviewsCount: number;\n  specifications: string[];\n  price: number;\n  originalPrice: number;\n  isAssured: boolean;\n  exchangeOffer: string;\n  bankOffer: string;\n}\n\nconst ProductCard = React.forwardRef<HTMLDivElement, ProductCardProps>(\n  (\n    {\n      className,\n      imageUrl,\n      title,\n      rating,\n      ratingsCount,\n      reviewsCount,\n      specifications,\n      price,\n      originalPrice,\n      isAssured,\n      exchangeOffer,\n      bankOffer,\n      ...props\n    },\n    ref\n  ) => {\n    const [isWishlisted, setIsWishlisted] = React.useState(false);\n\n    // Format numbers with commas for readability\n    const formatNumber = (num: number) =>\n      new Intl.NumberFormat(\"en-IN\").format(num);\n\n    // Calculate discount percentage\n    const discount = Math.round(((originalPrice - price) / originalPrice) * 100);\n\n    // Animation variants for framer-motion\n    const cardVariants = {\n      hidden: { opacity: 0, y: 20 },\n      visible: {\n        opacity: 1,\n        y: 0,\n        transition: { duration: 0.5, ease: \"easeOut\" },\n      },\n    };\n\n    return (\n      <motion.div\n        ref={ref}\n        className={cn(\n          \"bg-background text-foreground border rounded-lg overflow-hidden w-full p-4 md:p-6\",\n          className\n        )}\n        variants={cardVariants}\n        initial=\"hidden\"\n        animate=\"visible\"\n        whileHover={{\n          boxShadow: \"0px 10px 30px -5px hsl(var(--foreground) / 0.1)\",\n          y: -5,\n        }}\n        transition={{ duration: 0.3 }}\n        {...props}\n      >\n        <div className=\"grid grid-cols-1 md:grid-cols-[1fr_2fr_1.5fr] gap-6 items-start\">\n          {/* Column 1: Image & Compare */}\n          <div className=\"flex flex-col items-center gap-4\">\n            <div className=\"relative group w-full aspect-square max-w-[200px] mx-auto\">\n              <Image\n                src={imageUrl}\n                alt={title}\n                width={200}\n                height={200}\n                className=\"object-contain w-full h-full\"\n              />\n              <Button\n                variant=\"ghost\"\n                size=\"icon\"\n                className=\"absolute top-2 right-2 rounded-full\"\n                onClick={() => setIsWishlisted(!isWishlisted)}\n                aria-label=\"Toggle Wishlist\"\n              >\n                <Heart\n                  className={cn(\n                    \"h-5 w-5 text-muted-foreground transition-colors\",\n                    isWishlisted && \"fill-red-500 text-red-500\"\n                  )}\n                />\n              </Button>\n            </div>\n            <div className=\"flex items-center space-x-2 self-start md:self-center pt-4\">\n              <Checkbox id=\"compare\" />\n              <label\n                htmlFor=\"compare\"\n                className=\"text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70\"\n              >\n                Add to Compare\n              </label>\n            </div>\n          </div>\n\n          {/* Column 2: Product Details */}\n          <div className=\"flex flex-col gap-3\">\n            <h2 className=\"text-lg font-semibold text-foreground\">{title}</h2>\n            <div className=\"flex items-center gap-2 text-sm text-muted-foreground\">\n              <div className=\"bg-green-600 text-white px-2 py-0.5 rounded-md flex items-center gap-1\">\n                <span>{rating.toFixed(1)}</span>\n                <Star className=\"h-3 w-3 fill-white\" />\n              </div>\n              <span>\n                {formatNumber(ratingsCount)} Ratings & {formatNumber(reviewsCount)} Reviews\n              </span>\n            </div>\n            <ul className=\"space-y-2 text-sm list-disc list-inside text-muted-foreground pt-2\">\n              {specifications.map((spec, index) => (\n                <li key={index}>{spec}</li>\n              ))}\n            </ul>\n          </div>\n\n          {/* Column 3: Pricing */}\n          <div className=\"flex flex-col gap-1\">\n            <div className=\"flex items-center gap-2\">\n              <h3 className=\"text-3xl font-bold\">₹{formatNumber(price)}</h3>\n              {isAssured && (\n                <ShieldCheck className=\"h-6 w-6 text-primary\" strokeWidth={1.5} />\n              )}\n            </div>\n            <div className=\"flex items-center gap-3 text-sm\">\n              <span className=\"text-muted-foreground line-through\">\n                ₹{formatNumber(originalPrice)}\n              </span>\n              <span className=\"text-green-600 font-semibold\">{discount}% off</span>\n            </div>\n            <p className=\"text-sm font-medium mt-2\">Upto ₹{exchangeOffer} Off on Exchange</p>\n            <p className=\"text-sm font-medium text-green-600 cursor-pointer hover:underline\">\n              {bankOffer}\n            </p>\n          </div>\n        </div>\n      </motion.div>\n    );\n  }\n);\n\nProductCard.displayName = \"ProductCard\";\n\nexport { ProductCard };",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "ravikatiyar162",
+    "slug": "product-card-1",
+    "registry_url": "https://21st.dev/r/ravikatiyar162/product-card-1",
+    "title": "Product Card",
+    "description": "Product Card\nThis reusable card component displays product information, including an image, title, ratings, specifications, and pricing details in a responsive layout.",
+    "category": "card",
+    "category_group": "UI Components",
+    "downloads": 0,
+    "likes": 0
+  }
+}

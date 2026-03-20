@@ -1,0 +1,42 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "course-design-cards",
+  "type": "registry:component",
+  "title": "Course Design Cards",
+  "description": "A course-design-cards component.",
+  "dependencies": [],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/ui/course-design-cards.tsx",
+      "content": "import React from 'react';\n\n// Define the type for the card data\ninterface CardData {\n  id: number;\n  colorClass: string;\n  date: string;\n  title: string;\n  description: string;\n  progressPercent: string;\n  progressValue: string;\n  imgSrc1?: string;\n  imgAlt1?: string;\n  imgSrc2?: string;\n  imgAlt2?: string;\n  countdownText: string;\n}\n\n// Define the props for the Card component\ninterface CardProps {\n  data: CardData;\n}\n\n// SVG components (extracted for reusability and clarity)\nconst EllipsisIcon: React.FC = () => (\n  <svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"currentColor\" className=\"size-6\">\n    <path fillRule=\"evenodd\" d=\"M10.5 6a1.5 1.5 0 1 1 3 0 1.5 1.5 0 0 1-3 0Zm0 6a1.5 1.5 0 1 1 3 0 1.5 1.5 0 0 1-3 0Zm0 6a1.5 1.5 0\" clipRule=\"evenodd\" />\n  </svg>\n);\n\nconst AddIcon: React.FC = () => (\n  <svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"currentColor\" className=\"size-6\">\n    <path fillRule=\"evenodd\" d=\"M12 3.75a.75.75 0 0 1 .75.75v6.75h6.75a.75.75 0 0 1 0 1.5h-6.75v6.75a.75.75 0 0 1-1.5 0v-6.75H4.5a.75.75 0 0 1 0-1.5h6.75V4.5a.75.75 0 0 1 .75-.75Z\" clipRule=\"evenodd\" />\n  </svg>\n);\n\nconst Card: React.FC<CardProps> = ({ data }) => {\n  const {\n    colorClass,\n    date,\n    title,\n    description,\n    progressPercent,\n    progressValue,\n    imgSrc1,\n    imgAlt1,\n    imgSrc2,\n    imgAlt2,\n    countdownText,\n  } = data;\n\n  return (\n    <div className={`card ${colorClass}`}>\n      <div className=\"card-header\">\n        <div className=\"date\">{date}</div>\n        <EllipsisIcon />\n      </div>\n      <div className=\"card-body\">\n        <h3>{title}</h3>\n        <p>{description}</p>\n        <div className=\"progress\">\n          <span>Progress</span>\n          <div className=\"progress-bar\"></div>\n          <span>{progressValue}</span>\n        </div>\n      </div>\n      <div className=\"card-footer\">\n        <ul>\n          {imgSrc1 && (\n            <li>\n              <img src={imgSrc1} alt={imgAlt1 || 'user avatar'} />\n            </li>\n          )}\n          {imgSrc2 && (\n            <li>\n              <img src={imgSrc2} alt={imgAlt2 || 'user avatar'} />\n            </li>\n          )}\n          <li>\n            <a href=\"#\" className=\"btn-add\">\n              <AddIcon />\n            </a>\n          </li>\n        </ul>\n        <a href=\"#\" className=\"btn-countdown\">{countdownText}</a>\n      </div>\n    </div>\n  );\n};\n\nexport default Card;",
+      "type": "registry:component"
+    }
+  ],
+  "cssVars": {
+    "light": {
+      "--clr-blue": "#1890ff",
+      "--clr-green": "#01c3a8",
+      "--clr-orange": "#ffb741",
+      "--clr-red": "#a63d2a",
+      "--bg-dark": "#232228",
+      "--bg-footer": "#151419",
+      "--color-white": "#fff",
+      "--color-gray-light": "#ddd",
+      "--color-gray-medium": "#363636",
+      "--color-gray-dark": "#292929",
+      "--color-gray-very-dark": "#222127"
+    }
+  },
+  "_meta": {
+    "author": "kristen17",
+    "slug": "course-design-cards",
+    "registry_url": "https://21st.dev/r/kristen17/course-design-cards",
+    "title": "Course Design Cards",
+    "description": "Here is Course Design Cards component",
+    "category": "card",
+    "category_group": "UI Components",
+    "downloads": 33,
+    "likes": 0
+  }
+}

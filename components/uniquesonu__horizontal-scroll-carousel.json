@@ -1,0 +1,29 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "horizontal-scroll-carousel",
+  "type": "registry:component",
+  "title": "Horizontal Scroll Carousel",
+  "description": "A horizontal-scroll-carousel component.",
+  "dependencies": [
+    "framer-motion"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/ui/horizontal-scroll-carousel.tsx",
+      "content": "import { motion, useTransform, useScroll } from \"framer-motion\";\nimport { useRef } from \"react\";\n\nconst Example = () => {\n  return (\n    <div className=\"bg-neutral-800\">\n      <div className=\"flex h-48 items-center justify-center\">\n        <span className=\"font-semibold uppercase text-neutral-500\">\n          Scroll down\n        </span>\n      </div>\n      <HorizontalScrollCarousel />\n      <div className=\"flex h-48 items-center justify-center\">\n        <span className=\"font-semibold uppercase text-neutral-500\">\n          Scroll up\n        </span>\n      </div>\n    </div>\n  );\n};\n\nconst HorizontalScrollCarousel = () => {\n  const targetRef = useRef(null);\n  const { scrollYProgress } = useScroll({\n    target: targetRef,\n  });\n\n  const x = useTransform(scrollYProgress, [0, 1], [\"1%\", \"-95%\"]);\n\n  return (\n    <section ref={targetRef} className=\"relative h-[300vh] bg-neutral-900\">\n      <div className=\"sticky top-0 flex h-screen items-center overflow-hidden\">\n        <motion.div style={{ x }} className=\"flex gap-4\">\n          {cards.map((card) => {\n            return <Card card={card} key={card.id} />;\n          })}\n        </motion.div>\n      </div>\n    </section>\n  );\n};\n\nconst Card = ({ card }) => {\n  return (\n    <div\n      key={card.id}\n      className=\"group relative h-[450px] w-[450px] overflow-hidden bg-neutral-200\"\n    >\n      <div\n        style={{\n          backgroundImage: `url(${card.url})`,\n          backgroundSize: \"cover\",\n          backgroundPosition: \"center\",\n        }}\n        className=\"absolute inset-0 z-0 transition-transform duration-300 group-hover:scale-110\"\n      ></div>\n      <div className=\"absolute inset-0 z-10 grid place-content-center\">\n        <p className=\"bg-gradient-to-br from-white/20 to-white/0 p-8 text-6xl font-black uppercase text-white backdrop-blur-lg\">\n          {card.title}\n        </p>\n      </div>\n    </div>\n  );\n};\n\nexport default Example;\n\nconst cards = [\n  {\n    \"id\": 1,\n    \"title\": \"Title 1\",\n    \"url\": \"https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=800&q=80&auto=format&fit=crop\"\n  },\n  {\n    \"id\": 2,\n    \"title\": \"Title 2\",\n    \"url\": \"https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=800&q=80&auto=format&fit=crop\"\n  },\n  {\n    \"id\": 3,\n    \"title\": \"Title 3\",\n    \"url\": \"https://images.unsplash.com/photo-1602526216279-61258f121a1c?w=800&q=80&auto=format&fit=crop\"\n  },\n  {\n    \"id\": 4,\n    \"title\": \"Title 4\",\n    \"url\": \"https://images.unsplash.com/photo-1612831195783-c994e079a3bb?w=800&q=80&auto=format&fit=crop\"\n  },\n  {\n    \"id\": 5,\n    \"title\": \"Title 5\",\n    \"url\": \"https://images.unsplash.com/photo-1605460375648-278bcbd579a6?w=800&q=80&auto=format&fit=crop\"\n  },\n  {\n    \"id\": 6,\n    \"title\": \"Title 6\",\n    \"url\": \"https://images.unsplash.com/photo-1616587891160-9446f49b7f10?w=800&q=80&auto=format&fit=crop\"\n  },\n  {\n    \"id\": 7,\n    \"title\": \"Title 7\",\n    \"url\": \"https://images.unsplash.com/photo-1612831455544-e3a53c056cd7?w=800&q=80&auto=format&fit=crop\"\n  }\n];",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "uniquesonu",
+    "slug": "horizontal-scroll-carousel",
+    "registry_url": "https://21st.dev/r/uniquesonu/horizontal-scroll-carousel",
+    "title": "Horizontal Scroll Carousel",
+    "description": "HorizontalScrollCarousel Component\nCategory: UI · Scroll Interaction · Showcase\nFramework: React (Framer Motion + TailwindCSS)\n\n📋 Description:\nHorizontalScrollCarousel is an immersive scroll-based carousel built with Framer Motion and React, where cards move horizontally as you scroll vertically. It’s ideal for visual storytelling, case studies, portfolios, and interactive galleries.\n\n🌟 Features:\n🎞 Scroll-Triggered Animation: Vertically scroll to reveal horizontally sliding cards\n\n⚙️ Powered by Framer Motion’s useScroll and useTransform\n\n📱 Responsive and Adaptive\n\n🖼️ Customizable cards with titles and background images\n\n💡 Hover effect: Image zoom-in for interactivity\n\n🧩 Ideal Use Cases:\nVisual portfolios\n\nImage galleries\n\nCase studies and feature highlights\n\nStorytelling sections of landing pages\n\n📦 Dependencies:\nreact\n\nframer-motion\n\ntailwindcss\n\n🛠 Setup & Configuration:\nReplace local image paths with your own or use Unsplash CDN links:\n\njs\nCopy\nEdit\nconst cards = [\n  {\n    url: \"https://images.unsplash.com/photo-1581291519195-ef11498d1cf5?w=800&q=80&auto=format&fit=crop\",\n    title: \"Title 1\",\n    id: 1,\n  },\n  // ...more cards\n];\nMake sure to wrap the component in a scrollable container to trigger the animation effectively.\n\n",
+    "category": "carousel",
+    "category_group": "UI Components",
+    "downloads": 27,
+    "likes": 0
+  }
+}

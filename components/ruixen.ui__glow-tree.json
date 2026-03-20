@@ -1,0 +1,30 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "glow-tree",
+  "type": "registry:component",
+  "title": "Glow Tree",
+  "description": "A glow-tree component.",
+  "dependencies": [
+    "framer-motion",
+    "lucide-react"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/ui/glow-tree.tsx",
+      "content": "\"use client\";\n\nimport React, { useState } from \"react\";\nimport { motion, AnimatePresence } from \"framer-motion\";\nimport { cn } from \"@/lib/utils\";\nimport { Folder, File, Zap } from \"lucide-react\";\n\n// -------- GlowNode Types --------\nexport type GlowNode = {\n  id: string;\n  name: string;\n  type: \"file\" | \"folder\";\n  children?: GlowNode[];\n  glow?: boolean;\n};\n\nexport type GlowTreeProps = {\n  data?: GlowNode[];\n  onSelect?: (node: GlowNode) => void;\n};\n\n// -------- Default Data --------\nconst defaultGlowData: GlowNode[] = [\n  {\n    id: \"1\",\n    name: \"Glowing Folder\",\n    type: \"folder\",\n    glow: true,\n    children: [\n      { id: \"1-1\", name: \"Light File.txt\", type: \"file\", glow: true },\n      { id: \"1-2\", name: \"Hidden Glow\", type: \"folder\", children: [{ id: \"1-2-1\", name: \"Glow.js\", type: \"file\", glow: true }] },\n    ],\n  },\n  { id: \"2\", name: \"Normal File.md\", type: \"file\" },\n];\n\n// -------- GlowTree Component --------\nexport default function GlowTree({ data = defaultGlowData, onSelect }: GlowTreeProps) {\n  const [expanded, setExpanded] = useState<Record<string, boolean>>({});\n  const [selected, setSelected] = useState<string | null>(null);\n\n  const toggle = (id: string) => setExpanded(prev => ({ ...prev, [id]: !prev[id] }));\n\n  const renderNodes = (nodes: GlowNode[], level = 0) => (\n    nodes.map(n => (\n      <div key={n.id} className=\"relative group\">\n        <motion.div\n          className={cn(\n            \"flex items-center gap-2 px-2 py-1 rounded-md cursor-pointer select-none transition-all\",\n            selected === n.id ? \"bg-gray-300 dark:bg-gray-700 text-black dark:text-white shadow\" : \"hover:bg-muted\"\n          )}\n          style={{ paddingLeft: level * 16 + 8 }}\n          onClick={() => {\n            if (n.type === \"folder\") toggle(n.id);\n            setSelected(n.id);\n            onSelect?.(n);\n          }}\n          whileHover={{ scale: 1.04 }}\n          whileTap={{ scale: 0.97 }}\n        >\n          {n.type === \"folder\" ? <Folder size={16} /> : <File size={14} />}\n          <span className=\"flex-1 truncate\">{n.name}</span>\n          {n.glow && <Zap size={16} className=\"text-yellow-300 animate-pulse\" />}\n        </motion.div>\n\n        <AnimatePresence>\n          {n.children && n.children.length > 0 && expanded[n.id] && (\n            <motion.div\n              role=\"group\"\n              initial={{ height: 0, opacity: 0 }}\n              animate={{ height: \"auto\", opacity: 1 }}\n              exit={{ height: 0, opacity: 0 }}\n              transition={{ duration: 0.25, ease: \"easeInOut\" }}\n              className=\"pl-4 border-l border-gray-400 dark:border-gray-600\"\n            >\n              {renderNodes(n.children, level + 1)}\n            </motion.div>\n          )}\n        </AnimatePresence>\n      </div>\n    ))\n  );\n\n  return <div className=\"space-y-1\">{renderNodes(data)}</div>;\n}\n",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "ruixen.ui",
+    "slug": "glow-tree",
+    "registry_url": "https://21st.dev/r/ruixen.ui/glow-tree",
+    "title": "GlowTree",
+    "description": "The Glow Tree component is a visually engaging and interactive file explorer built with Shadcn UI styling utilities and lucide-react icons. It displays hierarchical data, such as files and folders, with smooth expand and collapse animations using Framer Motion. Each node can optionally have a glowing effect, creating a pulsating highlight that draws attention to important files or folders. The component supports selection, updating the styling of the currently selected node for both light and dark themes. It is fully client-side, lightweight, and designed to provide a futuristic, dynamic experience while remaining easy to integrate and customize.",
+    "category": "file-tree",
+    "category_group": "UI Components",
+    "downloads": 0,
+    "likes": 0
+  }
+}

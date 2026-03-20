@@ -1,0 +1,31 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "order-status-tracker",
+  "type": "registry:component",
+  "title": "Order Status Tracker",
+  "description": "A order-status-tracker component.",
+  "dependencies": [
+    "framer-motion"
+  ],
+  "registryDependencies": [
+    "https://21st.dev/r/shadcn/button"
+  ],
+  "files": [
+    {
+      "path": "src/components/ui/order-status-tracker.tsx",
+      "content": "import * as React from \"react\";\nimport { motion } from \"framer-motion\";\nimport { cn } from \"@/lib/utils\";\nimport { Button } from \"@/components/ui/button\";\n\n// Define TypeScript types for the component props for type safety and reusability\ninterface OrderItemProps {\n  imageUrl: string;\n  name: string;\n  details: string;\n  price: number;\n}\n\ninterface OrderSummaryItemProps {\n  label: string;\n  value: string;\n}\n\ninterface OrderStatusProps {\n  illustrationUrl: string;\n  statusTitle: string;\n  statusDescription: string;\n  item: OrderItemProps;\n  summary: OrderSummaryItemProps[];\n  trackingStatus: string;\n  onTrackOrder?: () => void;\n  className?: string;\n}\n\n// Reusable Card component for consistent styling\nconst InfoCard = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(\n  ({ className, ...props }, ref) => (\n    <div\n      ref={ref}\n      className={cn(\n        \"rounded-xl border bg-card text-card-foreground p-6\",\n        className\n      )}\n      {...props}\n    />\n  )\n);\nInfoCard.displayName = \"InfoCard\";\n\n\nexport const OrderStatus: React.FC<OrderStatusProps> = ({\n  illustrationUrl,\n  statusTitle,\n  statusDescription,\n  item,\n  summary,\n  trackingStatus,\n  onTrackOrder,\n  className,\n}) => {\n  // Animation variants for Framer Motion\n  const containerVariants = {\n    hidden: { opacity: 0 },\n    visible: {\n      opacity: 1,\n      transition: { staggerChildren: 0.1, delayChildren: 0.2 },\n    },\n  };\n\n  const itemVariants = {\n    hidden: { y: 20, opacity: 0 },\n    visible: { y: 0, opacity: 1 },\n  };\n\n  return (\n    <motion.div\n      className={cn(\"max-w-md w-full mx-auto p-4 font-sans\", className)}\n      variants={containerVariants}\n      initial=\"hidden\"\n      animate=\"visible\"\n    >\n      {/* Header section with illustration and status */}\n      <motion.div variants={itemVariants} className=\"text-center space-y-2 mb-8\">\n        <img\n          src={illustrationUrl}\n          alt=\"Order Status Illustration\"\n          className=\"w-32 h-32 mx-auto\"\n        />\n        <h1 className=\"text-2xl font-bold text-foreground\">{statusTitle}</h1>\n        <p className=\"text-muted-foreground\">{statusDescription}</p>\n      </motion.div>\n\n      {/* Ordered item details card */}\n      <motion.div variants={itemVariants} className=\"mb-6\">\n        <InfoCard>\n          <div className=\"flex items-center space-x-4\">\n            <img\n              src={item.imageUrl}\n              alt={item.name}\n              className=\"w-16 h-16 rounded-lg bg-muted object-cover\"\n            />\n            <div className=\"flex-1\">\n              <p className=\"font-semibold text-foreground\">{item.name}</p>\n              <p className=\"text-sm text-muted-foreground\">{item.details}</p>\n            </div>\n            <p className=\"font-bold text-foreground\">\n              ${item.price.toFixed(2)}\n            </p>\n          </div>\n        </InfoCard>\n      </motion.div>\n      \n      {/* Order summary card */}\n      <motion.div variants={itemVariants} className=\"mb-8\">\n        <InfoCard className=\"space-y-4\">\n            <h2 className=\"font-semibold text-lg text-foreground\">Order Summary</h2>\n            {summary.map((line, index) => (\n                <div key={index} className=\"flex justify-between items-center text-sm\">\n                    <p className=\"text-muted-foreground\">{line.label}</p>\n                    <p className=\"text-foreground font-medium text-right\">{line.value}</p>\n                </div>\n            ))}\n        </InfoCard>\n      </motion.div>\n\n      {/* Action button and final status text */}\n      <motion.div variants={itemVariants} className=\"text-center space-y-3\">\n        <Button onClick={onTrackOrder} className=\"w-full\">\n            Track order\n        </Button>\n        <p className=\"text-xs text-green-600 dark:text-green-500 font-medium\">{trackingStatus}</p>\n      </motion.div>\n    </motion.div>\n  );\n};",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "ravikatiyar162",
+    "slug": "order-status-tracker",
+    "registry_url": "https://21st.dev/r/ravikatiyar162/order-status-tracker",
+    "title": "Order Status Tracker",
+    "description": "Order Status Tracker\nThis component provides a detailed view of an order's status, including the item, summary, and tracking actions. It is designed to be highly reusable by accepting all its content through props.",
+    "category": "card",
+    "category_group": "UI Components",
+    "downloads": 3,
+    "likes": 0
+  }
+}

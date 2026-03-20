@@ -1,0 +1,30 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "card-1",
+  "type": "registry:component",
+  "title": "Card 1",
+  "description": "A card-1 component.",
+  "dependencies": [
+    "lucide-react",
+    "framer-motion"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/ui/card-1.tsx",
+      "content": "import * as React from \"react\";\nimport { Star } from \"lucide-react\";\nimport { motion } from \"framer-motion\";\nimport { cn } from \"@/lib/utils\"; // Assuming 'cn' utility from shadcn setup\n\n// Interface for component props for type-safety and reusability\nexport interface ReviewCardProps {\n  name: string;\n  handle: string;\n  review: string;\n  rating: number;\n  imageUrl: string;\n  className?: string;\n}\n\nconst ReviewCard = React.forwardRef<HTMLDivElement, ReviewCardProps>(\n  ({ name, handle, review, rating, imageUrl, className }, ref) => {\n    // Animation variants for framer-motion\n    const cardVariants = {\n      hidden: { opacity: 0, y: 20 },\n      visible: {\n        opacity: 1,\n        y: 0,\n        transition: {\n          duration: 0.4,\n          ease: \"easeOut\",\n        },\n      },\n    };\n\n    return (\n      <motion.div\n        ref={ref}\n        className={cn(\n          \"bg-card text-card-foreground border rounded-xl p-6 shadow-sm w-full max-w-md\",\n          className\n        )}\n        variants={cardVariants}\n        initial=\"hidden\"\n        animate=\"visible\"\n        // ARIA attributes for accessibility\n        role=\"article\"\n        aria-labelledby=\"review-author\"\n        aria-describedby=\"review-content\"\n      >\n        {/* Card Header */}\n        <div className=\"flex items-start justify-between gap-4\">\n          <div className=\"flex items-center gap-4\">\n            <img\n              src={imageUrl}\n              alt={`Avatar of ${name}`}\n              className=\"w-12 h-12 rounded-full object-cover\"\n            />\n            <div>\n              <h3 id=\"review-author\" className=\"text-lg font-semibold\">\n                {name}\n              </h3>\n              <p className=\"text-sm text-muted-foreground\">{handle}</p>\n            </div>\n          </div>\n          {/* Rating Section */}\n          <div className=\"flex items-center gap-1 text-lg font-bold\">\n            <Star className=\"w-5 h-5 text-yellow-400 fill-yellow-400\" />\n            <span>{rating.toFixed(1)}</span>\n          </div>\n        </div>\n\n        {/* Card Body */}\n        <p id=\"review-content\" className=\"mt-4 text-sm text-muted-foreground\">\n          {review}\n        </p>\n      </motion.div>\n    );\n  }\n);\n\nReviewCard.displayName = \"ReviewCard\";\n\nexport { ReviewCard };",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "lavikatiyar",
+    "slug": "card-1",
+    "registry_url": "https://21st.dev/r/lavikatiyar/card-1",
+    "title": "Card",
+    "description": "Review Card\nA visually polished card component to display user reviews or testimonials, complete with an avatar, rating, and review text. It features a subtle entrance animation and is fully themeable using shadcn/ui variables.",
+    "category": "card",
+    "category_group": "UI Components",
+    "downloads": 23,
+    "likes": 0
+  }
+}

@@ -1,0 +1,34 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "insurance-policy-card",
+  "type": "registry:component",
+  "title": "Insurance Policy Card",
+  "description": "A insurance-policy-card component.",
+  "dependencies": [
+    "framer-motion",
+    "lucide-react"
+  ],
+  "registryDependencies": [
+    "https://21st.dev/r/shadcn/button",
+    "https://21st.dev/r/originui/avatar",
+    "https://21st.dev/r/originui/tooltip"
+  ],
+  "files": [
+    {
+      "path": "src/components/ui/insurance-policy-card.tsx",
+      "content": "// components/ui/insurance-policy-card.tsx\n\nimport * as React from 'react';\nimport { motion } from 'framer-motion';\nimport { Clock, Copy } from 'lucide-react';\n\nimport { cn } from '@/lib/utils'; // Make sure to have this utility from shadcn\nimport { Button } from '@/components/ui/button';\nimport { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';\nimport { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';\n\n// Prop definition for type safety and reusability\ninterface InsurancePolicyCardProps {\n  client: {\n    name: string;\n    avatarUrl: string;\n    dateOfBirth: string;\n    cityOfResidence: string;\n  };\n  policy: {\n    idNumber: string;\n    policyNumber: string;\n    insuranceType: string;\n    vehicleInfo: string;\n    expiryDate: string;\n    expiryDuration: string;\n  };\n  qrCodeUrl: string;\n  onUpdatePolicy: () => void;\n  className?: string;\n}\n\n// A reusable sub-component for displaying data fields\nconst InfoField: React.FC<{ label: string; value: string; children?: React.ReactNode }> = ({\n  label,\n  value,\n  children,\n}) => (\n  <div className=\"flex flex-col\">\n    <span className=\"text-xs text-muted-foreground\">{label}</span>\n    <span className=\"mt-1 flex items-center gap-2 text-sm font-medium text-card-foreground\">\n      {value}\n      {children}\n    </span>\n  </div>\n);\n\nexport const InsurancePolicyCard: React.FC<InsurancePolicyCardProps> = ({\n  client,\n  policy,\n  qrCodeUrl,\n  onUpdatePolicy,\n  className,\n}) => {\n  const handleCopy = (text: string) => {\n    navigator.clipboard.writeText(text);\n    // Here you could add a toast notification for feedback\n  };\n\n  return (\n    <motion.div\n      initial={{ opacity: 0, y: 20 }}\n      animate={{ opacity: 1, y: 0 }}\n      transition={{ duration: 0.5, ease: 'easeOut' }}\n      className={cn(\n        'w-full max-w-md rounded-2xl border bg-card p-6 text-card-foreground shadow-lg',\n        className\n      )}\n    >\n      {/* Header Section */}\n      <div className=\"flex items-start justify-between\">\n        <div className=\"flex items-center gap-4\">\n          <Avatar className=\"h-14 w-14 border-2 border-border\">\n            <AvatarImage src={client.avatarUrl} alt={client.name} />\n            <AvatarFallback>{client.name.charAt(0)}</AvatarFallback>\n          </Avatar>\n          <div>\n            <div className=\"flex items-center gap-2 text-sm text-muted-foreground\">\n              <Clock className=\"h-4 w-4\" />\n              <span>Expire Date</span>\n            </div>\n            <p className=\"mt-1 font-semibold text-card-foreground\">{policy.expiryDate}</p>\n            <p className=\"text-xs text-muted-foreground\">({policy.expiryDuration})</p>\n          </div>\n        </div>\n        <img src={qrCodeUrl} alt=\"Policy QR Code\" className=\"h-16 w-16 rounded-md\" />\n      </div>\n\n      {/* Details Grid Section */}\n      <div className=\"my-6 grid grid-cols-2 gap-x-4 gap-y-5 border-y border-border py-6\">\n        <InfoField label=\"Client Name\" value={client.name} />\n        <InfoField label=\"Date of Birth\" value={client.dateOfBirth} />\n        <InfoField label=\"City of Residence\" value={client.cityOfResidence} />\n        <InfoField label=\"ID Number\" value={policy.idNumber} />\n        <InfoField label=\"Policy Number\" value={policy.policyNumber}>\n          <TooltipProvider delayDuration={100}>\n            <Tooltip>\n              <TooltipTrigger asChild>\n                <button\n                  onClick={() => handleCopy(policy.policyNumber)}\n                  aria-label=\"Copy policy number\"\n                  className=\"cursor-pointer text-muted-foreground transition-colors hover:text-foreground\"\n                >\n                  <Copy className=\"h-4 w-4\" />\n                </button>\n              </TooltipTrigger>\n              <TooltipContent>\n                <p>Copy</p>\n              </TooltipContent>\n            </Tooltip>\n          </TooltipProvider>\n        </InfoField>\n        <InfoField label=\"Type of Insurance\" value={policy.insuranceType} />\n        <InfoField label=\"Vehicle Information\" value={policy.vehicleInfo} />\n      </div>\n\n      {/* Action Button */}\n      <Button onClick={onUpdatePolicy} className=\"w-full\" size=\"lg\">\n        Update a Policy\n      </Button>\n    </motion.div>\n  );\n};",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "ravikatiyar162",
+    "slug": "insurance-policy-card",
+    "registry_url": "https://21st.dev/r/ravikatiyar162/insurance-policy-card",
+    "title": "Insurance Policy Card",
+    "description": "Insurance Policy Card\nDescription: A visually polished card to display key insurance policy details for a client. It includes sections for client info, policy data, a QR code, and an action button. It's designed to be easily reused with different data via props.",
+    "category": "card",
+    "category_group": "UI Components",
+    "downloads": 3,
+    "likes": 0
+  }
+}

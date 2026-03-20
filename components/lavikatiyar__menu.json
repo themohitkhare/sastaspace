@@ -1,0 +1,30 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "menu",
+  "type": "registry:component",
+  "title": "Menu",
+  "description": "A menu component.",
+  "dependencies": [
+    "framer-motion",
+    "lucide-react"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/ui/menu.tsx",
+      "content": "// 1. Import Dependencies\nimport * as React from 'react';\nimport { motion } from 'framer-motion';\nimport { ChevronRight } from 'lucide-react';\nimport { cn } from '@/lib/utils'; // Make sure you have this utility function\n\n// 2. Define Prop Types\ninterface NavItem {\n  icon: React.ReactNode;\n  label: string;\n  href: string;\n  isSeparator?: boolean; // Optional separator for grouping items\n}\n\ninterface UserProfile {\n  name: string;\n  email: string;\n  avatarUrl: string;\n}\n\ninterface UserProfileSidebarProps {\n  user: UserProfile;\n  navItems: NavItem[];\n  logoutItem: {\n    icon: React.ReactNode;\n    label: string;\n    onClick: () => void;\n  };\n  className?: string;\n}\n\n// 3. Define Animation Variants\nconst sidebarVariants = {\n  hidden: { opacity: 0 },\n  visible: {\n    opacity: 1,\n    transition: {\n      staggerChildren: 0.08,\n    },\n  },\n};\n\nconst itemVariants = {\n  hidden: { opacity: 0, x: -20 },\n  visible: {\n    opacity: 1,\n    x: 0,\n    transition: {\n      type: 'spring',\n      stiffness: 100,\n      damping: 15,\n    },\n  },\n};\n\n// 4. Create the Component\nexport const UserProfileSidebar = React.forwardRef<HTMLDivElement, UserProfileSidebarProps>(\n  ({ user, navItems, logoutItem, className }, ref) => {\n    return (\n      <motion.aside\n        ref={ref}\n        className={cn(\n          'flex h-full w-full max-w-xs flex-col rounded-xl border bg-card p-4 text-card-foreground shadow-sm',\n          className\n        )}\n        initial=\"hidden\"\n        animate=\"visible\"\n        variants={sidebarVariants}\n        aria-label=\"User Profile Menu\"\n      >\n        {/* User Info Header */}\n        <motion.div variants={itemVariants} className=\"flex items-center space-x-4 p-2\">\n          <img\n            src={user.avatarUrl}\n            alt={`${user.name}'s avatar`}\n            className=\"h-12 w-12 rounded-full object-cover\"\n          />\n          <div className=\"flex flex-col truncate\">\n            <span className=\"font-semibold text-lg\">{user.name}</span>\n            <span className=\"text-sm text-muted-foreground truncate\">{user.email}</span>\n          </div>\n        </motion.div>\n\n        <motion.div variants={itemVariants} className=\"my-4 border-t border-border\" />\n\n        {/* Navigation Links */}\n        <nav className=\"flex-1 space-y-1\" role=\"navigation\">\n          {navItems.map((item, index) => (\n            <React.Fragment key={index}>\n              {item.isSeparator && <motion.div variants={itemVariants} className=\"h-6\" />}\n              <motion.a\n                href={item.href}\n                variants={itemVariants}\n                className=\"group flex items-center rounded-md px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground\"\n              >\n                <span className=\"mr-3 h-5 w-5\">{item.icon}</span>\n                <span>{item.label}</span>\n                <ChevronRight className=\"ml-auto h-4 w-4 opacity-0 transition-opacity group-hover:opacity-100\" />\n              </motion.a>\n            </React.Fragment>\n          ))}\n        </nav>\n\n        {/* Logout Button */}\n        <motion.div variants={itemVariants} className=\"mt-4\">\n          <button\n            onClick={logoutItem.onClick}\n            className=\"group flex w-full items-center rounded-md px-3 py-2.5 text-sm font-medium text-destructive transition-colors hover:bg-destructive/10\"\n          >\n            <span className=\"mr-3 h-5 w-5\">{logoutItem.icon}</span>\n            <span>{logoutItem.label}</span>\n          </button>\n        </motion.div>\n      </motion.aside>\n    );\n  }\n);\n\nUserProfileSidebar.displayName = 'UserProfileSidebar';",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "lavikatiyar",
+    "slug": "menu",
+    "registry_url": "https://21st.dev/r/lavikatiyar/menu",
+    "title": "Menu",
+    "description": "Account Menu – Manage with ease. Quick access to orders, reviews, addresses, favorites, and settings in one place.",
+    "category": "menu",
+    "category_group": "UI Components",
+    "downloads": 18,
+    "likes": 0
+  }
+}

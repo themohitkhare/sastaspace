@@ -1,0 +1,102 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "command-menu",
+  "type": "registry:component",
+  "title": "Command Menu",
+  "description": "A command-menu component.",
+  "dependencies": [],
+  "registryDependencies": [
+    "https://21st.dev/r/shugar/modal"
+  ],
+  "files": [
+    {
+      "path": "src/components/ui/command-menu.tsx",
+      "content": "import React, { createContext, useContext, useEffect, useRef, useState } from \"react\";\nimport { Modal } from \"@/components/ui/modal\";\n\nconst CommandMenuContext = createContext<{\n  open: boolean;\n  setOpen: (open: boolean) => void;\n  inputValue: string;\n  onChangeInputValue: (value: string) => void;\n} | null>(null);\n\ninterface CommandMenuRootProps {\n  open: boolean;\n  setOpen: (open: boolean) => void;\n  children: React.ReactNode;\n}\n\nconst CommandMenuRoot = ({ open, setOpen, children }: CommandMenuRootProps) => {\n  const [inputValue, setInputValue] = useState<string>(\"\");\n\n  return (\n    <Modal.Modal active={open} onClickOutside={() => setOpen(false)}>\n      <Modal.Body className=\"!p-0\">\n        <CommandMenuContext value={{\n          open,\n          setOpen,\n          inputValue,\n          onChangeInputValue: (value: string) => setInputValue(value)\n        }}>\n          {children}\n        </CommandMenuContext>\n      </Modal.Body>\n    </Modal.Modal>\n  );\n};\n\ninterface CommandMenuInputProps {\n  placeholder?: string;\n}\n\nconst CommandMenuInput = ({ placeholder }: CommandMenuInputProps) => {\n  const context = useContext(CommandMenuContext);\n  const ref = useRef<HTMLInputElement>(null);\n\n  useEffect(() => {\n    if (context?.open) {\n      ref.current?.focus();\n    }\n  }, [context?.open]);\n\n  return (\n    <div\n      className=\"py-3 px-4 border-b border-gray-alpha-400 bg-background-100 flex items-center justify-between gap-3\"\n      onClick={() => ref?.current?.focus()}\n    >\n      <input\n        ref={ref}\n        placeholder={placeholder}\n        value={context?.inputValue}\n        onChange={(e) => context?.onChangeInputValue(e.target.value)}\n        className=\"h-7 text-lg text-sans bg-transparent text-gray-1000 placeholder:text-gray-900 placeholder:opacity-70 border-none outline-0\"\n      />\n      <button\n        className=\"h-5 shadow-border rounded bg-background-100 text-xs border-none px-1 ml-auto hover:bg-gray-100 duration-200\"\n        onClick={() => context?.setOpen(false)}\n      >\n        Esc\n      </button>\n    </div>\n  );\n};\n\ninterface CommandMenuListProps {\n  children: React.ReactNode;\n}\n\nconst CommandMenuList = ({ children }: CommandMenuListProps) => {\n  const context = useContext(CommandMenuContext);\n\n  const filteredChildren = React.Children.toArray(children)\n    .map((child) => {\n      if (React.isValidElement<CommandMenuItemProps>(child) && child.type === CommandMenu.Item) {\n        const text = child.props.children?.toString().toLowerCase() || \"\";\n        return text.includes(context?.inputValue?.toLowerCase() || \"\") ? child : null;\n      }\n\n      if (React.isValidElement<CommandMenuGroupProps>(child) && child.type === CommandMenu.Group) {\n        const groupChildren = React.Children.toArray(child.props.children);\n        const filteredGroupChildren = groupChildren.filter((item) => {\n          if (React.isValidElement<CommandMenuItemProps>(item) && item.type === CommandMenu.Item) {\n            const text = item.props.children?.toString().toLowerCase() || \"\";\n            return text.includes(context?.inputValue?.toLowerCase() || \"\");\n          }\n          return false;\n        });\n\n        if (filteredGroupChildren.length > 0) {\n          return React.cloneElement(child, {\n            children: filteredGroupChildren\n          });\n        }\n      }\n\n      return null;\n    })\n    .filter(Boolean);\n\n  return (\n    <div className=\"p-2 bg-background-100 overflow-y-auto duration-100\">\n      {filteredChildren.length > 0 ? filteredChildren : (\n        <div className=\"py-[30px]\">\n          <p className=\"text-gray-900 text-sm text-center\">\n            No results found for <span className=\"text-gray-1000\">\"{context?.inputValue}\"</span>.\n          </p>\n        </div>\n      )}\n    </div>\n  );\n};\n\ninterface CommandMenuItemProps {\n  callback?: () => void;\n  children: React.ReactNode;\n}\n\nconst CommandMenuItem = ({ callback, children }: CommandMenuItemProps) => {\n  const context = useContext(CommandMenuContext);\n\n  const onClick = () => {\n    context?.setOpen(false);\n    if (callback) {\n      callback();\n    }\n  };\n\n  return (\n    <div\n      className=\"min-h-10 rounded-md flex items-center gap-3 px-2 text-sm font-sans cursor-pointer hover:bg-gray-alpha-100\"\n      onClick={onClick}\n    >\n      {children}\n    </div>\n  );\n};\n\ninterface CommandMenuGroupProps {\n  heading: string;\n  children: React.ReactNode;\n}\n\nconst CommandMenuGroup = ({ heading, children }: CommandMenuGroupProps) => {\n  return (\n    <div>\n      <div className=\"text-[13px] font-sans text-gray-900 h-10 flex items-center px-2\">{heading}</div>\n      {children}\n    </div>\n  );\n};\n\nexport const CommandMenu = {\n  Root: CommandMenuRoot,\n  Input: CommandMenuInput,\n  List: CommandMenuList,\n  Item: CommandMenuItem,\n  Group: CommandMenuGroup\n};",
+      "type": "registry:component"
+    }
+  ],
+  "cssVars": {
+    "theme": {
+      "--color-context-card-border": "var(--context-card-border)",
+      "--color-gray-100": "var(--ds-gray-100)",
+      "--color-gray-900": "var(--ds-gray-900)",
+      "--color-gray-1000": "var(--ds-gray-1000)",
+      "--color-gray-alpha-100": "var(--ds-gray-alpha-100)",
+      "--color-gray-alpha-400": "var(--ds-gray-alpha-400)",
+      "--color-background-100": "var(--ds-background-100)",
+      "--color-background-200": "var(--ds-background-200)",
+      "--color-background-200-alpha-800": "var(--ds-background-200-alpha-800)",
+      "--color-accents-1": "var(--accents-1)",
+      "--color-accents-2": "var(--accents-2)",
+      "--color-overlay": "var(--ds-overlay)",
+      "--shadow-border": "var(--ds-shadow-border)",
+      "--shadow-border-small": "var(--ds-shadow-border-small)",
+      "--shadow-border-medium": "var(--ds-shadow-border-medium)",
+      "--shadow-border-large": "var(--ds-shadow-border-large)",
+      "--shadow-tooltip": "var(--ds-shadow-tooltip)",
+      "--shadow-menu": "var(--ds-shadow-menu)",
+      "--shadow-modal": "var(--ds-shadow-modal)",
+      "--shadow-fullscreen": "var(--ds-shadow-fullscreen)"
+    },
+    "light": {
+      "--context-card-border": "hsla(0, 0%, 92%, 1)",
+      "--ds-gray-100": "hsla(0, 0%, 95%, 1)",
+      "--ds-gray-900": "hsla(0, 0%, 40%, 1)",
+      "--ds-gray-alpha-100": "rgba(0, 0, 0, 0.05)",
+      "--ds-gray-1000": "hsla(0, 0%, 9%, 1)",
+      "--ds-gray-alpha-400": "hsla(0, 0%, 0%, 0.08)",
+      "--ds-background-200": "hsla(0, 0%, 98%, 1)",
+      "--ds-background-200-alpha-800": "hsla(0, 0%, 98%, 0.8)",
+      "--accents-1": "#fafafa",
+      "--accents-2": "#eaeaea",
+      "--ds-background-100": "hsla(0, 0%, 100%, 1)",
+      "--ds-overlay": "rgba(0, 0, 0, .4)",
+      "--ds-shadow-border": "0 0 0 1px rgba(0, 0, 0, 0.08)",
+      "--ds-shadow-small": "0px 2px 2px rgba(0, 0, 0, 0.04)",
+      "--ds-shadow-border-small": "var(--ds-shadow-border), var(--ds-shadow-small)",
+      "--ds-shadow-medium": "0px 2px 2px rgba(0, 0, 0, 0.04), 0px 8px 8px -8px rgba(0, 0, 0, 0.04)",
+      "--ds-shadow-border-medium": "var(--ds-shadow-border), var(--ds-shadow-medium)",
+      "--ds-shadow-large": "0px 2px 2px rgba(0, 0, 0, 0.04), 0px 8px 16px -4px rgba(0, 0, 0, 0.04)",
+      "--ds-shadow-border-large": "var(--ds-shadow-border), var(--ds-shadow-large)",
+      "--ds-shadow-tooltip": "var(--ds-shadow-border), 0px 1px 1px rgba(0, 0, 0, 0.02), 0px 4px 8px rgba(0, 0, 0, 0.04)",
+      "--ds-shadow-menu": "var(--ds-shadow-border), 0px 1px 1px rgba(0, 0, 0, 0.02), 0px 4px 8px -4px rgba(0, 0, 0, 0.04), 0px 16px 24px -8px rgba(0, 0, 0, 0.06)",
+      "--ds-shadow-modal": "var(--ds-shadow-border), 0px 1px 1px rgba(0, 0, 0, 0.02), 0px 8px 16px -4px rgba(0, 0, 0, 0.04), 0px 24px 32px -8px rgba(0, 0, 0, 0.06)",
+      "--ds-shadow-fullscreen": "var(--ds-shadow-border), 0px 1px 1px rgba(0, 0, 0, 0.02), 0px 8px 16px -4px rgba(0, 0, 0, 0.04), 0px 24px 32px -8px rgba(0, 0, 0, 0.06)"
+    },
+    "dark": {
+      "--context-card-border": "hsla(0, 0%, 18%, 1)",
+      "--ds-gray-100": "hsla(0, 0%, 10%, 1)",
+      "--ds-gray-900": "hsla(0, 0%, 63%, 1)",
+      "--ds-gray-alpha-100": "rgba(255, 255, 255, 0.06)",
+      "--ds-gray-1000": "hsla(0, 0%, 93%, 1)",
+      "--ds-gray-alpha-400": "hsla(0, 0%, 100%, 0.14)",
+      "--ds-background-200": "hsla(0, 0%, 0%, 1)",
+      "--ds-background-200-alpha-800": "hsla(0, 0%, 0%, 0.8)",
+      "--accents-2": "#333333",
+      "--accents-1": "#111111",
+      "--ds-background-100": "hsla(0, 0%, 4%, 1)",
+      "--ds-shadow-border": "0 0 0 1px rgba(255, 255, 255, 0.145)",
+      "--ds-shadow-small": "0px 1px 2px rgba(0, 0, 0, 0.16)",
+      "--ds-shadow-border-small": "var(--ds-shadow-border), 0px 1px 2px rgba(0, 0, 0, 0.16)",
+      "--ds-shadow-medium": "0px 2px 2px rgba(0, 0, 0, 0.32), 0px 8px 8px -8px rgba(0, 0, 0, 0.16)",
+      "--ds-shadow-border-medium": "var(--ds-shadow-border), 0px 2px 2px rgba(0, 0, 0, 0.32), 0px 8px 8px -8px rgba(0, 0, 0, 0.16)",
+      "--ds-shadow-large": "0px 2px 2px rgba(0, 0, 0, 0.04), 0px 8px 16px -4px rgba(0, 0, 0, 0.04)",
+      "--ds-shadow-border-large": "var(--ds-shadow-border), 0px 2px 2px rgba(0, 0, 0, 0.04), 0px 8px 16px -4px rgba(0, 0, 0, 0.04)",
+      "--ds-shadow-tooltip": "var(--ds-shadow-border), 0px 1px 1px rgba(0, 0, 0, 0.02), 0px 4px 8px rgba(0, 0, 0, 0.04)",
+      "--ds-shadow-menu": "var(--ds-shadow-border), 0px 1px 1px rgba(0, 0, 0, 0.02), 0px 4px 8px -4px rgba(0, 0, 0, 0.04), 0px 16px 24px -8px rgba(0, 0, 0, 0.06)",
+      "--ds-shadow-modal": "var(--ds-shadow-border), 0px 1px 1px rgba(0, 0, 0, 0.02), 0px 8px 16px -4px rgba(0, 0, 0, 0.04), 0px 24px 32px -8px rgba(0, 0, 0, 0.06)",
+      "--ds-shadow-fullscreen": "var(--ds-shadow-border), 0px 1px 1px rgba(0, 0, 0, 0.02), 0px 8px 16px -4px rgba(0, 0, 0, 0.04), 0px 24px 32px -8px rgba(0, 0, 0, 0.06)"
+    }
+  },
+  "_meta": {
+    "author": "shugar",
+    "slug": "command-menu",
+    "registry_url": "https://21st.dev/r/shugar/command-menu",
+    "title": "Command Menu",
+    "description": "Launch a set of actions as a full-screen overlay.",
+    "category": "modal-dialog",
+    "category_group": "UI Components",
+    "downloads": 19,
+    "likes": 0
+  }
+}

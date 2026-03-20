@@ -1,0 +1,78 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "button",
+  "type": "registry:component",
+  "title": "Button",
+  "description": "A button component.",
+  "dependencies": [
+    "@radix-ui/react-slot",
+    "class-variance-authority"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/ui/button.tsx",
+      "content": "\"use client\";\n\nimport * as React from \"react\";\nimport { Slot } from \"@radix-ui/react-slot\";\nimport { cva, type VariantProps } from \"class-variance-authority\";\nimport { cn } from \"@/lib/utils\";\n\nconst buttonVariants = cva(\n  \"inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-ele text-sm transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0\",\n  {\n    variants: {\n      variant: {\n        default:\n          \"bg-primary text-primary-foreground hover:bg-primary/90 focus-visible:ring-ring shadow-sm/2\",\n        destructive:\n          \"bg-destructive text-destructive-foreground hover:bg-destructive/90 focus-visible:ring-destructive shadow-sm/2\",\n        outline:\n          \"border border-border text-foreground hover:bg-accent hover:text-accent-foreground focus-visible:ring-ring shadow-sm/2\",\n        secondary:\n          \"bg-secondary text-secondary-foreground hover:bg-secondary/80 focus-visible:ring-ring\",\n        ghost:\n          \"text-foreground hover:bg-accent hover:text-accent-foreground focus-visible:ring-ring\",\n        link: \"text-secondary-foreground underline-offset-4 hover:underline focus-visible:ring-ring\",\n      },\n      size: {\n        default: \"h-9 px-4 py-2\",\n        sm: \"h-8 px-3 text-xs\",\n        lg: \"h-10 px-8\",\n        xl: \"h-12 px-10 text-base\",\n        icon: \"h-9 w-9\",\n      },\n    },\n    defaultVariants: {\n      variant: \"default\",\n      size: \"default\",\n    },\n  }\n);\n\nexport type CustomButtonProps = Omit<\n  ButtonProps,\n  keyof React.ComponentProps<\"button\">\n>;\n\nexport interface ButtonProps\n  extends React.ButtonHTMLAttributes<HTMLButtonElement>,\n    VariantProps<typeof buttonVariants> {\n  asChild?: boolean;\n  loading?: boolean;\n  leftIcon?: React.ReactNode;\n  rightIcon?: React.ReactNode;\n}\n\nconst Button = React.forwardRef<HTMLButtonElement, ButtonProps>(\n  (\n    {\n      className,\n      variant,\n      size,\n      asChild = false,\n      loading = false,\n      leftIcon,\n      rightIcon,\n      children,\n      disabled,\n      ...props\n    },\n    ref\n  ) => {\n    const Comp = asChild ? Slot : \"button\";\n\n    const content = (\n      <>\n        {loading && (\n          <svg\n            className=\"animate-spin h-4 w-4\"\n            xmlns=\"http://www.w3.org/2000/svg\"\n            fill=\"none\"\n            viewBox=\"0 0 24 24\"\n          >\n            <circle\n              className=\"opacity-25\"\n              cx=\"12\"\n              cy=\"12\"\n              r=\"10\"\n              stroke=\"currentColor\"\n              strokeWidth=\"4\"\n            />\n            <path\n              className=\"opacity-75\"\n              fill=\"currentColor\"\n              d=\"M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z\"\n            />\n          </svg>\n        )}\n        {leftIcon && !loading && leftIcon}\n        {children}\n        {rightIcon && !loading && rightIcon}\n      </>\n    );\n\n    return (\n      <Comp\n        className={cn(buttonVariants({ variant, size, className }))}\n        ref={ref}\n        disabled={disabled || loading}\n        {...props}\n      >\n        {asChild ? children : content}\n      </Comp>\n    );\n  }\n);\n\nButton.displayName = \"Button\";\n\nexport { Button, buttonVariants };",
+      "type": "registry:component"
+    }
+  ],
+  "cssVars": {
+    "light": {
+      "--hu-font-geist": "var(--font-geist)",
+      "--hu-font-jetbrains": "var(--font-jetbrains-mono)",
+      "--radius": "0.8rem",
+      "--card-radius": "1rem",
+      "--hu-background": "0, 0%, 100%",
+      "--hu-foreground": "0, 0%, 14%",
+      "--hu-card": "0, 0%, 99%",
+      "--hu-card-foreground": "0, 0%, 14%",
+      "--hu-primary": "235, 100%, 60%",
+      "--hu-primary-foreground": "0, 0%, 98%",
+      "--hu-secondary": "0, 0%, 97%",
+      "--hu-secondary-foreground": "0, 0%, 20%",
+      "--hu-muted": "0, 0%, 97%",
+      "--hu-muted-foreground": "0, 0%, 56%",
+      "--hu-accent": "0, 0%, 96%",
+      "--hu-accent-foreground": "0, 0%, 20%",
+      "--hu-destructive": "9, 96%, 47%",
+      "--hu-destructive-foreground": "0, 0%, 98%",
+      "--hu-border": "0, 0%, 92%",
+      "--hu-input": "0, 0%, 100%",
+      "--hu-ring": "0, 0%, 71%",
+      "--color-fd-background": "hsl(var(--hu-background))",
+      "--color-fd-card": "hsl(var(--hu-background))"
+    },
+    "dark": {
+      "--hu-background": "0, 0%, 7%",
+      "--hu-foreground": "0, 0%, 100%",
+      "--hu-card": "0, 0%, 9%",
+      "--hu-card-foreground": "0, 0%, 100%",
+      "--hu-primary": "235, 100%, 60%",
+      "--hu-primary-foreground": "0, 0%, 98%",
+      "--hu-secondary": "0, 0%, 15%",
+      "--hu-secondary-foreground": "0, 0%, 100%",
+      "--hu-muted": "0, 0%, 15%",
+      "--hu-muted-foreground": "0, 0%, 71%",
+      "--hu-accent": "0, 0%, 15%",
+      "--hu-accent-foreground": "0, 0%, 100%",
+      "--hu-destructive": "0, 84%, 50%",
+      "--hu-destructive-foreground": "0, 0%, 98%",
+      "--hu-border": "0, 0%, 100%, 10%",
+      "--hu-input": "0, 0%, 100%, 5%",
+      "--hu-ring": "0, 0%, 56%",
+      "--color-fd-background": "hsl(var(--hu-background))",
+      "--color-fd-card": "hsl(var(--hu-background))"
+    }
+  },
+  "_meta": {
+    "author": "preetsuthar17",
+    "slug": "button",
+    "registry_url": "https://21st.dev/r/preetsuthar17/button",
+    "title": "Button",
+    "description": "Displays a button component with various styles and states.",
+    "category": "button",
+    "category_group": "UI Components",
+    "downloads": 31,
+    "likes": 0
+  }
+}

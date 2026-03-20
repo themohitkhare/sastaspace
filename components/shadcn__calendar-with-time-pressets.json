@@ -1,0 +1,30 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "calendar-with-time-pressets",
+  "type": "registry:component",
+  "title": "Calendar With Time Pressets",
+  "description": "A calendar-with-time-pressets component.",
+  "dependencies": [],
+  "registryDependencies": [
+    "https://21st.dev/r/originui/calendar",
+    "https://21st.dev/r/shadcn/card"
+  ],
+  "files": [
+    {
+      "path": "src/components/ui/calendar-with-time-pressets.tsx",
+      "content": "import { cn } from \"@/lib/utils\";\nimport { useState } from \"react\";\n\nexport const Component = () => {\n  const [count, setCount] = useState(0);\n\n  return (\n    <div className={cn(\"flex flex-col items-center gap-4 p-4 rounded-lg\")}>\n      <h1 className=\"text-2xl font-bold mb-2\">Component Example</h1>\n      <h2 className=\"text-xl font-semibold\">{count}</h2>\n      <div className=\"flex gap-2\">\n        <button onClick={() => setCount((prev) => prev - 1)}>-</button>\n        <button onClick={() => setCount((prev) => prev + 1)}>+</button>\n      </div>\n    </div>\n  );\n};\n",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "shadcn",
+    "slug": "calendar-with-time-pressets",
+    "registry_url": "https://21st.dev/r/shadcn/calendar-with-time-pressets",
+    "title": "Calendar with time pressets",
+    "description": "Here is shadcn calendar component with time pressets",
+    "category": "calendar",
+    "category_group": "UI Components",
+    "downloads": 382,
+    "likes": 0
+  }
+}

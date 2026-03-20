@@ -1,0 +1,47 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "radio-group",
+  "type": "registry:component",
+  "title": "Radio Group",
+  "description": "A radio-group component.",
+  "dependencies": [
+    "lucide-react"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/ui/radio-group.tsx",
+      "content": "'use client';\nimport React, { useState } from 'react';\nimport { LucideIcon } from 'lucide-react';\n\ninterface RadioOption {\n  value: string;\n  label: string;\n  icon: LucideIcon;\n}\n\ninterface RadioGroupProps {\n  options: RadioOption[];\n  onChange?: (value: string) => void;\n  value?: string;\n  defaultValue?: string;\n  fontSize?: string;\n  fontWeight?: number;\n  fontFamily?: string;\n  borderRadius?: string;\n  gap?: string;\n  rtl?: boolean;\n  bgDefault?: string;\n  fgDefault?: string;\n  bgActive?: string;\n  fgActive?: string;\n  bgHover?: string;\n  fgHover?: string;\n  padding?: string;\n}\n\nexport function RadioGroup({\n  options,\n  onChange,\n  value,\n  defaultValue = options[0]?.value,\n  fontSize = '1rem',\n  fontWeight = 400,\n  fontFamily = 'inherit',\n  borderRadius = '8px',\n  gap = '14px',\n  rtl = false,\n  bgDefault = '#e1e1e1',\n  fgDefault = '#0a0a0a',\n  bgActive = '#0a0a0a',\n  fgActive = '#fff',\n  bgHover = '#00a6fb',\n  fgHover = '#fff',\n  padding = '0 56px',\n}: RadioGroupProps) {\n  const [internalValue, setInternalValue] = useState(defaultValue);\n  const activeTab = value !== undefined ? value : internalValue;\n  const [hovered, setHovered] = useState<string | null>(null);\n\n  // For RTL, use row-reverse so first option is rightmost, last is leftmost\n  // Don't reverse the array! Just let flexbox do the job.\n  return (\n    <div\n      style={{\n        display: 'flex',\n        flexDirection: rtl ? 'row-reverse' : 'row',\n        gap,\n        width: '100%',\n        justifyContent: 'center',\n        alignItems: 'center',\n        marginTop: 18,\n      }}\n    >\n      {options.map((option) => {\n        const isActive = activeTab === option.value;\n        const isHovered = hovered === option.value;\n\n        let bg = bgDefault;\n        let fg = fgDefault;\n        if (isActive) {\n          bg = bgActive;\n          fg = fgActive;\n        } else if (isHovered) {\n          bg = bgHover;\n          fg = fgHover;\n        }\n\n        // For RTL, swap icon and label order within the button\n        const content = rtl ? (\n          <>\n            <span\n              style={{\n                display: 'flex',\n                alignItems: 'center',\n                zIndex: 2,\n              }}\n            >\n              {option.label}\n            </span>\n            <span\n              style={{\n                display: 'flex',\n                alignItems: 'center',\n                marginLeft: 4,\n                zIndex: 2,\n              }}\n            >\n              <option.icon color=\"currentColor\" size={20} strokeWidth={2} />\n            </span>\n          </>\n        ) : (\n          <>\n            <span\n              style={{\n                display: 'flex',\n                alignItems: 'center',\n                marginRight: 4,\n                zIndex: 2,\n              }}\n            >\n              <option.icon color=\"currentColor\" size={20} strokeWidth={2} />\n            </span>\n            <span\n              style={{\n                display: 'flex',\n                alignItems: 'center',\n                zIndex: 2,\n              }}\n            >\n              {option.label}\n            </span>\n          </>\n        );\n\n        return (\n          <button\n            key={option.value}\n            type=\"button\"\n            aria-label={option.label}\n            onClick={() => {\n              if (value === undefined) setInternalValue(option.value);\n              onChange?.(option.value);\n            }}\n            onMouseEnter={() => setHovered(option.value)}\n            onMouseLeave={() => setHovered(null)}\n            style={{\n              background: bg,\n              color: fg,\n              display: 'flex',\n              alignItems: 'center',\n              justifyContent: 'center',\n              gap: 4,\n              padding,\n              height: 48,\n              border: 'none',\n              borderRadius,\n              fontSize,\n              fontWeight,\n              fontFamily,\n              cursor: 'pointer',\n              outline: 'none',\n              userSelect: 'none',\n              margin: 0,\n              boxSizing: 'border-box',\n              minWidth: 0,\n              minHeight: 0,\n              position: 'relative',\n              overflow: 'hidden',\n              transition: 'background 0.3s, color 0.3s',\n            }}\n          >\n            {content}\n          </button>\n        );\n      })}\n    </div>\n  );\n}\n",
+      "type": "registry:component"
+    }
+  ],
+  "cssVars": {
+    "light": {
+      "--radio-group-bg-default": "#e1e1e1",
+      "--radio-group-bg-active": "#0a0a0a",
+      "--radio-group-bg-hover": "#00a6fb",
+      "--radio-group-fg-default": "#0a0a0a",
+      "--radio-group-fg-active": "#fff",
+      "--radio-group-fg-hover": "#fff"
+    },
+    "dark": {
+      "--radio-group-bg-default": "#363636",
+      "--radio-group-bg-active": "#fff",
+      "--radio-group-bg-hover": "#00a6fb",
+      "--radio-group-fg-default": "#fff",
+      "--radio-group-fg-active": "#0a0a0a",
+      "--radio-group-fg-hover": "#fff"
+    }
+  },
+  "_meta": {
+    "author": "maxim.bort.devel",
+    "slug": "radio-group",
+    "registry_url": "https://21st.dev/r/maxim.bort.devel/radio-group",
+    "title": "Radio Group",
+    "description": "A simple component with the radio logic\n\nVue version: https://namer-ui-for-vue.netlify.app/",
+    "category": "radio-group",
+    "category_group": "UI Components",
+    "downloads": 17,
+    "likes": 0
+  }
+}

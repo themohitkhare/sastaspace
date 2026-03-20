@@ -1,0 +1,27 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "exp-level-card",
+  "type": "registry:component",
+  "title": "Exp Level Card",
+  "description": "A exp-level-card component.",
+  "dependencies": [],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/ui/exp-level-card.tsx",
+      "content": "import React, { useState } from 'react';\n\n/**\n * High-Quality, Remixable EXP Level Card Component.\n *\n * Displays current level and progress toward the next level.\n * Fully customizable via props for colors, starting stats, and EXP curve.\n *\n * @param {number} initialLevel - Starting level. Defaults to 1.\n * @param {number} initialExp - Starting EXP points. Defaults to 0.\n * @param {number} expIncrement - How much the EXP requirement increases per level. Defaults to 50.\n * @param {string} baseColorClass - Tailwind gradient classes (e.g., 'from-blue-600 to-indigo-900').\n * @param {string} highlightColorClass - Tailwind border/shadow classes (e.g., 'border-blue-500').\n */\nexport default function ExpLevelCard({\n  initialLevel = 1,\n  initialExp = 0,\n  expIncrement = 50,\n  baseColorClass = 'from-red-600 to-rose-900',\n  highlightColorClass = 'border-red-500',\n}) {\n  const [level, setLevel] = useState(initialLevel);\n  const [exp, setExp] = useState(initialExp);\n\n  // Compute EXP needed based on current level\n  const expToNextLevel = 100 + (level - 1) * expIncrement;\n\n  // Handle gaining random EXP on click\n  const handleGainExp = () => {\n    const gained = Math.floor(Math.random() * 50) + 10;\n    const totalExp = exp + gained;\n\n    if (totalExp >= expToNextLevel) {\n      const nextLevel = level + 1;\n      setLevel(nextLevel);\n      setExp(totalExp - expToNextLevel);\n    } else {\n      setExp(totalExp);\n    }\n  };\n\n  // Progress bar width\n  const progressWidth = `${(exp / expToNextLevel) * 100}%`;\n\n  return (\n    <div\n      className={`\n        relative \n        w-28 \n        h-20 \n        rounded-lg \n        overflow-hidden \n        bg-gradient-to-br ${baseColorClass} \n        border-2 ${highlightColorClass} \n        shadow-xl \n        hover-tilt \n        cursor-pointer \n        transition-all \n        duration-300\n      `}\n      onClick={handleGainExp}\n    >\n      <div className=\"absolute inset-0 flex flex-col items-center justify-center\">\n        <span className=\"text-xs font-bold text-white tracking-widest text-shadow-lg\">\n          LEVEL {level}\n        </span>\n        <span className=\"text-xl font-bold text-white tracking-widest text-shadow-lg\">\n          EXP\n        </span>\n      </div>\n\n      <div className=\"absolute bottom-2 left-2 right-2 h-1.5 bg-white/30 rounded-full overflow-hidden\">\n        <div\n          className=\"h-full bg-white rounded-full transition-all duration-300 ease-out\"\n          style={{ width: progressWidth }}\n        />\n      </div>\n    </div>\n  );\n}\n",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "dhileepkumargm",
+    "slug": "exp-level-card",
+    "registry_url": "https://21st.dev/r/dhileepkumargm/exp-level-card",
+    "title": "ExpLevelCard",
+    "description": "A high-quality, remixable EXP Level Card component that displays a user’s current level and progress toward the next level. It features an interactive tilt effect and is fully customizable via props for colors, starting stats, and EXP curves.",
+    "category": "card",
+    "category_group": "UI Components",
+    "downloads": 0,
+    "likes": 0
+  }
+}

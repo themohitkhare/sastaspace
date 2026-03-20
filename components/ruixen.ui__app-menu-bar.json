@@ -1,0 +1,31 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "app-menu-bar",
+  "type": "registry:component",
+  "title": "App Menu Bar",
+  "description": "A app-menu-bar component.",
+  "dependencies": [
+    "lucide-react"
+  ],
+  "registryDependencies": [
+    "https://21st.dev/r/shadcn/menubar"
+  ],
+  "files": [
+    {
+      "path": "src/components/ui/app-menu-bar.tsx",
+      "content": "\"use client\";\n\nimport {\n  Menubar,\n  MenubarContent,\n  MenubarItem,\n  MenubarMenu,\n  MenubarSeparator,\n  MenubarTrigger,\n  MenubarSub,\n  MenubarSubTrigger,\n  MenubarSubContent,\n} from \"@/components/ui/menubar\";\nimport {\n  Folder,\n  FolderPlus,\n  FileText,\n  Users,\n  UserCheck,\n  Settings,\n  Bell,\n  Calendar,\n  ChevronRight,\n  CheckCircle,\n  Upload,\n} from \"lucide-react\";\n\nexport default function AppMenuBar() {\n  return (\n    <Menubar className=\"bg-white border-b border-slate-200 shadow-sm rounded-b-lg\">\n      {/* Projects Menu */}\n      <MenubarMenu>\n        <MenubarTrigger className=\"flex items-center gap-2\">\n          <Folder className=\"w-4 h-4\" />\n          Projects\n        </MenubarTrigger>\n        <MenubarContent className=\"w-56\">\n          <MenubarItem className=\"flex items-center gap-2\">\n            <FolderPlus className=\"w-4 h-4\" />\n            New Project\n          </MenubarItem>\n          <MenubarItem className=\"flex items-center gap-2\">\n            <FileText className=\"w-4 h-4\" />\n            All Projects\n          </MenubarItem>\n          <MenubarItem className=\"flex items-center gap-2\">\n            <CheckCircle className=\"w-4 h-4\" />\n            Completed Projects\n          </MenubarItem>\n        </MenubarContent>\n      </MenubarMenu>\n\n      {/* Teams Menu with Submenu */}\n      <MenubarMenu>\n        <MenubarTrigger className=\"flex items-center gap-2\">\n          <Users className=\"w-4 h-4\" />\n          Teams\n        </MenubarTrigger>\n        <MenubarContent className=\"w-56\">\n          <MenubarItem className=\"flex items-center gap-2\">\n            <UserCheck className=\"w-4 h-4\" />\n            All Members\n          </MenubarItem>\n          <MenubarItem className=\"flex items-center gap-2\">\n            <FolderPlus className=\"w-4 h-4\" />\n            Create Team\n          </MenubarItem>\n\n          <MenubarSeparator />\n\n          {/* Proper Nested Submenu */}\n          <MenubarSub>\n            <MenubarSubTrigger className=\"flex items-center justify-between gap-2\">\n              Manage Teams\n            </MenubarSubTrigger>\n            <MenubarSubContent className=\"w-48\">\n              <MenubarItem className=\"flex items-center gap-2\">\n                <Settings className=\"w-4 h-4\" />\n                Team Settings\n              </MenubarItem>\n              <MenubarItem className=\"flex items-center gap-2\">\n                <Users className=\"w-4 h-4\" />\n                Team Members\n              </MenubarItem>\n            </MenubarSubContent>\n          </MenubarSub>\n        </MenubarContent>\n      </MenubarMenu>\n\n      {/* Calendar Menu */}\n      <MenubarMenu>\n        <MenubarTrigger className=\"flex items-center gap-2\">\n          <Calendar className=\"w-4 h-4\" />\n          Calendar\n        </MenubarTrigger>\n        <MenubarContent className=\"w-48\">\n          <MenubarItem className=\"flex items-center gap-2\">\n            <Calendar className=\"w-4 h-4\" />\n            View Calendar\n          </MenubarItem>\n          <MenubarItem className=\"flex items-center gap-2\">\n            <FileText className=\"w-4 h-4\" />\n            Schedule Task\n          </MenubarItem>\n        </MenubarContent>\n      </MenubarMenu>\n\n      {/* Notifications */}\n      <MenubarMenu>\n        <MenubarTrigger className=\"flex items-center gap-2\">\n          <Bell className=\"w-4 h-4\" />\n          Notifications\n        </MenubarTrigger>\n        <MenubarContent className=\"w-48\">\n          <MenubarItem className=\"flex items-center gap-2\">\n            <Bell className=\"w-4 h-4\" />\n            All Notifications\n          </MenubarItem>\n        </MenubarContent>\n      </MenubarMenu>\n\n      {/* Files Menu */}\n      <MenubarMenu>\n        <MenubarTrigger className=\"flex items-center gap-2\">\n          <Upload className=\"w-4 h-4\" />\n          Files\n        </MenubarTrigger>\n        <MenubarContent className=\"w-56\">\n          <MenubarItem className=\"flex items-center gap-2\">\n            <Upload className=\"w-4 h-4\" />\n            Upload File\n          </MenubarItem>\n          <MenubarItem className=\"flex items-center gap-2\">\n            <FileText className=\"w-4 h-4\" />\n            My Files\n          </MenubarItem>\n        </MenubarContent>\n      </MenubarMenu>\n    </Menubar>\n  );\n}\n",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "ruixen.ui",
+    "slug": "app-menu-bar",
+    "registry_url": "https://21st.dev/r/ruixen.ui/app-menu-bar",
+    "title": "App Menu Bar",
+    "description": "The AppMenuBar component is a versatile, fully-featured navigation menu designed for modern web applications. It combines a clean, horizontal menubar layout with intuitive nested menus, allowing users to easily access projects, teams, calendar events, notifications, and files. Each menu item is enhanced with clear Lucide icons, and nested submenus are implemented using MenubarSub, ensuring that hover interactions are smooth and the parent menu stays open when navigating into submenus. The component supports multiple levels of navigation without closing unexpectedly, maintains consistent spacing between icons and text, and leverages subtle hover effects for better visual feedback. Its modular structure makes it highly customizable, making it ideal for dashboards, admin panels, or collaborative tools where organized and accessible",
+    "category": "menu",
+    "category_group": "UI Components",
+    "downloads": 9,
+    "likes": 0
+  }
+}

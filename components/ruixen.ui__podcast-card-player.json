@@ -1,0 +1,31 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "podcast-card-player",
+  "type": "registry:component",
+  "title": "Podcast Card Player",
+  "description": "A podcast-card-player component.",
+  "dependencies": [],
+  "registryDependencies": [
+    "https://21st.dev/r/shadcn/button",
+    "https://21st.dev/r/originui/use-slider-with-input",
+    "https://21st.dev/r/shadcn/slider"
+  ],
+  "files": [
+    {
+      "path": "src/components/ui/podcast-card-player.tsx",
+      "content": "\"use client\"\n\nimport * as React from \"react\"\nimport { Button } from \"@/components/ui/button\"\nimport { cn } from \"@/lib/utils\"\n\ninterface PodcastCardPlayerProps {\n  imageSrc: string\n  title: string\n  episode: string\n  audioSrc: string\n  width?: number\n  className?: string\n}\n\nexport default function PodcastCardPlayer({\n  imageSrc,\n  title,\n  episode,\n  audioSrc,\n  width = 350,\n  className,\n}: PodcastCardPlayerProps) {\n  const [audio] = React.useState(new Audio(audioSrc))\n  const [isPlaying, setIsPlaying] = React.useState(false)\n  const [progress, setProgress] = React.useState(0)\n  const [currentTime, setCurrentTime] = React.useState(0)\n\n  React.useEffect(() => {\n    const handleTimeUpdate = () => {\n      setProgress((audio.currentTime / audio.duration) * 100)\n      setCurrentTime(audio.currentTime)\n    }\n\n    audio.addEventListener(\"timeupdate\", handleTimeUpdate)\n    return () => {\n      audio.removeEventListener(\"timeupdate\", handleTimeUpdate)\n      audio.pause()\n    }\n  }, [audio])\n\n  const togglePlay = () => {\n    if (isPlaying) audio.pause()\n    else audio.play()\n    setIsPlaying(!isPlaying)\n  }\n\n  const handleSeek = (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => {\n    const rect = e.currentTarget.getBoundingClientRect()\n    const clickX = e.clientX - rect.left\n    const seekTime = (clickX / rect.width) * audio.duration\n    audio.currentTime = seekTime\n  }\n\n  const formatTime = (seconds: number) => {\n    const mins = Math.floor(seconds / 60)\n    const secs = Math.floor(seconds % 60)\n    return `${mins}:${secs < 10 ? \"0\" : \"\"}${secs}`\n  }\n\n  return (\n    <div\n      className={cn(\n        \"flex flex-col items-center bg-white dark:bg-gray-800 shadow-md rounded-xl p-4 gap-3\",\n        className\n      )}\n      style={{ width }}\n    >\n      <img\n        src={imageSrc}\n        alt={title}\n        className=\"w-full h-40 object-cover rounded-lg\"\n      />\n      <div className=\"flex flex-col w-full\">\n        <h3 className=\"text-lg font-semibold text-gray-900 dark:text-gray-100\">{title}</h3>\n        <p className=\"text-sm text-gray-500 dark:text-gray-300\">{episode}</p>\n      </div>\n\n      {/* Waveform/Progress */}\n      <div\n        className=\"relative w-full h-2 rounded-full bg-gray-200 dark:bg-gray-700 cursor-pointer\"\n        onClick={handleSeek}\n      >\n        <div\n          className=\"absolute top-0 left-0 h-full rounded-full bg-black dark:bg-white\"\n          style={{ width: `${progress}%` }}\n        />\n      </div>\n\n      {/* Controls */}\n      <div className=\"flex justify-between items-center w-full\">\n        <Button\n          onClick={togglePlay}\n          className=\"text-sm px-3 py-1\"\n          variant=\"outline\"\n        >\n          {isPlaying ? \"Pause\" : \"Play\"}\n        </Button>\n        <span className=\"text-xs text-gray-500 dark:text-gray-300\">\n          {formatTime(currentTime)} / {formatTime(audio.duration || 0)}\n        </span>\n      </div>\n    </div>\n  )\n}\n",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "ruixen.ui",
+    "slug": "podcast-card-player",
+    "registry_url": "https://21st.dev/r/ruixen.ui/podcast-card-player",
+    "title": "Podcast Card Player",
+    "description": "The Podcast Card Player is a sleek, theme-aware component designed to display podcast episodes in a compact card layout. Each card includes an image, title, and episode information, along with an inline audio player featuring play/pause functionality, a progress bar, and a live timestamp. Built using Shadcn UI, it provides a clean and consistent design that adapts seamlessly to both light and dark themes. This component is perfect for podcast apps, media sections, or content platforms where users can quickly browse and listen to episodes without leaving the page. Its modular design also allows easy configuration for multiple cards or different audio sources.",
+    "category": "card",
+    "category_group": "UI Components",
+    "downloads": 3,
+    "likes": 0
+  }
+}

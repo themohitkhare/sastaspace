@@ -1,0 +1,33 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "modern-card-input",
+  "type": "registry:component",
+  "title": "Modern Card Input",
+  "description": "A modern-card-input component.",
+  "dependencies": [
+    "lucide-react",
+    "react-payment-inputs"
+  ],
+  "registryDependencies": [
+    "https://21st.dev/r/originui/input",
+    "https://21st.dev/r/shadcn/label"
+  ],
+  "files": [
+    {
+      "path": "src/components/ui/modern-card-input.tsx",
+      "content": "\"use client\"\n\nimport { useId, useState } from \"react\"\nimport { Input } from \"@/components/ui/input\"\nimport { Label } from \"@/components/ui/label\"\nimport { CreditCardIcon } from \"lucide-react\"\nimport images, { CardImages } from \"react-payment-inputs/images\"\nimport { usePaymentInputs } from \"react-payment-inputs\"\nimport { cn } from \"@/lib/utils\"\n\ninterface CardInputProps {\n  label?: string\n  showPreview?: boolean\n  onChange?: (data: { number: string; expiry: string; cvc: string }) => void\n}\n\nexport default function ModernCardInput({\n  label = \"Card Information\",\n  showPreview = true,\n  onChange,\n}: CardInputProps) {\n  const id = useId()\n  const [focusedField, setFocusedField] = useState<string | null>(null)\n\n  const {\n    meta,\n    getCardNumberProps,\n    getExpiryDateProps,\n    getCVCProps,\n    getCardImageProps,\n  } = usePaymentInputs()\n\n  const handleChange = () => {\n    if (onChange) {\n      onChange({\n        number: (getCardNumberProps() as any).value || \"\",\n        expiry: (getExpiryDateProps() as any).value || \"\",\n        cvc: (getCVCProps() as any).value || \"\",\n      })\n    }\n  }\n\n  return (\n    <div className=\"w-full max-w-md space-y-3\">\n      <Label className=\"text-sm font-medium\">{label}</Label>\n\n      <div\n        className={cn(\n          \"relative rounded-xl border bg-background p-4 shadow-md flex flex-col gap-3 transition-all\",\n          focusedField ? \"ring-2 ring-primary/50\" : \"ring-0\"\n        )}\n      >\n        {/* Card Number */}\n        <div className=\"relative\">\n          <Input\n            id={`card-number-${id}`}\n            placeholder=\"Card Number\"\n            {...getCardNumberProps()}\n            onFocus={() => setFocusedField(\"number\")}\n            onBlur={() => setFocusedField(null)}\n            onChange={handleChange}\n            className=\"peer rounded-xl pr-12\"\n          />\n          <div className=\"absolute inset-y-0 end-0 flex items-center justify-center pr-3 pointer-events-none text-muted-foreground\">\n            {meta.cardType ? (\n              <svg\n                {...getCardImageProps({ images: images as unknown as CardImages })}\n                width={24}\n                className=\"overflow-hidden rounded-sm transition-all\"\n              />\n            ) : (\n              <CreditCardIcon size={18} />\n            )}\n          </div>\n        </div>\n\n        {/* Expiry and CVC */}\n        <div className=\"flex gap-2\">\n          <Input\n            id={`expiry-${id}`}\n            placeholder=\"MM/YY\"\n            {...getExpiryDateProps()}\n            onFocus={() => setFocusedField(\"expiry\")}\n            onBlur={() => setFocusedField(null)}\n            onChange={handleChange}\n            className=\"flex-1 rounded-xl\"\n          />\n          <Input\n            id={`cvc-${id}`}\n            placeholder=\"CVC\"\n            {...getCVCProps()}\n            onFocus={() => setFocusedField(\"cvc\")}\n            onBlur={() => setFocusedField(null)}\n            onChange={handleChange}\n            className=\"flex-1 rounded-xl\"\n          />\n        </div>\n\n        {/* Optional Preview */}\n        {showPreview && meta.cardType && (\n          <div className=\"absolute top-3 right-3 text-xs text-muted-foreground font-medium\">\n            {meta.cardType.toUpperCase()}\n          </div>\n        )}\n      </div>\n    </div>\n  )\n}\n",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "ruixen.ui",
+    "slug": "modern-card-input",
+    "registry_url": "https://21st.dev/r/ruixen.ui/modern-card-input",
+    "title": "Modern Card Input",
+    "description": "This is a modern, reusable credit card input component designed for a smooth and intuitive user experience. It features dynamic card brand detection, displaying the appropriate card logo as the user types. Each field—card number, expiry, and CVC—has floating labels and focus highlights, ensuring clarity and accessibility. The component also supports an optional card preview for a quick glance at the detected card type. With built-in onChange callbacks, it is highly reusable and can easily integrate into any payment form.",
+    "category": "card",
+    "category_group": "UI Components",
+    "downloads": 6,
+    "likes": 0
+  }
+}

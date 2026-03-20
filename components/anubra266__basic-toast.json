@@ -1,0 +1,30 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "basic-toast",
+  "type": "registry:component",
+  "title": "Basic Toast",
+  "description": "A basic-toast component.",
+  "dependencies": [
+    "@ark-ui/react",
+    "lucide-react"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/ui/basic-toast.tsx",
+      "content": "\"use client\";\n\nimport { Toast, Toaster, createToaster } from \"@ark-ui/react/toast\";\nimport { Portal } from \"@ark-ui/react/portal\";\nimport { X } from \"lucide-react\";\n\nconst toaster = createToaster({\n  placement: \"bottom-end\",\n  gap: 16,\n  overlap: true,\n});\n\nexport default function ToastBasic() {\n  return (\n    <div className=\"bg-white dark:bg-gray-800 w-full px-4 py-12 rounded-xl flex flex-col items-center\">\n      <button\n        type=\"button\"\n        onClick={() =>\n          toaster.create({\n            title: \"Welcome!\",\n            description: \"Your account has been created successfully.\",\n            type: \"success\",\n          })\n        }\n        className=\"px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors text-sm font-medium\"\n      >\n        Show Toast\n      </button>\n\n      <Portal>\n        <Toaster toaster={toaster}>\n          {(toast) => (\n            <Toast.Root className=\"bg-white rounded-lg shadow-md border border-gray-100 min-w-80 p-4 relative overflow-anywhere transition-all duration-300 ease-default will-change-transform h-(--height) opacity-(--opacity) translate-x-(--x) translate-y-(--y) scale-(--scale) z-(--z-index)\">\n              <Toast.Title className=\"text-gray-900 font-semibold text-sm\">\n                {toast.title}\n              </Toast.Title>\n              <Toast.Description className=\"text-gray-600 text-sm mt-1\">\n                {toast.description}\n              </Toast.Description>\n              <Toast.CloseTrigger className=\"absolute top-3 right-3 p-1 hover:bg-gray-100 rounded transition-colors text-gray-400 hover:text-gray-600\">\n                <X className=\"w-3 h-3\" />\n              </Toast.CloseTrigger>\n            </Toast.Root>\n          )}\n        </Toaster>\n      </Portal>\n    </div>\n  );\n}\n",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "anubra266",
+    "slug": "basic-toast",
+    "registry_url": "https://21st.dev/r/anubra266/basic-toast",
+    "title": "Basic Toast",
+    "description": "Here is Toast component",
+    "category": "toast",
+    "category_group": "UI Components",
+    "downloads": 6,
+    "likes": 0
+  }
+}

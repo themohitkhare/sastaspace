@@ -1,0 +1,27 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "shiny-button-1",
+  "type": "registry:component",
+  "title": "Shiny Button 1",
+  "description": "A shiny-button-1 component.",
+  "dependencies": [],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/ui/shiny-button-1.tsx",
+      "content": "import React, { useId } from 'react';\n\nconst GlowButton = ({ children = 'Register' }) => {\n  const id = useId().replace(/:/g, '');\n  const filters = {\n    unopaq: `unopaq-${id}`,\n    unopaq2: `unopaq2-${id}`,\n    unopaq3: `unopaq3-${id}`,\n  };\n\n  return (\n    <div className=\"relative mx-8 group\">\n      {/* SVG Filters */}\n      <svg style={{ position: 'absolute', width: 0, height: 0 }}>\n        <filter width=\"300%\" x=\"-100%\" height=\"300%\" y=\"-100%\" id={filters.unopaq}>\n          <feColorMatrix values=\"1 0 0 0 0 0 1 0 0 0 0 0 1 0 0 0 0 0 9 0\" />\n        </filter>\n        <filter width=\"300%\" x=\"-100%\" height=\"300%\" y=\"-100%\" id={filters.unopaq2}>\n          <feColorMatrix values=\"1 0 0 0 0 0 1 0 0 0 0 0 1 0 0 0 0 0 3 0\" />\n        </filter>\n        <filter width=\"300%\" x=\"-100%\" height=\"300%\" y=\"-100%\" id={filters.unopaq3}>\n          <feColorMatrix values=\"1 0 0 0.2 0 0 1 0 0.2 0 0 0 1 0.2 0 0 0 0 2 0\" />\n        </filter>\n      </svg>\n\n      {/* Hidden Button */}\n      <button className=\"absolute w-[120px] h-[60px] z-20 outline-none border-none rounded-[17px] cursor-pointer opacity-0\" />\n\n      {/* Backdrop */}\n      <div className=\"absolute dark:inset-[-9900%] dark:bg-[radial-gradient(circle_at_50%_50%,#0000_0,#0000_20%,#111111aa_50%)] bg-[length:3px_3px] -z-10\" />\n\n      {/* Button Container */}\n      <div className=\"relative\">\n        {/* Outer Glow Layer */}\n        <div \n          className=\"absolute inset-0 -z-20 opacity-50 overflow-hidden transition-opacity duration-300\n                     group-hover:opacity-75 group-active:opacity-100\"\n          style={{ filter: `blur(2em) url(#${filters.unopaq})` }}\n        >\n          <div \n            className=\"absolute inset-[-150%] group-hover:animate-[speen_8s_cubic-bezier(0.56,0.15,0.28,0.86)_infinite,woah_4s_infinite]\"\n            style={{ \n              background: 'linear-gradient(90deg, #f50 30%, #0000 50%, #05f 70%)',\n            }}\n          />\n        </div>\n\n        {/* Middle Glow Layer */}\n        <div \n          className=\"absolute inset-[-0.125em] -z-20 opacity-50 overflow-hidden transition-opacity duration-300\n                     group-hover:opacity-75 group-active:opacity-100\"\n          style={{ \n            filter: `blur(0.25em) url(#${filters.unopaq2})`,\n            borderRadius: '0.75em'\n          }}\n        >\n          <div \n            className=\"absolute inset-[-150%] group-hover:animate-[speen_8s_cubic-bezier(0.56,0.15,0.28,0.86)_infinite,woah_4s_infinite]\"\n            style={{ \n              background: 'linear-gradient(90deg, #f95 20%, #0000 45% 55%, #59f 80%)',\n            }}\n          />\n        </div>\n\n        {/* Button Border */}\n        <div \n          className=\"p-0.5 bg-[#0005] rounded-[inherit]\"\n          style={{ \n            clipPath: 'path(\"M 90 0 C 121 0 126 5 126 33 C 126 61 121 66 90 66 L 33 66 C 5 66 0 61 0 33 C 0 5 5 0 33 0 Z\")' \n          }}\n        >\n          <div className=\"relative\">\n            {/* Inner Glow Layer */}\n            <div \n              className=\"absolute inset-[-2px] -z-10 opacity-50 overflow-hidden transition-opacity duration-300\n                         group-hover:opacity-75 group-active:opacity-100\"\n              style={{ \n                filter: `blur(2px) url(#${filters.unopaq3})`,\n                borderRadius: 'inherit'\n              }}\n            >\n              <div \n                className=\"absolute inset-[-150%] group-hover:animate-[speen_8s_cubic-bezier(0.56,0.15,0.28,0.86)_infinite,woah_4s_infinite]\"\n                style={{ \n                  background: 'linear-gradient(90deg, #fc9 30%, #0000 45% 55%, #9cf 70%)',\n                }}\n              />\n            </div>\n            \n            {/* Button Surface */}\n            <div \n              className=\"flex flex-col items-center justify-center w-[120px] h-[60px] bg-[#111215] text-white overflow-hidden\"\n              style={{ \n                clipPath: 'path(\"M 90 0 C 115 0 120 5 120 30 C 120 55 115 60 90 60 L 30 60 C 5 60 0 55 0 30 C 0 5 5 0 30 0 Z\")',\n                borderRadius: '0.875em'\n              }}\n            >\n              {children}\n            </div>\n          </div>\n        </div>\n      </div>\n\n      <style jsx global>{`\n        @keyframes speen {\n          0% { transform: rotate(10deg); }\n          50% { transform: rotate(190deg); }\n          100% { transform: rotate(370deg); }\n        }\n        @keyframes woah {\n          0%, 100% { transform: scale(1); }\n          50% { transform: scale(0.75); }\n        }\n      `}</style>\n    </div>\n  );\n};\n\nexport {GlowButton};",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "muhammad-binsalman",
+    "slug": "shiny-button-1",
+    "registry_url": "https://21st.dev/r/muhammad-binsalman/shiny-button-1",
+    "title": "Shiny Button",
+    "description": "this is a really cool shiny button with dotted bg and a hover bg glow with multiple layers",
+    "category": "button",
+    "category_group": "UI Components",
+    "downloads": 13,
+    "likes": 0
+  }
+}

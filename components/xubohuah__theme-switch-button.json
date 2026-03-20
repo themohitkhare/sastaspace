@@ -1,0 +1,30 @@
+{
+  "name": "theme-switch-button",
+  "type": "registry:ui",
+  "dependencies": [
+    "lucide-react"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "/components/ui/theme-switch-button.tsx",
+      "content": "'use client'\n\nimport * as React from 'react'\nimport { Moon, Sun } from 'lucide-react'\n\ninterface ThemeSwitchProps {\n  className?: string\n}\n\nexport function ThemeSwitch({ className = '' }: ThemeSwitchProps) {\n  const [theme, setTheme] = React.useState<'light' | 'dark'>('light')\n\n  // Check current theme on component mount\n  React.useEffect(() => {\n    const savedTheme =\n      localStorage.getItem('theme') ||\n      (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')\n\n    setTheme(savedTheme as 'light' | 'dark')\n    document.documentElement.classList.toggle('dark', savedTheme === 'dark')\n  }, [])\n\n  // Toggle theme\n  const toggleTheme = React.useCallback(() => {\n    const newTheme = theme === 'light' ? 'dark' : 'light'\n    setTheme(newTheme)\n    localStorage.setItem('theme', newTheme)\n    document.documentElement.classList.toggle('dark', newTheme === 'dark')\n  }, [theme])\n\n  return (\n    <button\n      onClick={toggleTheme}\n      className={`relative flex h-8 w-8 items-center justify-center rounded-full text-[var(--text-color-primary)] hover:opacity-80 transition-opacity overflow-hidden ${className}`}\n    >\n      <Sun\n        className={`absolute h-5 w-5 transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${\n          theme === 'light' \n            ? 'scale-100 translate-y-0 opacity-100' \n            : 'scale-50 translate-y-5 opacity-0'\n        }`}\n      />\n      <Moon\n        className={`absolute h-5 w-5 transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${\n          theme === 'dark' \n            ? 'scale-100 translate-y-0 opacity-100' \n            : 'scale-50 translate-y-5 opacity-0'\n        }`}\n      />\n    </button>\n  )\n}",
+      "type": "registry:ui",
+      "target": ""
+    }
+  ],
+  "tailwind": {
+    "config": {}
+  },
+  "_meta": {
+    "author": "xubohuah",
+    "slug": "theme-switch-button",
+    "registry_url": "https://21st.dev/r/xubohuah/theme-switch-button",
+    "title": "Theme Switch Button",
+    "description": "The ⁠ThemeSwitchButton is an animated icon button designed to toggle the application’s theme between light and dark modes. When pressed, the icon smoothly transitions (e.g., sun to moon), providing visual feedback to the user. It is customisable, accessible, and ideal for prominent placement in user interfaces where theme switching is required.",
+    "category": "button",
+    "category_group": "UI Components",
+    "downloads": 349,
+    "likes": 0
+  }
+}

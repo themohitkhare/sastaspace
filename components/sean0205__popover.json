@@ -1,0 +1,44 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "popover",
+  "type": "registry:component",
+  "title": "Popover",
+  "description": "A popover component.",
+  "dependencies": [
+    "radix-ui"
+  ],
+  "registryDependencies": [
+    "https://21st.dev/r/sean0205/button-1",
+    "https://21st.dev/r/sean0205/badge-2"
+  ],
+  "files": [
+    {
+      "path": "src/components/ui/popover.tsx",
+      "content": "'use client';\n\nimport * as React from 'react';\nimport { cn } from '@/lib/utils';\nimport { Popover as PopoverPrimitive } from 'radix-ui';\n\nfunction Popover({ ...props }: React.ComponentProps<typeof PopoverPrimitive.Root>) {\n  return <PopoverPrimitive.Root data-slot=\"popover\" {...props} />;\n}\n\nfunction PopoverTrigger({ ...props }: React.ComponentProps<typeof PopoverPrimitive.Trigger>) {\n  return <PopoverPrimitive.Trigger data-slot=\"popover-trigger\" {...props} />;\n}\n\nfunction PopoverContent({\n  className,\n  align = 'center',\n  sideOffset = 4,\n  ...props\n}: React.ComponentProps<typeof PopoverPrimitive.Content>) {\n  return (\n    <PopoverPrimitive.Content\n      data-slot=\"popover-content\"\n      align={align}\n      sideOffset={sideOffset}\n      className={cn(\n        'z-50 w-72 rounded-md border border-border bg-popover p-4 text-popover-foreground shadow-md shadow-black/5 outline-hidden data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2',\n        className,\n      )}\n      {...props}\n    />\n  );\n}\n\nexport { Popover, PopoverContent, PopoverTrigger };\n\n",
+      "type": "registry:component"
+    }
+  ],
+  "cssVars": {
+    "theme": {
+      "--color-destructive-foreground": "var(--destructive-foreground)",
+      "--color-color-destructive-foreground": "var(----color-destructive-foreground)"
+    },
+    "light": {
+      "--destructive-foreground": "oklch(1 0 0)"
+    },
+    "dark": {
+      "--destructive-foreground": "oklch(1 0 0)"
+    }
+  },
+  "_meta": {
+    "author": "sean0205",
+    "slug": "popover",
+    "registry_url": "https://21st.dev/r/sean0205/popover",
+    "title": "Popover",
+    "description": "Displays rich and interactive content in a portal, triggered by a button or other interactive element.",
+    "category": "popover",
+    "category_group": "UI Components",
+    "downloads": 11,
+    "likes": 0
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "gradient-card-showcase",
+  "type": "registry:component",
+  "title": "Gradient Card Showcase",
+  "description": "A gradient-card-showcase component.",
+  "dependencies": [],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/ui/gradient-card-showcase.tsx",
+      "content": "import React from 'react';\n\nconst cards = [\n  {\n    title: 'Card one',\n    desc: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.',\n    gradientFrom: '#ffbc00',\n    gradientTo: '#ff0058',\n  },\n  {\n    title: 'Card two',\n    desc: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.',\n    gradientFrom: '#03a9f4',\n    gradientTo: '#ff0058',\n  },\n  {\n    title: 'Card three',\n    desc: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.',\n    gradientFrom: '#4dff03',\n    gradientTo: '#00d0ff',\n  },\n];\n\nexport default function SkewCards() {\n  return (\n    <>\n      <div className=\"flex justify-center items-center flex-wrap py-10 bg-dark min-h-screen\">\n        {cards.map(({ title, desc, gradientFrom, gradientTo }, idx) => (\n          <div\n            key={idx}\n            className=\"group relative w-[320px] h-[400px] m-[40px_30px] transition-all duration-500\"\n          >\n            {/* Skewed gradient panels */}\n            <span\n              className=\"absolute top-0 left-[50px] w-1/2 h-full rounded-lg transform skew-x-[15deg] transition-all duration-500 group-hover:skew-x-0 group-hover:left-[20px] group-hover:w-[calc(100%-90px)]\"\n              style={{\n                background: `linear-gradient(315deg, ${gradientFrom}, ${gradientTo})`,\n              }}\n            />\n            <span\n              className=\"absolute top-0 left-[50px] w-1/2 h-full rounded-lg transform skew-x-[15deg] blur-[30px] transition-all duration-500 group-hover:skew-x-0 group-hover:left-[20px] group-hover:w-[calc(100%-90px)]\"\n              style={{\n                background: `linear-gradient(315deg, ${gradientFrom}, ${gradientTo})`,\n              }}\n            />\n\n            {/* Animated blurs */}\n            <span className=\"pointer-events-none absolute inset-0 z-10\">\n              <span className=\"absolute top-0 left-0 w-0 h-0 rounded-lg opacity-0 bg-[rgba(255,255,255,0.1)] backdrop-blur-[10px] shadow-[0_5px_15px_rgba(0,0,0,0.08)] transition-all duration-100 animate-blob group-hover:top-[-50px] group-hover:left-[50px] group-hover:w-[100px] group-hover:h-[100px] group-hover:opacity-100\" />\n              <span className=\"absolute bottom-0 right-0 w-0 h-0 rounded-lg opacity-0 bg-[rgba(255,255,255,0.1)] backdrop-blur-[10px] shadow-[0_5px_15px_rgba(0,0,0,0.08)] transition-all duration-500 animate-blob animation-delay-1000 group-hover:bottom-[-50px] group-hover:right-[50px] group-hover:w-[100px] group-hover:h-[100px] group-hover:opacity-100\" />\n            </span>\n\n            {/* Content */}\n            <div className=\"relative z-20 left-0 p-[20px_40px] bg-[rgba(255,255,255,0.05)] backdrop-blur-[10px] shadow-lg rounded-lg text-white transition-all duration-500 group-hover:left-[-25px] group-hover:p-[60px_40px]\">\n              <h2 className=\"text-2xl mb-2\">{title}</h2>\n              <p className=\"text-lg leading-relaxed mb-2\">{desc}</p>\n              <a\n                href=\"#\"\n                className=\"inline-block text-lg font-bold text-black bg-white px-3 py-2 rounded hover:bg-[#ffcf4d] hover:border hover:border-[rgba(255,0,88,0.4)] hover:shadow-md\"\n              >\n                Read More\n              </a>\n            </div>\n          </div>\n        ))}\n      </div>\n\n      {/* Tailwind custom utilities for animation and shadows */}\n      <style>{`\n        @keyframes blob {\n          0%, 100% { transform: translateY(10px); }\n          50% { transform: translate(-10px); }\n        }\n        .animate-blob { animation: blob 2s ease-in-out infinite; }\n        .animation-delay-1000 { animation-delay: -1s; }\n        .shadow-\\[0_5px_15px_rgba\\(0,0,0,0.08\\) { box-shadow: 0 5px 15px rgba(0,0,0,0.08); }\n      `}</style>\n    </>\n  );\n}\n",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "minhxthanh",
+    "slug": "gradient-card-showcase",
+    "registry_url": "https://21st.dev/r/minhxthanh/gradient-card-showcase",
+    "title": "Gradient Card Showcase",
+    "description": "Displays a set of interactive cards with skewed gradient back-panels, glowing blur highlights, and smooth hover transitions",
+    "category": "card",
+    "category_group": "UI Components",
+    "downloads": 122,
+    "likes": 0
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "trail-card",
+  "type": "registry:component",
+  "title": "Trail Card",
+  "description": "A trail-card component.",
+  "dependencies": [
+    "framer-motion",
+    "lucide-react"
+  ],
+  "registryDependencies": [
+    "https://21st.dev/r/shadcn/button"
+  ],
+  "files": [
+    {
+      "path": "src/components/ui/trail-card.tsx",
+      "content": "// components/ui/trail-card.tsx\nimport * as React from \"react\";\nimport { motion } from \"framer-motion\";\nimport { ArrowRight } from \"lucide-react\";\n\nimport { cn } from \"@/lib/utils\"; // Your utility for merging class names\nimport { Button } from \"@/components/ui/button\"; // Assuming you have a Button component\n\n// Define the props interface for type safety and reusability\ninterface TrailCardProps extends React.HTMLAttributes<HTMLDivElement> {\n  imageUrl: string;\n  mapImageUrl: string;\n  title: string;\n  location: string;\n  difficulty: string;\n  creators: string;\n  distance: string;\n  elevation: string;\n  duration: string;\n  onDirectionsClick?: () => void;\n}\n\n// Define stat item component for DRY principle\nconst StatItem = ({ label, value }: { label: string; value: string }) => (\n  <div className=\"flex flex-col\">\n    <span className=\"text-sm font-semibold text-foreground\">{value}</span>\n    <span className=\"text-xs text-muted-foreground\">{label}</span>\n  </div>\n);\n\nconst TrailCard = React.forwardRef<HTMLDivElement, TrailCardProps>(\n  (\n    {\n      className,\n      imageUrl,\n      mapImageUrl,\n      title,\n      location,\n      difficulty,\n      creators,\n      distance,\n      elevation,\n      duration,\n      onDirectionsClick,\n      ...props\n    },\n    ref\n  ) => {\n    return (\n      <motion.div\n        ref={ref}\n        className={cn(\n          \"w-full max-w-sm overflow-hidden rounded-2xl bg-card text-card-foreground shadow-lg\",\n          className\n        )}\n        whileHover={{ y: -5, scale: 1.02 }} // Subtle lift and scale animation on hover\n        transition={{ type: \"spring\", stiffness: 300, damping: 20 }}\n        {...props}\n      >\n        {/* Top section with background image and content */}\n        <div className=\"relative h-60 w-full\">\n          <img\n            src={imageUrl}\n            alt={title}\n            className=\"h-full w-full object-cover\"\n          />\n          <div className=\"absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent\" />\n          <div className=\"absolute bottom-0 left-0 flex w-full items-end justify-between p-4\">\n            <div className=\"text-white\">\n              <h3 className=\"text-xl font-bold\">{title}</h3>\n              <p className=\"text-sm text-white/90\">{location}</p>\n            </div>\n            {/* The button will animate in on hover of the parent card */}\n            <motion.div\n              initial={{ opacity: 0, x: 20 }}\n              whileHover={{ opacity: 1, x: 0 }}\n              animate={{ opacity: 0, x: 20 }} // Kept hidden by default\n              transition={{ duration: 0.3, ease: \"easeInOut\" }}\n            >\n              <Button\n                variant=\"secondary\"\n                onClick={onDirectionsClick}\n                aria-label={`Get directions to ${title}`}\n              >\n                Directions\n                <ArrowRight className=\"ml-2 h-4 w-4\" />\n              </Button>\n            </motion.div>\n          </div>\n        </div>\n\n        {/* Bottom section with trail details */}\n        <div className=\"p-5\">\n          <div className=\"flex items-center justify-between\">\n            <div>\n              <p className=\"font-bold text-foreground\">{difficulty}</p>\n              <p className=\"text-xs text-muted-foreground\">{creators}</p>\n            </div>\n            {/* Simple SVG or image representation of the trail map */}\n            <img\n              src={mapImageUrl}\n              alt=\"Trail map\"\n              className=\"h-10 w-20 object-contain\"\n            />\n          </div>\n          <div className=\"my-4 h-px w-full bg-border\" />\n          <div className=\"flex justify-between\">\n            <StatItem label=\"Distance\" value={distance} />\n            <StatItem label=\"Elevation\" value={elevation} />\n            <StatItem label=\"Duration\" value={duration} />\n          </div>\n        </div>\n      </motion.div>\n    );\n  }\n);\n\nTrailCard.displayName = \"TrailCard\";\n\nexport { TrailCard };",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "ravikatiyar162",
+    "slug": "trail-card",
+    "registry_url": "https://21st.dev/r/ravikatiyar162/trail-card",
+    "title": "Trail Card",
+    "description": "Trail Card\nA visually polished card component to display trail or location information, featuring a prominent image, key stats, and an interactive call-to-action. It includes a subtle hover animation for a modern feel.",
+    "category": "card",
+    "category_group": "UI Components",
+    "downloads": 110,
+    "likes": 0
+  }
+}

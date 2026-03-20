@@ -1,0 +1,75 @@
+{
+  "name": "type-table",
+  "type": "registry:ui",
+  "dependencies": [
+    "lucide-react",
+    "@radix-ui/react-popover",
+    "@radix-ui/react-slot",
+    "class-variance-authority",
+    "@radix-ui/react-label",
+    "@radix-ui/react-checkbox"
+  ],
+  "registryDependencies": [
+    "https://21st.dev/r/shadcn/popover"
+  ],
+  "files": [
+    {
+      "path": "/components/ui/type-table.tsx",
+      "content": "\"use client\"\n\nimport * as React from \"react\"\nimport { InfoIcon } from \"lucide-react\"\nimport Link from \"next/link\"\nimport { cn } from \"@/lib/utils\"\nimport {\n  Popover,\n  PopoverContent,\n  PopoverTrigger,\n} from \"@/components/ui/popover\"\n\ninterface TypeTableProps extends React.HTMLAttributes<HTMLDivElement> {\n  type: Record<string, {\n    description?: React.ReactNode\n    type: string\n    typeDescription?: React.ReactNode\n    typeDescriptionLink?: string\n    default?: string\n  }>\n}\n\nfunction Info({ children }: { children: React.ReactNode }) {\n  return (\n    <Popover>\n      <PopoverTrigger>\n        <InfoIcon className=\"size-4\" />\n      </PopoverTrigger>\n      <PopoverContent className=\"prose max-h-[400px] min-w-[220px] max-w-[400px] overflow-auto text-sm prose-no-margin\">\n        {children}\n      </PopoverContent>\n    </Popover>\n  )\n}\n\nexport function TypeTable({ type, className, ...props }: TypeTableProps) {\n  return (\n    <div \n      className={cn(\n        \"prose my-6 overflow-auto prose-no-margin rounded-xl border bg-background\",\n        className\n      )}\n      {...props}\n    >\n      <table className=\"w-full whitespace-nowrap text-sm text-muted-foreground\">\n        <thead className=\"border-b bg-muted/50\">\n          <tr>\n            <th className=\"w-[45%] p-4 text-left\">Prop</th>\n            <th className=\"w-[30%] p-4 text-left border-l\">Type</th>\n            <th className=\"w-1/4 p-4 text-left border-l\">Default</th>\n          </tr>\n        </thead>\n        <tbody>\n          {Object.entries(type).map(([key, value]) => (\n            <tr key={key} className=\"border-b last:border-0\">\n              <td className=\"p-4\">\n                <div className=\"inline-flex flex-row items-center gap-1\">\n                  <code className=\"rounded-md bg-primary/10 p-1 text-primary\">\n                    {key}\n                  </code>\n                  {value.description && <Info>{value.description}</Info>}\n                </div>\n              </td>\n              <td className=\"p-4 border-l\">\n                <div className=\"inline-flex flex-row items-center gap-1\">\n                  <code className=\"rounded-md bg-secondary p-1 text-secondary-foreground\">\n                    {value.type}\n                  </code>\n                  {value.typeDescription && <Info>{value.typeDescription}</Info>}\n                  {value.typeDescriptionLink && (\n                    <Link href={value.typeDescriptionLink}>\n                      <InfoIcon className=\"size-4\" />\n                    </Link>\n                  )}\n                </div>\n              </td>\n              <td className=\"p-4 border-l\">\n                {value.default ? (\n                  <code className=\"rounded-md bg-secondary p-1 text-secondary-foreground\">\n                    {value.default}\n                  </code>\n                ) : (\n                  <span>-</span>\n                )}\n              </td>\n            </tr>\n          ))}\n        </tbody>\n      </table>\n    </div>\n  )\n}",
+      "type": "registry:ui",
+      "target": ""
+    },
+    {
+      "path": "/components/ui/popover.tsx",
+      "content": "\"use client\"\n\nimport * as React from \"react\"\nimport * as PopoverPrimitive from \"@radix-ui/react-popover\"\n\nimport { cn } from \"@/lib/utils\"\n\nconst Popover = PopoverPrimitive.Root\n\nconst PopoverTrigger = PopoverPrimitive.Trigger\n\nconst PopoverContent = React.forwardRef<\n  React.ElementRef<typeof PopoverPrimitive.Content>,\n  React.ComponentPropsWithoutRef<typeof PopoverPrimitive.Content>\n>(({ className, align = \"center\", sideOffset = 4, ...props }, ref) => (\n  <PopoverPrimitive.Portal>\n    <PopoverPrimitive.Content\n      ref={ref}\n      align={align}\n      sideOffset={sideOffset}\n      className={cn(\n        \"z-50 w-72 rounded-md border bg-popover p-4 text-popover-foreground shadow-md outline-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2\",\n        className\n      )}\n      {...props}\n    />\n  </PopoverPrimitive.Portal>\n))\nPopoverContent.displayName = PopoverPrimitive.Content.displayName\n\nexport { Popover, PopoverTrigger, PopoverContent }\n",
+      "type": "registry:ui",
+      "target": ""
+    },
+    {
+      "path": "/components/ui/button.tsx",
+      "content": "import * as React from \"react\"\nimport { Slot } from \"@radix-ui/react-slot\"\nimport { cva, type VariantProps } from \"class-variance-authority\"\n\nimport { cn } from \"@/lib/utils\"\n\nconst buttonVariants = cva(\n  \"inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50\",\n  {\n    variants: {\n      variant: {\n        default: \"bg-primary text-primary-foreground hover:bg-primary/90\",\n        destructive:\n          \"bg-destructive text-destructive-foreground hover:bg-destructive/90\",\n        outline:\n          \"border border-input bg-background hover:bg-accent hover:text-accent-foreground\",\n        secondary:\n          \"bg-secondary text-secondary-foreground hover:bg-secondary/80\",\n        ghost: \"hover:bg-accent hover:text-accent-foreground\",\n        link: \"text-primary underline-offset-4 hover:underline\",\n      },\n      size: {\n        default: \"h-10 px-4 py-2\",\n        sm: \"h-9 rounded-md px-3\",\n        lg: \"h-11 rounded-md px-8\",\n        icon: \"h-10 w-10\",\n      },\n    },\n    defaultVariants: {\n      variant: \"default\",\n      size: \"default\",\n    },\n  },\n)\n\nexport interface ButtonProps\n  extends React.ButtonHTMLAttributes<HTMLButtonElement>,\n    VariantProps<typeof buttonVariants> {\n  asChild?: boolean\n}\n\nconst Button = React.forwardRef<HTMLButtonElement, ButtonProps>(\n  ({ className, variant, size, asChild = false, ...props }, ref) => {\n    const Comp = asChild ? Slot : \"button\"\n    return (\n      <Comp\n        className={cn(buttonVariants({ variant, size, className }))}\n        ref={ref}\n        {...props}\n      />\n    )\n  },\n)\nButton.displayName = \"Button\"\n\nexport { Button, buttonVariants }\n",
+      "type": "registry:ui",
+      "target": ""
+    },
+    {
+      "path": "/components/ui/input.tsx",
+      "content": "import * as React from \"react\"\n\nimport { cn } from \"@/lib/utils\"\n\nexport interface InputProps\n  extends React.InputHTMLAttributes<HTMLInputElement> {}\n\nconst Input = React.forwardRef<HTMLInputElement, InputProps>(\n  ({ className, type, ...props }, ref) => {\n    return (\n      <input\n        type={type}\n        className={cn(\n          \"flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50\",\n          className\n        )}\n        ref={ref}\n        {...props}\n      />\n    )\n  }\n)\nInput.displayName = \"Input\"\n\nexport { Input }\n",
+      "type": "registry:ui",
+      "target": ""
+    },
+    {
+      "path": "/components/ui/label.tsx",
+      "content": "\"use client\"\n\nimport * as React from \"react\"\nimport * as LabelPrimitive from \"@radix-ui/react-label\"\nimport { cva, type VariantProps } from \"class-variance-authority\"\n\nimport { cn } from \"@/lib/utils\"\n\nconst labelVariants = cva(\n  \"text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70\",\n)\n\nconst Label = React.forwardRef<\n  React.ElementRef<typeof LabelPrimitive.Root>,\n  React.ComponentPropsWithoutRef<typeof LabelPrimitive.Root> &\n    VariantProps<typeof labelVariants>\n>(({ className, ...props }, ref) => (\n  <LabelPrimitive.Root\n    ref={ref}\n    className={cn(labelVariants(), className)}\n    {...props}\n  />\n))\nLabel.displayName = LabelPrimitive.Root.displayName\n\nexport { Label }\n",
+      "type": "registry:ui",
+      "target": ""
+    },
+    {
+      "path": "/components/ui/checkbox.tsx",
+      "content": "\"use client\"\n\nimport * as React from \"react\"\nimport * as CheckboxPrimitive from \"@radix-ui/react-checkbox\"\nimport { Check } from \"lucide-react\"\n\nimport { cn } from \"@/lib/utils\"\n\nconst Checkbox = React.forwardRef<\n  React.ElementRef<typeof CheckboxPrimitive.Root>,\n  React.ComponentPropsWithoutRef<typeof CheckboxPrimitive.Root>\n>(({ className, ...props }, ref) => (\n  <CheckboxPrimitive.Root\n    ref={ref}\n    className={cn(\n      \"peer h-4 w-4 shrink-0 rounded-sm border border-primary ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground\",\n      className,\n    )}\n    {...props}\n  >\n    <CheckboxPrimitive.Indicator\n      className={cn(\"flex items-center justify-center text-current\")}\n    >\n      <Check className=\"h-4 w-4\" />\n    </CheckboxPrimitive.Indicator>\n  </CheckboxPrimitive.Root>\n))\nCheckbox.displayName = CheckboxPrimitive.Root.displayName\n\nexport { Checkbox }\n",
+      "type": "registry:ui",
+      "target": ""
+    }
+  ],
+  "cssVars": {
+    "light": {
+      "--primary": "220deg 91% 54%"
+    },
+    "dark": {
+      "--primary": "217deg 92% 76%"
+    }
+  },
+  "tailwind": {
+    "config": {}
+  },
+  "_meta": {
+    "author": "fuma-nama",
+    "slug": "type-table",
+    "registry_url": "https://21st.dev/r/fuma-nama/type-table",
+    "title": "Type Table",
+    "description": "A table component for displaying type definitions and props documentation.\n\nFeatures\n- Prop descriptions with tooltips\n- Type information display\n- Default value support\n- Links to type documentation\n- Responsive design\n- Dark mode support",
+    "category": "table",
+    "category_group": "UI Components",
+    "downloads": 119,
+    "likes": 2
+  }
+}

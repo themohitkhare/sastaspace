@@ -1,0 +1,27 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "button-ui",
+  "type": "registry:component",
+  "title": "Button Ui",
+  "description": "A button-ui component.",
+  "dependencies": [],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/ui/button-ui.tsx",
+      "content": "\"use client\";\n\nimport React from \"react\";\n\n\nexport default function Example() {\n    return (\n        <>\n            <style>{`\n                @keyframes rotate {\n                    100% {\n                        transform: rotate(1turn);\n                    }\n                }\n            \n                .rainbow::before {\n                    content: '';\n                    position: absolute;\n                    z-index: -2;\n                    left: -50%;\n                    top: -50%;\n                    width: 200%;\n                    height: 200%;\n                    background-position: 100% 50%;\n                    background-repeat: no-repeat;\n                    background-size: 50% 30%;\n                    filter: blur(6px);\n                    background-image: linear-gradient(#FFF);\n                    animation: rotate 4s linear infinite;\n                }\n            `}</style>\n            <div className=\"rainbow relative z-0 bg-white/15 overflow-hidden p-0.5 flex items-center justify-center rounded-full hover:scale-105 transition duration-300 active:scale-100\">\n                <button className=\"px-8 text-sm py-3 text-white rounded-full font-medium bg-gray-900/80 backdrop-blur\">\n                    Click Me\n                </button>\n            </div>\n        </>\n    );\n};",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "prebuiltui",
+    "slug": "button-ui",
+    "registry_url": "https://21st.dev/r/prebuiltui/button-ui",
+    "title": "Button Ui",
+    "description": "Here is Button Ui components",
+    "category": "button",
+    "category_group": "UI Components",
+    "downloads": 15,
+    "likes": 0
+  }
+}

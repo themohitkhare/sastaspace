@@ -1,0 +1,69 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "spinner-1",
+  "type": "registry:component",
+  "title": "Spinner 1",
+  "description": "A spinner-1 component.",
+  "dependencies": [],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/ui/spinner-1.tsx",
+      "content": "import React from \"react\";\n\ninterface SpinnerProps {\n  size?: number;\n  color?: string;\n}\n\nconst bars = [\n  {\n    animationDelay: \"-1.2s\",\n    transform: \"rotate(.0001deg) translate(146%)\"\n  },\n  {\n    animationDelay: \"-1.1s\",\n    transform: \"rotate(30deg) translate(146%)\"\n  },\n  {\n    animationDelay: \"-1.0s\",\n    transform: \"rotate(60deg) translate(146%)\"\n  },\n  {\n    animationDelay: \"-0.9s\",\n    transform: \"rotate(90deg) translate(146%)\"\n  },\n  {\n    animationDelay: \"-0.8s\",\n    transform: \"rotate(120deg) translate(146%)\"\n  },\n  {\n    animationDelay: \"-0.7s\",\n    transform: \"rotate(150deg) translate(146%)\"\n  },\n  {\n    animationDelay: \"-0.6s\",\n    transform: \"rotate(180deg) translate(146%)\"\n  },\n  {\n    animationDelay: \"-0.5s\",\n    transform: \"rotate(210deg) translate(146%)\"\n  },\n  {\n    animationDelay: \"-0.4s\",\n    transform: \"rotate(240deg) translate(146%)\"\n  },\n  {\n    animationDelay: \"-0.3s\",\n    transform: \"rotate(270deg) translate(146%)\"\n  },\n  {\n    animationDelay: \"-0.2s\",\n    transform: \"rotate(300deg) translate(146%)\"\n  },\n  {\n    animationDelay: \"-0.1s\",\n    transform: \"rotate(330deg) translate(146%)\"\n  }\n];\n\nexport const Spinner = ({ size = 20, color = \"#8f8f8f\" }: SpinnerProps) => {\n  return (\n    <div style={{ width: size, height: size }}>\n      <div className=\"relative top-1/2 left-1/2\" style={{ width: size, height: size }}>\n        {bars.map((item) => (\n          <div\n            key={item.transform}\n            className=\"absolute h-[8%] w-[24%] -left-[10%] -top-[3.9%] rounded-[5px] animate-fade-spin\"\n            style={{ backgroundColor: color, ...item }}\n          />\n        ))}\n      </div>\n    </div>\n  );\n};",
+      "type": "registry:component"
+    }
+  ],
+  "cssVars": {
+    "theme": {
+      "--color-context-card-border": "var(--context-card-border)",
+      "--animate-fade-spin": "fade-spin 1.2s linear infinite"
+    },
+    "light": {
+      "--context-card-border": "hsla(0, 0%, 92%, 1)",
+      "--ds-blue-100": "oklch(97.32% 0.0141 251.56)",
+      "--ds-blue-900": "oklch(53.18% 0.2399 256.9900584162342)",
+      "--ds-red-100": "oklch(96.5% 0.0223 13.09)",
+      "--ds-red-900": "oklch(54.99% 0.232 25.29)",
+      "--ds-amber-100": "oklch(97.48% 0.0331 85.79)",
+      "--ds-amber-900": "oklch(52.79% 0.1496 54.65)",
+      "--ds-gray-100": "hsla(0, 0%, 95%, 1)",
+      "--ds-gray-1000": "hsla(0, 0%, 9%, 1)",
+      "--ds-gray-alpha-400": "hsla(0, 0%, 0%, 0.08)",
+      "--ds-background-100": "hsla(0, 0%, 100%, 1)"
+    },
+    "dark": {
+      "--context-card-border": "hsla(0, 0%, 18%, 1)",
+      "--ds-blue-100": "oklch(22.17% 0.069 259.89)",
+      "--ds-blue-900": "oklch(71.7% 0.1648 250.79360374054167)",
+      "--ds-red-100": "oklch(22.1% 0.0657 15.11)",
+      "--ds-red-900": "oklch(69.96% 0.2136 22.03)",
+      "--ds-amber-100": "oklch(22.46% 0.0538 76.04)",
+      "--ds-amber-900": "oklch(77.21% 0.1991 64.28)",
+      "--ds-gray-100": "hsla(0, 0%, 10%, 1)",
+      "--ds-gray-1000": "hsla(0, 0%, 93%, 1)",
+      "--ds-gray-alpha-400": "hsla(0, 0%, 100%, 0.14)",
+      "--ds-background-100": "hsla(0, 0%, 4%, 1)"
+    }
+  },
+  "css": {
+    "@keyframes fade-spin": {
+      "0%": {
+        "opacity": "0.15"
+      },
+      "100%": {
+        "opacity": "1"
+      }
+    }
+  },
+  "_meta": {
+    "author": "shugar",
+    "slug": "spinner-1",
+    "registry_url": "https://21st.dev/r/shugar/spinner-1",
+    "title": "Spinner",
+    "description": "Indicate an action running in the background. Unlike the loading dots, this should generally be used to indicate loading feedback in response to a user action, like for buttons, pagination, etc.",
+    "category": "spinner-loader",
+    "category_group": "UI Components",
+    "downloads": 94,
+    "likes": 0
+  }
+}

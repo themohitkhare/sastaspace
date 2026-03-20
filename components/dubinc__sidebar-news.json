@@ -91,5 +91,16 @@
     "author": "dubinc",
     "name": "sidebar-news",
     "registry_url": "https://21st.dev/r/dubinc/sidebar-news"
+  },
+  "_meta": {
+    "author": "dubinc",
+    "slug": "sidebar-news",
+    "registry_url": "https://21st.dev/r/dubinc/sidebar-news",
+    "title": "Sidebar News",
+    "description": "A stackable news card component that displays updates in an interactive card format. Built for Dub.co's notification system.\n\nFeatures\n- Stacked card layout with hover animations\n- Swipe-to-dismiss functionality\n- Touch-friendly mobile interactions\n- Completion animation state\n- Progressive card reveal on hover",
+    "category": "card",
+    "category_group": "UI Components",
+    "downloads": 798,
+    "likes": 50
   }
 }

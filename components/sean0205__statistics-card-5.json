@@ -1,0 +1,42 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "statistics-card-5",
+  "type": "registry:component",
+  "title": "Statistics Card 5",
+  "description": "A statistics-card-5 component.",
+  "dependencies": [],
+  "registryDependencies": [
+    "https://21st.dev/r/sean0205/button-1",
+    "https://21st.dev/r/sean0205/card"
+  ],
+  "files": [
+    {
+      "path": "src/components/ui/statistics-card-5.tsx",
+      "content": "import { cn } from \"@/lib/utils\";\nimport { useState } from \"react\";\n\nexport const Component = () => {\n  const [count, setCount] = useState(0);\n\n  return (\n    <div className={cn(\"flex flex-col items-center gap-4 p-4 rounded-lg\")}>\n      <h1 className=\"text-2xl font-bold mb-2\">Component Example</h1>\n      <h2 className=\"text-xl font-semibold\">{count}</h2>\n      <div className=\"flex gap-2\">\n        <button onClick={() => setCount((prev) => prev - 1)}>-</button>\n        <button onClick={() => setCount((prev) => prev + 1)}>+</button>\n      </div>\n    </div>\n  );\n};\n",
+      "type": "registry:component"
+    }
+  ],
+  "cssVars": {
+    "theme": {
+      "--color-destructive-foreground": "oklch(1 0 0)",
+      "--color-color-destructive-foreground": "var(----color-destructive-foreground)"
+    },
+    "light": {
+      "--destructive-foreground": "oklch(1 0 0)"
+    },
+    "dark": {
+      "--destructive-foreground": "oklch(1 0 0)"
+    }
+  },
+  "_meta": {
+    "author": "sean0205",
+    "slug": "statistics-card-5",
+    "registry_url": "https://21st.dev/r/sean0205/statistics-card-5",
+    "title": "Statistics Card 5",
+    "description": "Statistics Card is designed to present key metrics and insights featuring unique layouts, data visualizations, and styling options. Perfect for dashboards, admin panels, and ",
+    "category": "card",
+    "category_group": "UI Components",
+    "downloads": 30,
+    "likes": 0
+  }
+}

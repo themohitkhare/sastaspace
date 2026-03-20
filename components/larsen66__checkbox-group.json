@@ -1,0 +1,27 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "checkbox-group",
+  "type": "registry:component",
+  "title": "Checkbox Group",
+  "description": "A checkbox-group component.",
+  "dependencies": [],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/ui/checkbox-group.tsx",
+      "content": "import { cn } from \"@/lib/utils\";\nimport { useState } from \"react\";\n\nexport const Component = () => {\n  const [count, setCount] = useState(0);\n\n  return (\n    <div className={cn(\"flex flex-col items-center gap-4 p-4 rounded-lg\")}>\n      <h1 className=\"text-2xl font-bold mb-2\">Component Example</h1>\n      <h2 className=\"text-xl font-semibold\">{count}</h2>\n      <div className=\"flex gap-2\">\n        <button onClick={() => setCount((prev) => prev - 1)}>-</button>\n        <button onClick={() => setCount((prev) => prev + 1)}>+</button>\n      </div>\n    </div>\n  );\n};\n",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "larsen66",
+    "slug": "checkbox-group",
+    "registry_url": "https://21st.dev/r/larsen66/checkbox-group",
+    "title": "Checkbox Group",
+    "description": "A checkbox group with proximity hover, animated checkmarks, contiguous selection merging, and spring transitions. Built on Radix UI with Framer Motion.",
+    "category": "checkbox",
+    "category_group": "UI Components",
+    "downloads": 0,
+    "likes": 0
+  }
+}

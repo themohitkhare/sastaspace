@@ -1,0 +1,29 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "card-11",
+  "type": "registry:component",
+  "title": "Card 11",
+  "description": "A card-11 component.",
+  "dependencies": [
+    "framer-motion"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/ui/card-11.tsx",
+      "content": "import React from 'react';\nimport { motion } from 'framer-motion';\n\n// --- TYPE DEFINITIONS ---\n// Defines the shape of a single news item object\nexport interface NewsItem {\n  id: string | number;\n  imageUrl: string;\n  title: string;\n  date: string;\n  source: string;\n  href: string;\n}\n\n// Defines the props for the main component\nexport interface LatestNewsCardProps {\n  /** The main title for the card, e.g., \"Latest News\" */\n  title: string;\n  /** The text for the \"View All\" link */\n  viewAllText?: string;\n  /** The URL for the \"View All\" link */\n  viewAllHref?: string;\n  /** An array of news items to display */\n  newsItems: NewsItem[];\n}\n\n// --- FRAMER MOTION VARIANTS ---\n// Animation variants for the list container to stagger children\nconst containerVariants = {\n  hidden: { opacity: 0 },\n  visible: {\n    opacity: 1,\n    transition: {\n      staggerChildren: 0.1,\n    },\n  },\n};\n\n// Animation variants for each list item\nconst itemVariants = {\n  hidden: { y: 20, opacity: 0 },\n  visible: {\n    y: 0,\n    opacity: 1,\n    transition: {\n      type: 'spring',\n      stiffness: 100,\n      damping: 10,\n    },\n  },\n};\n\n/**\n * A responsive and theme-adaptive card component to display a list of news articles.\n * Includes animations for item loading.\n */\nexport const LatestNewsCard: React.FC<LatestNewsCardProps> = ({\n  title,\n  viewAllText = 'View all',\n  viewAllHref = '#',\n  newsItems,\n}) => {\n  return (\n    <div className=\"w-full max-w-md rounded-xl border bg-card p-6 text-card-foreground shadow-sm\">\n      {/* Card Header */}\n      <div className=\"mb-4 flex items-center justify-between\">\n        <h2 className=\"text-lg font-semibold\">{title}</h2>\n        <a\n          href={viewAllHref}\n          className=\"text-sm font-medium text-primary transition-colors hover:text-primary/80\"\n          aria-label=\"View all news\"\n        >\n          {viewAllText}\n        </a>\n      </div>\n\n      {/* News List */}\n      <motion.ul\n        className=\"space-y-4\"\n        variants={containerVariants}\n        initial=\"hidden\"\n        animate=\"visible\"\n        aria-label={`${title} list`}\n      >\n        {newsItems.map((item) => (\n          <motion.li key={item.id} variants={itemVariants}>\n            <a\n              href={item.href}\n              target=\"_blank\"\n              rel=\"noopener noreferrer\"\n              className=\"group flex items-center gap-4 rounded-lg p-2 transition-colors hover:bg-accent\"\n            >\n              <img\n                src={item.imageUrl}\n                alt={`Image for ${item.title}`}\n                className=\"h-16 w-16 flex-shrink-0 rounded-md object-cover\"\n              />\n              <div className=\"flex-grow\">\n                <h3 className=\"font-medium leading-tight text-card-foreground\">\n                  {item.title}\n                </h3>\n                <p className=\"mt-1 text-sm text-muted-foreground\">\n                  {item.date} &bull; {item.source}\n                </p>\n              </div>\n            </a>\n          </motion.li>\n        ))}\n      </motion.ul>\n    </div>\n  );\n};",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "ravikatiyar162",
+    "slug": "card-11",
+    "registry_url": "https://21st.dev/r/ravikatiyar162/card-11",
+    "title": "Card",
+    "description": "Latest News Card\nA card component designed to display a list of recent articles or news items. It features a main title, a \"View all\" link, and a list of animated news entries that fade in on load. Each item is clickable and has a subtle hover effect.",
+    "category": "card",
+    "category_group": "UI Components",
+    "downloads": 15,
+    "likes": 0
+  }
+}

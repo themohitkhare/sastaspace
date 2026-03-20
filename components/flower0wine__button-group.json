@@ -1,0 +1,31 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "button-group",
+  "type": "registry:component",
+  "title": "Button Group",
+  "description": "A button-group component.",
+  "dependencies": [
+    "class-variance-authority"
+  ],
+  "registryDependencies": [
+    "https://21st.dev/r/originui/button"
+  ],
+  "files": [
+    {
+      "path": "src/components/ui/button-group.tsx",
+      "content": "import * as React from 'react'\nimport { cn } from '@/lib/utils'\nimport { cva, type VariantProps } from 'class-variance-authority'\n\nconst buttonVariants = cva(\n  'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 cursor-pointer',\n  {\n    variants: {\n      variant: {\n        default: 'bg-primary text-primary-foreground shadow hover:bg-primary/90',\n        destructive: 'bg-destructive text-destructive-foreground shadow-sm hover:bg-destructive/90',\n        outline: 'border border-input bg-background shadow-sm hover:bg-accent hover:text-accent-foreground text-text',\n        secondary: 'bg-secondary text-secondary-foreground shadow-sm hover:bg-secondary/80',\n        ghost: 'hover:bg-accent hover:text-accent-foreground text-text',\n        link: 'text-primary underline-offset-4 hover:underline'\n      },\n      size: {\n        default: 'h-9 px-4 py-2',\n        sm: 'h-8 rounded-md px-3 text-xs',\n        lg: 'h-10 rounded-md px-8',\n        icon: 'h-9 w-9'\n      }\n    },\n    defaultVariants: {\n      variant: 'default',\n      size: 'default'\n    }\n  }\n)\n\nconst ButtonGroupContext = React.createContext<{\n  variant?: VariantProps<typeof buttonVariants>['variant']\n  size?: VariantProps<typeof buttonVariants>['size']\n  hasDivider?: boolean\n  itemClassName?: string\n  dividerClassName?: string\n  itemCount: number\n  itemIndex: number\n}>({\n  itemCount: 0,\n  itemIndex: 0\n})\n\nconst ButtonGroup = React.forwardRef<\n  HTMLDivElement,\n  React.HTMLAttributes<HTMLDivElement> & {\n    variant?: VariantProps<typeof buttonVariants>['variant']\n    size?: VariantProps<typeof buttonVariants>['size']\n    hasDivider?: boolean\n    itemClassName?: string\n    dividerClassName?: string\n  }\n>(({ \n  children, \n  variant = 'default', \n  size = 'default', \n  hasDivider = true, \n  className,\n  itemClassName,\n  dividerClassName,\n  ...props \n}, ref) => {\n  const childrenArray = React.Children.toArray(children)\n  const itemCount = childrenArray.length\n\n  let index = 0\n\n  return (\n    <div \n      ref={ref}\n      className={cn(\n        'inline-flex relative items-center',\n        className\n      )}\n      {...props}\n    >\n      {React.Children.map(children, (child) => {\n        if (!React.isValidElement(child)) return child\n\n        return (\n          <ButtonGroupContext.Provider\n            value={{\n              variant,\n              size,\n              hasDivider,\n              itemClassName,\n              dividerClassName,\n              itemCount,\n              itemIndex: index++\n            }}\n          >\n            {child}\n          </ButtonGroupContext.Provider>\n        )\n      })}\n    </div>\n  )\n})\n\nButtonGroup.displayName = 'ButtonGroup'\n\nconst useButtonGroupContext = () => {\n  const context = React.useContext(ButtonGroupContext)\n  if (!context) {\n    throw new Error('ButtonGroupItem must be used within ButtonGroup')\n  }\n  return context\n}\n\nconst ButtonGroupItem = React.forwardRef<\n  HTMLButtonElement,\n  React.ComponentPropsWithoutRef<'button'> & {\n    variant?: VariantProps<typeof buttonVariants>['variant']\n    size?: VariantProps<typeof buttonVariants>['size']\n    roundedRadius?: string\n  }\n>(({ className, variant, size, children, roundedRadius = '2', ...props }, ref) => {\n  const {\n    variant: contextVariant,\n    size: contextSize,\n    hasDivider,\n    itemClassName,\n    dividerClassName,\n    itemCount,\n    itemIndex\n  } = useButtonGroupContext()\n\n  const positionClassName = \n    itemCount === 1 ? `rounded-${roundedRadius}` :\n    itemIndex === 0 ? `rounded-l-${roundedRadius} rounded-r-none` :\n    itemIndex === itemCount - 1 ? `rounded-r-${roundedRadius} rounded-l-none` :\n    `rounded-none`\n\n  return (\n    <React.Fragment>\n      <button\n        ref={ref}\n        className={cn(\n          buttonVariants({ \n            variant: variant || contextVariant, \n            size: size || contextSize \n          }),\n          positionClassName,\n          'relative',\n          itemClassName,\n          className,\n          cn(hasDivider && itemIndex < itemCount - 1 && \"border-r-2\", dividerClassName),\n          cn(hasDivider && itemIndex > 0 && \"border-l-0\")\n        )}\n        {...props}\n      >\n        {children}\n      </button>\n      \n    </React.Fragment>\n  )\n})\n\nButtonGroupItem.displayName = 'ButtonGroupItem'\n\nexport { ButtonGroup, ButtonGroupItem } ",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "flower0wine",
+    "slug": "button-group",
+    "registry_url": "https://21st.dev/r/flower0wine/button-group",
+    "title": "ButtonGroup",
+    "description": "common button group",
+    "category": "button",
+    "category_group": "UI Components",
+    "downloads": 2,
+    "likes": 0
+  }
+}

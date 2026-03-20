@@ -1,0 +1,27 @@
+{
+  "name": "button-1",
+  "type": "registry:ui",
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "/components/ui/button-1.tsx",
+      "content": "'use client';\n\nimport type { HTMLAttributes } from 'react';\n\ninterface GradientButtonProps extends HTMLAttributes<HTMLDivElement> {\n  children?: React.ReactNode;\n  width?: string;\n  height?: string;\n  onClick?: () => void;\n  disabled?: boolean;\n}\n\nconst GradientButton = ({\n  children,\n  width = '600px',\n  height = '100px',\n  className = '',\n  onClick,\n  disabled = false,\n  ...props\n}: GradientButtonProps) => {\n  const commonGradientStyles = `\n    relative rounded-[50px] cursor-pointer\n    after:content-[\"\"] after:block after:absolute after:bg-[var(--color-background)]\n    after:inset-[5px] after:rounded-[45px] after:z-[1]\n    after:transition-opacity after:duration-300 after:ease-linear\n    flex items-center justify-center\n    ${disabled ? 'opacity-50 cursor-not-allowed' : ''}\n  `;\n\n  const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {\n    if (disabled) return;\n    if (e.key === 'Enter' || e.key === ' ') {\n      e.preventDefault();\n      onClick?.();\n    }\n  };\n\n  return (\n    <div className=\"text-[#eee] text-center\">\n      <div\n        role=\"button\"\n        tabIndex={disabled ? -1 : 0}\n        className={`\n          ${commonGradientStyles}\n          rotatingGradient\n          ${className}\n        `}\n        style={{\n          '--r': '0deg',\n          minWidth: width,\n          height: height\n        } as React.CSSProperties}\n        onClick={disabled ? undefined : onClick}\n        onKeyDown={handleKeyDown}\n        aria-disabled={disabled}\n        {...props}\n      >\n        <span className=\"relative z-10 text-[var(--color-text)] flex items-center justify-center label\">\n          {children}\n        </span>\n      </div>\n    </div>\n  );\n};\n\nexport default GradientButton;\n",
+      "type": "registry:ui",
+      "target": ""
+    }
+  ],
+  "tailwind": {
+    "config": {}
+  },
+  "_meta": {
+    "author": "abishek1512",
+    "slug": "button-1",
+    "registry_url": "https://21st.dev/r/abishek1512/button-1",
+    "title": "Button",
+    "description": "Animated button",
+    "category": "button",
+    "category_group": "UI Components",
+    "downloads": 493,
+    "likes": 0
+  }
+}

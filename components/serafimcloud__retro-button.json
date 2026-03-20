@@ -1,0 +1,30 @@
+{
+  "name": "retro-button",
+  "type": "registry:ui",
+  "dependencies": [
+    "class-variance-authority"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "/components/ui/retro-button.tsx",
+      "content": "import * as React from \"react\"\nimport { cva, type VariantProps } from \"class-variance-authority\"\nimport { cn } from \"@/lib/utils\"\n\nconst retroButtonVariants = cva(\n  \"relative inline-flex items-center justify-center w-24 border-2 border-transparent rounded-[2px] bg-[#010101] shadow-[1px_1px_1px_rgba(255,255,255,0.6)]\",\n  {\n    variants: {\n      variant: {\n        default: [\n          \"text-white\",\n          \"[--bg-color:theme(colors.orange.500)]\",\n          \"[--bg-color-active:theme(colors.orange.600)]\",\n          \"[--shadow-light:theme(colors.orange.300)]\",\n          \"[--shadow-dark:theme(colors.orange.700)]\",\n        ],\n        darkGray: [\n          \"text-white\",\n          \"[--bg-color:theme(colors.neutral.700)]\",\n          \"[--bg-color-active:theme(colors.neutral.800)]\",\n          \"[--shadow-light:theme(colors.neutral.400)]\",\n          \"[--shadow-dark:theme(colors.neutral.900)]\",\n        ],\n        white: [\n          \"text-black\",\n          \"[--bg-color:theme(colors.neutral.200)]\",\n          \"[--bg-color-active:theme(colors.neutral.300)]\",\n          \"[--shadow-light:theme(colors.white)]\",\n          \"[--shadow-dark:theme(colors.neutral.500)]\",\n        ],\n        lightGray: [\n          \"text-white\",\n          \"[--bg-color:theme(colors.neutral.400)]\",\n          \"[--bg-color-active:theme(colors.neutral.500)]\",\n          \"[--shadow-light:theme(colors.neutral.200)]\",\n          \"[--shadow-dark:theme(colors.neutral.600)]\",\n        ],\n        gray: [\n          \"text-white\",\n          \"[--bg-color:theme(colors.neutral.600)]\",\n          \"[--bg-color-active:theme(colors.neutral.700)]\",\n          \"[--shadow-light:theme(colors.neutral.400)]\",\n          \"[--shadow-dark:theme(colors.neutral.800)]\",\n        ],\n      },\n    },\n    defaultVariants: {\n      variant: \"default\",\n    },\n  }\n)\n\nconst retroButtonInnerVariants = cva(\n  [\n    \"inline-block w-full rounded-[9px] px-3 py-2\",\n    \"uppercase tracking-wider text-center\",\n    \"bg-[var(--bg-color)] transition-all duration-200\",\n    \"shadow-[inset_1px_1px_1px_var(--shadow-light),inset_-1px_-1px_1px_var(--shadow-dark),2px_2px_4px_#000]\",\n    \"active:scale-[0.98] active:bg-[var(--bg-color-active)]\",\n    \"active:shadow-[inset_0_0_4px_#000,inset_1px_1px_1px_transparent,inset_-1px_-1px_1px_transparent,2px_2px_4px_transparent]\",\n  ]\n)\n\nexport interface RetroButtonProps\n  extends React.ButtonHTMLAttributes<HTMLButtonElement>,\n    VariantProps<typeof retroButtonVariants> {\n  children: React.ReactNode\n}\n\nconst RetroButton = React.forwardRef<HTMLButtonElement, RetroButtonProps>(\n  ({ className, variant, children, ...props }, ref) => {\n    return (\n      <button\n        className={cn(retroButtonVariants({ variant, className }))}\n        ref={ref}\n        {...props}\n      >\n        <span className={retroButtonInnerVariants()}>{children}</span>\n      </button>\n    )\n  }\n)\nRetroButton.displayName = \"RetroButton\"\n\nexport { RetroButton }",
+      "type": "registry:ui",
+      "target": ""
+    }
+  ],
+  "tailwind": {
+    "config": {}
+  },
+  "_meta": {
+    "author": "serafimcloud",
+    "slug": "retro-button",
+    "registry_url": "https://21st.dev/r/serafimcloud/retro-button",
+    "title": "Retro Button",
+    "description": "Retro 3D buttons by https://x.com/njesenberger",
+    "category": "button",
+    "category_group": "UI Components",
+    "downloads": 116,
+    "likes": 5
+  }
+}

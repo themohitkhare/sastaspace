@@ -1,0 +1,79 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "radio",
+  "type": "registry:component",
+  "title": "Radio",
+  "description": "A radio component.",
+  "dependencies": [
+    "@radix-ui/react-radio-group",
+    "class-variance-authority",
+    "motion"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/ui/radio.tsx",
+      "content": "\"use client\";\n\nimport * as React from \"react\";\nimport * as RadioGroupPrimitive from \"@radix-ui/react-radio-group\";\nimport { cva, type VariantProps } from \"class-variance-authority\";\nimport { cn } from \"@/lib/utils\";\nimport { motion, AnimatePresence } from \"motion/react\";\n\nconst radioGroupVariants = cva(\"grid gap-2\", {\n  variants: {\n    orientation: {\n      vertical: \"grid-cols-1\",\n      horizontal: \"grid-flow-col auto-cols-max\",\n    },\n  },\n  defaultVariants: {\n    orientation: \"vertical\",\n  },\n});\n\nconst radioVariants = cva(\n  \"aspect-square rounded-full border border-border text-primary focus:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 data-[state=checked]:border-primary shadow-sm/2\",\n  {\n    variants: {\n      size: {\n        sm: \"h-3 w-3\",\n        default: \"h-4 w-4\",\n        lg: \"h-5 w-5\",\n      },\n    },\n    defaultVariants: {\n      size: \"default\",\n    },\n  }\n);\n\ninterface RadioGroupProps\n  extends Omit<\n      React.ComponentPropsWithoutRef<typeof RadioGroupPrimitive.Root>,\n      \"orientation\"\n    >,\n    VariantProps<typeof radioGroupVariants> {\n  label?: string;\n  description?: string;\n  error?: string;\n}\n\ninterface RadioItemProps\n  extends React.ComponentPropsWithoutRef<typeof RadioGroupPrimitive.Item>,\n    VariantProps<typeof radioVariants> {\n  label?: string;\n  description?: string;\n}\n\nconst RadioGroup = React.forwardRef<\n  React.ElementRef<typeof RadioGroupPrimitive.Root>,\n  RadioGroupProps\n>(\n  (\n    { className, orientation, label, description, error, id, ...props },\n    ref\n  ) => {\n    const groupId = id || React.useId();\n\n    return (\n      <div className=\"flex flex-col gap-4\">\n        {(label || description) && (\n          <div className=\"grid gap-1.5\">\n            {label && (\n              <label\n                htmlFor={groupId}\n                className=\"text-sm  leading-none\"\n              >\n                {label}\n              </label>\n            )}\n            {description && (\n              <p className=\"text-xs text-muted-foreground\">\n                {description}\n              </p>\n            )}\n          </div>\n        )}\n\n        <RadioGroupPrimitive.Root\n          ref={ref}\n          id={groupId}\n          className={cn(radioGroupVariants({ orientation }), className)}\n          {...props}\n        />\n\n        {error && (\n          <p className=\"text-xs text-destructive\">{error}</p>\n        )}\n      </div>\n    );\n  }\n);\n\nRadioGroup.displayName = \"RadioGroup\";\n\nconst RadioItem = React.forwardRef<\n  React.ElementRef<typeof RadioGroupPrimitive.Item>,\n  RadioItemProps\n>(({ className, size, label, description, id, ...props }, ref) => {\n  const itemId = id || React.useId();\n  const dotSize = size === \"sm\" ? 5 : size === \"lg\" ? 8 : 6;\n\n  return (\n    <div className=\"flex flex-col gap-1\">\n      <div className=\"flex items-start gap-2\">\n        <RadioGroupPrimitive.Item\n          ref={ref}\n          id={itemId}\n          className={cn(radioVariants({ size }), className)}\n          {...props}\n        >\n          <RadioGroupPrimitive.Indicator asChild>\n            <div className=\"flex items-center justify-center w-full h-full\">\n              <AnimatePresence>\n                <motion.div\n                  key=\"dot\"\n                  className=\"rounded-full bg-primary\"\n                  style={{\n                    width: dotSize,\n                    height: dotSize,\n                  }}\n                  initial={{ scale: 0, opacity: 0 }}\n                  animate={{ scale: 1, opacity: 1 }}\n                  exit={{ scale: 0, opacity: 0 }}\n                  transition={{\n                    duration: 0.2,\n                    ease: \"easeInOut\",\n                  }}\n                />\n              </AnimatePresence>\n            </div>\n          </RadioGroupPrimitive.Indicator>\n        </RadioGroupPrimitive.Item>\n\n        {(label || description) && (\n          <div className=\"grid gap-1.5 leading-none\">\n            {label && (\n              <label\n                htmlFor={itemId}\n                className=\"text-sm  leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer\"\n              >\n                {label}\n              </label>\n            )}\n            {description && (\n              <p className=\"text-xs text-muted-foreground peer-disabled:opacity-70\">\n                {description}\n              </p>\n            )}\n          </div>\n        )}\n      </div>\n    </div>\n  );\n});\n\nRadioItem.displayName = \"RadioItem\";\n\nexport {\n  RadioGroup,\n  RadioItem,\n  radioGroupVariants,\n  radioVariants,\n  type RadioGroupProps,\n  type RadioItemProps,\n};",
+      "type": "registry:component"
+    }
+  ],
+  "cssVars": {
+    "light": {
+      "--hu-font-geist": "var(--font-geist)",
+      "--hu-font-jetbrains": "var(--font-jetbrains-mono)",
+      "--radius": "0.8rem",
+      "--card-radius": "1rem",
+      "--hu-background": "0, 0%, 100%",
+      "--hu-foreground": "0, 0%, 14%",
+      "--hu-card": "0, 0%, 99%",
+      "--hu-card-foreground": "0, 0%, 14%",
+      "--hu-primary": "235, 100%, 60%",
+      "--hu-primary-foreground": "0, 0%, 98%",
+      "--hu-secondary": "0, 0%, 97%",
+      "--hu-secondary-foreground": "0, 0%, 20%",
+      "--hu-muted": "0, 0%, 97%",
+      "--hu-muted-foreground": "0, 0%, 56%",
+      "--hu-accent": "0, 0%, 96%",
+      "--hu-accent-foreground": "0, 0%, 20%",
+      "--hu-destructive": "9, 96%, 47%",
+      "--hu-destructive-foreground": "0, 0%, 98%",
+      "--hu-border": "0, 0%, 92%",
+      "--hu-input": "0, 0%, 100%",
+      "--hu-ring": "0, 0%, 71%",
+      "--color-fd-background": "hsl(var(--hu-background))",
+      "--color-fd-card": "hsl(var(--hu-background))"
+    },
+    "dark": {
+      "--hu-background": "0, 0%, 7%",
+      "--hu-foreground": "0, 0%, 100%",
+      "--hu-card": "0, 0%, 9%",
+      "--hu-card-foreground": "0, 0%, 100%",
+      "--hu-primary": "235, 100%, 60%",
+      "--hu-primary-foreground": "0, 0%, 98%",
+      "--hu-secondary": "0, 0%, 15%",
+      "--hu-secondary-foreground": "0, 0%, 100%",
+      "--hu-muted": "0, 0%, 15%",
+      "--hu-muted-foreground": "0, 0%, 71%",
+      "--hu-accent": "0, 0%, 15%",
+      "--hu-accent-foreground": "0, 0%, 100%",
+      "--hu-destructive": "0, 84%, 50%",
+      "--hu-destructive-foreground": "0, 0%, 98%",
+      "--hu-border": "0, 0%, 100%, 10%",
+      "--hu-input": "0, 0%, 100%, 5%",
+      "--hu-ring": "0, 0%, 56%",
+      "--color-fd-background": "hsl(var(--hu-background))",
+      "--color-fd-card": "hsl(var(--hu-background))"
+    }
+  },
+  "_meta": {
+    "author": "preetsuthar17",
+    "slug": "radio",
+    "registry_url": "https://21st.dev/r/preetsuthar17/radio",
+    "title": "Radio",
+    "description": "A customizable radio group component with smooth animations and flexible layouts",
+    "category": "radio-group",
+    "category_group": "UI Components",
+    "downloads": 5,
+    "likes": 0
+  }
+}

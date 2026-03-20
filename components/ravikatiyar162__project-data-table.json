@@ -1,0 +1,38 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "project-data-table",
+  "type": "registry:component",
+  "title": "Project Data Table",
+  "description": "A project-data-table component.",
+  "dependencies": [
+    "framer-motion",
+    "class-variance-authority",
+    "lucide-react"
+  ],
+  "registryDependencies": [
+    "https://21st.dev/r/shadcn/button",
+    "https://21st.dev/r/originui/dropdown-menu",
+    "https://21st.dev/r/originui/input",
+    "https://21st.dev/r/originui/table",
+    "https://21st.dev/r/originui/avatar",
+    "https://21st.dev/r/originui/badge"
+  ],
+  "files": [
+    {
+      "path": "src/components/ui/project-data-table.tsx",
+      "content": "import * as React from \"react\";\nimport { motion } from \"framer-motion\";\nimport { cn } from \"@/lib/utils\";\nimport { cva, type VariantProps } from \"class-variance-authority\";\nimport {\n  Table,\n  TableBody,\n  TableCell,\n  TableHead,\n  TableHeader,\n  TableRow,\n} from \"@/components/ui/table\";\nimport { Avatar, AvatarFallback, AvatarImage } from \"@/components/ui/avatar\";\nimport { Badge } from \"@/components/ui/badge\";\nimport { ExternalLink } from \"lucide-react\";\n\n// --- TYPE DEFINITIONS ---\ninterface Contributor {\n  src: string;\n  alt: string;\n  fallback: string;\n}\n\ntype StatusVariant = \"active\" | \"inProgress\" | \"onHold\";\n\nexport interface Project {\n  id: string;\n  name: string;\n  repository: string;\n  team: string;\n  tech: string;\n  createdAt: string;\n  contributors: Contributor[];\n  status: {\n    text: string;\n    variant: StatusVariant;\n  };\n}\n\n// --- PROPS INTERFACE ---\ninterface ProjectDataTableProps {\n  projects: Project[];\n  visibleColumns: Set<keyof Project>;\n}\n\n// --- STATUS BADGE VARIANTS ---\nconst badgeVariants = cva(\"capitalize text-white\", {\n  variants: {\n    variant: {\n      active: \"bg-green-500 hover:bg-green-600\",\n      inProgress: \"bg-yellow-500 hover:bg-yellow-600\",\n      onHold: \"bg-red-500 hover:bg-red-600\",\n    },\n  },\n  defaultVariants: {\n    variant: \"active\",\n  },\n});\n\n// --- MAIN COMPONENT ---\nexport const ProjectDataTable = ({ projects, visibleColumns }: ProjectDataTableProps) => {\n  // Animation variants for table rows\n  const rowVariants = {\n    hidden: { opacity: 0, y: 20 },\n    visible: (i: number) => ({\n      opacity: 1,\n      y: 0,\n      transition: {\n        delay: i * 0.05,\n        duration: 0.3,\n        ease: \"easeInOut\",\n      },\n    }),\n  };\n  \n  const tableHeaders: { key: keyof Project; label: string }[] = [\n    { key: \"name\", label: \"Project\" },\n    { key: \"repository\", label: \"Repository\" },\n    { key: \"team\", label: \"Team\" },\n    { key: \"tech\", label: \"Tech\" },\n    { key: \"createdAt\", label: \"Created At\" },\n    { key: \"contributors\", label: \"Contributors\" },\n    { key: \"status\", label: \"Status\" },\n  ];\n\n  return (\n    <div className=\"rounded-lg border bg-card text-card-foreground shadow-sm\">\n      <div className=\"relative w-full overflow-auto\">\n        <Table>\n          <TableHeader>\n            <TableRow>\n              {tableHeaders\n                .filter((header) => visibleColumns.has(header.key))\n                .map((header) => (\n                  <TableHead key={header.key}>{header.label}</TableHead>\n                ))}\n            </TableRow>\n          </TableHeader>\n          <TableBody>\n            {projects.length > 0 ? (\n              projects.map((project, index) => (\n                <motion.tr\n                  key={project.id}\n                  custom={index}\n                  initial=\"hidden\"\n                  animate=\"visible\"\n                  variants={rowVariants}\n                  className=\"border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted\"\n                >\n                  {visibleColumns.has(\"name\") && <TableCell className=\"font-medium\">{project.name}</TableCell>}\n                  \n                  {visibleColumns.has(\"repository\") && (\n                    <TableCell>\n                      <a\n                        href={project.repository}\n                        target=\"_blank\"\n                        rel=\"noopener noreferrer\"\n                        className=\"flex items-center gap-2 text-muted-foreground transition-colors hover:text-foreground\"\n                      >\n                        <span className=\"truncate max-w-xs\">{project.repository.replace('https://', '')}</span>\n                        <ExternalLink className=\"h-3 w-3 flex-shrink-0\" />\n                      </a>\n                    </TableCell>\n                  )}\n                  \n                  {visibleColumns.has(\"team\") && <TableCell>{project.team}</TableCell>}\n                  {visibleColumns.has(\"tech\") && <TableCell>{project.tech}</TableCell>}\n                  {visibleColumns.has(\"createdAt\") && <TableCell>{project.createdAt}</TableCell>}\n                  \n                  {visibleColumns.has(\"contributors\") && (\n                    <TableCell>\n                      <div className=\"flex -space-x-2\">\n                        {project.contributors.map((contributor, idx) => (\n                          <Avatar key={idx} className=\"h-8 w-8 border-2 border-background\">\n                            <AvatarImage src={contributor.src} alt={contributor.alt} />\n                            <AvatarFallback>{contributor.fallback}</AvatarFallback>\n                          </Avatar>\n                        ))}\n                      </div>\n                    </TableCell>\n                  )}\n\n                  {visibleColumns.has(\"status\") && (\n                    <TableCell>\n                      <Badge className={cn(badgeVariants({ variant: project.status.variant }))}>\n                        {project.status.text}\n                      </Badge>\n                    </TableCell>\n                  )}\n                </motion.tr>\n              ))\n            ) : (\n              <TableRow>\n                <TableCell colSpan={visibleColumns.size} className=\"h-24 text-center\">\n                  No results.\n                </TableCell>\n              </TableRow>\n            )}\n          </TableBody>\n        </Table>\n      </div>\n    </div>\n  );\n};",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "ravikatiyar162",
+    "slug": "project-data-table",
+    "registry_url": "https://21st.dev/r/ravikatiyar162/project-data-table",
+    "title": "Project Data Table",
+    "description": "Project Data Table\nThis component provides a responsive, animated table for displaying a list of projects. It features a clean, modern design inspired by your image, with status badges and contributor avatars. The rows gracefully animate into view using framer-motion.",
+    "category": "table",
+    "category_group": "UI Components",
+    "downloads": 144,
+    "likes": 0
+  }
+}

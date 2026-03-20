@@ -1,0 +1,35 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "welcome-modal",
+  "type": "registry:component",
+  "title": "Welcome Modal",
+  "description": "A welcome-modal component.",
+  "dependencies": [
+    "lucide-react",
+    "class-variance-authority"
+  ],
+  "registryDependencies": [
+    "https://21st.dev/r/originui/badge",
+    "https://21st.dev/r/originui/button",
+    "https://21st.dev/r/originui/checkbox",
+    "https://21st.dev/r/originui/dialog"
+  ],
+  "files": [
+    {
+      "path": "src/components/ui/welcome-modal.tsx",
+      "content": "\"use client\"\n\nimport * as React from \"react\"\nimport { X, ArrowRight, ExternalLink, HelpCircle } from \"lucide-react\"\nimport { cva, type VariantProps } from \"class-variance-authority\"\n\nimport { cn } from \"@/lib/utils\"\nimport { Button } from \"@/components/ui/button\"\nimport { Checkbox } from \"@/components/ui/checkbox\"\nimport {\n  Dialog,\n  DialogContent,\n  DialogHeader,\n  DialogTitle,\n  DialogDescription,\n} from \"@/components/ui/dialog\"\n\nexport interface WelcomeModalProps extends React.ComponentPropsWithoutRef<typeof Dialog> {\n  title: React.ReactNode\n  description: string\n  mainActionText: string\n  onMainActionClick: () => void\n  showDontShowAgain?: boolean\n  helpLink?: string\n}\n\nconst WelcomeModal = ({\n  title,\n  description,\n  mainActionText,\n  onMainActionClick,\n  showDontShowAgain = true,\n  helpLink = \"#\",\n  children,\n  ...props\n}: WelcomeModalProps) => {\n  return (\n    <Dialog {...props}>\n      <DialogContent className=\"w-full sm:max-w-xl rounded-2xl bg-background p-0 shadow-2xl border-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95\">\n        {/* Main content area with responsive padding */}\n        <div className=\"p-6 sm:p-8 pb-0\">\n            <DialogHeader>\n              {/* Responsive title font size */}\n              <DialogTitle className=\"flex items-center text-xl sm:text-2xl font-bold text-foreground\">\n                {title}\n              </DialogTitle>\n              <DialogDescription className=\"text-muted-foreground pt-1 text-base\">\n                {description}\n              </DialogDescription>\n            </DialogHeader>\n\n            <div className=\"py-6 space-y-6 text-foreground\">\n                {children}\n            </div>\n        </div>\n\n        {/* Footer area with responsive padding */}\n        <div className=\"px-6 sm:px-8 pb-6 sm:pb-8 space-y-6\">\n            <div className=\"bg-muted/50 rounded-lg p-4 flex items-start space-x-3\">\n                <HelpCircle className=\"h-5 w-5 text-muted-foreground mt-0.5 flex-shrink-0\" />\n                <div>\n                    <p className=\"font-semibold\">Need help accessing your account?</p>\n                    <p className=\"text-sm text-muted-foreground\">If you're experiencing any login issues, I'm here to help. Reach out to me directly on X for immediate assistance.</p>\n                    <Button asChild variant=\"link\" className=\"p-0 h-auto mt-2 text-sm font-semibold\">\n                        <a href={helpLink}>\n                           Get login assistance <ArrowRight className=\"ml-1 h-4 w-4\" />\n                        </a>\n                    </Button>\n                </div>\n            </div>\n\n            {/* Responsive action bar */}\n            <div className=\"flex flex-col-reverse sm:flex-row sm:items-center w-full gap-4 sm:gap-2\">\n                {showDontShowAgain && (\n                    <div className=\"flex items-center space-x-2\">\n                        <Checkbox id=\"dont-show-again\" className=\"rounded-[4px]\"/>\n                        <label\n                            htmlFor=\"dont-show-again\"\n                            className=\"text-sm font-medium leading-none text-muted-foreground peer-disabled:cursor-not-allowed peer-disabled:opacity-70\"\n                        >\n                            Don't show again\n                        </label>\n                    </div>\n                )}\n               <div className=\"sm:flex-grow\"></div>\n                <Button size=\"lg\" onClick={onMainActionClick} className=\"font-semibold w-full sm:w-auto\">\n                    {mainActionText}\n                    <ExternalLink className=\"ml-2 h-4 w-4\" />\n                </Button>\n            </div>\n        </div>\n      </DialogContent>\n    </Dialog>\n  )\n}\nWelcomeModal.displayName = \"WelcomeModal\"\n\nexport { WelcomeModal }\n",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "ravikatiyar162",
+    "slug": "welcome-modal",
+    "registry_url": "https://21st.dev/r/ravikatiyar162/welcome-modal",
+    "title": "Welcome Modal",
+    "description": "Welcome modal for new and existing users. Highlights expanded access to premium templates and $299 value lifetime license. Includes clear CTAs like \"View templates\" and \"Get login assistance.\" Perfect for onboarding or upgrade announcements.",
+    "category": "button",
+    "category_group": "UI Components",
+    "downloads": 6,
+    "likes": 0
+  }
+}

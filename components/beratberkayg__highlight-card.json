@@ -1,0 +1,29 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "highlight-card",
+  "type": "registry:component",
+  "title": "Highlight Card",
+  "description": "A highlight-card component.",
+  "dependencies": [],
+  "registryDependencies": [
+    "https://21st.dev/r/shadcn/card"
+  ],
+  "files": [
+    {
+      "path": "src/components/ui/highlight-card.tsx",
+      "content": "\"use client\";\n\nimport { FC, ReactNode } from \"react\";\nimport { Card } from \"@/components/ui/card\";\n\ninterface ComponentProps {\n  title: string;\n  description: string[];\n  icon?: ReactNode;\n}\n\nconst Component: FC<ComponentProps> = ({ title, description, icon }) => {\n  return (\n    <div className=\"group cursor-pointer transform transition-all duration-500 hover:scale-105 hover:-rotate-1\">\n      <Card className=\"text-white rounded-2xl border border-white/10 bg-gradient-to-br from-[#010101] via-[#090909] to-[#010101] shadow-2xl relative backdrop-blur-xl overflow-hidden hover:border-white/25 hover:shadow-white/5 hover:shadow-3xl w-[350px]\">\n        \n        \n        <div className=\"absolute inset-0 z-0 overflow-hidden\">\n          <div className=\"absolute inset-0 bg-gradient-to-tr from-white/5 to-white/10 opacity-40 group-hover:opacity-60 transition-opacity duration-500\"></div>\n          <div className=\"absolute -bottom-20 -left-20 w-48 h-48 rounded-full bg-gradient-to-tr from-white/10 to-transparent blur-3xl opacity-30 group-hover:opacity-50 transform group-hover:scale-110 transition-all duration-700 animate-bounce\"></div>\n          <div className=\"absolute top-10 left-10 w-16 h-16 rounded-full bg-white/5 blur-xl animate-ping\"></div>\n          <div className=\"absolute bottom-16 right-16 w-12 h-12 rounded-full bg-white/5 blur-lg animate-ping\"></div>\n          <div className=\"absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent transform -skew-x-12 translate-x-full group-hover:translate-x-[-200%] transition-transform duration-1000\"></div>\n        </div>\n\n    \n        <div className=\"p-8 relative z-10 flex flex-col items-center text-center\">\n          <div className=\"relative mb-6\">\n            <div className=\"absolute inset-0 rounded-full border-2 border-white/20 animate-ping\"></div>\n            <div className=\"absolute inset-0 rounded-full border border-white/10 animate-pulse\"></div>\n\n            <div className=\"p-6 rounded-full backdrop-blur-lg border border-white/20 bg-gradient-to-br from-black/80 to-black/60 shadow-2xl transform group-hover:rotate-12 group-hover:scale-110 transition-all duration-500 hover:shadow-white/20\">\n              <div className=\"transform group-hover:rotate-180 transition-transform duration-700\">\n                {icon}\n              </div>\n            </div>\n          </div>\n\n          <h3 className=\"mb-4 text-3xl font-bold bg-gradient-to-r from-white via-gray-100 to-white bg-clip-text text-transparent animate-pulse transform group-hover:scale-105 transition-transform duration-300\">\n            {title}\n          </h3>\n\n          <div className=\"space-y-1 max-w-sm\">\n            {description.map((line, idx) => (\n              <p\n                key={idx}\n                className=\"text-gray-300 text-sm leading-relaxed transform group-hover:text-gray-200 transition-colors duration-300\"\n              >\n                {line}\n              </p>\n            ))}\n          </div>\n\n          <div className=\"mt-6 w-1/3 h-0.5 bg-gradient-to-r from-transparent via-white to-transparent rounded-full transform group-hover:w-1/2 group-hover:h-1 transition-all duration-500 animate-pulse\"></div>\n\n          <div className=\"flex space-x-2 mt-4 opacity-60 group-hover:opacity-100 transition-opacity duration-300\">\n            <div className=\"w-2 h-2 bg-white rounded-full animate-bounce\"></div>\n            <div className=\"w-2 h-2 bg-white rounded-full animate-bounce\" style={{ animationDelay: \"0.1s\" }}></div>\n            <div className=\"w-2 h-2 bg-white rounded-full animate-bounce\" style={{ animationDelay: \"0.2s\" }}></div>\n          </div>\n        </div>\n\n      \n        <div className=\"absolute top-0 left-0 w-20 h-20 bg-gradient-to-br from-white/10 to-transparent rounded-br-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500\"></div>\n        <div className=\"absolute bottom-0 right-0 w-20 h-20 bg-gradient-to-tl from-white/10 to-transparent rounded-tl-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500\"></div>\n      </Card>\n    </div>\n  );\n};\n\nexport default Component;\n",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "beratberkayg",
+    "slug": "highlight-card",
+    "registry_url": "https://21st.dev/r/beratberkayg/highlight-card",
+    "title": "Highlight Card",
+    "description": "Highlight Card  shacn card",
+    "category": "card",
+    "category_group": "UI Components",
+    "downloads": 4,
+    "likes": 0
+  }
+}

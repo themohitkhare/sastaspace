@@ -1,0 +1,29 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "progress-button",
+  "type": "registry:component",
+  "title": "Progress Button",
+  "description": "A progress-button component.",
+  "dependencies": [
+    "lucide-react"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/ui/progress-button.tsx",
+      "content": "import React, { useState } from \"react\";\nimport { cn } from \"@/lib/utils\";\nimport { Loader2, Check } from \"lucide-react\";\n\n/**\n * ProgressButton\n *\n * A button that shows progress feedback for async actions.\n * After click, it can display a loading spinner or a progress bar.\n * Useful for actions like Submit, Pay, Upload.\n */\n\ninterface ProgressButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {\n  label: string;\n  loadingLabel?: string;\n  successLabel?: string;\n  showBar?: boolean; // if true, show progress bar instead of spinner\n  duration?: number; // fake progress duration in ms when showBar is true\n}\n\nconst ProgressButton: React.FC<ProgressButtonProps> = ({\n  label,\n  loadingLabel = \"Processing...\",\n  successLabel = \"Done!\",\n  showBar = false,\n  duration = 2000,\n  className,\n  onClick,\n  ...props\n}) => {\n  const [loading, setLoading] = useState(false);\n  const [success, setSuccess] = useState(false);\n  const [progress, setProgress] = useState(0);\n\n  const handleClick = async (e: React.MouseEvent<HTMLButtonElement>) => {\n    if (loading) return;\n    setLoading(true);\n    setSuccess(false);\n    setProgress(0);\n\n    if (showBar) {\n      let step = 0;\n      const interval = setInterval(() => {\n        step += 100 / (duration / 100);\n        setProgress(Math.min(step, 100));\n      }, 100);\n      setTimeout(() => {\n        clearInterval(interval);\n        setLoading(false);\n        setSuccess(true);\n        setTimeout(() => setSuccess(false), 1500);\n      }, duration);\n    } else {\n      await new Promise((resolve) => setTimeout(resolve, duration));\n      setLoading(false);\n      setSuccess(true);\n      setTimeout(() => setSuccess(false), 1500);\n    }\n\n    onClick?.(e);\n  };\n\n  return (\n    <button\n      type=\"button\"\n      onClick={handleClick}\n      className={cn(\n        \"relative inline-flex items-center justify-center rounded-lg bg-primary text-primary-foreground font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 px-4 py-2 disabled:opacity-60\",\n        className\n      )}\n      disabled={loading}\n      {...props}\n    >\n      {showBar && loading ? (\n        <div className=\"absolute bottom-0 left-0 h-1 bg-primary-foreground/50 w-full overflow-hidden rounded-b-lg\">\n          <div\n            className=\"h-full bg-primary-foreground transition-all duration-100 ease-linear\"\n            style={{ width: `${progress}%` }}\n          />\n        </div>\n      ) : null}\n\n      <span className=\"flex items-center gap-2\">\n        {loading && !showBar && <Loader2 className=\"w-4 h-4 animate-spin\" />}\n        {success && <Check className=\"w-4 h-4\" />}\n        {!loading && !success && label}\n        {loading && !success && (showBar ? loadingLabel : loadingLabel)}\n        {success && successLabel}\n      </span>\n    </button>\n  );\n};\n\nexport default ProgressButton;",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "ruixen.ui",
+    "slug": "progress-button",
+    "registry_url": "https://21st.dev/r/ruixen.ui/progress-button",
+    "title": "Progress Button",
+    "description": "The ProgressButton is a versatile shadcn/ui-based component that enhances the user experience for asynchronous actions like Submit, Pay, or Upload. Unlike a regular button, it provides immediate visual feedback by showing either a spinner or a progress bar after being clicked. It supports customizable labels for loading and success states, giving users clear confirmation of action progress and completion. The progress bar mode is especially useful for longer operations such as file uploads, while the spinner mode fits quick async tasks. With built-in accessibility, smooth animations, and configurable duration, this button helps reduce uncertainty for users during wait times and makes critical interactions feel more responsive and reliable.",
+    "category": "button",
+    "category_group": "UI Components",
+    "downloads": 0,
+    "likes": 0
+  }
+}

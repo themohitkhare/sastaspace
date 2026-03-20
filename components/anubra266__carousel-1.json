@@ -1,0 +1,29 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "carousel-1",
+  "type": "registry:component",
+  "title": "Carousel 1",
+  "description": "A carousel-1 component.",
+  "dependencies": [
+    "@ark-ui/react"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/ui/carousel-1.tsx",
+      "content": "\nimport { Carousel } from \"@ark-ui/react/carousel\";\n\nexport default function BasicCarousel() {\n  const images = Array.from(\n    { length: 5 },\n    (_, i) => `https://picsum.photos/seed/${i + 1}/500/300`\n  );\n\n  return (\n    <Carousel.Root\n      defaultPage={0}\n      slideCount={images.length}\n      className=\"max-w-md mx-auto\"\n    >\n      <Carousel.Control className=\"flex items-center justify-between mb-4\">\n        <Carousel.PrevTrigger className=\"px-4 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 rounded-lg font-medium transition-colors\">\n          Previous\n        </Carousel.PrevTrigger>\n        <Carousel.NextTrigger className=\"px-4 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 rounded-lg font-medium transition-colors\">\n          Next\n        </Carousel.NextTrigger>\n      </Carousel.Control>\n\n      <Carousel.ItemGroup className=\"overflow-hidden rounded-lg\">\n        {images.map((image, index) => (\n          <Carousel.Item key={index} index={index}>\n            <img\n              src={image}\n              alt={`Slide ${index + 1}`}\n              className=\"w-full h-64 object-cover\"\n            />\n          </Carousel.Item>\n        ))}\n      </Carousel.ItemGroup>\n\n      <Carousel.IndicatorGroup className=\"flex justify-center items-center mt-4 gap-2\">\n        {images.map((_, index) => (\n          <Carousel.Indicator\n            key={index}\n            index={index}\n            className=\"w-2 h-2 rounded-full bg-gray-300 dark:bg-gray-600 data-current:bg-blue-500 transition-colors cursor-pointer\"\n          />\n        ))}\n      </Carousel.IndicatorGroup>\n    </Carousel.Root>\n  );\n}\n",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "anubra266",
+    "slug": "carousel-1",
+    "registry_url": "https://21st.dev/r/anubra266/carousel-1",
+    "title": "Carousel",
+    "description": "Here is Carousel component",
+    "category": "carousel",
+    "category_group": "UI Components",
+    "downloads": 82,
+    "likes": 0
+  }
+}

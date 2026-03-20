@@ -1,0 +1,34 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "project-progress-card",
+  "type": "registry:component",
+  "title": "Project Progress Card",
+  "description": "A project-progress-card component.",
+  "dependencies": [
+    "framer-motion",
+    "lucide-react"
+  ],
+  "registryDependencies": [
+    "https://21st.dev/r/shadcn/card",
+    "https://21st.dev/r/originui/button",
+    "https://21st.dev/r/shadcn/separator"
+  ],
+  "files": [
+    {
+      "path": "src/components/ui/project-progress-card.tsx",
+      "content": "\"use client\";\n\nimport * as React from \"react\";\nimport { motion } from \"framer-motion\";\nimport { Calendar, User, CheckCircle2, CircleDot } from \"lucide-react\";\nimport { Card, CardContent, CardHeader } from \"@/components/ui/card\";\nimport { Button } from \"@/components/ui/button\";\nimport { Separator } from \"@/components/ui/separator\";\n\ntype Milestone = {\n  title: string;\n  description: string;\n  completed?: boolean;\n};\n\nexport type ProjectProgressCardProps = {\n  title: string;\n  projectManager: string;\n  dueDate: string;\n  milestones: Milestone[];\n  onNextStep?: () => void;\n};\n\nexport const ProjectProgressCard: React.FC<ProjectProgressCardProps> = ({\n  title,\n  projectManager,\n  dueDate,\n  milestones,\n  onNextStep,\n}) => {\n  const variants = {\n    hidden: { opacity: 0, y: 15 },\n    visible: { opacity: 1, y: 0, transition: { duration: 0.25, ease: \"easeOut\" } },\n  };\n\n  return (\n    <Card\n      as={motion.div}\n      initial=\"hidden\"\n      animate=\"visible\"\n      variants={{\n        hidden: { opacity: 0, scale: 0.97 },\n        visible: { opacity: 1, scale: 1, transition: { staggerChildren: 0.05 } },\n      }}\n      className=\"w-full max-w-lg rounded-2xl border shadow-lg shadow-primary/10\"\n    >\n      {/* --- Header --- */}\n      <CardHeader className=\"p-6\">\n        <motion.div\n          variants={variants}\n          className=\"flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3\"\n        >\n          <div>\n            <h2 className=\"text-xl font-semibold text-foreground\">{title}</h2>\n            <p className=\"text-sm text-muted-foreground\">\n              Project overview & milestones\n            </p>\n          </div>\n          <div className=\"flex items-center gap-1 text-sm text-muted-foreground whitespace-nowrap\">\n            <Calendar className=\"h-4 w-4\" />\n            <span>{dueDate}</span>\n          </div>\n        </motion.div>\n      </CardHeader>\n\n      {/* --- Content --- */}\n      <CardContent className=\"px-6 pb-6 space-y-6\">\n        <motion.div variants={variants} className=\"flex items-center gap-2\">\n          <User className=\"h-4 w-4 text-muted-foreground\" />\n          <span className=\"text-sm text-muted-foreground\">\n            Managed by {projectManager}\n          </span>\n        </motion.div>\n\n        <Separator className=\"my-4\" />\n\n        {/* --- Vertical Milestone Timeline --- */}\n        <div className=\"relative\">\n          {milestones.map((m, i) => (\n            <motion.div\n              key={i}\n              variants={variants}\n              className=\"relative flex items-start gap-3 pb-6 last:pb-0\"\n            >\n              {/* Icon */}\n              <div className=\"relative z-10 flex h-7 w-7 items-center justify-center rounded-full bg-background ring-2 ring-muted\">\n                {m.completed ? (\n                  <CheckCircle2 className=\"h-4 w-4 text-green-500\" />\n                ) : (\n                  <CircleDot className=\"h-4 w-4 text-blue-500\" />\n                )}\n              </div>\n\n              {/* Text */}\n              <div className=\"flex flex-col\">\n                <p className=\"text-sm font-medium text-foreground\">{m.title}</p>\n                <p className=\"text-xs text-muted-foreground\">{m.description}</p>\n              </div>\n            </motion.div>\n          ))}\n        </div>\n      </CardContent>\n\n      {/* --- Footer --- */}\n      <motion.div variants={variants} className=\"bg-muted/40 p-6\">\n        <Button onClick={onNextStep} size=\"lg\" className=\"w-full\">\n          Next Step\n        </Button>\n      </motion.div>\n    </Card>\n  );\n};\n",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "ruixen.ui",
+    "slug": "project-progress-card",
+    "registry_url": "https://21st.dev/r/ruixen.ui/project-progress-card",
+    "title": "ProjectProgressCard",
+    "description": "The ProjectProgressCard is a visually engaging dashboard component built entirely with Shadcn UI and Framer Motion. It provides a clear overview of a project’s status, showing key details such as the project title, manager, due date, and a list of milestones. Each milestone is displayed in a vertical timeline with a progress line, with completed milestones marked distinctly from pending ones. The card includes smooth animations for loading and interactions, making it feel dynamic and responsive. A “Next Step” button at the bottom allows users to take immediate action, making this component ideal for project management dashboards or workflow tracking. Its clean layout, vertical progress visualization, and interactive design help users quickly understand project progress at a glance.",
+    "category": "card",
+    "category_group": "UI Components",
+    "downloads": 12,
+    "likes": 0
+  }
+}

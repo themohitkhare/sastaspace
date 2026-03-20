@@ -1,0 +1,29 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "animated-feature-card",
+  "type": "registry:component",
+  "title": "Animated Feature Card",
+  "description": "A animated-feature-card component.",
+  "dependencies": [
+    "framer-motion"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/ui/animated-feature-card.tsx",
+      "content": "import React from 'react';\nimport { motion } from 'framer-motion';\nimport { cn } from '@/lib/utils'; // Assuming a 'cn' utility from shadcn\n\n// Props interface for type-safety and reusability\ninterface AnimatedFeatureCardProps {\n  title: string;\n  description: string;\n  imageSrc: string;\n  featureNumber: string;\n  handle: string;\n  className?: string;\n}\n\n/**\n * A reusable card component for showcasing features with an animation effect.\n * It's designed to be responsive and theme-adaptive using shadcn's CSS variables.\n */\nexport const AnimatedFeatureCard = ({\n  title,\n  description,\n  imageSrc,\n  featureNumber,\n  handle,\n  className,\n}: AnimatedFeatureCardProps) => {\n  // Animation variants for framer-motion\n  const cardVariants = {\n    offscreen: {\n      y: 50,\n      opacity: 0,\n    },\n    onscreen: {\n      y: 0,\n      opacity: 1,\n      transition: {\n        type: 'spring',\n        bounce: 0.4,\n        duration: 0.8,\n      },\n    },\n  };\n\n  return (\n    <motion.div\n      className={cn(\n        'relative flex w-full max-w-sm flex-col overflow-hidden rounded-2xl bg-card p-6 shadow-sm',\n        className\n      )}\n      initial=\"offscreen\"\n      whileInView=\"onscreen\"\n      viewport={{ once: true, amount: 0.5 }}\n      variants={cardVariants}\n      whileHover={{ scale: 1.02, transition: { duration: 0.2 } }}\n    >\n      {/* Top section: Title */}\n      <div className=\"mb-6 rounded-lg bg-background/50 p-3 text-center text-sm text-card-foreground\">\n        <p>{title}</p>\n      </div>\n\n      {/* Middle section: Image */}\n      <div className=\"flex flex-grow items-center justify-center\">\n        <img\n          src={imageSrc}\n          alt={title}\n          className=\"h-auto w-full max-w-[250px] object-contain\"\n        />\n      </div>\n\n      {/* Bottom section: Description and metadata */}\n      <div className=\"mt-6 flex flex-col items-center text-center\">\n        <p className=\"text-lg font-medium text-foreground\">{description}</p>\n      </div>\n\n      <div className=\"mt-8 flex items-center justify-between text-muted-foreground\">\n        <span className=\"text-sm font-mono\">{featureNumber}</span>\n        <span className=\"text-sm font-medium\">{handle}</span>\n      </div>\n    </motion.div>\n  );\n};",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "ravikatiyar162",
+    "slug": "animated-feature-card",
+    "registry_url": "https://21st.dev/r/ravikatiyar162/animated-feature-card",
+    "title": "Animated Feature Card",
+    "description": "Animated Feature Card\nA visually polished card component that uses framer-motion for a subtle load-in animation and hover effect. It's designed to be highly reusable for showcasing features or portfolio items.",
+    "category": "card",
+    "category_group": "UI Components",
+    "downloads": 3,
+    "likes": 0
+  }
+}

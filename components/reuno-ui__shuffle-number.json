@@ -1,0 +1,33 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "shuffle-number",
+  "type": "registry:component",
+  "title": "Shuffle Number",
+  "description": "A shuffle-number component.",
+  "dependencies": [
+    "@number-flow/react",
+    "framer-motion",
+    "lucide-react"
+  ],
+  "registryDependencies": [
+    "https://21st.dev/r/shadcn/badge"
+  ],
+  "files": [
+    {
+      "path": "src/components/ui/shuffle-number.tsx",
+      "content": "\"use client\"\n\nimport React from \"react\"\nimport NumberFlow, { useCanAnimate } from \"@number-flow/react\"\nimport { motion } from \"framer-motion\"\nimport { ArrowUp } from \"lucide-react\"\n\nimport { cn } from \"@/lib/utils\"\n\nconst MotionNumberFlow = motion.create(NumberFlow)\nconst MotionArrowUp = motion.create(ArrowUp)\n\nexport default function AnimatedNumberRandom({\n  value,\n  diff,\n}: {\n  value: number\n  diff: number\n}) {\n  const canAnimate = useCanAnimate()\n\n  return (\n    <>\n      <span className=\"flex items-center justify-center gap-2\">\n        <NumberFlow\n          value={value}\n          className=\"text-5xl font-semibold\"\n          format={{ style: \"currency\", currency: \"USD\" }}\n        />\n        <motion.span\n          className={cn(\n            diff > 0 ? \"bg-emerald-400\" : \"bg-red-500\",\n            \"inline-flex items-center px-[0.3em] text-white transition-colors duration-300\"\n          )}\n          style={{ borderRadius: 999 }}\n          layout={canAnimate}\n          transition={{ layout: { duration: 0.9, bounce: 0, type: \"spring\" } }}\n        >\n          {\" \"}\n          <MotionArrowUp\n            className=\"mr-0.5 size-[0.75em]\"\n            absoluteStrokeWidth\n            strokeWidth={3}\n            transition={{\n              rotate: { type: \"spring\", duration: 0.5, bounce: 0 },\n            }}\n            animate={{ rotate: diff > 0 ? 0 : -180 }}\n            initial={false}\n          />{\" \"}\n          <MotionNumberFlow\n            value={diff}\n            className=\"font-semibold\"\n            format={{ style: \"percent\", maximumFractionDigits: 2 }}\n            layout={canAnimate}\n            layoutRoot={canAnimate}\n          />{\" \"}\n        </motion.span>\n      </span>\n    </>\n  )\n}\n",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "reuno-ui",
+    "slug": "shuffle-number",
+    "registry_url": "https://21st.dev/r/reuno-ui/shuffle-number",
+    "title": "Shuffle Number ",
+    "description": "Here is Shuffle Number  component",
+    "category": "number",
+    "category_group": "UI Components",
+    "downloads": 28,
+    "likes": 0
+  }
+}

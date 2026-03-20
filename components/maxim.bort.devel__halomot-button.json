@@ -1,0 +1,37 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "halomot-button",
+  "type": "registry:component",
+  "title": "Halomot Button",
+  "description": "A halomot-button component.",
+  "dependencies": [],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/ui/halomot-button.tsx",
+      "content": "\"use client\";\n    import React, { useState, useRef } from \"react\";\n    \n    interface HalomotButtonProps {\n      gradient?: string; // Gradient for the button border/background\n      inscription: string; // Button text\n      onClick: () => void;\n      fillWidth?: boolean;\n      fixedWidth?: string;\n      href?: string;\n      backgroundColor?: string; // Solid color for the inner button (not gradient)\n      icon?: React.ReactElement;\n      borderWidth?: string; // Controls the padding (thickness of the gradient border)\n      padding?: string; // Custom padding for the inner button, e.g., \"1rem 4rem\"\n      outerBorderRadius?: string; // Border radius for the gradient outer border\n      innerBorderRadius?: string; // Border radius for the inner button\n      textColor?: string; // Text color for the button, default #fff\n      hoverTextColor?: string;\n    }\n    \n    export const HalomotButton: React.FC<HalomotButtonProps> = ({\n      gradient = \"linear-gradient(135deg, #4776cb, #a19fe5, #6cc606)\",\n      inscription,\n      onClick,\n      fillWidth = false,\n      fixedWidth,\n      href,\n      backgroundColor = \"#000\",\n      icon,\n      borderWidth = \"1px\",\n      padding,\n      outerBorderRadius = \"6.34px\",\n      innerBorderRadius = \"6px\",\n      textColor = \"#fff\",\n      hoverTextColor,\n    }) => {\n      const [isHovered, setIsHovered] = useState(false);\n      const [delayedColor, setDelayedColor] = useState<string | undefined>(undefined);\n      const timeoutRef = useRef<NodeJS.Timeout | null>(null);\n    \n      // Container style for fixed width\n      const containerStyle: React.CSSProperties = fixedWidth\n        ? { width: fixedWidth, display: \"inline-block\" }\n        : {};\n    \n      // Outer button style (gradient border)\n      const buttonStyle: React.CSSProperties = {\n        margin: fillWidth || fixedWidth ? \"0\" : \"auto\",\n        padding: borderWidth,\n        background: gradient,\n        border: \"0\",\n        borderRadius: outerBorderRadius,\n        color: textColor,\n        fontWeight: \"bold\",\n        display: \"flex\",\n        justifyContent: \"center\",\n        alignItems: \"center\",\n        textDecoration: \"none\",\n        userSelect: \"none\",\n        WebkitUserSelect: \"none\",\n        whiteSpace: \"nowrap\",\n        transition: \"all .3s\",\n        width: fillWidth || fixedWidth ? \"100%\" : \"fit-content\",\n        flexDirection: \"row\",\n        boxSizing: \"border-box\",\n      };\n    \n      // Inner span style (actual clickable area)\n      const spanStyle: React.CSSProperties = {\n        background: isHovered ? \"none\" : backgroundColor,\n        padding: padding ?? (fillWidth || fixedWidth ? \"1rem 0\" : \"1rem 4rem\"),\n        border: \"0\",\n        borderRadius: innerBorderRadius,\n        width: \"100%\",\n        height: \"100%\",\n        transition: hoverTextColor ? \"color 0.3s, background 300ms\" : \"background 300ms\",\n        display: \"flex\",\n        alignItems: \"center\",\n        justifyContent: \"center\",\n        fontWeight: \"bold\",\n        color: delayedColor ? delayedColor : textColor,\n        whiteSpace: \"nowrap\",\n        fontFamily: \"inherit\",\n        fontSize: \"1rem\",\n        gap: icon ? \"0.5em\" : 0,\n        flexDirection: \"row\",\n        boxSizing: \"border-box\",\n        cursor: \"pointer\",\n      };\n    \n      // Icon style\n      const iconStyle: React.CSSProperties = {\n        display: \"inline-flex\",\n        alignItems: \"center\",\n        height: \"1em\",\n        width: \"1em\",\n        fontSize: \"1.1em\",\n        verticalAlign: \"middle\",\n        flexShrink: 0,\n      };\n    \n      // No delay, just set color immediately\n      const handleMouseEnter = () => {\n        setIsHovered(true);\n        if (hoverTextColor) {\n          setDelayedColor(hoverTextColor);\n        }\n      };\n    \n      const handleMouseLeave = () => {\n        setIsHovered(false);\n        setDelayedColor(undefined);\n      };\n    \n      const handleClick = (\n        e: React.MouseEvent<HTMLAnchorElement | HTMLButtonElement, MouseEvent>\n      ) => {\n        e.preventDefault();\n        onClick();\n      };\n    \n      const ButtonContent = (\n        <span\n          style={spanStyle}\n          onMouseEnter={handleMouseEnter}\n          onMouseLeave={handleMouseLeave}\n        >\n          {icon && React.cloneElement(icon, { style: iconStyle })}\n          {inscription}\n        </span>\n      );\n    \n      const ButtonElement = href ? (\n        <a href={href} style={buttonStyle} onClick={handleClick}>\n          {ButtonContent}\n        </a>\n      ) : (\n        <button type=\"button\" style={buttonStyle} onClick={handleClick}>\n          {ButtonContent}\n        </button>\n      );\n    \n      return fixedWidth ? (\n        <div style={containerStyle}>{ButtonElement}</div>\n      ) : (\n        ButtonElement\n      );\n    };\n",
+      "type": "registry:component"
+    }
+  ],
+  "cssVars": {
+    "light": {
+      "--halomot-button-background": "#fff",
+      "--halomot-button-foreground": "#0a0a0a"
+    },
+    "dark": {
+      "--halomot-button-background": "#0a0a0a",
+      "--halomot-button-foreground": "#fff"
+    }
+  },
+  "_meta": {
+    "author": "maxim.bort.devel",
+    "slug": "halomot-button",
+    "registry_url": "https://21st.dev/r/maxim.bort.devel/halomot-button",
+    "title": "Halomot Button",
+    "description": "A stylish button with a vibrant gradient that fills it on hover.\n\nFor credit information and Vue version, please visit https://namer-ui-for-vue.netlify.app/components/halomot-button",
+    "category": "button",
+    "category_group": "UI Components",
+    "downloads": 24,
+    "likes": 0
+  }
+}

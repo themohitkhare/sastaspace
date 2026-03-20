@@ -1,0 +1,29 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "metal-button",
+  "type": "registry:component",
+  "title": "Metal Button",
+  "description": "A metal-button component.",
+  "dependencies": [],
+  "registryDependencies": [
+    "https://21st.dev/r/designali-in/liquid-glass-button"
+  ],
+  "files": [
+    {
+      "path": "src/components/ui/metal-button.tsx",
+      "content": "\nimport { cn } from \"@/lib/utils\";\nimport { MetalButton } from \"@/components/ui/liquid-glass-button\"\n\nexport const Component = () => {\n  \n\n  return (\n    <MetalButton>Metal Button</MetalButton>\n  );\n};\n",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "designali-in",
+    "slug": "metal-button",
+    "registry_url": "https://21st.dev/r/designali-in/metal-button",
+    "title": "Metal Button",
+    "description": "Metal Button",
+    "category": "button",
+    "category_group": "UI Components",
+    "downloads": 33,
+    "likes": 0
+  }
+}

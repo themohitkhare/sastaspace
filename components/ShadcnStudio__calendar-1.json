@@ -1,0 +1,32 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "calendar-1",
+  "type": "registry:component",
+  "title": "Calendar 1",
+  "description": "A calendar-1 component.",
+  "dependencies": [],
+  "registryDependencies": [
+    "https://21st.dev/r/shadcn/calendar-with-booked-days",
+    "https://21st.dev/r/shadcn/card",
+    "https://21st.dev/r/shadcn/select",
+    "https://21st.dev/r/shadcn/scroll-area"
+  ],
+  "files": [
+    {
+      "path": "src/components/ui/calendar-1.tsx",
+      "content": "'use client'\n\nimport { useState } from 'react'\n\nimport { Calendar } from '@/components/ui/calendar'\n\nconst CalendarDemo = () => {\n  const [date, setDate] = useState<Date | undefined>(new Date())\n\n  return (\n    <div>\n      <Calendar mode='single' defaultMonth={date} selected={date} onSelect={setDate} className='rounded-lg border' />\n      <p className='text-muted-foreground mt-3 text-center text-xs' role='region'>\n        Default Month\n      </p>\n    </div>\n  )\n}\n\nexport default CalendarDemo\n",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "ShadcnStudio",
+    "slug": "calendar-1",
+    "registry_url": "https://21st.dev/r/ShadcnStudio/calendar-1",
+    "title": "Calendar ",
+    "description": "Here is Calendar  component ",
+    "category": "calendar",
+    "category_group": "UI Components",
+    "downloads": 42,
+    "likes": 0
+  }
+}

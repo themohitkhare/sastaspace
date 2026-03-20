@@ -1,0 +1,27 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "animated-arrow-button",
+  "type": "registry:component",
+  "title": "Animated Arrow Button",
+  "description": "A animated-arrow-button component.",
+  "dependencies": [],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/ui/animated-arrow-button.tsx",
+      "content": "import React from 'react';\n\nexport const Button04 = ({ text = \"Nothing-Plop\" }) => {\n  // Define dot indices for the two icon variations\n  const firstIconDots = [0, 2, 2, 1, 2, 0, 1, 1, 2, 2, 0, 1, 0, 2, 2, 1, 0, 2, 2, 2, 2, 0, 1, 0, 2];\n  const secondIconDots = [0, 2, 2, 1, 2, 0, 1, 1, 2];\n\n  return (\n    <a href=\"#\" className=\"button04 w-inline-block\">\n      <span className=\"button04_bg\"></span>\n      <span data-text={text} className=\"button04_inner\">\n        <span className=\"button04_text\">{text}</span>\n        <span className=\"button04_icon-wrap\">\n          <span \n            style={{ '--index-parent': 0 } as React.CSSProperties} \n            className=\"button04_icon\"\n          >\n            {firstIconDots.map((index, i) => (\n              <span\n                key={`first-dot-${i}`}\n                style={{ '--index': index }as React.CSSProperties}\n                className=\"button04_dot\"\n              ></span>\n            ))}\n          </span>\n          <span \n            style={{ '--index-parent': 1 }as React.CSSProperties} \n            className=\"button04_icon is-arrow\"\n          >\n            {secondIconDots.map((index, i) => (\n              <span\n                key={`second-dot-${i}`}\n                style={{ '--index': index }as React.CSSProperties}\n                className=\"button04_dot\"\n              ></span>\n            ))}\n          </span>\n        </span>\n      </span>\n    </a>\n  );\n};\n",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "nextjsshop",
+    "slug": "animated-arrow-button",
+    "registry_url": "https://21st.dev/r/nextjsshop/animated-arrow-button",
+    "title": "Animated Arrow Button",
+    "description": "A playful button with a minimal dotted-arrow animation that gives a quirky \"plop\" effect. Designed for fun, experimental, or creative interfaces, it adds a touch of humor and uniqueness compared to standard buttons.",
+    "category": "button",
+    "category_group": "UI Components",
+    "downloads": 33,
+    "likes": 0
+  }
+}

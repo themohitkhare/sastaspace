@@ -1,0 +1,29 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "card-9",
+  "type": "registry:component",
+  "title": "Card 9",
+  "description": "A card-9 component.",
+  "dependencies": [
+    "framer-motion"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/ui/card-9.tsx",
+      "content": "import * as React from 'react';\nimport { motion } from 'framer-motion';\nimport { cn } from '@/lib/utils'; // Assuming you have a cn utility from shadcn\n\n// Define the type for a single sentiment data point\nexport interface SentimentData {\n  label: string;\n  value: number;\n  color: string; // e.g., 'bg-green-500' or a custom theme color\n  icon: React.ReactNode;\n}\n\n// Define the props for the main component\nexport interface SentimentAnalysisCardProps extends React.HTMLAttributes<HTMLDivElement> {\n  title: string;\n  overallSentiment: string;\n  overallSentimentIcon?: React.ReactNode;\n  data: SentimentData[];\n}\n\nconst SentimentAnalysisCard = React.forwardRef<HTMLDivElement, SentimentAnalysisCardProps>(\n  ({ title, overallSentiment, overallSentimentIcon, data, className, ...props }, ref) => {\n    \n    // Calculate the total value to determine percentages\n    const totalValue = React.useMemo(() => data.reduce((acc, curr) => acc + curr.value, 0), [data]);\n\n    return (\n      <div\n        ref={ref}\n        className={cn(\n          'w-full max-w-md rounded-xl border bg-card text-card-foreground shadow-sm p-6',\n          className\n        )}\n        aria-labelledby=\"sentiment-card-title\"\n        role=\"region\"\n        {...props}\n      >\n        {/* Card Header */}\n        <div className=\"flex justify-between items-center mb-4\">\n          <h3 id=\"sentiment-card-title\" className=\"text-lg font-semibold text-card-foreground\">\n            {title}\n          </h3>\n          <div className=\"flex items-center gap-2 text-sm font-medium text-green-500\">\n            {overallSentimentIcon}\n            <span>{overallSentiment}</span>\n          </div>\n        </div>\n\n        {/* Animated Progress Bar */}\n        <div \n          className=\"relative w-full h-4 flex overflow-hidden rounded-full bg-muted mb-4\"\n          role=\"progressbar\"\n          aria-label={`Sentiment distribution: ${data.map(d => `${d.label} ${((d.value / totalValue) * 100).toFixed(0)}%`).join(', ')}`}\n          aria-valuemin={0}\n          aria-valuemax={100}\n        >\n          {data.map((item, index) => {\n            const percentage = totalValue > 0 ? (item.value / totalValue) * 100 : 0;\n            return (\n              <motion.div\n                key={index}\n                className={cn('h-full', item.color)}\n                initial={{ width: '0%' }}\n                animate={{ width: `${percentage}%` }}\n                transition={{ duration: 0.8, ease: 'easeInOut', delay: index * 0.1 }}\n                style={{\n                  // Add a subtle border between segments for better visual separation\n                  borderRight: index < data.length - 1 ? '2px solid hsl(var(--card))' : 'none'\n                }}\n              />\n            );\n          })}\n        </div>\n\n        {/* Legend */}\n        <div className=\"flex justify-start items-center gap-6 text-sm text-muted-foreground\">\n          {data.map((item, index) => (\n            <div key={index} className=\"flex items-center gap-2\">\n              {item.icon}\n              <span>{item.label}</span>\n            </div>\n          ))}\n        </div>\n      </div>\n    );\n  }\n);\n\nSentimentAnalysisCard.displayName = 'SentimentAnalysisCard';\n\nexport { SentimentAnalysisCard };",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "ravikatiyar162",
+    "slug": "card-9",
+    "registry_url": "https://21st.dev/r/ravikatiyar162/card-9",
+    "title": "Card",
+    "description": "Sentiment Analysis Card\nA visually engaging card component to display sentiment analysis results with an animated, segmented progress bar. It's built to be fully reusable by accepting data through props.",
+    "category": "card",
+    "category_group": "UI Components",
+    "downloads": 21,
+    "likes": 0
+  }
+}

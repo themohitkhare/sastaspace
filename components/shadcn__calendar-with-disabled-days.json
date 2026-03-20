@@ -1,0 +1,29 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "calendar-with-disabled-days",
+  "type": "registry:component",
+  "title": "Calendar With Disabled Days",
+  "description": "A calendar-with-disabled-days component.",
+  "dependencies": [],
+  "registryDependencies": [
+    "https://21st.dev/r/originui/calendar"
+  ],
+  "files": [
+    {
+      "path": "src/components/ui/calendar-with-disabled-days.tsx",
+      "content": "import { cn } from \"@/lib/utils\";\nimport { useState } from \"react\";\n\nexport const Component = () => {\n  const [count, setCount] = useState(0);\n\n  return (\n    <div className={cn(\"flex flex-col items-center gap-4 p-4 rounded-lg\")}>\n      <h1 className=\"text-2xl font-bold mb-2\">Component Example</h1>\n      <h2 className=\"text-xl font-semibold\">{count}</h2>\n      <div className=\"flex gap-2\">\n        <button onClick={() => setCount((prev) => prev - 1)}>-</button>\n        <button onClick={() => setCount((prev) => prev + 1)}>+</button>\n      </div>\n    </div>\n  );\n};\n",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "shadcn",
+    "slug": "calendar-with-disabled-days",
+    "registry_url": "https://21st.dev/r/shadcn/calendar-with-disabled-days",
+    "title": "Calendar with disabled days",
+    "description": "Here is modern shadcn calendar with disabled days",
+    "category": "calendar",
+    "category_group": "UI Components",
+    "downloads": 6,
+    "likes": 0
+  }
+}

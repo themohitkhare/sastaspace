@@ -1,0 +1,62 @@
+{
+  "name": "signup-form",
+  "type": "registry:ui",
+  "dependencies": [
+    "@tabler/icons-react",
+    "@radix-ui/react-slot",
+    "class-variance-authority",
+    "@radix-ui/react-label",
+    "lucide-react",
+    "@radix-ui/react-checkbox"
+  ],
+  "registryDependencies": [
+    "https://21st.dev/r/shadcn/input",
+    "https://21st.dev/r/shadcn/label"
+  ],
+  "files": [
+    {
+      "path": "/components/ui/signup-form.tsx",
+      "content": "\"use client\";\nimport React from \"react\";\nimport { Label } from \"@/components/ui/label\";\nimport { Input } from \"@/components/ui/input\";\nimport { cn } from \"@/lib/utils\";\nimport {\n  IconBrandGithub,\n  IconBrandGoogle,\n  IconBrandOnlyfans,\n} from \"@tabler/icons-react\";\n\nexport function SignupForm() {\n  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {\n    e.preventDefault();\n    console.log(\"Form submitted\");\n  };\n  return (\n    <div className=\"max-w-md w-full mx-auto rounded-none md:rounded-2xl p-4 md:p-8 shadow-input bg-white dark:bg-black\">\n      <h2 className=\"font-bold text-xl text-neutral-800 dark:text-neutral-200\">\n        Welcome to Aceternity\n      </h2>\n      <p className=\"text-neutral-600 text-sm max-w-sm mt-2 dark:text-neutral-300\">\n        Login to aceternity if you can because we don&apos;t have a login flow\n        yet\n      </p>\n\n      <form className=\"my-8\" onSubmit={handleSubmit}>\n        <div className=\"flex flex-col md:flex-row space-y-2 md:space-y-0 md:space-x-2 mb-4\">\n          <LabelInputContainer>\n            <Label htmlFor=\"firstname\">First name</Label>\n            <Input id=\"firstname\" placeholder=\"Tyler\" type=\"text\" />\n          </LabelInputContainer>\n          <LabelInputContainer>\n            <Label htmlFor=\"lastname\">Last name</Label>\n            <Input id=\"lastname\" placeholder=\"Durden\" type=\"text\" />\n          </LabelInputContainer>\n        </div>\n        <LabelInputContainer className=\"mb-4\">\n          <Label htmlFor=\"email\">Email Address</Label>\n          <Input id=\"email\" placeholder=\"projectmayhem@fc.com\" type=\"email\" />\n        </LabelInputContainer>\n        <LabelInputContainer className=\"mb-4\">\n          <Label htmlFor=\"password\">Password</Label>\n          <Input id=\"password\" placeholder=\"••••••••\" type=\"password\" />\n        </LabelInputContainer>\n        <LabelInputContainer className=\"mb-8\">\n          <Label htmlFor=\"twitterpassword\">Your twitter password</Label>\n          <Input\n            id=\"twitterpassword\"\n            placeholder=\"••••••••\"\n            type=\"twitterpassword\"\n          />\n        </LabelInputContainer>\n\n        <button\n          className=\"bg-gradient-to-br relative group/btn from-black dark:from-zinc-900 dark:to-zinc-900 to-neutral-600 block dark:bg-zinc-800 w-full text-white rounded-md h-10 font-medium shadow-[0px_1px_0px_0px_#ffffff40_inset,0px_-1px_0px_0px_#ffffff40_inset] dark:shadow-[0px_1px_0px_0px_var(--zinc-800)_inset,0px_-1px_0px_0px_var(--zinc-800)_inset]\"\n          type=\"submit\"\n        >\n          Sign up &rarr;\n          <BottomGradient />\n        </button>\n\n        <div className=\"bg-gradient-to-r from-transparent via-neutral-300 dark:via-neutral-700 to-transparent my-8 h-[1px] w-full\" />\n\n        <div className=\"flex flex-col space-y-4\">\n          <button\n            className=\" relative group/btn flex space-x-2 items-center justify-start px-4 w-full text-black rounded-md h-10 font-medium shadow-input bg-gray-50 dark:bg-zinc-900 dark:shadow-[0px_0px_1px_1px_var(--neutral-800)]\"\n            type=\"submit\"\n          >\n            <IconBrandGithub className=\"h-4 w-4 text-neutral-800 dark:text-neutral-300\" />\n            <span className=\"text-neutral-700 dark:text-neutral-300 text-sm\">\n              GitHub\n            </span>\n            <BottomGradient />\n          </button>\n          <button\n            className=\" relative group/btn flex space-x-2 items-center justify-start px-4 w-full text-black rounded-md h-10 font-medium shadow-input bg-gray-50 dark:bg-zinc-900 dark:shadow-[0px_0px_1px_1px_var(--neutral-800)]\"\n            type=\"submit\"\n          >\n            <IconBrandGoogle className=\"h-4 w-4 text-neutral-800 dark:text-neutral-300\" />\n            <span className=\"text-neutral-700 dark:text-neutral-300 text-sm\">\n              Google\n            </span>\n            <BottomGradient />\n          </button>\n          <button\n            className=\" relative group/btn flex space-x-2 items-center justify-start px-4 w-full text-black rounded-md h-10 font-medium shadow-input bg-gray-50 dark:bg-zinc-900 dark:shadow-[0px_0px_1px_1px_var(--neutral-800)]\"\n            type=\"submit\"\n          >\n            <IconBrandOnlyfans className=\"h-4 w-4 text-neutral-800 dark:text-neutral-300\" />\n            <span className=\"text-neutral-700 dark:text-neutral-300 text-sm\">\n              OnlyFans\n            </span>\n            <BottomGradient />\n          </button>\n        </div>\n      </form>\n    </div>\n  );\n}\n\nconst BottomGradient = () => {\n  return (\n    <>\n      <span className=\"group-hover/btn:opacity-100 block transition duration-500 opacity-0 absolute h-px w-full -bottom-px inset-x-0 bg-gradient-to-r from-transparent via-cyan-500 to-transparent\" />\n      <span className=\"group-hover/btn:opacity-100 blur-sm block transition duration-500 opacity-0 absolute h-px w-1/2 mx-auto -bottom-px inset-x-10 bg-gradient-to-r from-transparent via-indigo-500 to-transparent\" />\n    </>\n  );\n};\n\nconst LabelInputContainer = ({\n  children,\n  className,\n}: {\n  children: React.ReactNode;\n  className?: string;\n}) => {\n  return (\n    <div className={cn(\"flex flex-col space-y-2 w-full\", className)}>\n      {children}\n    </div>\n  );\n};\n",
+      "type": "registry:ui",
+      "target": ""
+    },
+    {
+      "path": "/components/ui/input.tsx",
+      "content": "import * as React from \"react\"\n\nimport { cn } from \"@/lib/utils\"\n\nexport interface InputProps\n  extends React.InputHTMLAttributes<HTMLInputElement> {}\n\nconst Input = React.forwardRef<HTMLInputElement, InputProps>(\n  ({ className, type, ...props }, ref) => {\n    return (\n      <input\n        type={type}\n        className={cn(\n          \"flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50\",\n          className\n        )}\n        ref={ref}\n        {...props}\n      />\n    )\n  }\n)\nInput.displayName = \"Input\"\n\nexport { Input }\n",
+      "type": "registry:ui",
+      "target": ""
+    },
+    {
+      "path": "/components/ui/button.tsx",
+      "content": "import * as React from \"react\"\nimport { Slot } from \"@radix-ui/react-slot\"\nimport { cva, type VariantProps } from \"class-variance-authority\"\n\nimport { cn } from \"@/lib/utils\"\n\nconst buttonVariants = cva(\n  \"inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50\",\n  {\n    variants: {\n      variant: {\n        default: \"bg-primary text-primary-foreground hover:bg-primary/90\",\n        destructive:\n          \"bg-destructive text-destructive-foreground hover:bg-destructive/90\",\n        outline:\n          \"border border-input bg-background hover:bg-accent hover:text-accent-foreground\",\n        secondary:\n          \"bg-secondary text-secondary-foreground hover:bg-secondary/80\",\n        ghost: \"hover:bg-accent hover:text-accent-foreground\",\n        link: \"text-primary underline-offset-4 hover:underline\",\n      },\n      size: {\n        default: \"h-10 px-4 py-2\",\n        sm: \"h-9 rounded-md px-3\",\n        lg: \"h-11 rounded-md px-8\",\n        icon: \"h-10 w-10\",\n      },\n    },\n    defaultVariants: {\n      variant: \"default\",\n      size: \"default\",\n    },\n  },\n)\n\nexport interface ButtonProps\n  extends React.ButtonHTMLAttributes<HTMLButtonElement>,\n    VariantProps<typeof buttonVariants> {\n  asChild?: boolean\n}\n\nconst Button = React.forwardRef<HTMLButtonElement, ButtonProps>(\n  ({ className, variant, size, asChild = false, ...props }, ref) => {\n    const Comp = asChild ? Slot : \"button\"\n    return (\n      <Comp\n        className={cn(buttonVariants({ variant, size, className }))}\n        ref={ref}\n        {...props}\n      />\n    )\n  },\n)\nButton.displayName = \"Button\"\n\nexport { Button, buttonVariants }\n",
+      "type": "registry:ui",
+      "target": ""
+    },
+    {
+      "path": "/components/ui/label.tsx",
+      "content": "\"use client\"\n\nimport * as React from \"react\"\nimport * as LabelPrimitive from \"@radix-ui/react-label\"\nimport { cva, type VariantProps } from \"class-variance-authority\"\n\nimport { cn } from \"@/lib/utils\"\n\nconst labelVariants = cva(\n  \"text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70\",\n)\n\nconst Label = React.forwardRef<\n  React.ElementRef<typeof LabelPrimitive.Root>,\n  React.ComponentPropsWithoutRef<typeof LabelPrimitive.Root> &\n    VariantProps<typeof labelVariants>\n>(({ className, ...props }, ref) => (\n  <LabelPrimitive.Root\n    ref={ref}\n    className={cn(labelVariants(), className)}\n    {...props}\n  />\n))\nLabel.displayName = LabelPrimitive.Root.displayName\n\nexport { Label }\n",
+      "type": "registry:ui",
+      "target": ""
+    },
+    {
+      "path": "/components/ui/checkbox.tsx",
+      "content": "\"use client\"\n\nimport * as React from \"react\"\nimport * as CheckboxPrimitive from \"@radix-ui/react-checkbox\"\nimport { Check } from \"lucide-react\"\n\nimport { cn } from \"@/lib/utils\"\n\nconst Checkbox = React.forwardRef<\n  React.ElementRef<typeof CheckboxPrimitive.Root>,\n  React.ComponentPropsWithoutRef<typeof CheckboxPrimitive.Root>\n>(({ className, ...props }, ref) => (\n  <CheckboxPrimitive.Root\n    ref={ref}\n    className={cn(\n      \"peer h-4 w-4 shrink-0 rounded-sm border border-primary ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground\",\n      className,\n    )}\n    {...props}\n  >\n    <CheckboxPrimitive.Indicator\n      className={cn(\"flex items-center justify-center text-current\")}\n    >\n      <Check className=\"h-4 w-4\" />\n    </CheckboxPrimitive.Indicator>\n  </CheckboxPrimitive.Root>\n))\nCheckbox.displayName = CheckboxPrimitive.Root.displayName\n\nexport { Checkbox }\n",
+      "type": "registry:ui",
+      "target": ""
+    }
+  ],
+  "tailwind": {
+    "config": {}
+  },
+  "_meta": {
+    "author": "aceternity",
+    "slug": "signup-form",
+    "registry_url": "https://21st.dev/r/aceternity/signup-form",
+    "title": "Signup Form",
+    "description": "A customizable form built on top of shadcn's input and label, with a touch of framer motion",
+    "category": "registration-signup",
+    "category_group": "UI Components",
+    "downloads": 923,
+    "likes": 10
+  }
+}

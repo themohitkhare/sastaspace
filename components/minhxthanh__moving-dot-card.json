@@ -1,0 +1,47 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "moving-dot-card",
+  "type": "registry:component",
+  "title": "Moving Dot Card",
+  "description": "A moving-dot-card component.",
+  "dependencies": [],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/ui/moving-dot-card.tsx",
+      "content": "import React, { useState, useEffect } from 'react';\n\nexport default function DotCard({ target = 777000, duration = 2000 }) {\n  const [count, setCount] = useState(0);\n\n  useEffect(() => {\n    let start = 0;\n    const end = target;\n    const range = end - start;\n    if (range <= 0) return;\n    const increment = Math.ceil(end / (duration / 50));\n    const timer = setInterval(() => {\n      start += increment;\n      if (start >= end) {\n        start = end;\n        clearInterval(timer);\n      }\n      setCount(start);\n    }, 50);\n    return () => clearInterval(timer);\n  }, [target, duration]);\n\n  const display = count < 1000 ? count : `${Math.floor(count / 1000)}k`;\n\n  return (\n    <div className=\"outer\">\n      <div className=\"dot\"></div>\n      <div className=\"card\">\n        <div className=\"ray\"></div>\n        <div className=\"text\">{display}</div>\n        <div className=\"label\">Views</div>\n        <div className=\"line topl\"></div>\n        <div className=\"line leftl\"></div>\n        <div className=\"line bottoml\"></div>\n        <div className=\"line rightl\"></div>\n      </div>\n    </div>\n  );\n}\n",
+      "type": "registry:component"
+    }
+  ],
+  "css": {
+    "@keyframes moveDot": {
+      "0%, 100%": {
+        "top": "10%",
+        "right": "10%"
+      },
+      "25%": {
+        "top": "10%",
+        "right": "calc(100% - 35px)"
+      },
+      "50%": {
+        "top": "calc(100% - 30px)",
+        "right": "calc(100% - 35px)"
+      },
+      "75%": {
+        "top": "calc(100% - 30px)",
+        "right": "10%"
+      }
+    }
+  },
+  "_meta": {
+    "author": "minhxthanh",
+    "slug": "moving-dot-card",
+    "registry_url": "https://21st.dev/r/minhxthanh/moving-dot-card",
+    "title": "Moving Dot Card",
+    "description": "A dynamic views counter card featuring an animated dot traversing the border, gradient-highlighted count display, and stylized corner lines for a sci-fi UI effect",
+    "category": "card",
+    "category_group": "UI Components",
+    "downloads": 186,
+    "likes": 0
+  }
+}

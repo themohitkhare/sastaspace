@@ -1,0 +1,29 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "card-21",
+  "type": "registry:component",
+  "title": "Card 21",
+  "description": "A card-21 component.",
+  "dependencies": [
+    "lucide-react"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/ui/card-21.tsx",
+      "content": "import * as React from \"react\";\nimport { cn } from \"@/lib/utils\"; // Your utility for merging class names\nimport { ArrowRight } from \"lucide-react\";\n\n// Define the props for the DestinationCard component\ninterface DestinationCardProps extends React.HTMLAttributes<HTMLDivElement> {\n  imageUrl: string;\n  location: string;\n  flag: string;\n  stats: string;\n  href: string;\n  themeColor: string; // e.g., \"150 50% 25%\" for a deep green\n}\n\nconst DestinationCard = React.forwardRef<HTMLDivElement, DestinationCardProps>(\n  ({ className, imageUrl, location, flag, stats, href, themeColor, ...props }, ref) => {\n    return (\n      // The 'group' class enables hover effects on child elements\n      <div\n        ref={ref}\n        style={{\n          // @ts-ignore - CSS custom properties are valid\n          \"--theme-color\": themeColor,\n        } as React.CSSProperties}\n        className={cn(\"group w-full h-full\", className)}\n        {...props}\n      >\n        <a\n          href={href}\n          className=\"relative block w-full h-full rounded-2xl overflow-hidden shadow-lg \n                     transition-all duration-500 ease-in-out \n                     group-hover:scale-105 group-hover:shadow-[0_0_60px_-15px_hsl(var(--theme-color)/0.6)]\"\n          aria-label={`Explore details for ${location}`}\n          style={{\n             boxShadow: `0 0 40px -15px hsl(var(--theme-color) / 0.5)`\n          }}\n        >\n          {/* Background Image with Parallax Zoom */}\n          <div\n            className=\"absolute inset-0 bg-cover bg-center \n                       transition-transform duration-500 ease-in-out group-hover:scale-110\"\n            style={{ backgroundImage: `url(${imageUrl})` }}\n          />\n\n          {/* Themed Gradient Overlay */}\n          <div\n            className=\"absolute inset-0\"\n            style={{\n              background: `linear-gradient(to top, hsl(var(--theme-color) / 0.9), hsl(var(--theme-color) / 0.6) 30%, transparent 60%)`,\n            }}\n          />\n          \n          {/* Content */}\n          <div className=\"relative flex flex-col justify-end h-full p-6 text-white\">\n            <h3 className=\"text-3xl font-bold tracking-tight\">\n              {location} <span className=\"text-2xl ml-1\">{flag}</span>\n            </h3>\n            <p className=\"text-sm text-white/80 mt-1 font-medium\">{stats}</p>\n\n            {/* Explore Button */}\n            <div className=\"mt-8 flex items-center justify-between bg-[hsl(var(--theme-color)/0.2)] backdrop-blur-md border border-[hsl(var(--theme-color)/0.3)] \n                           rounded-lg px-4 py-3 \n                           transition-all duration-300 \n                           group-hover:bg-[hsl(var(--theme-color)/0.4)] group-hover:border-[hsl(var(--theme-color)/0.5)]\">\n              <span className=\"text-sm font-semibold tracking-wide\">Explore Now</span>\n              <ArrowRight className=\"h-4 w-4 transform transition-transform duration-300 group-hover:translate-x-1\" />\n            </div>\n          </div>\n        </a>\n      </div>\n    );\n  }\n);\nDestinationCard.displayName = \"DestinationCard\";\n\nexport { DestinationCard };",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "ravikatiyar162",
+    "slug": "card-21",
+    "registry_url": "https://21st.dev/r/ravikatiyar162/card-21",
+    "title": "Card",
+    "description": "Destination Card\nA visually rich card component designed to showcase travel destinations. It features a background image, a content overlay, and an interactive 3D tilt effect on hover.",
+    "category": "card",
+    "category_group": "UI Components",
+    "downloads": 182,
+    "likes": 0
+  }
+}

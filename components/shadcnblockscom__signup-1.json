@@ -1,0 +1,32 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "signup-1",
+  "type": "registry:component",
+  "title": "Signup 1",
+  "description": "A signup-1 component.",
+  "dependencies": [
+    "react-icons"
+  ],
+  "registryDependencies": [
+    "https://21st.dev/r/shadcn/button",
+    "https://21st.dev/r/shadcn/input"
+  ],
+  "files": [
+    {
+      "path": "src/components/ui/signup-1.tsx",
+      "content": "import { FcGoogle } from \"react-icons/fc\";\n\nimport { Button } from \"@/components/ui/button\";\nimport { Input } from \"@/components/ui/input\";\n\ninterface Signup1Props {\n  heading?: string;\n  logo: {\n    url: string;\n    src: string;\n    alt: string;\n    title?: string;\n  };\n  signupText?: string;\n  googleText?: string;\n  loginText?: string;\n  loginUrl?: string;\n}\n\nconst Signup1 = ({\n  heading,\n  logo = {\n    url: \"https://www.shadcnblocks.com\",\n    src: \"https://www.shadcnblocks.com/images/block/logos/shadcnblockscom-wordmark.svg\",\n    alt: \"logo\",\n    title: \"shadcnblocks.com\",\n  },\n  googleText = \"Sign up with Google\",\n  signupText = \"Create an account\",\n  loginText = \"Already have an account?\",\n  loginUrl = \"#\",\n}: Signup1Props) => {\n  return (\n    <section className=\"bg-muted h-screen\">\n      <div className=\"flex h-full items-center justify-center\">\n        <div className=\"border-muted bg-background flex w-full max-w-sm flex-col items-center gap-y-8 rounded-md border px-6 py-12 shadow-md\">\n          <div className=\"flex flex-col items-center gap-y-2\">\n            {/* Logo */}\n            <div className=\"flex items-center gap-1 lg:justify-start\">\n              <a href={logo.url}>\n                <img\n                  src={logo.src}\n                  alt={logo.alt}\n                  title={logo.title}\n                  className=\"h-10 dark:invert\"\n                />\n              </a>\n            </div>\n            {heading && <h1 className=\"text-3xl font-semibold\">{heading}</h1>}\n          </div>\n          <div className=\"flex w-full flex-col gap-8\">\n            <div className=\"flex flex-col gap-4\">\n              <div className=\"flex flex-col gap-2\">\n                <Input\n                  type=\"email\"\n                  placeholder=\"Email\"\n                  required\n                />\n              </div>\n              <div className=\"flex flex-col gap-2\">\n                <Input\n                  type=\"password\"\n                  placeholder=\"Password\"\n                  required\n                />\n              </div>\n              <div className=\"flex flex-col gap-4\">\n                <Button type=\"submit\" className=\"mt-2 w-full\">\n                  {signupText}\n                </Button>\n                <Button variant=\"outline\" className=\"w-full\">\n                  <FcGoogle className=\"mr-2 size-5\" />\n                  {googleText}\n                </Button>\n              </div>\n            </div>\n          </div>\n          <div className=\"text-muted-foreground flex justify-center gap-1 text-sm\">\n            <p>{loginText}</p>\n            <a\n              href={loginUrl}\n              className=\"text-primary font-medium hover:underline\"\n            >\n              Login\n            </a>\n          </div>\n        </div>\n      </div>\n    </section>\n  );\n};\n\nexport { Signup1 };\n",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "shadcnblockscom",
+    "slug": "signup-1",
+    "registry_url": "https://21st.dev/r/shadcnblockscom/signup-1",
+    "title": "Signup 1",
+    "description": "Signup page with email and Google auth buttons",
+    "category": "sign-in",
+    "category_group": "UI Components",
+    "downloads": 197,
+    "likes": 0
+  }
+}

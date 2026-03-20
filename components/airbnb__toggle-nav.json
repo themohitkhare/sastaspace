@@ -1,0 +1,29 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "toggle-nav",
+  "type": "registry:component",
+  "title": "Toggle Nav",
+  "description": "A toggle-nav component.",
+  "dependencies": [
+    "@visx/responsive"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/ui/toggle-nav.tsx",
+      "content": "// src/components/ui/component.tsx\n\nimport React, { useState } from 'react';\nimport { ParentSize } from '@visx/responsive';\nimport { cn } from \"@/lib/utils\";\n\nconst Lines = ({ width, height }: { width: number; height: number }) => {\n  if (width < 10 || height < 10) return null;\n\n  const numLines = 8;\n  const pointsPerLine = 25;\n  const verticalSpreadFactor = 1.8;\n  const jaggedness = (height / numLines) / 2.5; \n  const linesData = Array.from({ length: numLines }).map((_, lineIndex) => {\n    const baseY = (height / (numLines + 1)) * (lineIndex + 1);\n    let pathString = `M 0 ${baseY + (Math.random() - 0.5) * jaggedness * 0.5}`; \n    for (let i = 1; i <= pointsPerLine; i++) {\n      const x = (width / pointsPerLine) * i;\n      const y = baseY + (Math.random() - 0.5) * jaggedness * verticalSpreadFactor;\n      pathString += ` L ${x.toFixed(2)} ${y.toFixed(2)}`;\n    }\n    return pathString;\n  });\n\n  return (\n    <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`}>\n      <rect width={width} height={height} fill=\"#000000\" />\n      {linesData.map((d, i) => (\n        <path key={i} d={d} stroke=\"white\" strokeWidth=\"1.5\" fill=\"none\" />\n      ))}\n    </svg>\n  );\n};\n\n\nconst Nav = () => {\n  return (\n    <ul className=\"responsive-nav-list\">\n      <li style={{ marginBottom: '0.5rem' }}><span role=\"img\" aria-label=\"robot\" style={{ fontSize: '2.5rem' }}>🤖</span></li>\n      <li>Home</li>\n      <li>Profile</li>\n      <li>Favorites</li>\n      <li>Settings</li>\n    </ul>\n  );\n};\n\nexport interface ComponentProps {\n  width: number;\n  height: number;\n  initialShowSidebar?: boolean;\n}\n\nexport const Component: React.FC<ComponentProps> = ({\n  width,\n  height,\n  initialShowSidebar = true,\n}) => {\n  const [showSidebar, setShowSidebar] = useState<boolean>(initialShowSidebar);\n\n  if (width < 20 || height < 20) return null;\n\n  const injectedStyles = `\n    .responsive-layout-container {\n      display: flex;\n      background-color: #ffffff;\n    }\n    .responsive-layout-nav {\n      display: flex;\n      flex: 0 0 220px;\n      padding: 1.5rem;\n      background-color: #fff;\n      transition: flex-basis 0.3s ease-in-out, min-width 0.3s ease-in-out, opacity 0.3s ease-in-out, padding 0.3s ease-in-out, border 0.3s ease-in-out;\n      overflow: hidden;\n    }\n    .responsive-layout-nav.hidden {\n        flex-basis: 0px !important;\n        min-width: 0px !important;\n        padding: 0rem !important;\n        opacity: 0 !important;\n        border-right: none !important; \n    }\n    .responsive-nav-list {\n      list-style: none;\n      padding: 0;\n      margin: 0;\n      width: 100%;\n    }\n    .responsive-nav-list li {\n      padding: 0.6rem 0;\n      cursor: pointer;\n      font-size: 1.6rem;\n      font-family: -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif;\n      color: #000000;\n    }\n    .responsive-layout-content {\n      display: flex;\n      flex: 1;\n      flex-direction: column;\n      overflow: hidden;\n      padding: 1rem;\n      background-color: #fff;\n      border-left: 1px solid #eeeeee;\n    }\n    .responsive-layout-controls {\n      margin-bottom: 0.5rem; /* Reduced margin */\n      text-align: left; /* Align button to left */\n    }\n    .responsive-layout-toggle-button {\n      padding: 0.25rem 0.75rem;\n      font-size: 0.8rem;\n      background-color: #f0f0f0;\n      color: black;\n      border: 1px solid #cccccc;\n      border-radius: 0.25rem;\n      cursor: pointer;\n      font-family: -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif;\n    }\n    .responsive-layout-toggle-button:hover {\n      background-color: #e0e0e0;\n    }\n    .responsive-layout-graph-area {\n      display: flex;\n      flex: 1;\n      overflow: hidden;\n      background: #000000;\n    }\n    .responsive-graph-container-class {\n        width: 100%;\n        height: 100%;\n    }\n  `;\n\n  return (\n    <>\n      <style>{injectedStyles}</style>\n      <div className=\"responsive-layout-container\" style={{ width, height }}>\n        <div className={cn(\"responsive-layout-nav\", !showSidebar && \"hidden\")}>\n          {showSidebar && <Nav />}\n        </div>\n        <div className=\"responsive-layout-content\">\n          <div className=\"responsive-layout-controls\">\n            <button\n              className=\"responsive-layout-toggle-button\"\n              onClick={(event) => {\n                event.preventDefault();\n                event.stopPropagation();\n                setShowSidebar(!showSidebar);\n              }}\n            >\n              toggle nav\n            </button>\n          </div>\n          <div className=\"responsive-layout-graph-area\">\n            <ParentSize className=\"responsive-graph-container-class\" debounceTime={10}>\n              {({ width: visWidth, height: visHeight }) => (\n                <Lines width={visWidth} height={visHeight} />\n              )}\n            </ParentSize>\n          </div>\n        </div>\n      </div>\n    </>\n  );\n};",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "airbnb",
+    "slug": "toggle-nav",
+    "registry_url": "https://21st.dev/r/airbnb/toggle-nav",
+    "title": "Toggle nav",
+    "description": "here is toggle nav component",
+    "category": "toggle",
+    "category_group": "UI Components",
+    "downloads": 1,
+    "likes": 0
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "pixel-button",
+  "type": "registry:component",
+  "title": "Pixel Button",
+  "description": "A pixel-button component.",
+  "dependencies": [],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/ui/pixel-button.tsx",
+      "content": "import React from 'react';\n\nexport const Button02 = ({ text = \"Pixel-Tetris\" }) => {\n  return (\n    <a href=\"#\" className=\"button02 w-inline-block\">\n      <span className=\"button02_bg\">\n        <span className=\"button02_bg-left\">\n          {[...Array(8)].map((_, index) => (\n            <span key={`left-${index}`} className=\"button02_bg-pixel\"></span>\n          ))}\n        </span>\n        <span className=\"button02_bg-mid\"></span>\n        <span className=\"button02_bg-right\">\n          {[...Array(8)].map((_, index) => (\n            <span key={`right-${index}`} className=\"button02_bg-pixel\"></span>\n          ))}\n        </span>\n      </span>\n      <span data-text={text} className=\"button02_inner\">\n        <span className=\"button02_text\">{text}</span>\n      </span>\n    </a>\n  );\n};\n",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "nextjsshop",
+    "slug": "pixel-button",
+    "registry_url": "https://21st.dev/r/nextjsshop/pixel-button",
+    "title": "Pixel Button",
+    "description": "A retro-styled button inspired by classic pixel art and arcade games. Perfect for projects with a nostalgic or playful theme, it combines blocky aesthetics with interactive functionality for a unique gaming-inspired UI element.",
+    "category": "button",
+    "category_group": "UI Components",
+    "downloads": 27,
+    "likes": 0
+  }
+}

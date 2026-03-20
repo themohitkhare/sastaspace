@@ -1,0 +1,29 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "notification",
+  "type": "registry:component",
+  "title": "Notification",
+  "description": "A notification component.",
+  "dependencies": [
+    "framer-motion"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/ui/notification.tsx",
+      "content": "import React from \"react\";\nimport { motion } from \"framer-motion\";\n\ninterface NotificationCardProps {\n  aiName?: string;\n  userName?: string;\n  paperTopic?: string;\n  doctorName?: string;\n  earnings?: string;\n  weekTotal?: string;\n}\n\nconst Component = ({\n  aiName = \"AI name\",\n  userName = \"User\",\n  paperTopic = \"general topic\",\n  doctorName = \"AI Doctor\",\n  earnings = \"$0.20c\",\n  weekTotal = \"$400\",\n}: NotificationCardProps) => {\n  return (\n    <motion.div\n      initial={{ opacity: 0, y: 50 }}\n      animate={{ opacity: 1, y: 0 }}\n      transition={{\n        delay: 0.5,\n        type: \"spring\",\n        stiffness: 100,\n        damping: 10,\n        duration: 0.6,\n      }}\n      className=\"relative mx-auto max-w-md overflow-hidden rounded-lg bg-white shadow-md\"\n      role=\"alert\"\n      aria-live=\"polite\"\n    >\n      <div className=\"p-4\">\n        <motion.div\n          initial={{ opacity: 0 }}\n          animate={{ opacity: 1 }}\n          transition={{\n            delay: 0.7,\n            duration: 0.3,\n          }}\n          className=\"relative mb-4 flex items-center\"\n        >\n          <div className=\"relative mr-3\">\n            <div className=\"flex h-10 w-10 items-center justify-center rounded-md bg-green-800 text-xl font-bold text-white\">\n              {aiName[0]}\n            </div>\n          </div>\n\n          <span className=\"text-lg font-semibold text-muted-foreground\">{aiName}</span>\n        </motion.div>\n\n        <div className=\"relative\">\n          <motion.div\n            initial={{ height: 0 }}\n            animate={{ height: \"calc(100% - 20px)\" }}\n            transition={{\n              delay: 1.0,\n              duration: 0.6,\n              ease: \"easeInOut\",\n            }}\n            className=\"absolute left-[19px] top-0 mt-3 w-1 bg-gray-100\"\n          />\n\n          <motion.div\n            initial={{ opacity: 0, height: 0 }}\n            animate={{ opacity: 1, height: \"auto\" }}\n            transition={{\n              delay: 1.0,\n              duration: 0.8,\n              type: \"tween\",\n            }}\n            style={{ overflow: \"hidden\" }}\n          >\n            <motion.div\n              initial={{ opacity: 0, y: 20 }}\n              animate={{ opacity: 1, y: 0 }}\n              transition={{\n                delay: 1.2,\n                duration: 0.6,\n              }}\n              className=\"mb-4 pl-12 text-gray-700 dark:text-gray-300\"\n            >\n              <p className=\"text-black\">\n                Hey {userName}, your paper on {paperTopic} was used by{\" \"}\n                <span className=\"underline\" style={{ color: \"#006622\" }}>\n                  {doctorName}\n                </span>{\" \"}\n                to give an assessment to a patient today.\n              </p>\n            </motion.div>\n\n            <motion.div\n              initial={{ opacity: 0, y: 20 }}\n              animate={{ opacity: 1, y: 0 }}\n              transition={{\n                delay: 1.4,\n                duration: 0.6,\n              }}\n              className=\"ml-12 rounded-md p-3\"\n              style={{ backgroundColor: \"#EFECE7\" }}\n            >\n              <div className=\"flex items-start\">\n                <p className=\"text-sm\" style={{ color: \"#4C4843\" }}>\n                  You've earned {earnings} because a new doctor LLM used your knowledge. This\n                  week's total: {weekTotal}.\n                </p>\n              </div>\n            </motion.div>\n          </motion.div>\n        </div>\n      </div>\n    </motion.div>\n  );\n};\n\nexport default Component;",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "hari",
+    "slug": "notification",
+    "registry_url": "https://21st.dev/r/hari/notification",
+    "title": "Notification ",
+    "description": "Here is notify user info component",
+    "category": "notification",
+    "category_group": "UI Components",
+    "downloads": 22,
+    "likes": 0
+  }
+}

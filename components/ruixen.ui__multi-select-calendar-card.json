@@ -1,0 +1,34 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "multi-select-calendar-card",
+  "type": "registry:component",
+  "title": "Multi Select Calendar Card",
+  "description": "A multi-select-calendar-card component.",
+  "dependencies": [
+    "date-fns"
+  ],
+  "registryDependencies": [
+    "https://21st.dev/r/shadcn/card",
+    "https://21st.dev/r/shadcn/button",
+    "https://21st.dev/r/originui/badge",
+    "https://21st.dev/r/originui/calendar"
+  ],
+  "files": [
+    {
+      "path": "src/components/ui/multi-select-calendar-card.tsx",
+      "content": "\"use client\";\n\nimport * as React from \"react\";\nimport { format } from \"date-fns\";\nimport { Calendar } from \"@/components/ui/calendar\";\nimport { Button } from \"@/components/ui/button\";\nimport { Badge } from \"@/components/ui/badge\";\nimport {\n  Card,\n  CardContent,\n  CardFooter,\n  CardHeader,\n  CardTitle,\n} from \"@/components/ui/card\";\n\nfunction MultiSelectCalendarCard() {\n  const [dates, setDates] = React.useState<Date[]>([]);\n\n  const handleRemove = (date: Date) => {\n    setDates((prev) =>\n      prev.filter((d) => format(d, \"yyyy-MM-dd\") !== format(date, \"yyyy-MM-dd\"))\n    );\n  };\n\n  return (\n    <Card className=\"w-[380px] shadow-none border-none bg-background\">\n      <CardHeader>\n        <CardTitle className=\"text-base\">Select Multiple Dates</CardTitle>\n      </CardHeader>\n      <CardContent className=\"flex flex-col gap-4\">\n        {/* Calendar */}\n        <Calendar\n          mode=\"multiple\"\n          selected={dates}\n          onSelect={(selected) => setDates(selected ?? [])}\n          className=\"rounded-md border\"\n        />\n\n        {/* Selected dates list */}\n        <div className=\"flex flex-wrap gap-2\">\n          {dates.length === 0 && (\n            <p className=\"text-xs text-muted-foreground\">No dates selected</p>\n          )}\n          {dates.map((d) => (\n            <Badge\n              key={d.toISOString()}\n              variant=\"secondary\"\n              className=\"flex items-center gap-2\"\n            >\n              {format(d, \"PP\")}\n              <Button\n                size=\"icon\"\n                variant=\"ghost\"\n                className=\"h-4 w-4 p-0 text-muted-foreground hover:text-destructive\"\n                onClick={() => handleRemove(d)}\n              >\n                ✕\n              </Button>\n            </Badge>\n          ))}\n        </div>\n      </CardContent>\n      <CardFooter className=\"flex justify-end\">\n        <Button\n          size=\"sm\"\n          onClick={() => {\n            console.log(\"Selected Dates:\", dates);\n          }}\n          disabled={dates.length === 0}\n        >\n          Confirm\n        </Button>\n      </CardFooter>\n    </Card>\n  );\n}\n\nexport { MultiSelectCalendarCard };\n",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "ruixen.ui",
+    "slug": "multi-select-calendar-card",
+    "registry_url": "https://21st.dev/r/ruixen.ui/multi-select-calendar-card",
+    "title": "Multi Select Calendar Card",
+    "description": "The MultiSelectCalendarCard is a modern, interactive date selection component that extends the functionality of a traditional calendar by supporting multiple date selections with an intuitive UI. Built entirely with shadcn/ui, it displays a calendar for picking dates and a dynamic list of selected dates shown as removable chips, giving users clear visibility and control over their choices. Each date can be easily removed from the list with a single click, and the built-in confirmation action ensures selections can be reviewed before submission. This makes the component ideal for use cases like booking systems, availability planners, or event scheduling where users need to select and manage multiple dates efficiently.",
+    "category": "calendar",
+    "category_group": "UI Components",
+    "downloads": 7,
+    "likes": 0
+  }
+}

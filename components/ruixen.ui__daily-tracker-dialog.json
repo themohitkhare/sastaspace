@@ -1,0 +1,33 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "daily-tracker-dialog",
+  "type": "registry:component",
+  "title": "Daily Tracker Dialog",
+  "description": "A daily-tracker-dialog component.",
+  "dependencies": [
+    "lucide-react"
+  ],
+  "registryDependencies": [
+    "https://21st.dev/r/shadcn/button",
+    "https://21st.dev/r/shadcn/dialog",
+    "https://21st.dev/r/originui/input"
+  ],
+  "files": [
+    {
+      "path": "src/components/ui/daily-tracker-dialog.tsx",
+      "content": "\"use client\"\n\nimport { useState } from \"react\"\nimport { CheckCircleIcon, PlusCircleIcon } from \"lucide-react\"\n\nimport { Button } from \"@/components/ui/button\"\nimport {\n  Dialog,\n  DialogContent,\n  DialogHeader,\n  DialogTitle,\n  DialogDescription,\n  DialogTrigger,\n} from \"@/components/ui/dialog\"\nimport { Input } from \"@/components/ui/input\"\n\nexport default function DailyTrackerDialog() {\n  const [tasks, setTasks] = useState([\n    { text: \"Morning meditation\", done: false },\n    { text: \"Read 20 pages\", done: false },\n    { text: \"Exercise\", done: false },\n  ])\n  const [newTask, setNewTask] = useState(\"\")\n\n  const toggleTask = (index: number) => {\n    const updated = [...tasks]\n    updated[index].done = !updated[index].done\n    setTasks(updated)\n  }\n\n  const addTask = () => {\n    if (newTask.trim() !== \"\") {\n      setTasks([...tasks, { text: newTask, done: false }])\n      setNewTask(\"\")\n    }\n  }\n\n  const completedCount = tasks.filter((t) => t.done).length\n\n  return (\n    <Dialog>\n      <DialogTrigger asChild>\n        <Button variant=\"outline\">Daily Tracker</Button>\n      </DialogTrigger>\n      <DialogContent className=\"sm:max-w-md !rounded-xl p-6\">\n        <DialogHeader className=\"text-center mb-4\">\n          <DialogTitle>Daily Productivity Tracker</DialogTitle>\n          <DialogDescription>\n            Track your tasks and see your daily progress.\n          </DialogDescription>\n        </DialogHeader>\n\n        {/* Progress */}\n        <div className=\"mb-4 text-center\">\n          <p className=\"text-sm text-muted-foreground\">\n            Completed {completedCount} of {tasks.length} tasks\n          </p>\n        </div>\n\n        {/* Task List */}\n        <div className=\"space-y-3\">\n          {tasks.map((task, idx) => (\n            <div\n              key={idx}\n              className=\"flex items-center gap-2 cursor-pointer p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800\"\n              onClick={() => toggleTask(idx)}\n            >\n              <CheckCircleIcon\n                size={20}\n                className={task.done ? \"text-green-500\" : \"text-gray-400\"}\n              />\n              <span className={task.done ? \"line-through text-gray-500\" : \"\"}>\n                {task.text}\n              </span>\n            </div>\n          ))}\n        </div>\n\n        {/* Add Task */}\n        <div className=\"mt-4 flex gap-2\">\n          <Input\n            placeholder=\"New task\"\n            value={newTask}\n            onChange={(e) => setNewTask(e.target.value)}\n          />\n          <Button onClick={addTask} className=\"px-4\">\n            <PlusCircleIcon size={20} />\n          </Button>\n        </div>\n      </DialogContent>\n    </Dialog>\n  )\n}\n",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "ruixen.ui",
+    "slug": "daily-tracker-dialog",
+    "registry_url": "https://21st.dev/r/ruixen.ui/daily-tracker-dialog",
+    "title": "Daily Tracker Dialog",
+    "description": "This component is a Daily Productivity Tracker modal that allows users to manage and track their daily tasks in a simple, interactive way. Users can mark tasks as completed, add new tasks, and instantly see their progress for the day. Designed to be minimal and responsive, it provides visual feedback with checkmarks and strikethroughs for completed tasks, making it easy and motivating for users to stay on top of their daily goals.",
+    "category": "modal-dialog",
+    "category_group": "UI Components",
+    "downloads": 0,
+    "likes": 0
+  }
+}

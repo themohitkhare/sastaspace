@@ -1,0 +1,31 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "expandable-content-button",
+  "type": "registry:component",
+  "title": "Expandable Content Button",
+  "description": "A expandable-content-button component.",
+  "dependencies": [
+    "lucide-react"
+  ],
+  "registryDependencies": [
+    "https://21st.dev/r/originui/button"
+  ],
+  "files": [
+    {
+      "path": "src/components/ui/expandable-content-button.tsx",
+      "content": "import React, { useState, useRef, useEffect } from \"react\";\nimport { Button } from \"@/components/ui/button\";\nimport { cn } from \"@/lib/utils\";\nimport { ChevronDown, ChevronUp, Twitter, Linkedin, Copy } from \"lucide-react\";\n\ninterface ExpandableContentButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {\n  label: string;\n  size?: \"sm\" | \"md\" | \"lg\";\n  options?: Array<{ label: string; icon?: React.ReactNode; onClick: () => void }>;\n}\n\nconst sizeConfig = {\n  sm: \"px-3 py-1 text-sm\",\n  md: \"px-4 py-2 text-base\",\n  lg: \"px-5 py-3 text-lg\",\n};\n\nexport default function ExpandableContentButton({\n  label,\n  size = \"md\",\n  options = [],\n  className,\n  ...props\n}: ExpandableContentButtonProps) {\n  const [expanded, setExpanded] = useState(false);\n  const containerRef = useRef<HTMLDivElement>(null);\n\n  useEffect(() => {\n    const handleClickOutside = (event: MouseEvent) => {\n      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {\n        setExpanded(false);\n      }\n    };\n    document.addEventListener(\"mousedown\", handleClickOutside);\n    return () => document.removeEventListener(\"mousedown\", handleClickOutside);\n  }, []);\n\n  return (\n    <div ref={containerRef} className=\"inline-block relative\">\n      <Button\n        className={cn(\n          \"flex justify-between items-center w-full\",\n          sizeConfig[size],\n          className\n        )}\n        onClick={() => setExpanded(!expanded)}\n        {...props}\n      >\n        <span className=\"flex-1 text-left\">{label}</span>\n        <span className=\"flex-shrink-0 ml-2\">\n          {expanded ? <ChevronUp className=\"w-4 h-4\" /> : <ChevronDown className=\"w-4 h-4\" />}\n        </span>\n      </Button>\n\n      {expanded && options.length > 0 && (\n        <div className=\"absolute mt-2 w-60 bg-white dark:bg-gray-800 shadow-lg rounded-lg p-3 z-50 border border-gray-200 dark:border-gray-700\">\n          {options.map((opt, idx) => (\n            <Button\n              key={idx}\n              variant=\"ghost\"\n              className=\"justify-start w-full flex items-center gap-2\"\n              onClick={() => {\n                opt.onClick();\n                setExpanded(false);\n              }}\n            >\n              {opt.icon && <span className=\"w-5 h-5\">{opt.icon}</span>}\n              <span>{opt.label}</span>\n            </Button>\n          ))}\n        </div>\n      )}\n    </div>\n  );\n}",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "ruixen.ui",
+    "slug": "expandable-content-button",
+    "registry_url": "https://21st.dev/r/ruixen.ui/expandable-content-button",
+    "title": "Expandable Content Button",
+    "description": "The Expandable Content Button is a highly flexible shadcn/ui component that combines a standard button with a hidden dropdown panel. On click, the button expands to reveal a mini-card containing configurable options, such as filters, social share links, or other quick actions. The main button includes a right-aligned chevron icon that indicates the expanded state, while the dropdown options can include custom Lucide icons or none at all, depending on the use case. It automatically closes when the user clicks outside, ensuring a clean and intuitive user experience. This component is ideal for dashboards, toolbars, or any interface where space-efficient interactive controls are needed, offering both visual clarity and functional flexibility.",
+    "category": "button",
+    "category_group": "UI Components",
+    "downloads": 0,
+    "likes": 0
+  }
+}

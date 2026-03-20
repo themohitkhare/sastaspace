@@ -1,0 +1,30 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "tag-input",
+  "type": "registry:component",
+  "title": "Tag Input",
+  "description": "A tag-input component.",
+  "dependencies": [
+    "framer-motion",
+    "lucide-react"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/ui/tag-input.tsx",
+      "content": "// component.tsx\nimport * as React from \"react\";\nimport { useEffect, useRef } from \"react\";\nimport { motion } from \"framer-motion\";\nimport { X } from \"lucide-react\";\n\nexport type Tag = {\n  id: string;\n  label: string;\n};\n\nexport interface TagInputProps\n  extends Omit<React.HTMLAttributes<HTMLDivElement>, \"onChange\"> {\n  options: Tag[];\n  value: Tag[];\n  onChange: (tags: Tag[]) => void;\n}\n\nconst TagInput = React.forwardRef<HTMLDivElement, TagInputProps>(\n  ({ options, value, onChange, className, ...props }, ref) => {\n    const selectedsContainerRef = useRef<HTMLDivElement>(null);\n\n    const removeTag = (tagToRemove: Tag) => {\n      onChange(value.filter((tag) => tag.id !== tagToRemove.id));\n    };\n\n    const addTag = (tagToAdd: Tag) => {\n      onChange([...value, tagToAdd]);\n    };\n\n    useEffect(() => {\n      if (selectedsContainerRef.current) {\n        selectedsContainerRef.current.scrollTo({\n          left: selectedsContainerRef.current.scrollWidth,\n          behavior: \"smooth\",\n        });\n      }\n    }, [value]);\n\n    const unselectedTags = options.filter(\n      (tag) => !value.some((selected) => selected.id === tag.id)\n    );\n\n    return (\n      <div ref={ref} className={className} {...props}>\n        <motion.h2 layout className=\"text-xl font-semibold\">\n          TAGS\n        </motion.h2>\n        <motion.div\n          className=\"w-full flex items-center justify-start gap-1.5 bg-white border h-14 mt-2 mb-3 overflow-x-auto p-1.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden\"\n          style={{\n            borderRadius: 16,\n          }}\n          ref={selectedsContainerRef}\n          layout\n        >\n          {value.map((tag) => (\n            <motion.div\n              key={tag.id}\n              className=\"flex items-center gap-1 pl-3 pr-1 py-1 bg-white shadow-md border h-full shrink-0\"\n              style={{\n                borderRadius: 14,\n              }}\n              layoutId={`tag-${tag.id}`}\n            >\n              <motion.span\n                layoutId={`tag-${tag.id}-label`}\n                className=\"text-gray-700 font-medium\"\n              >\n                {tag.label}\n              </motion.span>\n              <button\n                onClick={() => removeTag(tag)}\n                className=\"p-1 rounded-full\"\n              >\n                <X className=\"size-5 text-gray-500\" />\n              </button>\n            </motion.div>\n          ))}\n        </motion.div>\n        {unselectedTags.length > 0 && (\n          <motion.div\n            className=\"bg-white shadow-sm p-2 border w-full\"\n            style={{\n              borderRadius: 16,\n            }}\n            layout\n          >\n            <motion.div className=\"flex flex-wrap gap-2\">\n              {unselectedTags.map((tag) => (\n                <motion.button\n                  key={tag.id}\n                  layoutId={`tag-${tag.id}`}\n                  className=\"flex items-center gap-1 px-4 py-2.5 bg-gray-100/60 shrink-0\"\n                  onClick={() => addTag(tag)}\n                  style={{\n                    borderRadius: 14,\n                  }}\n                >\n                  <motion.span\n                    layoutId={`tag-${tag.id}-label`}\n                    className=\"text-gray-700 font-medium\"\n                  >\n                    {tag.label}\n                  </motion.span>\n                </motion.button>\n              ))}\n            </motion.div>\n          </motion.div>\n        )}\n      </div>\n    );\n  }\n);\n\nTagInput.displayName = \"TagInput\";\n\nexport default TagInput;",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "ln-dev7",
+    "slug": "tag-input",
+    "registry_url": "https://21st.dev/r/ln-dev7/tag-input",
+    "title": "Tag Input",
+    "description": "Here is tag input component",
+    "category": "input",
+    "category_group": "UI Components",
+    "downloads": 3,
+    "likes": 0
+  }
+}

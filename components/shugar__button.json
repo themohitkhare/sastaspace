@@ -1,0 +1,35 @@
+{
+  "name": "button",
+  "type": "registry:ui",
+  "registryDependencies": [
+    "https://21st.dev/r/shugar/spinner"
+  ],
+  "files": [
+    {
+      "path": "/components/ui/button.tsx",
+      "content": "import React from \"react\";\nimport { Spinner } from \"@/components/ui/spinner\";\n\nconst sizes = [\n  {\n    tiny: \"px-1.5 h-6 text-sm\",\n    small: \"px-1.5 h-8 text-sm\",\n    medium: \"px-2.5 h-10 text-sm\",\n    large: \"px-3.5 h-12 text-base\"\n  },\n  {\n    tiny: \"w-6 h-6 text-sm\",\n    small: \"w-8 h-8 text-sm\",\n    medium: \"w-10 h-10 text-sm\",\n    large: \"w-12 h-12 text-base\"\n  }\n];\n\nconst types = {\n  primary: \"bg-[#171717] dark:bg-[#ededed] hover:bg-[#383838] dark:hover:bg-[#cccccc] text-white dark:text-[#0a0a0a] fill-white dark:fill-[#0a0a0a]\",\n  secondary: \"bg-white dark:bg-[#171717] hover:bg-[#00000014] dark:hover:bg-[#ffffff17] text-[#171717] dark:text-[#ededed] fill-[#171717] dark:fill-[#ededed] border border-[#00000014] dark:border-[#ffffff24]\",\n  tertiary: \"bg-white dark:bg-[#171717] hover:bg-[#00000014] dark:hover:bg-[#ffffff17] text-[#171717] dark:text-[#ededed] fill-[#171717] dark:fill-[#ededed]\",\n  error: \"bg-[#ea001d] dark:bg-[#e2162a] hover:bg-[#ae292f] dark:hover:bg-[#ff565f] text-[#f5f5f5] dark:text-white fill-[#f5f5f5] dark:fill-white\",\n  warning: \"bg-[#ff9300] hover:bg-[#d27504] text-[#0a0a0a] fill-[#0a0a0a]\"\n};\n\nconst shapes = {\n  square: {\n    tiny: \"rounded\",\n    small: \"rounded-md\",\n    medium: \"rounded-md\",\n    large: \"rounded-lg\"\n  },\n  circle: {\n    tiny: \"rounded-[100%]\",\n    small: \"rounded-[100%]\",\n    medium: \"rounded-[100%]\",\n    large: \"rounded-[100%]\"\n  },\n  rounded: {\n    tiny: \"rounded-[100px]\",\n    small: \"rounded-[100px]\",\n    medium: \"rounded-[100px]\",\n    large: \"rounded-[100px]\"\n  }\n};\n\nexport interface ButtonProps {\n  size?: keyof typeof sizes[0];\n  type?: keyof typeof types;\n  shape?: keyof typeof shapes;\n  svgOnly?: boolean;\n  children?: React.ReactNode;\n  prefix?: React.ReactNode;\n  suffix?: React.ReactNode;\n  shadow?: boolean;\n  loading?: boolean;\n  disabled?: boolean;\n  fullWidth?: boolean;\n  onClick?: () => void;\n  ref?: React.Ref<HTMLButtonElement>;\n}\n\nexport const Button = ({\n  size = \"medium\",\n  type = \"primary\",\n  shape = \"square\",\n  svgOnly = false,\n  children,\n  prefix,\n  suffix,\n  shadow = false,\n  loading = false,\n  disabled = false,\n  fullWidth = false,\n  onClick,\n  ref,\n  ...rest\n}: ButtonProps) => {\n  return (\n    <button\n      ref={ref}\n      type=\"submit\"\n      disabled={disabled}\n      onClick={onClick}\n      tabIndex={0}\n      className={`flex justify-center items-center gap-0.5 duration-150 ${sizes[+svgOnly][size]} ${(disabled || loading) ? \"bg-[#f2f2f2] dark:bg-[#1a1a1a] text-[#8f8f8f] fill-[#8f8f8f] border border-[#ebebeb] dark:border-[#2e2e2e] cursor-not-allowed\" : types[type]} ${shapes[shape][size]}${shadow ? \" shadow-[0_0_0_1px_#00000014,_0px_2px_2px_#0000000a] border-none\" : \"\"}${fullWidth ? \" w-100%\" : \"\"} focus:shadow-[0_0_0_2px_hsla(0,0%,100%,1),0_0_0_4px_oklch(57.61% 0.2508 258.23)]`}\n      {...rest}\n    >\n      {loading ? (\n        <Spinner size={size === \"large\" ? 24 : 16} />\n      ) : prefix}\n      <span className={`overflow-hidden whitespace-nowrap overflow-ellipsis font-sans${size === \"tiny\" ? \"\" : \" px-1.5\"}`}>\n        {children}\n      </span>\n      {!loading && suffix}\n    </button>\n  );\n};",
+      "type": "registry:ui",
+      "target": ""
+    },
+    {
+      "path": "/components/ui/spinner.tsx",
+      "content": "import React from \"react\";\n\ninterface SpinnerProps {\n  size?: number;\n  color?: string;\n}\n\nconst bars = [\n  {\n    animationDelay: \"-1.2s\",\n    transform: \"rotate(.0001deg) translate(146%)\"\n  },\n  {\n    animationDelay: \"-1.1s\",\n    transform: \"rotate(30deg) translate(146%)\"\n  },\n  {\n    animationDelay: \"-1.0s\",\n    transform: \"rotate(60deg) translate(146%)\"\n  },\n  {\n    animationDelay: \"-0.9s\",\n    transform: \"rotate(90deg) translate(146%)\"\n  },\n  {\n    animationDelay: \"-0.8s\",\n    transform: \"rotate(120deg) translate(146%)\"\n  },\n  {\n    animationDelay: \"-0.7s\",\n    transform: \"rotate(150deg) translate(146%)\"\n  },\n  {\n    animationDelay: \"-0.6s\",\n    transform: \"rotate(180deg) translate(146%)\"\n  },\n  {\n    animationDelay: \"-0.5s\",\n    transform: \"rotate(210deg) translate(146%)\"\n  },\n  {\n    animationDelay: \"-0.4s\",\n    transform: \"rotate(240deg) translate(146%)\"\n  },\n  {\n    animationDelay: \"-0.3s\",\n    transform: \"rotate(270deg) translate(146%)\"\n  },\n  {\n    animationDelay: \"-0.2s\",\n    transform: \"rotate(300deg) translate(146%)\"\n  },\n  {\n    animationDelay: \"-0.1s\",\n    transform: \"rotate(330deg) translate(146%)\"\n  }\n];\n\nexport const Spinner = ({ size = 20, color = \"#8f8f8f\" }: SpinnerProps) => {\n  return (\n    <div style={{ width: size, height: size }}>\n      <style jsx>\n        {`\n          @keyframes spin {\n              0% {\n                  opacity: 0.15;\n              }\n              100% {\n                  opacity: 1;\n              }\n          }\n        `}\n      </style>\n      <div className=\"relative top-1/2 left-1/2\" style={{ width: size, height: size }}>\n        {bars.map((item) => (\n          <div\n            key={item.transform}\n            className=\"absolute h-[8%] w-[24%] -left-[10%] -top-[3.9%] rounded-[5px]\"\n            style={{ backgroundColor: color, animation: \"spin 1.2s linear infinite\", ...item }}\n          />\n        ))}\n      </div>\n    </div>\n  );\n};",
+      "type": "registry:ui",
+      "target": ""
+    }
+  ],
+  "tailwind": {
+    "config": {}
+  },
+  "_meta": {
+    "author": "shugar",
+    "slug": "button",
+    "registry_url": "https://21st.dev/r/shugar/button",
+    "title": "Button",
+    "description": "Trigger an action or event, such as submitting a form or displaying a dialog.\n\nA recreation of Vercel's Geist design system.",
+    "category": "button",
+    "category_group": "UI Components",
+    "downloads": 19,
+    "likes": 0
+  }
+}

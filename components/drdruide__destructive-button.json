@@ -1,0 +1,30 @@
+{
+  "name": "destructive-button",
+  "type": "registry:ui",
+  "dependencies": [
+    "framer-motion"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "/components/ui/destructive-button.tsx",
+      "content": "'use client';\n\nimport { motion, HTMLMotionProps } from 'framer-motion';\nimport { cn } from '@/lib/utils';\n\ntype DestructiveButtonProps = HTMLMotionProps<\"button\">;\n\nexport function DestructiveButton({\n  className,\n  children,\n  ...props\n}: DestructiveButtonProps) {\n  return (\n    <motion.button\n      className={cn(\n        \"relative font-mono text-sm\",\n        \"text-neutral-500 dark:text-neutral-400\",\n        \"hover:text-red-500/90 dark:hover:text-red-400/90\",\n        \"transition-all duration-300\",\n        className\n      )}\n      initial=\"initial\"\n      whileHover=\"hover\"\n      whileTap=\"tap\"\n      variants={{\n        tap: { \n          scale: 0.98,\n          transition: {\n            duration: 0.1,\n            ease: [0.23, 1, 0.32, 1]\n          }\n        }\n      }}\n      {...props}\n    >\n      <span className=\"relative inline-flex flex-col items-center gap-1\">\n        {/* Texte avec tremblement */}\n        <motion.span \n          className=\"relative z-10 inline-block\"\n          variants={{\n            initial: { \n              x: 0,\n              letterSpacing: \"0em\"\n            },\n            hover: { \n              x: [0, -1.5, 1.5, -1.5, 0],\n              letterSpacing: \"0.02em\",\n              transition: {\n                x: {\n                  duration: 0.15,\n                  repeat: 2,\n                  repeatType: \"mirror\",\n                  ease: \"linear\"\n                },\n                letterSpacing: {\n                  duration: 0.3,\n                  ease: [0.23, 1, 0.32, 1]\n                }\n              }\n            }\n          }}\n        >\n          {children}\n        </motion.span>\n\n        <div className=\"relative w-full h-[1px]\">\n          {/* Ligne de base */}\n          <div className=\"absolute inset-0 h-full bg-neutral-200 dark:bg-neutral-800\" />\n\n          {/* Ligne de destruction */}\n          <motion.div \n            className=\"absolute inset-y-0 left-1/2 w-0 h-full bg-red-500/90 dark:bg-red-400/90\"\n            variants={{\n              initial: { \n                width: \"0%\",\n                left: \"50%\",\n                opacity: 0.6\n              },\n              hover: { \n                width: \"100%\",\n                left: \"0%\",\n                opacity: 1,\n                transition: {\n                  duration: 0.35,\n                  ease: [0.23, 1, 0.32, 1]\n                }\n              }\n            }}\n          />\n        </div>\n      </span>\n    </motion.button>\n  );\n}",
+      "type": "registry:ui",
+      "target": ""
+    }
+  ],
+  "tailwind": {
+    "config": {}
+  },
+  "_meta": {
+    "author": "drdruide",
+    "slug": "destructive-button",
+    "registry_url": "https://21st.dev/r/drdruide/destructive-button",
+    "title": "Destructive Button",
+    "description": "A destructive button with a shake effect and underline animation on hover.",
+    "category": "button",
+    "category_group": "UI Components",
+    "downloads": 35,
+    "likes": 2
+  }
+}

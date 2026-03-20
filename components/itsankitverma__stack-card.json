@@ -1,0 +1,29 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "stack-card",
+  "type": "registry:component",
+  "title": "Stack Card",
+  "description": "A stack-card component.",
+  "dependencies": [
+    "motion"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/ui/stack-card.tsx",
+      "content": "import * as motion from \"motion/react-client\"\nimport type { Variants } from \"motion/react\"\n\nexport function ScrollTriggered() {\n    return (\n        <div className=\"w-full\" style={container}>\n            {food.map(([emoji, hueA, hueB], i) => (\n                <Card i={i} emoji={emoji} hueA={hueA} hueB={hueB} key={emoji} />\n            ))}\n        </div>\n    )\n}\n\ninterface CardProps {\n    emoji: string\n    hueA: number\n    hueB: number\n    i: number\n}\n\nfunction Card({ emoji, hueA, hueB, i }: CardProps) {\n    const background = `linear-gradient(306deg, ${hue(hueA)}, ${hue(hueB)})`\n\n    return (\n        <motion.div\n            className={`card-container-${i}`}\n            style={cardContainer}\n            initial=\"offscreen\"\n            whileInView=\"onscreen\"\n            viewport={{ amount: 0.8 }}\n        >\n            <div style={{ ...splash, background }} />\n            <motion.div style={card} variants={cardVariants} className=\"card\">\n                {emoji}\n            </motion.div>\n        </motion.div>\n    )\n}\n\nconst cardVariants: Variants = {\n    offscreen: {\n        y: 300,\n    },\n    onscreen: {\n        y: 50,\n        rotate: -10,\n        transition: {\n            type: \"spring\",\n            bounce: 0.4,\n            duration: 0.8,\n        },\n    },\n}\n\nconst hue = (h: number) => `hsl(${h}, 100%, 50%)`\n\n\nconst container: React.CSSProperties = {\n    margin: \"100px auto\",\n    maxWidth: 500,\n    paddingBottom: 100,\n    width: \"100%\",\n}\n\nconst cardContainer: React.CSSProperties = {\n    overflow: \"hidden\",\n    display: \"flex\",\n    justifyContent: \"center\",\n    alignItems: \"center\",\n    position: \"relative\",\n    paddingTop: 20,\n    marginBottom: -120,\n}\n\nconst splash: React.CSSProperties = {\n    position: \"absolute\",\n    top: 0,\n    left: 0,\n    right: 0,\n    bottom: 0,\n    clipPath: `path(\"M 0 303.5 C 0 292.454 8.995 285.101 20 283.5 L 460 219.5 C 470.085 218.033 480 228.454 480 239.5 L 500 430 C 500 441.046 491.046 450 480 450 L 20 450 C 8.954 450 0 441.046 0 430 Z\")`,\n}\n\nconst card: React.CSSProperties = {\n    fontSize: 164,\n    width: 300,\n    height: 430,\n    display: \"flex\",\n    justifyContent: \"center\",\n    alignItems: \"center\",\n    borderRadius: 20,\n    background: \"#f5f5f5\",\n    boxShadow:\n        \"0 0 1px hsl(0deg 0% 0% / 0.075), 0 0 2px hsl(0deg 0% 0% / 0.075), 0 0 4px hsl(0deg 0% 0% / 0.075), 0 0 8px hsl(0deg 0% 0% / 0.075), 0 0 16px hsl(0deg 0% 0% / 0.075)\",\n    transformOrigin: \"10% 60%\",\n}\n\n\nconst food: [string, number, number][] = [\n    [\"🍅\", 340, 10],\n    [\"🍊\", 20, 40],\n    [\"🍋\", 60, 90],\n    [\"🍐\", 80, 120],\n    [\"🍏\", 100, 140],\n    [\"🫐\", 205, 245],\n    [\"🍆\", 260, 290],\n    [\"🍇\", 290, 320],\n]\n\n",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "itsankitverma",
+    "slug": "stack-card",
+    "registry_url": "https://21st.dev/r/itsankitverma/stack-card",
+    "title": "Stack Card",
+    "description": "This is a simple Stack Card",
+    "category": "card",
+    "category_group": "UI Components",
+    "downloads": 48,
+    "likes": 0
+  }
+}

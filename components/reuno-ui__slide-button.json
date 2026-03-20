@@ -22,5 +22,16 @@
     "author": "reuno-ui",
     "name": "slide-button",
     "registry_url": "https://21st.dev/r/reuno-ui/slide-button"
+  },
+  "_meta": {
+    "author": "reuno-ui",
+    "slug": "slide-button",
+    "registry_url": "https://21st.dev/r/reuno-ui/slide-button",
+    "title": "Slide Button",
+    "description": "Here is Slide Button component",
+    "category": "button",
+    "category_group": "UI Components",
+    "downloads": 304,
+    "likes": 0
   }
 }

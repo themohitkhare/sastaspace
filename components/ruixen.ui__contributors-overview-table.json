@@ -1,0 +1,29 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "contributors-overview-table",
+  "type": "registry:component",
+  "title": "Contributors Overview Table",
+  "description": "A contributors-overview-table component.",
+  "dependencies": [],
+  "registryDependencies": [
+    "https://21st.dev/r/originui/table"
+  ],
+  "files": [
+    {
+      "path": "src/components/ui/contributors-overview-table.tsx",
+      "content": "\"use client\";\n\nimport {\n  Table,\n  TableBody,\n  TableCell,\n  TableFooter,\n  TableHead,\n  TableHeader,\n  TableRow,\n} from \"@/components/ui/table\";\n\nconst contributors = [\n  {\n    id: \"1\",\n    name: \"Aarav Mehta\",\n    email: \"aarav@ruixen.dev\",\n    location: \"Bangalore, India\",\n    status: \"Active\",\n    balance: \"₹45,000\",\n  },\n  {\n    id: \"2\",\n    name: \"Elena Torres\",\n    email: \"elena.t@ruixen.dev\",\n    location: \"Barcelona, Spain\",\n    status: \"Active\",\n    balance: \"₹22,000\",\n  },\n  {\n    id: \"3\",\n    name: \"Kenji Nakamura\",\n    email: \"kenji.n@ruixen.dev\",\n    location: \"Tokyo, Japan\",\n    status: \"Inactive\",\n    balance: \"₹0\",\n  },\n  {\n    id: \"4\",\n    name: \"Leila Ahmed\",\n    email: \"leila.a@ruixen.dev\",\n    location: \"Cairo, Egypt\",\n    status: \"Pending\",\n    balance: \"₹10,000\",\n  },\n  {\n    id: \"5\",\n    name: \"Ryan Smith\",\n    email: \"ryan.s@ruixen.dev\",\n    location: \"Toronto, Canada\",\n    status: \"Active\",\n    balance: \"₹31,500\",\n  },\n];\n\nfunction ContributorsOverviewTable() {\n  return (\n    <div className=\"max-w-3xl mx-auto rounded-xl border border-border bg-background p-6 shadow-sm\">\n      <h2 className=\"mb-4 text-xl font-semibold text-foreground\">Team Contributors</h2>\n      <Table className=\"table-fixed\">\n        <TableHeader>\n          <TableRow>\n            <TableHead className=\"w-[180px]\">Name</TableHead>\n            <TableHead>Email</TableHead>\n            <TableHead>Location</TableHead>\n            <TableHead>Status</TableHead>\n            <TableHead className=\"text-right\">Payout</TableHead>\n          </TableRow>\n        </TableHeader>\n        <TableBody>\n          {contributors.map((person) => (\n            <TableRow key={person.id} className=\"hover:bg-muted/40 transition-colors\">\n              <TableCell className=\"font-medium\">{person.name}</TableCell>\n              <TableCell>{person.email}</TableCell>\n              <TableCell>{person.location}</TableCell>\n              <TableCell>\n                <span\n                  className={`inline-block rounded-full px-2 py-1 text-xs font-semibold ${\n                    person.status === \"Active\"\n                      ? \"bg-green-100 text-green-700\"\n                      : person.status === \"Pending\"\n                      ? \"bg-yellow-100 text-yellow-700\"\n                      : \"bg-gray-200 text-gray-700\"\n                  }`}\n                >\n                  {person.status}\n                </span>\n              </TableCell>\n              <TableCell className=\"text-right\">{person.balance}</TableCell>\n            </TableRow>\n          ))}\n        </TableBody>\n        <TableFooter>\n          <TableRow>\n            <TableCell colSpan={4} className=\"text-right font-semibold\">\n              Total\n            </TableCell>\n            <TableCell className=\"text-right font-bold text-foreground\">₹1,08,500</TableCell>\n          </TableRow>\n        </TableFooter>\n      </Table>\n      <p className=\"mt-4 text-center text-sm text-muted-foreground\">contributors payout summary</p>\n    </div>\n  );\n}\n\nexport default ContributorsOverviewTable;\n",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "ruixen.ui",
+    "slug": "contributors-overview-table",
+    "registry_url": "https://21st.dev/r/ruixen.ui/contributors-overview-table",
+    "title": "ContributorsOverviewTable ",
+    "description": "The ContributorsOverviewTable component presents a clean, structured, and interactive summary of contributors within a team or project. Designed for clarity and ease of use, this table highlights essential details like contributor names, email addresses, geographic locations, account status, and individual payout balances. Visual cues such as colored status badges enhance readability, while responsive hover states provide a polished user experience",
+    "category": "table",
+    "category_group": "UI Components",
+    "downloads": 75,
+    "likes": 0
+  }
+}

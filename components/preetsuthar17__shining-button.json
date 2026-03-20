@@ -1,0 +1,27 @@
+{
+  "name": "shining-button",
+  "type": "registry:ui",
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "/components/ui/shining-button.tsx",
+      "content": "\"use client\" \r\n\r\nimport * as React from \"react\"\r\n\r\nexport const ShiningButton = () => {\r\n  return (\r\n    <>\r\n      <button className=\"cursor-pointer font-medium px-4 py-[0.4rem] bg-gradient-to-b from-blue-500 via-blue-600 to-blue-800 overflow-hidden relative rounded-full before:absolute before:w-[0.4rem] before:h-[20rem] before:top-0  before:translate-x-[-8rem] hover:before:translate-x-[7rem] before:duration-[0.8s] before:-skew-x-[10deg]  before:transition-all before:bg-white before:blur-[8px] hover:brightness-100 flex items-center justify-center gap-2 transition-all group text-white\">\r\n        Ask HextaAI\r\n      </button>\r\n    </>\r\n  );\r\n};",
+      "type": "registry:ui",
+      "target": ""
+    }
+  ],
+  "tailwind": {
+    "config": {}
+  },
+  "_meta": {
+    "author": "preetsuthar17",
+    "slug": "shining-button",
+    "registry_url": "https://21st.dev/r/preetsuthar17/shining-button",
+    "title": "Shining Button",
+    "description": "A button that shines when hovered",
+    "category": "button",
+    "category_group": "UI Components",
+    "downloads": 38,
+    "likes": 0
+  }
+}

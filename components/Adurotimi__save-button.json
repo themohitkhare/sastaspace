@@ -1,0 +1,76 @@
+{
+  "name": "save-button",
+  "type": "registry:ui",
+  "dependencies": [
+    "lucide-react",
+    "framer-motion",
+    "canvas-confetti"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "/components/ui/save-button.tsx",
+      "content": "\"use client\"\n\nimport { useState } from \"react\"\nimport { motion, AnimatePresence } from \"framer-motion\"\nimport { Loader2, Check, Sparkles } from \"lucide-react\"\nimport confetti from \"canvas-confetti\"\nimport { cn } from \"@/lib/utils\"\nimport { useTheme } from \"next-themes\"\n\n\ninterface SaveButtonProps {\n  text?: {\n    idle?: string\n    saving?: string\n    saved?: string\n  }\n  className?: string\n  onSave?: () => Promise<void> | void\n}\n\nexport function SaveButton({ \n  text = {\n    idle: \"Save\",\n    saving: \"Saving...\",\n    saved: \"Saved!\"\n  },\n  className,\n  onSave\n}: SaveButtonProps) {\n  const [status, setStatus] = useState<\"idle\" | \"saving\" | \"saved\">(\"idle\")\n  const [bounce, setBounce] = useState(false)\n  const { theme } = useTheme()\n  const isDark = theme === \"dark\"\n\n  const handleSave = async () => {\n    if (status === \"idle\") {\n      setStatus(\"saving\")\n      try {\n        if (onSave) {\n          await onSave()\n        } else {\n          // Симуляция сохранения если onSave не предоставлен\n          await new Promise(resolve => setTimeout(resolve, 2000))\n        }\n        setStatus(\"saved\")\n        setBounce(true)\n        confetti({\n          particleCount: 100,\n          spread: 70,\n          origin: { y: 0.6 },\n          colors: [\"#ff0000\", \"#00ff00\", \"#0000ff\", \"#ffff00\", \"#00ffff\", \"#ff00ff\"],\n          shapes: [\"star\", \"circle\"],\n        })\n        setTimeout(() => {\n          setStatus(\"idle\")\n          setBounce(false)\n        }, 2000)\n      } catch (error) {\n        setStatus(\"idle\")\n        console.error(\"Save failed:\", error)\n      }\n    }\n  }\n\n  const buttonVariants = {\n    idle: {\n      backgroundColor: isDark ? \"rgb(64, 64, 64)\" : \"rgb(243, 244, 246)\",\n      color: isDark ? \"white\" : \"black\",\n      scale: 1,\n    },\n    saving: {\n      backgroundColor: \"rgb(59, 130, 246)\",\n      color: \"white\",\n      scale: 1,\n    },\n    saved: {\n      backgroundColor: \"rgb(34, 197, 94)\",\n      color: \"white\",\n      scale: [1, 1.1, 1],\n      transition: {\n        duration: 0.2,\n        times: [0, 0.5, 1],\n      },\n    },\n  }\n\n  const sparkleVariants = {\n    initial: { opacity: 0, scale: 0 },\n    animate: { opacity: 1, scale: 1 },\n    exit: { opacity: 0, scale: 0 },\n  }\n\n  return (\n    <div className=\"relative\">\n      <motion.button\n        onClick={handleSave}\n        animate={status}\n        variants={buttonVariants}\n        className={cn(\n          \"group relative grid overflow-hidden rounded-full px-6 py-2 transition-all duration-200\",\n          status === \"idle\"\n            ? \"shadow-[0_1000px_0_0_hsl(0_0%_85%)_inset] dark:shadow-[0_1000px_0_0_hsl(0_0%_20%)_inset]\"\n            : \"\",\n          \"hover:shadow-lg\",\n          className\n        )}\n        style={{ minWidth: \"150px\" }}\n        whileHover={status === \"idle\" ? { scale: 1.05 } : {}}\n        whileTap={status === \"idle\" ? { scale: 0.95 } : {}}\n      >\n        {status === \"idle\" && (\n          <span>\n            <span\n              className={cn(\n                \"spark mask-gradient absolute inset-0 h-[100%] w-[100%] animate-flip overflow-hidden rounded-full\",\n                \"[mask:linear-gradient(black,_transparent_50%)] before:absolute before:aspect-square before:w-[200%] before:bg-[conic-gradient(from_0deg,transparent_0_340deg,black_360deg)]\",\n                \"before:rotate-[-90deg] before:animate-rotate dark:before:bg-[conic-gradient(from_0deg,transparent_0_340deg,white_360deg)]\",\n                \"before:content-[''] before:[inset:0_auto_auto_50%] before:[translate:-50%_-15%] dark:[mask:linear-gradient(white,_transparent_50%)]\",\n              )}\n            />\n          </span>\n        )}\n        <span\n          className={cn(\n            \"backdrop absolute inset-px rounded-[22px] transition-colors duration-200\",\n            status === \"idle\"\n              ? \"bg-neutral-100 group-hover:bg-neutral-200 dark:bg-neutral-950 dark:group-hover:bg-neutral-900\"\n              : \"\",\n          )}\n        />\n        <span className=\"z-10 flex items-center justify-center gap-2 text-sm font-medium\">\n          <AnimatePresence mode=\"wait\">\n            {status === \"saving\" && (\n              <motion.span\n                key=\"saving\"\n                initial={{ opacity: 0, rotate: 0 }}\n                animate={{ opacity: 1, rotate: 360 }}\n                exit={{ opacity: 0 }}\n                transition={{\n                  duration: 0.3,\n                  rotate: { repeat: Number.POSITIVE_INFINITY, duration: 1, ease: \"linear\" },\n                }}\n              >\n                <Loader2 className=\"w-4 h-4\" />\n              </motion.span>\n            )}\n            {status === \"saved\" && (\n              <motion.span\n                key=\"saved\"\n                initial={{ opacity: 0, scale: 0.5 }}\n                animate={{ opacity: 1, scale: 1 }}\n                exit={{ opacity: 0 }}\n              >\n                <Check className=\"w-4 h-4\" />\n              </motion.span>\n            )}\n          </AnimatePresence>\n          <motion.span\n            key={status}\n            initial={{ opacity: 0, y: 10 }}\n            animate={{ opacity: 1, y: 0 }}\n            exit={{ opacity: 0, y: -10 }}\n            transition={{ duration: 0.2 }}\n          >\n            {status === \"idle\" ? text.idle : status === \"saving\" ? text.saving : text.saved}\n          </motion.span>\n        </span>\n      </motion.button>\n      <AnimatePresence>\n        {bounce && (\n          <motion.div\n            className=\"absolute top-0 right-0 -mr-1 -mt-1\"\n            initial=\"initial\"\n            animate=\"animate\"\n            exit=\"exit\"\n            variants={sparkleVariants}\n          >\n            <Sparkles className=\"w-6 h-6 text-yellow-400\" />\n          </motion.div>\n        )}\n      </AnimatePresence>\n    </div>\n  )\n}",
+      "type": "registry:ui",
+      "target": ""
+    }
+  ],
+  "cssVars": {
+    "light": {
+      "--success": "142.1 70.6% 45.3%",
+      "--success-foreground": "0 0% 100%"
+    },
+    "dark": {},
+    "theme": {
+      "animate-flip": "flip 6s infinite steps(2, end)",
+      "animate-rotate": "rotate 3s linear infinite both"
+    }
+  },
+  "css": {
+    "@keyframes flip": {
+      "to": {
+        "transform": "rotate(360deg)"
+      }
+    },
+    "@keyframes rotate": {
+      "to": {
+        "transform": "rotate(90deg)"
+      }
+    }
+  },
+  "tailwind": {
+    "config": {
+      "theme": {
+        "extend": {
+          "animation": {
+            "flip": "flip 6s infinite steps(2, end)",
+            "rotate": "rotate 3s linear infinite both"
+          },
+          "keyframes": {
+            "flip": {
+              "to": {
+                "transform": "rotate(360deg)"
+              }
+            },
+            "rotate": {
+              "to": {
+                "transform": "rotate(90deg)"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "_meta": {
+    "author": "Adurotimi",
+    "slug": "save-button",
+    "registry_url": "https://21st.dev/r/Adurotimi/save-button",
+    "title": "Save Button",
+    "description": "A fun save button interaction.\n\n",
+    "category": "button",
+    "category_group": "UI Components",
+    "downloads": 514,
+    "likes": 2
+  }
+}

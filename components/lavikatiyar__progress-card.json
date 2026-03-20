@@ -1,0 +1,29 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "progress-card",
+  "type": "registry:component",
+  "title": "Progress Card",
+  "description": "A progress-card component.",
+  "dependencies": [
+    "framer-motion"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/ui/progress-card.tsx",
+      "content": "import * as React from \"react\";\nimport { motion } from \"framer-motion\";\nimport { cn } from \"@/lib/utils\"; // Assumes you have a 'cn' utility from shadcn\n\n/**\n * @interface AnimatedProgressCardProps\n * @description Defines the props for the AnimatedProgressCard component.\n * @property {React.ReactNode} icon - The icon to be displayed at the top of the card.\n * @property {string} title - The main title or goal description.\n * @property {string} progressLabel - The label for the progress section (e.g., \"Your Progress\").\n * @property {string} progressSubLabel - A secondary label under the progress label (e.g., \"Since 20 days ago\").\n * @property {number} currentValue - The current value of the progress.\n * @property {number} maxValue - The maximum value for the progress calculation.\n * @property {string} [className] - Optional additional CSS classes for custom styling.\n */\nexport interface AnimatedProgressCardProps {\n  icon: React.ReactNode;\n  title: string;\n  progressLabel: string;\n  progressSubLabel: string;\n  currentValue: number;\n  maxValue: number;\n  className?: string;\n}\n\n/**\n * A visually polished card for displaying progress with a smooth animation.\n * It's theme-adaptive, responsive, and reusable.\n */\nexport const AnimatedProgressCard = React.forwardRef<\n  HTMLDivElement,\n  AnimatedProgressCardProps\n>(\n  (\n    {\n      icon,\n      title,\n      progressLabel,\n      progressSubLabel,\n      currentValue,\n      maxValue,\n      className,\n    },\n    ref\n  ) => {\n    // Calculate the percentage, ensuring it doesn't exceed 100%\n    const percentage = maxValue > 0 ? (currentValue / maxValue) * 100 : 0;\n    const clampedPercentage = Math.min(percentage, 100);\n\n    return (\n      <div\n        ref={ref}\n        className={cn(\n          \"w-full max-w-sm rounded-xl border bg-primary p-6 text-primary-foreground shadow-lg\",\n          className\n        )}\n      >\n        {/* Header section with icon and title */}\n        <div className=\"flex items-center gap-3\">\n          <div className=\"flex h-8 w-8 items-center justify-center rounded-full bg-primary-foreground/20\">\n            {icon}\n          </div>\n          <p className=\"font-medium\">{title}</p>\n        </div>\n\n        {/* Progress bar section with animation */}\n        <div className=\"my-5\">\n          <div\n            className=\"relative h-2 w-full overflow-hidden rounded-full bg-primary-foreground/20\"\n            role=\"progressbar\"\n            aria-valuenow={currentValue}\n            aria-valuemin={0}\n            aria-valuemax={maxValue}\n            aria-label={title}\n          >\n            <motion.div\n              className=\"absolute left-0 top-0 h-full rounded-full bg-primary-foreground\"\n              initial={{ width: 0 }}\n              animate={{ width: `${clampedPercentage}%` }}\n              transition={{\n                duration: 1.2,\n                ease: \"easeInOut\",\n              }}\n            />\n          </div>\n        </div>\n\n        {/* Footer section with progress details */}\n        <div className=\"flex items-end justify-between\">\n          <div>\n            <p className=\"text-xs font-semibold uppercase tracking-wider text-primary-foreground/80\">\n              {progressLabel}\n            </p>\n            <p className=\"text-sm text-primary-foreground/60\">\n              {progressSubLabel}\n            </p>\n          </div>\n          <p className=\"text-2xl font-bold\">\n            {currentValue}\n            <span className=\"text-lg font-medium text-primary-foreground/80\">\n              {\" \"}\n              / {maxValue}\n            </span>\n          </p>\n        </div>\n      </div>\n    );\n  }\n);\n\nAnimatedProgressCard.displayName = \"AnimatedProgressCard\";",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "lavikatiyar",
+    "slug": "progress-card",
+    "registry_url": "https://21st.dev/r/lavikatiyar/progress-card",
+    "title": "Progress Card",
+    "description": "Animated Progress Card\nDescription: A card component designed to display a specific goal or statistic. It features a title, an icon, an animated progress bar, and customizable labels to track progress over time. The card is fully responsive and adapts to both light and dark themes using shadcn/ui's CSS variables.",
+    "category": "card",
+    "category_group": "UI Components",
+    "downloads": 10,
+    "likes": 0
+  }
+}

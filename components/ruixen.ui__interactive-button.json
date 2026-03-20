@@ -1,0 +1,32 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "interactive-button",
+  "type": "registry:component",
+  "title": "Interactive Button",
+  "description": "A interactive-button component.",
+  "dependencies": [
+    "framer-motion",
+    "lucide-react"
+  ],
+  "registryDependencies": [
+    "https://21st.dev/r/originui/button"
+  ],
+  "files": [
+    {
+      "path": "src/components/ui/interactive-button.tsx",
+      "content": "'use client';\n\nimport React from \"react\";\nimport { motion, Transition } from \"framer-motion\";\nimport { ArrowRight } from \"lucide-react\";\nimport { cn } from \"@/lib/utils\";\n\ninterface InteractiveHoverButtonProps\n  extends React.ButtonHTMLAttributes<HTMLButtonElement> {\n  text?: string;\n}\n\nexport const InteractiveHoverButton = React.forwardRef<\n  HTMLButtonElement,\n  InteractiveHoverButtonProps\n>(({ text = \"Button\", className, ...props }, ref) => {\n  const glowColors = [\"#ff5f6d\", \"#ffc371\", \"#6a11cb\", \"#2575fc\"];\n  const scale = 1.6;\n  const duration = 6;\n\n  const breatheEffect = {\n    background: glowColors.map(\n      (color) =>\n        `radial-gradient(circle at 50% 50%, ${color} 0%, transparent 100%)`\n    ),\n    scale: [1 * scale, 1.05 * scale, 1 * scale],\n    transition: {\n      repeat: Infinity,\n      duration: duration,\n      repeatType: \"mirror\",\n      ease: \"easeInOut\",\n    } as Transition,\n  };\n\n  return (\n    <button\n      ref={ref}\n      className={cn(\n        \"group relative inline-flex items-center justify-center overflow-hidden rounded-full px-6 py-2 font-semibold transition-all duration-300\",\n        \"border border-white/20 dark:border-white/10 bg-white/10 dark:bg-white/5 backdrop-blur-md text-black dark:text-white\",\n        \"hover:shadow-xl\",\n        className\n      )}\n      {...props}\n    >\n      {/* Embedded Glow Effect */}\n      <motion.div\n        animate={breatheEffect}\n        className={cn(\n          \"pointer-events-none absolute inset-0 z-0 transform-gpu blur-lg scale-[1.6]\"\n        )}\n        style={{\n          willChange: \"transform\",\n          backfaceVisibility: \"hidden\",\n        }}\n      />\n\n      {/* Foreground Text */}\n      <span className=\"relative z-10 flex items-center gap-2 transition-all duration-300 group-hover:translate-x-1\">\n        {text}\n        <ArrowRight className=\"h-4 w-4\" />\n      </span>\n    </button>\n  );\n});\n\nInteractiveHoverButton.displayName = \"InteractiveHoverButton\";\n",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "ruixen.ui",
+    "slug": "interactive-button",
+    "registry_url": "https://21st.dev/r/ruixen.ui/interactive-button",
+    "title": "InteractiveButton",
+    "description": "A modern interactive button that dynamically changes its background color when hovered over, focused, or clicked. This enhances user experience by providing immediate visual feedback, making it ideal for call-to-action elements. The transition is smooth and appealing, supporting both light and dark themes.",
+    "category": "button",
+    "category_group": "UI Components",
+    "downloads": 13,
+    "likes": 0
+  }
+}

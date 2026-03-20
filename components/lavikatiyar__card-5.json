@@ -1,0 +1,29 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "card-5",
+  "type": "registry:component",
+  "title": "Card 5",
+  "description": "A card-5 component.",
+  "dependencies": [
+    "framer-motion"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/ui/card-5.tsx",
+      "content": "import * as React from \"react\";\nimport { motion, Variants } from \"framer-motion\";\nimport { cn } from \"@/lib/utils\"; // Assuming you have a `cn` utility from shadcn\n\n// Pre-defined color themes for the card\nconst colorThemes = {\n  default: {\n    from: \"142 76% 46%\",\n    to: \"160 60% 48%\",\n    foreground: \"0 0% 100%\",\n  },\n  blue: {\n    from: \"217 91% 60%\",\n    to: \"221 83% 53%\",\n    foreground: \"0 0% 100%\",\n  },\n  violet: {\n    from: \"262 83% 58%\",\n    to: \"262 70% 50%\",\n    foreground: \"0 0% 100%\",\n  },\n  orange: {\n    from: \"24 94% 52%\",\n    to: \"35 92% 60%\",\n    foreground: \"0 0% 100%\",\n  },\n};\n\n// Updated prop definitions to include the color prop\nexport interface HighlightCardProps {\n  title: string;\n  description: string;\n  metricValue: string;\n  metricLabel: string;\n  buttonText: string;\n  onButtonClick: () => void;\n  icon: React.ReactNode;\n  color?: keyof typeof colorThemes; // 'default' | 'blue' | 'violet' | 'orange'\n  className?: string;\n}\n\n// Animation variants (unchanged)\nconst cardVariants: Variants = {\n  hidden: { opacity: 0, scale: 0.95 },\n  visible: {\n    opacity: 1,\n    scale: 1,\n    transition: {\n      duration: 0.4,\n      ease: \"easeOut\",\n      staggerChildren: 0.1,\n    },\n  },\n};\n\nconst itemVariants: Variants = {\n  hidden: { opacity: 0, y: 20 },\n  visible: {\n    opacity: 1,\n    y: 0,\n    transition: { duration: 0.3, ease: \"easeOut\" },\n  },\n};\n\nexport const HighlightCard = React.forwardRef<HTMLDivElement, HighlightCardProps>(\n  ({ title, description, metricValue, metricLabel, buttonText, onButtonClick, icon, color = \"default\", className }, ref) => {\n    // Get the selected color theme\n    const theme = colorThemes[color] || colorThemes.default;\n\n    return (\n      <motion.div\n        ref={ref}\n        className={cn(\n          \"relative w-full max-w-md overflow-hidden rounded-2xl p-6 shadow-lg\",\n          className\n        )}\n        style={{\n          // Dynamically set CSS variables for color\n          '--card-from-color': `hsl(${theme.from})`,\n          '--card-to-color': `hsl(${theme.to})`,\n          '--card-foreground-color': `hsl(${theme.foreground})`,\n          // Apply colors and dot pattern\n          color: 'var(--card-foreground-color)',\n          backgroundImage: `\n            radial-gradient(circle at 1px 1px, hsla(0,0%,100%,0.15) 1px, transparent 0),\n            linear-gradient(to bottom right, var(--card-from-color), var(--card-to-color))\n          `,\n          backgroundSize: \"0.5rem 0.5rem, 100% 100%\",\n        }}\n        variants={cardVariants}\n        initial=\"hidden\"\n        animate=\"visible\"\n      >\n        {/* Bookmark shape */}\n        <div className=\"absolute top-0 right-6 h-16 w-12 bg-white/95 backdrop-blur-sm [clip-path:polygon(0%_0%,_100%_0%,_100%_100%,_50%_75%,_0%_100%)] dark:bg-zinc-800/80\">\n          <div \n            className=\"absolute inset-0 flex items-center justify-center\"\n            style={{ color: 'var(--card-from-color)' }}\n          >\n            {icon}\n          </div>\n        </div>\n\n        <div className=\"flex h-full flex-col justify-between\">\n          {/* Top section */}\n          <div>\n            <motion.h3 variants={itemVariants} className=\"text-2xl font-bold tracking-tight\">\n              {title}\n            </motion.h3>\n            <motion.p variants={itemVariants} className=\"mt-1 text-sm opacity-90 max-w-[80%]\">\n              {description}\n            </motion.p>\n          </div>\n\n          {/* Divider */}\n          <motion.div variants={itemVariants} className=\"my-4 h-px w-full bg-white/20\" />\n\n          {/* Bottom section */}\n          <div className=\"flex items-end justify-between\">\n            <motion.div variants={itemVariants}>\n              <p className=\"text-4xl font-bold tracking-tighter\">{metricValue}</p>\n              <p className=\"text-sm opacity-90\">{metricLabel}</p>\n            </motion.div>\n            <motion.button\n              variants={itemVariants}\n              onClick={onButtonClick}\n              className=\"rounded-full bg-white/30 px-4 py-2 text-sm font-semibold backdrop-blur-sm transition-colors hover:bg-white/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50\"\n              aria-label={buttonText}\n            >\n              {buttonText}\n            </motion.button>\n          </div>\n        </div>\n      </motion.div>\n    );\n  }\n);\n\nHighlightCard.displayName = \"HighlightCard\";",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "lavikatiyar",
+    "slug": "card-5",
+    "registry_url": "https://21st.dev/r/lavikatiyar/card-5",
+    "title": "Card",
+    "description": "Highlight Card\nA visually rich card component designed to draw attention to key metrics or highlights. It features a gradient background with a subtle dot pattern, a distinctive bookmark-style icon holder, and smooth animations powered by framer-motion. The component is fully customizable through props, allowing for easy reuse throughout an application.",
+    "category": "card",
+    "category_group": "UI Components",
+    "downloads": 15,
+    "likes": 0
+  }
+}

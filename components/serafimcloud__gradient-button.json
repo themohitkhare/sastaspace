@@ -1,0 +1,35 @@
+{
+  "name": "gradient-button",
+  "type": "registry:ui",
+  "dependencies": [
+    "@radix-ui/react-slot",
+    "class-variance-authority"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "/components/ui/gradient-button.tsx",
+      "content": "\"use client\"\n\nimport * as React from \"react\"\nimport { Slot } from \"@radix-ui/react-slot\"\nimport { cva, type VariantProps } from \"class-variance-authority\"\nimport { cn } from \"@/lib/utils\"\n\nconst gradientButtonVariants = cva(\n  [\n    \"gradient-button\",\n    \"inline-flex items-center justify-center\",\n    \"rounded-[11px] min-w-[132px] px-9 py-4\",\n    \"text-base leading-[19px] font-[500] text-white\",\n    \"font-sans font-bold\",\n    \"focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring\",\n    \"disabled:pointer-events-none disabled:opacity-50\",\n  ],\n  {\n    variants: {\n      variant: {\n        default: \"\",\n        variant: \"gradient-button-variant\",\n      },\n    },\n    defaultVariants: {\n      variant: \"default\",\n    },\n  }\n)\n\nexport interface GradientButtonProps\n  extends React.ButtonHTMLAttributes<HTMLButtonElement>,\n    VariantProps<typeof gradientButtonVariants> {\n  asChild?: boolean\n}\n\nconst GradientButton = React.forwardRef<HTMLButtonElement, GradientButtonProps>(\n  ({ className, variant, asChild = false, ...props }, ref) => {\n    const Comp = asChild ? Slot : \"button\"\n    return (\n      <Comp\n        className={cn(gradientButtonVariants({ variant, className }))}\n        ref={ref}\n        {...props}\n      />\n    )\n  }\n)\nGradientButton.displayName = \"GradientButton\"\n\nexport { GradientButton, gradientButtonVariants }",
+      "type": "registry:ui",
+      "target": ""
+    }
+  ],
+  "cssVars": {
+    "light": {},
+    "dark": {}
+  },
+  "tailwind": {
+    "config": {}
+  },
+  "_meta": {
+    "author": "serafimcloud",
+    "slug": "gradient-button",
+    "registry_url": "https://21st.dev/r/serafimcloud/gradient-button",
+    "title": "Gradient Button",
+    "description": "A beautiful button component with animated gradient background and border effects, inspired by Aaron Iker's implementation of James design concept.\n\nFeatures\n- Smooth gradient animations on hover\n- Glowing border effect\n- Multiple color variants\n- Fully accessible\n- CSS-only animations\n- Dark mode support",
+    "category": "button",
+    "category_group": "UI Components",
+    "downloads": 6277,
+    "likes": 59
+  }
+}

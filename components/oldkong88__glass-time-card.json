@@ -1,0 +1,27 @@
+{
+  "name": "glass-time-card",
+  "type": "registry:ui",
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "/components/ui/glass-time-card.tsx",
+      "content": "\"use client\"\n\nimport * as React from \"react\"\nimport { useState, useEffect } from \"react\"\n\ninterface GlassTimeCardProps {\n  showSeconds?: boolean;\n  showTimezone?: boolean;\n}\n\nexport function GlassTimeCard(props: GlassTimeCardProps) {\n  const { showSeconds = false, showTimezone = false } = props;\n  \n  const [currentTime, setCurrentTime] = useState<Date>(new Date());\n  const [timezoneName, setTimezoneName] = useState<string>(\"\");\n  \n  useEffect(() => {\n    const timezoneOffset = currentTime.getTimezoneOffset();\n    \n    const timezoneShorter = Intl.DateTimeFormat().resolvedOptions().timeZone;\n    \n    const offset = -timezoneOffset / 60;\n    const offsetStr = offset >= 0 ? `+${offset}` : `${offset}`;\n    \n    setTimezoneName(`${timezoneShorter} GMT${offsetStr}`);\n    \n    const intervalId = setInterval(() => {\n      setCurrentTime(new Date());\n    }, 1000);\n    \n    return () => clearInterval(intervalId);\n  }, []);\n  \n  const formatTime = (date: Date): string => {\n    return date.toLocaleTimeString(undefined, {\n      hour: '2-digit',\n      minute: '2-digit',\n      second: showSeconds ? '2-digit' : undefined,\n      hour12: false\n    });\n  };\n  \n  const formatDate = (date: Date): string => {\n    const day = date.getDate();\n    \n    const weekdays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];\n    const weekday = weekdays[date.getDay()];\n    \n    const months = ['January', 'February', 'March', 'April', 'May', 'June', \n                   'July', 'August', 'September', 'October', 'November', 'December'];\n    const month = months[date.getMonth()];\n    \n    return `${weekday} | ${month} ${day}`;\n  };\n\n  return (\n    <div className=\"w-80 text-white bg-neutral-white/20 shadow-xl backdrop-blur-xl p-4 rounded-lg border border-white/10\">\n      <div className=\"flex flex-col gap-1 items-center\">\n        <div className=\"text-sm\">{formatDate(currentTime)}</div>\n        <div className=\"text-5xl font-bold tabular-nums\">{formatTime(currentTime)}</div>\n        {showTimezone && (\n          <div className=\"text-xs text-muted\">{timezoneName}</div>\n        )}\n      </div>\n    </div>\n  )\n}",
+      "type": "registry:ui",
+      "target": ""
+    }
+  ],
+  "tailwind": {
+    "config": {}
+  },
+  "_meta": {
+    "author": "oldkong88",
+    "slug": "glass-time-card",
+    "registry_url": "https://21st.dev/r/oldkong88/glass-time-card",
+    "title": "Glass Time Card",
+    "description": "Glassmorphism style time card component",
+    "category": "card",
+    "category_group": "UI Components",
+    "downloads": 133,
+    "likes": 0
+  }
+}

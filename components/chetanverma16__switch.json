@@ -1,0 +1,29 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "switch",
+  "type": "registry:component",
+  "title": "Switch",
+  "description": "A switch component.",
+  "dependencies": [
+    "framer-motion"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/ui/switch.tsx",
+      "content": "\"use client\";\n\nimport React, { useState } from \"react\";\nimport { motion } from \"framer-motion\";\nimport { cn } from \"@/lib/utils\";\n\ninterface SwitchProps {\n  checked?: boolean;\n  onCheckedChange?: (checked: boolean) => void;\n}\n\nconst Switch = ({ checked = false, onCheckedChange }: SwitchProps) => {\n  const [isChecked, setIsChecked] = useState(checked);\n\n  const handleToggle = () => {\n    const newValue = !isChecked;\n    setIsChecked(newValue);\n    onCheckedChange?.(newValue);\n  };\n\n  return (\n    <motion.button\n      role=\"switch\"\n      aria-checked={isChecked}\n      onClick={handleToggle}\n      className={cn(\n        \"relative inline-flex h-6 w-11 items-center rounded-full\",\n        isChecked ? \"bg-gray-800\" : \"bg-gray-200\"\n      )}\n      transition={{\n        type: \"spring\",\n        stiffness: 700,\n        damping: 30,\n      }}\n    >\n      {/* {isChecked && (\n        <div className=\"absolute h-full w-full z-0 rounded-full bg-yellow-500 blur-lg\" />\n      )} */}\n      <motion.span\n        className={cn(\n          \"inline-block h-5 w-5 rounded-full bg-gray-900\",\n          isChecked ? \"bg-yellow-300\" : \"bg-gray-900\"\n        )}\n        animate={{\n          x: isChecked ? 20 : 4,\n        }}\n        transition={{\n          type: \"spring\",\n          stiffness: 700,\n          damping: 30,\n          bounce: 0,\n        }}\n      >\n        {isChecked && (\n          <motion.div\n            className=\"absolute h-full w-full z-0 rounded-full bg-yellow-500 blur-lg\"\n            initial={{\n              scale: 0,\n            }}\n            animate={{\n              scale: 1,\n            }}\n            transition={{\n              type: \"spring\",\n              duration: 0.02,\n            }}\n          />\n        )}\n      </motion.span>\n    </motion.button>\n  );\n};\n\nexport default Switch;\n",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "chetanverma16",
+    "slug": "switch",
+    "registry_url": "https://21st.dev/r/chetanverma16/switch",
+    "title": "Switch",
+    "description": "A switch component made with Framer Motion and Tailwind CSS.",
+    "category": "toggle",
+    "category_group": "UI Components",
+    "downloads": 67,
+    "likes": 0
+  }
+}

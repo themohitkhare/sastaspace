@@ -42,5 +42,16 @@
     "author": "easemize",
     "name": "sign-in",
     "registry_url": "https://21st.dev/r/easemize/sign-in"
+  },
+  "_meta": {
+    "author": "easemize",
+    "slug": "sign-in",
+    "registry_url": "https://21st.dev/r/easemize/sign-in",
+    "title": "Sign In",
+    "description": "sign in log in signin login",
+    "category": "sign-in",
+    "category_group": "UI Components",
+    "downloads": 2299,
+    "likes": 0
   }
 }

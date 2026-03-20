@@ -1,0 +1,30 @@
+{
+  "name": "hover-link-preview",
+  "type": "registry:ui",
+  "dependencies": [
+    "framer-motion"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "/components/ui/hover-link-preview.tsx",
+      "content": "\"use client\" \r\n\r\nimport * as React from \"react\"\r\nimport { useRef, useState } from \"react\";\r\nimport {\r\n  motion,\r\n  AnimatePresence,\r\n  useMotionValue,\r\n  useSpring,\r\n} from \"framer-motion\";\r\n \r\ninterface HoverLinkPreviewProps {\r\n  href: string;\r\n  previewImage: string;\r\n  imageAlt?: string;\r\n  children: React.ReactNode;\r\n}\r\n \r\nconst HoverLinkPreview: React.FC<HoverLinkPreviewProps> = ({\r\n  href,\r\n  previewImage,\r\n  imageAlt = \"Link preview\",\r\n  children,\r\n}) => {\r\n  const [showPreview, setShowPreview] = useState(false);\r\n  const prevX = useRef<number | null>(null);\r\n \r\n  // Motion values for smooth animation\r\n  const motionTop = useMotionValue(0);\r\n  const motionLeft = useMotionValue(0);\r\n  const motionRotate = useMotionValue(0);\r\n \r\n  // Springs for natural movement\r\n  const springTop = useSpring(motionTop, { stiffness: 300, damping: 30 });\r\n  const springLeft = useSpring(motionLeft, { stiffness: 300, damping: 30 });\r\n  const springRotate = useSpring(motionRotate, { stiffness: 300, damping: 20 });\r\n \r\n  // Handlers\r\n  const handleMouseEnter = () => {\r\n    setShowPreview(true);\r\n    prevX.current = null;\r\n  };\r\n \r\n  const handleMouseLeave = () => {\r\n    setShowPreview(false);\r\n    prevX.current = null;\r\n    motionRotate.set(0);\r\n  };\r\n \r\n  const handleMouseMove = (e: React.MouseEvent<HTMLAnchorElement>) => {\r\n    const PREVIEW_WIDTH = 192;\r\n    const PREVIEW_HEIGHT = 112;\r\n    const OFFSET_Y = 40;\r\n \r\n    // Position the preview\r\n    motionTop.set(e.clientY - PREVIEW_HEIGHT - OFFSET_Y);\r\n    motionLeft.set(e.clientX - PREVIEW_WIDTH / 2);\r\n \r\n    // Calculate tilt based on horizontal movement\r\n    if (prevX.current !== null) {\r\n      const deltaX = e.clientX - prevX.current;\r\n      const newRotate = Math.max(-15, Math.min(15, deltaX * 1.2));\r\n      motionRotate.set(newRotate);\r\n    }\r\n    prevX.current = e.clientX;\r\n  };\r\n \r\n  return (\r\n    <>\r\n      <a\r\n        href={href}\r\n        target=\"_blank\"\r\n        rel=\"noopener noreferrer\"\r\n        className=\"relative inline-block cursor-pointer text-blue-600 underline\"\r\n        onMouseEnter={handleMouseEnter}\r\n        onMouseLeave={handleMouseLeave}\r\n        onMouseMove={handleMouseMove}\r\n      >\r\n        {children}\r\n      </a>\r\n \r\n      <AnimatePresence>\r\n        {showPreview && (\r\n          <motion.div\r\n            initial={{ opacity: 0, scale: 0.8, y: -10, rotate: 0 }}\r\n            animate={{ opacity: 1, scale: 1, y: 0 }}\r\n            exit={{ opacity: 0, scale: 0.8, y: -10, rotate: 0 }}\r\n            style={{\r\n              position: \"fixed\",\r\n              top: springTop,\r\n              left: springLeft,\r\n              rotate: springRotate,\r\n              zIndex: 50,\r\n              pointerEvents: \"none\",\r\n            }}\r\n          >\r\n            <div className=\"bg-white border rounded-2xl shadow-lg p-2 min-w-[180px] max-w-xs\">\r\n              <img\r\n                src={previewImage}\r\n                alt={imageAlt}\r\n                draggable={false}\r\n                className=\"w-48 h-28 object-cover rounded-md\"\r\n              />\r\n            </div>\r\n          </motion.div>\r\n        )}\r\n      </AnimatePresence>\r\n    </>\r\n  );\r\n};\r\n \r\nexport { HoverLinkPreview };",
+      "type": "registry:ui",
+      "target": ""
+    }
+  ],
+  "tailwind": {
+    "config": {}
+  },
+  "_meta": {
+    "author": "preetsuthar17",
+    "slug": "hover-link-preview",
+    "registry_url": "https://21st.dev/r/preetsuthar17/hover-link-preview",
+    "title": "Hover Link Preview",
+    "description": "When a user hovers over a link, a preview of the link's destination appears.",
+    "category": "link",
+    "category_group": "UI Components",
+    "downloads": 84,
+    "likes": 0
+  }
+}

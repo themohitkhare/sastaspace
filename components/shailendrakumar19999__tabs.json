@@ -1,0 +1,29 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "tabs",
+  "type": "registry:component",
+  "title": "Tabs",
+  "description": "A tabs component.",
+  "dependencies": [
+    "@ark-ui/react"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/ui/tabs.tsx",
+      "content": "import { Tabs } from \"@ark-ui/react/tabs\"\n\nconst tabs = [\n  { value: \"react\", label: \"React\", content: \"🚀 React makes UI interactive and fast.\" },\n  { value: \"vue\", label: \"Vue\", content: \"🟢 Vue is approachable and versatile.\" },\n  { value: \"solid\", label: \"Solid\", content: \"⚡ Solid is reactive and lightweight.\" },\n  { value: \"svelte\", label: \"Svelte\", content: \"🔥 Svelte compiles away the framework.\" },\n]\n\nexport const BasicTab = () => (\n  <div className=\"w-full max-w-md mx-auto p-6 bg-white dark:bg-gray-900 rounded-2xl shadow-md\">\n    <Tabs.Root defaultValue=\"react\" className=\"flex flex-col\">\n      \n      {/* Tab List */}\n      <Tabs.List className=\"flex border-b border-gray-200 dark:border-gray-700\">\n        {tabs.map(({ value, label }) => (\n          <Tabs.Trigger\n            key={value}\n            value={value}\n            className=\"px-4 py-2 text-sm font-medium transition-colors\n                       text-gray-600 dark:text-gray-400\n                       data-[selected]:text-blue-600 dark:data-[selected]:text-blue-400\n                       data-[selected]:border-b-2 data-[selected]:border-blue-500\n                       hover:text-gray-800 dark:hover:text-gray-200\"\n          >\n            {label}\n          </Tabs.Trigger>\n        ))}\n      </Tabs.List>\n\n      {/* Tab Content */}\n      <div className=\"p-4 mt-4 rounded-xl bg-gray-50 dark:bg-gray-800 text-gray-800 dark:text-gray-200\">\n        {tabs.map(({ value, content }) => (\n          <Tabs.Content key={value} value={value}>\n            {content}\n          </Tabs.Content>\n        ))}\n      </div>\n    </Tabs.Root>\n  </div>\n)\n",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "shailendrakumar19999",
+    "slug": "tabs",
+    "registry_url": "https://21st.dev/r/shailendrakumar19999/tabs",
+    "title": "Tabs",
+    "description": "This is basic tabs",
+    "category": "tabs",
+    "category_group": "UI Components",
+    "downloads": 12,
+    "likes": 0
+  }
+}

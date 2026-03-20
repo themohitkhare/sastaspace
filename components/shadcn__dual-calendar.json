@@ -1,0 +1,30 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "dual-calendar",
+  "type": "registry:component",
+  "title": "Dual Calendar",
+  "description": "A dual-calendar component.",
+  "dependencies": [],
+  "registryDependencies": [
+    "https://21st.dev/r/originui/calendar-rac",
+    "https://21st.dev/r/originui/calendar"
+  ],
+  "files": [
+    {
+      "path": "src/components/ui/dual-calendar.tsx",
+      "content": "// component.tsx\n\"use client\";\n\nimport * as React from \"react\";\n\nimport { Calendar } from \"@/components/ui/calendar\";\n\nconst DualCalendarWithPreset = React.forwardRef<\n  React.ElementRef<typeof Calendar>,\n  React.ComponentPropsWithoutRef<typeof Calendar>\n>((props, ref) => {\n  const [date, setDate] = React.useState<Date | undefined>(\n    new Date(2025, 5, 12)\n  );\n\n  return (\n    <Calendar\n      mode=\"single\"\n      defaultMonth={date}\n      numberOfMonths={2}\n      selected={date}\n      onSelect={setDate}\n      className=\"rounded-lg border shadow-sm\"\n      {...props}\n      ref={ref}\n    />\n  );\n});\n\nDualCalendarWithPreset.displayName = \"DualCalendarWithPreset\";\n\nexport default DualCalendarWithPreset;",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "shadcn",
+    "slug": "dual-calendar",
+    "registry_url": "https://21st.dev/r/shadcn/dual-calendar",
+    "title": "Dual Calendar",
+    "description": "Here is Dual Calendar by Shadcn",
+    "category": "calendar",
+    "category_group": "UI Components",
+    "downloads": 3,
+    "likes": 0
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "name": "button",
+  "type": "registry:ui",
+  "dependencies": [
+    "framer-motion"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "/components/ui/button.tsx",
+      "content": "\"use client\";\n\nimport React from \"react\";\nimport { cn } from \"@/lib/utils\";\nimport { motion, MotionProps } from \"framer-motion\";\n\ntype MotionButtonProps = MotionProps & {\n  asChild?: boolean;\n  children: React.ReactNode;\n  className?: string;\n};\n\ntype HTMLButtonProps = Omit<\n  React.ButtonHTMLAttributes<HTMLButtonElement>,\n  \"ref\"\n>;\n\nconst Button = React.forwardRef<\n  HTMLButtonElement,\n  MotionButtonProps & HTMLButtonProps\n>(({ asChild = false, children, className, ...props }, ref) => {\n  const classNames = cn(\n    \"flex h-12 px-6 items-center justify bg-primary text-white rounded-lg\",\n    className\n  );\n\n  if (asChild && React.isValidElement(children)) {\n    const child = children as React.ReactElement;\n    return (\n      <motion.span whileTap={{ scale: 0.93 }}>\n        {React.cloneElement(child, {\n          className: cn(child.props.className, classNames),\n          ref,\n          ...props,\n        })}\n      </motion.span>\n    );\n  }\n\n  return (\n    <motion.button whileTap={{ scale: 0.93 }} className={classNames} {...props}>\n      {children}\n    </motion.button>\n  );\n});\n\nButton.displayName = \"Button\";\n\nexport { Button };\n",
+      "type": "registry:ui",
+      "target": ""
+    }
+  ],
+  "tailwind": {
+    "config": {}
+  },
+  "_meta": {
+    "author": "bundui",
+    "slug": "button",
+    "registry_url": "https://21st.dev/r/bundui/button",
+    "title": "Animated Shadcn Button",
+    "description": "An animated button component to enhance your app's user experience and interactivity. This example was made with Tailwind CSS and Framer Motion.",
+    "category": "button",
+    "category_group": "UI Components",
+    "downloads": 80,
+    "likes": 3
+  }
+}

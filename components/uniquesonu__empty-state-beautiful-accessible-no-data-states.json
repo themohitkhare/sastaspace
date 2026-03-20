@@ -1,0 +1,31 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "empty-state-beautiful-accessible-no-data-states",
+  "type": "registry:component",
+  "title": "Empty State Beautiful Accessible No Data States",
+  "description": "A empty-state-beautiful-accessible-no-data-states component.",
+  "dependencies": [
+    "lucide-react"
+  ],
+  "registryDependencies": [
+    "https://21st.dev/r/shadcn/button"
+  ],
+  "files": [
+    {
+      "path": "src/components/ui/empty-state-beautiful-accessible-no-data-states.tsx",
+      "content": "import React from 'react';\nimport { Button } from \"@/components/ui/button\";\nimport { cn } from \"@/lib/utils\"; // Assumes shadcn's utility for class merging\nimport { FileText, PlusCircle } from 'lucide-react';\nimport { Search, FolderOpen, AlertTriangle } from 'lucide-react';\n\n// Define the icon type. Using React.ElementType for flexibility.\ntype IconType = React.ElementType | React.FunctionComponent<React.SVGProps<SVGSVGElement>>;\n\n// --- 📦 API (Props) Definition ---\nexport interface EmptyStateProps {\n  /** The primary title of the empty state (e.g., \"No Documents Found\"). */\n  title: string;\n  /** The detailed descriptive message. */\n  message: string;\n  /** Optional label for the primary action button. */\n  actionLabel?: string;\n  /** Optional icon for the primary action button. Defaults to PlusCircle. */\n  actionIcon?: IconType;\n  /** Callback function when the primary action button is clicked. */\n  onActionClick?: () => void;\n  /** The main icon to display prominently in the empty state. Defaults to FileText. */\n  mainIcon?: IconType;\n  /** Optional class name for the container div. */\n  className?: string;\n}\n\n/**\n * A professional, accessible, and responsive component for indicating the absence of data.\n * It guides the user with a clear message and an optional call-to-action.\n */\nconst EmptyState: React.FC<EmptyStateProps> = ({\n  title,\n  message,\n  actionLabel,\n  actionIcon: ActionIcon = PlusCircle, // Default to PlusCircle\n  onActionClick,\n  mainIcon: MainIcon = FileText, // Default to FileText\n  className,\n}) => {\n  const showAction = actionLabel && onActionClick;\n\n  return (\n    <div\n      className={cn(\n        \"flex flex-col items-center justify-center text-center p-8 sm:p-12 md:p-16 border-2 border-dashed border-border rounded-lg bg-card transition-colors duration-200\",\n        className\n      )}\n      role=\"status\" // ARIA role to indicate status information\n      aria-live=\"polite\"\n    >\n      {/* Main Icon */}\n      <div className=\"mb-4 p-3 rounded-full bg-muted text-muted-foreground border border-border\">\n        <MainIcon className=\"h-10 w-10 text-muted-foreground\" aria-hidden=\"true\" />\n      </div>\n\n      {/* Title */}\n      <h3 className=\"text-xl font-semibold text-foreground mb-2\">{title}</h3>\n\n      {/* Message */}\n      <p className=\"max-w-md text-sm text-muted-foreground mb-6\">{message}</p>\n\n      {/* Action Button (Optional) */}\n      {showAction && (\n        <Button\n          onClick={onActionClick}\n          className=\"transition-shadow duration-200 hover:shadow-md\"\n          aria-label={actionLabel}\n        >\n          <ActionIcon className=\"h-4 w-4 mr-2\" aria-hidden=\"true\" />\n          {actionLabel}\n        </Button>\n      )}\n    </div>\n  );\n};\n\n// export default EmptyState;\n\n\nconst ExampleUsage = () => {\n  return (\n    <div className=\"p-8 bg-background flex flex-col gap-8\">\n      {/* Example 1: Standard Empty State (No Content) */}\n      <EmptyState\n        title=\"No Reports Generated Yet\"\n        message=\"It looks like you haven't run any analysis reports. Click the button below to start your first financial summary.\"\n        actionLabel=\"Generate First Report\"\n        onActionClick={() => console.log(\"Action: Generate Report\")}\n        mainIcon={FolderOpen}\n        className=\"max-w-3xl mx-auto\"\n      />\n\n      {/* Example 2: Search Empty State */}\n      <EmptyState\n        title=\"No Results Found\"\n        message=\"We couldn't find any items matching your search criteria. Try simplifying your query or checking your spelling.\"\n        mainIcon={Search}\n        className=\"max-w-xl mx-auto\"\n      />\n\n      {/* Example 3: Error/Configuration Empty State (No Action) */}\n      <EmptyState\n        title=\"Configuration Required\"\n        message=\"The system is not yet configured with a data source. Please contact your administrator to set up the connection.\"\n        mainIcon={AlertTriangle}\n        className=\"max-w-2xl mx-auto\"\n      />\n    </div>\n  );\n};\n\nexport default ExampleUsage;",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "uniquesonu",
+    "slug": "empty-state-beautiful-accessible-no-data-states",
+    "registry_url": "https://21st.dev/r/uniquesonu/empty-state-beautiful-accessible-no-data-states",
+    "title": "EmptyState – Beautiful, Accessible ‘No Data’ States",
+    "description": "“Stop leaving your users in the void. The EmptyState component gives you elegant, accessible, and responsive UI for no-data moments. With built-in icons, customizable CTAs, and dark mode support, it turns empty screens into clear guidance and actionable UX. Perfect for dashboards, search pages, and error states.”\n\n⚡ Why this works:\n\nProblem framing: “Stop leaving users in the void” → instantly relatable.\n\nSolution promise: “Elegant, accessible, responsive UI for no-data moments.”\n\nFeature highlights: Icons, CTA, dark mode, flexible usage.\n\nUse cases: Dashboards, search results, error/config screens.",
+    "category": "empty-state",
+    "category_group": "UI Components",
+    "downloads": 9,
+    "likes": 0
+  }
+}

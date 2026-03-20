@@ -1,0 +1,29 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "toggle-group",
+  "type": "registry:component",
+  "title": "Toggle Group",
+  "description": "A toggle-group component.",
+  "dependencies": [
+    "@base-ui-components/react"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/ui/toggle-group.tsx",
+      "content": "import * as React from 'react';\nimport { Toggle } from '@base-ui-components/react/toggle';\nimport { ToggleGroup } from '@base-ui-components/react/toggle-group';\n\nexport default function ExampleToggleGroup() {\n  return (\n    <ToggleGroup\n      defaultValue={['left']}\n      className=\"flex gap-px rounded-md border border-gray-200 bg-gray-50 p-0.5\"\n    >\n      <Toggle\n        aria-label=\"Align left\"\n        value=\"left\"\n        className=\"flex size-8 items-center justify-center rounded-sm text-gray-600 select-none hover:bg-gray-100 focus-visible:bg-none focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-1 focus-visible:outline-blue-800 active:bg-gray-200 data-[pressed]:bg-gray-100 data-[pressed]:text-gray-900\"\n      >\n        <AlignLeftIcon className=\"size-4\" />\n      </Toggle>\n      <Toggle\n        aria-label=\"Align center\"\n        value=\"center\"\n        className=\"flex size-8 items-center justify-center rounded-sm text-gray-600 select-none hover:bg-gray-100 focus-visible:bg-none focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-1 focus-visible:outline-blue-800 active:bg-gray-200 data-[pressed]:bg-gray-100 data-[pressed]:text-gray-900\"\n      >\n        <AlignCenterIcon className=\"size-4\" />\n      </Toggle>\n      <Toggle\n        aria-label=\"Align right\"\n        value=\"right\"\n        className=\"flex size-8 items-center justify-center rounded-sm text-gray-600 select-none hover:bg-gray-100 focus-visible:bg-none focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-1 focus-visible:outline-blue-800 active:bg-gray-200 data-[pressed]:bg-gray-100 data-[pressed]:text-gray-900\"\n      >\n        <AlignRightIcon className=\"size-4\" />\n      </Toggle>\n    </ToggleGroup>\n  );\n}\n\nfunction AlignLeftIcon(props: React.ComponentProps<'svg'>) {\n  return (\n    <svg\n      width=\"16\"\n      height=\"16\"\n      viewBox=\"0 0 16 16\"\n      stroke=\"currentcolor\"\n      strokeLinecap=\"round\"\n      {...props}\n    >\n      <path d=\"M2.5 3.5H13.5\" />\n      <path d=\"M2.5 9.5H13.5\" />\n      <path d=\"M2.5 6.5H10.5\" />\n      <path d=\"M2.5 12.5H10.5\" />\n    </svg>\n  );\n}\n\nfunction AlignCenterIcon(props: React.ComponentProps<'svg'>) {\n  return (\n    <svg\n      width=\"16\"\n      height=\"16\"\n      viewBox=\"0 0 16 16\"\n      stroke=\"currentcolor\"\n      strokeLinecap=\"round\"\n      {...props}\n    >\n      <path d=\"M3 3.5H14\" />\n      <path d=\"M3 9.5H14\" />\n      <path d=\"M4.5 6.5H12.5\" />\n      <path d=\"M4.5 12.5H12.5\" />\n    </svg>\n  );\n}\n\nfunction AlignRightIcon(props: React.ComponentProps<'svg'>) {\n  return (\n    <svg\n      width=\"16\"\n      height=\"16\"\n      viewBox=\"0 0 16 16\"\n      stroke=\"currentcolor\"\n      strokeLinecap=\"round\"\n      {...props}\n    >\n      <path d=\"M2.5 3.5H13.5\" />\n      <path d=\"M2.5 9.5H13.5\" />\n      <path d=\"M5.5 6.5H13.5\" />\n      <path d=\"M5.5 12.5H13.5\" />\n    </svg>\n  );\n}\n",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "base-ui",
+    "slug": "toggle-group",
+    "registry_url": "https://21st.dev/r/base-ui/toggle-group",
+    "title": "Toggle Group",
+    "description": "Here is Toggle Group component",
+    "category": "toggle",
+    "category_group": "UI Components",
+    "downloads": 0,
+    "likes": 0
+  }
+}

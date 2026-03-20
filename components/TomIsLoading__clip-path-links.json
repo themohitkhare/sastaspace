@@ -1,0 +1,31 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "clip-path-links",
+  "type": "registry:component",
+  "title": "Clip Path Links",
+  "description": "A clip-path-links component.",
+  "dependencies": [
+    "react-icons",
+    "lucide-react",
+    "framer-motion"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/ui/clip-path-links.tsx",
+      "content": "import React from \"react\";\nimport {\n  SiGoogle,\n  SiTiktok,\n  SiSpotify,\n} from \"react-icons/si\";\nimport { FaDiscord } from \"react-icons/fa\";\nimport {\n  Github,\n  Twitter,\n  Instagram,\n  Facebook,\n  Linkedin,\n  Code,\n} from \"lucide-react\";\nimport { useAnimate } from \"framer-motion\";\n\nexport const ClipPathLinks = () => {\n  return (\n    <div className=\"divide-y border divide-border border-border\">\n      <div className=\"grid grid-cols-2 divide-x divide-border\">\n        <LinkBox Icon={SiGoogle} href=\"https://mail.google.com/mail/u/0/?fs=1&to=kamalkamalesh316@gmail.com&tf=cm\" />\n        <LinkBox Icon={Github} href=\"https://github.com/kamaleshsa\" />\n      </div>\n      <div className=\"grid grid-cols-4 divide-x divide-border\">\n        <LinkBox Icon={Twitter} href=\"https://x.com/Kamales71036733\" />\n        <LinkBox Icon={Linkedin} href=\"https://www.linkedin.com/in/kamaleshsa\" />\n        <LinkBox Icon={Instagram} href=\"https://www.instagram.com/k.a.m.a_l?igsh=ZmRzbXF6NTBwOXIw\" />\n        <LinkBox Icon={Facebook} href=\"https://www.facebook.com/share/16Zgo4MK6M/\" />\n      </div>\n      <div className=\"grid grid-cols-3 divide-x divide-border\">\n        <LinkBox Icon={FaDiscord} href=\"https://discord.com/users/1367756111725334599\" />\n        <LinkBox\n          href=\"https://21st.dev/kamaleshsa\"\n          className=\"h-6 w-auto object-contain\"\n          imgSrc=\"https://media.licdn.com/dms/image/v2/D4E0BAQH3Jqtih4t7-A/company-logo_200_200/B4EZY_fSK1HUAM-/0/1744821888382/21st_dev_logo?e=2147483647&v=beta&t=8hoDRfmpNQR3aqnKWef5U0bW9Mg2GCbgwvgeQ5MKaKU\"\n        />\n        <LinkBox\n          href=\"https://kamaleshsaportfolio.netlify.app/\"\n          className=\"h-8 w-auto object-contain\"\n          imgSrc=\"https://i.ibb.co/q36kg6qT/fotor-2025052503615.png\"\n        />\n      </div>\n    </div>\n  );\n};\n\nconst NO_CLIP = \"polygon(0 0, 100% 0, 100% 100%, 0% 100%)\";\nconst BOTTOM_RIGHT_CLIP = \"polygon(0 0, 100% 0, 0 0, 0% 100%)\";\nconst TOP_RIGHT_CLIP = \"polygon(0 0, 0 100%, 100% 100%, 0% 100%)\";\nconst BOTTOM_LEFT_CLIP = \"polygon(100% 100%, 100% 0, 100% 100%, 0 100%)\";\nconst TOP_LEFT_CLIP = \"polygon(0 0, 100% 0, 100% 100%, 100% 0)\";\n\nconst ENTRANCE_KEYFRAMES = {\n  left: [BOTTOM_RIGHT_CLIP, NO_CLIP],\n  bottom: [BOTTOM_RIGHT_CLIP, NO_CLIP],\n  top: [BOTTOM_RIGHT_CLIP, NO_CLIP],\n  right: [TOP_LEFT_CLIP, NO_CLIP],\n};\n\nconst EXIT_KEYFRAMES = {\n  left: [NO_CLIP, TOP_RIGHT_CLIP],\n  bottom: [NO_CLIP, TOP_RIGHT_CLIP],\n  top: [NO_CLIP, TOP_RIGHT_CLIP],\n  right: [NO_CLIP, BOTTOM_LEFT_CLIP],\n};\n\nconst LinkBox = ({ Icon, href, imgSrc, className }) => {\n  const [scope, animate] = useAnimate();\n\n  const getNearestSide = (e) => {\n    const box = e.target.getBoundingClientRect();\n\n    const proximityToLeft = {\n      proximity: Math.abs(box.left - e.clientX),\n      side: \"left\",\n    };\n    const proximityToRight = {\n      proximity: Math.abs(box.right - e.clientX),\n      side: \"right\",\n    };\n    const proximityToTop = {\n      proximity: Math.abs(box.top - e.clientY),\n      side: \"top\",\n    };\n    const proximityToBottom = {\n      proximity: Math.abs(box.bottom - e.clientY),\n      side: \"bottom\",\n    };\n\n    const sortedProximity = [\n      proximityToLeft,\n      proximityToRight,\n      proximityToTop,\n      proximityToBottom,\n    ].sort((a, b) => a.proximity - b.proximity);\n\n    return sortedProximity[0].side;\n  };\n\n  const handleMouseEnter = (e) => {\n    const side = getNearestSide(e);\n    animate(scope.current, {\n      clipPath: ENTRANCE_KEYFRAMES[side],\n    });\n  };\n\n  const handleMouseLeave = (e) => {\n    const side = getNearestSide(e);\n    animate(scope.current, {\n      clipPath: EXIT_KEYFRAMES[side],\n    });\n  };\n\n  return (\n    <a\n      href={href}\n      target=\"_blank\"\n      rel=\"noopener noreferrer\"\n      onMouseEnter={handleMouseEnter}\n      onMouseLeave={handleMouseLeave}\n      className=\"relative grid h-20 w-full place-content-center sm:h-28 md:h-36 text-foreground bg-background\"\n    >\n      {imgSrc ? (\n        <img\n          src={imgSrc}\n          alt=\"custom icon\"\n          className={className ?? \"max-h-10 sm:max-h-16 md:max-h-20 object-contain\"}\n        />\n      ) : (\n        <Icon className=\"text-xl sm:text-3xl md:text-4xl\" />\n      )}\n\n      <div\n        ref={scope}\n        style={{ clipPath: BOTTOM_RIGHT_CLIP }}\n        className=\"absolute inset-0 grid place-content-center bg-primary text-primary-foreground transition-colors duration-300\"\n      >\n        {imgSrc ? (\n          <img\n            src={imgSrc}\n            alt=\"custom icon hover\"\n            className={className ?? \"max-h-10 sm:max-h-16 md:max-h-20 object-contain\"}\n          />\n        ) : (\n          <Icon className=\"text-xl sm:text-3xl md:text-4xl\" />\n        )}\n      </div>\n    </a>\n  );\n};\n",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "TomIsLoading",
+    "slug": "clip-path-links",
+    "registry_url": "https://21st.dev/r/TomIsLoading/clip-path-links",
+    "title": "Clip Path Links",
+    "description": "The LinkBox component displays either an icon or image inside a styled grid item.\nOn hover, it animates a dark overlay from the nearest edge using clip-path with Framer Motion.\nIt's used for linking to external platforms and opens the target URL in a new tab",
+    "category": "card",
+    "category_group": "UI Components",
+    "downloads": 71,
+    "likes": 0
+  }
+}
