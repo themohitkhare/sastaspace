@@ -29,11 +29,11 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. A second concurrent redesign request is rejected while one is already running
   4. LLM-generated HTML served from the result URL has dangerous tags and attributes stripped (script tags, event handlers removed by nh3)
   5. A fetch request from the Next.js origin (localhost:3000) is allowed by CORS; requests from other origins are rejected
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 01-01: TBD
-- [ ] 01-02: TBD
+- [ ] 01-01-PLAN.md — Config, dependencies, CORS middleware, and test scaffolds
+- [ ] 01-02-PLAN.md — /redesign SSE endpoint with rate limiting, concurrency cap, sanitization, and full tests
 
 ### Phase 2: Next.js Scaffold + Wiring
 **Goal**: A running Next.js dev environment wired to the FastAPI backend with the full UI toolchain ready
@@ -87,7 +87,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Secure API Foundation | 0/0 | Not started | - |
+| 1. Secure API Foundation | 0/2 | Planning complete | - |
 | 2. Next.js Scaffold + Wiring | 0/0 | Not started | - |
 | 3. Core UI -- Landing + Progress + Result | 0/0 | Not started | - |
 | 4. Contact Form + Polish | 0/0 | Not started | - |
