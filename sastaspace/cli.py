@@ -38,17 +38,7 @@ def redesign_cmd(url: str, subdomain: str | None, no_open: bool, sites_dir: str 
     """Crawl, redesign, and deploy a website. Opens a local preview."""
     sites = Path(sites_dir) if sites_dir else DEFAULT_SITES_DIR
 
-    try:
-        cfg = _load_config()
-    except Exception as e:
-        console.print(
-            Panel(
-                f"[red]Configuration error:[/red] {e}\n\n"
-                "Create a .env file with ANTHROPIC_API_KEY=sk-ant-...",
-                title="Error",
-            )
-        )
-        raise SystemExit(1)
+    cfg = _load_config()
 
     with Progress(
         SpinnerColumn(),
@@ -79,7 +69,7 @@ def redesign_cmd(url: str, subdomain: str | None, no_open: bool, sites_dir: str 
 
         progress.update(task, description="Redesigning with Claude AI (this takes ~30s)...")
         try:
-            html = redesign(crawl_result, api_key=cfg.anthropic_api_key, model=cfg.claude_model)
+            html = redesign(crawl_result, api_url=cfg.claude_code_api_url, model=cfg.claude_model)
         except RedesignError as e:
             progress.stop()
             console.print(Panel(f"[red]Redesign failed:[/red] {e}", title="Error"))

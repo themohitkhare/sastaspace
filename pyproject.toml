@@ -4,8 +4,7 @@ version = "0.1.0"
 description = "AI Website Redesigner — crawl any site, get a beautiful redesign in 60 seconds"
 requires-python = ">=3.11"
 dependencies = [
-    "agno>=2.5.10",
-    "anthropic>=0.40.0",
+    "openai>=1.0.0",
     "playwright>=1.40.0",
     "beautifulsoup4>=4.12.0",
     "click>=8.1.0",

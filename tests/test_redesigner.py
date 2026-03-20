@@ -36,13 +36,17 @@ def make_crawl_result(url="https://acme.com", title="Acme", screenshot_b64=None)
     )
 
 
-def make_mock_agent(response_text: str):
-    """Return a mock Agno Agent whose .run() returns a RunOutput-like object."""
+def make_mock_client(response_text: str):
+    """Return a mock OpenAI client whose chat.completions.create() returns response_text."""
+    mock_message = MagicMock()
+    mock_message.content = response_text
+    mock_choice = MagicMock()
+    mock_choice.message = mock_message
     mock_response = MagicMock()
-    mock_response.content = response_text
-    mock_agent = MagicMock()
-    mock_agent.run.return_value = mock_response
-    return mock_agent
+    mock_response.choices = [mock_choice]
+    mock_client = MagicMock()
+    mock_client.chat.completions.create.return_value = mock_response
+    return mock_client
 
 
 # --- HTML cleaning tests ---
@@ -51,10 +55,10 @@ def make_mock_agent(response_text: str):
 def test_strips_markdown_fences():
     """redesign() strips ```html ... ``` wrapping."""
     wrapped = f"```html\n{SAMPLE_HTML}\n```"
-    mock_agent = make_mock_agent(wrapped)
+    mock_client = make_mock_client(wrapped)
 
-    with patch("sastaspace.redesigner.Agent", return_value=mock_agent):
-        result = redesign(make_crawl_result(), api_key="sk-test")
+    with patch("sastaspace.redesigner.OpenAI", return_value=mock_client):
+        result = redesign(make_crawl_result())
 
     assert result.startswith("<!DOCTYPE html>")
     assert "```" not in result
@@ -62,19 +66,19 @@ def test_strips_markdown_fences():
 
 def test_strips_generic_fences():
     wrapped = f"```\n{SAMPLE_HTML}\n```"
-    mock_agent = make_mock_agent(wrapped)
+    mock_client = make_mock_client(wrapped)
 
-    with patch("sastaspace.redesigner.Agent", return_value=mock_agent):
-        result = redesign(make_crawl_result(), api_key="sk-test")
+    with patch("sastaspace.redesigner.OpenAI", return_value=mock_client):
+        result = redesign(make_crawl_result())
 
     assert "```" not in result
 
 
 def test_valid_html_passes_through():
-    mock_agent = make_mock_agent(SAMPLE_HTML)
+    mock_client = make_mock_client(SAMPLE_HTML)
 
-    with patch("sastaspace.redesigner.Agent", return_value=mock_agent):
-        result = redesign(make_crawl_result(), api_key="sk-test")
+    with patch("sastaspace.redesigner.OpenAI", return_value=mock_client):
+        result = redesign(make_crawl_result())
 
     assert "<!DOCTYPE html>" in result
     assert "</html>" in result
@@ -84,28 +88,28 @@ def test_valid_html_passes_through():
 
 
 def test_raises_on_empty_response():
-    mock_agent = make_mock_agent("")
+    mock_client = make_mock_client("")
 
-    with patch("sastaspace.redesigner.Agent", return_value=mock_agent):
+    with patch("sastaspace.redesigner.OpenAI", return_value=mock_client):
         with pytest.raises(RedesignError, match="empty"):
-            redesign(make_crawl_result(), api_key="sk-test")
+            redesign(make_crawl_result())
 
 
 def test_raises_on_missing_doctype():
-    mock_agent = make_mock_agent("<html><body>Hi</body></html>")
+    mock_client = make_mock_client("<html><body>Hi</body></html>")
 
-    with patch("sastaspace.redesigner.Agent", return_value=mock_agent):
+    with patch("sastaspace.redesigner.OpenAI", return_value=mock_client):
         with pytest.raises(RedesignError, match="DOCTYPE"):
-            redesign(make_crawl_result(), api_key="sk-test")
+            redesign(make_crawl_result())
 
 
 def test_raises_on_missing_closing_html_tag():
     truncated = "<!DOCTYPE html>\n<html><body>Cut off mid way..."
-    mock_agent = make_mock_agent(truncated)
+    mock_client = make_mock_client(truncated)
 
-    with patch("sastaspace.redesigner.Agent", return_value=mock_agent):
+    with patch("sastaspace.redesigner.OpenAI", return_value=mock_client):
         with pytest.raises(RedesignError, match="</html>"):
-            redesign(make_crawl_result(), api_key="sk-test")
+            redesign(make_crawl_result())
 
 
 def test_raises_on_crawl_error():
@@ -113,35 +117,39 @@ def test_raises_on_crawl_error():
     bad_result = make_crawl_result()
     bad_result.error = "Timeout"
 
-    mock_agent = make_mock_agent("")
-    with patch("sastaspace.redesigner.Agent", return_value=mock_agent):
+    mock_client = make_mock_client("")
+    with patch("sastaspace.redesigner.OpenAI", return_value=mock_client):
         with pytest.raises(RedesignError, match="crawl failed"):
-            redesign(bad_result, api_key="sk-test")
+            redesign(bad_result)
 
-    mock_agent.run.assert_not_called()
-
-
-# --- Agno agent call tests ---
+    mock_client.chat.completions.create.assert_not_called()
 
 
-def test_agent_run_called_with_images_when_screenshot_present():
-    """When screenshot_base64 is set, agent.run() receives images=[...]."""
-    mock_agent = make_mock_agent(SAMPLE_HTML)
-
-    with patch("sastaspace.redesigner.Agent", return_value=mock_agent):
-        redesign(make_crawl_result(screenshot_b64=FAKE_PNG_B64), api_key="sk-test")
-
-    call_kwargs = mock_agent.run.call_args.kwargs
-    assert call_kwargs.get("images") is not None
-    assert len(call_kwargs["images"]) == 1
+# --- OpenAI client call tests ---
 
 
-def test_agent_run_called_without_images_when_no_screenshot():
-    """When screenshot_base64 is empty, agent.run() receives images=None."""
-    mock_agent = make_mock_agent(SAMPLE_HTML)
+def test_client_called_with_image_when_screenshot_present():
+    """When screenshot_base64 is set, messages include an image_url content block."""
+    mock_client = make_mock_client(SAMPLE_HTML)
 
-    with patch("sastaspace.redesigner.Agent", return_value=mock_agent):
-        redesign(make_crawl_result(screenshot_b64=""), api_key="sk-test")
+    with patch("sastaspace.redesigner.OpenAI", return_value=mock_client):
+        redesign(make_crawl_result(screenshot_b64=FAKE_PNG_B64))
 
-    call_kwargs = mock_agent.run.call_args.kwargs
-    assert call_kwargs.get("images") is None
+    call_kwargs = mock_client.chat.completions.create.call_args.kwargs
+    user_content = call_kwargs["messages"][-1]["content"]
+    image_blocks = [c for c in user_content if c.get("type") == "image_url"]
+    assert len(image_blocks) == 1
+    assert "base64" in image_blocks[0]["image_url"]["url"]
+
+
+def test_client_called_without_image_when_no_screenshot():
+    """When screenshot_base64 is empty, messages contain only the text block."""
+    mock_client = make_mock_client(SAMPLE_HTML)
+
+    with patch("sastaspace.redesigner.OpenAI", return_value=mock_client):
+        redesign(make_crawl_result(screenshot_b64=""))
+
+    call_kwargs = mock_client.chat.completions.create.call_args.kwargs
+    user_content = call_kwargs["messages"][-1]["content"]
+    image_blocks = [c for c in user_content if c.get("type") == "image_url"]
+    assert len(image_blocks) == 0

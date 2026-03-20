@@ -1,13 +1,9 @@
 # sastaspace/redesigner.py
 from __future__ import annotations
 
-import base64
-import os
 import re
 
-from agno.agent import Agent
-from agno.media import Image
-from agno.models.anthropic import Claude
+from openai import OpenAI
 
 from sastaspace.crawler import CrawlResult
 
@@ -80,12 +76,12 @@ def _validate_html(html: str) -> None:
 
 
 def redesign(
-    crawl_result: CrawlResult, api_key: str, model: str = "claude-sonnet-4-20250514"
+    crawl_result: CrawlResult,
+    api_url: str = "http://localhost:8000/v1",
+    model: str = "claude-sonnet-4-5-20250929",
 ) -> str:
     """
-    Use Agno + Claude to redesign a crawled website into a single HTML file.
-
-    Uses Agno's Agent with Claude vision model for screenshot analysis.
+    Use the claude-code-api gateway to redesign a crawled website into a single HTML file.
 
     Raises:
         RedesignError: if crawl_result.error is set or Claude's output is invalid.
@@ -93,13 +89,7 @@ def redesign(
     if crawl_result.error:
         raise RedesignError(f"Cannot redesign — crawl failed: {crawl_result.error}")
 
-    os.environ["ANTHROPIC_API_KEY"] = api_key
-
-    agent = Agent(
-        model=Claude(id=model, max_tokens=16000),
-        instructions=SYSTEM_PROMPT,
-        markdown=False,
-    )
+    client = OpenAI(base_url=api_url, api_key="claude-code")
 
     user_text = USER_PROMPT_TEMPLATE.format(
         crawl_context=crawl_result.to_prompt_context(),
@@ -109,14 +99,26 @@ def redesign(
         fonts=", ".join(crawl_result.fonts[:5]) or "not detected",
     )
 
-    images: list[Image] = []
+    user_content: list = []
     if crawl_result.screenshot_base64:
-        screenshot_bytes = base64.b64decode(crawl_result.screenshot_base64)
-        images.append(Image(content=screenshot_bytes))
+        user_content.append(
+            {
+                "type": "image_url",
+                "image_url": {"url": f"data:image/png;base64,{crawl_result.screenshot_base64}"},
+            }
+        )
+    user_content.append({"type": "text", "text": user_text})
 
-    response = agent.run(user_text, images=images if images else None)
-    raw = response.content or ""
+    response = client.chat.completions.create(
+        model=model,
+        messages=[
+            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "user", "content": user_content},
+        ],
+        max_tokens=16000,
+    )
 
+    raw = response.choices[0].message.content or ""
     html = _clean_html(raw)
     _validate_html(html)
     return html
