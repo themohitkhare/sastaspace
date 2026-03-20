@@ -10,8 +10,11 @@ import time
 from pathlib import Path
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, HTMLResponse
 from starlette.responses import Response
+
+from sastaspace.config import Settings
 
 _SITES_DIR: Path = Path("./sites")
 
@@ -19,6 +22,15 @@ _SITES_DIR: Path = Path("./sites")
 def make_app(sites_dir: Path) -> FastAPI:
     """Create the FastAPI app bound to a specific sites directory."""
     app = FastAPI(title="SastaSpace Preview Server")
+
+    settings = Settings()
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=settings.cors_origins,
+        allow_credentials=False,
+        allow_methods=["GET", "POST"],
+        allow_headers=["Content-Type"],
+    )
 
     @app.get("/", response_class=HTMLResponse)
     async def index() -> str:
