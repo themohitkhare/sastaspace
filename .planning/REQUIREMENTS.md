@@ -18,8 +18,8 @@
 
 ### Frontend — Next.js Scaffold
 
-- [ ] **FRONT-01**: Next.js 16 App Router project scaffolded in `web/` directory
-- [ ] **FRONT-02**: shadcn/ui + Tailwind v4 + Motion installed and configured
+- [x] **FRONT-01**: Next.js 16 App Router project scaffolded in `web/` directory
+- [x] **FRONT-02**: shadcn/ui + Tailwind v4 + Motion installed and configured
 - [ ] **FRONT-03**: Makefile `dev` target starts both FastAPI and Next.js dev servers together
 - [ ] **FRONT-04**: Cloudflare tunnel ingress rules configured: `/api/*` → FastAPI (8080), `/` → Next.js (3000)
 

@@ -46,7 +46,7 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 02-01-PLAN.md — Scaffold Next.js 16 in web/, install shadcn/ui + Tailwind v4 + Motion, create placeholder page
+- [x] 02-01-PLAN.md — Scaffold Next.js 16 in web/, install shadcn/ui + Tailwind v4 + Motion, create placeholder page
 - [ ] 02-02-PLAN.md — Wire Makefile dev target for concurrent servers, create Cloudflare tunnel ingress config
 
 ### Phase 3: Core UI -- Landing + Progress + Result
