@@ -7,12 +7,12 @@
 
 ### API — FastAPI Backend Extension
 
-- [ ] **API-01**: `POST /redesign` endpoint accepts a URL and streams SSE progress events
-- [ ] **API-02**: SSE stream emits named step events: `crawling`, `redesigning`, `deploying`, `done` (with result URL) and `error`
-- [ ] **API-03**: `redesign()` wrapped in `asyncio.to_thread()` to avoid blocking FastAPI event loop
-- [ ] **API-04**: Concurrency cap: max 1 simultaneous redesign job (asyncio.Semaphore)
-- [ ] **API-05**: IP rate limiting: max 3 redesign requests per hour per IP
-- [ ] **API-06**: LLM output HTML sanitized with `nh3` before writing to disk
+- [x] **API-01**: `POST /redesign` endpoint accepts a URL and streams SSE progress events
+- [x] **API-02**: SSE stream emits named step events: `crawling`, `redesigning`, `deploying`, `done` (with result URL) and `error`
+- [x] **API-03**: `redesign()` wrapped in `asyncio.to_thread()` to avoid blocking FastAPI event loop
+- [x] **API-04**: Concurrency cap: max 1 simultaneous redesign job (asyncio.Semaphore)
+- [x] **API-05**: IP rate limiting: max 3 redesign requests per hour per IP
+- [x] **API-06**: LLM output HTML sanitized with `nh3` before writing to disk
 - [x] **API-07**: CORS configured to allow Next.js frontend origin
 - [x] **API-08**: `fastapi` dependency bumped to `>=0.135.0` for built-in SSE support
 

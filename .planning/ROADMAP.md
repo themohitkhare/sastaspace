@@ -33,7 +33,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 Plans:
 - [x] 01-01-PLAN.md — Config, dependencies, CORS middleware, and test scaffolds
-- [ ] 01-02-PLAN.md — /redesign SSE endpoint with rate limiting, concurrency cap, sanitization, and full tests
+- [x] 01-02-PLAN.md — /redesign SSE endpoint with rate limiting, concurrency cap, sanitization, and full tests
 
 ### Phase 2: Next.js Scaffold + Wiring
 **Goal**: A running Next.js dev environment wired to the FastAPI backend with the full UI toolchain ready
