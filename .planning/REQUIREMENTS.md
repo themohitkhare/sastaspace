@@ -13,8 +13,8 @@
 - [ ] **API-04**: Concurrency cap: max 1 simultaneous redesign job (asyncio.Semaphore)
 - [ ] **API-05**: IP rate limiting: max 3 redesign requests per hour per IP
 - [ ] **API-06**: LLM output HTML sanitized with `nh3` before writing to disk
-- [ ] **API-07**: CORS configured to allow Next.js frontend origin
-- [ ] **API-08**: `fastapi` dependency bumped to `>=0.135.0` for built-in SSE support
+- [x] **API-07**: CORS configured to allow Next.js frontend origin
+- [x] **API-08**: `fastapi` dependency bumped to `>=0.135.0` for built-in SSE support
 
 ### Frontend — Next.js Scaffold
 

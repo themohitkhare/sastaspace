@@ -32,7 +32,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Plans**: 2 plans
 
 Plans:
-- [ ] 01-01-PLAN.md — Config, dependencies, CORS middleware, and test scaffolds
+- [x] 01-01-PLAN.md — Config, dependencies, CORS middleware, and test scaffolds
 - [ ] 01-02-PLAN.md — /redesign SSE endpoint with rate limiting, concurrency cap, sanitization, and full tests
 
 ### Phase 2: Next.js Scaffold + Wiring
