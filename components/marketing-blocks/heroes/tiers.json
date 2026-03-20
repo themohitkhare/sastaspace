@@ -2,267 +2,1274 @@
   "category": "heroes",
   "category_group": "Marketing Blocks",
   "gold": [
-    {"file": "aceternity__container-scroll-animation.json", "title": "Container Scroll Animation", "reason": "Iconic 3D scroll rotation effect (9940 downloads, 116 likes) used widely in SaaS landing pages — visually stunning and production-proven."},
-    {"file": "aceternity__lamp.json", "title": "Lamp", "reason": "Elegant conic-gradient lamp spotlight effect (9754 downloads, 77 likes) — polished dark hero backdrop widely recognisable from Linear-style sites."},
-    {"file": "aceternity__hero-parallax.json", "title": "Hero Parallax", "reason": "Full parallax product-grid hero with 3D scroll animations (1365 downloads, 28 likes) — visually impressive and perfect for portfolio/SaaS showcases."},
-    {"file": "aceternity__google-gemini-effect.json", "title": "Google Gemini Effect", "reason": "Animated multi-color SVG path scroll reveal (2415 downloads, 31 likes) — distinctive scroll-driven animation ideal for high-impact landing pages."},
-    {"file": "dillionverma__hero-video-dialog.json", "title": "Hero Video Dialog", "reason": "Production-ready animated video lightbox with 8 animation styles (1326 downloads, 37 likes) — essential hero embellishment for any SaaS or product site."},
-    {"file": "magicui__hero-video-dialog.json", "title": "hero-video-dialog", "reason": "Identical high-quality video dialog component from MagicUI registry — widely used production pattern for video-first hero sections."},
-    {"file": "arunachalam0606__scroll-expansion-hero.json", "title": "Scroll media expansion hero", "reason": "Immersive scroll-driven video/image expansion effect (4207 downloads) — creates a cinematic first impression perfect for premium brands."},
-    {"file": "meschacirung__hero-section-2.json", "title": "Hero Section 2", "reason": "Complete hero with navbar, animated blur reveal, app mockup screenshot, and social-proof logo grid — full production-ready SaaS landing page section."},
-    {"file": "serafimcloud__hero-with-mockup.json", "title": "Hero with Mockup", "reason": "Polished hero with gradient heading, dual CTA buttons, animated mockup frame, and branded glow effect — archetypal SaaS hero template."},
-    {"file": "mikolajdobrucki__hero-section.json", "title": "Hero Section", "reason": "Complete hero with badge, gradient headline, animated CTAs, dark/light mockup frame with glow effect — high-quality composable SaaS component."},
-    {"file": "tailark__hero-section-9.json", "title": "Hero Section 9", "reason": "Hero with perspective-tilted app screenshot, responsive nav, and partner logo grid — modern SaaS pattern matching top-tier landing pages."},
-    {"file": "shadcnblockscom__shadcnblocks-com-hero115.json", "title": "Hero 115", "reason": "Striking radial circle rings background with centred hero and product screenshot — clean, geometric, instantly impressive."},
-    {"file": "chowlol202__product-spotlight-hero-section.json", "title": "Product Spotlight Hero Section", "reason": "Innovative ecommerce hero with live product animations floating across the screen — unique and wowing for product-led sites."},
-    {"file": "tommyjepsen__animated-hero.json", "title": "Animated Hero", "reason": "Classic animated rotating-word headline hero with spring physics (widely forked) — versatile, polished, works universally for SaaS/business sites."},
-    {"file": "tommyjepsen__hero-with-group-of-images-text-and-two-buttons.json", "title": "Hero with Group of Images", "reason": "Clean two-column hero with image mosaic grid and badge — production-ready layout common on high-quality marketing sites."},
-    {"file": "tommyjepsen__hero-with-image-text-and-two-buttons.json", "title": "Hero with Image, Text and Two Buttons", "reason": "Foundational two-column hero with badge, large heading, description and dual CTAs — universally usable, clean SaaS pattern."},
-    {"file": "tommyjepsen__hero-with-text-and-two-button.json", "title": "Hero with Text and Two Buttons", "reason": "Clean centred text hero with two CTA buttons — simple, versatile, and production-ready for any business site."},
-    {"file": "shadcnblockscom__modern-hero.json", "title": "Modern Hero", "reason": "Centred hero with 5-star review avatars and social proof count — polished trust-builder ideal for SaaS and product sites."},
-    {"file": "easemize__hero-1.json", "title": "Hero 1", "reason": "Full-screen hero with gradient background, responsive nav, announcement banner and configurable CTAs — production-ready SaaS hero template."},
-    {"file": "easemize__hero-with-video.json", "title": "Hero With Video", "reason": "Complete hero with video background toggle, email signup, and full responsive navigation — feature-rich, production-ready template."},
-    {"file": "bankkroll__commerce-hero.json", "title": "Commerce Hero", "reason": "Ecommerce hero with animated category cards, product grid, and responsive nav — great for ecommerce redesigns with modern polished design."},
-    {"file": "waleedkibhen__saa-s-template.json", "title": "SaaS Template", "reason": "Dark SaaS hero with fixed nav, gradient headline, announcement badge, and dashboard screenshot with glow — production-ready dark theme template."},
-    {"file": "ruixen.ui__hero-section-with-gradient.json", "title": "HeroSectionWithGradient", "reason": "Pastel gradient background with blur reveal animations, mockup preview, and partner brand grid — polished and visually distinct."},
-    {"file": "prebuiltui__hero-section.json", "title": "Hero Section", "reason": "Clean hero with grid background, responsive nav with dropdowns, announcement badge, and dual CTAs — solid production-ready pattern."},
-    {"file": "muhammad-binsalman__light-saas-hero-section.json", "title": "Light Saas Hero Section", "reason": "Full SaaS hero with interactive plasma WebGL background, glassmorphic nav, stats grid, and gradient headline — visually impressive light-theme template."},
-    {"file": "meschacirung__hero-section-1.json", "title": "Hero Section 1", "reason": "Complete hero with responsive navigation and modern layout — well-structured full page section."},
-    {"file": "serafimcloud__hero.json", "title": "Hero (Serafim)", "reason": "Clean hero with animated mockup frame and gradient styling — solid production-ready SaaS hero with great visual polish."},
-    {"file": "aceternity__images-slider.json", "title": "Images Slider", "reason": "Full-page animated image slider with 3D rotation and keyboard navigation — high impact hero for media-rich brands."},
-    {"file": "aceternity__spotlight-new.json", "title": "Spotlight New", "reason": "Animated dual spotlight with configurable gradients and grid background — ideal atmospheric effect for dark hero sections."},
-    {"file": "bankkroll__myna-hero.json", "title": "Myna Hero", "reason": "AI/tech hero with blur-in animated headline words, feature tags, and feature grid — polished and appropriate for SaaS/AI products."},
-    {"file": "beratberkayg__hero.json", "title": "Hero (beratberkayg)", "reason": "Full-screen canvas beam animation with rotating animated headlines — visually impressive dark hero with good production quality."},
-    {"file": "aghasisahakyan1__hero-section.json", "title": "Hero Section (aghasisahakyan1)", "reason": "Full-page hero with responsive navigation, abstract background, headline/description, and embedded app data table mockup — unique and versatile."},
-    {"file": "easemize__glassmorphism-trust-hero.json", "title": "Glassmorphism Trust Hero", "reason": "Glassmorphism-styled hero likely featuring trust signals — distinctive aesthetic popular for SaaS landing pages."},
-    {"file": "easemize__dynamic-hero.json", "title": "Dynamic Hero", "reason": "Dynamic hero component with modern interactive capabilities — versatile for business/SaaS redesigns."},
-    {"file": "meschacirung__hero-section-3.json", "title": "Hero Section 3", "reason": "Full hero section with responsive layout and modern design — production-ready SaaS hero."},
-    {"file": "meschacirung__hero-section-4.json", "title": "Hero Section 4", "reason": "Complete hero section from established multi-variant series — production quality."},
-    {"file": "meschacirung__hero-section-5.json", "title": "Hero Section 5", "reason": "Full hero section — part of polished series from meschacirung."},
-    {"file": "meschacirung__hero-section-6.json", "title": "Hero Section 6", "reason": "Complete hero section variant — part of comprehensive series."},
-    {"file": "meschacirung__hero-section-9.json", "title": "Hero Section 9", "reason": "Hero section variant from reliable series — production quality."},
-    {"file": "serafimcloud__splite.json", "title": "Splite", "reason": "Split-layout hero variant from serafimcloud — clean and differentiated layout pattern."},
-    {"file": "ruixen.ui__hero-section06.json", "title": "Hero Section 06", "reason": "Well-structured hero section from ruixen.ui — polished gradient and animation work."},
-    {"file": "ruixen.ui__ruixen-hero-section-02.json", "title": "Ruixen Hero Section 02", "reason": "Production hero section from established design system — consistent quality."},
-    {"file": "ruixen.ui__home-section.json", "title": "Home Section", "reason": "Home hero section — complete layout suitable for SaaS/business sites."},
-    {"file": "ruixen.ui__ruixen-ui-hero.json", "title": "Ruixen UI Hero", "reason": "Full hero from ruixen.ui design system — polished and production-ready."},
-    {"file": "ravikatiyar162__hero-section-2.json", "title": "Hero Section 2 (ravikatiyar162)", "reason": "Full hero section variant from high-volume author — production quality."},
-    {"file": "ravikatiyar162__modern-hero-section.json", "title": "Modern Hero Section", "reason": "Modern hero section from prolific author — clean SaaS-appropriate design."},
-    {"file": "ravikatiyar162__ai-image-generator-hero.json", "title": "AI Image Generator Hero", "reason": "AI tool hero with specialized layout — well-suited for AI/tech SaaS redesigns."},
-    {"file": "ravikatiyar162__floating-icons-hero-section.json", "title": "Floating Icons Hero Section", "reason": "Hero with floating tech icons animation — visually distinctive for SaaS product sites."},
-    {"file": "ravikatiyar162__animated-hero-section-1.json", "title": "Animated Hero Section 1", "reason": "Full animated hero section — production quality from established author."},
-    {"file": "lavikatiyar__growth-hero-section.json", "title": "Growth Hero Section", "reason": "Growth/analytics focused hero — well-suited for business/SaaS redesigns."},
-    {"file": "lavikatiyar__hero-section.json", "title": "Hero Section (lavikatiyar)", "reason": "Complete hero section — production-ready layout for business sites."},
-    {"file": "lovesickfromthe6ix__horizon-hero-section.json", "title": "Horizon Hero Section", "reason": "Full hero section with modern design — production-ready for SaaS/business sites."},
-    {"file": "lovesickfromthe6ix__revolution-hero.json", "title": "Revolution Hero", "reason": "High-impact hero with distinctive visual design — suitable for modern business redesigns."},
-    {"file": "lovesickfromthe6ix__artificial-hero.json", "title": "Artificial Hero", "reason": "AI/tech themed hero — well-suited for AI product landing pages."},
-    {"file": "moumensoliman__hero-block-shadcnui.json", "title": "Hero Block Shadcn UI", "reason": "Production hero block built on shadcn/ui — clean and versatile."},
-    {"file": "moumensoliman__hero-section-shadcnui.json", "title": "Hero Section Shadcn UI", "reason": "Full hero section on shadcn/ui — solid production-ready design."},
-    {"file": "moumensoliman__glowy-waves-hero-shadcnui.json", "title": "Glowy Waves Hero Shadcn UI", "reason": "Hero with glowing wave animation — visually impressive for SaaS dark-theme sites."},
-    {"file": "vaib215__hero-with-product-mockup.json", "title": "Hero with Product Mockup", "reason": "Hero featuring product mockup — essential SaaS pattern with high visual impact."},
-    {"file": "ohmfordev__hero.json", "title": "Hero (ohmfordev)", "reason": "Full hero section — production-quality layout for business sites."},
-    {"file": "hurerag24__hero-grid-section.json", "title": "Hero Grid Section", "reason": "Grid-layout hero section — distinctive layout pattern for modern sites."},
-    {"file": "kokonutd__hero-fashion.json", "title": "Hero Fashion", "reason": "Fashion/ecommerce hero — excellent for retail and lifestyle brand redesigns."},
-    {"file": "uilayout.contact__hero-section.json", "title": "Hero Section (uilayout)", "reason": "Full hero section from dedicated UI layout author — production quality."},
-    {"file": "uniquesonu__modern-hero-section.json", "title": "Modern Hero Section", "reason": "Modern hero with animations — production-ready for business sites."},
-    {"file": "uniquesonu__modern-animated-hero-section.json", "title": "Modern Animated Hero Section", "reason": "Animated hero section — polished and suitable for SaaS/business redesigns."},
-    {"file": "uniquesonu__animated-hero-section.json", "title": "Animated Hero Section", "reason": "Full animated hero section — production-ready."},
-    {"file": "jatin-yadav05__classy-hero.json", "title": "Classy Hero", "reason": "Elegant, polished hero — well-suited for premium business/SaaS sites."},
-    {"file": "ravikatiyar162__animated-hero.json", "title": "Animated Hero (ravikatiyar162)", "reason": "Full animated hero — production-ready for SaaS redesigns."},
-    {"file": "ravikatiyar162__interactive-hero-backgrounds.json", "title": "Interactive Hero Backgrounds", "reason": "Multiple interactive background options for heroes — highly versatile reference for redesigns."},
-    {"file": "ravikatiyar162__minimalist-hero.json", "title": "Minimalist Hero", "reason": "Clean minimalist hero — perfect for professional/portfolio sites."},
-    {"file": "ravikatiyar162__hero-section-4.json", "title": "Hero Section 4 (ravikatiyar162)", "reason": "Full hero section — production-ready from prolific author."},
-    {"file": "ravikatiyar162__hero-section-5.json", "title": "Hero Section 5 (ravikatiyar162)", "reason": "Full hero section variant — production quality."},
-    {"file": "ravikatiyar162__hero-section-8.json", "title": "Hero Section 8 (ravikatiyar162)", "reason": "Full hero section — production quality SaaS pattern."},
-    {"file": "ravikatiyar162__hero-section-9.json", "title": "Hero Section 9 (ravikatiyar162)", "reason": "Full hero section with variant layout — production quality."},
-    {"file": "sshahaider__illuminated-hero.json", "title": "Illuminated Hero", "reason": "Hero with illumination effect — visually distinctive for dark-theme sites."},
-    {"file": "erikvalencia1__hero-odyssey.json", "title": "Hero Odyssey", "reason": "Distinctive named hero with modern aesthetic — production-ready for business sites."},
-    {"file": "Codehagen__hero.json", "title": "Hero (Codehagen)", "reason": "Well-known author hero section — clean and production-ready for SaaS/business."}
+    {
+      "file": "aceternity__container-scroll-animation.json",
+      "title": "Container Scroll Animation",
+      "reason": "Iconic 3D scroll rotation effect (9940 downloads, 116 likes) used widely in SaaS landing pages \u2014 visually stunning and production-proven."
+    },
+    {
+      "file": "aceternity__lamp.json",
+      "title": "Lamp",
+      "reason": "Elegant conic-gradient lamp spotlight effect (9754 downloads, 77 likes) \u2014 polished dark hero backdrop widely recognisable from Linear-style sites."
+    },
+    {
+      "file": "aceternity__hero-parallax.json",
+      "title": "Hero Parallax",
+      "reason": "Full parallax product-grid hero with 3D scroll animations (1365 downloads, 28 likes) \u2014 visually impressive and perfect for portfolio/SaaS showcases."
+    },
+    {
+      "file": "aceternity__google-gemini-effect.json",
+      "title": "Google Gemini Effect",
+      "reason": "Animated multi-color SVG path scroll reveal (2415 downloads, 31 likes) \u2014 distinctive scroll-driven animation ideal for high-impact landing pages."
+    },
+    {
+      "file": "dillionverma__hero-video-dialog.json",
+      "title": "Hero Video Dialog",
+      "reason": "Production-ready animated video lightbox with 8 animation styles (1326 downloads, 37 likes) \u2014 essential hero embellishment for any SaaS or product site."
+    },
+    {
+      "file": "magicui__hero-video-dialog.json",
+      "title": "hero-video-dialog",
+      "reason": "Identical high-quality video dialog component from MagicUI registry \u2014 widely used production pattern for video-first hero sections."
+    },
+    {
+      "file": "arunachalam0606__scroll-expansion-hero.json",
+      "title": "Scroll media expansion hero",
+      "reason": "Immersive scroll-driven video/image expansion effect (4207 downloads) \u2014 creates a cinematic first impression perfect for premium brands."
+    },
+    {
+      "file": "meschacirung__hero-section-2.json",
+      "title": "Hero Section 2",
+      "reason": "Complete hero with navbar, animated blur reveal, app mockup screenshot, and social-proof logo grid \u2014 full production-ready SaaS landing page section."
+    },
+    {
+      "file": "serafimcloud__hero-with-mockup.json",
+      "title": "Hero with Mockup",
+      "reason": "Polished hero with gradient heading, dual CTA buttons, animated mockup frame, and branded glow effect \u2014 archetypal SaaS hero template."
+    },
+    {
+      "file": "mikolajdobrucki__hero-section.json",
+      "title": "Hero Section",
+      "reason": "Complete hero with badge, gradient headline, animated CTAs, dark/light mockup frame with glow effect \u2014 high-quality composable SaaS component."
+    },
+    {
+      "file": "tailark__hero-section-9.json",
+      "title": "Hero Section 9",
+      "reason": "Hero with perspective-tilted app screenshot, responsive nav, and partner logo grid \u2014 modern SaaS pattern matching top-tier landing pages."
+    },
+    {
+      "file": "shadcnblockscom__shadcnblocks-com-hero115.json",
+      "title": "Hero 115",
+      "reason": "Striking radial circle rings background with centred hero and product screenshot \u2014 clean, geometric, instantly impressive."
+    },
+    {
+      "file": "chowlol202__product-spotlight-hero-section.json",
+      "title": "Product Spotlight Hero Section",
+      "reason": "Innovative ecommerce hero with live product animations floating across the screen \u2014 unique and wowing for product-led sites."
+    },
+    {
+      "file": "tommyjepsen__animated-hero.json",
+      "title": "Animated Hero",
+      "reason": "Classic animated rotating-word headline hero with spring physics (widely forked) \u2014 versatile, polished, works universally for SaaS/business sites."
+    },
+    {
+      "file": "tommyjepsen__hero-with-group-of-images-text-and-two-buttons.json",
+      "title": "Hero with Group of Images",
+      "reason": "Clean two-column hero with image mosaic grid and badge \u2014 production-ready layout common on high-quality marketing sites."
+    },
+    {
+      "file": "tommyjepsen__hero-with-image-text-and-two-buttons.json",
+      "title": "Hero with Image, Text and Two Buttons",
+      "reason": "Foundational two-column hero with badge, large heading, description and dual CTAs \u2014 universally usable, clean SaaS pattern."
+    },
+    {
+      "file": "tommyjepsen__hero-with-text-and-two-button.json",
+      "title": "Hero with Text and Two Buttons",
+      "reason": "Clean centred text hero with two CTA buttons \u2014 simple, versatile, and production-ready for any business site."
+    },
+    {
+      "file": "shadcnblockscom__modern-hero.json",
+      "title": "Modern Hero",
+      "reason": "Centred hero with 5-star review avatars and social proof count \u2014 polished trust-builder ideal for SaaS and product sites."
+    },
+    {
+      "file": "easemize__hero-1.json",
+      "title": "Hero 1",
+      "reason": "Full-screen hero with gradient background, responsive nav, announcement banner and configurable CTAs \u2014 production-ready SaaS hero template."
+    },
+    {
+      "file": "easemize__hero-with-video.json",
+      "title": "Hero With Video",
+      "reason": "Complete hero with video background toggle, email signup, and full responsive navigation \u2014 feature-rich, production-ready template."
+    },
+    {
+      "file": "bankkroll__commerce-hero.json",
+      "title": "Commerce Hero",
+      "reason": "Ecommerce hero with animated category cards, product grid, and responsive nav \u2014 great for ecommerce redesigns with modern polished design."
+    },
+    {
+      "file": "waleedkibhen__saa-s-template.json",
+      "title": "SaaS Template",
+      "reason": "Dark SaaS hero with fixed nav, gradient headline, announcement badge, and dashboard screenshot with glow \u2014 production-ready dark theme template."
+    },
+    {
+      "file": "ruixen.ui__hero-section-with-gradient.json",
+      "title": "HeroSectionWithGradient",
+      "reason": "Pastel gradient background with blur reveal animations, mockup preview, and partner brand grid \u2014 polished and visually distinct."
+    },
+    {
+      "file": "prebuiltui__hero-section.json",
+      "title": "Hero Section",
+      "reason": "Clean hero with grid background, responsive nav with dropdowns, announcement badge, and dual CTAs \u2014 solid production-ready pattern."
+    },
+    {
+      "file": "muhammad-binsalman__light-saas-hero-section.json",
+      "title": "Light Saas Hero Section",
+      "reason": "Full SaaS hero with interactive plasma WebGL background, glassmorphic nav, stats grid, and gradient headline \u2014 visually impressive light-theme template."
+    },
+    {
+      "file": "meschacirung__hero-section-1.json",
+      "title": "Hero Section 1",
+      "reason": "Complete hero with responsive navigation and modern layout \u2014 well-structured full page section."
+    },
+    {
+      "file": "serafimcloud__hero.json",
+      "title": "Hero (Serafim)",
+      "reason": "Clean hero with animated mockup frame and gradient styling \u2014 solid production-ready SaaS hero with great visual polish."
+    },
+    {
+      "file": "aceternity__images-slider.json",
+      "title": "Images Slider",
+      "reason": "Full-page animated image slider with 3D rotation and keyboard navigation \u2014 high impact hero for media-rich brands."
+    },
+    {
+      "file": "aceternity__spotlight-new.json",
+      "title": "Spotlight New",
+      "reason": "Animated dual spotlight with configurable gradients and grid background \u2014 ideal atmospheric effect for dark hero sections."
+    },
+    {
+      "file": "bankkroll__myna-hero.json",
+      "title": "Myna Hero",
+      "reason": "AI/tech hero with blur-in animated headline words, feature tags, and feature grid \u2014 polished and appropriate for SaaS/AI products."
+    },
+    {
+      "file": "beratberkayg__hero.json",
+      "title": "Hero (beratberkayg)",
+      "reason": "Full-screen canvas beam animation with rotating animated headlines \u2014 visually impressive dark hero with good production quality."
+    },
+    {
+      "file": "aghasisahakyan1__hero-section.json",
+      "title": "Hero Section (aghasisahakyan1)",
+      "reason": "Full-page hero with responsive navigation, abstract background, headline/description, and embedded app data table mockup \u2014 unique and versatile."
+    },
+    {
+      "file": "easemize__glassmorphism-trust-hero.json",
+      "title": "Glassmorphism Trust Hero",
+      "reason": "Glassmorphism-styled hero likely featuring trust signals \u2014 distinctive aesthetic popular for SaaS landing pages."
+    },
+    {
+      "file": "easemize__dynamic-hero.json",
+      "title": "Dynamic Hero",
+      "reason": "Dynamic hero component with modern interactive capabilities \u2014 versatile for business/SaaS redesigns."
+    },
+    {
+      "file": "meschacirung__hero-section-3.json",
+      "title": "Hero Section 3",
+      "reason": "Full hero section with responsive layout and modern design \u2014 production-ready SaaS hero."
+    },
+    {
+      "file": "meschacirung__hero-section-4.json",
+      "title": "Hero Section 4",
+      "reason": "Complete hero section from established multi-variant series \u2014 production quality."
+    },
+    {
+      "file": "meschacirung__hero-section-5.json",
+      "title": "Hero Section 5",
+      "reason": "Full hero section \u2014 part of polished series from meschacirung."
+    },
+    {
+      "file": "meschacirung__hero-section-6.json",
+      "title": "Hero Section 6",
+      "reason": "Complete hero section variant \u2014 part of comprehensive series."
+    },
+    {
+      "file": "meschacirung__hero-section-9.json",
+      "title": "Hero Section 9",
+      "reason": "Hero section variant from reliable series \u2014 production quality."
+    },
+    {
+      "file": "serafimcloud__splite.json",
+      "title": "Splite",
+      "reason": "Split-layout hero variant from serafimcloud \u2014 clean and differentiated layout pattern."
+    },
+    {
+      "file": "ruixen.ui__hero-section06.json",
+      "title": "Hero Section 06",
+      "reason": "Well-structured hero section from ruixen.ui \u2014 polished gradient and animation work."
+    },
+    {
+      "file": "ruixen.ui__ruixen-hero-section-02.json",
+      "title": "Ruixen Hero Section 02",
+      "reason": "Production hero section from established design system \u2014 consistent quality."
+    },
+    {
+      "file": "ruixen.ui__home-section.json",
+      "title": "Home Section",
+      "reason": "Home hero section \u2014 complete layout suitable for SaaS/business sites."
+    },
+    {
+      "file": "ruixen.ui__ruixen-ui-hero.json",
+      "title": "Ruixen UI Hero",
+      "reason": "Full hero from ruixen.ui design system \u2014 polished and production-ready."
+    },
+    {
+      "file": "ravikatiyar162__hero-section-2.json",
+      "title": "Hero Section 2 (ravikatiyar162)",
+      "reason": "Full hero section variant from high-volume author \u2014 production quality."
+    },
+    {
+      "file": "ravikatiyar162__modern-hero-section.json",
+      "title": "Modern Hero Section",
+      "reason": "Modern hero section from prolific author \u2014 clean SaaS-appropriate design."
+    },
+    {
+      "file": "ravikatiyar162__ai-image-generator-hero.json",
+      "title": "AI Image Generator Hero",
+      "reason": "AI tool hero with specialized layout \u2014 well-suited for AI/tech SaaS redesigns."
+    },
+    {
+      "file": "ravikatiyar162__floating-icons-hero-section.json",
+      "title": "Floating Icons Hero Section",
+      "reason": "Hero with floating tech icons animation \u2014 visually distinctive for SaaS product sites."
+    },
+    {
+      "file": "ravikatiyar162__animated-hero-section-1.json",
+      "title": "Animated Hero Section 1",
+      "reason": "Full animated hero section \u2014 production quality from established author."
+    },
+    {
+      "file": "lavikatiyar__growth-hero-section.json",
+      "title": "Growth Hero Section",
+      "reason": "Growth/analytics focused hero \u2014 well-suited for business/SaaS redesigns."
+    },
+    {
+      "file": "lavikatiyar__hero-section.json",
+      "title": "Hero Section (lavikatiyar)",
+      "reason": "Complete hero section \u2014 production-ready layout for business sites."
+    },
+    {
+      "file": "lovesickfromthe6ix__horizon-hero-section.json",
+      "title": "Horizon Hero Section",
+      "reason": "Full hero section with modern design \u2014 production-ready for SaaS/business sites."
+    },
+    {
+      "file": "lovesickfromthe6ix__revolution-hero.json",
+      "title": "Revolution Hero",
+      "reason": "High-impact hero with distinctive visual design \u2014 suitable for modern business redesigns."
+    },
+    {
+      "file": "lovesickfromthe6ix__artificial-hero.json",
+      "title": "Artificial Hero",
+      "reason": "AI/tech themed hero \u2014 well-suited for AI product landing pages."
+    },
+    {
+      "file": "moumensoliman__hero-block-shadcnui.json",
+      "title": "Hero Block Shadcn UI",
+      "reason": "Production hero block built on shadcn/ui \u2014 clean and versatile."
+    },
+    {
+      "file": "moumensoliman__hero-section-shadcnui.json",
+      "title": "Hero Section Shadcn UI",
+      "reason": "Full hero section on shadcn/ui \u2014 solid production-ready design."
+    },
+    {
+      "file": "moumensoliman__glowy-waves-hero-shadcnui.json",
+      "title": "Glowy Waves Hero Shadcn UI",
+      "reason": "Hero with glowing wave animation \u2014 visually impressive for SaaS dark-theme sites."
+    },
+    {
+      "file": "vaib215__hero-with-product-mockup.json",
+      "title": "Hero with Product Mockup",
+      "reason": "Hero featuring product mockup \u2014 essential SaaS pattern with high visual impact."
+    },
+    {
+      "file": "ohmfordev__hero.json",
+      "title": "Hero (ohmfordev)",
+      "reason": "Full hero section \u2014 production-quality layout for business sites."
+    },
+    {
+      "file": "hurerag24__hero-grid-section.json",
+      "title": "Hero Grid Section",
+      "reason": "Grid-layout hero section \u2014 distinctive layout pattern for modern sites."
+    },
+    {
+      "file": "kokonutd__hero-fashion.json",
+      "title": "Hero Fashion",
+      "reason": "Fashion/ecommerce hero \u2014 excellent for retail and lifestyle brand redesigns."
+    },
+    {
+      "file": "uilayout.contact__hero-section.json",
+      "title": "Hero Section (uilayout)",
+      "reason": "Full hero section from dedicated UI layout author \u2014 production quality."
+    },
+    {
+      "file": "uniquesonu__modern-hero-section.json",
+      "title": "Modern Hero Section",
+      "reason": "Modern hero with animations \u2014 production-ready for business sites."
+    },
+    {
+      "file": "uniquesonu__modern-animated-hero-section.json",
+      "title": "Modern Animated Hero Section",
+      "reason": "Animated hero section \u2014 polished and suitable for SaaS/business redesigns."
+    },
+    {
+      "file": "uniquesonu__animated-hero-section.json",
+      "title": "Animated Hero Section",
+      "reason": "Full animated hero section \u2014 production-ready."
+    },
+    {
+      "file": "jatin-yadav05__classy-hero.json",
+      "title": "Classy Hero",
+      "reason": "Elegant, polished hero \u2014 well-suited for premium business/SaaS sites."
+    },
+    {
+      "file": "ravikatiyar162__animated-hero.json",
+      "title": "Animated Hero (ravikatiyar162)",
+      "reason": "Full animated hero \u2014 production-ready for SaaS redesigns."
+    },
+    {
+      "file": "ravikatiyar162__interactive-hero-backgrounds.json",
+      "title": "Interactive Hero Backgrounds",
+      "reason": "Multiple interactive background options for heroes \u2014 highly versatile reference for redesigns."
+    },
+    {
+      "file": "ravikatiyar162__minimalist-hero.json",
+      "title": "Minimalist Hero",
+      "reason": "Clean minimalist hero \u2014 perfect for professional/portfolio sites."
+    },
+    {
+      "file": "ravikatiyar162__hero-section-4.json",
+      "title": "Hero Section 4 (ravikatiyar162)",
+      "reason": "Full hero section \u2014 production-ready from prolific author."
+    },
+    {
+      "file": "ravikatiyar162__hero-section-5.json",
+      "title": "Hero Section 5 (ravikatiyar162)",
+      "reason": "Full hero section variant \u2014 production quality."
+    },
+    {
+      "file": "ravikatiyar162__hero-section-8.json",
+      "title": "Hero Section 8 (ravikatiyar162)",
+      "reason": "Full hero section \u2014 production quality SaaS pattern."
+    },
+    {
+      "file": "ravikatiyar162__hero-section-9.json",
+      "title": "Hero Section 9 (ravikatiyar162)",
+      "reason": "Full hero section with variant layout \u2014 production quality."
+    },
+    {
+      "file": "sshahaider__illuminated-hero.json",
+      "title": "Illuminated Hero",
+      "reason": "Hero with illumination effect \u2014 visually distinctive for dark-theme sites."
+    },
+    {
+      "file": "erikvalencia1__hero-odyssey.json",
+      "title": "Hero Odyssey",
+      "reason": "Distinctive named hero with modern aesthetic \u2014 production-ready for business sites."
+    },
+    {
+      "file": "Codehagen__hero.json",
+      "title": "Hero (Codehagen)",
+      "reason": "Well-known author hero section \u2014 clean and production-ready for SaaS/business."
+    }
   ],
   "silver": [
-    {"file": "aceternity__spotlight.json", "title": "Spotlight", "reason": "SVG spotlight effect utility (798 downloads) — effective background embellishment but only a primitive effect, not a full hero section."},
-    {"file": "aceternity__flip-words.json", "title": "Flip Words", "reason": "Animated word-flipping text component (569 downloads, 12 likes) — good animated headline utility but not a standalone hero."},
-    {"file": "aceternity__background-ripple-effect.json", "title": "Background Ripple Effect", "reason": "Interactive grid ripple background (692 downloads) — nice interactive backdrop but too dark/niche and not a complete hero."},
-    {"file": "aceternity__cover.json", "title": "Cover", "reason": "Sparkle beam hover effect for inline text — polished UI primitive but too small scope for a full hero section."},
-    {"file": "aceternity__link-preview.json", "title": "Link Preview", "reason": "Animated hover link previews (601 downloads, 32 likes) — technically impressive but misplaced in hero category, primarily a micro-interaction."},
-    {"file": "aghasisahakyan1__galaxy-interactive-hero-section.json", "title": "Galaxy Interactive Hero Section", "reason": "Full-page Spline 3D hero with responsive nav (1123 downloads) — impressive but Spline dependency limits practical use and editability."},
-    {"file": "aghasisahakyan1__3d-hero-section-boxes.json", "title": "3D Hero Section Boxes", "reason": "Full Spline 3D hero with nav and mockup — good composition but Spline dependency and hardcoded assets reduce adaptability."},
-    {"file": "aghasisahakyan1__hero-section-nexus.json", "title": "Hero Section Nexus", "reason": "Complex hero with multiple subsections — interesting but potentially over-engineered for most redesign use cases."},
-    {"file": "beratberkayg__hero-1.json", "title": "Hero 1 (beratberkayg)", "reason": "Clean minimal hero with grid background and radial accent — solid but limited visual complexity compared to gold tier."},
-    {"file": "bankkroll__acme-hero.json", "title": "Acme Hero", "reason": "Clean SaaS hero with dashboard preview (low downloads) — well-built but conservative design without strong differentiation."},
-    {"file": "chowlol202__liquid-metal-hero.json", "title": "Liquid Metal Hero", "reason": "Hero with liquid metal shader background — visually distinctive but niche shader dependency and minimal content structure."},
-    {"file": "chowlol202__grain-gradient-hero-section.json", "title": "Grain Gradient Hero Section", "reason": "Simple hero with Paper Shaders grain gradient — clean but minimal structure and unusual dependency."},
-    {"file": "chowlol202__globe-hero.json", "title": "Globe Hero", "reason": "Three.js wireframe globe hero — interesting visual but very minimal content, heavy dependency, and low downloads."},
-    {"file": "daiwiikharihar17147__spatial-product-showcase.json", "title": "Spatial Product Showcase", "reason": "3D product showcase concept — distinctive but likely too experimental for standard website redesigns."},
-    {"file": "danielpetho__parallax-floating.json", "title": "Parallax Floating", "reason": "Parallax floating elements hero — good for creative/portfolio sites but more of a UI primitive than full hero."},
-    {"file": "danielpetho__vertical-cut-reveal.json", "title": "Vertical Cut Reveal", "reason": "Creative vertical cut reveal animation — artistic but niche, best for portfolio/agency sites."},
-    {"file": "designali-in__hero-01.json", "title": "Hero 01 (designali)", "reason": "Hero section from design-focused author — good quality but limited adoption signals."},
-    {"file": "designali-in__hero-02.json", "title": "Hero 02 (designali)", "reason": "Hero variant — solid design but niche without strong adoption."},
-    {"file": "designali-in__hero-03.json", "title": "Hero 03 (designali)", "reason": "Hero variant from designali — moderate quality design."},
-    {"file": "designali-in__hero-04.json", "title": "Hero 04 (designali)", "reason": "Hero variant — useful for portfolio/creative sites."},
-    {"file": "designali-in__hero-designali.json", "title": "Hero Designali", "reason": "Design-studio hero — good for agency/creative redesigns."},
-    {"file": "designali-in__vercel-hero.json", "title": "Vercel Hero", "reason": "Vercel-inspired hero — clean and minimal, good SaaS reference but derivative."},
-    {"file": "dillionverma__animated-gradient-text.json", "title": "Animated Gradient Text", "reason": "Animated gradient text utility — useful effect component but not a standalone hero section."},
-    {"file": "dillionverma__blur-fade.json", "title": "Blur Fade", "reason": "Blur fade animation component — useful utility for hero animations but a primitive, not a full section."},
-    {"file": "dillionverma__meteors.json", "title": "Meteors", "reason": "Animated meteor shower background effect — visually impressive but purely a background decorator."},
-    {"file": "dillionverma__text-reveal.json", "title": "Text Reveal", "reason": "Scroll-triggered text reveal animation — good hero text primitive but not a standalone hero."},
-    {"file": "dhileepkumargm__aurora-section-hero.json", "title": "Aurora Section Hero", "reason": "Aurora background hero section — visually appealing, moderate scope for business/SaaS use."},
-    {"file": "dhileepkumargm__foxify-hero.json", "title": "Foxify Hero", "reason": "Named SaaS hero — good composition for business sites."},
-    {"file": "dhileepkumargm__glow-hero-section.json", "title": "Glow Hero Section", "reason": "Hero with glow effects — good atmospheric design for dark-theme sites."},
-    {"file": "dhileepkumargm__hero-section-2.json", "title": "Hero Section 2 (dhileepkumar)", "reason": "Full hero section variant — moderate quality production hero."},
-    {"file": "dhileepkumargm__hero-section-3.json", "title": "Hero Section 3 (dhileepkumar)", "reason": "Hero section variant — production-ready but similar to many others."},
-    {"file": "dhileepkumargm__minimal.json", "title": "Minimal (dhileepkumar)", "reason": "Minimal hero — clean design good for professional/portfolio sites."},
-    {"file": "dhileepkumargm__pulse-fit-hero.json", "title": "Pulse Fit Hero", "reason": "Fitness/health themed hero — good for niche health/wellness site redesigns."},
-    {"file": "dhileepkumargm__design-meets-innovation.json", "title": "Design Meets Innovation", "reason": "Tech/design agency hero — appropriate for agency or product sites."},
-    {"file": "dhileepkumargm__aether-flow-hero.json", "title": "Aether Flow Hero", "reason": "Abstract flow animation hero — visually interesting for creative/tech brands."},
-    {"file": "dhileepkumargm__living-fluid-hero.json", "title": "Living Fluid Hero", "reason": "Fluid animation hero — creative and distinctive for modern brands."},
-    {"file": "dhileepkumargm__glass-refraction-hero.json", "title": "Glass Refraction Hero", "reason": "Glass refraction effect hero — visually interesting but niche material aesthetic."},
-    {"file": "designali-in__morphing-light.json", "title": "Morphing Light", "reason": "Morphing light background effect — attractive for SaaS sites but more of a background primitive."},
-    {"file": "designali-in__particle-hero.json", "title": "Particle Hero", "reason": "Particle-based hero background — versatile but common pattern."},
-    {"file": "designali-in__graaadeints.json", "title": "Graaadeints", "reason": "Gradient hero — clean and useful but gradient-only is simple for a full hero."},
-    {"file": "dhileepkumargm__aurora-hero-bg.json", "title": "Aurora Hero BG", "reason": "Aurora background effect — good atmospheric backdrop but purely decorative."},
-    {"file": "dhileepkumargm__aurora-hero-bg-1.json", "title": "Aurora Hero BG 1", "reason": "Aurora background variant — atmospheric effect good as background layer."},
-    {"file": "dhileepkumargm__aurora-hero-bg-2.json", "title": "Aurora Hero BG 2", "reason": "Aurora background variant — useful atmospheric backdrop."},
-    {"file": "dhileepkumargm__aurora-hero-bg-3.json", "title": "Aurora Hero BG 3", "reason": "Aurora background variant — solid atmospheric effect."},
-    {"file": "isaiahbjork__video-scroll-hero.json", "title": "Video Scroll Hero", "reason": "Scroll-driven video hero — engaging pattern for media-rich brands."},
-    {"file": "ishamsu__smooth-scroll-hero.json", "title": "Smooth Scroll Hero", "reason": "Smooth scroll animated hero — good UX pattern for immersive site experiences."},
-    {"file": "hammamikhairi__animated-gradient-background.json", "title": "Animated Gradient Background", "reason": "Animated gradient background for heroes — useful backdrop but only a background layer."},
-    {"file": "ibelick__text-effect.json", "title": "Text Effect", "reason": "Text animation effect component — useful hero text primitive."},
-    {"file": "ibelick__text-scramble.json", "title": "Text Scramble", "reason": "Text scramble animation — interesting effect for tech brands but limited standalone value."},
-    {"file": "hari__reveal-images.json", "title": "Reveal Images", "reason": "Image reveal animation hero — creative pattern good for portfolio/agency sites."},
-    {"file": "jatin-yadav05__glowing-card.json", "title": "Glowing Card", "reason": "Glowing card hero element — good design accent but card-level, not full hero section."},
-    {"file": "kinfe123__hero-section-dark.json", "title": "Hero Section Dark", "reason": "Dark-themed hero section — good for dark-mode first redesigns."},
-    {"file": "kurket21__progressive-hero.json", "title": "Progressive Hero", "reason": "Progressive reveal hero — interesting animation pattern for modern brands."},
-    {"file": "lovesickfromthe6ix__full-screen-scroll-fx.json", "title": "Full Screen Scroll FX", "reason": "Scroll-driven full-screen effect — creative but may be too immersive for standard business sites."},
-    {"file": "lovesickfromthe6ix__scroll-animated-video.json", "title": "Scroll Animated Video", "reason": "Scroll-animated video hero — good for media-rich premium brand sites."},
-    {"file": "lovesickfromthe6ix__particle-hero.json", "title": "Particle Hero", "reason": "Particle background hero — visually interesting atmospheric effect."},
-    {"file": "lyanchouss__hero-minimalism.json", "title": "Hero Minimalism", "reason": "Minimalist hero design — clean and appropriate for professional/startup sites."},
-    {"file": "m.umairwaheedansari__tunnel-hero.json", "title": "Tunnel Hero", "reason": "Tunnel perspective hero effect — creative and visually striking for bold brands."},
-    {"file": "moazamtrade__sleek-hero-with-orb.json", "title": "Sleek Hero With Orb", "reason": "Dark hero with glowing orb — attractive for AI/tech product sites."},
-    {"file": "moazamtrade__hero-button-expendable.json", "title": "Hero Button Expendable", "reason": "Hero with animated expandable button — interesting interactive pattern."},
-    {"file": "moazamtrade__3d-gallery-photography.json", "title": "3D Gallery Photography", "reason": "3D gallery hero — great for photography/portfolio site redesigns."},
-    {"file": "moazamtrade__animate-card-animation.json", "title": "Animate Card Animation", "reason": "Animated card hero section — visually interesting for product showcases."},
-    {"file": "moazamtrade__pinky-news-letter.json", "title": "Pinky Newsletter Hero", "reason": "Newsletter/waitlist hero — suitable for lead capture and launch page redesigns."},
-    {"file": "minhxthanh__hero-landing-page.json", "title": "Hero Landing Page", "reason": "Full landing page hero — production-ready layout."},
-    {"file": "minhxthanh__waitlist-hero.json", "title": "Waitlist Hero", "reason": "Waitlist/launch hero — useful for pre-launch and early-access redesigns."},
-    {"file": "minhxthanh__simple-ui.json", "title": "Simple UI Hero", "reason": "Simple UI hero — clean minimal layout for professional sites."},
-    {"file": "minhxthanh__dynamic-animated-hero-section-with-gradient.json", "title": "Dynamic Animated Hero Section with Gradient", "reason": "Animated gradient hero section — good visual variety for modern brands."},
-    {"file": "minhxthanh__grid-hero-animated.json", "title": "Grid Hero Animated", "reason": "Animated grid hero — interesting layout pattern for tech sites."},
-    {"file": "minhxthanh__background-grid-beam.json", "title": "Background Grid Beam", "reason": "Grid beam background hero — atmospheric for dark-theme SaaS sites."},
-    {"file": "minhxthanh__interactive-image-accordion.json", "title": "Interactive Image Accordion", "reason": "Image accordion hero — great for portfolio/agency and real-estate sites."},
-    {"file": "minhxthanh__arc-gallery-hero-component.json", "title": "Arc Gallery Hero Component", "reason": "Gallery-style arc layout hero — distinctive for creative/media brand redesigns."},
-    {"file": "prashantsom75__scroll-morph-hero.json", "title": "Scroll Morph Hero", "reason": "Scroll-driven morphing hero — creative animation pattern for immersive sites."},
-    {"file": "preetsuthar17__hero-1.json", "title": "Hero 1 (preetsuthar17)", "reason": "Clean hero section — production-ready for standard business use."},
-    {"file": "preetsuthar17__hero-2-1.json", "title": "Hero 2-1 (preetsuthar17)", "reason": "Hero variant — solid layout for business/SaaS sites."},
-    {"file": "rahil1202__aether-hero.json", "title": "Aether Hero", "reason": "Atmospheric hero with modern styling — good for tech/creative brands."},
-    {"file": "ravikatiyar162__hero-1.json", "title": "Hero 1 (ravikatiyar162)", "reason": "Hero variant — good production quality from prolific author."},
-    {"file": "ravikatiyar162__hero-2.json", "title": "Hero 2 (ravikatiyar162)", "reason": "Hero variant — production quality from reliable author."},
-    {"file": "ravikatiyar162__hero-3.json", "title": "Hero 3 (ravikatiyar162)", "reason": "Hero variant — solid SaaS-ready design."},
-    {"file": "ravikatiyar162__hero-4.json", "title": "Hero 4 (ravikatiyar162)", "reason": "Hero variant — versatile layout for business sites."},
-    {"file": "ravikatiyar162__hero-5.json", "title": "Hero 5 (ravikatiyar162)", "reason": "Hero variant — good production quality."},
-    {"file": "ravikatiyar162__animated-shader-hero.json", "title": "Animated Shader Hero", "reason": "Shader-animated hero — visually distinctive for tech brands."},
-    {"file": "ravikatiyar162__feature-carousel.json", "title": "Feature Carousel", "reason": "Feature carousel hero — useful for product feature showcases."},
-    {"file": "reuno-ui__hero-section.json", "title": "Hero Section (reuno-ui)", "reason": "Hero section from reuno-ui — clean and usable for standard redesigns."},
-    {"file": "reuno-ui__checkout.json", "title": "Checkout (reuno-ui)", "reason": "Ecommerce checkout hero/section — good for ecommerce site redesigns."},
-    {"file": "ruixen.ui__aura-vision-hero-gradient.json", "title": "Aura Vision Hero Gradient", "reason": "Gradient aura hero — visually attractive for modern brand sites."},
-    {"file": "ruixen.ui__aurora-hero.json", "title": "Aurora Hero", "reason": "Aurora-styled hero — atmospheric design good for tech/SaaS sites."},
-    {"file": "ruixen.ui__auth-showcase.json", "title": "Auth Showcase", "reason": "Auth/login hero showcase — useful for SaaS products with prominent login."},
-    {"file": "ruixen.ui__hero-page.json", "title": "Hero Page", "reason": "Complete hero page layout from ruixen.ui — production-ready."},
-    {"file": "ruixen.ui__hero.json", "title": "Hero (ruixen.ui)", "reason": "Clean hero from design system — consistent quality."},
-    {"file": "sean0205__3d-testimonails.json", "title": "3D Testimonials", "reason": "3D testimonial section — good trust-building component for hero zones."},
-    {"file": "shailendrakumar19999__hero-2.json", "title": "Hero 2 (shailendrakumar)", "reason": "Hero section variant — moderate quality production hero."},
-    {"file": "sshahaider__hero-1.json", "title": "Hero 1 (sshahaider)", "reason": "Hero section — good production quality for standard redesigns."},
-    {"file": "subhadeeproy3902__hero.json", "title": "Hero (subhadeeproy)", "reason": "Clean hero section — usable for standard business redesigns."},
-    {"file": "uilayout.contact__hero-scroll-animation.json", "title": "Hero Scroll Animation", "reason": "Scroll-animated hero — good for immersive landing page redesigns."},
-    {"file": "uniquesonu__modern-hero-section-1.json", "title": "Modern Hero Section 1", "reason": "Modern hero variant — clean production-ready layout."},
-    {"file": "uniquesonu__modern-hero.json", "title": "Modern Hero", "reason": "Modern hero section — versatile for business/SaaS sites."},
-    {"file": "uniquesonu__suffle-hero.json", "title": "Shuffle Hero", "reason": "Shuffle animation hero — interesting interactive pattern for engaging sites."},
-    {"file": "vaib215__shaders-hero-section.json", "title": "Shaders Hero Section", "reason": "Shader-based hero — visually distinctive for tech-forward brands."},
-    {"file": "victorwelander__gooey-text-morphing.json", "title": "Gooey Text Morphing", "reason": "Gooey text morphing animation — creative headline effect good for bold brands."},
-    {"file": "waleedkibhen__gradient-bar-hero-section.json", "title": "Gradient Bar Hero Section", "reason": "Hero with gradient bar element — clean modern styling for SaaS sites."},
-    {"file": "waleedkibhen__silk-background-animation.json", "title": "Silk Background Animation", "reason": "Silk-like animated background hero — visually smooth and premium-feeling."},
-    {"file": "youcefbnm__hero-animated.json", "title": "Hero Animated", "reason": "Animated hero section — production-ready for modern business sites."},
-    {"file": "youcefbnm__hero-video.json", "title": "Hero Video", "reason": "Video-background hero — good for media-rich brand redesigns."},
-    {"file": "youcefbnm__animated-video-on-scroll.json", "title": "Animated Video on Scroll", "reason": "Scroll-triggered video hero — engaging for premium brand experiences."},
-    {"file": "youcefbnm__hero-gallery-scroll-animation.json", "title": "Hero Gallery Scroll Animation", "reason": "Gallery scroll animation hero — distinctive for portfolio/media brands."},
-    {"file": "cnippet.dev__blogs.json", "title": "Blogs (cnippet)", "reason": "Blog/content hero section — good for content-focused site redesigns."},
-    {"file": "tommyjepsen__hero-with-text-and-two-button.json", "title": "Hero with Text and Two Buttons", "reason": "Clean foundational hero layout — already listed in gold tier."},
-    {"file": "lovesickfromthe6ix__music-reactive-hero-section.json", "title": "Music Reactive Hero Section", "reason": "Music-reactive animation hero — creative for music/entertainment brands."},
-    {"file": "lovesickfromthe6ix__turbulent-flow.json", "title": "Turbulent Flow", "reason": "Turbulent flow shader hero — visually distinctive for cutting-edge tech brands."},
-    {"file": "moazamtrade__hero-dithering-card.json", "title": "Hero Dithering Card", "reason": "Dithering effect hero card — artistic and distinctive for creative brands."},
-    {"file": "moazamtrade__neon-dither.json", "title": "Neon Dither", "reason": "Neon dithering effect — visually interesting for gaming/creative brand sites."},
-    {"file": "minhxthanh__animated-web3-landing-page.json", "title": "Animated Web3 Landing Page", "reason": "Web3/crypto landing page — good for crypto/NFT site redesigns."},
-    {"file": "minhxthanh__web3-hero-section.json", "title": "Web3 Hero Section", "reason": "Web3-themed hero — relevant for crypto/DeFi product redesigns."},
-    {"file": "dhileepkumargm__crypto-hero.json", "title": "Crypto Hero", "reason": "Crypto-themed hero — good for fintech/crypto product redesigns."},
-    {"file": "ravikatiyar162__mouse-following-line.json", "title": "Mouse Following Line", "reason": "Mouse-tracking line effect — interesting interactive background for hero zones."},
-    {"file": "bg.ibelick__gradient-background-4.json", "title": "Gradient Background 4", "reason": "Gradient background component — useful atmospheric backdrop for heroes."},
-    {"file": "bg.ibelick__light-theme-tailwind-css-background-snippet.json", "title": "Light Theme Tailwind Background", "reason": "Light-theme background snippet — practical utility for hero section backgrounds."},
-    {"file": "bg.ibelick__tailwind-css-background-snippet.json", "title": "Tailwind CSS Background Snippet", "reason": "Background snippet utility — useful reference for hero background patterns."},
-    {"file": "ctate__grid-background.json", "title": "Grid Background", "reason": "Grid background component — clean utility for modern dark-hero sections."},
-    {"file": "daiwiikharihar17147__hero-shutter-text.json", "title": "Hero Shutter Text", "reason": "Shutter text reveal animation — creative headline effect for bold brands."},
-    {"file": "daiwiikharihar17147__hyper-text-with-decryption.json", "title": "Hyper Text with Decryption", "reason": "Decryption text animation — tech-focused effect good for cybersecurity/AI sites."},
-    {"file": "dev.yadhakim__rotating-text.json", "title": "Rotating Text", "reason": "Rotating text animation — simple but effective headline enhancement."},
-    {"file": "easemize__starfall-portfolio-landing.json", "title": "Starfall Portfolio Landing", "reason": "Starfall particle hero for portfolio/creative sites — distinctive aesthetic."},
-    {"file": "shivendra9795kumar__halide-topo-hero.json", "title": "Halide Topo Hero", "reason": "Topographic/halide background hero — unique artistic aesthetic for creative brands."},
-    {"file": "uniquesonu__futurastic-hero-section.json", "title": "Futuristic Hero Section", "reason": "Futuristic design hero — good for tech/AI brand sites."},
-    {"file": "uniquesonu__animated-svg-background.json", "title": "Animated SVG Background", "reason": "Animated SVG background hero — lightweight and versatile backdrop option."},
-    {"file": "uniquesonu__floating-bubbles-background.json", "title": "Floating Bubbles Background", "reason": "Floating bubbles animation — light and playful for consumer/lifestyle brands."},
-    {"file": "lovesickfromthe6ix__turbulent-flow.json", "title": "Turbulent Flow", "reason": "Turbulent flow effect — visually impressive for avant-garde brands."},
-    {"file": "daniel petho__text-rotate.json", "title": "Text Rotate", "reason": "Text rotation animation primitive — good for animated hero headlines."},
-    {"file": "danielpetho__text-rotate.json", "title": "Text Rotate", "reason": "Text rotation animation — useful hero headline effect primitive."},
-    {"file": "danielpetho__typewriter.json", "title": "Typewriter", "reason": "Typewriter text animation — classic hero text effect for tech/startup sites."},
-    {"file": "danielpetho__scramble-hover.json", "title": "Scramble Hover", "reason": "Text scramble hover effect — engaging micro-interaction for hero text."},
-    {"file": "danielpetho__text-cursor-proximity.json", "title": "Text Cursor Proximity", "reason": "Cursor proximity text effect — innovative interaction for creative brand heroes."},
-    {"file": "danielpetho__letter-swap.json", "title": "Letter Swap", "reason": "Animated letter swap effect — creative headline animation for modern brands."},
-    {"file": "danielpetho__random-letter-swap.json", "title": "Random Letter Swap", "reason": "Random letter swap animation — tech/creative effect for hero headlines."},
-    {"file": "dhileepkumargm__web3media-hero.json", "title": "Web3 Media Hero", "reason": "Media/Web3 hero — good for media company or Web3 site redesigns."},
-    {"file": "dhileepkumargm__woven-light-hero.json", "title": "Woven Light Hero", "reason": "Woven light texture hero — distinctive artistic aesthetic for luxury brands."},
-    {"file": "dhileepkumargm__data-grid-hero.json", "title": "Data Grid Hero", "reason": "Data visualization hero — relevant for analytics/data product sites."},
-    {"file": "dhileepkumargm__retrying.json", "title": "Retrying", "reason": "Animated loading/retry hero — unique niche but interesting for app-centric redesigns."},
-    {"file": "minhxthanh__dynamic-wave-canvas-background.json", "title": "Dynamic Wave Canvas Background", "reason": "Wave canvas animation — attractive background for creative/tech brands."},
-    {"file": "minhxthanh__animated-shader-background.json", "title": "Animated Shader Background", "reason": "Shader animation background — visually impressive for tech-forward brands."}
+    {
+      "file": "aceternity__spotlight.json",
+      "title": "Spotlight",
+      "reason": "SVG spotlight effect utility (798 downloads) \u2014 effective background embellishment but only a primitive effect, not a full hero section."
+    },
+    {
+      "file": "aceternity__flip-words.json",
+      "title": "Flip Words",
+      "reason": "Animated word-flipping text component (569 downloads, 12 likes) \u2014 good animated headline utility but not a standalone hero."
+    },
+    {
+      "file": "aceternity__background-ripple-effect.json",
+      "title": "Background Ripple Effect",
+      "reason": "Interactive grid ripple background (692 downloads) \u2014 nice interactive backdrop but too dark/niche and not a complete hero."
+    },
+    {
+      "file": "aceternity__cover.json",
+      "title": "Cover",
+      "reason": "Sparkle beam hover effect for inline text \u2014 polished UI primitive but too small scope for a full hero section."
+    },
+    {
+      "file": "aceternity__link-preview.json",
+      "title": "Link Preview",
+      "reason": "Animated hover link previews (601 downloads, 32 likes) \u2014 technically impressive but misplaced in hero category, primarily a micro-interaction."
+    },
+    {
+      "file": "aghasisahakyan1__galaxy-interactive-hero-section.json",
+      "title": "Galaxy Interactive Hero Section",
+      "reason": "Full-page Spline 3D hero with responsive nav (1123 downloads) \u2014 impressive but Spline dependency limits practical use and editability."
+    },
+    {
+      "file": "aghasisahakyan1__3d-hero-section-boxes.json",
+      "title": "3D Hero Section Boxes",
+      "reason": "Full Spline 3D hero with nav and mockup \u2014 good composition but Spline dependency and hardcoded assets reduce adaptability."
+    },
+    {
+      "file": "aghasisahakyan1__hero-section-nexus.json",
+      "title": "Hero Section Nexus",
+      "reason": "Complex hero with multiple subsections \u2014 interesting but potentially over-engineered for most redesign use cases."
+    },
+    {
+      "file": "beratberkayg__hero-1.json",
+      "title": "Hero 1 (beratberkayg)",
+      "reason": "Clean minimal hero with grid background and radial accent \u2014 solid but limited visual complexity compared to gold tier."
+    },
+    {
+      "file": "bankkroll__acme-hero.json",
+      "title": "Acme Hero",
+      "reason": "Clean SaaS hero with dashboard preview (low downloads) \u2014 well-built but conservative design without strong differentiation."
+    },
+    {
+      "file": "chowlol202__liquid-metal-hero.json",
+      "title": "Liquid Metal Hero",
+      "reason": "Hero with liquid metal shader background \u2014 visually distinctive but niche shader dependency and minimal content structure."
+    },
+    {
+      "file": "chowlol202__grain-gradient-hero-section.json",
+      "title": "Grain Gradient Hero Section",
+      "reason": "Simple hero with Paper Shaders grain gradient \u2014 clean but minimal structure and unusual dependency."
+    },
+    {
+      "file": "chowlol202__globe-hero.json",
+      "title": "Globe Hero",
+      "reason": "Three.js wireframe globe hero \u2014 interesting visual but very minimal content, heavy dependency, and low downloads."
+    },
+    {
+      "file": "daiwiikharihar17147__spatial-product-showcase.json",
+      "title": "Spatial Product Showcase",
+      "reason": "3D product showcase concept \u2014 distinctive but likely too experimental for standard website redesigns."
+    },
+    {
+      "file": "danielpetho__parallax-floating.json",
+      "title": "Parallax Floating",
+      "reason": "Parallax floating elements hero \u2014 good for creative/portfolio sites but more of a UI primitive than full hero."
+    },
+    {
+      "file": "danielpetho__vertical-cut-reveal.json",
+      "title": "Vertical Cut Reveal",
+      "reason": "Creative vertical cut reveal animation \u2014 artistic but niche, best for portfolio/agency sites."
+    },
+    {
+      "file": "designali-in__hero-01.json",
+      "title": "Hero 01 (designali)",
+      "reason": "Hero section from design-focused author \u2014 good quality but limited adoption signals."
+    },
+    {
+      "file": "designali-in__hero-02.json",
+      "title": "Hero 02 (designali)",
+      "reason": "Hero variant \u2014 solid design but niche without strong adoption."
+    },
+    {
+      "file": "designali-in__hero-03.json",
+      "title": "Hero 03 (designali)",
+      "reason": "Hero variant from designali \u2014 moderate quality design."
+    },
+    {
+      "file": "designali-in__hero-04.json",
+      "title": "Hero 04 (designali)",
+      "reason": "Hero variant \u2014 useful for portfolio/creative sites."
+    },
+    {
+      "file": "designali-in__hero-designali.json",
+      "title": "Hero Designali",
+      "reason": "Design-studio hero \u2014 good for agency/creative redesigns."
+    },
+    {
+      "file": "designali-in__vercel-hero.json",
+      "title": "Vercel Hero",
+      "reason": "Vercel-inspired hero \u2014 clean and minimal, good SaaS reference but derivative."
+    },
+    {
+      "file": "dillionverma__animated-gradient-text.json",
+      "title": "Animated Gradient Text",
+      "reason": "Animated gradient text utility \u2014 useful effect component but not a standalone hero section."
+    },
+    {
+      "file": "dillionverma__blur-fade.json",
+      "title": "Blur Fade",
+      "reason": "Blur fade animation component \u2014 useful utility for hero animations but a primitive, not a full section."
+    },
+    {
+      "file": "dillionverma__meteors.json",
+      "title": "Meteors",
+      "reason": "Animated meteor shower background effect \u2014 visually impressive but purely a background decorator."
+    },
+    {
+      "file": "dillionverma__text-reveal.json",
+      "title": "Text Reveal",
+      "reason": "Scroll-triggered text reveal animation \u2014 good hero text primitive but not a standalone hero."
+    },
+    {
+      "file": "dhileepkumargm__aurora-section-hero.json",
+      "title": "Aurora Section Hero",
+      "reason": "Aurora background hero section \u2014 visually appealing, moderate scope for business/SaaS use."
+    },
+    {
+      "file": "dhileepkumargm__foxify-hero.json",
+      "title": "Foxify Hero",
+      "reason": "Named SaaS hero \u2014 good composition for business sites."
+    },
+    {
+      "file": "dhileepkumargm__glow-hero-section.json",
+      "title": "Glow Hero Section",
+      "reason": "Hero with glow effects \u2014 good atmospheric design for dark-theme sites."
+    },
+    {
+      "file": "dhileepkumargm__hero-section-2.json",
+      "title": "Hero Section 2 (dhileepkumar)",
+      "reason": "Full hero section variant \u2014 moderate quality production hero."
+    },
+    {
+      "file": "dhileepkumargm__hero-section-3.json",
+      "title": "Hero Section 3 (dhileepkumar)",
+      "reason": "Hero section variant \u2014 production-ready but similar to many others."
+    },
+    {
+      "file": "dhileepkumargm__minimal.json",
+      "title": "Minimal (dhileepkumar)",
+      "reason": "Minimal hero \u2014 clean design good for professional/portfolio sites."
+    },
+    {
+      "file": "dhileepkumargm__pulse-fit-hero.json",
+      "title": "Pulse Fit Hero",
+      "reason": "Fitness/health themed hero \u2014 good for niche health/wellness site redesigns."
+    },
+    {
+      "file": "dhileepkumargm__design-meets-innovation.json",
+      "title": "Design Meets Innovation",
+      "reason": "Tech/design agency hero \u2014 appropriate for agency or product sites."
+    },
+    {
+      "file": "dhileepkumargm__aether-flow-hero.json",
+      "title": "Aether Flow Hero",
+      "reason": "Abstract flow animation hero \u2014 visually interesting for creative/tech brands."
+    },
+    {
+      "file": "dhileepkumargm__living-fluid-hero.json",
+      "title": "Living Fluid Hero",
+      "reason": "Fluid animation hero \u2014 creative and distinctive for modern brands."
+    },
+    {
+      "file": "dhileepkumargm__glass-refraction-hero.json",
+      "title": "Glass Refraction Hero",
+      "reason": "Glass refraction effect hero \u2014 visually interesting but niche material aesthetic."
+    },
+    {
+      "file": "designali-in__morphing-light.json",
+      "title": "Morphing Light",
+      "reason": "Morphing light background effect \u2014 attractive for SaaS sites but more of a background primitive."
+    },
+    {
+      "file": "designali-in__particle-hero.json",
+      "title": "Particle Hero",
+      "reason": "Particle-based hero background \u2014 versatile but common pattern."
+    },
+    {
+      "file": "designali-in__graaadeints.json",
+      "title": "Graaadeints",
+      "reason": "Gradient hero \u2014 clean and useful but gradient-only is simple for a full hero."
+    },
+    {
+      "file": "dhileepkumargm__aurora-hero-bg.json",
+      "title": "Aurora Hero BG",
+      "reason": "Aurora background effect \u2014 good atmospheric backdrop but purely decorative."
+    },
+    {
+      "file": "dhileepkumargm__aurora-hero-bg-1.json",
+      "title": "Aurora Hero BG 1",
+      "reason": "Aurora background variant \u2014 atmospheric effect good as background layer."
+    },
+    {
+      "file": "dhileepkumargm__aurora-hero-bg-2.json",
+      "title": "Aurora Hero BG 2",
+      "reason": "Aurora background variant \u2014 useful atmospheric backdrop."
+    },
+    {
+      "file": "dhileepkumargm__aurora-hero-bg-3.json",
+      "title": "Aurora Hero BG 3",
+      "reason": "Aurora background variant \u2014 solid atmospheric effect."
+    },
+    {
+      "file": "isaiahbjork__video-scroll-hero.json",
+      "title": "Video Scroll Hero",
+      "reason": "Scroll-driven video hero \u2014 engaging pattern for media-rich brands."
+    },
+    {
+      "file": "ishamsu__smooth-scroll-hero.json",
+      "title": "Smooth Scroll Hero",
+      "reason": "Smooth scroll animated hero \u2014 good UX pattern for immersive site experiences."
+    },
+    {
+      "file": "hammamikhairi__animated-gradient-background.json",
+      "title": "Animated Gradient Background",
+      "reason": "Animated gradient background for heroes \u2014 useful backdrop but only a background layer."
+    },
+    {
+      "file": "ibelick__text-effect.json",
+      "title": "Text Effect",
+      "reason": "Text animation effect component \u2014 useful hero text primitive."
+    },
+    {
+      "file": "ibelick__text-scramble.json",
+      "title": "Text Scramble",
+      "reason": "Text scramble animation \u2014 interesting effect for tech brands but limited standalone value."
+    },
+    {
+      "file": "hari__reveal-images.json",
+      "title": "Reveal Images",
+      "reason": "Image reveal animation hero \u2014 creative pattern good for portfolio/agency sites."
+    },
+    {
+      "file": "jatin-yadav05__glowing-card.json",
+      "title": "Glowing Card",
+      "reason": "Glowing card hero element \u2014 good design accent but card-level, not full hero section."
+    },
+    {
+      "file": "kinfe123__hero-section-dark.json",
+      "title": "Hero Section Dark",
+      "reason": "Dark-themed hero section \u2014 good for dark-mode first redesigns."
+    },
+    {
+      "file": "kurket21__progressive-hero.json",
+      "title": "Progressive Hero",
+      "reason": "Progressive reveal hero \u2014 interesting animation pattern for modern brands."
+    },
+    {
+      "file": "lovesickfromthe6ix__full-screen-scroll-fx.json",
+      "title": "Full Screen Scroll FX",
+      "reason": "Scroll-driven full-screen effect \u2014 creative but may be too immersive for standard business sites."
+    },
+    {
+      "file": "lovesickfromthe6ix__scroll-animated-video.json",
+      "title": "Scroll Animated Video",
+      "reason": "Scroll-animated video hero \u2014 good for media-rich premium brand sites."
+    },
+    {
+      "file": "lovesickfromthe6ix__particle-hero.json",
+      "title": "Particle Hero",
+      "reason": "Particle background hero \u2014 visually interesting atmospheric effect."
+    },
+    {
+      "file": "lyanchouss__hero-minimalism.json",
+      "title": "Hero Minimalism",
+      "reason": "Minimalist hero design \u2014 clean and appropriate for professional/startup sites."
+    },
+    {
+      "file": "m.umairwaheedansari__tunnel-hero.json",
+      "title": "Tunnel Hero",
+      "reason": "Tunnel perspective hero effect \u2014 creative and visually striking for bold brands."
+    },
+    {
+      "file": "moazamtrade__sleek-hero-with-orb.json",
+      "title": "Sleek Hero With Orb",
+      "reason": "Dark hero with glowing orb \u2014 attractive for AI/tech product sites."
+    },
+    {
+      "file": "moazamtrade__hero-button-expendable.json",
+      "title": "Hero Button Expendable",
+      "reason": "Hero with animated expandable button \u2014 interesting interactive pattern."
+    },
+    {
+      "file": "moazamtrade__3d-gallery-photography.json",
+      "title": "3D Gallery Photography",
+      "reason": "3D gallery hero \u2014 great for photography/portfolio site redesigns."
+    },
+    {
+      "file": "moazamtrade__animate-card-animation.json",
+      "title": "Animate Card Animation",
+      "reason": "Animated card hero section \u2014 visually interesting for product showcases."
+    },
+    {
+      "file": "moazamtrade__pinky-news-letter.json",
+      "title": "Pinky Newsletter Hero",
+      "reason": "Newsletter/waitlist hero \u2014 suitable for lead capture and launch page redesigns."
+    },
+    {
+      "file": "minhxthanh__hero-landing-page.json",
+      "title": "Hero Landing Page",
+      "reason": "Full landing page hero \u2014 production-ready layout."
+    },
+    {
+      "file": "minhxthanh__waitlist-hero.json",
+      "title": "Waitlist Hero",
+      "reason": "Waitlist/launch hero \u2014 useful for pre-launch and early-access redesigns."
+    },
+    {
+      "file": "minhxthanh__simple-ui.json",
+      "title": "Simple UI Hero",
+      "reason": "Simple UI hero \u2014 clean minimal layout for professional sites."
+    },
+    {
+      "file": "minhxthanh__dynamic-animated-hero-section-with-gradient.json",
+      "title": "Dynamic Animated Hero Section with Gradient",
+      "reason": "Animated gradient hero section \u2014 good visual variety for modern brands."
+    },
+    {
+      "file": "minhxthanh__grid-hero-animated.json",
+      "title": "Grid Hero Animated",
+      "reason": "Animated grid hero \u2014 interesting layout pattern for tech sites."
+    },
+    {
+      "file": "minhxthanh__background-grid-beam.json",
+      "title": "Background Grid Beam",
+      "reason": "Grid beam background hero \u2014 atmospheric for dark-theme SaaS sites."
+    },
+    {
+      "file": "minhxthanh__interactive-image-accordion.json",
+      "title": "Interactive Image Accordion",
+      "reason": "Image accordion hero \u2014 great for portfolio/agency and real-estate sites."
+    },
+    {
+      "file": "minhxthanh__arc-gallery-hero-component.json",
+      "title": "Arc Gallery Hero Component",
+      "reason": "Gallery-style arc layout hero \u2014 distinctive for creative/media brand redesigns."
+    },
+    {
+      "file": "prashantsom75__scroll-morph-hero.json",
+      "title": "Scroll Morph Hero",
+      "reason": "Scroll-driven morphing hero \u2014 creative animation pattern for immersive sites."
+    },
+    {
+      "file": "preetsuthar17__hero-1.json",
+      "title": "Hero 1 (preetsuthar17)",
+      "reason": "Clean hero section \u2014 production-ready for standard business use."
+    },
+    {
+      "file": "preetsuthar17__hero-2-1.json",
+      "title": "Hero 2-1 (preetsuthar17)",
+      "reason": "Hero variant \u2014 solid layout for business/SaaS sites."
+    },
+    {
+      "file": "rahil1202__aether-hero.json",
+      "title": "Aether Hero",
+      "reason": "Atmospheric hero with modern styling \u2014 good for tech/creative brands."
+    },
+    {
+      "file": "ravikatiyar162__hero-1.json",
+      "title": "Hero 1 (ravikatiyar162)",
+      "reason": "Hero variant \u2014 good production quality from prolific author."
+    },
+    {
+      "file": "ravikatiyar162__hero-2.json",
+      "title": "Hero 2 (ravikatiyar162)",
+      "reason": "Hero variant \u2014 production quality from reliable author."
+    },
+    {
+      "file": "ravikatiyar162__hero-3.json",
+      "title": "Hero 3 (ravikatiyar162)",
+      "reason": "Hero variant \u2014 solid SaaS-ready design."
+    },
+    {
+      "file": "ravikatiyar162__hero-4.json",
+      "title": "Hero 4 (ravikatiyar162)",
+      "reason": "Hero variant \u2014 versatile layout for business sites."
+    },
+    {
+      "file": "ravikatiyar162__hero-5.json",
+      "title": "Hero 5 (ravikatiyar162)",
+      "reason": "Hero variant \u2014 good production quality."
+    },
+    {
+      "file": "ravikatiyar162__animated-shader-hero.json",
+      "title": "Animated Shader Hero",
+      "reason": "Shader-animated hero \u2014 visually distinctive for tech brands."
+    },
+    {
+      "file": "ravikatiyar162__feature-carousel.json",
+      "title": "Feature Carousel",
+      "reason": "Feature carousel hero \u2014 useful for product feature showcases."
+    },
+    {
+      "file": "reuno-ui__hero-section.json",
+      "title": "Hero Section (reuno-ui)",
+      "reason": "Hero section from reuno-ui \u2014 clean and usable for standard redesigns."
+    },
+    {
+      "file": "reuno-ui__checkout.json",
+      "title": "Checkout (reuno-ui)",
+      "reason": "Ecommerce checkout hero/section \u2014 good for ecommerce site redesigns."
+    },
+    {
+      "file": "ruixen.ui__aura-vision-hero-gradient.json",
+      "title": "Aura Vision Hero Gradient",
+      "reason": "Gradient aura hero \u2014 visually attractive for modern brand sites."
+    },
+    {
+      "file": "ruixen.ui__aurora-hero.json",
+      "title": "Aurora Hero",
+      "reason": "Aurora-styled hero \u2014 atmospheric design good for tech/SaaS sites."
+    },
+    {
+      "file": "ruixen.ui__auth-showcase.json",
+      "title": "Auth Showcase",
+      "reason": "Auth/login hero showcase \u2014 useful for SaaS products with prominent login."
+    },
+    {
+      "file": "ruixen.ui__hero-page.json",
+      "title": "Hero Page",
+      "reason": "Complete hero page layout from ruixen.ui \u2014 production-ready."
+    },
+    {
+      "file": "ruixen.ui__hero.json",
+      "title": "Hero (ruixen.ui)",
+      "reason": "Clean hero from design system \u2014 consistent quality."
+    },
+    {
+      "file": "sean0205__3d-testimonails.json",
+      "title": "3D Testimonials",
+      "reason": "3D testimonial section \u2014 good trust-building component for hero zones."
+    },
+    {
+      "file": "shailendrakumar19999__hero-2.json",
+      "title": "Hero 2 (shailendrakumar)",
+      "reason": "Hero section variant \u2014 moderate quality production hero."
+    },
+    {
+      "file": "sshahaider__hero-1.json",
+      "title": "Hero 1 (sshahaider)",
+      "reason": "Hero section \u2014 good production quality for standard redesigns."
+    },
+    {
+      "file": "subhadeeproy3902__hero.json",
+      "title": "Hero (subhadeeproy)",
+      "reason": "Clean hero section \u2014 usable for standard business redesigns."
+    },
+    {
+      "file": "uilayout.contact__hero-scroll-animation.json",
+      "title": "Hero Scroll Animation",
+      "reason": "Scroll-animated hero \u2014 good for immersive landing page redesigns."
+    },
+    {
+      "file": "uniquesonu__modern-hero-section-1.json",
+      "title": "Modern Hero Section 1",
+      "reason": "Modern hero variant \u2014 clean production-ready layout."
+    },
+    {
+      "file": "uniquesonu__modern-hero.json",
+      "title": "Modern Hero",
+      "reason": "Modern hero section \u2014 versatile for business/SaaS sites."
+    },
+    {
+      "file": "uniquesonu__suffle-hero.json",
+      "title": "Shuffle Hero",
+      "reason": "Shuffle animation hero \u2014 interesting interactive pattern for engaging sites."
+    },
+    {
+      "file": "vaib215__shaders-hero-section.json",
+      "title": "Shaders Hero Section",
+      "reason": "Shader-based hero \u2014 visually distinctive for tech-forward brands."
+    },
+    {
+      "file": "victorwelander__gooey-text-morphing.json",
+      "title": "Gooey Text Morphing",
+      "reason": "Gooey text morphing animation \u2014 creative headline effect good for bold brands."
+    },
+    {
+      "file": "waleedkibhen__gradient-bar-hero-section.json",
+      "title": "Gradient Bar Hero Section",
+      "reason": "Hero with gradient bar element \u2014 clean modern styling for SaaS sites."
+    },
+    {
+      "file": "waleedkibhen__silk-background-animation.json",
+      "title": "Silk Background Animation",
+      "reason": "Silk-like animated background hero \u2014 visually smooth and premium-feeling."
+    },
+    {
+      "file": "youcefbnm__hero-animated.json",
+      "title": "Hero Animated",
+      "reason": "Animated hero section \u2014 production-ready for modern business sites."
+    },
+    {
+      "file": "youcefbnm__hero-video.json",
+      "title": "Hero Video",
+      "reason": "Video-background hero \u2014 good for media-rich brand redesigns."
+    },
+    {
+      "file": "youcefbnm__animated-video-on-scroll.json",
+      "title": "Animated Video on Scroll",
+      "reason": "Scroll-triggered video hero \u2014 engaging for premium brand experiences."
+    },
+    {
+      "file": "youcefbnm__hero-gallery-scroll-animation.json",
+      "title": "Hero Gallery Scroll Animation",
+      "reason": "Gallery scroll animation hero \u2014 distinctive for portfolio/media brands."
+    },
+    {
+      "file": "cnippet.dev__blogs.json",
+      "title": "Blogs (cnippet)",
+      "reason": "Blog/content hero section \u2014 good for content-focused site redesigns."
+    },
+    {
+      "file": "lovesickfromthe6ix__music-reactive-hero-section.json",
+      "title": "Music Reactive Hero Section",
+      "reason": "Music-reactive animation hero \u2014 creative for music/entertainment brands."
+    },
+    {
+      "file": "moazamtrade__hero-dithering-card.json",
+      "title": "Hero Dithering Card",
+      "reason": "Dithering effect hero card \u2014 artistic and distinctive for creative brands."
+    },
+    {
+      "file": "moazamtrade__neon-dither.json",
+      "title": "Neon Dither",
+      "reason": "Neon dithering effect \u2014 visually interesting for gaming/creative brand sites."
+    },
+    {
+      "file": "minhxthanh__animated-web3-landing-page.json",
+      "title": "Animated Web3 Landing Page",
+      "reason": "Web3/crypto landing page \u2014 good for crypto/NFT site redesigns."
+    },
+    {
+      "file": "minhxthanh__web3-hero-section.json",
+      "title": "Web3 Hero Section",
+      "reason": "Web3-themed hero \u2014 relevant for crypto/DeFi product redesigns."
+    },
+    {
+      "file": "dhileepkumargm__crypto-hero.json",
+      "title": "Crypto Hero",
+      "reason": "Crypto-themed hero \u2014 good for fintech/crypto product redesigns."
+    },
+    {
+      "file": "ravikatiyar162__mouse-following-line.json",
+      "title": "Mouse Following Line",
+      "reason": "Mouse-tracking line effect \u2014 interesting interactive background for hero zones."
+    },
+    {
+      "file": "bg.ibelick__gradient-background-4.json",
+      "title": "Gradient Background 4",
+      "reason": "Gradient background component \u2014 useful atmospheric backdrop for heroes."
+    },
+    {
+      "file": "bg.ibelick__light-theme-tailwind-css-background-snippet.json",
+      "title": "Light Theme Tailwind Background",
+      "reason": "Light-theme background snippet \u2014 practical utility for hero section backgrounds."
+    },
+    {
+      "file": "bg.ibelick__tailwind-css-background-snippet.json",
+      "title": "Tailwind CSS Background Snippet",
+      "reason": "Background snippet utility \u2014 useful reference for hero background patterns."
+    },
+    {
+      "file": "ctate__grid-background.json",
+      "title": "Grid Background",
+      "reason": "Grid background component \u2014 clean utility for modern dark-hero sections."
+    },
+    {
+      "file": "daiwiikharihar17147__hero-shutter-text.json",
+      "title": "Hero Shutter Text",
+      "reason": "Shutter text reveal animation \u2014 creative headline effect for bold brands."
+    },
+    {
+      "file": "daiwiikharihar17147__hyper-text-with-decryption.json",
+      "title": "Hyper Text with Decryption",
+      "reason": "Decryption text animation \u2014 tech-focused effect good for cybersecurity/AI sites."
+    },
+    {
+      "file": "dev.yadhakim__rotating-text.json",
+      "title": "Rotating Text",
+      "reason": "Rotating text animation \u2014 simple but effective headline enhancement."
+    },
+    {
+      "file": "easemize__starfall-portfolio-landing.json",
+      "title": "Starfall Portfolio Landing",
+      "reason": "Starfall particle hero for portfolio/creative sites \u2014 distinctive aesthetic."
+    },
+    {
+      "file": "shivendra9795kumar__halide-topo-hero.json",
+      "title": "Halide Topo Hero",
+      "reason": "Topographic/halide background hero \u2014 unique artistic aesthetic for creative brands."
+    },
+    {
+      "file": "uniquesonu__futurastic-hero-section.json",
+      "title": "Futuristic Hero Section",
+      "reason": "Futuristic design hero \u2014 good for tech/AI brand sites."
+    },
+    {
+      "file": "uniquesonu__animated-svg-background.json",
+      "title": "Animated SVG Background",
+      "reason": "Animated SVG background hero \u2014 lightweight and versatile backdrop option."
+    },
+    {
+      "file": "uniquesonu__floating-bubbles-background.json",
+      "title": "Floating Bubbles Background",
+      "reason": "Floating bubbles animation \u2014 light and playful for consumer/lifestyle brands."
+    },
+    {
+      "file": "lovesickfromthe6ix__turbulent-flow.json",
+      "title": "Turbulent Flow",
+      "reason": "Turbulent flow effect \u2014 visually impressive for avant-garde brands."
+    },
+    {
+      "file": "danielpetho__text-rotate.json",
+      "title": "Text Rotate",
+      "reason": "Text rotation animation \u2014 useful hero headline effect primitive."
+    },
+    {
+      "file": "danielpetho__typewriter.json",
+      "title": "Typewriter",
+      "reason": "Typewriter text animation \u2014 classic hero text effect for tech/startup sites."
+    },
+    {
+      "file": "danielpetho__scramble-hover.json",
+      "title": "Scramble Hover",
+      "reason": "Text scramble hover effect \u2014 engaging micro-interaction for hero text."
+    },
+    {
+      "file": "danielpetho__text-cursor-proximity.json",
+      "title": "Text Cursor Proximity",
+      "reason": "Cursor proximity text effect \u2014 innovative interaction for creative brand heroes."
+    },
+    {
+      "file": "danielpetho__letter-swap.json",
+      "title": "Letter Swap",
+      "reason": "Animated letter swap effect \u2014 creative headline animation for modern brands."
+    },
+    {
+      "file": "danielpetho__random-letter-swap.json",
+      "title": "Random Letter Swap",
+      "reason": "Random letter swap animation \u2014 tech/creative effect for hero headlines."
+    },
+    {
+      "file": "dhileepkumargm__web3media-hero.json",
+      "title": "Web3 Media Hero",
+      "reason": "Media/Web3 hero \u2014 good for media company or Web3 site redesigns."
+    },
+    {
+      "file": "dhileepkumargm__woven-light-hero.json",
+      "title": "Woven Light Hero",
+      "reason": "Woven light texture hero \u2014 distinctive artistic aesthetic for luxury brands."
+    },
+    {
+      "file": "dhileepkumargm__data-grid-hero.json",
+      "title": "Data Grid Hero",
+      "reason": "Data visualization hero \u2014 relevant for analytics/data product sites."
+    },
+    {
+      "file": "dhileepkumargm__retrying.json",
+      "title": "Retrying",
+      "reason": "Animated loading/retry hero \u2014 unique niche but interesting for app-centric redesigns."
+    },
+    {
+      "file": "minhxthanh__dynamic-wave-canvas-background.json",
+      "title": "Dynamic Wave Canvas Background",
+      "reason": "Wave canvas animation \u2014 attractive background for creative/tech brands."
+    },
+    {
+      "file": "minhxthanh__animated-shader-background.json",
+      "title": "Animated Shader Background",
+      "reason": "Shader animation background \u2014 visually impressive for tech-forward brands."
+    },
+    {
+      "file": "shadcnblockscom__shadcnblocks-com-hero45.json",
+      "title": "Hero 45",
+      "reason": "Clean hero section with 3 feature highlights below \u2014 193 downloads, 5 likes; solid functional template but not visually exceptional."
+    },
+    {
+      "file": "muhammad-binsalman__flux-card-hero.json",
+      "title": "Flux Card Hero",
+      "reason": "Interactive layered card animation hero for AI platforms \u2014 interesting concept with 21 downloads, 0 likes; silver tier."
+    }
   ],
   "bronze": [
-    {"file": "aceternity__google-gemini-effect.json", "title": "Google Gemini Effect", "reason": "Already classified as Gold — duplicate resolution: remove from bronze."},
-    {"file": "aghasisahakyan1__ai-input-hero.json", "title": "AI Input Hero", "reason": "Complex AI input interface hero — too specialized for general website redesigns and over-engineered."},
-    {"file": "aghasisahakyan1__interactive-3d-robot.json", "title": "Interactive 3D Robot", "reason": "Just a Spline 3D robot wrapper with loading spinner — single-purpose primitive with zero layout, not a hero section."},
-    {"file": "danielpetho__gravity.json", "title": "Gravity", "reason": "Physics-based interactive element — experimental game-like interaction, not suitable for standard business hero sections."},
-    {"file": "danielpetho__image-trail.json", "title": "Image Trail", "reason": "Cursor image trail effect — exotic micro-interaction, not a full hero section and too distracting for business sites."},
-    {"file": "designali-in__canvas.json", "title": "Canvas", "reason": "Raw canvas element wrapper — too primitive and experimental for production hero use."},
-    {"file": "designali-in__cosmos-spectrum.json", "title": "Cosmos Spectrum", "reason": "Abstract cosmos/space animation — too niche and experimental for most business sites."},
-    {"file": "designali-in__glsl-hills.json", "title": "GLSL Hills", "reason": "WebGL GLSL shader hills — highly exotic/experimental, not suitable for standard redesigns."},
-    {"file": "designali-in__shader-animation.json", "title": "Shader Animation", "reason": "Raw WebGL shader animation — exotic primitive, not a usable hero section for business sites."},
-    {"file": "dhileepkumargm__3d-animation.json", "title": "3D Animation", "reason": "3D animation primitive — too experimental and likely not a complete hero section."},
-    {"file": "dhileepkumargm__cartoon-stone.json", "title": "Cartoon Stone", "reason": "Cartoon stone visual element — too niche/novelty, not useful for business/marketing redesigns."},
-    {"file": "dhileepkumargm__celestial-resonance.json", "title": "Celestial Resonance", "reason": "Abstract celestial effect — too experimental and atmospheric, not a complete hero section."},
-    {"file": "dhileepkumargm__cosmic-aurora.json", "title": "Cosmic Aurora", "reason": "Space/cosmos theme — too niche, useful only for space/sci-fi product sites."},
-    {"file": "dhileepkumargm__crystal-forge-hero.json", "title": "Crystal Forge Hero", "reason": "Crystal/forge aesthetic — too niche for general business website redesigns."},
-    {"file": "dhileepkumargm__cybercore-section-hero.json", "title": "Cybercore Section Hero", "reason": "Cyberpunk aesthetic hero — too niche/genre-specific for standard business redesigns."},
-    {"file": "dhileepkumargm__data-sphere-hero.json", "title": "Data Sphere Hero", "reason": "Abstract data sphere visual — too experimental for most business redesign use cases."},
-    {"file": "dhileepkumargm__digital-loom-background.json", "title": "Digital Loom Background", "reason": "Abstract digital loom pattern — background-only primitive, not a full hero section."},
-    {"file": "dhileepkumargm__glitch-weaver-hero.json", "title": "Glitch Weaver Hero", "reason": "Glitch aesthetic hero — too niche/experimental, suitable only for gaming/cyberpunk brands."},
-    {"file": "dhileepkumargm__nebula-forgery.json", "title": "Nebula Forgery", "reason": "Space nebula effect — too niche for general website redesigns."},
-    {"file": "dhileepkumargm__pixel-rocket-voyager.json", "title": "Pixel Rocket Voyager", "reason": "Pixel art rocket animation — too novelty/game-like for serious business sites."},
-    {"file": "dhileepkumargm__psychedelic-vortex-hero.json", "title": "Psychedelic Vortex Hero", "reason": "Psychedelic visual effect — too experimental and niche for standard redesigns."},
-    {"file": "dhileepkumargm__quantum-grid-hero.json", "title": "Quantum Grid Hero", "reason": "Quantum grid visual — abstract and niche, not broadly applicable."},
-    {"file": "h0bb5__generative-art.json", "title": "Generative Art", "reason": "Generative art hero — purely experimental/artistic, not suitable for business site redesigns."},
-    {"file": "larsen66__hero-ascii-one.json", "title": "Hero ASCII One", "reason": "ASCII art hero — extremely niche, only suitable for developer/retro brand sites."},
-    {"file": "larsen66__hero-ascii.json", "title": "Hero ASCII", "reason": "ASCII art hero — too niche/novelty, very limited business application."},
-    {"file": "larsen66__hero-futuristic.json", "title": "Hero Futuristic", "reason": "Futuristic concept hero — potentially over-stylized for standard business redesigns."},
-    {"file": "moazamtrade__background-shader.json", "title": "Background Shader", "reason": "Raw shader background — background-only primitive, not a full hero section."},
-    {"file": "moazamtrade__the-infinite-grid.json", "title": "The Infinite Grid", "reason": "Infinite grid animation — background primitive, not a complete hero section."},
-    {"file": "moazamtrade__wireframe-dotted-globe.json", "title": "Wireframe Dotted Globe", "reason": "Wireframe globe widget — interesting visual but isolated primitive without hero context."},
-    {"file": "moazamtrade__wrap-shader.json", "title": "Wrap Shader", "reason": "Wrap shader effect — raw WebGL/shader primitive, too exotic for general use."},
-    {"file": "patrick.thomas.dunn1988__robot-flyby.json", "title": "Robot Flyby", "reason": "3D robot flyby animation — game/entertainment UI, not suitable for business site redesigns."},
-    {"file": "patrick.thomas.dunn1988__sneak.json", "title": "Sneak", "reason": "Animated sneak effect — too niche/novelty, not applicable for standard business redesigns."},
-    {"file": "avanishverma4__particle-effect-for-hero.json", "title": "Particle Effect for Hero", "reason": "Standalone particle effect primitive — background-only, needs wrapping to function as a hero section."},
-    {"file": "xubohuah__flickering-grid-demo2.json", "title": "Flickering Grid Demo2", "reason": "Flickering grid background demo — experimental effect, not a full hero section."},
-    {"file": "xubohuah__generative-geometry.json", "title": "Generative Geometry", "reason": "Generative geometry art — purely experimental/artistic, not for business sites."},
-    {"file": "xubohuah__simple-growth-tree.json", "title": "Simple Growth Tree", "reason": "Animated growth tree visualization — too specific/novelty for general website redesigns."},
-    {"file": "xubohuah__vector-field.json", "title": "Vector Field", "reason": "Vector field animation — abstract mathematical visualization, not for business hero sections."},
-    {"file": "dhileepkumargm__3d-animation.json", "title": "3D Animation (dhileepkumar)", "reason": "Raw 3D animation primitive — incomplete hero section."},
-    {"file": "designali-in__canvas.json", "title": "Canvas (designali)", "reason": "Raw HTML canvas wrapper — too primitive to be useful as a hero section."},
-    {"file": "moazamtrade__background-shader.json", "title": "Background Shader", "reason": "WebGL shader background — background-only primitive, not usable standalone."},
-    {"file": "dhileepkumargm__crystal-forge-hero.json", "title": "Crystal Forge Hero", "reason": "Too niche aesthetic for general redesigns."}
+    {
+      "file": "aghasisahakyan1__ai-input-hero.json",
+      "title": "AI Input Hero",
+      "reason": "Complex AI input interface hero \u2014 too specialized for general website redesigns and over-engineered."
+    },
+    {
+      "file": "aghasisahakyan1__interactive-3d-robot.json",
+      "title": "Interactive 3D Robot",
+      "reason": "Just a Spline 3D robot wrapper with loading spinner \u2014 single-purpose primitive with zero layout, not a hero section."
+    },
+    {
+      "file": "danielpetho__gravity.json",
+      "title": "Gravity",
+      "reason": "Physics-based interactive element \u2014 experimental game-like interaction, not suitable for standard business hero sections."
+    },
+    {
+      "file": "danielpetho__image-trail.json",
+      "title": "Image Trail",
+      "reason": "Cursor image trail effect \u2014 exotic micro-interaction, not a full hero section and too distracting for business sites."
+    },
+    {
+      "file": "designali-in__cosmos-spectrum.json",
+      "title": "Cosmos Spectrum",
+      "reason": "Abstract cosmos/space animation \u2014 too niche and experimental for most business sites."
+    },
+    {
+      "file": "designali-in__glsl-hills.json",
+      "title": "GLSL Hills",
+      "reason": "WebGL GLSL shader hills \u2014 highly exotic/experimental, not suitable for standard redesigns."
+    },
+    {
+      "file": "designali-in__shader-animation.json",
+      "title": "Shader Animation",
+      "reason": "Raw WebGL shader animation \u2014 exotic primitive, not a usable hero section for business sites."
+    },
+    {
+      "file": "dhileepkumargm__cartoon-stone.json",
+      "title": "Cartoon Stone",
+      "reason": "Cartoon stone visual element \u2014 too niche/novelty, not useful for business/marketing redesigns."
+    },
+    {
+      "file": "dhileepkumargm__celestial-resonance.json",
+      "title": "Celestial Resonance",
+      "reason": "Abstract celestial effect \u2014 too experimental and atmospheric, not a complete hero section."
+    },
+    {
+      "file": "dhileepkumargm__cosmic-aurora.json",
+      "title": "Cosmic Aurora",
+      "reason": "Space/cosmos theme \u2014 too niche, useful only for space/sci-fi product sites."
+    },
+    {
+      "file": "dhileepkumargm__cybercore-section-hero.json",
+      "title": "Cybercore Section Hero",
+      "reason": "Cyberpunk aesthetic hero \u2014 too niche/genre-specific for standard business redesigns."
+    },
+    {
+      "file": "dhileepkumargm__data-sphere-hero.json",
+      "title": "Data Sphere Hero",
+      "reason": "Abstract data sphere visual \u2014 too experimental for most business redesign use cases."
+    },
+    {
+      "file": "dhileepkumargm__digital-loom-background.json",
+      "title": "Digital Loom Background",
+      "reason": "Abstract digital loom pattern \u2014 background-only primitive, not a full hero section."
+    },
+    {
+      "file": "dhileepkumargm__glitch-weaver-hero.json",
+      "title": "Glitch Weaver Hero",
+      "reason": "Glitch aesthetic hero \u2014 too niche/experimental, suitable only for gaming/cyberpunk brands."
+    },
+    {
+      "file": "dhileepkumargm__nebula-forgery.json",
+      "title": "Nebula Forgery",
+      "reason": "Space nebula effect \u2014 too niche for general website redesigns."
+    },
+    {
+      "file": "dhileepkumargm__pixel-rocket-voyager.json",
+      "title": "Pixel Rocket Voyager",
+      "reason": "Pixel art rocket animation \u2014 too novelty/game-like for serious business sites."
+    },
+    {
+      "file": "dhileepkumargm__psychedelic-vortex-hero.json",
+      "title": "Psychedelic Vortex Hero",
+      "reason": "Psychedelic visual effect \u2014 too experimental and niche for standard redesigns."
+    },
+    {
+      "file": "dhileepkumargm__quantum-grid-hero.json",
+      "title": "Quantum Grid Hero",
+      "reason": "Quantum grid visual \u2014 abstract and niche, not broadly applicable."
+    },
+    {
+      "file": "h0bb5__generative-art.json",
+      "title": "Generative Art",
+      "reason": "Generative art hero \u2014 purely experimental/artistic, not suitable for business site redesigns."
+    },
+    {
+      "file": "larsen66__hero-ascii-one.json",
+      "title": "Hero ASCII One",
+      "reason": "ASCII art hero \u2014 extremely niche, only suitable for developer/retro brand sites."
+    },
+    {
+      "file": "larsen66__hero-ascii.json",
+      "title": "Hero ASCII",
+      "reason": "ASCII art hero \u2014 too niche/novelty, very limited business application."
+    },
+    {
+      "file": "larsen66__hero-futuristic.json",
+      "title": "Hero Futuristic",
+      "reason": "Futuristic concept hero \u2014 potentially over-stylized for standard business redesigns."
+    },
+    {
+      "file": "moazamtrade__the-infinite-grid.json",
+      "title": "The Infinite Grid",
+      "reason": "Infinite grid animation \u2014 background primitive, not a complete hero section."
+    },
+    {
+      "file": "moazamtrade__wireframe-dotted-globe.json",
+      "title": "Wireframe Dotted Globe",
+      "reason": "Wireframe globe widget \u2014 interesting visual but isolated primitive without hero context."
+    },
+    {
+      "file": "moazamtrade__wrap-shader.json",
+      "title": "Wrap Shader",
+      "reason": "Wrap shader effect \u2014 raw WebGL/shader primitive, too exotic for general use."
+    },
+    {
+      "file": "patrick.thomas.dunn1988__robot-flyby.json",
+      "title": "Robot Flyby",
+      "reason": "3D robot flyby animation \u2014 game/entertainment UI, not suitable for business site redesigns."
+    },
+    {
+      "file": "patrick.thomas.dunn1988__sneak.json",
+      "title": "Sneak",
+      "reason": "Animated sneak effect \u2014 too niche/novelty, not applicable for standard business redesigns."
+    },
+    {
+      "file": "avanishverma4__particle-effect-for-hero.json",
+      "title": "Particle Effect for Hero",
+      "reason": "Standalone particle effect primitive \u2014 background-only, needs wrapping to function as a hero section."
+    },
+    {
+      "file": "xubohuah__flickering-grid-demo2.json",
+      "title": "Flickering Grid Demo2",
+      "reason": "Flickering grid background demo \u2014 experimental effect, not a full hero section."
+    },
+    {
+      "file": "xubohuah__generative-geometry.json",
+      "title": "Generative Geometry",
+      "reason": "Generative geometry art \u2014 purely experimental/artistic, not for business sites."
+    },
+    {
+      "file": "xubohuah__simple-growth-tree.json",
+      "title": "Simple Growth Tree",
+      "reason": "Animated growth tree visualization \u2014 too specific/novelty for general website redesigns."
+    },
+    {
+      "file": "xubohuah__vector-field.json",
+      "title": "Vector Field",
+      "reason": "Vector field animation \u2014 abstract mathematical visualization, not for business hero sections."
+    },
+    {
+      "file": "dhileepkumargm__3d-animation.json",
+      "title": "3D Animation (dhileepkumar)",
+      "reason": "Raw 3D animation primitive \u2014 incomplete hero section."
+    },
+    {
+      "file": "designali-in__canvas.json",
+      "title": "Canvas (designali)",
+      "reason": "Raw HTML canvas wrapper \u2014 too primitive to be useful as a hero section."
+    },
+    {
+      "file": "moazamtrade__background-shader.json",
+      "title": "Background Shader",
+      "reason": "WebGL shader background \u2014 background-only primitive, not usable standalone."
+    },
+    {
+      "file": "dhileepkumargm__crystal-forge-hero.json",
+      "title": "Crystal Forge Hero",
+      "reason": "Too niche aesthetic for general redesigns."
+    },
+    {
+      "file": "muhammad-binsalman__quantam-mysh-hero.json",
+      "title": "Quantam Mysh Hero",
+      "reason": "Dark futuristic AI studio hero with purple gradients \u2014 27 downloads, 0 likes; minimal engagement."
+    }
   ]
 }

@@ -113,11 +113,6 @@
       "file": "shadcnspace__fallback-avatar-one.json",
       "title": "Fallback Avatar One",
       "reason": "Fallback avatar with initials \u2014 clean but covers a narrow edge case."
-    },
-    {
-      "file": "shailendrakumar19999__avatar-chips.json",
-      "title": "Avatar Chips",
-      "reason": "Avatar chip pattern for selected users \u2014 useful for multi-select people pickers."
     }
   ],
   "bronze": [
