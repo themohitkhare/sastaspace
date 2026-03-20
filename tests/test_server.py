@@ -1,9 +1,8 @@
 # tests/test_server.py
 import json
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
-import pytest
 from fastapi.testclient import TestClient
 
 SAMPLE_HTML = "<!DOCTYPE html><html><body><h1>Acme</h1></body></html>"
@@ -211,46 +210,296 @@ def test_cors_blocks_unknown_origin(test_client):
     assert resp.headers.get("access-control-allow-origin") != "http://evil.com"
 
 
-# --- Stub tests (Wave 0 scaffolds for Plan 01-02) ---
+# --- /redesign endpoint tests (Plan 01-02) ---
 
 
-@pytest.mark.skip(reason="Wave 0 stub -- implemented in Plan 01-02")
-def test_redesign_sse_stream(test_client):
-    """POST /redesign with valid URL returns 200 with content-type text/event-stream."""
-    pass
+def parse_sse_events(text: str) -> list[dict]:
+    """Parse SSE text into list of {event, data} dicts."""
+    events = []
+    current: dict = {}
+    for line in text.split("\n"):
+        if line.startswith("event:"):
+            current["event"] = line.split(":", 1)[1].strip()
+        elif line.startswith("data:"):
+            raw = line.split(":", 1)[1].strip()
+            try:
+                current["data"] = json.loads(raw)
+            except json.JSONDecodeError:
+                current["data"] = raw
+        elif line == "" and current:
+            events.append(current)
+            current = {}
+    if current:
+        events.append(current)
+    return events
 
 
-@pytest.mark.skip(reason="Wave 0 stub -- implemented in Plan 01-02")
-def test_sse_event_names(test_client):
-    """SSE stream contains events named crawling, redesigning, deploying, done."""
-    pass
+def test_redesign_sse_stream(redesign_client):
+    """POST /redesign with valid URL returns 200 with text/event-stream."""
+    resp = redesign_client.post("/redesign", json={"url": "https://example.com"})
+    assert resp.status_code == 200
+    assert "text/event-stream" in resp.headers["content-type"]
 
 
-@pytest.mark.skip(reason="Wave 0 stub -- implemented in Plan 01-02")
-def test_to_thread_wrapping(test_client):
-    """redesign() and deploy() are called via asyncio.to_thread (verify with mock)."""
-    pass
+def test_sse_event_names(redesign_client):
+    """SSE stream contains events crawling, redesigning, deploying, done in order."""
+    resp = redesign_client.post("/redesign", json={"url": "https://example.com"})
+    events = parse_sse_events(resp.text)
+    event_names = [e["event"] for e in events if "event" in e]
+    assert "crawling" in event_names
+    assert "redesigning" in event_names
+    assert "deploying" in event_names
+    assert "done" in event_names
+    # Verify order
+    idx_c = event_names.index("crawling")
+    idx_r = event_names.index("redesigning")
+    idx_dp = event_names.index("deploying")
+    idx_d = event_names.index("done")
+    assert idx_c < idx_r < idx_dp < idx_d
 
 
-@pytest.mark.skip(reason="Wave 0 stub -- implemented in Plan 01-02")
-def test_concurrency_cap(test_client):
-    """Second concurrent POST /redesign returns 429."""
-    pass
+def test_sse_done_event_payload(redesign_client):
+    """done event data has job_id, message, progress=100, url, subdomain."""
+    resp = redesign_client.post("/redesign", json={"url": "https://example.com"})
+    events = parse_sse_events(resp.text)
+    done_events = [e for e in events if e.get("event") == "done"]
+    assert len(done_events) == 1
+    data = done_events[0]["data"]
+    assert "job_id" in data
+    assert data["progress"] == 100
+    assert data["subdomain"] == "example-com"
+    assert data["url"] == "/example-com/"
 
 
-@pytest.mark.skip(reason="Wave 0 stub -- implemented in Plan 01-02")
-def test_rate_limit(test_client):
-    """4th request within window returns 429."""
-    pass
+def test_to_thread_wrapping(tmp_sites, mock_crawl_result, mock_deploy_result):
+    """redesign() and deploy() are called; crawl() is awaited directly."""
+    mock_html = "<html><body><p>OK</p></body></html>"
+    with (
+        patch(
+            "sastaspace.server.crawl",
+            new_callable=AsyncMock,
+            return_value=mock_crawl_result,
+        ) as m_crawl,
+        patch(
+            "sastaspace.server.redesign",
+            return_value=mock_html,
+        ) as m_redesign,
+        patch(
+            "sastaspace.server.deploy",
+            return_value=mock_deploy_result,
+        ) as m_deploy,
+    ):
+        from sastaspace.server import make_app
+
+        app = make_app(tmp_sites)
+        client = TestClient(app)
+        client.post("/redesign", json={"url": "https://example.com"})
+
+        m_crawl.assert_called_once_with("https://example.com")
+        m_redesign.assert_called_once()
+        m_deploy.assert_called_once()
 
 
-@pytest.mark.skip(reason="Wave 0 stub -- implemented in Plan 01-02")
-def test_rate_limit_localhost_exempt(test_client):
+def test_concurrency_cap(tmp_sites, mock_crawl_result, mock_deploy_result):
+    """Second request while first is running returns 429."""
+    import asyncio
+    import threading
+
+    block = threading.Event()
+    proceed = threading.Event()
+
+    original_crawl_result = mock_crawl_result
+
+    async def slow_crawl(url):
+        proceed.set()
+        # Block in a thread-safe way
+        await asyncio.get_event_loop().run_in_executor(None, block.wait, 5)
+        return original_crawl_result
+
+    mock_html = "<html><body>OK</body></html>"
+    with (
+        patch("sastaspace.server.crawl", side_effect=slow_crawl),
+        patch("sastaspace.server.redesign", return_value=mock_html),
+        patch(
+            "sastaspace.server.deploy",
+            return_value=mock_deploy_result,
+        ),
+    ):
+        from sastaspace.server import make_app
+
+        app = make_app(tmp_sites)
+        client = TestClient(app)
+
+        results: dict = {}
+
+        def first_request():
+            results["first"] = client.post("/redesign", json={"url": "https://example.com"})
+
+        t = threading.Thread(target=first_request)
+        t.start()
+        proceed.wait(timeout=5)
+
+        # Second request should get 429
+        resp = client.post("/redesign", json={"url": "https://example.com"})
+        assert resp.status_code == 429
+        assert "already in progress" in resp.json()["error"]
+
+        block.set()
+        t.join(timeout=5)
+
+
+def test_rate_limit(tmp_sites, mock_crawl_result, mock_deploy_result):
+    """4th request from same non-localhost IP returns 429 with retry_after."""
+    mock_html = "<html><body>OK</body></html>"
+    with (
+        patch(
+            "sastaspace.server.crawl",
+            new_callable=AsyncMock,
+            return_value=mock_crawl_result,
+        ),
+        patch("sastaspace.server.redesign", return_value=mock_html),
+        patch(
+            "sastaspace.server.deploy",
+            return_value=mock_deploy_result,
+        ),
+    ):
+        from sastaspace.server import make_app
+
+        app = make_app(tmp_sites)
+        client = TestClient(app)
+        headers = {"X-Forwarded-For": "1.2.3.4"}
+
+        # First 3 requests should succeed
+        for i in range(3):
+            resp = client.post(
+                "/redesign",
+                json={"url": "https://example.com"},
+                headers=headers,
+            )
+            assert resp.status_code == 200, f"Request {i + 1} should succeed"
+
+        # 4th request should be rate limited
+        resp = client.post(
+            "/redesign",
+            json={"url": "https://example.com"},
+            headers=headers,
+        )
+        assert resp.status_code == 429
+        data = resp.json()
+        assert "Rate limit exceeded" in data["error"]
+        assert "retry_after" in data
+
+
+def test_rate_limit_localhost_exempt(tmp_sites, mock_crawl_result, mock_deploy_result):
     """Requests from 127.0.0.1 bypass rate limiting."""
-    pass
+    mock_html = "<html><body>OK</body></html>"
+    with (
+        patch(
+            "sastaspace.server.crawl",
+            new_callable=AsyncMock,
+            return_value=mock_crawl_result,
+        ),
+        patch("sastaspace.server.redesign", return_value=mock_html),
+        patch(
+            "sastaspace.server.deploy",
+            return_value=mock_deploy_result,
+        ),
+    ):
+        from sastaspace.server import make_app
+
+        app = make_app(tmp_sites)
+        client = TestClient(app)
+        # TestClient reports host as "testclient", so use header
+        headers = {"X-Forwarded-For": "127.0.0.1"}
+
+        # Make 5 requests -- all should succeed (localhost exempt)
+        for i in range(5):
+            resp = client.post(
+                "/redesign",
+                json={"url": "https://example.com"},
+                headers=headers,
+            )
+            assert resp.status_code == 200, f"Request {i + 1} should succeed (localhost exempt)"
 
 
-@pytest.mark.skip(reason="Wave 0 stub -- implemented in Plan 01-02")
-def test_nh3_sanitization(test_client):
-    """HTML with <script>alert(1)</script> has script tags stripped in SSE done event."""
-    pass
+def test_nh3_sanitization(tmp_sites, mock_crawl_result, mock_deploy_result):
+    """HTML with script tags is cleaned before deploy receives it."""
+    dirty_html = "<html><body><script>alert(1)</script><p>safe</p></body></html>"
+    captured_html = {}
+
+    def capture_deploy(url, html, sites_dir):
+        captured_html["html"] = html
+        return mock_deploy_result
+
+    with (
+        patch(
+            "sastaspace.server.crawl",
+            new_callable=AsyncMock,
+            return_value=mock_crawl_result,
+        ),
+        patch("sastaspace.server.redesign", return_value=dirty_html),
+        patch("sastaspace.server.deploy", side_effect=capture_deploy),
+    ):
+        from sastaspace.server import make_app
+
+        app = make_app(tmp_sites)
+        client = TestClient(app)
+        client.post("/redesign", json={"url": "https://example.com"})
+
+        assert "<script>" not in captured_html["html"]
+        assert "<p>safe</p>" in captured_html["html"]
+
+
+def test_error_crawl_failure(tmp_sites):
+    """crawl error emits error SSE event with user-facing message."""
+    from sastaspace.crawler import CrawlResult
+
+    failed_crawl = CrawlResult(
+        url="https://example.com",
+        title="",
+        meta_description="",
+        favicon_url="",
+        html_source="",
+        screenshot_base64="",
+        error="timeout",
+    )
+    with patch(
+        "sastaspace.server.crawl",
+        new_callable=AsyncMock,
+        return_value=failed_crawl,
+    ):
+        from sastaspace.server import make_app
+
+        app = make_app(tmp_sites)
+        client = TestClient(app)
+        resp = client.post("/redesign", json={"url": "https://example.com"})
+
+        events = parse_sse_events(resp.text)
+        error_events = [e for e in events if e.get("event") == "error"]
+        assert len(error_events) >= 1
+        assert "Could not reach that website" in error_events[0]["data"]["error"]
+
+
+def test_error_redesign_failure(tmp_sites, mock_crawl_result):
+    """redesign exception emits error SSE event."""
+    with (
+        patch(
+            "sastaspace.server.crawl",
+            new_callable=AsyncMock,
+            return_value=mock_crawl_result,
+        ),
+        patch(
+            "sastaspace.server.redesign",
+            side_effect=Exception("API down"),
+        ),
+    ):
+        from sastaspace.server import make_app
+
+        app = make_app(tmp_sites)
+        client = TestClient(app)
+        resp = client.post("/redesign", json={"url": "https://example.com"})
+
+        events = parse_sse_events(resp.text)
+        error_events = [e for e in events if e.get("event") == "error"]
+        assert len(error_events) >= 1
+        assert "Redesign service unavailable" in error_events[0]["data"]["error"]

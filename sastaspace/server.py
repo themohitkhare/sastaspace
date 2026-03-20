@@ -17,7 +17,7 @@ import nh3
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
-from fastapi.sse import EventSourceResponse, ServerSentEvent
+from fastapi.sse import EventSourceResponse, format_sse_event
 from pydantic import BaseModel
 from starlette.responses import Response
 
@@ -78,7 +78,11 @@ def make_app(sites_dir: Path) -> FastAPI:
     def record_request(ip: str) -> None:
         _rate_limit_store.setdefault(ip, []).append(time_mod.time())
 
-    async def redesign_stream(url: str) -> AsyncGenerator[ServerSentEvent, None]:
+    def _sse_event(data_str: str, event: str) -> bytes:
+        """Format a single SSE event as bytes."""
+        return format_sse_event(data_str=data_str, event=event)
+
+    async def redesign_stream(url: str) -> AsyncGenerator[bytes, None]:
         job_id = str(uuid4())
         async with _redesign_semaphore:
             try:
@@ -88,16 +92,13 @@ def make_app(sites_dir: Path) -> FastAPI:
                     "message": "Crawling your site...",
                     "progress": 10,
                 }
-                yield ServerSentEvent(
-                    data=json.dumps(crawling_data),
-                    event="crawling",
-                )
+                yield _sse_event(json.dumps(crawling_data), "crawling")
                 crawl_result = await crawl(url)
                 if crawl_result.error:
                     err_msg = "Could not reach that website. Check the URL and try again."
-                    yield ServerSentEvent(
-                        data=json.dumps({"job_id": job_id, "error": err_msg}),
-                        event="error",
+                    yield _sse_event(
+                        json.dumps({"job_id": job_id, "error": err_msg}),
+                        "error",
                     )
                     return
 
@@ -107,10 +108,7 @@ def make_app(sites_dir: Path) -> FastAPI:
                     "message": "Claude is redesigning...",
                     "progress": 40,
                 }
-                yield ServerSentEvent(
-                    data=json.dumps(redesigning_data),
-                    event="redesigning",
-                )
+                yield _sse_event(json.dumps(redesigning_data), "redesigning")
                 html = await asyncio.to_thread(
                     redesign,
                     crawl_result,
@@ -127,34 +125,24 @@ def make_app(sites_dir: Path) -> FastAPI:
                     "message": "Deploying your redesign...",
                     "progress": 80,
                 }
-                yield ServerSentEvent(
-                    data=json.dumps(deploying_data),
-                    event="deploying",
-                )
+                yield _sse_event(json.dumps(deploying_data), "deploying")
                 result = await asyncio.to_thread(deploy, url, html, settings.sites_dir)
 
                 # Step 4: Done
-                yield ServerSentEvent(
-                    data=json.dumps(
-                        {
-                            "job_id": job_id,
-                            "message": "Done!",
-                            "progress": 100,
-                            "url": f"/{result.subdomain}/",
-                            "subdomain": result.subdomain,
-                        }
-                    ),
-                    event="done",
-                )
+                done_data = {
+                    "job_id": job_id,
+                    "message": "Done!",
+                    "progress": 100,
+                    "url": f"/{result.subdomain}/",
+                    "subdomain": result.subdomain,
+                }
+                yield _sse_event(json.dumps(done_data), "done")
             except Exception:
                 err_data = {
                     "job_id": job_id,
                     "error": ("Redesign service unavailable. Please try again later."),
                 }
-                yield ServerSentEvent(
-                    data=json.dumps(err_data),
-                    event="error",
-                )
+                yield _sse_event(json.dumps(err_data), "error")
                 return
 
     @app.post("/redesign")

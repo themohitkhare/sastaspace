@@ -1,3 +1,5 @@
+from unittest.mock import AsyncMock, patch
+
 import pytest
 from fastapi.testclient import TestClient
 
@@ -51,3 +53,33 @@ def test_client(tmp_sites):
 
     app = make_app(tmp_sites)
     return TestClient(app)
+
+
+@pytest.fixture
+def redesign_client(tmp_sites, mock_crawl_result, mock_deploy_result):
+    """TestClient with mocked pipeline functions for /redesign testing."""
+    mock_html = "<html><body><p>Redesigned</p></body></html>"
+
+    with (
+        patch(
+            "sastaspace.server.crawl",
+            new_callable=AsyncMock,
+            return_value=mock_crawl_result,
+        ) as m_crawl,
+        patch(
+            "sastaspace.server.redesign",
+            return_value=mock_html,
+        ) as m_redesign,
+        patch(
+            "sastaspace.server.deploy",
+            return_value=mock_deploy_result,
+        ) as m_deploy,
+    ):
+        from sastaspace.server import make_app
+
+        app = make_app(tmp_sites)
+        client = TestClient(app)
+        client._mock_crawl = m_crawl
+        client._mock_redesign = m_redesign
+        client._mock_deploy = m_deploy
+        yield client
