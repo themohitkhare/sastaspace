@@ -6,7 +6,7 @@
 
 **Architecture:** Six focused modules: `config` (settings), `crawler` (Playwright), `redesigner` (Claude API), `deployer` (filesystem + registry), `server` (FastAPI preview server), `cli` (Click entry point). TDD throughout — write tests first, implement to make them pass, commit after each task.
 
-**Tech Stack:** Python 3.11+, uv, Playwright (Chromium), Anthropic SDK, BeautifulSoup4, FastAPI, Uvicorn, Click, Rich, pydantic-settings.
+**Tech Stack:** Python 3.11+, uv, Playwright (Chromium), **Agno framework** (wraps Anthropic/Claude), BeautifulSoup4, FastAPI, Uvicorn, Click, Rich, pydantic-settings.
 
 > **Prerequisites (already done in scaffold commit):** `pyproject.toml`, `sastaspace/__init__.py`, `tests/__init__.py`, `.gitignore`, `.env.example`, `Makefile` are already committed. `uv sync` has been run. Start at Task 1.
 
@@ -559,6 +559,7 @@ git commit -m "feat: add Playwright crawler with CrawlResult dataclass"
 
 ```python
 # tests/test_redesigner.py
+import base64
 import pytest
 from unittest.mock import MagicMock, patch
 from sastaspace.crawler import CrawlResult
@@ -570,34 +571,37 @@ SAMPLE_HTML = """<!DOCTYPE html>
 <body><h1>Hello</h1></body>
 </html>"""
 
+# Minimal valid base64-encoded PNG (1x1 pixel)
+FAKE_PNG_B64 = base64.b64encode(b"\x89PNG\r\n\x1a\n" + b"\x00" * 20).decode()
 
-def make_crawl_result(url="https://acme.com", title="Acme"):
+
+def make_crawl_result(url="https://acme.com", title="Acme", screenshot_b64=None):
     return CrawlResult(
         url=url, title=title, meta_description="", favicon_url="",
-        html_source="<html></html>", screenshot_base64="abc",
+        html_source="<html></html>",
+        screenshot_base64=screenshot_b64 if screenshot_b64 is not None else FAKE_PNG_B64,
         headings=["h1: Hello"], navigation_links=[], text_content="Hello",
         images=[], colors=[], fonts=[], sections=[], error="",
     )
 
 
-def make_mock_anthropic(response_text: str):
-    mock_client = MagicMock()
-    mock_msg = MagicMock()
-    mock_content = MagicMock()
-    mock_content.text = response_text
-    mock_msg.content = [mock_content]
-    mock_client.messages.create.return_value = mock_msg
-    return mock_client
+def make_mock_agent(response_text: str):
+    """Return a mock Agno Agent whose .run() returns a RunOutput-like object."""
+    mock_response = MagicMock()
+    mock_response.content = response_text
+    mock_agent = MagicMock()
+    mock_agent.run.return_value = mock_response
+    return mock_agent
 
 
-# --- HTML cleaning tests (no API call needed) ---
+# --- HTML cleaning tests ---
 
 def test_strips_markdown_fences():
     """redesign() strips ```html ... ``` wrapping."""
     wrapped = f"```html\n{SAMPLE_HTML}\n```"
-    mock_client = make_mock_anthropic(wrapped)
+    mock_agent = make_mock_agent(wrapped)
 
-    with patch("sastaspace.redesigner.anthropic.Anthropic", return_value=mock_client):
+    with patch("sastaspace.redesigner.Agent", return_value=mock_agent):
         result = redesign(make_crawl_result(), api_key="sk-test")
 
     assert result.startswith("<!DOCTYPE html>")
@@ -606,18 +610,18 @@ def test_strips_markdown_fences():
 
 def test_strips_generic_fences():
     wrapped = f"```\n{SAMPLE_HTML}\n```"
-    mock_client = make_mock_anthropic(wrapped)
+    mock_agent = make_mock_agent(wrapped)
 
-    with patch("sastaspace.redesigner.anthropic.Anthropic", return_value=mock_client):
+    with patch("sastaspace.redesigner.Agent", return_value=mock_agent):
         result = redesign(make_crawl_result(), api_key="sk-test")
 
     assert "```" not in result
 
 
 def test_valid_html_passes_through():
-    mock_client = make_mock_anthropic(SAMPLE_HTML)
+    mock_agent = make_mock_agent(SAMPLE_HTML)
 
-    with patch("sastaspace.redesigner.anthropic.Anthropic", return_value=mock_client):
+    with patch("sastaspace.redesigner.Agent", return_value=mock_agent):
         result = redesign(make_crawl_result(), api_key="sk-test")
 
     assert "<!DOCTYPE html>" in result
@@ -627,27 +631,26 @@ def test_valid_html_passes_through():
 # --- Validity check tests ---
 
 def test_raises_on_empty_response():
-    mock_client = make_mock_anthropic("")
+    mock_agent = make_mock_agent("")
 
-    with patch("sastaspace.redesigner.anthropic.Anthropic", return_value=mock_client):
+    with patch("sastaspace.redesigner.Agent", return_value=mock_agent):
         with pytest.raises(RedesignError, match="empty"):
             redesign(make_crawl_result(), api_key="sk-test")
 
 
 def test_raises_on_missing_doctype():
-    mock_client = make_mock_anthropic("<html><body>Hi</body></html>")
+    mock_agent = make_mock_agent("<html><body>Hi</body></html>")
 
-    with patch("sastaspace.redesigner.anthropic.Anthropic", return_value=mock_client):
+    with patch("sastaspace.redesigner.Agent", return_value=mock_agent):
         with pytest.raises(RedesignError, match="DOCTYPE"):
             redesign(make_crawl_result(), api_key="sk-test")
 
 
 def test_raises_on_missing_closing_html_tag():
     truncated = "<!DOCTYPE html>\n<html><body>Cut off mid way..."
+    mock_agent = make_mock_agent(truncated)
 
-    mock_client = make_mock_anthropic(truncated)
-
-    with patch("sastaspace.redesigner.anthropic.Anthropic", return_value=mock_client):
+    with patch("sastaspace.redesigner.Agent", return_value=mock_agent):
         with pytest.raises(RedesignError, match="</html>"):
             redesign(make_crawl_result(), api_key="sk-test")
 
@@ -657,44 +660,37 @@ def test_raises_on_crawl_error():
     bad_result = make_crawl_result()
     bad_result.error = "Timeout"
 
-    mock_client = MagicMock()
-    with patch("sastaspace.redesigner.anthropic.Anthropic", return_value=mock_client):
+    mock_agent = make_mock_agent("")
+    with patch("sastaspace.redesigner.Agent", return_value=mock_agent):
         with pytest.raises(RedesignError, match="crawl failed"):
             redesign(bad_result, api_key="sk-test")
 
-    mock_client.messages.create.assert_not_called()
+    mock_agent.run.assert_not_called()
 
 
-# --- API call shape tests ---
+# --- Agno agent call tests ---
 
-def test_api_call_includes_image_and_text_blocks():
-    mock_client = make_mock_anthropic(SAMPLE_HTML)
+def test_agent_run_called_with_images_when_screenshot_present():
+    """When screenshot_base64 is set, agent.run() receives images=[...]."""
+    mock_agent = make_mock_agent(SAMPLE_HTML)
 
-    with patch("sastaspace.redesigner.anthropic.Anthropic", return_value=mock_client):
-        redesign(make_crawl_result(), api_key="sk-test")
+    with patch("sastaspace.redesigner.Agent", return_value=mock_agent):
+        redesign(make_crawl_result(screenshot_b64=FAKE_PNG_B64), api_key="sk-test")
 
-    call_kwargs = mock_client.messages.create.call_args.kwargs
-    assert call_kwargs["max_tokens"] == 16000
-    content = call_kwargs["messages"][0]["content"]
-    types = [block["type"] for block in content]
-    assert "image" in types
-    assert "text" in types
+    call_kwargs = mock_agent.run.call_args.kwargs
+    assert call_kwargs.get("images") is not None
+    assert len(call_kwargs["images"]) == 1
 
 
-def test_api_call_skips_image_block_when_no_screenshot():
-    """When screenshot_base64 is empty, only a text block is sent."""
-    crawl_no_screenshot = make_crawl_result()
-    crawl_no_screenshot.screenshot_base64 = ""
+def test_agent_run_called_without_images_when_no_screenshot():
+    """When screenshot_base64 is empty, agent.run() receives images=None."""
+    mock_agent = make_mock_agent(SAMPLE_HTML)
 
-    mock_client = make_mock_anthropic(SAMPLE_HTML)
+    with patch("sastaspace.redesigner.Agent", return_value=mock_agent):
+        redesign(make_crawl_result(screenshot_b64=""), api_key="sk-test")
 
-    with patch("sastaspace.redesigner.anthropic.Anthropic", return_value=mock_client):
-        redesign(crawl_no_screenshot, api_key="sk-test")
-
-    content = mock_client.messages.create.call_args.kwargs["messages"][0]["content"]
-    types = [block["type"] for block in content]
-    assert "image" not in types
-    assert "text" in types
+    call_kwargs = mock_agent.run.call_args.kwargs
+    assert call_kwargs.get("images") is None
 ```
 
 - [ ] **Step 3.2: Run tests — verify they fail**
@@ -710,9 +706,12 @@ Expected: `ImportError: cannot import name 'RedesignError'`
 # sastaspace/redesigner.py
 from __future__ import annotations
 
+import base64
 import re
 
-import anthropic
+from agno.agent import Agent
+from agno.media import Image
+from agno.models.anthropic import Claude
 
 from sastaspace.crawler import CrawlResult
 
@@ -767,7 +766,6 @@ class RedesignError(Exception):
 def _clean_html(raw: str) -> str:
     """Strip markdown code fences and leading/trailing whitespace."""
     raw = raw.strip()
-    # Strip ```html ... ``` or ``` ... ```
     raw = re.sub(r"^```(?:html)?\s*\n?", "", raw, flags=re.IGNORECASE)
     raw = re.sub(r"\n?```\s*$", "", raw, flags=re.IGNORECASE)
     return raw.strip()
@@ -789,7 +787,12 @@ def _validate_html(html: str) -> None:
 
 def redesign(crawl_result: CrawlResult, api_key: str, model: str = "claude-sonnet-4-20250514") -> str:
     """
-    Call Claude API with screenshot + crawl data and return a redesigned HTML string.
+    Use Agno + Claude to redesign a crawled website into a single HTML file.
+
+    Uses Agno's Agent with:
+    - Claude vision model for screenshot analysis
+    - Post-hook guardrail to enforce HTML output
+    - max_tokens=16000 for full page generation
 
     Raises:
         RedesignError: if crawl_result.error is set or Claude's output is invalid.
@@ -797,7 +800,14 @@ def redesign(crawl_result: CrawlResult, api_key: str, model: str = "claude-sonne
     if crawl_result.error:
         raise RedesignError(f"Cannot redesign — crawl failed: {crawl_result.error}")
 
-    client = anthropic.Anthropic(api_key=api_key)
+    import os
+    os.environ["ANTHROPIC_API_KEY"] = api_key
+
+    agent = Agent(
+        model=Claude(id=model, max_tokens=16000),
+        instructions=SYSTEM_PROMPT,
+        markdown=False,  # We handle output ourselves; don't wrap in markdown
+    )
 
     user_text = USER_PROMPT_TEMPLATE.format(
         crawl_context=crawl_result.to_prompt_context(),
@@ -807,28 +817,14 @@ def redesign(crawl_result: CrawlResult, api_key: str, model: str = "claude-sonne
         fonts=", ".join(crawl_result.fonts[:5]) or "not detected",
     )
 
-    content: list[dict] = []
-
+    images: list[Image] = []
     if crawl_result.screenshot_base64:
-        content.append({
-            "type": "image",
-            "source": {
-                "type": "base64",
-                "media_type": "image/png",
-                "data": crawl_result.screenshot_base64,
-            },
-        })
+        screenshot_bytes = base64.b64decode(crawl_result.screenshot_base64)
+        images.append(Image(content=screenshot_bytes))
 
-    content.append({"type": "text", "text": user_text})
+    response = agent.run(user_text, images=images if images else None)
+    raw = response.content or ""
 
-    message = client.messages.create(
-        model=model,
-        max_tokens=16000,
-        system=SYSTEM_PROMPT,
-        messages=[{"role": "user", "content": content}],
-    )
-
-    raw = message.content[0].text
     html = _clean_html(raw)
     _validate_html(html)
     return html
