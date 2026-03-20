@@ -1,0 +1,101 @@
+# Requirements: SastaSpace Web Frontend
+
+**Defined:** 2026-03-21
+**Core Value:** Users see a stunning AI redesign of their own website and immediately want to hire you to make it real.
+
+## v1 Requirements
+
+### API — FastAPI Backend Extension
+
+- [ ] **API-01**: `POST /redesign` endpoint accepts a URL and streams SSE progress events
+- [ ] **API-02**: SSE stream emits named step events: `crawling`, `redesigning`, `deploying`, `done` (with result URL) and `error`
+- [ ] **API-03**: `redesign()` wrapped in `asyncio.to_thread()` to avoid blocking FastAPI event loop
+- [ ] **API-04**: Concurrency cap: max 1 simultaneous redesign job (asyncio.Semaphore)
+- [ ] **API-05**: IP rate limiting: max 3 redesign requests per hour per IP
+- [ ] **API-06**: LLM output HTML sanitized with `nh3` before writing to disk
+- [ ] **API-07**: CORS configured to allow Next.js frontend origin
+- [ ] **API-08**: `fastapi` dependency bumped to `>=0.135.0` for built-in SSE support
+
+### Frontend — Next.js Scaffold
+
+- [ ] **FRONT-01**: Next.js 16 App Router project scaffolded in `web/` directory
+- [ ] **FRONT-02**: shadcn/ui + Tailwind v4 + Motion installed and configured
+- [ ] **FRONT-03**: Makefile `dev` target starts both FastAPI and Next.js dev servers together
+- [ ] **FRONT-04**: Cloudflare tunnel ingress rules configured: `/api/*` → FastAPI (8080), `/` → Next.js (3000)
+
+### Frontend — Landing Page
+
+- [ ] **LAND-01**: Hero section with large headline, subheadline, and URL input form
+- [ ] **LAND-02**: URL input validates format before submission
+- [ ] **LAND-03**: "How it works" section (3 steps: Enter URL → AI Redesigns → See Result)
+- [ ] **LAND-04**: Professional, high-design visual — the page itself looks like a $5,000 website
+- [ ] **LAND-05**: Fully mobile responsive
+
+### Frontend — Progress Experience
+
+- [ ] **PROG-01**: On form submit, page transitions to progress view (no full page reload)
+- [ ] **PROG-02**: SSE client connects via `fetch()` + `ReadableStream` (NOT `EventSource` — Cloudflare buffers GET SSE)
+- [ ] **PROG-03**: Named step display: each SSE event updates a visible step indicator
+- [ ] **PROG-04**: Animated progress bar advances through steps (determinate, not indeterminate spinner)
+- [ ] **PROG-05**: Estimated time remaining shown ("~45 seconds")
+- [ ] **PROG-06**: Error state handled gracefully with retry option
+
+### Frontend — Result Page
+
+- [ ] **RESULT-01**: Redesigned HTML displayed in sandboxed iframe (`sandbox="allow-scripts"` only — no `allow-same-origin`)
+- [ ] **RESULT-02**: "View original site" link opens in new tab
+- [ ] **RESULT-03**: Result page is shareable (URL contains subdomain slug)
+- [ ] **RESULT-04**: Page title updates to "Your redesign is ready — SastaSpace"
+
+### Frontend — Contact Form
+
+- [ ] **CONTACT-01**: Contact form appears on result page with headline "Like what you see? Let's build the real thing."
+- [ ] **CONTACT-02**: 3 fields only: Name, Email, Message
+- [ ] **CONTACT-03**: Cloudflare Turnstile widget + honeypot field for spam protection
+- [ ] **CONTACT-04**: Form submission sends email via Resend to owner's inbox
+- [ ] **CONTACT-05**: Success state confirms submission without leaving the result page
+- [ ] **CONTACT-06**: No phone number field
+
+## v2 Requirements
+
+### Visual Differentiation
+
+- **DIFF-01**: Before/after interactive slider comparing original screenshot vs redesign screenshot
+- **DIFF-02**: Shareable result URLs with Open Graph preview tags (show redesign screenshot in social link preview)
+
+### Growth
+
+- **GROW-01**: SEO metadata on landing page (title, description, OG tags)
+- **GROW-02**: Simple analytics (Plausible or Umami — privacy-friendly, self-hosted)
+
+## Out of Scope
+
+| Feature | Reason |
+|---------|--------|
+| User accounts / auth | Lead-gen model — open access is the point |
+| Billing / subscriptions | Consulting inquiry model, not SaaS |
+| Download/export redesigned HTML | Undercuts the "hire me" CTA — they should hire you, not DIY |
+| Multiple redesign variations | Adds backend complexity; single result is sufficient for lead-gen |
+| Side-by-side view (original + redesign) | Full redesign view chosen for impact; original accessible via link |
+| OAuth / social login | No auth at all in v1 |
+| Admin dashboard | Contact form emails go to inbox — no dashboard needed |
+
+## Traceability
+
+| Requirement | Phase | Status |
+|-------------|-------|--------|
+| API-01 through API-08 | Phase 1 | Pending |
+| FRONT-01 through FRONT-04 | Phase 2 | Pending |
+| LAND-01 through LAND-05 | Phase 3 | Pending |
+| PROG-01 through PROG-06 | Phase 3 | Pending |
+| RESULT-01 through RESULT-04 | Phase 3 | Pending |
+| CONTACT-01 through CONTACT-06 | Phase 4 | Pending |
+
+**Coverage:**
+- v1 requirements: 33 total
+- Mapped to phases: 33
+- Unmapped: 0 ✓
+
+---
+*Requirements defined: 2026-03-21*
+*Last updated: 2026-03-21 after initial definition*
