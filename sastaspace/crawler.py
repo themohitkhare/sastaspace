@@ -59,7 +59,7 @@ class CrawlResult:
             nav = "\n".join(f"- {n['text']} → {n['href']}" for n in self.navigation_links)
             lines.append(f"## Navigation\n{nav}")
         if self.text_content:
-            lines.append(f"## Main Text Content\n{self.text_content[:5000]}")
+            lines.append(f"## Main Text Content\n{self.text_content[:4999]}")
         if self.images:
             img_lines = "\n".join(
                 f"- src={i['src']} alt={i.get('alt', '')}" for i in self.images[:10]
