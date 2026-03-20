@@ -1,0 +1,83 @@
+{
+  "name": "testimonials-with-marquee",
+  "type": "registry:block",
+  "dependencies": [
+    "@radix-ui/react-avatar"
+  ],
+  "registryDependencies": [
+    "https://21st.dev/r/serafimcloud/testimonial-card"
+  ],
+  "files": [
+    {
+      "path": "/components/blocks/testimonials-with-marquee.tsx",
+      "content": "import { cn } from \"@/lib/utils\"\nimport { TestimonialCard, TestimonialAuthor } from \"@/components/ui/testimonial-card\"\n\ninterface TestimonialsSectionProps {\n  title: string\n  description: string\n  testimonials: Array<{\n    author: TestimonialAuthor\n    text: string\n    href?: string\n  }>\n  className?: string\n}\n\nexport function TestimonialsSection({ \n  title,\n  description,\n  testimonials,\n  className \n}: TestimonialsSectionProps) {\n  return (\n    <section className={cn(\n      \"bg-background text-foreground\",\n      \"py-12 sm:py-24 md:py-32 px-0\",\n      className\n    )}>\n      <div className=\"mx-auto flex max-w-container flex-col items-center gap-4 text-center sm:gap-16\">\n        <div className=\"flex flex-col items-center gap-4 px-4 sm:gap-8\">\n          <h2 className=\"max-w-[720px] text-3xl font-semibold leading-tight sm:text-5xl sm:leading-tight\">\n            {title}\n          </h2>\n          <p className=\"text-md max-w-[600px] font-medium text-muted-foreground sm:text-xl\">\n            {description}\n          </p>\n        </div>\n\n        <div className=\"relative flex w-full flex-col items-center justify-center overflow-hidden\">\n          <div className=\"group flex overflow-hidden p-2 [--gap:1rem] [gap:var(--gap)] flex-row [--duration:40s]\">\n            <div className=\"flex shrink-0 justify-around [gap:var(--gap)] animate-marquee flex-row group-hover:[animation-play-state:paused]\">\n              {[...Array(4)].map((_, setIndex) => (\n                testimonials.map((testimonial, i) => (\n                  <TestimonialCard \n                    key={`${setIndex}-${i}`}\n                    {...testimonial}\n                  />\n                ))\n              ))}\n            </div>\n          </div>\n\n          <div className=\"pointer-events-none absolute inset-y-0 left-0 hidden w-1/3 bg-gradient-to-r from-background sm:block\" />\n          <div className=\"pointer-events-none absolute inset-y-0 right-0 hidden w-1/3 bg-gradient-to-l from-background sm:block\" />\n        </div>\n      </div>\n    </section>\n  )\n}",
+      "type": "registry:block",
+      "target": ""
+    },
+    {
+      "path": "/components/ui/testimonial-card.tsx",
+      "content": "import { cn } from \"@/lib/utils\"\nimport { Avatar, AvatarImage } from \"@/components/ui/avatar\"\n\nexport interface TestimonialAuthor {\n  name: string\n  handle: string\n  avatar: string\n}\n\nexport interface TestimonialCardProps {\n  author: TestimonialAuthor\n  text: string\n  href?: string\n  className?: string\n}\n\nexport function TestimonialCard({ \n  author,\n  text,\n  href,\n  className\n}: TestimonialCardProps) {\n  const Card = href ? 'a' : 'div'\n  \n  return (\n    <Card\n      {...(href ? { href } : {})}\n      className={cn(\n        \"flex flex-col rounded-lg border-t\",\n        \"bg-gradient-to-b from-muted/50 to-muted/10\",\n        \"p-4 text-start sm:p-6\",\n        \"hover:from-muted/60 hover:to-muted/20\",\n        \"max-w-[320px] sm:max-w-[320px]\",\n        \"transition-colors duration-300\",\n        className\n      )}\n    >\n      <div className=\"flex items-center gap-3\">\n        <Avatar className=\"h-12 w-12\">\n          <AvatarImage src={author.avatar} alt={author.name} />\n        </Avatar>\n        <div className=\"flex flex-col items-start\">\n          <h3 className=\"text-md font-semibold leading-none\">\n            {author.name}\n          </h3>\n          <p className=\"text-sm text-muted-foreground\">\n            {author.handle}\n          </p>\n        </div>\n      </div>\n      <p className=\"sm:text-md mt-4 text-sm text-muted-foreground\">\n        {text}\n      </p>\n    </Card>\n  )\n}",
+      "type": "registry:ui",
+      "target": ""
+    },
+    {
+      "path": "/components/ui/avatar.tsx",
+      "content": "\"use client\"\n\nimport * as React from \"react\"\nimport * as AvatarPrimitive from \"@radix-ui/react-avatar\"\n\nimport { cn } from \"@/lib/utils\"\n\nconst Avatar = React.forwardRef<\n  React.ElementRef<typeof AvatarPrimitive.Root>,\n  React.ComponentPropsWithoutRef<typeof AvatarPrimitive.Root>\n>(({ className, ...props }, ref) => (\n  <AvatarPrimitive.Root\n    ref={ref}\n    className={cn(\n      \"relative flex h-10 w-10 shrink-0 overflow-hidden rounded-full\",\n      className,\n    )}\n    {...props}\n  />\n))\nAvatar.displayName = AvatarPrimitive.Root.displayName\n\nconst AvatarImage = React.forwardRef<\n  React.ElementRef<typeof AvatarPrimitive.Image>,\n  React.ComponentPropsWithoutRef<typeof AvatarPrimitive.Image>\n>(({ className, ...props }, ref) => (\n  <AvatarPrimitive.Image\n    ref={ref}\n    className={cn(\"aspect-square h-full w-full\", className)}\n    {...props}\n  />\n))\nAvatarImage.displayName = AvatarPrimitive.Image.displayName\n\nconst AvatarFallback = React.forwardRef<\n  React.ElementRef<typeof AvatarPrimitive.Fallback>,\n  React.ComponentPropsWithoutRef<typeof AvatarPrimitive.Fallback>\n>(({ className, ...props }, ref) => (\n  <AvatarPrimitive.Fallback\n    ref={ref}\n    className={cn(\n      \"flex h-full w-full items-center justify-center rounded-full bg-muted\",\n      className,\n    )}\n    {...props}\n  />\n))\nAvatarFallback.displayName = AvatarPrimitive.Fallback.displayName\n\nexport { Avatar, AvatarImage, AvatarFallback }\n",
+      "type": "registry:ui",
+      "target": ""
+    }
+  ],
+  "cssVars": {
+    "theme": {
+      "animate-marquee": "marquee var(--duration) linear infinite"
+    }
+  },
+  "css": {
+    "@keyframes marquee": {
+      "from": {
+        "transform": "translateX(0)"
+      },
+      "to": {
+        "transform": "translateX(calc(-100% - var(--gap)))"
+      }
+    }
+  },
+  "tailwind": {
+    "config": {
+      "theme": {
+        "extend": {
+          "maxWidth": {
+            "container": "1280px"
+          },
+          "animation": {
+            "marquee": "marquee var(--duration) linear infinite"
+          },
+          "keyframes": {
+            "marquee": {
+              "from": {
+                "transform": "translateX(0)"
+              },
+              "to": {
+                "transform": "translateX(calc(-100% - var(--gap)))"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "_source": {
+    "author": "serafim",
+    "name": "testimonials-with-marquee",
+    "registry_url": "https://21st.dev/r/serafim/testimonials-with-marquee"
+  },
+  "_meta": {
+    "author": "serafim",
+    "slug": "testimonials-with-marquee",
+    "registry_url": "https://21st.dev/r/serafim/testimonials-with-marquee",
+    "title": "testimonials-with-marquee",
+    "description": "",
+    "category": "testimonials",
+    "category_group": "Marketing Blocks"
+  }
+}
