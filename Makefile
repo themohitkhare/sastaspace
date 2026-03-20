@@ -5,10 +5,10 @@ install:
 	uv run playwright install chromium
 
 lint:
-	uv run ruff check sastaspace/
-	uv run ruff format --check sastaspace/
+	uv run ruff check sastaspace/ tests/
+	uv run ruff format --check sastaspace/ tests/
 
 test:
-	uv run pytest tests/ -v; ec=$$?; test $$ec -eq 0 -o $$ec -eq 5
+	uv run pytest tests/ -v
 
 ci: lint test
