@@ -1,0 +1,32 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "simple-header",
+  "type": "registry:component",
+  "title": "Simple Header",
+  "description": "A simple-header component.",
+  "dependencies": [
+    "lucide-react"
+  ],
+  "registryDependencies": [
+    "https://21st.dev/r/sshahaider/sheet",
+    "https://21st.dev/r/sshahaider/menu-toggle"
+  ],
+  "files": [
+    {
+      "path": "src/components/ui/simple-header.tsx",
+      "content": "import React from 'react'; \nimport { Grid2x2PlusIcon } from 'lucide-react';\nimport { Sheet, SheetContent, SheetFooter } from '@/components/ui/sheet';\nimport { Button, buttonVariants } from '@/components/ui/button';\nimport { MenuToggle } from '@/components/ui/menu-toggle';\n\nexport function SimpleHeader() {\n\tconst [open, setOpen] = React.useState(false);\n\n\tconst links = [\n\t\t{\n\t\t\tlabel: 'Features',\n\t\t\thref: '#',\n\t\t},\n\t\t{\n\t\t\tlabel: 'Pricing',\n\t\t\thref: '#',\n\t\t},\n\t\t{\n\t\t\tlabel: 'About',\n\t\t\thref: '#',\n\t\t},\n\t];\n\n\treturn (\n\t\t<header className=\"bg-background/95 supports-[backdrop-filter]:bg-background/80 sticky top-1/4 z-50 w-full border-b backdrop-blur-lg\">\n\t\t\t<nav className=\"mx-auto flex h-14 w-full max-w-4xl items-center justify-between px-4\">\n\t\t\t\t<div className=\"flex items-center gap-2\">\n\t\t\t\t\t<Grid2x2PlusIcon className=\"size-6\" />\n\t\t\t\t\t<p className=\"font-mono text-lg font-bold\">Asme</p>\n\t\t\t\t</div>\n\t\t\t\t<div className=\"hidden items-center gap-2 lg:flex\">\n\t\t\t\t\t{links.map((link) => (\n\t\t\t\t\t\t<a\n\t\t\t\t\t\t\tclassName={buttonVariants({ variant: 'ghost' })}\n\t\t\t\t\t\t\thref={link.href}\n\t\t\t\t\t\t>\n\t\t\t\t\t\t\t{link.label}\n\t\t\t\t\t\t</a>\n\t\t\t\t\t))}\n\t\t\t\t\t<Button variant=\"outline\">Sign In</Button>\n\t\t\t\t\t<Button>Get Started</Button>\n\t\t\t\t</div>\n\t\t\t\t<Sheet open={open} onOpenChange={setOpen}>\n\t\t\t\t\t<Button size=\"icon\" variant=\"outline\" className=\"lg:hidden\">\n\t\t\t\t\t\t<MenuToggle\n\t\t\t\t\t\t\tstrokeWidth={2.5}\n\t\t\t\t\t\t\topen={open}\n\t\t\t\t\t\t\tonOpenChange={setOpen}\n\t\t\t\t\t\t\tclassName=\"size-6\"\n\t\t\t\t\t\t/>\n\t\t\t\t\t</Button>\n\t\t\t\t\t<SheetContent\n\t\t\t\t\t\tclassName=\"bg-background/95 supports-[backdrop-filter]:bg-background/80 gap-0 backdrop-blur-lg\"\n\t\t\t\t\t\tshowClose={false}\n\t\t\t\t\t\tside=\"left\"\n\t\t\t\t\t>\n\t\t\t\t\t\t<div className=\"grid gap-y-2 overflow-y-auto px-4 pt-12 pb-5\">\n\t\t\t\t\t\t\t{links.map((link) => (\n\t\t\t\t\t\t\t\t<a\n\t\t\t\t\t\t\t\t\tclassName={buttonVariants({\n\t\t\t\t\t\t\t\t\t\tvariant: 'ghost',\n\t\t\t\t\t\t\t\t\t\tclassName: 'justify-start',\n\t\t\t\t\t\t\t\t\t})}\n\t\t\t\t\t\t\t\t\thref={link.href}\n\t\t\t\t\t\t\t\t>\n\t\t\t\t\t\t\t\t\t{link.label}\n\t\t\t\t\t\t\t\t</a>\n\t\t\t\t\t\t\t))}\n\t\t\t\t\t\t</div>\n\t\t\t\t\t\t<SheetFooter>\n\t\t\t\t\t\t\t<Button variant=\"outline\">Sign In</Button>\n\t\t\t\t\t\t\t<Button>Get Started</Button>\n\t\t\t\t\t\t</SheetFooter>\n\t\t\t\t\t</SheetContent>\n\t\t\t\t</Sheet>\n\t\t\t</nav>\n\t\t</header>\n\t);\n}\n",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "sshahaider",
+    "slug": "simple-header",
+    "registry_url": "https://21st.dev/r/sshahaider/simple-header",
+    "title": "Simple Header",
+    "description": "A modern React header with sticky positioning, backdrop blur effects, and seamless mobile-to-desktop navigation experience.\nFeatures collapsible hamburger menu for mobile devices and clean horizontal navigation for desktop users, built with shadcn/ui components and Lucide React icons.",
+    "category": "navbar-navigation",
+    "category_group": "Marketing Blocks",
+    "downloads": 323,
+    "likes": 0
+  }
+}

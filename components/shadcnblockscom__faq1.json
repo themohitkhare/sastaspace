@@ -1,0 +1,39 @@
+{
+  "name": "faq1",
+  "type": "registry:block",
+  "dependencies": [
+    "lucide-react",
+    "@radix-ui/react-accordion"
+  ],
+  "registryDependencies": [
+    "https://21st.dev/r/shadcn/accordion"
+  ],
+  "files": [
+    {
+      "path": "/components/blocks/faq1.tsx",
+      "content": "import {\n  Accordion,\n  AccordionContent,\n  AccordionItem,\n  AccordionTrigger,\n} from \"@/components/ui/accordion\";\n\ninterface FaqItem {\n  question: string;\n  answer: string;\n}\n\ninterface Faq1Props {\n  heading?: string;\n  items?: FaqItem[];\n}\n\nconst Faq1 = ({\n  heading = \"Frequently asked questions\",\n  items = [\n    {\n      question: \"What is a FAQ?\",\n      answer:\n        \"A FAQ is a list of frequently asked questions and answers on a particular topic.\",\n    },\n    {\n      question: \"What is the purpose of a FAQ?\",\n      answer:\n        \"The purpose of a FAQ is to provide answers to common questions and help users find the information they need quickly and easily.\",\n    },\n    {\n      question: \"How do I create a FAQ?\",\n      answer:\n        \"To create a FAQ, you need to compile a list of common questions and answers on a particular topic and organize them in a clear and easy-to-navigate format.\",\n    },\n    {\n      question: \"What are the benefits of a FAQ?\",\n      answer:\n        \"The benefits of a FAQ include providing quick and easy access to information, reducing the number of support requests, and improving the overall user experience.\",\n    },\n  ],\n}: Faq1Props) => {\n  return (\n    <section className=\"py-32\">\n      <div className=\"container mx-auto\">\n        <h1 className=\"mb-4 text-3xl font-semibold md:mb-11 md:text-5xl\">\n          {heading}\n        </h1>\n        {items.map((item, index) => (\n          <Accordion key={index} type=\"single\" collapsible>\n            <AccordionItem value={`item-${index}`}>\n              <AccordionTrigger className=\"hover:text-foreground/60 hover:no-underline\">\n                {item.question}\n              </AccordionTrigger>\n              <AccordionContent>{item.answer}</AccordionContent>\n            </AccordionItem>\n          </Accordion>\n        ))}\n      </div>\n    </section>\n  );\n};\n\nexport { Faq1 };\n",
+      "type": "registry:block",
+      "target": ""
+    },
+    {
+      "path": "/components/ui/accordion.tsx",
+      "content": "\"use client\"\n\nimport * as React from \"react\"\nimport * as AccordionPrimitive from \"@radix-ui/react-accordion\"\nimport { ChevronDown } from \"lucide-react\"\n\nimport { cn } from \"@/lib/utils\"\n\nconst Accordion = AccordionPrimitive.Root\n\nconst AccordionItem = React.forwardRef<\n  React.ElementRef<typeof AccordionPrimitive.Item>,\n  React.ComponentPropsWithoutRef<typeof AccordionPrimitive.Item>\n>(({ className, ...props }, ref) => (\n  <AccordionPrimitive.Item\n    ref={ref}\n    className={cn(\"border-b\", className)}\n    {...props}\n  />\n))\nAccordionItem.displayName = \"AccordionItem\"\n\nconst AccordionTrigger = React.forwardRef<\n  React.ElementRef<typeof AccordionPrimitive.Trigger>,\n  React.ComponentPropsWithoutRef<typeof AccordionPrimitive.Trigger>\n>(({ className, children, ...props }, ref) => (\n  <AccordionPrimitive.Header className=\"flex\">\n    <AccordionPrimitive.Trigger\n      ref={ref}\n      className={cn(\n        \"flex flex-1 items-center justify-between py-4 font-medium transition-all hover:underline [&[data-state=open]>svg]:rotate-180\",\n        className,\n      )}\n      {...props}\n    >\n      {children}\n      <ChevronDown className=\"h-4 w-4 shrink-0 transition-transform duration-200\" />\n    </AccordionPrimitive.Trigger>\n  </AccordionPrimitive.Header>\n))\nAccordionTrigger.displayName = AccordionPrimitive.Trigger.displayName\n\nconst AccordionContent = React.forwardRef<\n  React.ElementRef<typeof AccordionPrimitive.Content>,\n  React.ComponentPropsWithoutRef<typeof AccordionPrimitive.Content>\n>(({ className, children, ...props }, ref) => (\n  <AccordionPrimitive.Content\n    ref={ref}\n    className=\"overflow-hidden text-sm transition-all data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down\"\n    {...props}\n  >\n    <div className={cn(\"pb-4 pt-0\", className)}>{children}</div>\n  </AccordionPrimitive.Content>\n))\n\nAccordionContent.displayName = AccordionPrimitive.Content.displayName\n\nexport { Accordion, AccordionItem, AccordionTrigger, AccordionContent }\n",
+      "type": "registry:ui",
+      "target": ""
+    }
+  ],
+  "tailwind": {
+    "config": {}
+  },
+  "_meta": {
+    "author": "shadcnblockscom",
+    "slug": "faq1",
+    "registry_url": "https://21st.dev/r/shadcnblockscom/faq1",
+    "title": "FAQ 1",
+    "description": "A basic FAQ block with an accordion component",
+    "category": "accordion",
+    "category_group": "UI Components",
+    "downloads": 126,
+    "likes": 3
+  }
+}

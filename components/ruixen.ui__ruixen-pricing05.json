@@ -1,0 +1,32 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "ruixen-pricing05",
+  "type": "registry:component",
+  "title": "Ruixen Pricing05",
+  "description": "A ruixen-pricing05 component.",
+  "dependencies": [
+    "framer-motion"
+  ],
+  "registryDependencies": [
+    "https://21st.dev/r/originui/button",
+    "https://21st.dev/r/shadcn/card"
+  ],
+  "files": [
+    {
+      "path": "src/components/ui/ruixen-pricing05.tsx",
+      "content": "\"use client\";\n\nimport { motion } from \"framer-motion\";\nimport { Button } from \"@/components/ui/button\";\nimport { Card, CardContent, CardHeader, CardTitle } from \"@/components/ui/card\";\n\nconst pricingTiers = [\n  {\n    title: \"Starter\",\n    monthlyPrice: 0,\n    buttonText: \"Start free\",\n    popular: false,\n    inverse: false,\n    features: [\n      \"Up to 5 team members\",\n      \"Unlimited content projects\",\n      \"2GB storage\",\n      \"Basic integrations\",\n      \"Community support\",\n    ],\n  },\n  {\n    title: \"Pro\",\n    monthlyPrice: 9,\n    buttonText: \"Upgrade now\",\n    popular: true,\n    inverse: true,\n    features: [\n      \"Up to 50 team members\",\n      \"Unlimited AI-generated content\",\n      \"50GB storage\",\n      \"All integrations\",\n      \"Priority support\",\n      \"Content export\",\n      \"Keyword analytics\",\n    ],\n  },\n  {\n    title: \"Business\",\n    monthlyPrice: 19,\n    buttonText: \"Contact sales\",\n    popular: false,\n    inverse: false,\n    features: [\n      \"Unlimited team members\",\n      \"200GB storage\",\n      \"Dedicated AI workflows\",\n      \"Custom branding\",\n      \"Dedicated support manager\",\n      \"API access\",\n      \"Enterprise-grade security\",\n    ],\n  },\n];\n\nexport default function Pricing_05() {\n  return (\n    <section className=\"py-24 bg-white dark:bg-background\">\n      <div className=\"container\">\n        <div className=\"text-center max-w-2xl mx-auto\">\n          <h2 className=\"text-4xl font-semibold tracking-tight sm:text-5xl\">\n            Simple pricing for every team\n          </h2>\n          <p className=\"text-muted-foreground mt-4 text-lg\">\n            Whether you're starting small or scaling fast, Ruixen UI grows with your content needs.\n          </p>\n        </div>\n\n        <div className=\"flex flex-col gap-6 items-center mt-12 lg:flex-row lg:items-end lg:justify-center\">\n          {pricingTiers.map(({ title, monthlyPrice, buttonText, popular, features, inverse }) => (\n            <Card\n              key={title}\n              className={`max-w-xs w-full border ${inverse ? \"bg-black text-white\" : \"\"}`}\n            >\n              <CardHeader className=\"flex justify-between items-start\">\n                <CardTitle className={`text-lg font-bold ${inverse ? \"text-white/70\" : \"text-muted-foreground\"}`}>\n                  {title}\n                </CardTitle>\n                {popular && (\n                  <motion.div\n                    animate={{ backgroundPositionX: \"-100%\" }}\n                    transition={{\n                      duration: 1,\n                      repeat: Infinity,\n                      ease: \"linear\",\n                      repeatType: \"loop\",\n                    }}\n                    className=\"text-sm px-3 py-1 rounded-xl border border-white/20 bg-[linear-gradient(to_right,#DD7DDF,#E1CD86,#BBCB92,#71C2EF,#3BFFFF)] [background-size:200%] text-transparent bg-clip-text font-medium\"\n                  >\n                    Popular\n                  </motion.div>\n                )}\n              </CardHeader>\n              <CardContent>\n                <div className=\"flex items-baseline gap-1 mt-2\">\n                  <span className=\"text-4xl font-bold tracking-tighter leading-none\">${monthlyPrice}</span>\n                  <span className={`tracking-tight font-semibold ${inverse ? \"text-white/60\" : \"text-muted-foreground\"}`}>\n                    /month\n                  </span>\n                </div>\n                <Button\n                  variant={inverse ? \"secondary\" : \"default\"}\n                  className=\"w-full mt-6\"\n                >\n                  {buttonText}\n                </Button>\n                <ul className=\"flex flex-col gap-4 mt-6 text-sm\">\n                  {features.map((feature) => (\n                    <li key={feature} className=\"flex items-center gap-2\">\n                      {/* You can add a check icon here if needed */}\n                      <span>{feature}</span>\n                    </li>\n                  ))}\n                </ul>\n              </CardContent>\n            </Card>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "ruixen.ui",
+    "slug": "ruixen-pricing05",
+    "registry_url": "https://21st.dev/r/ruixen.ui/ruixen-pricing05",
+    "title": "RuixenPricing05",
+    "description": "This feature section highlights Ruixen UI's powerful tools for content optimization and SEO growth. With a user-friendly dashboard, one-click automation, and a smart keyword generator, it simplifies complex tasks for creators and marketers. Designed with modern icons and animations, it ensures an intuitive and engaging user experience.",
+    "category": "pricing-section",
+    "category_group": "Marketing Blocks",
+    "downloads": 20,
+    "likes": 0
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "footer-1",
+  "type": "registry:component",
+  "title": "Footer 1",
+  "description": "A footer-1 component.",
+  "dependencies": [
+    "next",
+    "lucide-react"
+  ],
+  "registryDependencies": [
+    "https://21st.dev/r/originui/button"
+  ],
+  "files": [
+    {
+      "path": "src/components/ui/footer-1.tsx",
+      "content": "\"use client\";\n\nimport Image from \"next/image\";\nimport Link from \"next/link\";\nimport { FC } from \"react\";\nimport { LucideIcon, Instagram, Twitter, Linkedin } from \"lucide-react\";\nimport { Button } from \"@/components/ui/button\";\n\ninterface FooterLink {\n  label: string;\n  href: string;\n  badge?: string; // optional, e.g., \"Pro\", \"New\", \"Hiring\"\n}\n\ninterface FooterColumn {\n  title: string;\n  links: FooterLink[];\n}\n\ninterface SocialLink {\n  icon: LucideIcon;\n  href: string;\n  label: string;\n}\n\ninterface FooterProps {\n  logoSrc: string;\n  logoAlt: string;\n  description: string;\n  columns: FooterColumn[];\n  socialLinks: SocialLink[];\n  copyright?: string;\n}\n\nexport const Footer: FC<FooterProps> = ({\n  logoSrc,\n  logoAlt,\n  description,\n  columns,\n  socialLinks,\n  copyright = `© ${new Date().getFullYear()} Ruixen. All Rights Reserved.`,\n}) => {\n  return (\n    <footer className=\"w-full bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700\">\n      <div className=\"max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8\">\n        <div className=\"flex flex-col md:flex-row md:justify-between md:items-start gap-8 md:gap-0\">\n          {/* Logo + Description + Social */}\n          <div className=\"flex flex-col gap-4 md:w-1/3\">\n          <Link \n          href=\"https://21st.dev/?ref=ruixen\"\n          alt=\"ruixen-ui\"\n           >\n            <Image\n              src={logoSrc}\n              alt={logoAlt}\n              width={120}\n              height={40}\n              className=\"object-contain\"\n            />\n            </Link>\n            <p className=\"text-gray-600 dark:text-gray-400\">{description}</p>\n            <div className=\"flex space-x-4 mt-2\">\n              {socialLinks.map(({ icon: Icon, href, label }) => (\n                <Link\n                  key={label}\n                  href={href}\n                  target=\"_blank\"\n                  rel=\"noopener noreferrer\"\n                  aria-label={label}\n                  className=\"text-gray-500 hover:text-gray-900 dark:hover:text-white\"\n                >\n                  <Icon className=\"w-5 h-5\" />\n                </Link>\n              ))}\n            </div>\n          </div>\n\n          {/* Navigation */}\n          <div className=\"flex flex-wrap gap-8 md:w-2/3\">\n            {columns.map((col) => (\n              <div key={col.title} className=\"flex flex-col space-y-2 min-w-[120px]\">\n                <h4 className=\"text-gray-900 dark:text-white font-semibold\">{col.title}</h4>\n                {col.links.map(({ label, href, badge }) => (\n                  <Link\n                    key={label}\n                    href={href}\n                    className=\"text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white flex items-center gap-1\"\n                  >\n                    {label}\n                    {badge && (\n                      <span className=\"bg-[#B5FF21] dark:bg-green-600 text-xs px-1 rounded\">\n                        {badge}\n                      </span>\n                    )}\n                  </Link>\n                ))}\n              </div>\n            ))}\n          </div>\n        </div>\n\n        {/* Bottom */}\n        <div className=\"mt-12 border-t border-gray-200 dark:border-gray-700 pt-6 flex flex-col md:flex-row justify-between items-center text-sm text-gray-500 dark:text-gray-400\">\n          <p>{copyright}</p>\n          <div className=\"flex space-x-4 mt-2 md:mt-0\">\n            <Link href=\"#\" className=\"hover:underline\">\n              Privacy Policy\n            </Link>\n            <Link href=\"#\" className=\"hover:underline\">\n              Terms of Service\n            </Link>\n            <Link href=\"#\" className=\"hover:underline\">\n              Cookie Settings\n            </Link>\n          </div>\n        </div>\n      </div>\n    </footer>\n  );\n};\n",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "ruixen.ui",
+    "slug": "footer-1",
+    "registry_url": "https://21st.dev/r/ruixen.ui/footer-1",
+    "title": "Footer",
+    "description": "The Footer component is a fully configurable, responsive, and theme-aware UI element built with Next.js and Shadcn-style design. It supports dynamic navigation columns, customizable social media links with Lucide icons, and optional badges for highlighting features like “Pro,” “New,” or “Hiring.” The component adapts seamlessly to light and dark modes using Tailwind CSS, ensures accessibility with proper aria-labels, and leverages Next.js Link for client-side navigation. Designed for flexibility, it allows developers to easily extend columns, add additional social platforms, and include extra content like legal links or community sections, making it ideal for professional SaaS, product, or corporate websites.",
+    "category": "footer",
+    "category_group": "Marketing Blocks",
+    "downloads": 24,
+    "likes": 0
+  }
+}

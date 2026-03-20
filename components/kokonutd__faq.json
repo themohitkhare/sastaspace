@@ -1,0 +1,51 @@
+{
+  "name": "faq",
+  "type": "registry:block",
+  "dependencies": [
+    "lucide-react",
+    "framer-motion",
+    "@radix-ui/react-slot",
+    "class-variance-authority"
+  ],
+  "registryDependencies": [
+    "https://21st.dev/r/shadcn/button"
+  ],
+  "files": [
+    {
+      "path": "/components/blocks/faq.tsx",
+      "content": "// components/ui/faq-section.tsx\n\"use client\";\n\nimport * as React from \"react\";\nimport { motion, AnimatePresence } from \"framer-motion\";\nimport { ChevronDown, Mail } from \"lucide-react\";\nimport { cn } from \"@/lib/utils\";\nimport { Button } from \"@/components/ui/button\";\n\ninterface FaqSectionProps extends React.HTMLAttributes<HTMLElement> {\n  title: string;\n  description?: string;\n  items: {\n    question: string;\n    answer: string;\n  }[];\n  contactInfo?: {\n    title: string;\n    description: string;\n    buttonText: string;\n    onContact?: () => void;\n  };\n}\n\nconst FaqSection = React.forwardRef<HTMLElement, FaqSectionProps>(\n  ({ className, title, description, items, contactInfo, ...props }, ref) => {\n    return (\n      <section\n        ref={ref}\n        className={cn(\n          \"py-16 w-full bg-gradient-to-b from-transparent via-muted/50 to-transparent\",\n          className\n        )}\n        {...props}\n      >\n        <div className=\"container\">\n          {/* Header */}\n          <motion.div\n            initial={{ opacity: 0, y: 20 }}\n            animate={{ opacity: 1, y: 0 }}\n            transition={{ duration: 0.5 }}\n            className=\"max-w-2xl mx-auto text-center mb-12\"\n          >\n            <h2 className=\"text-3xl font-semibold mb-3 bg-gradient-to-r from-foreground via-foreground/80 to-foreground bg-clip-text text-transparent\">\n              {title}\n            </h2>\n            {description && (\n              <p className=\"text-sm text-muted-foreground\">{description}</p>\n            )}\n          </motion.div>\n\n          {/* FAQ Items */}\n          <div className=\"max-w-2xl mx-auto space-y-2\">\n            {items.map((item, index) => (\n              <FaqItem\n                key={index}\n                question={item.question}\n                answer={item.answer}\n                index={index}\n              />\n            ))}\n          </div>\n\n          {/* Contact Section */}\n          {contactInfo && (\n            <motion.div\n              initial={{ opacity: 0, y: 20 }}\n              animate={{ opacity: 1, y: 0 }}\n              transition={{ duration: 0.5, delay: 0.3 }}\n              className=\"max-w-md mx-auto mt-12 p-6 rounded-lg text-center\"\n            >\n              <div className=\"inline-flex items-center justify-center p-1.5 rounded-full mb-4\">\n                <Mail className=\"h-4 w-4\" />\n              </div>\n              <p className=\"text-sm font-medium text-foreground mb-1\">\n                {contactInfo.title}\n              </p>\n              <p className=\"text-xs text-muted-foreground mb-4\">\n                {contactInfo.description}\n              </p>\n              <Button size=\"sm\" onClick={contactInfo.onContact}>\n                {contactInfo.buttonText}\n              </Button>\n            </motion.div>\n          )}\n        </div>\n      </section>\n    );\n  }\n);\nFaqSection.displayName = \"FaqSection\";\n\n// Internal FaqItem component\nconst FaqItem = React.forwardRef<\n  HTMLDivElement,\n  {\n    question: string;\n    answer: string;\n    index: number;\n  }\n>((props, ref) => {\n  const [isOpen, setIsOpen] = React.useState(false);\n  const { question, answer, index } = props;\n\n  return (\n    <motion.div\n      ref={ref}\n      initial={{ opacity: 0, y: 10 }}\n      animate={{ opacity: 1, y: 0 }}\n      transition={{ duration: 0.2, delay: index * 0.1 }}\n      className={cn(\n        \"group rounded-lg\",\n        \"transition-all duration-200 ease-in-out\",\n        \"border border-border/50\",\n        isOpen\n          ? \"bg-gradient-to-br from-background via-muted/50 to-background\"\n          : \"hover:bg-muted/50\"\n      )}\n    >\n      <Button\n        variant=\"ghost\"\n        onClick={() => setIsOpen(!isOpen)}\n        className=\"w-full px-6 py-4 h-auto justify-between hover:bg-transparent\"\n      >\n        <h3\n          className={cn(\n            \"text-base font-medium transition-colors duration-200 text-left\",\n            \"text-foreground/70\",\n            isOpen && \"text-foreground\"\n          )}\n        >\n          {question}\n        </h3>\n        <motion.div\n          animate={{\n            rotate: isOpen ? 180 : 0,\n            scale: isOpen ? 1.1 : 1,\n          }}\n          transition={{ duration: 0.2 }}\n          className={cn(\n            \"p-0.5 rounded-full flex-shrink-0\",\n            \"transition-colors duration-200\",\n            isOpen ? \"text-primary\" : \"text-muted-foreground\"\n          )}\n        >\n          <ChevronDown className=\"h-4 w-4\" />\n        </motion.div>\n      </Button>\n      <AnimatePresence initial={false}>\n        {isOpen && (\n          <motion.div\n            initial={{ height: 0, opacity: 0 }}\n            animate={{\n              height: \"auto\",\n              opacity: 1,\n              transition: { duration: 0.2, ease: \"easeOut\" },\n            }}\n            exit={{\n              height: 0,\n              opacity: 0,\n              transition: { duration: 0.2, ease: \"easeIn\" },\n            }}\n          >\n            <div className=\"px-6 pb-4 pt-2\">\n              <motion.p\n                initial={{ y: -10, opacity: 0 }}\n                animate={{ y: 0, opacity: 1 }}\n                exit={{ y: -10, opacity: 0 }}\n                className=\"text-sm text-muted-foreground leading-relaxed\"\n              >\n                {answer}\n              </motion.p>\n            </div>\n          </motion.div>\n        )}\n      </AnimatePresence>\n    </motion.div>\n  );\n});\nFaqItem.displayName = \"FaqItem\";\n\nexport { FaqSection };",
+      "type": "registry:block",
+      "target": ""
+    },
+    {
+      "path": "/components/ui/button.tsx",
+      "content": "import * as React from \"react\"\nimport { Slot } from \"@radix-ui/react-slot\"\nimport { cva, type VariantProps } from \"class-variance-authority\"\n\nimport { cn } from \"@/lib/utils\"\n\nconst buttonVariants = cva(\n  \"inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50\",\n  {\n    variants: {\n      variant: {\n        default: \"bg-primary text-primary-foreground hover:bg-primary/90\",\n        destructive:\n          \"bg-destructive text-destructive-foreground hover:bg-destructive/90\",\n        outline:\n          \"border border-input bg-background hover:bg-accent hover:text-accent-foreground\",\n        secondary:\n          \"bg-secondary text-secondary-foreground hover:bg-secondary/80\",\n        ghost: \"hover:bg-accent hover:text-accent-foreground\",\n        link: \"text-primary underline-offset-4 hover:underline\",\n      },\n      size: {\n        default: \"h-10 px-4 py-2\",\n        sm: \"h-9 rounded-md px-3\",\n        lg: \"h-11 rounded-md px-8\",\n        icon: \"h-10 w-10\",\n      },\n    },\n    defaultVariants: {\n      variant: \"default\",\n      size: \"default\",\n    },\n  },\n)\n\nexport interface ButtonProps\n  extends React.ButtonHTMLAttributes<HTMLButtonElement>,\n    VariantProps<typeof buttonVariants> {\n  asChild?: boolean\n}\n\nconst Button = React.forwardRef<HTMLButtonElement, ButtonProps>(\n  ({ className, variant, size, asChild = false, ...props }, ref) => {\n    const Comp = asChild ? Slot : \"button\"\n    return (\n      <Comp\n        className={cn(buttonVariants({ variant, size, className }))}\n        ref={ref}\n        {...props}\n      />\n    )\n  },\n)\nButton.displayName = \"Button\"\n\nexport { Button, buttonVariants }\n",
+      "type": "registry:ui",
+      "target": ""
+    }
+  ],
+  "tailwind": {
+    "config": {
+      "theme": {
+        "container": {
+          "center": true,
+          "padding": "2rem",
+          "screens": {
+            "2xl": "1400px"
+          }
+        }
+      }
+    }
+  },
+  "_meta": {
+    "author": "kokonutd",
+    "slug": "faq",
+    "registry_url": "https://21st.dev/r/kokonutd/faq",
+    "title": "FAQ",
+    "description": "A comprehensive FAQ section component with animated accordions, gradient styling, and an optional contact prompt. Built with shadcn/ui primitives and Framer Motion animations.\n\nFeatures\n\n- Header Section\n  - Gradient text title\n  - Optional description\n  - Animated entrance\n\n- FAQ Items\n  - Animated accordions\n  - Smooth transitions\n  - Progressive reveal animation\n  - Interactive hover states\n  - Gradient backgrounds\n  - Status indicators\n\n- Contact Section\n  - Optional inclusion\n  - Custom call-to-action\n  - Animated entrance\n  - Configurable content",
+    "category": "accordion",
+    "category_group": "UI Components",
+    "downloads": 2068,
+    "likes": 18
+  }
+}

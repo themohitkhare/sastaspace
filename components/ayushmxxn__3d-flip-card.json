@@ -1,0 +1,30 @@
+{
+  "name": "3d-flip-card",
+  "type": "registry:ui",
+  "dependencies": [
+    "framer-motion"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "/components/ui/3d-flip-card.tsx",
+      "content": "'use client';\n\nimport React, { useState, useEffect } from 'react';\nimport Image from 'next/image';\nimport { motion } from 'framer-motion';\nimport { cn } from \"@/lib/utils\"\n\ninterface CardImage {\n  src: string;\n  alt: string;\n}\n\ninterface CardStackProps {\n  images: CardImage[];\n  className?: string;\n  cardWidth?: number;\n  cardHeight?: number;\n  spacing?: {\n    x?: number;\n    y?: number;\n  };\n}\n\ninterface CardProps extends CardImage {\n  index: number;\n  isHovered: boolean;\n  isFirstCard?: boolean;\n  isMobile: boolean;\n  isFront?: boolean;\n  frontCardIndex: number | null;\n  onClick: (index: number) => void;\n  width: number;\n  height: number;\n  spacing: { x?: number; y?: number };\n}\n\nconst Card = ({\n  src, \n  alt, \n  index, \n  isHovered, \n  isMobile,\n  isFront,\n  frontCardIndex,\n  onClick,\n  width,\n  height,\n  spacing\n}: CardProps) => {\n  return (\n    <motion.div\n      className={cn(\n        \"absolute overflow-hidden rounded-xl shadow-lg\",\n        isFront && \"z-20\"\n      )}\n      style={{\n        width,\n        height,\n        transformStyle: 'preserve-3d',\n        transformOrigin: isMobile ? 'top center' : 'left center',\n        zIndex: isFront ? 20 : 5 - index,\n        filter: isFront || frontCardIndex === null ? 'none' : 'blur(5px)', \n      }}\n      initial={{\n        rotateY: 0,\n        x: 0,\n        y: 0,\n        scale: 1,\n        boxShadow: '0px 0px 15px rgba(0, 0, 0, 0.1)',\n      }}\n      animate={isFront\n        ? {\n            scale: 1.2,\n            rotateY: 0,\n            x: 0,\n            y: isMobile ? 0 : -50,\n            z: 50,\n            boxShadow: '0px 15px 40px rgba(0, 0, 0, 0.5)',\n          }\n        : isHovered\n        ? {\n            rotateY: isMobile ? 0 : -45,\n            x: isMobile ? 0 : index * (spacing.x ?? 50),\n            y: isMobile ? index * (spacing.y ?? 50) : index * -5,\n            z: index * 15,\n            scale: 1.05,\n            boxShadow: `10px 20px 30px rgba(0, 0, 0, ${0.2 + index * 0.05})`,\n            transition: { type: 'spring', stiffness: 300, damping: 50, delay: index * 0.1 }\n          }\n        : {\n            rotateY: 0,\n            x: 0,\n            y: 0,\n            z: 0,\n            scale: 1,\n            boxShadow: '0px 0px 15px rgba(0, 0, 0, 0.1)',\n            transition: { type: 'spring', stiffness: 300, damping: 20, delay: (4 - index) * 0.1 }\n          }\n      }\n      onClick={() => onClick(index)}\n    >\n      <Image\n        src={src}\n        alt={alt}\n        fill\n        style={{ objectFit: 'cover' }}\n        className=\"rounded-xl\"\n      />\n    </motion.div>\n  );\n};\n\nexport function CardStack3D({ \n  images, \n  className,\n  cardWidth = 320,\n  cardHeight = 192,\n  spacing = { x: 50, y: 50 }\n}: CardStackProps) {\n  const [isHovered, setIsHovered] = useState(false);\n  const [isMobile, setIsMobile] = useState(false);\n  const [frontCardIndex, setFrontCardIndex] = useState<number | null>(null);\n  \n  useEffect(() => {\n    const handleResize = () => setIsMobile(window.innerWidth <= 768);\n    handleResize();\n    window.addEventListener('resize', handleResize);\n    return () => window.removeEventListener('resize', handleResize);\n  }, []);\n\n  return (\n    <div className={cn(\"flex justify-center items-center py-32\", className)}>\n      <div\n        className=\"relative perspective-1000\"\n        style={{ width: cardWidth, height: cardHeight }}\n        onMouseEnter={() => setIsHovered(true)}\n        onMouseLeave={() => setIsHovered(false)}\n      >\n        {images.map((image, index) => (\n          <Card\n            key={index}\n            {...image}\n            index={index}\n            isHovered={isHovered}\n            isFirstCard={index === 0}\n            isMobile={isMobile}\n            isFront={frontCardIndex === index}\n            frontCardIndex={frontCardIndex}\n            onClick={(idx) => setFrontCardIndex(prev => prev === idx ? null : idx)}\n            width={cardWidth}\n            height={cardHeight}\n            spacing={spacing}\n          />\n        ))}\n      </div>\n    </div>\n  );\n}",
+      "type": "registry:ui",
+      "target": ""
+    }
+  ],
+  "tailwind": {
+    "config": {}
+  },
+  "_meta": {
+    "author": "ayushmxxn",
+    "slug": "3d-flip-card",
+    "registry_url": "https://21st.dev/r/ayushmxxn/3d-flip-card",
+    "title": "3D Flip Card",
+    "description": "An interactive card stack component with 3D hover effects and animations. Perfect for showcasing images, portfolios, or featured content.\n\nFeatures\n- Smooth 3D rotation effects\n- Responsive design\n- Interactive card selection\n- Customizable card dimensions\n- Configurable stack spacing\n- Mobile-friendly fallback animations\n- Blur effects for depth perception",
+    "category": "image",
+    "category_group": "Marketing Blocks",
+    "downloads": 198,
+    "likes": 4
+  }
+}

@@ -1,0 +1,39 @@
+{
+  "name": "card-with-lines-patter",
+  "type": "registry:ui",
+  "dependencies": [
+    "framer-motion"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "/components/ui/card-with-lines-patter.tsx",
+      "content": "import { cn } from '@/lib/utils'\nimport { motion } from \"framer-motion\"\n\ninterface LinesPatternCardProps {\n  children: React.ReactNode\n  className?: string\n  patternClassName?: string\n  gradientClassName?: string\n}\n\nexport function LinesPatternCard({ \n  children, \n  className,\n  patternClassName,\n  gradientClassName\n}: LinesPatternCardProps) {\n  return (\n    <motion.div\n      className={cn(\n        \"border w-full rounded-md overflow-hidden\",\n        \"bg-background\",\n        \"border-border\",\n        \"p-3\",\n        className\n      )}\n      initial={{ opacity: 0, y: -20 }}\n      animate={{ opacity: 1, y: 0 }}\n      transition={{ duration: 0.8, ease: \"easeOut\" }}\n    >\n      <div className={cn(\n        \"size-full bg-repeat bg-[length:30px_30px]\",\n        \"bg-lines-pattern-light dark:bg-lines-pattern\",\n        patternClassName\n      )}>\n        <div className={cn(\n          \"size-full bg-gradient-to-tr\",\n          \"from-background/90 via-background/40 to-background/10\",\n          gradientClassName\n        )}>\n          {children}\n        </div>\n      </div>\n    </motion.div>\n  )\n}\n\nexport function LinesPatternCardBody({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {\n  return (\n    <div \n      className={cn(\"text-left p-4 md:p-6\", className)} \n      {...props} \n    />\n  )\n}",
+      "type": "registry:ui",
+      "target": ""
+    }
+  ],
+  "tailwind": {
+    "config": {
+      "theme": {
+        "extend": {
+          "backgroundImage": {
+            "grid-pattern": "",
+            "grid-pattern-light": ""
+          }
+        }
+      }
+    }
+  },
+  "_meta": {
+    "author": "Ali-Hussein-dev",
+    "slug": "card-with-lines-patter",
+    "registry_url": "https://21st.dev/r/Ali-Hussein-dev/card-with-lines-patter",
+    "title": "Card With Lines Patter",
+    "description": "A modern card component featuring a diagonal lines pattern. The pattern creates a dynamic visual texture through intersecting diagonal lines, perfect for creating a sense of movement and sophistication in your UI.\n\nFeatures\n- Diagonal lines pattern with consistent spacing\n- Clean, minimalist aesthetic\n- Dark/Light mode support\n- Smooth gradient overlay\n- Responsive design\n- Built with shadcn/ui theme system\n- Framer Motion entrance animation",
+    "category": "features",
+    "category_group": "Marketing Blocks",
+    "downloads": 268,
+    "likes": 4
+  }
+}

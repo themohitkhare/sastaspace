@@ -1,0 +1,140 @@
+{
+  "name": "cta-with-rectangle",
+  "type": "registry:block",
+  "dependencies": [
+    "class-variance-authority",
+    "@radix-ui/react-slot"
+  ],
+  "registryDependencies": [
+    "https://21st.dev/r/shadcn/badge",
+    "https://21st.dev/r/shadcn/button"
+  ],
+  "files": [
+    {
+      "path": "/components/blocks/cta-with-rectangle.tsx",
+      "content": "\"use client\"\n\nimport { Button } from \"@/components/ui/button\"\nimport { Badge } from \"@/components/ui/badge\"\nimport { cn } from \"@/lib/utils\"\n\ninterface CTAProps {\n  badge?: {\n    text: string\n  }\n  title: string\n  description?: string\n  action: {\n    text: string\n    href: string\n    variant?: \"default\" | \"glow\"\n  }\n  withGlow?: boolean\n  className?: string\n}\n\nexport function CTASection({\n  badge,\n  title,\n  description,\n  action,\n  withGlow = true,\n  className,\n}: CTAProps) {\n  return (\n    <section className={cn(\"overflow-hidden pt-0 md:pt-0\", className)}>\n      <div className=\"relative mx-auto flex max-w-container flex-col items-center gap-6 px-8 py-12 text-center sm:gap-8 md:py-24\">\n        {/* Badge */}\n        {badge && (\n          <Badge\n            variant=\"outline\"\n            className=\"opacity-0 animate-fade-in-up delay-100\"\n          >\n            <span className=\"text-muted-foreground\">{badge.text}</span>\n          </Badge>\n        )}\n\n        {/* Title */}\n        <h2 className=\"text-3xl font-semibold sm:text-5xl opacity-0 animate-fade-in-up delay-200\">\n          {title}\n        </h2>\n\n        {/* Description */}\n        {description && (\n          <p className=\"text-muted-foreground opacity-0 animate-fade-in-up delay-300\">\n            {description}\n          </p>\n        )}\n\n        {/* Action Button */}\n        <Button\n          variant={action.variant || \"default\"}\n          size=\"lg\"\n          className=\"opacity-0 animate-fade-in-up delay-500\"\n          asChild\n        >\n          <a href={action.href}>{action.text}</a>\n        </Button>\n\n        {/* Glow Effect */}\n        {withGlow && (\n          <div className=\"fade-top-lg pointer-events-none absolute inset-0 rounded-2xl shadow-glow opacity-0 animate-scale-in delay-700\" />\n        )}\n      </div>\n    </section>\n  )\n}\n",
+      "type": "registry:block",
+      "target": ""
+    },
+    {
+      "path": "/components/ui/badge.tsx",
+      "content": "import * as React from \"react\"\nimport { cva, type VariantProps } from \"class-variance-authority\"\n\nimport { cn } from \"@/lib/utils\"\n\nconst badgeVariants = cva(\n  \"inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2\",\n  {\n    variants: {\n      variant: {\n        default:\n          \"border-transparent bg-primary text-primary-foreground hover:bg-primary/80\",\n        secondary:\n          \"border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/80\",\n        destructive:\n          \"border-transparent bg-destructive text-destructive-foreground hover:bg-destructive/80\",\n        outline: \"text-foreground\",\n      },\n    },\n    defaultVariants: {\n      variant: \"default\",\n    },\n  },\n)\n\nexport interface BadgeProps\n  extends React.HTMLAttributes<HTMLDivElement>,\n    VariantProps<typeof badgeVariants> {}\n\nfunction Badge({ className, variant, ...props }: BadgeProps) {\n  return (\n    <div className={cn(badgeVariants({ variant }), className)} {...props} />\n  )\n}\n\nexport { Badge, badgeVariants }\n",
+      "type": "registry:ui",
+      "target": ""
+    },
+    {
+      "path": "/components/ui/button.tsx",
+      "content": "import * as React from \"react\"\nimport { Slot } from \"@radix-ui/react-slot\"\nimport { cva, type VariantProps } from \"class-variance-authority\"\n\nimport { cn } from \"@/lib/utils\"\n\nconst buttonVariants = cva(\n  \"inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50\",\n  {\n    variants: {\n      variant: {\n        default: \"bg-primary text-primary-foreground hover:bg-primary/90\",\n        destructive:\n          \"bg-destructive text-destructive-foreground hover:bg-destructive/90\",\n        outline:\n          \"border border-input bg-background hover:bg-accent hover:text-accent-foreground\",\n        secondary:\n          \"bg-secondary text-secondary-foreground hover:bg-secondary/80\",\n        ghost: \"hover:bg-accent hover:text-accent-foreground\",\n        link: \"text-primary underline-offset-4 hover:underline\",\n      },\n      size: {\n        default: \"h-10 px-4 py-2\",\n        sm: \"h-9 rounded-md px-3\",\n        lg: \"h-11 rounded-md px-8\",\n        icon: \"h-10 w-10\",\n      },\n    },\n    defaultVariants: {\n      variant: \"default\",\n      size: \"default\",\n    },\n  },\n)\n\nexport interface ButtonProps\n  extends React.ButtonHTMLAttributes<HTMLButtonElement>,\n    VariantProps<typeof buttonVariants> {\n  asChild?: boolean\n}\n\nconst Button = React.forwardRef<HTMLButtonElement, ButtonProps>(\n  ({ className, variant, size, asChild = false, ...props }, ref) => {\n    const Comp = asChild ? Slot : \"button\"\n    return (\n      <Comp\n        className={cn(buttonVariants({ variant, size, className }))}\n        ref={ref}\n        {...props}\n      />\n    )\n  },\n)\nButton.displayName = \"Button\"\n\nexport { Button, buttonVariants }\n",
+      "type": "registry:ui",
+      "target": ""
+    }
+  ],
+  "cssVars": {
+    "light": {
+      "--brand": "27 96% 61%",
+      "--brand-foreground": "31 97% 72%"
+    },
+    "dark": {
+      "--brand": "31 97% 72%"
+    },
+    "theme": {
+      "animate-fade-in-up": "fade-in-up 0.5s ease-out forwards",
+      "animate-fade-in": "fade-in 0.5s ease-out forwards",
+      "animate-scale-in": "scale-in 0.5s ease-out forwards"
+    }
+  },
+  "css": {
+    "@keyframes fade-in-up": {
+      "0%": {
+        "opacity": "0",
+        "transform": "translateY(10px)"
+      },
+      "100%": {
+        "opacity": "1",
+        "transform": "translateY(0)"
+      }
+    },
+    "@keyframes fade-in": {
+      "0%": {
+        "opacity": "0"
+      },
+      "100%": {
+        "opacity": "1"
+      }
+    },
+    "@keyframes scale-in": {
+      "0%": {
+        "opacity": "0",
+        "transform": "scale(0.95)"
+      },
+      "100%": {
+        "opacity": "1",
+        "transform": "scale(1)"
+      }
+    }
+  },
+  "tailwind": {
+    "config": {
+      "theme": {
+        "extend": {
+          "colors": {
+            "brand": "hsl(var(--brand))",
+            "brand-foreground": "hsl(var(--brand-foreground))"
+          },
+          "maxWidth": {
+            "container": "80rem"
+          },
+          "boxShadow": {
+            "glow": "0 -16px 128px 0 hsla(var(--brand-foreground) / 0.5) inset, 0 -16px 32px 0 hsla(var(--brand) / 0.5) inset"
+          },
+          "keyframes": {
+            "fade-in-up": {
+              "0%": {
+                "opacity": "0",
+                "transform": "translateY(10px)"
+              },
+              "100%": {
+                "opacity": "1",
+                "transform": "translateY(0)"
+              }
+            },
+            "fade-in": {
+              "0%": {
+                "opacity": "0"
+              },
+              "100%": {
+                "opacity": "1"
+              }
+            },
+            "scale-in": {
+              "0%": {
+                "opacity": "0",
+                "transform": "scale(0.95)"
+              },
+              "100%": {
+                "opacity": "1",
+                "transform": "scale(1)"
+              }
+            }
+          },
+          "animation": {
+            "fade-in-up": "fade-in-up 0.5s ease-out forwards",
+            "fade-in": "fade-in 0.5s ease-out forwards",
+            "scale-in": "scale-in 0.5s ease-out forwards"
+          }
+        }
+      }
+    }
+  },
+  "_meta": {
+    "author": "mikolajdobrucki",
+    "slug": "cta-with-rectangle",
+    "registry_url": "https://21st.dev/r/mikolajdobrucki/cta-with-rectangle",
+    "title": "CTA with Rectangle",
+    "description": "A powerful Call-to-Action component built with shadcn's design system.\n\nThis component features multiple styles including box layouts and beam effects, all following shadcn's minimalist aesthetic. Each variant is designed to create compelling call-to-action sections that drive user engagement.\n\nBuilt with Tailwind CSS, it ensures responsive design and seamless integration with other shadcn components. The component maintains high accessibility standards while providing flexibility in how you present your calls to action.",
+    "category": "call-to-action",
+    "category_group": "Marketing Blocks",
+    "downloads": 1541,
+    "likes": 9
+  }
+}

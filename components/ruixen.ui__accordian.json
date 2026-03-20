@@ -1,0 +1,56 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "accordian",
+  "type": "registry:component",
+  "title": "Accordian",
+  "description": "A accordian component.",
+  "dependencies": [
+    "framer-motion",
+    "lucide-react"
+  ],
+  "registryDependencies": [
+    "https://21st.dev/r/originui/accordion"
+  ],
+  "files": [
+    {
+      "path": "src/components/ui/accordian.tsx",
+      "content": "import { useState, useRef, useEffect } from \"react\";\nimport { motion, AnimatePresence } from \"framer-motion\";\nimport { Plus, Minus, Info, Settings, Code, Accessibility } from \"lucide-react\";\n\n\nconst items = [\n    {\n        id: \"1\",\n        icon: Info,\n        title: \"What is the core philosophy of Origin UI?\",\n        content:\n            \"Origin UI emphasizes developer experience by offering lightweight, accessible components with strong TypeScript support and excellent documentation.\",\n    },\n    {\n        id: \"2\",\n        icon: Settings,\n        title: \"How do I customize styles in Origin UI?\",\n        content:\n            \"You can easily customize styles using CSS variables, Tailwind, or traditional CSS by overriding classNames or using the style prop.\",\n    },\n    {\n        id: \"3\",\n        icon: Code,\n        title: \"How performant is Origin UI?\",\n        content:\n            \"Optimized for performance with minimal bundle size, tree shaking, and fast rendering to keep your apps light and fast.\",\n    },\n    {\n        id: \"4\",\n        icon: Accessibility,\n        title: \"Is accessibility a priority in Origin UI?\",\n        content:\n            \"Absolutely! All components follow WAI-ARIA guidelines and support keyboard navigation and screen readers out of the box.\",\n    },\n];\n\nexport const Component = () => {\n    const [openItem, setOpenItem] = useState<string | null>(null);\n    const contentRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});\n\n    const toggleItem = (id: string) => {\n        setOpenItem((current) => (current === id ? null : id));\n    };\n\n  return (\n        <div\n            className=\"\n        max-w-md\n        bg-white/30 dark:bg-black/30\n        backdrop-blur-md\n        border border-gray-300 dark:border-gray-700\n        rounded-lg\n        shadow-lg shadow-black/20 dark:shadow-white/10\n        transition-colors duration-500\n      \"\n        >\n            <h2 className=\"text-2xl font-extrabold text-black dark:text-white px-5 pt-5 select-none\">\n                FAQs\n            </h2>\n\n            <div>\n                {items.map(({ id, icon: Icon, title, content }) => {\n                    const isOpen = openItem === id;\n\n                    return (\n                        <div\n                            key={id}\n                            className=\"border-t border-gray-300 dark:border-gray-700 last:border-b-0\"\n                        >\n                            <button\n                                onClick={() => toggleItem(id)}\n                                aria-expanded={isOpen}\n                                className={`\n                                    flex items-center justify-between w-full\n                                    px-5 py-4\n                                    text-black dark:text-white\n                                    text-base font-medium\n                                    cursor-pointer\n                                    bg-transparent\n                                    transition-colors duration-300\n                                    hover:bg-black/5 dark:hover:bg-white/10\n                                    select-none\n                                    focus:outline-none\n                                    `}\n                            >\n                                <div className=\"flex items-center gap-3\">\n                                    <Icon\n                                        className=\"w-4 h-4 text-black dark:text-white\"\n                                        strokeWidth={2}\n                                        aria-hidden=\"true\"\n                                    />\n                                    <span>{title}</span>\n                                </div>\n\n                                <div className=\"relative w-4 h-4 flex-shrink-0\">\n                                    <Plus\n                                        className={`absolute inset-0 text-black dark:text-white transition-opacity duration-300 ${isOpen ? \"opacity-0\" : \"opacity-100\"\n                                            }`}\n                                        strokeWidth={2}\n                                        aria-hidden=\"true\"\n                                    />\n                                    <Minus\n                                        className={`absolute inset-0 text-black dark:text-white transition-opacity duration-300 ${isOpen ? \"opacity-100\" : \"opacity-0\"\n                                            }`}\n                                        strokeWidth={2}\n                                        aria-hidden=\"true\"\n                                    />\n                                </div>\n                            </button>\n\n                            {/* Content wrapper */}\n                            <motion.div\n                                initial={false}\n                                animate={{ height: isOpen ? \"auto\" : 0, opacity: isOpen ? 1 : 0 }}\n                                transition={{ duration: 0.4, ease: \"easeInOut\" }}\n                                style={{ overflow: \"hidden\" }}\n                            >\n                                <div\n                                    ref={(el) => {\n                                        contentRefs.current[id] = el;\n                                    }}\n                                    className=\"px-5 pb-5 text-gray-700 dark:text-gray-300 text-sm leading-relaxed select-text\"\n                                >\n                                    {content}\n                                </div>\n                            </motion.div>\n                        </div>\n                    );\n                })}\n            </div>\n        </div>\n  );\n};\n",
+      "type": "registry:component"
+    }
+  ],
+  "cssVars": {
+    "theme": {
+      "--animate-accordion-down": "accordion-down 0.2s ease-out",
+      "--animate-accordion-up": "accordion-up 0.2s ease-out"
+    }
+  },
+  "css": {
+    "@keyframes accordion-down": {
+      "from": {
+        "height": "0"
+      },
+      "to": {
+        "height": "var(--radix-accordion-content-height)"
+      }
+    },
+    "@keyframes accordion-up": {
+      "from": {
+        "height": "var(--radix-accordion-content-height)"
+      },
+      "to": {
+        "height": "0"
+      }
+    }
+  },
+  "_meta": {
+    "author": "ruixen.ui",
+    "slug": "accordian",
+    "registry_url": "https://21st.dev/r/ruixen.ui/accordian",
+    "title": "Accordian",
+    "description": "The RUIXEN UI Accordion is a fully accessible, lightweight, and responsive component designed to deliver structured content like FAQs or feature explanations in a clean, elegant layout. Built with WAI-ARIA guidelines, it supports seamless keyboard navigation and screen readers out of the box. Its minimal design, smooth toggle animation, and customizable icons make it a perfect fit for modern web apps. Whether you're building a dashboard, landing page, or documentation site, this accordion blends performance with accessibility—crafted the RUIXEN way.",
+    "category": "accordion",
+    "category_group": "UI Components",
+    "downloads": 48,
+    "likes": 0
+  }
+}

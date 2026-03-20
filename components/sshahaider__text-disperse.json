@@ -1,0 +1,29 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "text-disperse",
+  "type": "registry:component",
+  "title": "Text Disperse",
+  "description": "A text-disperse component.",
+  "dependencies": [
+    "framer-motion"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/ui/text-disperse.tsx",
+      "content": "'use client';\nimport { useState } from 'react';\nimport type { JSX, ComponentProps } from 'react';\nimport { motion } from 'framer-motion';\nimport { cn } from '@/lib/utils';\n\ninterface Transform {\n\tx: number;\n\ty: number;\n\trotationZ: number;\n}\n\nconst transforms: Transform[] = [\n\t{ x: -0.8, y: -0.6, rotationZ: -29 },\n\t{ x: -0.2, y: -0.4, rotationZ: -6 },\n\t{ x: -0.05, y: 0.1, rotationZ: 12 },\n\t{ x: -0.05, y: -0.1, rotationZ: -9 },\n\t{ x: -0.1, y: 0.55, rotationZ: 3 },\n\t{ x: 0, y: -0.1, rotationZ: 9 },\n\t{ x: 0, y: 0.15, rotationZ: -12 },\n\t{ x: 0, y: 0.15, rotationZ: -17 },\n\t{ x: 0, y: -0.65, rotationZ: 9 },\n\t{ x: 0.1, y: 0.4, rotationZ: 12 },\n\t{ x: 0, y: -0.15, rotationZ: -9 },\n\t{ x: 0.2, y: 0.15, rotationZ: 12 },\n\t{ x: 0.8, y: 0.6, rotationZ: 20 },\n];\n\ntype TextDisperseProps = ComponentProps<'div'> & {\n\t/** children should be string (max 13 chars) */\n\tchildren: string;\n\tonHover?: (isActive: boolean) => void;\n};\n\nexport function TextDisperse({\n\tchildren,\n\tonHover,\n\tclassName,\n\t...props\n}: Omit<TextDisperseProps, 'onMouseEnter' | 'onMouseLeave'>) {\n\tconst [isAnimated, setIsAnimated] = useState(false);\n\n\tconst splitWord = (word: string) => {\n\t\tlet chars: JSX.Element[] = [];\n\t\tword.split('').forEach((char, i) => {\n\t\t\tchars.push(\n\t\t\t\t<motion.span\n\t\t\t\t\tcustom={i}\n\t\t\t\t\tvariants={{\n\t\t\t\t\t\topen: (i: number) => ({\n\t\t\t\t\t\t\tx: transforms[i].x + 'em',\n\t\t\t\t\t\t\ty: transforms[i].y + 'em',\n\t\t\t\t\t\t\trotateZ: transforms[i].rotationZ,\n\t\t\t\t\t\t\ttransition: { duration: 0.75, ease: [0.33, 1, 0.68, 1] },\n\t\t\t\t\t\t\tzIndex: 1,\n\t\t\t\t\t\t}),\n\t\t\t\t\t\tclosed: {\n\t\t\t\t\t\t\tx: 0,\n\t\t\t\t\t\t\ty: 0,\n\t\t\t\t\t\t\trotateZ: 0,\n\t\t\t\t\t\t\ttransition: { duration: 0.75, ease: [0.33, 1, 0.68, 1] },\n\t\t\t\t\t\t\tzIndex: 0,\n\t\t\t\t\t\t},\n\t\t\t\t\t}}\n\t\t\t\t\tanimate={isAnimated ? 'open' : 'closed'}\n\t\t\t\t\tkey={char + i}\n\t\t\t\t>\n\t\t\t\t\t{char}\n\t\t\t\t</motion.span>,\n\t\t\t);\n\t\t});\n\t\treturn chars;\n\t};\n\n\tconst manageMouseEnter = () => {\n\t\tonHover?.(true);\n\t\tsetIsAnimated(true);\n\t};\n\n\tconst manageMouseLeave = () => {\n\t\tonHover?.(false);\n\t\tsetIsAnimated(false);\n\t};\n\n\treturn (\n\t\t<div\n\t\t\tclassName={cn(\n\t\t\t\t\"relative flex cursor-pointer justify-between text-[6vw] data-[index='4']:inline-flex data-[index='5']:right-[-40px] data-[index='5']:inline-flex\",\n\t\t\t\tclassName,\n\t\t\t)}\n\t\t\tonMouseEnter={manageMouseEnter}\n\t\t\tonMouseLeave={manageMouseLeave}\n\t\t\t{...props}\n\t\t>\n\t\t\t{splitWord(children)}\n\t\t</div>\n\t);\n}\n",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "sshahaider",
+    "slug": "text-disperse",
+    "registry_url": "https://21st.dev/r/sshahaider/text-disperse",
+    "title": "Text Disperse",
+    "description": "A playful hover effect that scatters each letter in unique directions with smooth motion.\nGreat for adding personality and interactivity to headings or standout text.",
+    "category": "call-to-action",
+    "category_group": "Marketing Blocks",
+    "downloads": 1,
+    "likes": 0
+  }
+}

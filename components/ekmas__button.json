@@ -1,0 +1,98 @@
+{
+  "name": "button",
+  "type": "registry:ui",
+  "dependencies": [
+    "@radix-ui/react-slot",
+    "class-variance-authority"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "/components/ui/button.tsx",
+      "content": "import { Slot } from \"@radix-ui/react-slot\"\r\nimport { cva, type VariantProps } from \"class-variance-authority\"\r\n\r\nimport * as React from \"react\"\r\n\r\nimport { cn } from \"@/lib/utils\"\r\n\r\nconst buttonVariants = cva(\r\n  \"inline-flex items-center justify-center whitespace-nowrap rounded-base text-sm font-base ring-offset-white transition-all gap-2 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50\",\r\n  {\r\n    variants: {\r\n      variant: {\r\n        default:\r\n          \"text-mtext bg-main border-2 border-border shadow-shadow hover:translate-x-boxShadowX hover:translate-y-boxShadowY hover:shadow-none\",\r\n        noShadow: \"text-mtext bg-main border-2 border-border\",\r\n        neutral:\r\n          \"bg-bw text-text border-2 border-border shadow-shadow hover:translate-x-boxShadowX hover:translate-y-boxShadowY hover:shadow-none\",\r\n        reverse:\r\n          \"text-mtext bg-main border-2 border-border hover:translate-x-reverseBoxShadowX hover:translate-y-reverseBoxShadowY hover:shadow-shadow\",\r\n      },\r\n      size: {\r\n        default: \"h-10 px-4 py-2\",\r\n        sm: \"h-9 px-3\",\r\n        lg: \"h-11 px-8\",\r\n        icon: \"h-10 w-10\",\r\n      },\r\n    },\r\n    defaultVariants: {\r\n      variant: \"default\",\r\n      size: \"default\",\r\n    },\r\n  },\r\n)\r\n\r\nexport interface ButtonProps\r\n  extends React.ButtonHTMLAttributes<HTMLButtonElement>,\r\n    VariantProps<typeof buttonVariants> {\r\n  asChild?: boolean\r\n}\r\n\r\nconst Button = React.forwardRef<HTMLButtonElement, ButtonProps>(\r\n  ({ className, variant, size, asChild = false, ...props }, ref) => {\r\n    const Comp = asChild ? Slot : \"button\"\r\n    return (\r\n      <Comp\r\n        className={cn(buttonVariants({ variant, size, className }))}\r\n        ref={ref}\r\n        {...props}\r\n      />\r\n    )\r\n  },\r\n)\r\nButton.displayName = \"Button\"\r\n\r\nexport { Button, buttonVariants }",
+      "type": "registry:ui",
+      "target": ""
+    }
+  ],
+  "cssVars": {
+    "light": {
+      "--main": "#88aaee",
+      "--overlay": "rgba(0, 0, 0, 0.8)",
+      "--bg": "#dfe5f2",
+      "--bw": "#fff",
+      "--blank": "#000",
+      "--border": "#000",
+      "--text": "#000",
+      "--mtext": "#000",
+      "--ring": "#000",
+      "--ring-offset": "#fff",
+      "--border-radius": "5px",
+      "--box-shadow-x": "4px",
+      "--box-shadow-y": "4px",
+      "--reverse-box-shadow-x": "-4px",
+      "--reverse-box-shadow-y": "-4px",
+      "--base-font-weight": "500",
+      "--heading-font-weight": "700",
+      "--shadow": "var(--box-shadow-x) var(--box-shadow-y) 0px 0px var(--border)"
+    },
+    "dark": {
+      "--bg": "#272933",
+      "--bw": "#212121",
+      "--blank": "#fff",
+      "--border": "#000",
+      "--text": "#e6e6e6",
+      "--mtext": "#000",
+      "--ring": "#fff",
+      "--ring-offset": "#000",
+      "--shadow": "var(--box-shadow-x) var(--box-shadow-y) 0px 0px var(--border)"
+    }
+  },
+  "tailwind": {
+    "config": {
+      "theme": {
+        "extend": {
+          "colors": {
+            "main": "var(--main)",
+            "overlay": "var(--overlay)",
+            "bg": "var(--bg)",
+            "bw": "var(--bw)",
+            "blank": "var(--blank)",
+            "text": "var(--text)",
+            "mtext": "var(--mtext)",
+            "border": "var(--border)",
+            "ring": "var(--ring)",
+            "ringOffset": "var(--ring-offset)",
+            "secondaryBlack": "#212121"
+          },
+          "borderRadius": {
+            "base": "5px"
+          },
+          "boxShadow": {
+            "shadow": "var(--shadow)"
+          },
+          "translate": {
+            "boxShadowX": "4px",
+            "boxShadowY": "4px",
+            "reverseBoxShadowX": "-4px",
+            "reverseBoxShadowY": "-4px"
+          },
+          "fontWeight": {
+            "base": "500",
+            "heading": "700"
+          }
+        }
+      }
+    }
+  },
+  "_meta": {
+    "author": "ekmas",
+    "slug": "button",
+    "registry_url": "https://21st.dev/r/ekmas/button",
+    "title": "Button",
+    "description": "Neobrutalism-styled button component.",
+    "category": "button",
+    "category_group": "UI Components",
+    "downloads": 319,
+    "likes": 2
+  }
+}

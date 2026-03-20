@@ -1,0 +1,47 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "spinning-logos",
+  "type": "registry:component",
+  "title": "Spinning Logos",
+  "description": "A spinning-logos component.",
+  "dependencies": [
+    "lucide-react"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/ui/spinning-logos.tsx",
+      "content": "\"use client\"\n\nimport React from 'react';\nimport { \n  Facebook, \n  Youtube, \n  Gamepad2, \n  Code, \n  Palette, \n  Camera,\n  Zap\n} from 'lucide-react';\nimport { cn } from '@/lib/utils';\n\nexport const SpinningLogos: React.FC = () => {\n  const radiusToCenterOfIcons = 180;\n  const iconWrapperWidth = 60;\n  const ringPadding = 40;\n\n  const toRadians = (degrees: number): number => (Math.PI / 180) * degrees;\n\n  const logos = [\n    { Icon: Code, className: 'bg-purple-600 text-white', name: 'VSCode' },\n    { Icon: Palette, className: 'bg-red-600 text-white', name: 'Adobe' },\n    { Icon: Camera, className: 'bg-orange-600 text-white', name: 'Reddit' },\n    { Icon: Zap, className: 'bg-blue-600 text-white', name: 'Coinbase' },\n    { Icon: Gamepad2, className: 'bg-indigo-600 text-white', name: 'PlayStation' },\n    { Icon: Facebook, className: 'bg-blue-500 text-white', name: 'Facebook' },\n    { Icon: Youtube, className: 'bg-red-500 text-white', name: 'YouTube' },\n  ];\n\n  return (\n    <div className=\"flex justify-center items-center min-h-screen bg-background p-8 overflow-hidden\">\n      <div\n        style={{\n          width: radiusToCenterOfIcons * 2 + iconWrapperWidth + ringPadding,\n          height: radiusToCenterOfIcons * 2 + iconWrapperWidth + ringPadding,\n        }}\n        className=\"relative rounded-full bg-muted/50 shadow-lg border border-border\"\n      >\n        <div className=\"absolute inset-0 animate-spin-slow\">\n          {logos.map((logo, index) => {\n            const angle = (360 / logos.length) * index;\n            return (\n              <div\n                key={index}\n                style={{\n                  top: `calc(50% - ${iconWrapperWidth / 2}px + ${radiusToCenterOfIcons * Math.sin(toRadians(angle))}px)`,\n                  left: `calc(50% - ${iconWrapperWidth / 2}px + ${radiusToCenterOfIcons * Math.cos(toRadians(angle))}px)`,\n                  width: iconWrapperWidth,\n                  height: iconWrapperWidth,\n                }}\n                className={cn(\n                  \"absolute flex items-center justify-center rounded-full shadow-md border-2 border-white dark:border-gray-800 animate-spin-reverse\",\n                  logo.className\n                )}\n                aria-label={`${logo.name} logo`}\n              >\n                <logo.Icon className=\"w-6 h-6\" />\n              </div>\n            );\n          })}\n        </div>\n        <div className=\"absolute inset-0 flex items-center justify-center\">\n          <div className=\"bg-background rounded-full w-3/5 h-3/5 flex items-center justify-center shadow-inner border-4 border-border\">\n            <span className=\"text-2xl sm:text-3xl font-bold text-foreground text-center px-4\">\n              YOUR LOGO\n            </span>\n          </div>\n        </div>\n      </div>\n    </div>\n  );\n};\n",
+      "type": "registry:component"
+    }
+  ],
+  "css": {
+    "@keyframes spin-slow": {
+      "from": {
+        "transform": "rotate(0deg)"
+      },
+      "to": {
+        "transform": "rotate(360deg)"
+      }
+    },
+    "@keyframes spin-reverse": {
+      "from": {
+        "transform": "rotate(0deg)"
+      },
+      "to": {
+        "transform": "rotate(-360deg)"
+      }
+    }
+  },
+  "_meta": {
+    "author": "vaib215",
+    "slug": "spinning-logos",
+    "registry_url": "https://21st.dev/r/vaib215/spinning-logos",
+    "title": "Spinning Logos",
+    "description": "Give some movements to those boring logos of your clients or users and bring that landing page to life. No framer motion used.",
+    "category": "clients",
+    "category_group": "Marketing Blocks",
+    "downloads": 157,
+    "likes": 0
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "name": "timestamp",
+  "type": "registry:ui",
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "/components/ui/timestamp.tsx",
+      "content": "interface TimestampProps {\n  seconds: number;\n}\n\nexport function Timestamp(props: TimestampProps) {\n  const { seconds } = props;\n\n  const formatTime = (totalSeconds: number): string => {\n    if (isNaN(totalSeconds) || totalSeconds < 0) {\n      return '0:00';\n    }\n\n    const hours = Math.floor(totalSeconds / 3600);\n    const minutes = Math.floor((totalSeconds % 3600) / 60);\n    const secs = Math.floor(totalSeconds % 60);\n\n    if (hours > 0) {\n      return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;\n    } else {\n      return `${minutes}:${secs.toString().padStart(2, '0')}`;\n    }\n  };\n\n  return (\n    <div className=\"bg-neutral-950/75 text-white text-xs font-extrabold px-1 h-5 leading-5 rounded-sm\">\n      {formatTime(seconds)}\n    </div>\n  )\n}",
+      "type": "registry:ui",
+      "target": ""
+    }
+  ],
+  "tailwind": {
+    "config": {}
+  },
+  "_meta": {
+    "author": "oldkong88",
+    "slug": "timestamp",
+    "registry_url": "https://21st.dev/r/oldkong88/timestamp",
+    "title": "Timestamp",
+    "description": "badge style component for timestamp",
+    "category": "video",
+    "category_group": "Marketing Blocks",
+    "downloads": 8,
+    "likes": 0
+  }
+}

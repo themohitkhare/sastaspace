@@ -1,0 +1,30 @@
+{
+  "name": "infinite-text-marquee",
+  "type": "registry:ui",
+  "dependencies": [
+    "motion"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "/components/ui/infinite-text-marquee.tsx",
+      "content": "\"use client\";\r\n \r\nimport * as React from \"react\";\r\nimport { motion } from \"motion/react\";\r\nimport { useEffect, useState } from \"react\";\r\nimport Link from \"next/link\";\r\n \r\ntype InfiniteTextMarqueeProps = {\r\n  text?: string;\r\n  link?: string;\r\n  speed?: number;\r\n  showTooltip?: boolean;\r\n  tooltipText?: string;\r\n  fontSize?: string;\r\n  textColor?: string;\r\n  hoverColor?: string;\r\n};\r\n \r\nexport const InfiniteTextMarquee: React.FC<InfiniteTextMarqueeProps> = ({\r\n  text = \"Let's Get Started\",\r\n  link = \"/components\",\r\n  speed = 30,\r\n  showTooltip = true,\r\n  tooltipText = \"Time to Flex💪\",\r\n  fontSize = \"8rem\",\r\n  textColor = \"\", // optional override\r\n  hoverColor = \"\", // optional override\r\n}) => {\r\n  const [cursorPosition, setCursorPosition] = useState({ x: 0, y: 0 });\r\n  const [isHovered, setIsHovered] = useState(false);\r\n  const [rotation, setRotation] = useState(0);\r\n  const maxRotation = 8;\r\n \r\n  useEffect(() => {\r\n    if (!showTooltip) return;\r\n \r\n    const handleMouseMove = (e: MouseEvent) => {\r\n      setCursorPosition({ x: e.clientX, y: e.clientY });\r\n \r\n      const midpoint = window.innerWidth / 2;\r\n      const distanceFromMidpoint = Math.abs(e.clientX - midpoint);\r\n      const rotation = (distanceFromMidpoint / midpoint) * maxRotation;\r\n \r\n      setRotation(e.clientX > midpoint ? rotation : -rotation);\r\n    };\r\n \r\n    window.addEventListener(\"mousemove\", handleMouseMove);\r\n    return () => window.removeEventListener(\"mousemove\", handleMouseMove);\r\n  }, [showTooltip]);\r\n \r\n  const repeatedText = Array(10).fill(text).join(\" - \") + \" -\";\r\n \r\n  return (\r\n    <>\r\n      {showTooltip && (\r\n        <div\r\n          className={`following-tooltip fixed z-[99] transition-opacity duration-300 font-bold px-12 py-6 rounded-3xl text-nowrap\r\n            ${isHovered ? \"opacity-100\" : \"opacity-0\"}\r\n            bg-primary text-primary-foreground\r\n          `}\r\n          style={{\r\n            top: `${cursorPosition.y}px`,\r\n            left: `${cursorPosition.x}px`,\r\n            transform: `rotateZ(${rotation}deg) translate(-50%, -140%)`,\r\n          }}\r\n        >\r\n          <p>{tooltipText}</p>\r\n        </div>\r\n      )}\r\n \r\n      <main className=\"relative w-vw overflow-hidden\">\r\n        <motion.div\r\n          className=\"whitespace-nowrap\"\r\n          onMouseEnter={() => setIsHovered(true)}\r\n          onMouseLeave={() => setIsHovered(false)}\r\n          animate={{\r\n            x: [0, -1000],\r\n            transition: {\r\n              repeat: Infinity,\r\n              duration: speed,\r\n              ease: \"linear\",\r\n            },\r\n          }}\r\n        >\r\n          <Link href={link}>\r\n            <span\r\n              className={`cursor-pointer font-bold tracking-tight py-10 m-0 transition-all ${\r\n                textColor ? \"\" : \"text-black dark:text-white\"\r\n              }`}\r\n              style={{\r\n                fontSize,\r\n                color: textColor || undefined,\r\n              }}\r\n            >\r\n              <span className=\"hoverable-text\">{repeatedText}</span>\r\n              <style jsx>{`\r\n                .hoverable-text:hover {\r\n                  color: ${hoverColor || \"var(--tw-prose-links)\"};\r\n                }\r\n              `}</style>\r\n            </span>\r\n          </Link>\r\n        </motion.div>\r\n      </main>\r\n    </>\r\n  );\r\n};",
+      "type": "registry:ui",
+      "target": ""
+    }
+  ],
+  "tailwind": {
+    "config": {}
+  },
+  "_meta": {
+    "author": "preetsuthar17",
+    "slug": "infinite-text-marquee",
+    "registry_url": "https://21st.dev/r/preetsuthar17/infinite-text-marquee",
+    "title": "Infinite Text Marquee",
+    "description": "Awesome infinite text scrolling effect using framer-motion",
+    "category": "text",
+    "category_group": "Marketing Blocks",
+    "downloads": 112,
+    "likes": 0
+  }
+}

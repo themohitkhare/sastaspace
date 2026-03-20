@@ -1,0 +1,1415 @@
+[
+  {
+    "file": "Codehagen__display-cards.json",
+    "name": "display-cards",
+    "title": "",
+    "description": "",
+    "author": "Codehagen",
+    "registry_url": "https://21st.dev/r/Codehagen/display-cards",
+    "dependencies": [
+      "lucide-react"
+    ],
+    "files": [
+      "/components/ui/display-cards.tsx"
+    ]
+  },
+  {
+    "file": "Codehagen__pricing.json",
+    "name": "pricing",
+    "title": "",
+    "description": "",
+    "author": "Codehagen",
+    "registry_url": "https://21st.dev/r/Codehagen/pricing",
+    "dependencies": [
+      "lucide-react",
+      "framer-motion",
+      "canvas-confetti",
+      "@number-flow/react",
+      "@radix-ui/react-slot",
+      "class-variance-authority",
+      "@radix-ui/react-label",
+      "@radix-ui/react-checkbox",
+      "@radix-ui/react-switch"
+    ],
+    "files": [
+      "/components/blocks/pricing.tsx",
+      "/components/ui/button.tsx",
+      "/components/ui/label.tsx",
+      "/components/ui/checkbox.tsx",
+      "/components/ui/switch.tsx"
+    ]
+  },
+  {
+    "file": "Kain0127__particle-text-effect.json",
+    "name": "particle-text-effect",
+    "title": "Particle Text Effect",
+    "description": "A particle-text-effect component.",
+    "author": "Kain0127",
+    "registry_url": "https://21st.dev/r/Kain0127/particle-text-effect",
+    "dependencies": [],
+    "files": [
+      "src/components/ui/particle-text-effect.tsx"
+    ]
+  },
+  {
+    "file": "Kain0127__spiral-animation.json",
+    "name": "spiral-animation",
+    "title": "",
+    "description": "",
+    "author": "Kain0127",
+    "registry_url": "https://21st.dev/r/Kain0127/spiral-animation",
+    "dependencies": [
+      "gsap"
+    ],
+    "files": [
+      "/components/ui/spiral-animation.tsx"
+    ]
+  },
+  {
+    "file": "Northstrix__playing-card.json",
+    "name": "playing-card",
+    "title": "Playing Card",
+    "description": "A playing-card component.",
+    "author": "Northstrix",
+    "registry_url": "https://21st.dev/r/Northstrix/playing-card",
+    "dependencies": [
+      "next",
+      "@react-three/fiber",
+      "three"
+    ],
+    "files": [
+      "src/components/ui/playing-card.tsx"
+    ]
+  },
+  {
+    "file": "aceternity__animated-testimonials.json",
+    "name": "animated-testimonials",
+    "title": "",
+    "description": "",
+    "author": "aceternity",
+    "registry_url": "https://21st.dev/r/aceternity/animated-testimonials",
+    "dependencies": [
+      "framer-motion",
+      "@tabler/icons-react"
+    ],
+    "files": [
+      "/components/ui/animated-testimonials.tsx"
+    ]
+  },
+  {
+    "file": "aceternity__aurora-background.json",
+    "name": "aurora-background",
+    "title": "",
+    "description": "",
+    "author": "aceternity",
+    "registry_url": "https://21st.dev/r/aceternity/aurora-background",
+    "dependencies": [],
+    "files": [
+      "/components/ui/aurora-background.tsx"
+    ]
+  },
+  {
+    "file": "aceternity__background-beams.json",
+    "name": "background-beams",
+    "title": "",
+    "description": "",
+    "author": "aceternity",
+    "registry_url": "https://21st.dev/r/aceternity/background-beams",
+    "dependencies": [
+      "framer-motion"
+    ],
+    "files": [
+      "/components/ui/background-beams.tsx"
+    ]
+  },
+  {
+    "file": "aceternity__background-boxes.json",
+    "name": "background-boxes",
+    "title": "",
+    "description": "",
+    "author": "aceternity",
+    "registry_url": "https://21st.dev/r/aceternity/background-boxes",
+    "dependencies": [
+      "framer-motion"
+    ],
+    "files": [
+      "/components/ui/background-boxes.tsx"
+    ]
+  },
+  {
+    "file": "aceternity__bento-grid.json",
+    "name": "bento-grid",
+    "title": "",
+    "description": "",
+    "author": "aceternity",
+    "registry_url": "https://21st.dev/r/aceternity/bento-grid",
+    "dependencies": [
+      "@radix-ui/react-slot",
+      "class-variance-authority"
+    ],
+    "files": [
+      "/components/ui/bento-grid.tsx",
+      "/components/ui/button.tsx"
+    ]
+  },
+  {
+    "file": "aceternity__card-spotlight.json",
+    "name": "card-spotlight",
+    "title": "",
+    "description": "",
+    "author": "aceternity",
+    "registry_url": "https://21st.dev/r/aceternity/card-spotlight",
+    "dependencies": [
+      "framer-motion",
+      "three",
+      "@react-three/fiber"
+    ],
+    "files": [
+      "/components/ui/card-spotlight.tsx",
+      "/components/ui/canvas-reveal-effect.tsx"
+    ]
+  },
+  {
+    "file": "aceternity__code-block.json",
+    "name": "code-block",
+    "title": "",
+    "description": "",
+    "author": "aceternity",
+    "registry_url": "https://21st.dev/r/aceternity/code-block",
+    "dependencies": [
+      "lucide-react",
+      "react-syntax-highlighter"
+    ],
+    "files": [
+      "/components/ui/code-block.tsx"
+    ]
+  },
+  {
+    "file": "aceternity__container-scroll-animation.json",
+    "name": "container-scroll-animation",
+    "title": "",
+    "description": "",
+    "author": "aceternity",
+    "registry_url": "https://21st.dev/r/aceternity/container-scroll-animation",
+    "dependencies": [
+      "framer-motion"
+    ],
+    "files": [
+      "/components/ui/container-scroll-animation.tsx"
+    ]
+  },
+  {
+    "file": "aceternity__container-text-flip.json",
+    "name": "container-text-flip",
+    "title": "Container Text Flip",
+    "description": "A container-text-flip component.",
+    "author": "aceternity",
+    "registry_url": "https://21st.dev/r/aceternity/container-text-flip",
+    "dependencies": [
+      "motion",
+      "clsx",
+      "tailwind-merge"
+    ],
+    "files": [
+      "src/components/ui/container-text-flip.tsx"
+    ]
+  },
+  {
+    "file": "aceternity__evervault-card.json",
+    "name": "evervault-card",
+    "title": "",
+    "description": "",
+    "author": "aceternity",
+    "registry_url": "https://21st.dev/r/aceternity/evervault-card",
+    "dependencies": [
+      "framer-motion"
+    ],
+    "files": [
+      "/components/ui/evervault-card.tsx"
+    ]
+  },
+  {
+    "file": "aceternity__feature-section-with-hover-effects.json",
+    "name": "feature-section-with-hover-effects",
+    "title": "",
+    "description": "",
+    "author": "aceternity",
+    "registry_url": "https://21st.dev/r/aceternity/feature-section-with-hover-effects",
+    "dependencies": [
+      "@tabler/icons-react"
+    ],
+    "files": [
+      "/components/blocks/feature-section-with-hover-effects.tsx"
+    ]
+  },
+  {
+    "file": "aceternity__glowing-effect.json",
+    "name": "glowing-effect",
+    "title": "",
+    "description": "",
+    "author": "aceternity",
+    "registry_url": "https://21st.dev/r/aceternity/glowing-effect",
+    "dependencies": [
+      "motion"
+    ],
+    "files": [
+      "/components/ui/glowing-effect.tsx"
+    ]
+  },
+  {
+    "file": "aceternity__lamp.json",
+    "name": "lamp",
+    "title": "",
+    "description": "",
+    "author": "aceternity",
+    "registry_url": "https://21st.dev/r/aceternity/lamp",
+    "dependencies": [
+      "framer-motion"
+    ],
+    "files": [
+      "/components/ui/lamp.tsx"
+    ]
+  },
+  {
+    "file": "aceternity__meteors.json",
+    "name": "meteors",
+    "title": "",
+    "description": "",
+    "author": "aceternity",
+    "registry_url": "https://21st.dev/r/aceternity/meteors",
+    "dependencies": [],
+    "files": [
+      "/components/ui/meteors.tsx"
+    ]
+  },
+  {
+    "file": "aceternity__moving-border.json",
+    "name": "moving-border",
+    "title": "",
+    "description": "",
+    "author": "aceternity",
+    "registry_url": "https://21st.dev/r/aceternity/moving-border",
+    "dependencies": [
+      "framer-motion"
+    ],
+    "files": [
+      "/components/ui/moving-border.tsx"
+    ]
+  },
+  {
+    "file": "aceternity__sidebar.json",
+    "name": "sidebar",
+    "title": "",
+    "description": "",
+    "author": "aceternity",
+    "registry_url": "https://21st.dev/r/aceternity/sidebar",
+    "dependencies": [
+      "framer-motion"
+    ],
+    "files": [
+      "/components/ui/sidebar.tsx"
+    ]
+  },
+  {
+    "file": "aceternity__sparkles.json",
+    "name": "sparkles",
+    "title": "",
+    "description": "",
+    "author": "aceternity",
+    "registry_url": "https://21st.dev/r/aceternity/sparkles",
+    "dependencies": [
+      "framer-motion",
+      "@tsparticles/slim",
+      "@tsparticles/react",
+      "@tsparticles/engine"
+    ],
+    "files": [
+      "/components/ui/sparkles.tsx"
+    ]
+  },
+  {
+    "file": "aceternity__spotlight.json",
+    "name": "spotlight",
+    "title": "",
+    "description": "",
+    "author": "aceternity",
+    "registry_url": "https://21st.dev/r/aceternity/spotlight",
+    "dependencies": [],
+    "files": [
+      "/components/ui/spotlight.tsx"
+    ]
+  },
+  {
+    "file": "aceternity__timeline.json",
+    "name": "timeline",
+    "title": "",
+    "description": "",
+    "author": "aceternity",
+    "registry_url": "https://21st.dev/r/aceternity/timeline",
+    "dependencies": [
+      "framer-motion"
+    ],
+    "files": [
+      "/components/ui/timeline.tsx"
+    ]
+  },
+  {
+    "file": "aceternity__typewriter-effect.json",
+    "name": "typewriter-effect",
+    "title": "",
+    "description": "",
+    "author": "aceternity",
+    "registry_url": "https://21st.dev/r/aceternity/typewriter-effect",
+    "dependencies": [
+      "framer-motion"
+    ],
+    "files": [
+      "/components/ui/typewriter-effect.tsx"
+    ]
+  },
+  {
+    "file": "aceternity__vortex.json",
+    "name": "vortex",
+    "title": "",
+    "description": "",
+    "author": "aceternity",
+    "registry_url": "https://21st.dev/r/aceternity/vortex",
+    "dependencies": [
+      "framer-motion",
+      "simplex-noise"
+    ],
+    "files": [
+      "/components/ui/vortex.tsx"
+    ]
+  },
+  {
+    "file": "aceternity__wavy-background.json",
+    "name": "wavy-background",
+    "title": "",
+    "description": "",
+    "author": "aceternity",
+    "registry_url": "https://21st.dev/r/aceternity/wavy-background",
+    "dependencies": [
+      "simplex-noise"
+    ],
+    "files": [
+      "/components/ui/wavy-background.tsx"
+    ]
+  },
+  {
+    "file": "aliimam__highlighter.json",
+    "name": "highlighter",
+    "title": "",
+    "description": "",
+    "author": "aliimam",
+    "registry_url": "https://21st.dev/r/aliimam/highlighter",
+    "dependencies": [],
+    "files": [
+      "/components/ui/highlighter.tsx"
+    ]
+  },
+  {
+    "file": "aliimam__liquid-glass-button.json",
+    "name": "liquid-glass-button",
+    "title": "Liquid Glass Button",
+    "description": "A liquid-glass-button component.",
+    "author": "aliimam",
+    "registry_url": "https://21st.dev/r/aliimam/liquid-glass-button",
+    "dependencies": [
+      "@radix-ui/react-slot",
+      "class-variance-authority"
+    ],
+    "files": [
+      "src/components/ui/liquid-glass-button.tsx"
+    ]
+  },
+  {
+    "file": "aliimam__shader-animation.json",
+    "name": "shader-animation",
+    "title": "Shader Animation",
+    "description": "A shader-animation component.",
+    "author": "aliimam",
+    "registry_url": "https://21st.dev/r/aliimam/shader-animation",
+    "dependencies": [
+      "three"
+    ],
+    "files": [
+      "src/components/ui/shader-animation.tsx"
+    ]
+  },
+  {
+    "file": "aliimam__shader-lines.json",
+    "name": "shader-lines",
+    "title": "Shader Lines",
+    "description": "A shader-lines component.",
+    "author": "aliimam",
+    "registry_url": "https://21st.dev/r/aliimam/shader-lines",
+    "dependencies": [],
+    "files": [
+      "src/components/ui/shader-lines.tsx"
+    ]
+  },
+  {
+    "file": "aliimam__web-gl-shader.json",
+    "name": "web-gl-shader",
+    "title": "Web Gl Shader",
+    "description": "A web-gl-shader component.",
+    "author": "aliimam",
+    "registry_url": "https://21st.dev/r/aliimam/web-gl-shader",
+    "dependencies": [
+      "three"
+    ],
+    "files": [
+      "src/components/ui/web-gl-shader.tsx"
+    ]
+  },
+  {
+    "file": "andrewlu0__filters.json",
+    "name": "filters",
+    "title": "",
+    "description": "",
+    "author": "andrewlu0",
+    "registry_url": "https://21st.dev/r/andrewlu0/filters",
+    "dependencies": [
+      "motion",
+      "lucide-react",
+      "@radix-ui/react-slot",
+      "class-variance-authority",
+      "@radix-ui/react-avatar",
+      "@radix-ui/react-checkbox",
+      "cmdk",
+      "@radix-ui/react-dialog",
+      "@radix-ui/react-dropdown-menu",
+      "@radix-ui/react-popover"
+    ],
+    "files": [
+      "/components/ui/filters.tsx",
+      "/components/ui/button.tsx",
+      "/components/ui/avatar.tsx",
+      "/components/ui/checkbox.tsx",
+      "/components/ui/command.tsx",
+      "/components/ui/dropdown-menu.tsx",
+      "/components/ui/popover.tsx",
+      "/components/ui/dialog.tsx"
+    ]
+  },
+  {
+    "file": "anurag-mishra22__dock-two.json",
+    "name": "dock-two",
+    "title": "",
+    "description": "",
+    "author": "anurag-mishra22",
+    "registry_url": "https://21st.dev/r/anurag-mishra22/dock-two",
+    "dependencies": [
+      "lucide-react",
+      "framer-motion"
+    ],
+    "files": [
+      "/components/ui/dock-two.tsx"
+    ]
+  },
+  {
+    "file": "arunachalam0606__scroll-expansion-hero.json",
+    "name": "scroll-expansion-hero",
+    "title": "",
+    "description": "",
+    "author": "arunachalam0606",
+    "registry_url": "https://21st.dev/r/arunachalam0606/scroll-expansion-hero",
+    "dependencies": [
+      "framer-motion"
+    ],
+    "files": [
+      "/components/blocks/scroll-expansion-hero.tsx"
+    ]
+  },
+  {
+    "file": "aymanch-03__pricing-section.json",
+    "name": "pricing-section",
+    "title": "",
+    "description": "",
+    "author": "aymanch-03",
+    "registry_url": "https://21st.dev/r/aymanch-03/pricing-section",
+    "dependencies": [
+      "lucide-react",
+      "@number-flow/react",
+      "framer-motion",
+      "@radix-ui/react-slot",
+      "class-variance-authority"
+    ],
+    "files": [
+      "/components/blocks/pricing-section.tsx",
+      "/components/ui/pricing-card.tsx",
+      "/components/ui/pricing-tab.tsx",
+      "/components/ui/button.tsx",
+      "/components/ui/badge.tsx",
+      "/components/ui/card.tsx"
+    ]
+  },
+  {
+    "file": "ayushmxxn__feature-section.json",
+    "name": "feature-section",
+    "title": "",
+    "description": "",
+    "author": "ayushmxxn",
+    "registry_url": "https://21st.dev/r/ayushmxxn/feature-section",
+    "dependencies": [
+      "framer-motion"
+    ],
+    "files": [
+      "/components/blocks/feature-section.tsx"
+    ]
+  },
+  {
+    "file": "ayushmxxn__theme-toggle.json",
+    "name": "theme-toggle",
+    "title": "",
+    "description": "",
+    "author": "ayushmxxn",
+    "registry_url": "https://21st.dev/r/ayushmxxn/theme-toggle",
+    "dependencies": [
+      "lucide-react"
+    ],
+    "files": [
+      "/components/ui/theme-toggle.tsx"
+    ]
+  },
+  {
+    "file": "ayushmxxn__tubelight-navbar.json",
+    "name": "tubelight-navbar",
+    "title": "",
+    "description": "",
+    "author": "ayushmxxn",
+    "registry_url": "https://21st.dev/r/ayushmxxn/tubelight-navbar",
+    "dependencies": [
+      "lucide-react",
+      "framer-motion"
+    ],
+    "files": [
+      "/components/ui/tubelight-navbar.tsx"
+    ]
+  },
+  {
+    "file": "barvian__number-input.json",
+    "name": "number-input",
+    "title": "",
+    "description": "",
+    "author": "barvian",
+    "registry_url": "https://21st.dev/r/barvian/number-input",
+    "dependencies": [],
+    "files": [
+      "/components/ui/number-input.tsx"
+    ]
+  },
+  {
+    "file": "danielpetho__typewriter.json",
+    "name": "typewriter",
+    "title": "",
+    "description": "",
+    "author": "danielpetho",
+    "registry_url": "https://21st.dev/r/danielpetho/typewriter",
+    "dependencies": [
+      "framer-motion"
+    ],
+    "files": [
+      "/components/ui/typewriter.tsx"
+    ]
+  },
+  {
+    "file": "dubinc__sidebar-news.json",
+    "name": "sidebar-news",
+    "title": "",
+    "description": "",
+    "author": "dubinc",
+    "registry_url": "https://21st.dev/r/dubinc/sidebar-news",
+    "dependencies": [
+      "@radix-ui/react-slot",
+      "class-variance-authority",
+      "@radix-ui/react-label",
+      "lucide-react",
+      "@radix-ui/react-checkbox",
+      "@radix-ui/react-select",
+      "@radix-ui/react-switch"
+    ],
+    "files": [
+      "/components/ui/sidebar-news.tsx",
+      "/components/ui/card.tsx",
+      "/components/ui/button.tsx",
+      "/components/ui/input.tsx",
+      "/components/ui/label.tsx",
+      "/components/ui/checkbox.tsx",
+      "/components/ui/select.tsx",
+      "/components/ui/switch.tsx"
+    ]
+  },
+  {
+    "file": "easemize__ai-prompt-box.json",
+    "name": "ai-prompt-box",
+    "title": "Ai Prompt Box",
+    "description": "A ai-prompt-box component.",
+    "author": "easemize",
+    "registry_url": "https://21st.dev/r/easemize/ai-prompt-box",
+    "dependencies": [
+      "@radix-ui/react-tooltip",
+      "@radix-ui/react-dialog",
+      "lucide-react",
+      "framer-motion"
+    ],
+    "files": [
+      "src/components/ui/ai-prompt-box.tsx"
+    ]
+  },
+  {
+    "file": "easemize__sign-in.json",
+    "name": "sign-in",
+    "title": "Sign In",
+    "description": "A sign-in component.",
+    "author": "easemize",
+    "registry_url": "https://21st.dev/r/easemize/sign-in",
+    "dependencies": [
+      "lucide-react"
+    ],
+    "files": [
+      "src/components/ui/sign-in.tsx"
+    ]
+  },
+  {
+    "file": "efferd__testimonials-columns-1.json",
+    "name": "testimonials-columns-1",
+    "title": "",
+    "description": "",
+    "author": "efferd",
+    "registry_url": "https://21st.dev/r/efferd/testimonials-columns-1",
+    "dependencies": [
+      "motion"
+    ],
+    "files": [
+      "/components/blocks/testimonials-columns-1.tsx"
+    ]
+  },
+  {
+    "file": "hammamikhairi__animated-gradient-background.json",
+    "name": "animated-gradient-background",
+    "title": "",
+    "description": "",
+    "author": "hammamikhairi",
+    "registry_url": "https://21st.dev/r/hammamikhairi/animated-gradient-background",
+    "dependencies": [
+      "framer-motion"
+    ],
+    "files": [
+      "/components/ui/animated-gradient-background.tsx"
+    ]
+  },
+  {
+    "file": "hextaui__toolbar.json",
+    "name": "toolbar",
+    "title": "Toolbar",
+    "description": "A toolbar component.",
+    "author": "hextaui",
+    "registry_url": "https://21st.dev/r/hextaui/toolbar",
+    "dependencies": [
+      "framer-motion",
+      "lucide-react"
+    ],
+    "files": [
+      "src/components/ui/toolbar.tsx"
+    ]
+  },
+  {
+    "file": "jakobhoeg__expandable-chat.json",
+    "name": "expandable-chat",
+    "title": "",
+    "description": "",
+    "author": "jakobhoeg",
+    "registry_url": "https://21st.dev/r/jakobhoeg/expandable-chat",
+    "dependencies": [
+      "lucide-react",
+      "@radix-ui/react-slot",
+      "class-variance-authority"
+    ],
+    "files": [
+      "/components/ui/expandable-chat.tsx",
+      "/components/ui/button.tsx"
+    ]
+  },
+  {
+    "file": "jatin-yadav05__etheral-shadow.json",
+    "name": "etheral-shadow",
+    "title": "Etheral Shadow",
+    "description": "A etheral-shadow component.",
+    "author": "jatin-yadav05",
+    "registry_url": "https://21st.dev/r/jatin-yadav05/etheral-shadow",
+    "dependencies": [
+      "framer-motion"
+    ],
+    "files": [
+      "src/components/ui/etheral-shadow.tsx"
+    ]
+  },
+  {
+    "file": "jatin-yadav05__location-tag.json",
+    "name": "location-tag",
+    "title": "Location Tag",
+    "description": "A location-tag component.",
+    "author": "jatin-yadav05",
+    "registry_url": "https://21st.dev/r/jatin-yadav05/location-tag",
+    "dependencies": [],
+    "files": [
+      "src/components/ui/location-tag.tsx"
+    ]
+  },
+  {
+    "file": "jatin-yadav05__radial-orbital-timeline.json",
+    "name": "radial-orbital-timeline",
+    "title": "",
+    "description": "",
+    "author": "jatin-yadav05",
+    "registry_url": "https://21st.dev/r/jatin-yadav05/radial-orbital-timeline",
+    "dependencies": [
+      "lucide-react",
+      "@radix-ui/react-slot",
+      "class-variance-authority"
+    ],
+    "files": [
+      "/components/ui/radial-orbital-timeline.tsx",
+      "/components/ui/button.tsx",
+      "/components/ui/badge.tsx",
+      "/components/ui/card.tsx"
+    ]
+  },
+  {
+    "file": "kinfe123__hero-section-dark.json",
+    "name": "hero-section-dark",
+    "title": "",
+    "description": "",
+    "author": "kinfe123",
+    "registry_url": "https://21st.dev/r/kinfe123/hero-section-dark",
+    "dependencies": [
+      "lucide-react"
+    ],
+    "files": [
+      "/components/blocks/hero-section-dark.tsx"
+    ]
+  },
+  {
+    "file": "kokonutd__ai-voice-input.json",
+    "name": "ai-voice-input",
+    "title": "",
+    "description": "",
+    "author": "kokonutd",
+    "registry_url": "https://21st.dev/r/kokonutd/ai-voice-input",
+    "dependencies": [
+      "lucide-react"
+    ],
+    "files": [
+      "/components/ui/ai-voice-input.tsx"
+    ]
+  },
+  {
+    "file": "kokonutd__background-paths.json",
+    "name": "background-paths",
+    "title": "",
+    "description": "",
+    "author": "kokonutd",
+    "registry_url": "https://21st.dev/r/kokonutd/background-paths",
+    "dependencies": [
+      "framer-motion",
+      "@radix-ui/react-slot",
+      "class-variance-authority"
+    ],
+    "files": [
+      "/components/ui/background-paths.tsx",
+      "/components/ui/button.tsx"
+    ]
+  },
+  {
+    "file": "kokonutd__beams-background.json",
+    "name": "beams-background",
+    "title": "",
+    "description": "",
+    "author": "kokonutd",
+    "registry_url": "https://21st.dev/r/kokonutd/beams-background",
+    "dependencies": [
+      "motion"
+    ],
+    "files": [
+      "/components/ui/beams-background.tsx"
+    ]
+  },
+  {
+    "file": "kokonutd__bento-grid.json",
+    "name": "bento-grid",
+    "title": "",
+    "description": "",
+    "author": "kokonutd",
+    "registry_url": "https://21st.dev/r/kokonutd/bento-grid",
+    "dependencies": [
+      "lucide-react"
+    ],
+    "files": [
+      "/components/ui/bento-grid.tsx"
+    ]
+  },
+  {
+    "file": "kokonutd__shape-landing-hero.json",
+    "name": "shape-landing-hero",
+    "title": "",
+    "description": "",
+    "author": "kokonutd",
+    "registry_url": "https://21st.dev/r/kokonutd/shape-landing-hero",
+    "dependencies": [
+      "lucide-react",
+      "framer-motion"
+    ],
+    "files": [
+      "/components/ui/shape-landing-hero.tsx"
+    ]
+  },
+  {
+    "file": "kokonutd__text-rewind.json",
+    "name": "text-rewind",
+    "title": "",
+    "description": "",
+    "author": "kokonutd",
+    "registry_url": "https://21st.dev/r/kokonutd/text-rewind",
+    "dependencies": [
+      "framer-motion"
+    ],
+    "files": [
+      "/components/ui/text-rewind.tsx"
+    ]
+  },
+  {
+    "file": "kokonutd__v0-ai-chat.json",
+    "name": "v0-ai-chat",
+    "title": "",
+    "description": "",
+    "author": "kokonutd",
+    "registry_url": "https://21st.dev/r/kokonutd/v0-ai-chat",
+    "dependencies": [
+      "lucide-react"
+    ],
+    "files": [
+      "/components/ui/v0-ai-chat.tsx",
+      "/components/ui/textarea.tsx"
+    ]
+  },
+  {
+    "file": "magicui__animated-beam.json",
+    "name": "animated-beam",
+    "title": "",
+    "description": "",
+    "author": "magicui",
+    "registry_url": "https://21st.dev/r/magicui/animated-beam",
+    "dependencies": [
+      "framer-motion"
+    ],
+    "files": [
+      "/components/ui/animated-beam.tsx"
+    ]
+  },
+  {
+    "file": "magicui__animated-shiny-text.json",
+    "name": "animated-shiny-text",
+    "title": "",
+    "description": "",
+    "author": "magicui",
+    "registry_url": "https://21st.dev/r/magicui/animated-shiny-text",
+    "dependencies": [],
+    "files": [
+      "/components/ui/animated-shiny-text.tsx"
+    ]
+  },
+  {
+    "file": "magicui__globe.json",
+    "name": "globe",
+    "title": "",
+    "description": "",
+    "author": "magicui",
+    "registry_url": "https://21st.dev/r/magicui/globe",
+    "dependencies": [
+      "cobe"
+    ],
+    "files": [
+      "/components/ui/globe.tsx"
+    ]
+  },
+  {
+    "file": "magicui__hero-video-dialog.json",
+    "name": "hero-video-dialog",
+    "title": "",
+    "description": "",
+    "author": "magicui",
+    "registry_url": "https://21st.dev/r/magicui/hero-video-dialog",
+    "dependencies": [
+      "lucide-react",
+      "framer-motion"
+    ],
+    "files": [
+      "/components/ui/hero-video-dialog.tsx"
+    ]
+  },
+  {
+    "file": "magicui__interactive-hover-button.json",
+    "name": "interactive-hover-button",
+    "title": "",
+    "description": "",
+    "author": "magicui",
+    "registry_url": "https://21st.dev/r/magicui/interactive-hover-button",
+    "dependencies": [
+      "lucide-react"
+    ],
+    "files": [
+      "/components/ui/interactive-hover-button.tsx"
+    ]
+  },
+  {
+    "file": "magicui__rainbow-button.json",
+    "name": "rainbow-button",
+    "title": "",
+    "description": "",
+    "author": "magicui",
+    "registry_url": "https://21st.dev/r/magicui/rainbow-button",
+    "dependencies": [],
+    "files": [
+      "/components/ui/rainbow-button.tsx"
+    ]
+  },
+  {
+    "file": "magicui__shimmer-button.json",
+    "name": "shimmer-button",
+    "title": "",
+    "description": "",
+    "author": "magicui",
+    "registry_url": "https://21st.dev/r/magicui/shimmer-button",
+    "dependencies": [],
+    "files": [
+      "/components/ui/shimmer-button.tsx"
+    ]
+  },
+  {
+    "file": "magicui__shine-border.json",
+    "name": "shine-border",
+    "title": "",
+    "description": "",
+    "author": "magicui",
+    "registry_url": "https://21st.dev/r/magicui/shine-border",
+    "dependencies": [],
+    "files": [
+      "/components/ui/shine-border.tsx"
+    ]
+  },
+  {
+    "file": "magicui__sparkles-text.json",
+    "name": "sparkles-text",
+    "title": "",
+    "description": "",
+    "author": "magicui",
+    "registry_url": "https://21st.dev/r/magicui/sparkles-text",
+    "dependencies": [
+      "framer-motion"
+    ],
+    "files": [
+      "/components/ui/sparkles-text.tsx"
+    ]
+  },
+  {
+    "file": "magicui__text-reveal.json",
+    "name": "text-reveal",
+    "title": "",
+    "description": "",
+    "author": "magicui",
+    "registry_url": "https://21st.dev/r/magicui/text-reveal",
+    "dependencies": [
+      "framer-motion"
+    ],
+    "files": [
+      "/components/ui/text-reveal.tsx"
+    ]
+  },
+  {
+    "file": "mikolajdobrucki__hero-section.json",
+    "name": "hero-section",
+    "title": "",
+    "description": "",
+    "author": "mikolajdobrucki",
+    "registry_url": "https://21st.dev/r/mikolajdobrucki/hero-section",
+    "dependencies": [
+      "lucide-react",
+      "class-variance-authority",
+      "@radix-ui/react-slot",
+      "@radix-ui/react-label",
+      "@radix-ui/react-checkbox",
+      "@radix-ui/react-select",
+      "@radix-ui/react-switch"
+    ],
+    "files": [
+      "/components/blocks/hero-section.tsx",
+      "/components/ui/glow.tsx",
+      "/components/ui/badge.tsx",
+      "/components/ui/button.tsx",
+      "/components/ui/card.tsx",
+      "/components/ui/input.tsx",
+      "/components/ui/label.tsx",
+      "/components/ui/checkbox.tsx",
+      "/components/ui/select.tsx",
+      "/components/ui/switch.tsx",
+      "/components/ui/icons.tsx",
+      "/components/ui/mockup.tsx"
+    ]
+  },
+  {
+    "file": "motion-primitives__animated-tabs.json",
+    "name": "animated-tabs",
+    "title": "",
+    "description": "",
+    "author": "motion-primitives",
+    "registry_url": "https://21st.dev/r/motion-primitives/animated-tabs",
+    "dependencies": [
+      "framer-motion"
+    ],
+    "files": [
+      "/components/ui/animated-tabs.tsx"
+    ]
+  },
+  {
+    "file": "motion-primitives__text-shimmer.json",
+    "name": "text-shimmer",
+    "title": "",
+    "description": "",
+    "author": "motion-primitives",
+    "registry_url": "https://21st.dev/r/motion-primitives/text-shimmer",
+    "dependencies": [
+      "framer-motion"
+    ],
+    "files": [
+      "/components/ui/text-shimmer.tsx"
+    ]
+  },
+  {
+    "file": "motion-primitives__transition-panel.json",
+    "name": "transition-panel",
+    "title": "",
+    "description": "",
+    "author": "motion-primitives",
+    "registry_url": "https://21st.dev/r/motion-primitives/transition-panel",
+    "dependencies": [
+      "framer-motion"
+    ],
+    "files": [
+      "/components/ui/transition-panel.tsx"
+    ]
+  },
+  {
+    "file": "paceui__dot-loader.json",
+    "name": "dot-loader",
+    "title": "Dot Loader",
+    "description": "A dot-loader component.",
+    "author": "paceui",
+    "registry_url": "https://21st.dev/r/paceui/dot-loader",
+    "dependencies": [],
+    "files": [
+      "src/components/ui/dot-loader.tsx"
+    ]
+  },
+  {
+    "file": "ravikatiyar__animated-shader-hero.json",
+    "name": "animated-shader-hero",
+    "title": "Animated Shader Hero",
+    "description": "A animated-shader-hero component.",
+    "author": "ravikatiyar",
+    "registry_url": "https://21st.dev/r/ravikatiyar/animated-shader-hero",
+    "dependencies": [],
+    "files": [
+      "src/components/ui/animated-shader-hero.tsx"
+    ]
+  },
+  {
+    "file": "reuno-ui__ai-input.json",
+    "name": "ai-input",
+    "title": "Ai Input",
+    "description": "A ai-input component.",
+    "author": "reuno-ui",
+    "registry_url": "https://21st.dev/r/reuno-ui/ai-input",
+    "dependencies": [
+      "next",
+      "framer-motion",
+      "lucide-react"
+    ],
+    "files": [
+      "src/components/ui/ai-input.tsx"
+    ]
+  },
+  {
+    "file": "reuno-ui__slide-button.json",
+    "name": "slide-button",
+    "title": "Slide Button",
+    "description": "A slide-button component.",
+    "author": "reuno-ui",
+    "registry_url": "https://21st.dev/r/reuno-ui/slide-button",
+    "dependencies": [
+      "framer-motion",
+      "lucide-react"
+    ],
+    "files": [
+      "src/components/ui/slide-button.tsx"
+    ]
+  },
+  {
+    "file": "serafim__gradient-button.json",
+    "name": "gradient-button",
+    "title": "",
+    "description": "",
+    "author": "serafim",
+    "registry_url": "https://21st.dev/r/serafim/gradient-button",
+    "dependencies": [
+      "@radix-ui/react-slot",
+      "class-variance-authority"
+    ],
+    "files": [
+      "/components/ui/gradient-button.tsx"
+    ]
+  },
+  {
+    "file": "serafim__splite.json",
+    "name": "splite",
+    "title": "",
+    "description": "",
+    "author": "serafim",
+    "registry_url": "https://21st.dev/r/serafim/splite",
+    "dependencies": [
+      "@splinetool/runtime",
+      "@splinetool/react-spline"
+    ],
+    "files": [
+      "/components/ui/splite.tsx"
+    ]
+  },
+  {
+    "file": "serafim__testimonials-with-marquee.json",
+    "name": "testimonials-with-marquee",
+    "title": "",
+    "description": "",
+    "author": "serafim",
+    "registry_url": "https://21st.dev/r/serafim/testimonials-with-marquee",
+    "dependencies": [
+      "@radix-ui/react-avatar"
+    ],
+    "files": [
+      "/components/blocks/testimonials-with-marquee.tsx",
+      "/components/ui/testimonial-card.tsx",
+      "/components/ui/avatar.tsx"
+    ]
+  },
+  {
+    "file": "shadcnblockscom__gallery4.json",
+    "name": "gallery4",
+    "title": "",
+    "description": "",
+    "author": "shadcnblockscom",
+    "registry_url": "https://21st.dev/r/shadcnblockscom/gallery4",
+    "dependencies": [
+      "lucide-react",
+      "@radix-ui/react-slot",
+      "class-variance-authority",
+      "embla-carousel-react"
+    ],
+    "files": [
+      "/components/blocks/gallery4.tsx",
+      "/components/ui/button.tsx",
+      "/components/ui/carousel.tsx",
+      "/components/ui/card.tsx"
+    ]
+  },
+  {
+    "file": "tailark__hero-section-9.json",
+    "name": "hero-section-9",
+    "title": "",
+    "description": "",
+    "author": "tailark",
+    "registry_url": "https://21st.dev/r/tailark/hero-section-9",
+    "dependencies": [
+      "lucide-react",
+      "@radix-ui/react-slot",
+      "class-variance-authority"
+    ],
+    "files": [
+      "/components/blocks/hero-section-9.tsx",
+      "/components/ui/button.tsx"
+    ]
+  },
+  {
+    "file": "thanh__animated-shader-background.json",
+    "name": "animated-shader-background",
+    "title": "Animated Shader Background",
+    "description": "A animated-shader-background component.",
+    "author": "thanh",
+    "registry_url": "https://21st.dev/r/thanh/animated-shader-background",
+    "dependencies": [
+      "three",
+      "lucide-react"
+    ],
+    "files": [
+      "src/components/ui/animated-shader-background.tsx"
+    ]
+  },
+  {
+    "file": "thanh__shader-background.json",
+    "name": "shader-background",
+    "title": "Shader Background",
+    "description": "A shader-background component.",
+    "author": "thanh",
+    "registry_url": "https://21st.dev/r/thanh/shader-background",
+    "dependencies": [],
+    "files": [
+      "src/components/ui/shader-background.tsx"
+    ]
+  },
+  {
+    "file": "tommyjepsen__animated-hero.json",
+    "name": "animated-hero",
+    "title": "",
+    "description": "",
+    "author": "tommyjepsen",
+    "registry_url": "https://21st.dev/r/tommyjepsen/animated-hero",
+    "dependencies": [
+      "lucide-react",
+      "framer-motion",
+      "@radix-ui/react-slot",
+      "class-variance-authority"
+    ],
+    "files": [
+      "/components/ui/animated-hero.tsx",
+      "/components/ui/button.tsx"
+    ]
+  },
+  {
+    "file": "tommyjepsen__cases-with-infinite-scroll.json",
+    "name": "cases-with-infinite-scroll",
+    "title": "",
+    "description": "",
+    "author": "tommyjepsen",
+    "registry_url": "https://21st.dev/r/tommyjepsen/cases-with-infinite-scroll",
+    "dependencies": [
+      "lucide-react",
+      "embla-carousel-react",
+      "@radix-ui/react-slot",
+      "class-variance-authority",
+      "@radix-ui/react-label",
+      "@radix-ui/react-checkbox",
+      "@radix-ui/react-select",
+      "@radix-ui/react-switch"
+    ],
+    "files": [
+      "/components/ui/cases-with-infinite-scroll.tsx",
+      "/components/ui/carousel.tsx",
+      "/components/ui/button.tsx",
+      "/components/ui/card.tsx",
+      "/components/ui/input.tsx",
+      "/components/ui/label.tsx",
+      "/components/ui/checkbox.tsx",
+      "/components/ui/select.tsx",
+      "/components/ui/switch.tsx"
+    ]
+  },
+  {
+    "file": "ui-layouts__pricing-section-4.json",
+    "name": "pricing-section-4",
+    "title": "Pricing Section 4",
+    "description": "A pricing-section-4 component.",
+    "author": "ui-layouts",
+    "registry_url": "https://21st.dev/r/ui-layouts/pricing-section-4",
+    "dependencies": [
+      "@number-flow/react",
+      "motion"
+    ],
+    "files": [
+      "src/components/ui/pricing-section-4.tsx"
+    ]
+  },
+  {
+    "file": "ui-layouts__sticky-scroll.json",
+    "name": "sticky-scroll",
+    "title": "Sticky Scroll",
+    "description": "A sticky-scroll component.",
+    "author": "ui-layouts",
+    "registry_url": "https://21st.dev/r/ui-layouts/sticky-scroll",
+    "dependencies": [
+      "lenis"
+    ],
+    "files": [
+      "src/components/ui/sticky-scroll.tsx"
+    ]
+  },
+  {
+    "file": "vaib215__dark-gradient-pricing.json",
+    "name": "dark-gradient-pricing",
+    "title": "",
+    "description": "",
+    "author": "vaib215",
+    "registry_url": "https://21st.dev/r/vaib215/dark-gradient-pricing",
+    "dependencies": [
+      "framer-motion",
+      "@radix-ui/react-slot",
+      "class-variance-authority",
+      "@radix-ui/react-label",
+      "lucide-react",
+      "@radix-ui/react-checkbox",
+      "@radix-ui/react-select",
+      "@radix-ui/react-switch"
+    ],
+    "files": [
+      "/components/ui/dark-gradient-pricing.tsx",
+      "/components/ui/button.tsx",
+      "/components/ui/card.tsx",
+      "/components/ui/input.tsx",
+      "/components/ui/label.tsx",
+      "/components/ui/checkbox.tsx",
+      "/components/ui/select.tsx",
+      "/components/ui/switch.tsx"
+    ]
+  },
+  {
+    "file": "victorwelander__expandable-tabs.json",
+    "name": "expandable-tabs",
+    "title": "",
+    "description": "",
+    "author": "victorwelander",
+    "registry_url": "https://21st.dev/r/victorwelander/expandable-tabs",
+    "dependencies": [
+      "usehooks-ts",
+      "lucide-react",
+      "framer-motion"
+    ],
+    "files": [
+      "/components/ui/expandable-tabs.tsx"
+    ]
+  },
+  {
+    "file": "victorwelander__gooey-text-morphing.json",
+    "name": "gooey-text-morphing",
+    "title": "",
+    "description": "",
+    "author": "victorwelander",
+    "registry_url": "https://21st.dev/r/victorwelander/gooey-text-morphing",
+    "dependencies": [],
+    "files": [
+      "/components/ui/gooey-text-morphing.tsx"
+    ]
+  },
+  {
+    "file": "victorwelander__upgrade-banner.json",
+    "name": "upgrade-banner",
+    "title": "",
+    "description": "",
+    "author": "victorwelander",
+    "registry_url": "https://21st.dev/r/victorwelander/upgrade-banner",
+    "dependencies": [
+      "lucide-react",
+      "framer-motion"
+    ],
+    "files": [
+      "/components/ui/upgrade-banner.tsx"
+    ]
+  }
+]

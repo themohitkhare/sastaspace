@@ -1,0 +1,33 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "pricing-card-with-features",
+  "type": "registry:component",
+  "title": "Pricing Card With Features",
+  "description": "A pricing-card-with-features component.",
+  "dependencies": [
+    "react-icons"
+  ],
+  "registryDependencies": [
+    "https://21st.dev/r/shadcn/button",
+    "https://21st.dev/r/shadcn/card",
+    "https://21st.dev/r/shadcn/tooltip"
+  ],
+  "files": [
+    {
+      "path": "src/components/ui/pricing-card-with-features.tsx",
+      "content": "\"use client\";\n\nimport React from \"react\";\nimport { cn } from \"@/lib/utils\";\nimport { Card, CardContent } from \"@/components/ui/card\";\nimport { Button } from \"@/components/ui/button\";\nimport {\n  Tooltip,\n  TooltipContent,\n  TooltipProvider,\n  TooltipTrigger,\n} from \"@/components/ui/tooltip\";\nimport { FaCheck } from \"react-icons/fa6\";\nimport { FaPhoneAlt } from \"react-icons/fa\";\n\nexport const Box = (): JSX.Element => {\n  const features = [\n    { label: \"Complete App development\", info: \"End-to-end GPT app delivery.\" },\n    { label: \"Custom UI/UX Interfaces for ChatGPT\", info: \"Optimized conversational design.\" },\n    { label: \"Backend API integration\", info: \"Seamless OpenAI + third-party API integration.\" },\n    { label: \"OAuth authentication setup trough OpenAI\", info: \"Implements secure OAuth sign-in.\" },\n    { label: \"Production deployment\", info: \"Deployment on Vercel or preferred host.\" },\n    { label: \"Updates every 48h\", info: \"Frequent feature & patch releases.\" },\n    { label: \"30-90 days post-launch support\", info: \"Ongoing stability & support.\" },\n    { label: \"Handling submission process with OpenAI\", info: \"App review & approval assistance.\" },\n  ];\n\n  return (\n    <TooltipProvider>\n      <Card className=\"w-[464px] rounded-[38px] border border-border bg-card text-card-foreground p-[23px] flex flex-col gap-6 shadow-sm\">\n        {/* Header */}\n        <div>\n          <h2 className=\"text-xl font-semibold leading-[24px]\">\n            Full GPT App Development\n          </h2>\n          <p className=\"text-base text-muted-foreground leading-[19px]\">\n            Tailor solution for your case\n          </p>\n        </div>\n\n        {/* Features */}\n        <CardContent className=\"rounded-[33px] border border-border bg-background px-[27px] py-[30px] flex flex-col gap-[25px]\">\n          {features.map((f, i) => (\n            <Tooltip key={i}>\n              <TooltipTrigger asChild>\n                <div className=\"flex items-center gap-3 cursor-pointer select-none text-muted-foreground hover:text-foreground transition-colors\">\n                  <FaCheck className=\"text-primary w-5 h-5 flex-shrink-0\" />\n                  <span className=\"text-base leading-[19px]\">{f.label}</span>\n                </div>\n              </TooltipTrigger>\n              <TooltipContent\n                side=\"top\"\n                className=\"max-w-[260px] text-sm bg-popover text-popover-foreground border border-border rounded-xl px-3 py-2 shadow-md\"\n              >\n                {f.info}\n              </TooltipContent>\n            </Tooltip>\n          ))}\n        </CardContent>\n\n        {/* Footer */}\n        <div className=\"flex items-center justify-between px-[6px]\">\n          <div className=\"flex flex-col\">\n            <span className=\"text-sm text-muted-foreground\">Starting from</span>\n            <span className=\"text-[34px] font-medium leading-[41px]\">$3499</span>\n          </div>\n\n          {/* Simple gradient button */}\n          <Button\n            className={cn(\n              \"flex items-center justify-center gap-3 w-[220px] h-[64px] rounded-[39px] text-[20px] font-medium text-white\",\n              \"bg-gradient-to-r from-blue-500 via-blue-400 to-blue-500\",\n              \"border-[3px] border-blue-600\",\n              \"shadow-sm hover:opacity-90 transition-all duration-150\"\n            )}\n          >\n            <FaPhoneAlt className=\"w-[20px] h-[20px]\" />\n            <span>Book a call</span>\n          </Button>\n        </div>\n      </Card>\n    </TooltipProvider>\n  );\n};\n",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "erikvalencia1",
+    "slug": "pricing-card-with-features",
+    "registry_url": "https://21st.dev/r/erikvalencia1/pricing-card-with-features",
+    "title": "Pricing Card With Features",
+    "description": "Pricing Card With Features",
+    "category": "features",
+    "category_group": "Marketing Blocks",
+    "downloads": 18,
+    "likes": 0
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "text-explode",
+  "type": "registry:component",
+  "title": "Text Explode",
+  "description": "A text-explode component.",
+  "dependencies": [
+    "framer-motion"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/ui/text-explode.tsx",
+      "content": "import { useCallback, useEffect, useRef } from \"react\";\nimport { motion, useAnimationControls, Variants } from \"framer-motion\";\n\nimport { cn } from \"@/lib/utils\";\n\nconst containerVariants: Variants = {\n  initial: {\n    opacity: 1,\n    translateY: 0,\n    transition: {\n      duration: 0.5,\n    },\n    letterSpacing: \"0px\",\n  },\n  shrink: {\n    // Scale might need to be adjust according to font size for better effect\n    scale: 0.8,\n    letterSpacing: \"-10%\",\n  },\n  jitter: {\n    x: [0, -3, 3, -3, 3, 0],\n    y: [0, -2, 2, -2, 2, 0],\n    transition: {\n      duration: 0.5,\n      times: [0, 0.2, 0.4, 0.6, 0.8, 1],\n      ease: \"easeInOut\",\n    },\n  },\n  explode: {\n    scale: [0.7, 0.9, 1],\n    opacity: [1, 0.7, 0],\n    letterSpacing: \"0px\",\n    transition: {\n      times: [0, 0.9, 1],\n    },\n  },\n  end: {\n    scale: 1,\n    letterSpacing: \"0px\",\n    translateY: 50,\n  },\n};\n\nconst createExplosion = ({ index, total }: { index: number; total: number }) => {\n  const direction = Math.random() > Math.random() ? -1 : 1;\n\n  const x = Math.random() * 10 * total * direction;\n\n  const radius = total * 4;\n  const angleRange = Math.PI;\n  const angle = (index / (total - 1)) * angleRange;\n  const y = radius * -Math.sin(angle) * Math.random();\n\n  const rotation = Math.random() * 360 * direction;\n\n  return {\n    translateX: [0, x * 0.5, x * 0.7, x],\n    translateY: [0, y, -y / 5, 0, 5],\n    rotate: [0, rotation * 0.4, rotation * 0.8, rotation],\n    scale: [0.9, 1.2, 1 + Math.random() + 0.2, 1 + Math.random() * 2],\n    opacity: [1, 0.8, 0.5, 0],\n  };\n};\n\nconst characterVariants: Variants = {\n  jitter: () => ({\n    x: [0, -3 + Math.random() * 6, 3 - Math.random() * 6, 0],\n    y: [0, -2 + Math.random() * 4, 2 - Math.random() * 4, 0],\n    transition: {\n      duration: 0.5,\n      times: [0, 0.33, 0.66, 1],\n      ease: \"easeInOut\",\n    },\n  }),\n  shrink: {\n    scale: 1.1,\n  },\n  explode: createExplosion,\n  end: {\n    translateY: 0,\n    translateX: 0,\n    rotate: 0,\n    scale: 1,\n  },\n  initial: {\n    opacity: 1,\n  },\n};\n\nconst splitText = (text: string) => String(text).split(/(?:)/u);\n\nexport default function TextExplode({\n  text,\n  mode = \"loop\",\n  className,\n}: {\n  text: string;\n  className?: string;\n  mode?: \"loop\" | \"hover\";\n}) {\n  const characters = splitText(text);\n  const controls = useAnimationControls();\n  const isPlaying = useRef(false);\n\n  const animateSequence = useCallback(async () => {\n    await Promise.all([\n      controls.start(\"shrink\", {\n        duration: 1,\n        ease: \"easeOut\",\n      }),\n      controls.start(\"jitter\", {\n        delay: 0.1,\n      }),\n    ]);\n    await controls.start(\"explode\", {});\n    await controls.start(\"end\");\n    await controls.start(\"initial\", {\n      delay: 0.5,\n      duration: 1,\n      type: \"spring\",\n    });\n\n    if (mode === \"loop\") {\n      requestAnimationFrame(() => animateSequence());\n    } else {\n      isPlaying.current = false;\n    }\n  }, [mode, controls]);\n\n  useEffect(() => {\n    if (!characters.length || mode === \"hover\") {\n      return;\n    }\n\n    animateSequence();\n  }, [characters.length, mode, animateSequence]);\n\n  return (\n    <motion.div\n      variants={containerVariants}\n      animate={controls}\n      onPointerDown={() => {\n        if (mode === \"hover\" && !isPlaying.current) {\n          isPlaying.current = true;\n          animateSequence();\n        }\n      }}\n      onMouseEnter={() => {\n        if (mode === \"hover\" && !isPlaying.current) {\n          isPlaying.current = true;\n          animateSequence();\n        }\n      }}\n      className={cn(\n        \"flex items-center justify-center text-3xl tracking-normal text-foreground\",\n        className,\n      )}\n    >\n      {characters.map((char, index) => (\n        <motion.span\n          key={index}\n          variants={characterVariants}\n          custom={{ index, total: characters.length }}\n          className=\"inline-block\"\n        >\n          {char === \" \" ? \"\\u00A0\" : char}\n        </motion.span>\n      ))}\n      <span className=\"sr-only\">{text}</span>\n    </motion.div>\n  );\n}\n",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "minhxthanh",
+    "slug": "text-explode",
+    "registry_url": "https://21st.dev/r/minhxthanh/text-explode",
+    "title": "Text Explode",
+    "description": "Text explode effect",
+    "category": "text",
+    "category_group": "Marketing Blocks",
+    "downloads": 16,
+    "likes": 0
+  }
+}

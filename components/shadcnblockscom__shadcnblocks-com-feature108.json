@@ -1,0 +1,48 @@
+{
+  "name": "shadcnblocks-com-feature108",
+  "type": "registry:block",
+  "dependencies": [
+    "lucide-react",
+    "@radix-ui/react-tabs",
+    "class-variance-authority",
+    "@radix-ui/react-slot"
+  ],
+  "registryDependencies": [
+    "https://21st.dev/r/shadcn/badge",
+    "https://21st.dev/r/shadcn/button"
+  ],
+  "files": [
+    {
+      "path": "/components/blocks/shadcnblocks-com-feature108.tsx",
+      "content": "import { Tabs, TabsContent, TabsList, TabsTrigger } from \"@radix-ui/react-tabs\";\nimport { Layout, Pointer, Zap } from \"lucide-react\";\n\nimport { Badge } from \"@/components/ui/badge\";\nimport { Button } from \"@/components/ui/button\";\n\ninterface TabContent {\n  badge: string;\n  title: string;\n  description: string;\n  buttonText: string;\n  imageSrc: string;\n  imageAlt: string;\n}\n\ninterface Tab {\n  value: string;\n  icon: React.ReactNode;\n  label: string;\n  content: TabContent;\n}\n\ninterface Feature108Props {\n  badge?: string;\n  heading?: string;\n  description?: string;\n  tabs?: Tab[];\n}\n\nconst Feature108 = ({\n  badge = \"shadcnblocks.com\",\n  heading = \"A Collection of Components Built With Shadcn & Tailwind\",\n  description = \"Join us to build flawless web solutions.\",\n  tabs = [\n    {\n      value: \"tab-1\",\n      icon: <Zap className=\"h-auto w-4 shrink-0\" />,\n      label: \"Boost Revenue\",\n      content: {\n        badge: \"Modern Tactics\",\n        title: \"Make your site a true standout.\",\n        description:\n          \"Discover new web trends that help you craft sleek, highly functional sites that drive traffic and convert leads into customers.\",\n        buttonText: \"See Plans\",\n        imageSrc:\n          \"https://shadcnblocks.com/images/block/placeholder-dark-1.svg\",\n        imageAlt: \"placeholder\",\n      },\n    },\n    {\n      value: \"tab-2\",\n      icon: <Pointer className=\"h-auto w-4 shrink-0\" />,\n      label: \"Higher Engagement\",\n      content: {\n        badge: \"Expert Features\",\n        title: \"Boost your site with top-tier design.\",\n        description:\n          \"Use stellar design to easily engage users and strengthen their loyalty. Create a seamless experience that keeps them coming back for more.\",\n        buttonText: \"See Tools\",\n        imageSrc:\n          \"https://shadcnblocks.com/images/block/placeholder-dark-2.svg\",\n        imageAlt: \"placeholder\",\n      },\n    },\n    {\n      value: \"tab-3\",\n      icon: <Layout className=\"h-auto w-4 shrink-0\" />,\n      label: \"Stunning Layouts\",\n      content: {\n        badge: \"Elite Solutions\",\n        title: \"Build an advanced web experience.\",\n        description:\n          \"Lift your brand with modern tech that grabs attention and drives action. Create a digital experience that stands out from the crowd.\",\n        buttonText: \"See Options\",\n        imageSrc:\n          \"https://shadcnblocks.com/images/block/placeholder-dark-3.svg\",\n        imageAlt: \"placeholder\",\n      },\n    },\n  ],\n}: Feature108Props) => {\n  return (\n    <section className=\"py-32\">\n      <div className=\"container mx-auto\">\n        <div className=\"flex flex-col items-center gap-4 text-center\">\n          <Badge variant=\"outline\">{badge}</Badge>\n          <h1 className=\"max-w-2xl text-3xl font-semibold md:text-4xl\">\n            {heading}\n          </h1>\n          <p className=\"text-muted-foreground\">{description}</p>\n        </div>\n        <Tabs defaultValue={tabs[0].value} className=\"mt-8\">\n          <TabsList className=\"container flex flex-col items-center justify-center gap-4 sm:flex-row md:gap-10\">\n            {tabs.map((tab) => (\n              <TabsTrigger\n                key={tab.value}\n                value={tab.value}\n                className=\"flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold text-muted-foreground data-[state=active]:bg-muted data-[state=active]:text-primary\"\n              >\n                {tab.icon} {tab.label}\n              </TabsTrigger>\n            ))}\n          </TabsList>\n          <div className=\"mx-auto mt-8 max-w-screen-xl rounded-2xl bg-muted/70 p-6 lg:p-16\">\n            {tabs.map((tab) => (\n              <TabsContent\n                key={tab.value}\n                value={tab.value}\n                className=\"grid place-items-center gap-20 lg:grid-cols-2 lg:gap-10\"\n              >\n                <div className=\"flex flex-col gap-5\">\n                  <Badge variant=\"outline\" className=\"w-fit bg-background\">\n                    {tab.content.badge}\n                  </Badge>\n                  <h3 className=\"text-3xl font-semibold lg:text-5xl\">\n                    {tab.content.title}\n                  </h3>\n                  <p className=\"text-muted-foreground lg:text-lg\">\n                    {tab.content.description}\n                  </p>\n                  <Button className=\"mt-2.5 w-fit gap-2\" size=\"lg\">\n                    {tab.content.buttonText}\n                  </Button>\n                </div>\n                <img\n                  src={tab.content.imageSrc}\n                  alt={tab.content.imageAlt}\n                  className=\"rounded-xl\"\n                />\n              </TabsContent>\n            ))}\n          </div>\n        </Tabs>\n      </div>\n    </section>\n  );\n};\n\nexport { Feature108 };\n",
+      "type": "registry:block",
+      "target": ""
+    },
+    {
+      "path": "/components/ui/badge.tsx",
+      "content": "import * as React from \"react\"\nimport { cva, type VariantProps } from \"class-variance-authority\"\n\nimport { cn } from \"@/lib/utils\"\n\nconst badgeVariants = cva(\n  \"inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2\",\n  {\n    variants: {\n      variant: {\n        default:\n          \"border-transparent bg-primary text-primary-foreground hover:bg-primary/80\",\n        secondary:\n          \"border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/80\",\n        destructive:\n          \"border-transparent bg-destructive text-destructive-foreground hover:bg-destructive/80\",\n        outline: \"text-foreground\",\n      },\n    },\n    defaultVariants: {\n      variant: \"default\",\n    },\n  },\n)\n\nexport interface BadgeProps\n  extends React.HTMLAttributes<HTMLDivElement>,\n    VariantProps<typeof badgeVariants> {}\n\nfunction Badge({ className, variant, ...props }: BadgeProps) {\n  return (\n    <div className={cn(badgeVariants({ variant }), className)} {...props} />\n  )\n}\n\nexport { Badge, badgeVariants }\n",
+      "type": "registry:ui",
+      "target": ""
+    },
+    {
+      "path": "/components/ui/button.tsx",
+      "content": "import * as React from \"react\"\nimport { Slot } from \"@radix-ui/react-slot\"\nimport { cva, type VariantProps } from \"class-variance-authority\"\n\nimport { cn } from \"@/lib/utils\"\n\nconst buttonVariants = cva(\n  \"inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50\",\n  {\n    variants: {\n      variant: {\n        default: \"bg-primary text-primary-foreground hover:bg-primary/90\",\n        destructive:\n          \"bg-destructive text-destructive-foreground hover:bg-destructive/90\",\n        outline:\n          \"border border-input bg-background hover:bg-accent hover:text-accent-foreground\",\n        secondary:\n          \"bg-secondary text-secondary-foreground hover:bg-secondary/80\",\n        ghost: \"hover:bg-accent hover:text-accent-foreground\",\n        link: \"text-primary underline-offset-4 hover:underline\",\n      },\n      size: {\n        default: \"h-10 px-4 py-2\",\n        sm: \"h-9 rounded-md px-3\",\n        lg: \"h-11 rounded-md px-8\",\n        icon: \"h-10 w-10\",\n      },\n    },\n    defaultVariants: {\n      variant: \"default\",\n      size: \"default\",\n    },\n  },\n)\n\nexport interface ButtonProps\n  extends React.ButtonHTMLAttributes<HTMLButtonElement>,\n    VariantProps<typeof buttonVariants> {\n  asChild?: boolean\n}\n\nconst Button = React.forwardRef<HTMLButtonElement, ButtonProps>(\n  ({ className, variant, size, asChild = false, ...props }, ref) => {\n    const Comp = asChild ? Slot : \"button\"\n    return (\n      <Comp\n        className={cn(buttonVariants({ variant, size, className }))}\n        ref={ref}\n        {...props}\n      />\n    )\n  },\n)\nButton.displayName = \"Button\"\n\nexport { Button, buttonVariants }\n",
+      "type": "registry:ui",
+      "target": ""
+    }
+  ],
+  "tailwind": {
+    "config": {}
+  },
+  "_meta": {
+    "author": "shadcnblockscom",
+    "slug": "shadcnblocks-com-feature108",
+    "registry_url": "https://21st.dev/r/shadcnblockscom/shadcnblocks-com-feature108",
+    "title": "Feature 108",
+    "description": "A versatile section with 3 features inside a tabs component",
+    "category": "features",
+    "category_group": "Marketing Blocks",
+    "downloads": 2065,
+    "likes": 17
+  }
+}

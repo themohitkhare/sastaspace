@@ -1,0 +1,33 @@
+{
+  "name": "use-click-outside",
+  "type": "registry:hook",
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "/components/hooks/use-click-outside.tsx",
+      "content": "import { RefObject, useEffect } from 'react'\n\ntype Handler = (event: MouseEvent | TouchEvent) => void\n\nexport function useClickOutside<T extends HTMLElement = HTMLElement>(\n  ref: RefObject<T>,\n  handler: Handler,\n  mouseEvent: 'mousedown' | 'mouseup' = 'mousedown'\n): void {\n  useEffect(() => {\n    const listener = (event: MouseEvent | TouchEvent) => {\n      const el = ref?.current\n      const target = event.target\n\n      // Do nothing if clicking ref's element or descendent elements\n      if (!el || !target || el.contains(target as Node)) {\n        return\n      }\n\n      handler(event)\n    }\n\n    document.addEventListener(mouseEvent, listener)\n    document.addEventListener('touchstart', listener)\n\n    return () => {\n      document.removeEventListener(mouseEvent, listener)\n      document.removeEventListener('touchstart', listener)\n    }\n  }, [ref, handler, mouseEvent])\n}",
+      "type": "registry:hook",
+      "target": ""
+    },
+    {
+      "path": "/hooks/use-click-outside.tsx",
+      "content": "import { RefObject, useEffect } from 'react'\n\ntype Handler = (event: MouseEvent | TouchEvent) => void\n\nexport function useClickOutside<T extends HTMLElement = HTMLElement>(\n  ref: RefObject<T>,\n  handler: Handler,\n  mouseEvent: 'mousedown' | 'mouseup' = 'mousedown'\n): void {\n  useEffect(() => {\n    const listener = (event: MouseEvent | TouchEvent) => {\n      const el = ref?.current\n      const target = event.target\n\n      // Do nothing if clicking ref's element or descendent elements\n      if (!el || !target || el.contains(target as Node)) {\n        return\n      }\n\n      handler(event)\n    }\n\n    document.addEventListener(mouseEvent, listener)\n    document.addEventListener('touchstart', listener)\n\n    return () => {\n      document.removeEventListener(mouseEvent, listener)\n      document.removeEventListener('touchstart', listener)\n    }\n  }, [ref, handler, mouseEvent])\n}",
+      "type": "registry:hook",
+      "target": ""
+    }
+  ],
+  "tailwind": {
+    "config": {}
+  },
+  "_meta": {
+    "author": "serafimcloud",
+    "slug": "use-click-outside",
+    "registry_url": "https://21st.dev/r/serafimcloud/use-click-outside",
+    "title": "useClickOutside",
+    "description": "A hook that handles clicks outside of a specified element",
+    "category": "hook",
+    "category_group": "Marketing Blocks",
+    "downloads": 93,
+    "likes": 2
+  }
+}

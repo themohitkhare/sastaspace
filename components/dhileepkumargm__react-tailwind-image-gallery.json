@@ -1,0 +1,27 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "react-tailwind-image-gallery",
+  "type": "registry:component",
+  "title": "React Tailwind Image Gallery",
+  "description": "A react-tailwind-image-gallery component.",
+  "dependencies": [],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/ui/react-tailwind-image-gallery.tsx",
+      "content": "// components.js\n\nimport React from 'react';\n\nexport function Gallery({ data, onImageClick }) {\n  return (\n    <section id=\"portfolio\" className=\"py-20 bg-gray-900\">\n      <div className=\"container mx-auto px-6\">\n        <h2 className=\"text-4xl font-bold text-center text-white mb-12\">\n          My Work\n        </h2>\n        <div className=\"grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4\">\n          {data.map((img) => (\n            <div\n              key={img.id}\n              className={`group cursor-pointer relative overflow-hidden rounded-lg ${img.span}`}\n              onClick={() => onImageClick(img.src)}\n            >\n              <img\n                src={img.src}\n                alt={img.alt}\n                className=\"gallery-img w-full h-full object-cover\"\n              />\n              <div className=\"absolute inset-0 bg-gradient-to-t from-black/70 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-4\">\n                <p className=\"text-white text-lg font-medium transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300 ease-in-out\">\n                  {img.title}\n                </p>\n              </div>\n            </div>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n\nexport function ImageModal({ src, onClose }) {\n  if (!src) return null;\n\n  return (\n    <div\n      id=\"imageModal\"\n      className=\"fixed inset-0 bg-black bg-opacity-80 flex justify-center items-center z-50 opacity-100\"\n      onClick={onClose}\n    >\n      <img\n        src={src}\n        alt=\"Enlarged view\"\n        className=\"max-w-[90vw] max-h-[90vh] rounded-lg shadow-2xl\"\n        onClick={(e) => e.stopPropagation()}\n      />\n      <button\n        className=\"absolute top-5 right-5 text-white text-4xl font-bold\"\n        onClick={onClose}\n      >\n        &times;\n      </button>\n    </div>\n  );\n}\n",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "dhileepkumargm",
+    "slug": "react-tailwind-image-gallery",
+    "registry_url": "https://21st.dev/r/dhileepkumargm/react-tailwind-image-gallery",
+    "title": "React Tailwind Image Gallery",
+    "description": "A responsive React component for displaying an image gallery with hover-zoom effects, customizable grid spans, and a fullscreen modal lightbox—built with Tailwind CSS.",
+    "category": "image",
+    "category_group": "Marketing Blocks",
+    "downloads": 74,
+    "likes": 0
+  }
+}

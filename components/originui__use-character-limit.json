@@ -1,0 +1,33 @@
+{
+  "name": "use-character-limit",
+  "type": "registry:hook",
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "/components/hooks/use-character-limit.tsx",
+      "content": "\"use client\";\n\nimport { ChangeEvent, useState } from \"react\";\n\ntype UseCharacterLimitProps = {\n  maxLength: number;\n  initialValue?: string;\n};\n\nexport function useCharacterLimit({ maxLength, initialValue = \"\" }: UseCharacterLimitProps) {\n  const [value, setValue] = useState(initialValue);\n  const [characterCount, setCharacterCount] = useState(initialValue.length);\n\n  const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {\n    const newValue = e.target.value;\n    if (newValue.length <= maxLength) {\n      setValue(newValue);\n      setCharacterCount(newValue.length);\n    }\n  };\n\n  return {\n    value,\n    characterCount,\n    handleChange,\n    maxLength,\n  };\n}",
+      "type": "registry:hook",
+      "target": ""
+    },
+    {
+      "path": "/hooks/use-character-limit.tsx",
+      "content": "\"use client\";\n\nimport { ChangeEvent, useState } from \"react\";\n\ntype UseCharacterLimitProps = {\n  maxLength: number;\n  initialValue?: string;\n};\n\nexport function useCharacterLimit({ maxLength, initialValue = \"\" }: UseCharacterLimitProps) {\n  const [value, setValue] = useState(initialValue);\n  const [characterCount, setCharacterCount] = useState(initialValue.length);\n\n  const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {\n    const newValue = e.target.value;\n    if (newValue.length <= maxLength) {\n      setValue(newValue);\n      setCharacterCount(newValue.length);\n    }\n  };\n\n  return {\n    value,\n    characterCount,\n    handleChange,\n    maxLength,\n  };\n}",
+      "type": "registry:hook",
+      "target": ""
+    }
+  ],
+  "tailwind": {
+    "config": {}
+  },
+  "_meta": {
+    "author": "originui",
+    "slug": "use-character-limit",
+    "registry_url": "https://21st.dev/r/originui/use-character-limit",
+    "title": "useCharacterLimit",
+    "description": "useCharacterLimit hook",
+    "category": "hook",
+    "category_group": "Marketing Blocks",
+    "downloads": 43,
+    "likes": 2
+  }
+}

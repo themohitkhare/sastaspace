@@ -1,0 +1,27 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "lissajous-nebula-shader",
+  "type": "registry:component",
+  "title": "Lissajous Nebula Shader",
+  "description": "A lissajous-nebula-shader component.",
+  "dependencies": [],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/ui/lissajous-nebula-shader.tsx",
+      "content": "// src/components/ui/lissajous-nebula-shader.tsx\n\"use client\";\n\nimport { useEffect, useRef } from \"react\";\n\ndeclare global {\n  interface Window {\n    THREE: any;\n  }\n}\n\n/**\n * LissajousNebulaShader\n *\n * Full-screen swirling nebula built from Lissajous curves.\n * Loads Three.js from CDN and renders a dynamic, color-cycling background.\n */\nexport function LissajousNebulaShader() {\n  const containerRef = useRef<HTMLDivElement>(null);\n  const sceneRef = useRef<{\n    renderer?: any;\n    scene?: any;\n    camera?: any;\n    uniforms?: any;\n    rafId?: number;\n  }>({});\n\n  useEffect(() => {\n    // 1) Load Three.js from CDN\n    const script = document.createElement(\"script\");\n    script.src = \"https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js\";\n    script.onload = initThree;\n    document.head.appendChild(script);\n\n    // Cleanup on unmount\n    return () => {\n      if (sceneRef.current.rafId) cancelAnimationFrame(sceneRef.current.rafId);\n      sceneRef.current.renderer?.dispose();\n      document.head.removeChild(script);\n    };\n  }, []);\n\n  function initThree() {\n    if (!window.THREE || !containerRef.current) return;\n    const THREE = window.THREE;\n    const container = containerRef.current;\n    container.innerHTML = \"\";\n\n    // 2) Camera, scene, clock\n    const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);\n    const scene = new THREE.Scene();\n    const clock = new THREE.Clock();\n\n    // 3) Uniforms\n    const uniforms = {\n      iTime: { value: 0 },\n      iResolution: { value: new THREE.Vector2() },\n    };\n\n    // 4) Shaders\n    const vertexShader = `\n      varying vec2 vUv;\n      void main() {\n        vUv = uv;\n        gl_Position = vec4(position, 1.0);\n      }\n    `;\n    const fragmentShader = `\n      precision highp float;\n      uniform vec2 iResolution;\n      uniform float iTime;\n      varying vec2 vUv;\n\n      // Custom palette function\n      vec3 palette(float t) {\n        return 0.5 + 0.5 * cos(\n          6.28318 * (\n            vec3(0.7, 0.4, 1.2) * t +\n            vec3(0.0, 0.33, 0.67)\n          )\n        );\n      }\n\n      void mainImage(out vec4 O, in vec2 uv) {\n        // Normalize coords to –1..1\n        vec2 p = uv * 2.0 - 1.0;\n        p.x *= iResolution.x / iResolution.y;\n\n        float t = iTime * 0.2;\n\n        // Lissajous pattern warp\n        float lx = sin(p.x * 3.0 + t) + cos(p.y * 5.0 - t * 1.5);\n        // Radial swirl\n        float r = length(p);\n        float swirl = sin(6.28318 * (r * 4.0 - t) + lx * 2.0);\n\n        // Edge softness\n        float edge = smoothstep(0.2, 0.22, abs(swirl));\n\n        // Final color\n        vec3 col = palette(r + swirl * 0.5 + t);\n        O = vec4(col * edge, edge);\n      }\n\n      void main() {\n        mainImage(gl_FragColor, vUv);\n      }\n    `;\n\n    // 5) Mesh + material\n    const mat = new THREE.ShaderMaterial({ uniforms, vertexShader, fragmentShader });\n    const quad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), mat);\n    scene.add(quad);\n\n    // 6) Renderer\n    const renderer = new THREE.WebGLRenderer({ antialias: true });\n    renderer.setPixelRatio(window.devicePixelRatio);\n    container.appendChild(renderer.domElement);\n\n    // 7) Resize handler\n    const onResize = () => {\n      const { width, height } = container.getBoundingClientRect();\n      renderer.setSize(width, height);\n      uniforms.iResolution.value.set(width, height);\n    };\n    window.addEventListener(\"resize\", onResize);\n    onResize();\n\n    // 8) Animation loop\n    const animate = () => {\n      uniforms.iTime.value = clock.getElapsedTime();\n      renderer.render(scene, camera);\n      sceneRef.current.rafId = requestAnimationFrame(animate);\n    };\n    animate();\n\n    // Store for cleanup\n    sceneRef.current = { renderer, scene, camera, uniforms, rafId: sceneRef.current.rafId };\n  }\n\n  return (\n    <div\n      ref={containerRef}\n      className=\"fixed inset-0 bg-background\"\n      aria-label=\"Lissajous nebula shader background\"\n    />\n  );\n}\n",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "dhileepkumargm",
+    "slug": "lissajous-nebula-shader",
+    "registry_url": "https://21st.dev/r/dhileepkumargm/lissajous-nebula-shader",
+    "title": "Lissajous Nebula Shader",
+    "description": "A full-screen, dynamic nebula background generated from Lissajous curves and radial swirls. Loads Three.js from CDN, and cycles through a custom color palette.",
+    "category": "shader",
+    "category_group": "Marketing Blocks",
+    "downloads": 0,
+    "likes": 0
+  }
+}

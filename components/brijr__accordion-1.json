@@ -1,0 +1,57 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "accordion-1",
+  "type": "registry:component",
+  "title": "Accordion 1",
+  "description": "A accordion-1 component.",
+  "dependencies": [
+    "lucide-react",
+    "clsx",
+    "tailwind-merge"
+  ],
+  "registryDependencies": [
+    "https://21st.dev/r/shadcn/accordion"
+  ],
+  "files": [
+    {
+      "path": "src/components/ui/accordion-1.tsx",
+      "content": "// app/components/FAQ.tsx\nimport * as React from \"react\";\nimport { ArrowUpRight } from \"lucide-react\";\n\n// shadcn/ui accordion\nimport {\n  Accordion,\n  AccordionContent,\n  AccordionItem,\n  AccordionTrigger,\n} from \"@/components/ui/accordion\";\n\n// --- minimal craft-ds inline -----------------------------------\nimport clsx, { type ClassValue } from \"clsx\";\nimport { twMerge } from \"tailwind-merge\";\nconst cn = (...inputs: ClassValue[]) => twMerge(clsx(inputs));\n\ntype SectionProps = { children: React.ReactNode; className?: string; id?: string };\ntype ContainerProps = { children: React.ReactNode; className?: string; id?: string };\n\nconst Section = ({ children, className, id }: SectionProps) => (\n  <section className={cn(\"py-8 md:py-12\", className)} id={id}>\n    {children}\n  </section>\n);\n\nconst Container = ({ children, className, id }: ContainerProps) => (\n  <div className={cn(\"mx-auto max-w-5xl p-6 sm:p-8\", className)} id={id}>\n    {children}\n  </div>\n);\n// ----------------------------------------------------------------\n\ntype FAQItem = {\n  question: string;\n  answer: string;\n  link?: string;\n};\n\nconst content: FAQItem[] = [\n  {\n    question: \"Lorem ipsum dolor sit amet?\",\n    answer:\n      \"Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.\",\n    link: \"https://google.com\",\n  },\n  {\n    question: \"Ut enim ad minim veniam?\",\n    answer:\n      \"Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.\",\n  },\n  {\n    question: \"Duis aute irure dolor in reprehenderit?\",\n    answer:\n      \"Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.\",\n  },\n  {\n    question: \"Excepteur sint occaecat cupidatat non proident?\",\n    answer:\n      \"Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.\",\n  },\n];\n\nexport default function FAQ() {\n  return (\n    <Section>\n      <Container>\n        <h3 className=\"!mt-0\">Frequently Asked Questions</h3>\n        <h4 className=\"text-muted-foreground\">\n          Can&apos;t find the answer you&apos;re looking for? Reach out to our customer support team.\n        </h4>\n\n        <div className=\"not-prose mt-4 md:mt-8\">\n          {/* Single accordion with multiple items (better a11y & keyboard nav) */}\n          <Accordion type=\"single\" collapsible className=\"flex flex-col gap-4\">\n            {content.map((item) => (\n              <AccordionItem key={item.question} value={item.question}>\n                <AccordionTrigger className=\"text-left\">\n                  {item.question}\n                </AccordionTrigger>\n                <AccordionContent className=\"text-base md:w-3/4\">\n                  <p>{item.answer}</p>\n                  {item.link && (\n                    <a\n                      href={item.link}\n                      target=\"_blank\"\n                      rel=\"noreferrer noopener\"\n                      className=\"mt-2 inline-flex items-center opacity-60 transition-opacity hover:opacity-100\"\n                    >\n                      Learn more <ArrowUpRight className=\"ml-1\" size={16} />\n                    </a>\n                  )}\n                </AccordionContent>\n              </AccordionItem>\n            ))}\n          </Accordion>\n        </div>\n      </Container>\n    </Section>\n  );\n}\n",
+      "type": "registry:component"
+    }
+  ],
+  "cssVars": {
+    "theme": {
+      "--animate-accordion-down": "accordion-down 0.2s ease-out",
+      "--animate-accordion-up": "accordion-up 0.2s ease-out"
+    }
+  },
+  "css": {
+    "@keyframes accordion-down": {
+      "from": {
+        "height": "0"
+      },
+      "to": {
+        "height": "var(--radix-accordion-content-height)"
+      }
+    },
+    "@keyframes accordion-up": {
+      "from": {
+        "height": "var(--radix-accordion-content-height)"
+      },
+      "to": {
+        "height": "0"
+      }
+    }
+  },
+  "_meta": {
+    "author": "brijr",
+    "slug": "accordion-1",
+    "registry_url": "https://21st.dev/r/brijr/accordion-1",
+    "title": "Accordion",
+    "description": "Here is Accordion component",
+    "category": "accordion",
+    "category_group": "UI Components",
+    "downloads": 21,
+    "likes": 0
+  }
+}

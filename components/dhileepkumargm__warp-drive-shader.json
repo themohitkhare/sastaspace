@@ -1,0 +1,29 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "warp-drive-shader",
+  "type": "registry:component",
+  "title": "Warp Drive Shader",
+  "description": "A warp-drive-shader component.",
+  "dependencies": [
+    "three"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/ui/warp-drive-shader.tsx",
+      "content": "import React, { useEffect, useRef } from 'react';\nimport * as THREE from 'three';\n\nconst WarpDriveShader = () => {\n  const containerRef = useRef(null);\n\n  useEffect(() => {\n    const container = containerRef.current;\n    if (!container) return;\n\n    // 1) Renderer + Scene + Camera + Clock\n    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });\n    renderer.setPixelRatio(window.devicePixelRatio);\n    container.appendChild(renderer.domElement);\n\n    const scene = new THREE.Scene();\n    const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);\n    const clock = new THREE.Clock();\n\n    // 2) GLSL Shaders\n    const vertexShader = `\n      void main() {\n        gl_Position = vec4(position, 1.0);\n      }\n    `;\n\n    const fragmentShader = `\n      precision highp float;\n      uniform vec2 iResolution;\n      uniform float iTime;\n      uniform vec2 iMouse;\n\n      void main() {\n        // Normalize to center, scale by height\n        vec2 uv    = (gl_FragCoord.xy - 0.5 * iResolution.xy) / iResolution.y;\n        vec2 mouse = (iMouse      - 0.5 * iResolution.xy) / iResolution.y;\n\n        // Time warp\n        float t = iTime * 0.5;\n        uv -= mouse;\n\n        float r = length(uv) * 0.8;\n        float a = atan(uv.y, uv.x);\n\n        // Tunnel effect\n        vec3 finalColor = vec3(0.0);\n        float offset = 0.01;\n        finalColor.r = pow(fract(0.5 / length(uv + vec2(offset, 0.0)) + t * 2.0), 15.0);\n        finalColor.g = pow(fract(0.5 / length(uv)                  + t * 2.0), 15.0);\n        finalColor.b = pow(fract(0.5 / length(uv - vec2(offset, 0.0)) + t * 2.0), 15.0);\n\n        float fade = smoothstep(0.0, 0.1, r);\n        finalColor *= fade;\n\n        gl_FragColor = vec4(finalColor, 1.0);\n      }\n    `;\n\n    // 3) Uniforms + Material + Mesh\n    const uniforms = {\n      iTime:       { value: 0 },\n      iResolution: { value: new THREE.Vector2() },\n      iMouse:      { value: new THREE.Vector2(window.innerWidth / 2, window.innerHeight / 2) }\n    };\n\n    const material = new THREE.ShaderMaterial({\n      vertexShader,\n      fragmentShader,\n      uniforms\n    });\n\n    const geometry = new THREE.PlaneGeometry(2, 2);\n    const mesh     = new THREE.Mesh(geometry, material);\n    scene.add(mesh);\n\n    // 4) Resize handler\n    const onResize = () => {\n      const width  = container.clientWidth;\n      const height = container.clientHeight;\n      renderer.setSize(width, height);\n      uniforms.iResolution.value.set(width, height);\n    };\n    window.addEventListener('resize', onResize);\n    onResize(); // initialize size\n\n    // 5) Mouse handler\n    const onMouseMove = (e) => {\n      // flip Y so origin is bottom-left\n      uniforms.iMouse.value.set(\n        e.clientX,\n        container.clientHeight - e.clientY\n      );\n    };\n    window.addEventListener('mousemove', onMouseMove);\n\n    // 6) Animation loop\n    renderer.setAnimationLoop(() => {\n      uniforms.iTime.value = clock.getElapsedTime();\n      renderer.render(scene, camera);\n    });\n\n    // 7) Cleanup on unmount\n    return () => {\n      window.removeEventListener('resize', onResize);\n      window.removeEventListener('mousemove', onMouseMove);\n\n      renderer.setAnimationLoop(null);\n\n      const canvas = renderer.domElement;\n      if (canvas && canvas.parentNode) {\n        canvas.parentNode.removeChild(canvas);\n      }\n\n      material.dispose();\n      geometry.dispose();\n      renderer.dispose();\n    };\n  }, []);\n\n  return (\n    <div\n      ref={containerRef}\n      className=\"shader-container\"\n      style={{\n        position:     'fixed',\n        top:          0,\n        left:         0,\n        width:        '100vw',\n        height:       '100vh',\n        zIndex:       -1,\n        pointerEvents:'none'\n      }}\n      aria-label=\"Warp Drive animated background\"\n    />\n  );\n};\n\nexport default WarpDriveShader;\n",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "dhileepkumargm",
+    "slug": "warp-drive-shader",
+    "registry_url": "https://21st.dev/r/dhileepkumargm/warp-drive-shader",
+    "title": "Warp Drive shader",
+    "description": "This \"Warp Drive\" shader simulates the visual spectacle of traveling through a wormhole. It transforms the 2D plane into a dynamic, 3D-like tunnel of streaking starlight. The animation is fully interactive, allowing you to control the center of the warp effect with your mouse, bending and shifting the fabric of spacetime.",
+    "category": "shader",
+    "category_group": "Marketing Blocks",
+    "downloads": 5,
+    "likes": 0
+  }
+}

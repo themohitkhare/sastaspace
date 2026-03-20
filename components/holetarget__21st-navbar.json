@@ -1,0 +1,108 @@
+{
+  "name": "21st-navbar",
+  "type": "registry:components",
+  "dependencies": [
+    "clsx"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "/components/components/21st-navbar.tsx",
+      "content": "\"use client\"\r\n\r\nimport * as React from \"react\"\r\nimport clsx from 'clsx'\r\n\r\ninterface NavButton {\r\n  className?: string\r\n  children: React.ReactNode\r\n  variant?: 'default' | 'outline'\r\n  onClick?: () => void\r\n}\r\n\r\nconst Button: React.FC<NavButton> = ({ \r\n  className, \r\n  children, \r\n  variant = 'default',\r\n  onClick \r\n}) => {\r\n  return (\r\n    <button\r\n      onClick={onClick}\r\n      className={clsx(\r\n        'inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors',\r\n        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2',\r\n        'disabled:pointer-events-none disabled:opacity-50',\r\n        'h-10 px-4 py-2',\r\n        variant === 'default' && [\r\n          'bg-black text-white hover:bg-black/90',\r\n          'dark:bg-white dark:text-black dark:hover:bg-white/90'\r\n        ],\r\n        variant === 'outline' && [\r\n          'border border-current',\r\n          'hover:bg-black/10 dark:hover:bg-white/10'\r\n        ],\r\n        className\r\n      )}\r\n    >\r\n      {children}\r\n    </button>\r\n  )\r\n}\r\n\r\ninterface NavItem {\r\n  to?: string\r\n  text: string\r\n  items?: {\r\n    icon?: {\r\n      dark: string\r\n      light: string\r\n    }\r\n    text: string\r\n    description?: string\r\n    to: string\r\n  }[]\r\n}\r\n\r\ninterface HeaderProps {\r\n  className?: string\r\n  theme?: 'light' | 'dark'\r\n  isSticky?: boolean\r\n  isStickyOverlay?: boolean\r\n  withBorder?: boolean\r\n  logo?: React.ReactNode\r\n  menuItems?: NavItem[]\r\n  onThemeChange?: () => void\r\n  rightContent?: React.ReactNode\r\n}\r\n\r\nconst ChevronIcon = () => (\r\n  <svg\r\n    width=\"10\"\r\n    height=\"6\"\r\n    viewBox=\"0 0 10 6\"\r\n    fill=\"none\"\r\n    xmlns=\"http://www.w3.org/2000/svg\"\r\n    className=\"w-2.5 opacity-60 [&_path]:stroke-2\"\r\n  >\r\n    <path d=\"M1 1L5 5L9 1\" stroke=\"currentColor\" strokeWidth=\"2\" strokeLinecap=\"round\" strokeLinejoin=\"round\"/>\r\n  </svg>\r\n)\r\n\r\nconst Navigation: React.FC<{ isDarkTheme?: boolean; items: NavItem[] }> = ({ isDarkTheme, items }) => (\r\n  <nav>\r\n    <ul className=\"flex gap-x-10 xl:gap-x-8 lg:hidden [@media(max-width:1070px)]:gap-x-6\">\r\n      {items.map(({ to, text, items }, index) => {\r\n        const Tag = to ? 'a' : 'button'\r\n        return (\r\n          <li\r\n            className={clsx('relative [perspective:2000px]', items?.length > 0 && 'group')}\r\n            key={index}\r\n          >\r\n            <Tag\r\n              className={clsx(\r\n                'flex items-center gap-x-1 whitespace-pre text-sm',\r\n                isDarkTheme ? 'text-white' : 'text-black dark:text-white'\r\n              )}\r\n              href={to}\r\n            >\r\n              {text}\r\n              {items?.length > 0 && <ChevronIcon />}\r\n            </Tag>\r\n            {items?.length > 0 && (\r\n              <div\r\n                className={clsx(\r\n                  'absolute -left-5 top-full w-[300px] pt-5',\r\n                  'pointer-events-none opacity-0',\r\n                  'origin-top-left transition-[opacity,transform] duration-200 [transform:rotateX(-12deg)_scale(0.9)]',\r\n                  'group-hover:pointer-events-auto group-hover:visible group-hover:opacity-100 group-hover:[transform:none]'\r\n                )}\r\n              >\r\n                <ul\r\n                  className={clsx(\r\n                    'relative flex min-w-[248px] flex-col gap-y-0.5 rounded-[14px] border p-2.5',\r\n                    'dark:border-[#16181D] dark:bg-[#0B0C0F] dark:shadow-[0px_14px_20px_0px_rgba(0,0,0,.5)]',\r\n                    isDarkTheme\r\n                      ? 'border-[#16181D] bg-[#0B0C0F] shadow-[0px_14px_20px_0px_rgba(0,0,0,.5)]'\r\n                      : 'border-gray-200 bg-white shadow-[0px_14px_20px_0px_rgba(0,0,0,.1)]'\r\n                  )}\r\n                >\r\n                  {items.map(({ icon, text, description, to }, index) => (\r\n                    <li key={index}>\r\n                      <a\r\n                        className={clsx(\r\n                          'group/link relative flex items-center overflow-hidden whitespace-nowrap rounded-[14px] p-2',\r\n                          'before:absolute before:inset-0 before:z-10 before:opacity-0 before:transition-opacity before:duration-200 hover:before:opacity-100',\r\n                          isDarkTheme\r\n                            ? 'text-white before:bg-[#16181D]'\r\n                            : 'text-black before:bg-[#f5f5f5]'\r\n                        )}\r\n                        href={to}\r\n                      >\r\n                        {icon && (\r\n                          <div\r\n                            className={clsx(\r\n                              'relative z-10 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border',\r\n                              isDarkTheme\r\n                                ? 'border-[#2E3038] bg-[#16181D]'\r\n                                : 'border-gray-200 bg-[#F5F5F5]'\r\n                            )}\r\n                          >\r\n                            <img\r\n                              className=\"h-5 w-5\"\r\n                              src={isDarkTheme ? icon.dark : icon.light}\r\n                              width={20}\r\n                              height={20}\r\n                              loading=\"lazy\"\r\n                              alt=\"\"\r\n                              aria-hidden\r\n                            />\r\n                          </div>\r\n                        )}\r\n                        <div className=\"relative z-10 ml-3\">\r\n                          <span className=\"block text-sm font-medium\">{text}</span>\r\n                          {description && (\r\n                            <span\r\n                              className={clsx(\r\n                                'mt-0.5 block text-sm',\r\n                                isDarkTheme ? 'text-gray-400' : 'text-gray-500'\r\n                              )}\r\n                            >\r\n                              {description}\r\n                            </span>\r\n                          )}\r\n                        </div>\r\n                      </a>\r\n                    </li>\r\n                  ))}\r\n                </ul>\r\n              </div>\r\n            )}\r\n          </li>\r\n        )\r\n      })}\r\n    </ul>\r\n  </nav>\r\n)\r\n\r\nconst MobileMenuButton: React.FC<{ onClick: () => void; isDarkTheme?: boolean }> = ({\r\n  onClick,\r\n  isDarkTheme,\r\n}) => (\r\n  <button\r\n    className={clsx(\r\n      'hidden lg:block',\r\n      'relative h-8 w-8',\r\n      isDarkTheme ? 'text-white' : 'text-black dark:text-white'\r\n    )}\r\n    onClick={onClick}\r\n  >\r\n    <span className=\"absolute left-1/2 top-1/2 block h-0.5 w-5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-current\" />\r\n    <span className=\"absolute left-1/2 top-1/2 block h-0.5 w-5 -translate-x-1/2 translate-y-1 rounded-full bg-current\" />\r\n  </button>\r\n)\r\n\r\nexport const Header: React.FC<HeaderProps> = ({\r\n  className,\r\n  theme = 'light',\r\n  isSticky = false,\r\n  isStickyOverlay = false,\r\n  withBorder = false,\r\n  logo,\r\n  menuItems = [],\r\n  onThemeChange,\r\n  rightContent,\r\n}) => {\r\n  const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false)\r\n  const isDarkTheme = theme === 'dark'\r\n\r\n  return (\r\n    <header\r\n      className={clsx(\r\n        'relative z-40 w-full',\r\n        isSticky && 'sticky top-0',\r\n        isStickyOverlay && 'bg-white/80 backdrop-blur-md dark:bg-[#0B0C0F]/80',\r\n        withBorder && 'border-b border-gray-200 dark:border-[#16181D]',\r\n        className\r\n      )}\r\n    >\r\n      <div className=\"mx-auto max-w-[1760px] px-5 py-4\">\r\n        <div className=\"flex items-center justify-between\">\r\n          {logo}\r\n          <Navigation isDarkTheme={isDarkTheme} items={menuItems} />\r\n          <div className=\"flex items-center gap-x-6\">\r\n            {rightContent}\r\n            {onThemeChange && (\r\n              <Button\r\n                variant=\"default\"\r\n                onClick={onThemeChange}\r\n              >\r\n                {isDarkTheme ? '🌞' : '🌙'}\r\n              </Button>\r\n            )}\r\n            <MobileMenuButton\r\n              isDarkTheme={isDarkTheme}\r\n              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}\r\n            />\r\n          </div>\r\n        </div>\r\n      </div>\r\n    </header>\r\n  )\r\n}\r\n\r\nexport { Button }\r\nexport default Header\r\n",
+      "type": "registry:components",
+      "target": ""
+    }
+  ],
+  "cssVars": {
+    "light": {
+      "--navbar-height": "4rem"
+    },
+    "dark": {},
+    "theme": {
+      "animate-navbar-slide-down": "navbar-slide-down 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+      "animate-navbar-dropdown": "navbar-dropdown 0.2s cubic-bezier(0.4, 0, 0.2, 1)"
+    }
+  },
+  "css": {
+    "@keyframes navbar-slide-down": {
+      "0%": {
+        "transform": "translateY(-100%)"
+      },
+      "100%": {
+        "transform": "translateY(0)"
+      }
+    },
+    "@keyframes navbar-dropdown": {
+      "0%": {
+        "opacity": "0",
+        "transform": "rotateX(-12deg) scale(0.9)"
+      },
+      "100%": {
+        "opacity": "1",
+        "transform": "rotateX(0) scale(1)"
+      }
+    }
+  },
+  "tailwind": {
+    "config": {
+      "theme": {
+        "extend": {
+          "colors": {
+            "navbar": {
+              "light": {
+                "bg": "rgb(255 255 255 / 0.8)",
+                "border": "rgb(229 231 235)",
+                "text": "rgb(17 24 39)",
+                "hover": "rgb(243 244 246)"
+              },
+              "dark": {
+                "bg": "rgb(11 12 15 / 0.8)",
+                "border": "rgb(22 24 29)",
+                "text": "rgb(255 255 255)",
+                "hover": "rgb(22 24 29)"
+              }
+            }
+          },
+          "animation": {
+            "navbar-slide-down": "navbar-slide-down 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+            "navbar-dropdown": "navbar-dropdown 0.2s cubic-bezier(0.4, 0, 0.2, 1)"
+          },
+          "keyframes": {
+            "navbar-slide-down": {
+              "0%": {
+                "transform": "translateY(-100%)"
+              },
+              "100%": {
+                "transform": "translateY(0)"
+              }
+            },
+            "navbar-dropdown": {
+              "0%": {
+                "opacity": "0",
+                "transform": "rotateX(-12deg) scale(0.9)"
+              },
+              "100%": {
+                "opacity": "1",
+                "transform": "rotateX(0) scale(1)"
+              }
+            }
+          },
+          "backdropBlur": {
+            "navbar": "10px"
+          }
+        }
+      }
+    }
+  },
+  "_meta": {
+    "author": "holetarget",
+    "slug": "21st-navbar",
+    "registry_url": "https://21st.dev/r/holetarget/21st-navbar",
+    "title": "Simple Navbar with Dropdown",
+    "description": "A modern, fully-customizable React navigation bar with smooth dropdown animations and seamless dark mode support. Features include animated dropdowns with perspective effects, glass morphism for sticky headers, and mobile responsiveness. Built with TypeScript and Tailwind CSS, it includes a custom button component and supports dynamic theme switching. Perfect for modern web applications requiring a sleek, professional navigation experience.\n\nKey features in bullet points:\n\n🎨 Light/Dark mode with smooth transitions\n📱 Responsive design with mobile menu\n🔄 Animated dropdowns with 3D effects\n💎 Glass morphism support for sticky headers\n🎯 TypeScript & Tailwind CSS\n🔧 Highly customizable (colors, animations, layout)\n📦 Zero external dependencies (includes custom button)",
+    "category": "navbar-navigation",
+    "category_group": "Marketing Blocks",
+    "downloads": 578,
+    "likes": 4
+  }
+}

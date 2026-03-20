@@ -1,0 +1,27 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "footer",
+  "type": "registry:component",
+  "title": "Footer",
+  "description": "A footer component.",
+  "dependencies": [],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/ui/footer.tsx",
+      "content": "import { useState } from \"react\";\nimport { cn } from \"@/lib/utils\";\n\nexport const Component = () => {\n  const [count, setCount] = useState(0);\n\n  return (\n    <div className={cn(\"flex flex-col items-center gap-4 p-4 rounded-lg\")}>\n      <h1 className=\"text-2xl font-bold mb-2\">Component Example</h1>\n      <h2 className=\"text-xl font-semibold\">{count}</h2>\n      <div className=\"flex gap-2\">\n        <button onClick={() => setCount((prev) => prev - 1)}>-</button>\n        <button onClick={() => setCount((prev) => prev + 1)}>+</button>\n      </div>\n    </div>\n  );\n};\n",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "mdadul",
+    "slug": "footer",
+    "registry_url": "https://21st.dev/r/mdadul/footer",
+    "title": "Footer",
+    "description": "The footer of Chillbion’s website serves as a comprehensive navigation and contact hub, reinforcing the brand’s identity and professionalism. It includes key links to services and company pages, ensuring visitors can easily explore offerings like MVP development, AI solutions, and full-stack engineering. Contact information is clearly presented, including an email address, phone number, and office location in Dhaka, Bangladesh — building trust and accessibility. The footer design is clean and modern, with a tech-forward feel, aligned with Chillbion’s mission of helping startups transform ideas into reality using cutting-edge technology.",
+    "category": "footer",
+    "category_group": "Marketing Blocks",
+    "downloads": 163,
+    "likes": 0
+  }
+}

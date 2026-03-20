@@ -1,0 +1,55 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "default",
+  "type": "registry:component",
+  "title": "Default",
+  "description": "A default component.",
+  "dependencies": [
+    "lucide-react"
+  ],
+  "registryDependencies": [
+    "https://21st.dev/r/shadcn/accordion"
+  ],
+  "files": [
+    {
+      "path": "src/components/ui/default.tsx",
+      "content": "import {\n  Accordion,\n  AccordionContent,\n  AccordionItem,\n  AccordionTrigger,\n} from \"@/components/ui/accordion\";\nimport { cn } from \"@/lib/utils\";\nimport { FileText, Folder, LucideIcon, Settings, Users } from \"lucide-react\";\n\nconst data: {\n  value: string;\n  title: string;\n  subtitle: string;\n  content: string;\n  icon: LucideIcon;\n  textColor: string;\n  bgColor: string;\n}[] = [\n  {\n    value: \"documents\",\n    title: \"Documents\",\n    subtitle: \"Manage your files\",\n    content:\n      \"View, upload, and organize all your documents in one place. Keep everything structured and easy to find.\",\n    icon: FileText,\n    textColor: \"text-blue-500\",\n    bgColor: \"bg-blue-500/10\",\n  },\n  {\n    value: \"projects\",\n    title: \"Projects\",\n    subtitle: \"Organize your work\",\n    content:\n      \"Group related files and tasks into projects to keep your workflow clean and efficient.\",\n    icon: Folder,\n    textColor: \"text-orange-400\",\n    bgColor: \"bg-orange-400/10\",\n  },\n  {\n    value: \"settings\",\n    title: \"Settings\",\n    subtitle: \"Customize your experience\",\n    content:\n      \"Adjust preferences, update account details, and configure application behavior.\",\n    icon: Settings,\n    textColor: \"text-teal-400\",\n    bgColor: \"bg-teal-400/10\",\n  },\n  {\n    value: \"team\",\n    title: \"Team Members\",\n    subtitle: \"Manage users and roles\",\n    content:\n      \"Invite new members, assign roles, and control access permissions for your team.\",\n    icon: Users,\n    textColor: \"text-red-500\",\n    bgColor: \"bg-red-500/10\",\n  },\n];\n\nconst AccordionDemo = () => (\n  <div className=\"flex items-center justify-center max-w-md w-full\">\n    <Accordion\n      className=\"w-full -space-y-px\"\n      defaultValue={[data[0].value]}\n    >\n      {data.map((item) => {\n        const Icon = item.icon;\n        return (\n          <AccordionItem\n            key={item.value}\n            value={item.value}\n            className=\" border bg-background px-4 first:rounded-t-lg last:rounded-b-lg last:border-b\"\n          >\n            <AccordionTrigger className=\"hover:no-underline\">\n              <div className=\"flex items-center gap-3\">\n                <div\n                  className={cn(\n                    \"p-2.5 rounded-xl\",\n                    item.bgColor,\n                    item.textColor\n                  )}\n                >\n                  <Icon size={20} className=\"size-5\" />\n                </div>\n                <div className=\"flex flex-col items-start text-left\">\n                  <span>{item.title}</span>\n                  <span className=\"text-sm text-muted-foreground\">\n                    {item.subtitle}\n                  </span>\n                </div>\n              </div>\n            </AccordionTrigger>\n            <AccordionContent className=\"ps-14\">\n              <p className=\"text-muted-foreground\">{item.content}</p>\n            </AccordionContent>\n          </AccordionItem>\n        );\n      })}\n    </Accordion>\n  </div>\n);\n\nexport default AccordionDemo;\n",
+      "type": "registry:component"
+    }
+  ],
+  "cssVars": {
+    "theme": {
+      "--animate-accordion-down": "accordion-down 0.2s ease-out",
+      "--animate-accordion-up": "accordion-up 0.2s ease-out"
+    }
+  },
+  "css": {
+    "@keyframes accordion-down": {
+      "from": {
+        "height": "0"
+      },
+      "to": {
+        "height": "var(--radix-accordion-content-height)"
+      }
+    },
+    "@keyframes accordion-up": {
+      "from": {
+        "height": "var(--radix-accordion-content-height)"
+      },
+      "to": {
+        "height": "0"
+      }
+    }
+  },
+  "_meta": {
+    "author": "shadcnspace",
+    "slug": "default",
+    "registry_url": "https://21st.dev/r/shadcnspace/default",
+    "title": "Default",
+    "description": "Here is according default component",
+    "category": "accordion",
+    "category_group": "UI Components",
+    "downloads": 6,
+    "likes": 0
+  }
+}

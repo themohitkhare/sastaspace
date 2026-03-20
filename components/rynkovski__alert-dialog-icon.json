@@ -1,0 +1,31 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "alert-dialog-icon",
+  "type": "registry:component",
+  "title": "Alert Dialog Icon",
+  "description": "A alert-dialog-icon component.",
+  "dependencies": [
+    "lucide-react"
+  ],
+  "registryDependencies": [
+    "https://21st.dev/r/shadcn/alert-dialog"
+  ],
+  "files": [
+    {
+      "path": "src/components/ui/alert-dialog-icon.tsx",
+      "content": "import { Trash2 } from \"lucide-react\"\n\nimport {\n    AlertDialog,\n    AlertDialogAction,\n    AlertDialogCancel,\n    AlertDialogContent,\n    AlertDialogDescription,\n    AlertDialogFooter,\n    AlertDialogHeader,\n    AlertDialogTitle,\n    AlertDialogTrigger,\n} from \"@/components/ui/alert-dialog\"\nimport { Button } from \"@/components/ui/button\"\n\n\nexport function Component() {\n    return (\n        <AlertDialog>\n            <AlertDialogTrigger asChild>\n                <Button>Icon Dialog</Button>\n            </AlertDialogTrigger>\n            <AlertDialogContent>\n                <AlertDialogHeader>\n                    <div className=\"flex items-center gap-2\">\n                        <Trash2 className=\"h-5 w-5 \" />\n                        <AlertDialogTitle>Delete Account</AlertDialogTitle>\n                    </div>\n                    <AlertDialogDescription>\n                        This action cannot be undone. This will permanently delete your account and remove your data from our\n                        servers.\n                    </AlertDialogDescription>\n                </AlertDialogHeader>\n                <AlertDialogFooter>\n                    <AlertDialogCancel>Cancel</AlertDialogCancel>\n                    <AlertDialogAction>Delete</AlertDialogAction>\n                </AlertDialogFooter>\n            </AlertDialogContent>\n        </AlertDialog>\n    )\n}",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "rynkovski",
+    "slug": "alert-dialog-icon",
+    "registry_url": "https://21st.dev/r/rynkovski/alert-dialog-icon",
+    "title": "Alert Dialog Icon",
+    "description": "Here is Alert Dialog Icon component",
+    "category": "alert",
+    "category_group": "UI Components",
+    "downloads": 24,
+    "likes": 0
+  }
+}

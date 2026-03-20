@@ -1,0 +1,51 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "text-animation",
+  "type": "registry:component",
+  "title": "Text Animation",
+  "description": "A text-animation component.",
+  "dependencies": [],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/ui/text-animation.tsx",
+      "content": "import { cn } from \"@/lib/utils\";\nimport { useState } from \"react\";\n\nexport const Component = () => {\n  const [count, setCount] = useState(0);\n\n  return (\n    <div class=\"h-screen w-full flex flex-col items-center justify-center\">\n\t<p class=\"m-0 text-transparent text-5xl sm:text-7xl md:text-8xl font-serif font-bold uppercase animate-text bg-[url('https://plus.unsplash.com/premium_photo-1661882403999-46081e67c401?w=900&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8OXx8Y29kZXxlbnwwfHwwfHx8MA%3D%3D')] bg-contain bg-clip-text opacity-80\">Text</p>\n\t<p class=\"m-0 text-transparent text-5xl sm:text-7xl md:text-8xl font-serif font-bold uppercase animate-text bg-[url('https://plus.unsplash.com/premium_photo-1661963874418-df1110ee39c1?w=900&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MXx8Y29kZXxlbnwwfHwwfHx8MA%3D%3D')] bg-contain bg-clip-text opacity-80\">Animation</p>\n</div>\n  );\n};\n",
+      "type": "registry:component"
+    }
+  ],
+  "css": {
+    "@keyframes text": {
+      "0%": {
+        "background-position": "0 0"
+      },
+      "50%": {
+        "background-position": "200px"
+      },
+      "100%": {
+        "background-position": "0 0"
+      }
+    },
+    "@keyframes textReverse": {
+      "0%": {
+        "background-position": "0 0"
+      },
+      "50%": {
+        "background-position": "-200px"
+      },
+      "100%": {
+        "background-position": "0 0"
+      }
+    }
+  },
+  "_meta": {
+    "author": "minhxthanh",
+    "slug": "text-animation",
+    "registry_url": "https://21st.dev/r/minhxthanh/text-animation",
+    "title": "Text Animation",
+    "description": "Text Animation",
+    "category": "text",
+    "category_group": "Marketing Blocks",
+    "downloads": 60,
+    "likes": 0
+  }
+}

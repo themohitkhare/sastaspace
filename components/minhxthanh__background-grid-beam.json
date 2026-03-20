@@ -1,0 +1,29 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "background-grid-beam",
+  "type": "registry:component",
+  "title": "Background Grid Beam",
+  "description": "A background-grid-beam component.",
+  "dependencies": [
+    "framer-motion"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/ui/background-grid-beam.tsx",
+      "content": "// GridBeam.tsx\n\n'use client'\n\nimport React from 'react'\nimport { motion } from 'framer-motion'\nimport { cn } from \"@/lib/utils\"\n\nexport const GridBeam: React.FC<{ children: React.ReactNode; className?: string }> = ({\n  children,\n  className\n}) => (\n  <div className={cn('relative w-full h-full bg-grid', className)}>\n    <Beam />\n    {children}\n  </div>\n)\n\nexport const Beam = () => {\n  return (\n    <svg\n      width=\"156\"\n      height=\"63\"\n      viewBox=\"0 0 156 63\"\n      fill=\"none\"\n      xmlns=\"http://www.w3.org/2000/svg\"\n      className=\"absolute top-0 left-0 ml-24 mt-8 pointer-events-none\"\n    >\n      <path\n        d=\"M31 .5h32M0 .5h32m30 31h32m-1 0h32m-1 31h32M62.5 32V0m62 63V31\"\n        stroke=\"url(#grad1)\"\n        strokeWidth={1.5}\n      />\n      <defs>\n        <motion.linearGradient\n          id=\"grad1\"\n          variants={{\n            initial: {\n              x1: '40%',\n              x2: '50%',\n              y1: '160%',\n              y2: '180%'\n            },\n            animate: {\n              x1: '0%',\n              x2: '10%',\n              y1: '-40%',\n              y2: '-20%'\n            }\n          }}\n          animate=\"animate\"\n          initial=\"initial\"\n          transition={{\n            duration: 1.8,\n            repeat: Infinity,\n            repeatType: 'loop',\n            ease: 'linear',\n            repeatDelay: 2\n          }}\n        >\n          <stop stopColor=\"#18CCFC\" stopOpacity=\"0\" />\n          <stop stopColor=\"#18CCFC\" />\n          <stop offset=\"0.325\" stopColor=\"#6344F5\" />\n          <stop offset=\"1\" stopColor=\"#AE48FF\" stopOpacity=\"0\" />\n        </motion.linearGradient>\n      </defs>\n    </svg>\n  )\n}\n",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "minhxthanh",
+    "slug": "background-grid-beam",
+    "registry_url": "https://21st.dev/r/minhxthanh/background-grid-beam",
+    "title": "Background Grid Beam",
+    "description": "Background Grid Beam\n",
+    "category": "hero",
+    "category_group": "Marketing Blocks",
+    "downloads": 76,
+    "likes": 0
+  }
+}

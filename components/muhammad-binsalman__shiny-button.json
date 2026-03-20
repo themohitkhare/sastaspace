@@ -1,0 +1,29 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "shiny-button",
+  "type": "registry:component",
+  "title": "Shiny Button",
+  "description": "A shiny-button component.",
+  "dependencies": [
+    "clsx"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/ui/shiny-button.tsx",
+      "content": "import React from 'react';\nimport clsx from 'clsx';\n\ntype Variant = 'default' | 'green' | 'indigo' | 'red';\n\ninterface FancyButtonProps {\n  icon: React.ReactNode;\n  variant?: Variant;\n  onClick?: () => void;\n  className?: string;\n  ariaLabel?: string;\n}\n\nconst variantClasses: Record<Variant, string> = {\n  default: `\n    border-white/10 hover:border-white/30 \n    bg-gradient-to-tr from-black/60 to-black/40 \n    hover:bg-gradient-to-tr hover:from-white/10 hover:to-black/40 \n    hover:shadow-white/20`,\n  green: `\n    border-green-500/20 hover:border-green-500/50 \n    bg-gradient-to-tr from-black/60 to-black/40 \n    hover:bg-gradient-to-tr hover:from-green-500/10 hover:to-black/40 \n    hover:shadow-green-500/30`,\n  indigo: `\n    border-indigo-500/20 hover:border-indigo-500/50 \n    bg-gradient-to-tr from-black/60 to-black/40 \n    hover:bg-gradient-to-tr hover:from-indigo-500/10 hover:to-black/40 \n    hover:shadow-indigo-500/30`,\n  red: `\n    border-red-500/20 hover:border-red-500/50 \n    bg-gradient-to-tr from-black/60 to-black/40 \n    hover:bg-gradient-to-tr hover:from-red-500/10 hover:to-black/40 \n    hover:shadow-red-500/30`,\n};\n\nconst glowGradientClasses: Record<Variant, string> = {\n  default: 'via-white/10',\n  green: 'via-green-400/20',\n  indigo: 'via-indigo-400/20',\n  red: 'via-red-400/20',\n};\n\nconst FancyButton: React.FC<FancyButtonProps> = ({\n  icon,\n  variant = 'default',\n  onClick,\n  className = '',\n  ariaLabel = 'Fancy Button',\n}) => {\n  return (\n    <button\n      onClick={onClick}\n      aria-label={ariaLabel}\n      className={clsx(\n        'p-5 rounded-full backdrop-blur-lg shadow-lg transition-all duration-300 ease-out cursor-pointer group relative overflow-hidden',\n        'hover:scale-110 active:scale-95 hover:rotate-2 active:rotate-0 hover:shadow-2xl',\n        variantClasses[variant],\n        className\n      )}\n    >\n      <div\n        className={clsx(\n          'absolute inset-0 bg-gradient-to-r from-transparent to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700 ease-out',\n          glowGradientClasses[variant]\n        )}\n      />\n      <div className=\"relative z-10\">{icon}</div>\n    </button>\n  );\n};\n\nexport default FancyButton;\n",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "muhammad-binsalman",
+    "slug": "shiny-button",
+    "registry_url": "https://21st.dev/r/muhammad-binsalman/shiny-button",
+    "title": "Shiny Button",
+    "description": "A beautiful, animated, and theme-aware circular button component built with Tailwind CSS. Includes hover effects, rotating transitions, gradient overlays, and support for custom icons. Perfect for modern dashboards, media apps, or landing pages that need a premium visual punch.",
+    "category": "testimonials",
+    "category_group": "Marketing Blocks",
+    "downloads": 23,
+    "likes": 0
+  }
+}

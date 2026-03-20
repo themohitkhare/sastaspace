@@ -1,0 +1,27 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "vertical-text",
+  "type": "registry:component",
+  "title": "Vertical Text",
+  "description": "A vertical-text component.",
+  "dependencies": [],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/ui/vertical-text.tsx",
+      "content": "import { cn } from \"@/lib/utils\";\n\ntype ElementType = React.ElementType;\n\ninterface TextVerticalProps extends React.HTMLAttributes<HTMLElement> {\n  as?: ElementType;\n}\n\nexport const Component = ({\n  as: Component = 'div',\n  className,\n  style,\n  ...props\n}: TextVerticalProps) => {\n\n   return (\n    <Component\n      className={cn('size-min -rotate-180 whitespace-nowrap', className)}\n      style={{\n        writingMode: 'vertical-rl',\n        ...style,\n      }}\n      {...props}\n    />\n  );\n};\n",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "youcefbnm",
+    "slug": "vertical-text",
+    "registry_url": "https://21st.dev/r/youcefbnm/vertical-text",
+    "title": "Vertical Text",
+    "description": "Vertical display text",
+    "category": "text",
+    "category_group": "Marketing Blocks",
+    "downloads": 17,
+    "likes": 0
+  }
+}

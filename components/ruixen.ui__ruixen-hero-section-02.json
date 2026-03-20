@@ -1,0 +1,34 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "ruixen-hero-section-02",
+  "type": "registry:component",
+  "title": "Ruixen Hero Section 02",
+  "description": "A ruixen-hero-section-02 component.",
+  "dependencies": [
+    "framer-motion",
+    "lucide-react",
+    "next"
+  ],
+  "registryDependencies": [
+    "https://21st.dev/r/bundui/button",
+    "https://21st.dev/r/serafimcloud/alert"
+  ],
+  "files": [
+    {
+      "path": "src/components/ui/ruixen-hero-section-02.tsx",
+      "content": "\"use client\";\n\nimport { motion } from \"framer-motion\";\nimport { Button } from \"@/components/ui/button\";\nimport { Github, Settings2, Sparkles, Zap } from \"lucide-react\";\nimport DotPattern from \"@/components/ui/dot-pattern\";\nimport { cn } from \"@/lib/utils\";\nimport Link from \"next/link\";\n\n\nexport default function HeroSection02() {\n\n  return (\n    <section className=\"relative w-full min-h-[100vh] flex flex-col items-center justify-center px-6 py-24 overflow-hidden bg-gradient-to-br from-background to-muted/30\">\n      <DotPattern className={cn(\n        \"[mask-image:radial-gradient(40vw_circle_at_center,white,transparent)]\",\n      )} />\n      <motion.div\n        initial={{ opacity: 0, scale: 0.6 }}\n        animate={{ opacity: 0.4, scale: 1 }}\n        transition={{ duration: 1.4 }}\n        className=\"absolute top-[-100px] left-[-100px] w-[300px] h-[300px] bg-primary/30 blur-[120px] rounded-full z-0\"\n      />\n      <motion.div\n        initial={{ opacity: 0, scale: 0.6 }}\n        animate={{ opacity: 0.3, scale: 1 }}\n        transition={{ duration: 1.6, delay: 0.3 }}\n        className=\"absolute bottom-[-100px] right-[-100px] w-[400px] h-[400px] bg-secondary/20 blur-[160px] rounded-full z-0\"\n      />\n\n      <div className=\"absolute inset-0 z-0 pointer-events-none\">\n        {Array.from({ length: 30 }).map((_, i) => (\n          <motion.div\n            key={i}\n            initial={{ opacity: 0, y: 0 }}\n            animate={{ opacity: 0.2, y: [0, -20, 0] }}\n            transition={{\n              duration: 5 + Math.random() * 5,\n              repeat: Infinity,\n              delay: Math.random() * 5,\n            }}\n            className=\"absolute w-1 h-1 bg-muted-foreground/20 rounded-full\"\n            style={{\n              top: `${Math.random() * 100}%`,\n              left: `${Math.random() * 100}%`,\n            }}\n          />\n        ))}\n      </div>\n\n      <div className=\"relative z-10 text-center max-w-2xl space-y-6\">\n        <button\n          className=\"group relative inline-flex h-11 cursor-pointer items-center justify-center rounded-3xl border-0 bg-[length:200%] px-8 py-2 font-medium text-black dark:text-white transition-colors [background-clip:padding-box,border-box,border-box] [background-origin:border-box] [border:calc(0.08*1rem)_solid_transparent]\n            focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50\n            before:absolute before:bottom-[-20%] before:left-1/2 before:z-0 before:h-1/5 before:w-3/5 before:-translate-x-1/2 before:animate-[rainbow_3s_linear_infinite] before:bg-[linear-gradient(90deg,var(--color-1),var(--color-2),var(--color-3),var(--color-4),var(--color-5))] before:bg-[length:200%] before:[filter:blur(12px)]\n            bg-white dark:bg-black\"\n          style={{\n            ['--color-1' as any]: 'hsl(210, 100%, 60%)', // Blue\n            ['--color-2' as any]: 'hsl(280, 80%, 65%)',  // Purple\n            ['--color-3' as any]: 'hsl(330, 100%, 65%)', // Pink\n            ['--color-4' as any]: 'hsl(20, 100%, 60%)',  // Orange\n            ['--color-5' as any]: 'hsl(140, 70%, 50%)',  // Green\n          }}\n        >\n          <Link\n            href=\"https://github.com/ruixenui/ruixen-free-components\"\n            target=\"_blank\"\n            rel=\"noopener noreferrer\"\n            className=\"inline-flex border px-3 py-2 rounded-2xl items-center text-black dark:text-white font-normal\"\n          >\n            <Github className=\"w-4 h-4 mr-2\" />\n            Ruixen UI\n          </Link>\n        </button>\n\n        <motion.h1\n          initial={{ opacity: 0, y: 30 }}\n          animate={{ opacity: 1, y: 0 }}\n          transition={{ duration: 0.6 }}\n          className=\"text-4xl md:text-6xl font-bold leading-tight tracking-tight\"\n        >\n          Build Exceptional Interfaces with Ease\n        </motion.h1>\n\n        <motion.p\n          initial={{ opacity: 0, y: 20 }}\n          animate={{ opacity: 1, y: 0 }}\n          transition={{ duration: 0.6, delay: 0.2 }}\n          className=\"text-lg text-muted-foreground max-w-xl mx-auto\"\n        >\n          Use our component library powered by Shadcn UI & Tailwind CSS to craft beautiful, fast, and accessible UIs.\n        </motion.p>\n        <motion.div\n          initial={{ opacity: 0, y: 20 }}\n          animate={{ opacity: 1, y: 0 }}\n          transition={{ duration: 0.6, delay: 0.4 }}\n          className=\"mt-8 flex justify-center gap-4 flex-wrap\"\n        >\n          <Button size=\"lg\">Get Started</Button>\n          <Button size=\"lg\" variant=\"outline\">\n            Browse Components\n          </Button>\n        </motion.div>\n      </div>\n      {/* <div className=\"relative z-10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 mt-16 w-full max-w-4xl\">\n        {[...Array(3)].map((_, idx) => {\n          const icons = [<Zap className=\"size-6\" />, <Settings2 className=\"size-6\" />, <Sparkles className=\"size-6\" />];\n          const titles = [\"Customizable\", \"Control\", \"Powered By AI\"];\n\n          return (\n          <div\n            key={idx}\n            className=\"group flex flex-col items-center justify-center rounded-2xl border border-white/10 transition-transform hover:scale-[1.02] p-6\"\n          >\n            <div className=\"flex items-center justify-center size-12 mb-4 border border-white/20 bg-background/50 rounded-lg shadow-inner\">\n              {icons[idx]}\n            </div>\n            <h3 className=\"text-lg font-medium text-gray-700 dark:text-gray-400 text-center\">{titles[idx]}</h3>\n          </div>\n          );\n        })}\n      </div> */}\n    </section>\n  );\n}\n",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "ruixen.ui",
+    "slug": "ruixen-hero-section-02",
+    "registry_url": "https://21st.dev/r/ruixen.ui/ruixen-hero-section-02",
+    "title": "ruixen-hero-section-02",
+    "description": "This hero section is a visually striking, interactive introduction component designed to showcase a ruixen UI. It features a dynamic background with soft gradients, animated floating dots, and glowing blur effects to create a futuristic aesthetic.",
+    "category": "hero",
+    "category_group": "Marketing Blocks",
+    "downloads": 89,
+    "likes": 0
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "button-4",
+  "type": "registry:component",
+  "title": "Button 4",
+  "description": "A button-4 component.",
+  "dependencies": [],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/ui/button-4.tsx",
+      "content": "import React, { useState } from \"react\";\n\n\nexport const Component = () => {\n  const [selected, setSelected] = useState(\"\");\n\n  const handleChange = (value) => {\n    setSelected(value);\n  };\n\n  return (\n    <div className=\"radio-group\">\n      <div className={`radio-container ${selected === \"yes\" ? \"active\" : \"\"}`}>\n        <label className=\"radio-button\">\n          <input\n            type=\"radio\"\n            name=\"option\"\n            value=\"yes\"\n            className=\"radio-input-element\"\n            checked={selected === \"yes\"}\n            onChange={() => handleChange(\"yes\")}\n          />\n          <svg\n            className=\"radio-icon-element\"\n            xmlns=\"http://www.w3.org/2000/svg\"\n            viewBox=\"0 0 24 24\"\n          >\n            <circle cx=\"12\" cy=\"12\" r=\"8\"></circle>\n          </svg>\n          <div className=\"glow\"></div>\n        </label>\n      </div>\n\n      <div className={`radio-container danger ${selected === \"no\" ? \"active\" : \"\"}`}>\n        <label className=\"radio-button\">\n          <input\n            type=\"radio\"\n            name=\"option\"\n            value=\"no\"\n            className=\"radio-input-element\"\n            checked={selected === \"no\"}\n            onChange={() => handleChange(\"no\")}\n          />\n          <svg\n            className=\"radio-icon-element\"\n            xmlns=\"http://www.w3.org/2000/svg\"\n            viewBox=\"0 0 24 24\"\n          >\n            <path d=\"M6 18 18 6M6 6l12 12\"></path>\n          </svg>\n          <div className=\"glow\"></div>\n        </label>\n      </div>\n    </div>\n  );\n};\n",
+      "type": "registry:component"
+    }
+  ],
+  "css": {
+    "@keyframes pulse": {
+      "0%": {
+        "transform": "perspective(100px) rotateX(10deg) scale(0.8)",
+        "opacity": "0.45"
+      },
+      "50%": {
+        "transform": "perspective(100px) rotateX(10deg) scale(1)",
+        "opacity": "0.75"
+      },
+      "100%": {
+        "transform": "perspective(100px) rotateX(10deg) scale(0.8)",
+        "opacity": "0.45"
+      }
+    }
+  },
+  "_meta": {
+    "author": "beratberkayg",
+    "slug": "button-4",
+    "registry_url": "https://21st.dev/r/beratberkayg/button-4",
+    "title": "Button",
+    "description": "realistic animated button",
+    "category": "button",
+    "category_group": "UI Components",
+    "downloads": 0,
+    "likes": 0
+  }
+}

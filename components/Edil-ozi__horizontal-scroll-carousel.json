@@ -1,0 +1,30 @@
+{
+  "name": "horizontal-scroll-carousel",
+  "type": "registry:ui",
+  "dependencies": [
+    "framer-motion"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "/components/ui/horizontal-scroll-carousel.tsx",
+      "content": "\"use client\"\n\nimport * as React from \"react\"\nimport { motion, useTransform, useScroll } from \"framer-motion\"\nimport Image from \"next/image\"\n\ninterface HorizontalScrollCarouselProps {\n  images: string[]\n}\n\nconst HorizontalScrollCarousel: React.FC<HorizontalScrollCarouselProps> = ({ images }) => {\n  const targetRef = React.useRef<HTMLDivElement>(null)\n  const { scrollYProgress } = useScroll({\n    target: targetRef,\n    offset: [\"start end\", \"end start\"]\n  })\n\n  const x = useTransform(scrollYProgress, [0, 1], [\"5%\", \"-95%\"])\n\n  return (\n    <section\n      ref={targetRef}\n      className=\"relative h-[400vh] w-full\"\n    >\n      <div className=\"sticky top-0 flex h-screen items-center overflow-hidden\">\n        <motion.div\n          style={{ x }}\n          className=\"flex gap-4\"\n        >\n          {images.map((src) => (\n            <Card\n              src={src}\n              key={src}\n            />\n          ))}\n        </motion.div>\n      </div>\n    </section>\n  )\n}\n\nconst Card: React.FC<{ src: string }> = ({ src }) => {\n  return (\n    <div className=\"group relative h-[450px] w-[450px] overflow-hidden rounded-lg\">\n      <Image\n        src=\"https://www.edilozi.pro/_next/image?url=https%3A%2F%2Fimages.unsplash.com%2Fphoto-1572099606223-6e29045d7de3%3Fq%3D80%26w%3D2070&w=3840&q=75\"\n        fill\n        objectFit=\"cover\"\n        alt=\"carousel image\"\n      />\n    </div>\n  )\n}\n\nexport { HorizontalScrollCarousel };",
+      "type": "registry:ui",
+      "target": ""
+    }
+  ],
+  "tailwind": {
+    "config": {}
+  },
+  "_meta": {
+    "author": "Edil-ozi",
+    "slug": "horizontal-scroll-carousel",
+    "registry_url": "https://21st.dev/r/Edil-ozi/horizontal-scroll-carousel",
+    "title": "Horizontal Scroll Carousel",
+    "description": "The HorizontalScrollCarousel component is a visually engaging carousel that leverages vertical scrolling to create a horizontal sliding effect for images. As users scroll down the page, the images move horizontally across the screen, providing a dynamic and interactive experience. This component is ideal for showcasing a series of images in a unique and captivating manner. It utilizes framer-motion for smooth animations and next/image for optimized image loading. The carousel is fully customizable, allowing you to adjust the number of images and the scrolling behavior to fit your design needs.",
+    "category": "scroll-area",
+    "category_group": "Marketing Blocks",
+    "downloads": 295,
+    "likes": 3
+  }
+}

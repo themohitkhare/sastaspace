@@ -1,0 +1,27 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "quantum-grid-hero",
+  "type": "registry:component",
+  "title": "Quantum Grid Hero",
+  "description": "A quantum-grid-hero component.",
+  "dependencies": [],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/ui/quantum-grid-hero.tsx",
+      "content": "'use client';\n\nimport React, { useRef, useEffect } from 'react';\n\nconst CelestialOrbHero = () => {\n  const canvasRef = useRef(null);\n\n  useEffect(() => {\n    const canvas = canvasRef.current;\n    if (!canvas) return;\n    const ctx = canvas.getContext('2d');\n\n    let particles = [];\n    let mouse = { x: window.innerWidth / 2, y: window.innerHeight / 2 };\n    let animationFrameId;\n\n    const resizeCanvas = () => {\n      canvas.width = window.innerWidth;\n      canvas.height = window.innerHeight;\n    };\n    resizeCanvas();\n    window.addEventListener('resize', resizeCanvas);\n\n    const handleMouseMove = (e) => {\n      mouse.x = e.clientX;\n      mouse.y = e.clientY;\n    };\n    window.addEventListener('mousemove', handleMouseMove);\n\n    class Particle {\n      constructor(x, y, radius, color, isOrbiter = false) {\n        this.x = x;\n        this.y = y;\n        this.radius = radius;\n        this.color = color;\n        this.isOrbiter = isOrbiter;\n        this.orbitRadius = Math.random() * 150 + 100;\n        this.angle = Math.random() * Math.PI * 2;\n        this.speed = Math.random() * 0.02 + 0.01;\n      }\n      draw() {\n        ctx.beginPath();\n        ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);\n        ctx.fillStyle = this.color;\n        ctx.shadowColor = this.color;\n        ctx.shadowBlur = 15;\n        ctx.fill();\n        ctx.shadowBlur = 0;\n      }\n      update(center) {\n        if (this.isOrbiter) {\n          this.angle += this.speed;\n          this.x = center.x + Math.cos(this.angle) * this.orbitRadius;\n          this.y = center.y + Math.sin(this.angle) * this.orbitRadius;\n        }\n        this.draw();\n      }\n    }\n\n    const centerPoint = {\n      x: canvas.width / 2,\n      y: canvas.height / 2,\n      targetX: canvas.width / 2,\n      targetY: canvas.height / 2,\n    };\n\n    const init = () => {\n      particles = [];\n      particles.push(\n        new Particle(centerPoint.x, centerPoint.y, 20, 'rgba(255, 255, 255, 0.9)')\n      );\n      for (let i = 0; i < 50; i++) {\n        particles.push(\n          new Particle(\n            0,\n            0,\n            Math.random() * 3 + 1,\n            `hsl(${Math.random() * 60 + 200}, 70%, 60%)`,\n            true\n          )\n        );\n      }\n    };\n\n    const animate = () => {\n      animationFrameId = requestAnimationFrame(animate);\n      ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';\n      ctx.fillRect(0, 0, canvas.width, canvas.height);\n\n      centerPoint.targetX = mouse.x;\n      centerPoint.targetY = mouse.y;\n      centerPoint.x += (centerPoint.targetX - centerPoint.x) * 0.05;\n      centerPoint.y += (centerPoint.targetY - centerPoint.y) * 0.05;\n\n      particles[0].x = centerPoint.x;\n      particles[0].y = centerPoint.y;\n      particles[0].draw();\n\n      for (let i = 1; i < particles.length; i++) {\n        particles[i].update(centerPoint);\n      }\n    };\n\n    init();\n    animate();\n\n    return () => {\n      window.removeEventListener('resize', resizeCanvas);\n      window.removeEventListener('mousemove', handleMouseMove);\n      cancelAnimationFrame(animationFrameId);\n    };\n  }, []);\n\n  return (\n    <div className=\"relative min-h-screen w-full flex items-center justify-center text-center bg-black text-slate-200 overflow-hidden\">\n      <canvas\n        ref={canvasRef}\n        className=\"absolute top-0 left-0 w-full h-full z-0\"\n      />\n\n      <main className=\"relative z-10 w-full px-4\">\n        <h1 className=\"text-5xl sm:text-7xl lg:text-8xl font-black tracking-tighter text-white uppercase\">\n          Celestial Orb\n        </h1>\n        <p className=\"mt-6 mx-auto max-w-2xl text-lg text-slate-300\">\n          A unique digital canvas where cosmic forces interact with your every\n          move.\n        </p>\n      </main>\n    </div>\n  );\n};\n\nexport default CelestialOrbHero;\n",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "dhileepkumargm",
+    "slug": "quantum-grid-hero",
+    "registry_url": "https://21st.dev/r/dhileepkumargm/quantum-grid-hero",
+    "title": "Quantum Grid Hero",
+    "description": " \"Quantum Grid Hero\" features an interactive 3D grid of cubes that light up and ripple in response to your cursor's movement. The background is a deep, futuristic dark theme, and the text animates into view with a clean, modern aesthetic. This component is designed to be highly engaging and visually striking.",
+    "category": "hero",
+    "category_group": "Marketing Blocks",
+    "downloads": 0,
+    "likes": 0
+  }
+}

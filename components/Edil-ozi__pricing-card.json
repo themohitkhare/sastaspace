@@ -1,0 +1,40 @@
+{
+  "name": "pricing-card",
+  "type": "registry:ui",
+  "dependencies": [
+    "lucide-react",
+    "class-variance-authority",
+    "@radix-ui/react-slot"
+  ],
+  "registryDependencies": [
+    "https://21st.dev/r/shadcn/button"
+  ],
+  "files": [
+    {
+      "path": "/components/ui/pricing-card.tsx",
+      "content": "\"use client\"\n\nimport * as React from \"react\"\nimport { Check } from \"lucide-react\"\nimport { cva, type VariantProps } from \"class-variance-authority\"\n\nimport { cn } from \"@/lib/utils\"\nimport { Button } from \"@/components/ui/button\"\n\nconst pricingCardVariants = cva(\n  \"relative w-full min-w-56 max-w-[300px] transform overflow-hidden rounded-lg border shadow-lg transition duration-300\",\n  {\n    variants: {\n      variant: {\n        default: \"border-gray-700 bg-gradient-to-br from-slate-700 to-slate-800\",\n        outline: \"border-gray-700 bg-gradient-to-br from-slate-700 to-slate-800\",\n        ghost: \"border-transparent bg-transparent\",\n      },\n      size: {\n        default: \"p-6 lg:p-8\",\n        sm: \"p-4 lg:p-6\",\n        lg: \"p-8 lg:p-10\",\n      },\n      hover: {\n        default: \"hover:scale-[none] md:hover:scale-105\",\n        none: \"hover:scale-100\",\n      }\n    },\n    defaultVariants: {\n      variant: \"default\",\n      size: \"default\",\n      hover: \"default\"\n    }\n  }\n)\n\nexport interface PricingCardProps\n  extends React.HTMLAttributes<HTMLDivElement>,\n    VariantProps<typeof pricingCardVariants> {\n  heading: string\n  description: string\n  price: number\n  buttonText: string\n  list: string[]\n  discount?: number\n  listHeading?: string\n  onButtonClick?: () => void\n}\n\nconst PricingCard = React.forwardRef<HTMLDivElement, PricingCardProps>(\n  ({ \n    className, \n    variant, \n    size,\n    hover,\n    heading,\n    description,\n    price,\n    discount,\n    list,\n    listHeading,\n    buttonText,\n    onButtonClick,\n    ...props \n  }, ref) => {\n    const withDiscount = React.useMemo(() => {\n      return Math.round(price - (price * (discount ?? 100)) / 100)\n    }, [price, discount])\n\n    return (\n      <div\n        ref={ref}\n        className={cn(pricingCardVariants({ variant, size, hover, className }))}\n        {...props}\n      >\n        <div className=\"flex h-full flex-col justify-between\">\n          <div className=\"mb-4 lg:mb-6 xl:mb-8\">\n            <h3 className=\"mb-2 text-2xl font-semibold text-white lg:mb-4 lg:text-3xl xl:text-4xl\">\n              {heading}\n            </h3>\n            <p className=\"text-gray-300 lg:text-base xl:text-xl\">\n              {description}\n            </p>\n          </div>\n\n          <div>\n            <div className=\"mb-3 flex space-x-2 xl:mb-4\">\n              <span className=\"text-3xl font-extrabold text-white lg:text-4xl xl:text-5xl\">\n                ${discount ? withDiscount : price}\n              </span>\n              {discount && (\n                <span className=\"text-gray-400 line-through md:text-lg lg:text-xl xl:text-2xl\">\n                  ${price}\n                </span>\n              )}\n            </div>\n\n            {discount && (\n              <div className=\"origin-center-right absolute right-[-50%] top-0 w-full -translate-x-6 translate-y-4 rotate-45 bg-gradient-to-r from-slate-600 to-slate-700 text-center text-white lg:text-lg xl:text-xl\">\n                {discount}%\n              </div>\n            )}\n\n            <Button\n              onClick={onButtonClick}\n              className=\"w-full bg-gradient-to-r from-slate-600 to-slate-700 hover:from-slate-600 hover:to-slate-600\"\n            >\n              {buttonText}\n            </Button>\n\n            <ul className=\"mt-4 space-y-1 text-gray-200 lg:mt-6 lg:text-lg xl:mt-8 xl:text-xl\">\n              {listHeading && <h5>{listHeading}</h5>}\n              {list.map((text, index) => (\n                <li key={index} className=\"flex items-center\">\n                  <Check className=\"mr-2 h-5 w-5 text-emerald-500\" />\n                  <span>{text}</span>\n                </li>\n              ))}\n            </ul>\n          </div>\n        </div>\n      </div>\n    )\n  }\n)\nPricingCard.displayName = \"PricingCard\"\n\nexport { PricingCard, pricingCardVariants } ",
+      "type": "registry:ui",
+      "target": ""
+    },
+    {
+      "path": "/components/ui/button.tsx",
+      "content": "import * as React from \"react\"\nimport { Slot } from \"@radix-ui/react-slot\"\nimport { cva, type VariantProps } from \"class-variance-authority\"\n\nimport { cn } from \"@/lib/utils\"\n\nconst buttonVariants = cva(\n  \"inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50\",\n  {\n    variants: {\n      variant: {\n        default: \"bg-primary text-primary-foreground hover:bg-primary/90\",\n        destructive:\n          \"bg-destructive text-destructive-foreground hover:bg-destructive/90\",\n        outline:\n          \"border border-input bg-background hover:bg-accent hover:text-accent-foreground\",\n        secondary:\n          \"bg-secondary text-secondary-foreground hover:bg-secondary/80\",\n        ghost: \"hover:bg-accent hover:text-accent-foreground\",\n        link: \"text-primary underline-offset-4 hover:underline\",\n      },\n      size: {\n        default: \"h-10 px-4 py-2\",\n        sm: \"h-9 rounded-md px-3\",\n        lg: \"h-11 rounded-md px-8\",\n        icon: \"h-10 w-10\",\n      },\n    },\n    defaultVariants: {\n      variant: \"default\",\n      size: \"default\",\n    },\n  },\n)\n\nexport interface ButtonProps\n  extends React.ButtonHTMLAttributes<HTMLButtonElement>,\n    VariantProps<typeof buttonVariants> {\n  asChild?: boolean\n}\n\nconst Button = React.forwardRef<HTMLButtonElement, ButtonProps>(\n  ({ className, variant, size, asChild = false, ...props }, ref) => {\n    const Comp = asChild ? Slot : \"button\"\n    return (\n      <Comp\n        className={cn(buttonVariants({ variant, size, className }))}\n        ref={ref}\n        {...props}\n      />\n    )\n  },\n)\nButton.displayName = \"Button\"\n\nexport { Button, buttonVariants }\n",
+      "type": "registry:ui",
+      "target": ""
+    }
+  ],
+  "tailwind": {
+    "config": {}
+  },
+  "_meta": {
+    "author": "Edil-ozi",
+    "slug": "pricing-card",
+    "registry_url": "https://21st.dev/r/Edil-ozi/pricing-card",
+    "title": "Pricing Card",
+    "description": "\nA modern, responsive pricing card component for displaying subscription plans.\nSupports discounts, feature lists, multiple variants, and dark/light modes.\nBuilt with customization and accessibility in mind.",
+    "category": "pricing-section",
+    "category_group": "Marketing Blocks",
+    "downloads": 192,
+    "likes": 1
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "image-comparison-slider",
+  "type": "registry:component",
+  "title": "Image Comparison Slider",
+  "description": "A image-comparison-slider component.",
+  "dependencies": [],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/ui/image-comparison-slider.tsx",
+      "content": "import React, { useState, useRef, useCallback, useEffect } from 'react';\n\n// This component takes two image URLs (before and after) and creates a slider to compare them.\nexport const ImageComparison = ({ beforeImage, afterImage, altBefore = 'Before', altAfter = 'After' }) => {\n    // State to track the slider's position (from 0 to 100)\n    const [sliderPosition, setSliderPosition] = useState(50);\n    // State to track if the user is currently dragging the slider\n    const [isDragging, setIsDragging] = useState(false);\n\n    // Ref to the main container element to get its dimensions\n    const containerRef = useRef(null);\n\n    // Function to handle the slider movement (for both mouse and touch)\n    const handleMove = useCallback((clientX) => {\n        // If not dragging or no container ref, do nothing\n        if (!isDragging || !containerRef.current) return;\n        \n        // Get the bounding box of the container\n        const rect = containerRef.current.getBoundingClientRect();\n        // Calculate the new slider position as a percentage\n        let newPosition = ((clientX - rect.left) / rect.width) * 100;\n\n        // Clamp the position to be between 0 and 100 to prevent it from going out of bounds\n        newPosition = Math.max(0, Math.min(100, newPosition));\n        \n        setSliderPosition(newPosition);\n    }, [isDragging]);\n\n    // Mouse event handlers\n    const handleMouseDown = () => setIsDragging(true);\n    const handleMouseUp = () => setIsDragging(false);\n    const handleMouseMove = (e) => handleMove(e.clientX);\n    \n    // Touch event handlers\n    const handleTouchStart = () => setIsDragging(true);\n    const handleTouchEnd = () => setIsDragging(false);\n    const handleTouchMove = (e) => handleMove(e.touches[0].clientX);\n\n    // Effect to add and clean up global event listeners for mouse up/leave\n    // This ensures dragging stops even if the cursor leaves the component area\n    useEffect(() => {\n        window.addEventListener('mouseup', handleMouseUp);\n        // Clean up the event listener when the component unmounts\n        return () => {\n            window.removeEventListener('mouseup', handleMouseUp);\n        };\n    }, [handleMouseUp]);\n\n    return (\n        <div \n            ref={containerRef}\n            className=\"relative w-full max-w-4xl mx-auto select-none rounded-xl overflow-hidden shadow-2xl\"\n            onMouseMove={handleMouseMove}\n            onMouseLeave={handleMouseUp} // Stop dragging if mouse leaves the container\n            onTouchMove={handleTouchMove}\n            onTouchEnd={handleTouchEnd}\n        >\n            {/* After Image (Top Layer) - Its visibility is controlled by the clip-path */}\n            <div\n                className=\"absolute top-0 left-0 h-full w-full overflow-hidden\"\n                style={{ clipPath: `inset(0 ${100 - sliderPosition}% 0 0)` }}\n            >\n                <img\n                    src={afterImage}\n                    alt={altAfter}\n                    className=\"h-full w-full object-cover object-left\"\n                    draggable=\"false\"\n                />\n            </div>\n\n            {/* Before Image (Bottom Layer) */}\n            <img\n                src={beforeImage}\n                alt={altBefore}\n                className=\"block h-full w-full object-cover object-left\"\n                draggable=\"false\"\n            />\n\n            {/* Slider Handle */}\n            <div\n                className=\"absolute top-0 bottom-0 w-1.5 bg-white/80 cursor-ew-resize flex items-center justify-center\"\n                style={{ left: `calc(${sliderPosition}% - 0.375rem)` }} // Center the handle on the line\n                onMouseDown={handleMouseDown}\n                onTouchStart={handleTouchStart}\n            >\n                <div className={`bg-white rounded-full h-12 w-12 flex items-center justify-center shadow-md transition-all duration-200 ease-in-out ${isDragging ? 'scale-110 shadow-xl' : ''}`}>\n                    <svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" strokeWidth=\"2\" strokeLinecap=\"round\" strokeLinejoin=\"round\" className=\"text-gray-700\">\n                        <line x1=\"15\" y1=\"18\" x2=\"9\" y2=\"12\"></line>\n                        <line x1=\"9\" y1=\"6\" x2=\"15\" y2=\"12\"></line>\n                    </svg>\n                </div>\n            </div>\n        </div>\n    );\n};",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "minhxthanh",
+    "slug": "image-comparison-slider",
+    "registry_url": "https://21st.dev/r/minhxthanh/image-comparison-slider",
+    "title": "Image Comparison Slider",
+    "description": "Image Comparison Slider. Drag the slider to compare the two images.",
+    "category": "image",
+    "category_group": "Marketing Blocks",
+    "downloads": 101,
+    "likes": 0
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "loop-animation-hook",
+  "type": "registry:component",
+  "title": "Loop Animation Hook",
+  "description": "A loop-animation-hook component.",
+  "dependencies": [
+    "framer-motion"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/ui/loop-animation-hook.tsx",
+      "content": "\"use client\";\n\nimport { AnimatePresence, motion } from \"framer-motion\";\nimport { useCallback, useEffect, useMemo, useState } from \"react\";\n\nconst useLoop = (delay = 1000) => {\n  const [key, setKey] = useState(0);\n\n  const incrementKey = useCallback(() => {\n    setKey((prev) => prev + 1);\n  }, []);\n\n  useEffect(() => {\n    const interval = setInterval(incrementKey, delay);\n    return () => clearInterval(interval);\n  }, [delay, incrementKey]);\n\n  return { key };\n};\n\nexport { useLoop };\n\nconst Skiper62 = () => {\n  const { key } = useLoop();\n\n  const array = useMemo(\n    () => [\n      \"Tik-Tik uno\",\n      \"Tik-Tik dos\",\n      \"Tik-Tik tres\",\n      \"Tik-Tik cuatro\",\n      \"Tik-Tik cinco\",\n      \"Tik-Tik seis\",\n      \"Tik-Tik siete\",\n      \"Tik-Tik ocho\",\n      \"Tik-Tik nueve\",\n      \"Tik-Tik diez\",\n    ],\n    [],\n  );\n\n  const currentItem = useMemo(() => {\n    return array[key % array.length];\n  }, [array, key]);\n\n  return (\n    <div className=\"flex flex-col items-center justify-center gap-8 p-8\">\n      <div className=\"mb-20 grid content-start justify-items-center gap-6 text-center\">\n        <span className=\"after:to-foreground relative max-w-[12ch] text-xs uppercase leading-tight opacity-40 after:absolute after:left-1/2 after:top-full after:h-16 after:w-px after:bg-gradient-to-b after:from-transparent after:content-['']\">\n          useLoop hook\n        </span>\n      </div>\n      <AnimatePresence mode=\"popLayout\">\n        <motion.h1\n          key={key}\n          initial={{ opacity: 0, y: \" 100%\" }}\n          animate={{ opacity: 1, y: 0 }}\n          exit={{ opacity: 0, y: \"-100%\" }}\n          transition={{ duration: 0.3 }}\n          className=\"bordr whitespace-nowrap text-center\"\n        >\n          {currentItem}\n        </motion.h1>\n      </AnimatePresence>\n    </div>\n  );\n};\n\nexport { Skiper62 };\n",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "reuno-ui",
+    "slug": "loop-animation-hook",
+    "registry_url": "https://21st.dev/r/reuno-ui/loop-animation-hook",
+    "title": "Loop Animation Hook",
+    "description": "Here is Loop animation hook",
+    "category": "hook",
+    "category_group": "Marketing Blocks",
+    "downloads": 3,
+    "likes": 0
+  }
+}

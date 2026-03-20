@@ -1,0 +1,98 @@
+{
+  "name": "avatar",
+  "type": "registry:ui",
+  "dependencies": [
+    "clsx",
+    "csstype",
+    "tailwind-merge"
+  ],
+  "registryDependencies": [
+    "https://21st.dev/r/shugar/skeleton"
+  ],
+  "files": [
+    {
+      "path": "/components/ui/avatar.tsx",
+      "content": "import React from \"react\";\nimport { Skeleton } from \"@/components/ui/skeleton\";\nimport clsx from \"clsx\";\n\ninterface AvatarProps {\n  placeholder?: boolean;\n  size?: number;\n  src?: string;\n}\n\nexport const Avatar = ({ placeholder = false, size = 24, src }: AvatarProps) => {\n  if (placeholder) {\n    return (\n      <Skeleton rounded height={size} width={size} className=\"border border-gray-alpha-400\" />\n    );\n  }\n\n  return (\n    <span\n      className=\"rounded-full inline-block overflow-hidden border border-gray-alpha-400 duration-200\"\n      style={{ width: size, height: size }}\n    >\n      {src && (\n        <img\n          src={src}\n          alt=\"Avatar\"\n          className=\"w-full h-full\"\n        />\n      )}\n    </span>\n  );\n};\n\ninterface GitAvatarProps {\n  username?: string;\n  size?: number;\n  src?: string;\n}\n\nconst GitHubIcon = () => (\n  <svg\n    className=\"text-[#000000] h-3.5 w-3.5\"\n    height=\"16\"\n    strokeLinejoin=\"round\"\n    viewBox=\"0 0 16 16\"\n    width=\"16\">\n    <g clipPath=\"url(#clip0_872_3147)\"\n    >\n      <path\n        fillRule=\"evenodd\"\n        clipRule=\"evenodd\"\n        d=\"M8 0C3.58 0 0 3.57879 0 7.99729C0 11.5361 2.29 14.5251 5.47 15.5847C5.87 15.6547 6.02 15.4148 6.02 15.2049C6.02 15.0149 6.01 14.3851 6.01 13.7154C4 14.0852 3.48 13.2255 3.32 12.7757C3.23 12.5458 2.84 11.836 2.5 11.6461C2.22 11.4961 1.82 11.1262 2.49 11.1162C3.12 11.1062 3.57 11.696 3.72 11.936C4.44 13.1455 5.59 12.8057 6.05 12.5957C6.12 12.0759 6.33 11.726 6.56 11.5261C4.78 11.3262 2.92 10.6364 2.92 7.57743C2.92 6.70773 3.23 5.98797 3.74 5.42816C3.66 5.22823 3.38 4.40851 3.82 3.30888C3.82 3.30888 4.49 3.09895 6.02 4.1286C6.66 3.94866 7.34 3.85869 8.02 3.85869C8.7 3.85869 9.38 3.94866 10.02 4.1286C11.55 3.08895 12.22 3.30888 12.22 3.30888C12.66 4.40851 12.38 5.22823 12.3 5.42816C12.81 5.98797 13.12 6.69773 13.12 7.57743C13.12 10.6464 11.25 11.3262 9.47 11.5261C9.76 11.776 10.01 12.2558 10.01 13.0056C10.01 14.0752 10 14.9349 10 15.2049C10 15.4148 10.15 15.6647 10.55 15.5847C12.1381 15.0488 13.5182 14.0284 14.4958 12.6673C15.4735 11.3062 15.9996 9.67293 16 7.99729C16 3.57879 12.42 0 8 0Z\"\n      />\n    </g>\n    <defs>\n      <clipPath id=\"clip0_872_3147\">\n        <rect width=\"16\" height=\"16\" fill=\"white\" />\n      </clipPath>\n    </defs>\n  </svg>\n);\nconst GitLabIcon = () => (\n  <svg aria-label=\"gitlab\" height=\"14\" viewBox=\"0 0 24 22\" width=\"14\" className=\"scale-75 fill-white\">\n    <path\n      d=\"M1.279 8.29L.044 12.294c-.117.367 0 .78.325 1.014l11.323 8.23-.009-.012-.03-.039L1.279 8.29zM22.992 13.308a.905.905 0 00.325-1.014L22.085 8.29 11.693 21.52l11.299-8.212z\"\n    />\n    <path\n      d=\"M1.279 8.29l10.374 13.197.03.039.01-.006L22.085 8.29H1.28z\"\n      opacity=\"0.4\"\n    />\n    <path\n      d=\"M15.982 8.29l-4.299 13.236-.004.011.014-.017L22.085 8.29h-6.103zM7.376 8.29H1.279l10.374 13.197L7.376 8.29z\"\n      opacity=\"0.6\"\n    />\n    <path\n      d=\"M18.582.308l-2.6 7.982h6.103L19.48.308c-.133-.41-.764-.41-.897 0zM1.279 8.29L3.88.308c.133-.41.764-.41.897 0l2.6 7.982H1.279z\"\n      opacity=\"0.4\"\n    />\n  </svg>\n);\n\nconst BitbucketIcon = () => (\n  <svg height=\"14\" viewBox=\"-2 -2 65 59\" width=\"14\" className=\"scale-[65%]\">\n    <defs>\n      <linearGradient id=\"bitbucketGradient\" x1=\"104.953%\" x2=\"46.569%\" y1=\"21.921%\" y2=\"75.234%\">\n        <stop offset=\"7%\" stopColor=\"white\" stopOpacity=\".4\" />\n        <stop offset=\"100%\" stopColor=\"white\" />\n      </linearGradient>\n    </defs>\n    <path\n      d=\"M59.696 18.86h-18.77l-3.15 18.39h-13L9.426 55.47a2.71 2.71 0 001.75.66h40.74a2 2 0 002-1.68l5.78-35.59z\"\n      fill=\"url(#bitbucketGradient)\"\n      fillRule=\"nonzero\"\n      transform=\"translate(-.026 .82)\"\n    />\n    <path\n      d=\"M2 .82a2 2 0 00-2 2.32l8.49 51.54a2.7 2.7 0 00.91 1.61 2.71 2.71 0 001.75.66l15.76-18.88H24.7l-3.47-18.39h38.44l2.7-16.53a2 2 0 00-2-2.32L2 .82z\"\n      fillRule=\"nonzero\"\n      className=\"fill-white\"\n    />\n  </svg>\n);\n\nexport const GitHubAvatar = ({ username, size = 24, src }: GitAvatarProps) => {\n  return (\n    <div className=\"relative\" style={{ width: size, height: size }}>\n      <span\n        className=\"rounded-full inline-block overflow-hidden border border-gray-alpha-400 duration-200\"\n        style={{ width: size, height: size }}\n      >\n      {src && (\n        <img\n          src={src}\n          alt={`Avatar for ${username}`}\n          className=\"w-full h-full\"\n        />\n      )}\n      </span>\n      <div className=\"absolute -left-[3px] -bottom-[5px] flex items-center justify-center rounded-full overflow-hidden bg-white border border-background\">\n        <GitHubIcon />\n      </div>\n    </div>\n  );\n};\n\nexport const GitLabAvatar = ({ username, size = 24, src }: GitAvatarProps) => {\n  return (\n    <div className=\"relative\" style={{ width: size, height: size }}>\n      <span\n        className=\"rounded-full inline-block overflow-hidden border border-gray-alpha-400 duration-200\"\n        style={{ width: size, height: size }}\n      >\n      {src && (\n        <img\n          src={src}\n          alt={`Avatar for ${username}`}\n          className=\"w-full h-full\"\n        />\n      )}\n      </span>\n      <div\n        className=\"absolute -left-[3px] -bottom-[5px] flex items-center justify-center rounded-full overflow-hidden bg-[#6b4fbb] border border-background\">\n        <GitLabIcon />\n      </div>\n    </div>\n  );\n};\n\nexport const BitbucketAvatar = ({ username, size = 24, src }: GitAvatarProps) => {\n  return (\n    <div className=\"relative\" style={{ width: size, height: size }}>\n      <span\n        className=\"rounded-full inline-block overflow-hidden border border-gray-alpha-400 duration-200\"\n        style={{ width: size, height: size }}\n      >\n      {src && (\n        <img\n          src={src}\n          alt={`Avatar for ${username}`}\n          className=\"w-full h-full\"\n        />\n      )}\n      </span>\n      <div\n        className=\"absolute -left-[3px] -bottom-[5px] flex items-center justify-center rounded-full overflow-hidden bg-[#0052cc] border border-background\">\n        <BitbucketIcon />\n      </div>\n    </div>\n  );\n};\n\ninterface AvatarGroupProps {\n  members: {\n    username?: string;\n    src?: string;\n  }[];\n  size?: number;\n  limit?: number;\n}\n\nexport const AvatarGroup = ({ members, size, limit = 3 }: AvatarGroupProps) => {\n  return (\n    <div className=\"flex items-center\">\n      {(members.length >= limit ? members.slice(0, limit - 1) : members).map((member, index) => (\n        <span\n          key={member.username}\n          className={clsx(\"inline-flex items-center\", index !== 0 && \"-ml-2\")}\n          style={{ zIndex: index + 1 }}\n          aria-label={`Avatar for ${member.username}`}\n        >\n          <span\n            className=\"rounded-full inline-block overflow-hidden border border-gray-alpha-400 duration-200\"\n            style={{ width: size, height: size }}\n          >\n            {member.src && (\n              <img\n                src={member.src}\n                alt={`Avatar for ${member.username}`}\n                className=\"w-full h-full\"\n              />\n            )}\n          </span>\n        </span>\n      ))}\n      {members.length === limit && (\n        <span\n          className=\"inline-flex items-center -ml-2\"\n          style={{ zIndex: limit }}\n          aria-label=\"1 more avatars in this group\"\n        >\n          <span\n            className=\"rounded-full inline-block overflow-hidden border border-gray-alpha-400 duration-200\"\n            style={{ width: size, height: size }}\n          >\n            <img\n              src=\"https://vercel.com/api/www/avatar?u=rauchg&s=64\"\n              alt=\"1 more avatars in this group\"\n              className=\"w-full h-full\"\n            />\n          </span>\n        </span>\n      )}\n      {members.length > limit && (\n        <span\n          className=\"inline-flex items-center -ml-2 dark\"\n          style={{ zIndex: limit }}\n          aria-label={`${members.length - limit + 1} more avatars in this group`}\n        >\n          <span\n            className=\"rounded-full overflow-hidden border border-gray-400 bg-gray-100 duration-200 flex justify-center items-center text-gray-1000 text-[0.625rem] leading-3 font-semibold\"\n            style={{ width: size, height: size }}\n          >\n            +{members.length - limit + 1}\n          </span>\n        </span>\n      )}\n    </div>\n  );\n};",
+      "type": "registry:ui",
+      "target": ""
+    },
+    {
+      "path": "/components/ui/skeleton.tsx",
+      "content": "import React from \"react\";\nimport clsx from \"clsx\";\nimport { Property } from \"csstype\";\nimport { twMerge } from \"tailwind-merge\";\n\ninterface SkeletonProps {\n  width?: Property.Width | number;\n  height?: Property.Height | number;\n  boxHeight?: number;\n  show?: boolean;\n  pill?: boolean;\n  rounded?: boolean;\n  squared?: boolean;\n  animated?: boolean;\n  children?: React.ReactNode;\n  className?: string;\n}\n\nexport const Skeleton = ({\n  width,\n  height,\n  boxHeight,\n  show = true,\n  pill = false,\n  rounded = false,\n  squared = false,\n  animated = true,\n  children,\n  className\n}: SkeletonProps) => {\n  return (\n    <span\n      className={twMerge(clsx(\n        \"block rounded-[5px]\",\n        !children && show && \"bg-skeleton-gradient bg-[length:400%_100%]\",\n        children && show && !width && !height && \"relative after:absolute after:top-0 after:bottom-0 after:left-0 after:right-0 after:rounded after:bg-skeleton-gradient after:bg-[length:400%_100%]\",\n        pill && \"rounded-full after:rounded-full\",\n        rounded && \"rounded-[50%] after:rounded-[50%]\",\n        squared && \"rounded-none after:rounded-none\",\n        animated && !children && show && \"animate-skeleton-loading\",\n        animated && children && show && \"after:animate-skeleton-loading\",\n        className\n      ))}\n      style={{\n        minHeight: height || 24,\n        width: children ? \"fit-content\" : width,\n        marginBottom: `calc(${(boxHeight || \"100%\")} - (${typeof height === \"number\" ? height : 0}))`\n    }}\n    >\n      {children}\n    </span>\n  );\n};",
+      "type": "registry:ui",
+      "target": ""
+    }
+  ],
+  "cssVars": {
+    "light": {
+      "--ds-gray-alpha-400": "hsla(0, 0%, 0%, 0.08)",
+      "--geist-background": "#fff",
+      "--accents-1": "#fafafa",
+      "--accents-2": "#eaeaea"
+    },
+    "dark": {
+      "--ds-gray-100": "hsla(0, 0%, 10%, 1)",
+      "--ds-gray-400": "hsla(0, 0%, 18%, 1)",
+      "--ds-gray-1000": "hsla(0, 0%, 93%, 1)",
+      "--ds-gray-alpha-400": "hsla(0, 0%, 100%, 0.14)",
+      "--geist-background": "#000",
+      "--accents-2": "#333333",
+      "--accents-1": "#111111"
+    },
+    "theme": {
+      "animate-skeleton-loading": "skeletonLoading 8s infinite ease-in-out"
+    }
+  },
+  "css": {
+    "@keyframes skeletonLoading": {
+      "0%": {
+        "backgroundPosition": "200% 0"
+      },
+      "100%": {
+        "backgroundPosition": "-200% 0"
+      }
+    }
+  },
+  "tailwind": {
+    "config": {
+      "theme": {
+        "extend": {
+          "colors": {
+            "gray-100": "var(--ds-gray-100)",
+            "gray-400": "var(--ds-gray-400)",
+            "gray-1000": "var(--ds-gray-1000)",
+            "gray-alpha-400": "var(--ds-gray-alpha-400)",
+            "background": "var(--geist-background)"
+          },
+          "backgroundImage": {
+            "skeleton-gradient": "linear-gradient(270deg, var(--accents-1), var(--accents-2), var(--accents-2), var(--accents-1))"
+          },
+          "animation": {
+            "skeleton-loading": "skeletonLoading 8s infinite ease-in-out"
+          },
+          "keyframes": {
+            "skeletonLoading": {
+              "0%": {
+                "backgroundPosition": "200% 0"
+              },
+              "100%": {
+                "backgroundPosition": "-200% 0"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "_meta": {
+    "author": "shugar",
+    "slug": "avatar",
+    "registry_url": "https://21st.dev/r/shugar/avatar",
+    "title": "Avatar",
+    "description": "Avatars represent a user or a team. Stacked avatars represent a group of people",
+    "category": "avatar",
+    "category_group": "UI Components",
+    "downloads": 26,
+    "likes": 0
+  }
+}

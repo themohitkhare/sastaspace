@@ -1,0 +1,27 @@
+{
+  "name": "grid-feature-cards",
+  "type": "registry:block",
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "/components/blocks/grid-feature-cards.tsx",
+      "content": "import { cn } from '@/lib/utils';\nimport React from 'react';\n\ntype FeatureType = {\n\ttitle: string;\n\ticon: React.ComponentType<React.SVGProps<SVGSVGElement>>;\n\tdescription: string;\n};\n\ntype FeatureCardPorps = React.ComponentProps<'div'> & {\n\tfeature: FeatureType;\n};\n\nexport function FeatureCard({ feature, className, ...props }: FeatureCardPorps) {\n\tconst p = genRandomPattern();\n\n\treturn (\n\t\t<div className={cn('relative overflow-hidden p-6', className)} {...props}>\n\t\t\t<div className=\"pointer-events-none absolute top-0 left-1/2 -mt-2 -ml-20 h-full w-full [mask-image:linear-gradient(white,transparent)]\">\n\t\t\t\t<div className=\"from-foreground/5 to-foreground/1 absolute inset-0 bg-gradient-to-r [mask-image:radial-gradient(farthest-side_at_top,white,transparent)] opacity-100\">\n\t\t\t\t\t<GridPattern\n\t\t\t\t\t\twidth={20}\n\t\t\t\t\t\theight={20}\n\t\t\t\t\t\tx=\"-12\"\n\t\t\t\t\t\ty=\"4\"\n\t\t\t\t\t\tsquares={p}\n\t\t\t\t\t\tclassName=\"fill-foreground/5 stroke-foreground/25 absolute inset-0 h-full w-full mix-blend-overlay\"\n\t\t\t\t\t/>\n\t\t\t\t</div>\n\t\t\t</div>\n\t\t\t<feature.icon className=\"text-foreground/75 size-6\" strokeWidth={1} aria-hidden />\n\t\t\t<h3 className=\"mt-10 text-sm md:text-base\">{feature.title}</h3>\n\t\t\t<p className=\"text-muted-foreground relative z-20 mt-2 text-xs font-light\">{feature.description}</p>\n\t\t</div>\n\t);\n}\n\nfunction GridPattern({\n\twidth,\n\theight,\n\tx,\n\ty,\n\tsquares,\n\t...props\n}: React.ComponentProps<'svg'> & { width: number; height: number; x: string; y: string; squares?: number[][] }) {\n\tconst patternId = React.useId();\n\n\treturn (\n\t\t<svg aria-hidden=\"true\" {...props}>\n\t\t\t<defs>\n\t\t\t\t<pattern id={patternId} width={width} height={height} patternUnits=\"userSpaceOnUse\" x={x} y={y}>\n\t\t\t\t\t<path d={`M.5 ${height}V.5H${width}`} fill=\"none\" />\n\t\t\t\t</pattern>\n\t\t\t</defs>\n\t\t\t<rect width=\"100%\" height=\"100%\" strokeWidth={0} fill={`url(#${patternId})`} />\n\t\t\t{squares && (\n\t\t\t\t<svg x={x} y={y} className=\"overflow-visible\">\n\t\t\t\t\t{squares.map(([x, y], index) => (\n\t\t\t\t\t\t<rect strokeWidth=\"0\" key={index} width={width + 1} height={height + 1} x={x * width} y={y * height} />\n\t\t\t\t\t))}\n\t\t\t\t</svg>\n\t\t\t)}\n\t\t</svg>\n\t);\n}\n\nfunction genRandomPattern(length?: number): number[][] {\n\tlength = length ?? 5;\n\treturn Array.from({ length }, () => [\n\t\tMath.floor(Math.random() * 4) + 7, // random x between 7 and 10\n\t\tMath.floor(Math.random() * 6) + 1, // random y between 1 and 6\n\t]);\n}\n",
+      "type": "registry:block",
+      "target": ""
+    }
+  ],
+  "tailwind": {
+    "config": {}
+  },
+  "_meta": {
+    "author": "sshahaider",
+    "slug": "grid-feature-cards",
+    "registry_url": "https://21st.dev/r/sshahaider/grid-feature-cards",
+    "title": "Grid Feature Cards",
+    "description": "Minimal Features Section using Grid Feature Cards",
+    "category": "features",
+    "category_group": "Marketing Blocks",
+    "downloads": 1023,
+    "likes": 0
+  }
+}

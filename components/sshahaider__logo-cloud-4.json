@@ -1,0 +1,30 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "logo-cloud-4",
+  "type": "registry:component",
+  "title": "Logo Cloud 4",
+  "description": "A logo-cloud-4 component.",
+  "dependencies": [],
+  "registryDependencies": [
+    "https://21st.dev/r/ibelick/infinite-slider",
+    "https://21st.dev/r/ibelick/progressive-blur"
+  ],
+  "files": [
+    {
+      "path": "src/components/ui/logo-cloud-4.tsx",
+      "content": "import { InfiniteSlider } from \"@/components/ui/infinite-slider\";\nimport { ProgressiveBlur } from \"@/components/ui/progressive-blur\";\n\ntype Logo = {\n  src: string;\n  alt: string;\n  width?: number;\n  height?: number;\n};\n\ntype LogoCloudProps = React.ComponentProps<\"div\"> & {\n  logos: Logo[];\n};\n\nexport function LogoCloud({ logos }: LogoCloudProps) {\n  return (\n    <div className=\"relative mx-auto max-w-3xl bg-gradient-to-r from-secondary via-transparent to-secondary py-6 md:border-x\">\n      <div className=\"-translate-x-1/2 -top-px pointer-events-none absolute left-1/2 w-screen border-t\" />\n\n      <InfiniteSlider gap={42} reverse speed={60} speedOnHover={20}>\n        {logos.map((logo) => (\n          <img\n            alt={logo.alt}\n            className=\"pointer-events-none h-4 select-none md:h-5 dark:brightness-0 dark:invert\"\n            height=\"auto\"\n            key={`logo-${logo.alt}`}\n            loading=\"lazy\"\n            src={logo.src}\n            width=\"auto\"\n          />\n        ))}\n      </InfiniteSlider>\n\n      <ProgressiveBlur\n        blurIntensity={1}\n        className=\"pointer-events-none absolute top-0 left-0 h-full w-[160px]\"\n        direction=\"left\"\n      />\n      <ProgressiveBlur\n        blurIntensity={1}\n        className=\"pointer-events-none absolute top-0 right-0 h-full w-[160px]\"\n        direction=\"right\"\n      />\n\n      <div className=\"-translate-x-1/2 -bottom-px pointer-events-none absolute left-1/2 w-screen border-b\" />\n    </div>\n  );\n}\n",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "sshahaider",
+    "slug": "logo-cloud-4",
+    "registry_url": "https://21st.dev/r/sshahaider/logo-cloud-4",
+    "title": "Logo Cloud 4",
+    "description": "",
+    "category": "clients",
+    "category_group": "Marketing Blocks",
+    "downloads": 266,
+    "likes": 0
+  }
+}

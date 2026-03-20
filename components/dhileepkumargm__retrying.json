@@ -1,0 +1,30 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "retrying",
+  "type": "registry:component",
+  "title": "Retrying",
+  "description": "A retrying component.",
+  "dependencies": [
+    "framer-motion",
+    "three"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/ui/retrying.tsx",
+      "content": "\"use client\";\n\nimport React, { useRef, useEffect } from 'react';\nimport { motion, useAnimation } from 'framer-motion';\nimport * as THREE from 'three';\n\n// --- Main Hero Component ---\nexport const GravitationalMeshHero = () => {\n  const textControls = useAnimation();\n  const buttonControls = useAnimation();\n\n  useEffect(() => {\n    textControls.start(i => ({\n      opacity: 1,\n      y: 0,\n      transition: {\n        delay: i * 0.05 + 1.5,\n        duration: 1.2,\n        ease: [0.2, 0.65, 0.3, 0.9]\n      }\n    }));\n    buttonControls.start({\n        opacity: 1,\n        transition: { delay: 2.5, duration: 1 }\n    });\n  }, [textControls, buttonControls]);\n\n  const headline = \"Retrying Digital\";\n  \n  return (\n    <div className=\"relative flex h-screen w-full flex-col items-center justify-center overflow-hidden bg-white dark:bg-black\">\n      <MeshCanvas />\n      <div className=\"relative z-10 text-center px-4\">\n        <h1 className=\"text-6xl font-bold tracking-tight text-slate-900 dark:text-white md:text-8xl\" style={{ textShadow: '0 0 50px rgba(0, 0, 0, 0.1)' }}>\n            {headline.split(\"\").map((char, i) => (\n                <motion.span key={i} custom={i} initial={{ opacity: 0, y: 50 }} animate={textControls} style={{ display: 'inline-block' }}>\n                    {char}\n                </motion.span>\n            ))}\n        </h1>\n        <motion.p\n          custom={headline.length}\n          initial={{ opacity: 0, y: 30 }}\n          animate={textControls}\n          className=\"mx-auto mt-6 max-w-xl text-lg text-slate-600 dark:text-slate-300\"\n        >\n          “Let’s keep that cinematic backdrop energy, but move the mouse ‘vibe’ for something with a ‘Reteyinh burn’ intensity.”\n        </motion.p>\n      </div>\n    </div>\n  );\n};\n\n// --- Three.js Canvas Component ---\nconst MeshCanvas = () => {\n  const mountRef = useRef<HTMLDivElement>(null);\n\n  useEffect(() => {\n    if (!mountRef.current) return;\n\n    const scene = new THREE.Scene();\n    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);\n    camera.position.z = 10;\n    const renderer = new THREE.WebGLRenderer({ antias: true, alpha: true });\n    renderer.setSize(window.innerWidth, window.innerHeight);\n    renderer.setPixelRatio(window.devicePixelRatio);\n    mountRef.current.appendChild(renderer.domElement);\n\n    const mouse = new THREE.Vector2(0, 0);\n    const clock = new THREE.Clock();\n\n    const isDarkMode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;\n\n    // --- Gravitational Mesh ---\n    const geometry = new THREE.PlaneGeometry(40, 40, 50, 50);\n    const material = new THREE.ShaderMaterial({\n        uniforms: {\n            uTime: { value: 0 },\n            uMouse: { value: new THREE.Vector2(0,0) },\n            uColor: { value: new THREE.Color(isDarkMode ? 0xa0a0ff : 0x404080) }\n        },\n        vertexShader: `\n            uniform float uTime;\n            uniform vec2 uMouse;\n            varying float vIntensity;\n\n            void main() {\n                vec3 pos = position;\n                float mouseDist = distance(pos.xy, uMouse * 20.0);\n                \n                float warp = 1.0 - smoothstep(0.0, 5.0, mouseDist);\n                pos.z += warp * 3.0;\n                vIntensity = warp;\n\n                pos.z += sin(pos.x * 0.5 + uTime * 0.5) * 0.1;\n\n                gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);\n            }\n        `,\n        fragmentShader: `\n            uniform vec3 uColor;\n            varying float vIntensity;\n            void main() {\n                gl_FragColor = vec4(uColor * vIntensity, vIntensity * 0.8);\n            }\n        `,\n        wireframe: true,\n        transparent: true,\n        blending: isDarkMode ? THREE.AdditiveBlending : THREE.NormalBlending,\n    });\n    \n    const mesh = new THREE.Mesh(geometry, material);\n    scene.add(mesh);\n\n    const handleMouseMove = (event: MouseEvent) => {\n        mouse.x = (event.clientX / window.innerWidth) * 2 - 1;\n        mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;\n    };\n    window.addEventListener('mousemove', handleMouseMove);\n\n    const animate = () => {\n        requestAnimationFrame(animate);\n        const elapsedTime = clock.getElapsedTime();\n        \n        material.uniforms.uTime.value = elapsedTime;\n        material.uniforms.uMouse.value.lerp(mouse, 0.05);\n\n        mesh.rotation.x = -0.2;\n        \n        renderer.render(scene, camera);\n    };\n    animate();\n\n    const handleResize = () => {\n        camera.aspect = window.innerWidth / window.innerHeight;\n        camera.updateProjectionMatrix();\n        renderer.setSize(window.innerWidth, window.innerHeight);\n    };\n    window.addEventListener('resize', handleResize);\n\n    return () => {\n        window.removeEventListener('resize', handleResize);\n        window.removeEventListener('mousemove', handleMouseMove);\n        mountRef.current?.removeChild(renderer.domElement);\n    };\n  }, []);\n\n  return <div ref={mountRef} className=\"absolute inset-0 z-0\" />;\n};\n",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "dhileepkumargm",
+    "slug": "retrying",
+    "registry_url": "https://21st.dev/r/dhileepkumargm/retrying",
+    "title": "Retrying",
+    "description": "Retrying Back Gourd Hero ",
+    "category": "hero",
+    "category_group": "Marketing Blocks",
+    "downloads": 13,
+    "likes": 0
+  }
+}

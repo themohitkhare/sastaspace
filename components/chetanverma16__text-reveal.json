@@ -1,0 +1,30 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "text-reveal",
+  "type": "registry:component",
+  "title": "Text Reveal",
+  "description": "A text-reveal component.",
+  "dependencies": [
+    "gsap",
+    "@gsap/react"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/ui/text-reveal.tsx",
+      "content": "\"use client\";\n\nimport { cn } from \"@/lib/utils\";\nimport React, { useRef, useEffect } from \"react\";\nimport gsap from \"gsap\";\nimport { useGSAP } from \"@gsap/react\";\n\ngsap.registerPlugin(useGSAP);\n\nconst TextRevealEffect = ({\n  text,\n  splitBy = \"word\",\n  className,\n  duration = 0.5,\n  stagger = 0.1,\n  effect = \"revealX\",\n  blur = 10,\n  wordSpacing = 1,\n  characterSpacing = 1,\n}: {\n  text: string;\n  splitBy?: \"word\" | \"character\";\n  className?: string;\n  duration?: number;\n  stagger?: number;\n  effect?:\n    | \"revealX\"\n    | \"revealY\"\n    | \"revealXY\"\n    | \"revealXReverse\"\n    | \"revealYReverse\"\n    | \"revealXYReverse\"\n    | \"scale\";\n  blur?: number;\n  wordSpacing?: number;\n  characterSpacing?: number;\n}) => {\n  const containerRef = useRef<HTMLDivElement>(null);\n  const splittedText =\n    splitBy === \"word\" ? splitTextByWord(text) : splitTextByCharacter(text);\n\n  const effects = {\n    revealX: {\n      from: { x: 20, opacity: 0, filter: `blur(${blur}px)` },\n      to: { x: 0, opacity: 1, filter: `blur(0px)` },\n    },\n    revealY: {\n      from: { y: 20, opacity: 0, filter: `blur(${blur}px)` },\n      to: { y: 0, opacity: 1, filter: `blur(0px)` },\n    },\n    revealXY: {\n      from: { x: 20, y: 20, opacity: 0, filter: `blur(${blur}px)` },\n      to: { x: 0, y: 0, opacity: 1, filter: `blur(0px)` },\n    },\n    revealXReverse: {\n      from: { x: -20, opacity: 0, filter: `blur(${blur}px)` },\n      to: { x: 0, opacity: 1, filter: `blur(0px)` },\n    },\n    revealYReverse: {\n      from: { y: -20, opacity: 0, filter: `blur(${blur}px)` },\n      to: { y: 0, opacity: 1, filter: `blur(0px)` },\n    },\n    revealXYReverse: {\n      from: { x: -20, y: -20, opacity: 0, filter: `blur(${blur}px)` },\n      to: { x: 0, y: 0, opacity: 1, filter: `blur(0px)` },\n    },\n    scale: {\n      from: { scale: 0.5, opacity: 0, filter: `blur(${blur}px)` },\n      to: { scale: 1, opacity: 1, filter: `blur(0px)` },\n    },\n  };\n\n  useEffect(() => {\n    if (containerRef.current) {\n      const elements = containerRef.current.children;\n\n      gsap.set(elements, effects[effect].from);\n\n      gsap.to(elements, {\n        ...effects[effect].to,\n        duration: duration,\n        stagger: stagger,\n        ease: \"power2.out\",\n      });\n    }\n  }, [text, splitBy, effect, duration, stagger, blur]);\n\n  function splitTextByWord(text: string) {\n    return text.split(\" \").map((word, index) => ({\n      word,\n      key: index,\n    }));\n  }\n\n  function splitTextByCharacter(text: string) {\n    return text.split(\"\").map((char, index) => ({\n      char,\n      key: index,\n    }));\n  }\n\n  return (\n    <div\n      ref={containerRef}\n      className={cn(`flex`, className)}\n      style={{\n        gap:\n          splitBy === \"character\"\n            ? `${characterSpacing * 10}px`\n            : `${wordSpacing * 10}px`,\n      }}\n    >\n      {splittedText.map((item, index) => (\n        <div key={item.key}>\n          <div\n            style={{\n              letterSpacing:\n                splitBy === \"word\" ? `${characterSpacing * 10}px` : undefined,\n            }}\n          >\n            {splitBy === \"word\"\n              ? (item as { word: string }).word\n              : (item as { char: string }).char}\n          </div>\n          {splitBy === \"character\" &&\n            index < splittedText.length - 1 &&\n            (item as { char: string }).char === \" \" && (\n              <div style={{ width: `${wordSpacing * 10}px` }} />\n            )}\n        </div>\n      ))}\n    </div>\n  );\n};\n\nexport default TextRevealEffect;\n",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "chetanverma16",
+    "slug": "text-reveal",
+    "registry_url": "https://21st.dev/r/chetanverma16/text-reveal",
+    "title": "Text Reveal",
+    "description": "A text reveal effect component made with gsap and tailwind css",
+    "category": "text",
+    "category_group": "Marketing Blocks",
+    "downloads": 6,
+    "likes": 0
+  }
+}

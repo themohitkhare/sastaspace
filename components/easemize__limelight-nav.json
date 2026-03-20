@@ -1,0 +1,27 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "limelight-nav",
+  "type": "registry:component",
+  "title": "Limelight Nav",
+  "description": "A limelight-nav component.",
+  "dependencies": [],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/ui/limelight-nav.tsx",
+      "content": "import React, { useState, useRef, useLayoutEffect, cloneElement } from 'react';\n\n// --- Internal Types and Defaults ---\n\nconst DefaultHomeIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" strokeWidth=\"2\" strokeLinecap=\"round\" strokeLinejoin=\"round\"><path d=\"m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z\" /></svg>;\nconst DefaultCompassIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" strokeWidth=\"2\" strokeLinecap=\"round\" strokeLinejoin=\"round\"><circle cx=\"12\" cy=\"12\" r=\"10\" /><path d=\"m16.24 7.76-2.12 6.36-6.36 2.12 2.12-6.36 6.36-2.12z\" /></svg>;\nconst DefaultBellIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" strokeWidth=\"2\" strokeLinecap=\"round\" strokeLinejoin=\"round\"><path d=\"M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9\" /><path d=\"M10.3 21a1.94 1.94 0 0 0 3.4 0\" /></svg>;\n\ntype NavItem = {\n  id: string | number;\n  icon: React.ReactElement;\n  label?: string;\n  onClick?: () => void;\n};\n\nconst defaultNavItems: NavItem[] = [\n  { id: 'default-home', icon: <DefaultHomeIcon />, label: 'Home' },\n  { id: 'default-explore', icon: <DefaultCompassIcon />, label: 'Explore' },\n  { id: 'default-notifications', icon: <DefaultBellIcon />, label: 'Notifications' },\n];\n\ntype LimelightNavProps = {\n  items?: NavItem[];\n  defaultActiveIndex?: number;\n  onTabChange?: (index: number) => void;\n  className?: string;\n  limelightClassName?: string;\n  iconContainerClassName?: string;\n  iconClassName?: string;\n};\n\n/**\n * An adaptive-width navigation bar with a \"limelight\" effect that highlights the active item.\n */\nexport const LimelightNav = ({\n  items = defaultNavItems,\n  defaultActiveIndex = 0,\n  onTabChange,\n  className,\n  limelightClassName,\n  iconContainerClassName,\n  iconClassName,\n}: LimelightNavProps) => {\n  const [activeIndex, setActiveIndex] = useState(defaultActiveIndex);\n  const [isReady, setIsReady] = useState(false);\n  const navItemRefs = useRef<(HTMLAnchorElement | null)[]>([]);\n  const limelightRef = useRef<HTMLDivElement | null>(null);\n\n  useLayoutEffect(() => {\n    if (items.length === 0) return;\n\n    const limelight = limelightRef.current;\n    const activeItem = navItemRefs.current[activeIndex];\n    \n    if (limelight && activeItem) {\n      const newLeft = activeItem.offsetLeft + activeItem.offsetWidth / 2 - limelight.offsetWidth / 2;\n      limelight.style.left = `${newLeft}px`;\n\n      if (!isReady) {\n        setTimeout(() => setIsReady(true), 50);\n      }\n    }\n  }, [activeIndex, isReady, items]);\n\n  if (items.length === 0) {\n    return null; \n  }\n\n  const handleItemClick = (index: number, itemOnClick?: () => void) => {\n    setActiveIndex(index);\n    onTabChange?.(index);\n    itemOnClick?.();\n  };\n\n  return (\n    <nav className={`relative inline-flex items-center h-16 rounded-lg bg-card text-foreground border px-2 ${className}`}>\n      {items.map(({ id, icon, label, onClick }, index) => (\n          <a\n            key={id}\n            ref={el => (navItemRefs.current[index] = el)}\n            className={`relative z-20 flex h-full cursor-pointer items-center justify-center p-5 ${iconContainerClassName}`}\n            onClick={() => handleItemClick(index, onClick)}\n            aria-label={label}\n          >\n            {cloneElement(icon, {\n              className: `w-6 h-6 transition-opacity duration-100 ease-in-out ${\n                activeIndex === index ? 'opacity-100' : 'opacity-40'\n              } ${icon.props.className || ''} ${iconClassName || ''}`,\n            })}\n          </a>\n      ))}\n\n      <div \n        ref={limelightRef}\n        className={`absolute top-0 z-10 w-11 h-[5px] rounded-full bg-primary shadow-[0_50px_15px_var(--primary)] ${\n          isReady ? 'transition-[left] duration-400 ease-in-out' : ''\n        } ${limelightClassName}`}\n        style={{ left: '-999px' }}\n      >\n        <div className=\"absolute left-[-30%] top-[5px] w-[160%] h-14 [clip-path:polygon(5%_100%,25%_0,75%_0,95%_100%)] bg-gradient-to-b from-primary/30 to-transparent pointer-events-none\" />\n      </div>\n    </nav>\n  );\n};",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "easemize",
+    "slug": "limelight-nav",
+    "registry_url": "https://21st.dev/r/easemize/limelight-nav",
+    "title": "Limelight Nav",
+    "description": "A sleek and modern navigation bar with a unique \"limelight\" effect that follows the active tab. This component is designed to be both highly functional and visually appealing, providing a smooth and intuitive user experience. Part of the EaseMize UI library, it's incredibly easy to integrate into your projects and customize to fit your brand's aesthetic. The component is built with TypeScript and is fully typed for a better developer experience",
+    "category": "dock",
+    "category_group": "Marketing Blocks",
+    "downloads": 525,
+    "likes": 0
+  }
+}

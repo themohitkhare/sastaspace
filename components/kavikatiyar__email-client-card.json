@@ -1,0 +1,34 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "email-client-card",
+  "type": "registry:component",
+  "title": "Email Client Card",
+  "description": "A email-client-card component.",
+  "dependencies": [
+    "class-variance-authority",
+    "framer-motion"
+  ],
+  "registryDependencies": [
+    "https://21st.dev/r/originui/input",
+    "https://21st.dev/r/shadcn/avatar",
+    "https://21st.dev/r/shadcn/button"
+  ],
+  "files": [
+    {
+      "path": "src/components/ui/email-client-card.tsx",
+      "content": "import * as React from 'react';\nimport { cva, type VariantProps } from 'class-variance-authority';\nimport { AnimatePresence, motion } from 'framer-motion';\nimport { cn } from '@/lib/utils'; // Assuming you have a utils file for `cn`\n\n// ShadCN UI Primitives (install via CLI)\nimport { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';\nimport { Button } from '@/components/ui/button';\nimport { Input } from '@/components/ui/input';\n\nconst cardVariants = cva(\n  'w-full max-w-2xl mx-auto rounded-xl border bg-card text-card-foreground shadow-sm flex flex-col transition-colors',\n  {\n    variants: {\n      isExpanded: {\n        true: 'h-auto',\n        false: 'h-auto', // Placeholder for potential collapsed styles\n      },\n    },\n    defaultVariants: {\n      isExpanded: true,\n    },\n  },\n);\n\nexport interface EmailClientCardProps\n  extends React.HTMLAttributes<HTMLDivElement>,\n    VariantProps<typeof cardVariants> {\n  avatarSrc: string;\n  avatarFallback: string;\n  senderName: string;\n  senderEmail: string;\n  timestamp: string;\n  message: string;\n  actions?: React.ReactNode[];\n  reactions?: string[];\n  onReactionClick?: (reaction: string) => void;\n  onActionClick?: (index: number) => void;\n}\n\nconst EmailClientCard = React.forwardRef<HTMLDivElement, EmailClientCardProps>(\n  (\n    {\n      className,\n      avatarSrc,\n      avatarFallback,\n      senderName,\n      senderEmail,\n      timestamp,\n      message,\n      actions = [],\n      reactions = [],\n      onReactionClick,\n      onActionClick,\n      isExpanded,\n      ...props\n    },\n    ref,\n  ) => {\n    const [inputValue, setInputValue] = React.useState('');\n\n    const containerVariants = {\n      hidden: { opacity: 0, y: 20 },\n      visible: {\n        opacity: 1,\n        y: 0,\n        transition: {\n          staggerChildren: 0.05,\n        },\n      },\n    };\n\n    const itemVariants = {\n      hidden: { opacity: 0, y: 10 },\n      visible: { opacity: 1, y: 0 },\n    };\n\n    return (\n      <motion.div\n        ref={ref}\n        className={cn(cardVariants({ isExpanded }), className)}\n        variants={containerVariants}\n        initial=\"hidden\"\n        animate=\"visible\"\n        {...props}\n      >\n        {/* Card Header */}\n        <motion.div\n          className=\"p-4 sm:p-6 flex items-start gap-4 border-b\"\n          variants={itemVariants}\n        >\n          <Avatar className=\"w-10 h-10 border\">\n            <AvatarImage src={avatarSrc} alt={senderName} />\n            <AvatarFallback>{avatarFallback}</AvatarFallback>\n          </Avatar>\n          <div className=\"flex-grow\">\n            <p className=\"font-semibold text-card-foreground\">{senderName}</p>\n            <p className=\"text-sm text-muted-foreground\">{senderEmail}</p>\n          </div>\n          <div className=\"flex items-center gap-1 text-muted-foreground\">\n            <span className=\"text-xs hidden sm:inline\">{timestamp}</span>\n            {actions.map((action, index) => (\n              <motion.div\n                key={index}\n                whileHover={{ scale: 1.1 }}\n                whileTap={{ scale: 0.9 }}\n              >\n                <Button\n                  variant=\"ghost\"\n                  size=\"icon\"\n                  className=\"w-8 h-8\"\n                  onClick={() => onActionClick?.(index)}\n                  aria-label={`Action ${index + 1}`}\n                >\n                  {action}\n                </Button>\n              </motion.div>\n            ))}\n          </div>\n        </motion.div>\n\n        {/* Card Body */}\n        <motion.div\n          className=\"p-4 sm:p-6 text-sm text-foreground/90 leading-relaxed\"\n          variants={itemVariants}\n        >\n          <p>{message}</p>\n        </motion.div>\n\n        {/* Card Footer with Reply */}\n        <motion.div\n          className=\"p-3 sm:p-4 mt-auto border-t bg-muted/50\"\n          variants={itemVariants}\n        >\n          <div className=\"flex items-center gap-2\">\n            <Input\n              type=\"text\"\n              placeholder=\"Type here...\"\n              className=\"flex-grow bg-background focus-visible:ring-1 focus-visible:ring-offset-0\"\n              value={inputValue}\n              onChange={(e) => setInputValue(e.target.value)}\n            />\n            <div className=\"flex items-center gap-1\">\n              {reactions.map((reaction, index) => (\n                <motion.div\n                  key={index}\n                  whileHover={{ scale: 1.2, rotate: -5 }}\n                  whileTap={{ scale: 0.9 }}\n                  transition={{ type: 'spring', stiffness: 400, damping: 15 }}\n                >\n                  <Button\n                    variant=\"ghost\"\n                    size=\"icon\"\n                    className=\"w-8 h-8 text-xl\"\n                    onClick={() => onReactionClick?.(reaction)}\n                    aria-label={`React with ${reaction}`}\n                  >\n                    {reaction}\n                  </Button>\n                </motion.div>\n              ))}\n            </div>\n          </div>\n        </motion.div>\n      </motion.div>\n    );\n  },\n);\n\nEmailClientCard.displayName = 'EmailClientCard';\n\nexport { EmailClientCard, cardVariants };",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "kavikatiyar",
+    "slug": "email-client-card",
+    "registry_url": "https://21st.dev/r/kavikatiyar/email-client-card",
+    "title": "Email Client Card",
+    "description": "Email Client Card\nA responsive card component for displaying and replying to messages, designed in the style of modern email clients. It features customizable slots for actions, reactions, and a reply input.",
+    "category": "clients",
+    "category_group": "Marketing Blocks",
+    "downloads": 21,
+    "likes": 0
+  }
+}

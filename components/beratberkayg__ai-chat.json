@@ -1,0 +1,30 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "ai-chat",
+  "type": "registry:component",
+  "title": "Ai Chat",
+  "description": "A ai-chat component.",
+  "dependencies": [
+    "framer-motion",
+    "lucide-react"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/ui/ai-chat.tsx",
+      "content": "\"use client\";\n\nimport { useState } from \"react\";\nimport { motion } from \"framer-motion\";\nimport { Send } from \"lucide-react\";\nimport { cn } from \"@/lib/utils\";\n\nexport default function AIChatCard({ className }: { className?: string }) {\n  const [messages, setMessages] = useState<{ sender: \"ai\" | \"user\"; text: string }[]>([\n    { sender: \"ai\", text: \"👋 Hello! I’m your AI assistant.\" },\n  ]);\n  const [input, setInput] = useState(\"\");\n  const [isTyping, setIsTyping] = useState(false);\n\n  const handleSend = () => {\n    if (!input.trim()) return;\n    setMessages([...messages, { sender: \"user\", text: input }]);\n    setInput(\"\");\n    setIsTyping(true);\n\n    // Simulate AI response\n    setTimeout(() => {\n      setMessages((prev) => [...prev, { sender: \"ai\", text: \"🤖 This is a sample AI response.\" }]);\n      setIsTyping(false);\n    }, 1200);\n  };\n\n  return (\n    <div className={cn(\"relative w-[360px] h-[460px] rounded-2xl overflow-hidden p-[2px]\", className)}>\n      {/* Animated Outer Border */}\n      <motion.div\n        className=\"absolute inset-0 rounded-2xl border-2 border-white/20\"\n        animate={{ rotate: [0, 360] }}\n        transition={{ duration: 25, repeat: Infinity, ease: \"linear\" }}\n      />\n\n      {/* Inner Card */}\n      <div className=\"relative flex flex-col w-full h-full rounded-xl border border-white/10 overflow-hidden bg-black/90 backdrop-blur-xl\">\n        {/* Inner Animated Background */}\n        <motion.div\n          className=\"absolute inset-0 bg-gradient-to-br from-gray-800 via-black to-gray-900\"\n          animate={{ backgroundPosition: [\"0% 0%\", \"100% 100%\", \"0% 0%\"] }}\n          transition={{ duration: 20, repeat: Infinity, ease: \"linear\" }}\n          style={{ backgroundSize: \"200% 200%\" }}\n        />\n\n        {/* Floating Particles */}\n        {Array.from({ length: 20 }).map((_, i) => (\n          <motion.div\n            key={i}\n            className=\"absolute w-1 h-1 rounded-full bg-white/10\"\n            animate={{\n              y: [\"0%\", \"-140%\"],\n              x: [Math.random() * 200 - 100, Math.random() * 200 - 100],\n              opacity: [0, 1, 0],\n            }}\n            transition={{\n              duration: 5 + Math.random() * 3,\n              repeat: Infinity,\n              delay: i * 0.5,\n              ease: \"easeInOut\",\n            }}\n            style={{ left: `${Math.random() * 100}%`, bottom: \"-10%\" }}\n          />\n        ))}\n\n        {/* Header */}\n        <div className=\"px-4 py-3 border-b border-white/10 relative z-10\">\n          <h2 className=\"text-lg font-semibold text-white\">🤖 AI Assistant</h2>\n        </div>\n\n        {/* Messages */}\n        <div className=\"flex-1 px-4 py-3 overflow-y-auto space-y-3 text-sm flex flex-col relative z-10\">\n          {messages.map((msg, i) => (\n            <motion.div\n              key={i}\n              initial={{ opacity: 0, y: 10 }}\n              animate={{ opacity: 1, y: 0 }}\n              transition={{ duration: 0.4 }}\n              className={cn(\n                \"px-3 py-2 rounded-xl max-w-[80%] shadow-md backdrop-blur-md\",\n                msg.sender === \"ai\"\n                  ? \"bg-white/10 text-white self-start\"\n                  : \"bg-white/30 text-black font-semibold self-end\"\n              )}\n            >\n              {msg.text}\n            </motion.div>\n          ))}\n\n          {/* AI Typing Indicator */}\n          {isTyping && (\n            <motion.div\n              className=\"flex items-center gap-1 px-3 py-2 rounded-xl max-w-[30%] bg-white/10 self-start\"\n              initial={{ opacity: 0 }}\n              animate={{ opacity: [0, 1, 0.6, 1] }}\n              transition={{ repeat: Infinity, duration: 1.2 }}\n            >\n              <span className=\"w-2 h-2 rounded-full bg-white animate-pulse\"></span>\n              <span className=\"w-2 h-2 rounded-full bg-white animate-pulse delay-200\"></span>\n              <span className=\"w-2 h-2 rounded-full bg-white animate-pulse delay-400\"></span>\n            </motion.div>\n          )}\n        </div>\n\n        {/* Input */}\n        <div className=\"flex items-center gap-2 p-3 border-t border-white/10 relative z-10\">\n          <input\n            className=\"flex-1 px-3 py-2 text-sm bg-black/50 rounded-lg border border-white/10 text-white focus:outline-none focus:ring-1 focus:ring-white/50\"\n            placeholder=\"Type a message...\"\n            value={input}\n            onChange={(e) => setInput(e.target.value)}\n            onKeyDown={(e) => e.key === \"Enter\" && handleSend()}\n          />\n          <button\n            onClick={handleSend}\n            className=\"p-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors\"\n          >\n            <Send className=\"w-4 h-4 text-white\" />\n          </button>\n        </div>\n      </div>\n    </div>\n  );\n}\n",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "beratberkayg",
+    "slug": "ai-chat",
+    "registry_url": "https://21st.dev/r/beratberkayg/ai-chat",
+    "title": "AI Chat ",
+    "description": "ai chat card animated",
+    "category": "ai-chat",
+    "category_group": "UI Components",
+    "downloads": 86,
+    "likes": 0
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "name": "pulse-beams",
+  "type": "registry:ui",
+  "dependencies": [
+    "framer-motion"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "/components/ui/pulse-beams.tsx",
+      "content": "\"use client\";\n\nimport React from \"react\";\nimport { motion } from \"framer-motion\";\nimport { cn } from \"@/lib/utils\";\n\ninterface BeamPath {\n  path: string;\n  gradientConfig: {\n    initial: {\n      x1: string;\n      x2: string;\n      y1: string;\n      y2: string;\n    };\n    animate: {\n      x1: string | string[];\n      x2: string | string[];\n      y1: string | string[];\n      y2: string | string[];\n    };\n    transition?: {\n      duration?: number;\n      repeat?: number;\n      repeatType?: string;\n      ease?: string;\n      repeatDelay?: number;\n      delay?: number;\n    };\n  };\n  connectionPoints?: Array<{\n    cx: number;\n    cy: number;\n    r: number;\n  }>;\n}\n\ninterface PulseBeamsProps {\n  children?: React.ReactNode;\n  className?: string;\n  background?: React.ReactNode;\n  beams: BeamPath[];\n  width?: number;\n  height?: number;\n  baseColor?: string;\n  accentColor?: string;\n  gradientColors?: {\n    start: string;\n    middle: string;\n    end: string;\n  };\n}\n\nexport const PulseBeams = ({\n  children,\n  className,\n  background,\n  beams,\n  width = 858,\n  height = 434,\n  baseColor = \"var(--slate-800)\",\n  accentColor = \"var(--slate-600)\",\n  gradientColors,\n}: PulseBeamsProps) => {\n  return (\n    <div\n      className={cn(\n        \"w-full h-screen relative flex items-center justify-center antialiased overflow-hidden\",\n        className\n      )}\n    >\n      {background}\n      <div className=\"relative z-10\">{children}</div>\n      <div className=\"absolute inset-0 flex items-center justify-center\">\n        <SVGs\n          beams={beams}\n          width={width}\n          height={height}\n          baseColor={baseColor}\n          accentColor={accentColor}\n          gradientColors={gradientColors}\n        />\n      </div>\n    </div>\n  );\n};\n\nconst SVGs = ({ beams, width, height, baseColor, accentColor, gradientColors }) => {\n  return (\n    <svg\n      width={width}\n      height={height}\n      viewBox={`0 0 ${width} ${height}`}\n      fill=\"none\"\n      xmlns=\"http://www.w3.org/2000/svg\"\n      className=\"flex flex-shrink-0\"\n    >\n      {beams.map((beam, index) => (\n        <React.Fragment key={index}>\n          <path\n            d={beam.path}\n            stroke={baseColor}\n            strokeWidth=\"1\"\n          />\n          <path\n            d={beam.path}\n            stroke={`url(#grad${index})`}\n            strokeWidth=\"2\"\n            strokeLinecap=\"round\"\n          />\n          {beam.connectionPoints?.map((point, pointIndex) => (\n            <circle\n              key={`${index}-${pointIndex}`}\n              cx={point.cx}\n              cy={point.cy}\n              r={point.r}\n              fill={baseColor}\n              stroke={accentColor}\n            />\n          ))}\n        </React.Fragment>\n      ))}\n\n      <defs>\n        {beams.map((beam, index) => (\n          <motion.linearGradient\n            key={index}\n            id={`grad${index}`}\n            gradientUnits=\"userSpaceOnUse\"\n            initial={beam.gradientConfig.initial}\n            animate={beam.gradientConfig.animate}\n            transition={beam.gradientConfig.transition}\n          >\n            <GradientColors colors={gradientColors} />\n          </motion.linearGradient>\n        ))}\n      </defs>\n    </svg>\n  );\n};\n\nconst GradientColors = ({ colors = {\n  start: \"#18CCFC\",\n  middle: \"#6344F5\",\n  end: \"#AE48FF\"\n} }) => {\n  return (\n    <>\n      <stop offset=\"0%\" stopColor={colors.start} stopOpacity=\"0\" />\n      <stop offset=\"20%\" stopColor={colors.start} stopOpacity=\"1\" />\n      <stop offset=\"50%\" stopColor={colors.middle} stopOpacity=\"1\" />\n      <stop offset=\"100%\" stopColor={colors.end} stopOpacity=\"0\" />\n    </>\n  );\n};",
+      "type": "registry:ui",
+      "target": ""
+    }
+  ],
+  "tailwind": {
+    "config": {}
+  },
+  "_meta": {
+    "author": "aceternity",
+    "slug": "pulse-beams",
+    "registry_url": "https://21st.dev/r/aceternity/pulse-beams",
+    "title": "Pulse Beams",
+    "description": "Multiple beams that converge into a single point, as seen on Next.js website",
+    "category": "call-to-action",
+    "category_group": "Marketing Blocks",
+    "downloads": 1047,
+    "likes": 9
+  }
+}

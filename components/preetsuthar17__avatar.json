@@ -1,0 +1,105 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "avatar",
+  "type": "registry:component",
+  "title": "Avatar",
+  "description": "A avatar component.",
+  "dependencies": [
+    "@radix-ui/react-avatar",
+    "class-variance-authority"
+  ],
+  "registryDependencies": [
+    "https://21st.dev/r/preetsuthar17/tooltip"
+  ],
+  "files": [
+    {
+      "path": "src/components/ui/avatar.tsx",
+      "content": "\"use client\";\n\nimport * as React from \"react\";\nimport * as AvatarPrimitive from \"@radix-ui/react-avatar\";\nimport { cva, type VariantProps } from \"class-variance-authority\";\nimport { cn } from \"@/lib/utils\";\nimport {\n  Tooltip,\n  TooltipContent,\n  TooltipProvider,\n  TooltipTrigger,\n} from \"@/components/ui/tooltip\";\n\nconst avatarVariants = cva(\n  \"relative flex shrink-0 overflow-hidden rounded-full shadow-sm/2 bg-background\",\n  {\n    variants: {\n      size: {\n        xs: \"h-6 w-6\",\n        sm: \"h-8 w-8\",\n        md: \"h-10 w-10\",\n        lg: \"h-12 w-12\",\n        xl: \"h-16 w-16\",\n        \"2xl\": \"h-20 w-20\",\n      },\n    },\n    defaultVariants: {\n      size: \"md\",\n    },\n  },\n);\n\ninterface AvatarProps\n  extends React.ComponentPropsWithoutRef<typeof AvatarPrimitive.Root>,\n    VariantProps<typeof avatarVariants> {\n  tooltip?: string | React.ComponentProps<typeof TooltipContent>;\n}\n\nconst Avatar = React.forwardRef<\n  React.ElementRef<typeof AvatarPrimitive.Root>,\n  AvatarProps\n>(({ className, size, tooltip, ...props }, ref) => {\n  const avatar = (\n    <AvatarPrimitive.Root\n      ref={ref}\n      className={cn(avatarVariants({ size }), className)}\n      {...props}\n    />\n  );\n\n  if (!tooltip) {\n    return avatar;\n  }\n\n  const tooltipProps =\n    typeof tooltip === \"string\" ? { children: tooltip } : tooltip;\n\n  return (\n    <TooltipProvider>\n      <Tooltip>\n        <TooltipTrigger asChild>{avatar}</TooltipTrigger>\n        <TooltipContent {...tooltipProps} />\n      </Tooltip>\n    </TooltipProvider>\n  );\n});\nAvatar.displayName = AvatarPrimitive.Root.displayName;\n\nconst AvatarImage = React.forwardRef<\n  React.ElementRef<typeof AvatarPrimitive.Image>,\n  React.ComponentPropsWithoutRef<typeof AvatarPrimitive.Image>\n>(({ className, ...props }, ref) => (\n  <AvatarPrimitive.Image\n    ref={ref}\n    className={cn(\"aspect-square h-full w-full object-cover\", className)}\n    {...props}\n  />\n));\nAvatarImage.displayName = AvatarPrimitive.Image.displayName;\n\nconst AvatarFallback = React.forwardRef<\n  React.ElementRef<typeof AvatarPrimitive.Fallback>,\n  React.ComponentPropsWithoutRef<typeof AvatarPrimitive.Fallback>\n>(({ className, ...props }, ref) => (\n  <AvatarPrimitive.Fallback\n    ref={ref}\n    className={cn(\n      \"flex h-full w-full items-center justify-center rounded-full bg-muted text-muted-foreground font-medium\",\n      className,\n    )}\n    {...props}\n  />\n));\nAvatarFallback.displayName = AvatarPrimitive.Fallback.displayName;\n\ninterface AvatarGroupProps extends React.HTMLAttributes<HTMLDivElement> {\n  max?: number;\n  spacing?: \"tight\" | \"normal\" | \"loose\";\n  size?: VariantProps<typeof avatarVariants>[\"size\"];\n  children: React.ReactElement[];\n}\n\nconst avatarGroupSpacing = {\n  tight: \"-space-x-2\",\n  normal: \"-space-x-1\",\n  loose: \"space-x-1\",\n};\n\nconst AvatarGroup = React.forwardRef<HTMLDivElement, AvatarGroupProps>(\n  (\n    { className, max = 3, spacing = \"normal\", size = \"md\", children, ...props },\n    ref,\n  ) => {\n    const avatarsToShow = children.slice(0, max);\n    const remainingCount = Math.max(0, children.length - max);\n\n    return (\n      <div\n        ref={ref}\n        className={cn(\n          \"flex items-center\",\n          avatarGroupSpacing[spacing],\n          className,\n        )}\n        {...props}\n      >\n        {avatarsToShow.map((child, index) => {\n          if (React.isValidElement(child)) {\n            return React.cloneElement(child, {\n              key: index,\n              size,\n              className: cn(\n                \"border-2 border-background\",\n                (child.props as any)?.className,\n              ),\n            } as any);\n          }\n          return child;\n        })}\n        {remainingCount > 0 && (\n          <Avatar\n            size={size}\n            className=\"border-2 border-background\"\n          >\n            <AvatarFallback className=\"bg-secondary text-secondary-foreground font-semibold\">\n              +{remainingCount}\n            </AvatarFallback>\n          </Avatar>\n        )}\n      </div>\n    );\n  },\n);\nAvatarGroup.displayName = \"AvatarGroup\";\n\nexport { Avatar, AvatarImage, AvatarFallback, AvatarGroup, avatarVariants };\nexport type { AvatarGroupProps };",
+      "type": "registry:component"
+    }
+  ],
+  "cssVars": {
+    "theme": {
+      "--hu-font-geist": "var(----hu-font-geist)",
+      "--hu-font-jetbrains": "var(----hu-font-jetbrains)",
+      "--radius": "var(----radius)",
+      "--card-radius": "var(----card-radius)",
+      "--color-hu-background": "var(----hu-background)",
+      "--color-hu-foreground": "var(----hu-foreground)",
+      "--color-hu-card": "var(----hu-card)",
+      "--color-hu-card-foreground": "var(----hu-card-foreground)",
+      "--color-hu-primary": "var(----hu-primary)",
+      "--color-hu-primary-foreground": "var(----hu-primary-foreground)",
+      "--color-hu-secondary": "var(----hu-secondary)",
+      "--color-hu-secondary-foreground": "var(----hu-secondary-foreground)",
+      "--color-hu-muted": "var(----hu-muted)",
+      "--color-hu-muted-foreground": "var(----hu-muted-foreground)",
+      "--color-hu-accent": "var(----hu-accent)",
+      "--color-hu-accent-foreground": "var(----hu-accent-foreground)",
+      "--color-hu-destructive": "var(----hu-destructive)",
+      "--color-hu-destructive-foreground": "var(----hu-destructive-foreground)",
+      "--color-hu-border": "var(----hu-border)",
+      "--color-hu-input": "var(----hu-input)",
+      "--color-hu-ring": "var(----hu-ring)",
+      "--color-color-fd-background": "var(----color-fd-background)",
+      "--color-color-fd-card": "var(----color-fd-card)"
+    },
+    "light": {
+      "--hu-font-geist": "var(--font-geist)",
+      "--hu-font-jetbrains": "var(--font-jetbrains-mono)",
+      "--radius": "0.8rem",
+      "--card-radius": "1rem",
+      "--hu-background": "0, 0%, 100%",
+      "--hu-foreground": "0, 0%, 14%",
+      "--hu-card": "0, 0%, 99%",
+      "--hu-card-foreground": "0, 0%, 14%",
+      "--hu-primary": "235, 100%, 60%",
+      "--hu-primary-foreground": "0, 0%, 98%",
+      "--hu-secondary": "0, 0%, 97%",
+      "--hu-secondary-foreground": "0, 0%, 20%",
+      "--hu-muted": "0, 0%, 97%",
+      "--hu-muted-foreground": "0, 0%, 56%",
+      "--hu-accent": "0, 0%, 96%",
+      "--hu-accent-foreground": "0, 0%, 20%",
+      "--hu-destructive": "9, 96%, 47%",
+      "--hu-destructive-foreground": "0, 0%, 98%",
+      "--hu-border": "0, 0%, 92%",
+      "--hu-input": "0, 0%, 100%",
+      "--hu-ring": "0, 0%, 71%",
+      "--color-fd-background": "hsl(var(--hu-background))",
+      "--color-fd-card": "hsl(var(--hu-background))"
+    },
+    "dark": {
+      "--hu-background": "0, 0%, 7%",
+      "--hu-foreground": "0, 0%, 100%",
+      "--hu-card": "0, 0%, 9%",
+      "--hu-card-foreground": "0, 0%, 100%",
+      "--hu-primary": "235, 100%, 60%",
+      "--hu-primary-foreground": "0, 0%, 98%",
+      "--hu-secondary": "0, 0%, 15%",
+      "--hu-secondary-foreground": "0, 0%, 100%",
+      "--hu-muted": "0, 0%, 15%",
+      "--hu-muted-foreground": "0, 0%, 71%",
+      "--hu-accent": "0, 0%, 15%",
+      "--hu-accent-foreground": "0, 0%, 100%",
+      "--hu-destructive": "0, 84%, 50%",
+      "--hu-destructive-foreground": "0, 0%, 98%",
+      "--hu-border": "0, 0%, 100%, 10%",
+      "--hu-input": "0, 0%, 100%, 5%",
+      "--hu-ring": "0, 0%, 56%",
+      "--color-fd-background": "hsl(var(--hu-background))",
+      "--color-fd-card": "hsl(var(--hu-background))"
+    }
+  },
+  "_meta": {
+    "author": "preetsuthar17",
+    "slug": "avatar",
+    "registry_url": "https://21st.dev/r/preetsuthar17/avatar",
+    "title": "Avatar",
+    "description": "An image element with a fallback for representing the user",
+    "category": "avatar",
+    "category_group": "UI Components",
+    "downloads": 5,
+    "likes": 0
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "toast-buttons",
+  "type": "registry:component",
+  "title": "Toast Buttons",
+  "description": "A toast-buttons component.",
+  "dependencies": [
+    "lucide-react",
+    "motion"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/ui/toast-buttons.tsx",
+      "content": "\"use client\"\n\nimport { useEffect, useState } from \"react\"\nimport { AlertCircle, CheckCircle, Info, X, XCircle } from \"lucide-react\"\nimport { AnimatePresence, motion } from \"motion/react\"\n\ntype ToastType = \"success\" | \"error\" | \"info\" | \"warning\"\n\ninterface ToastProps {\n  message: string\n  type?: ToastType\n  duration?: number\n  onClose?: () => void\n  isVisible?: boolean\n  className?: string\n}\n\nconst toastIcons = {\n  success: <CheckCircle className=\"h-5 w-5 text-emerald-500\" />,\n  error: <XCircle className=\"h-5 w-5 text-red-500\" />,\n  warning: <AlertCircle className=\"h-5 w-5 text-amber-500\" />,\n  info: <Info className=\"h-5 w-5 text-blue-500\" />,\n}\n\nconst toastClasses = {\n  success:\n    \"border-emerald-100 bg-emerald-50 dark:border-emerald-900 dark:bg-emerald-950\",\n  error: \"border-red-100 bg-red-50 dark:border-red-900 dark:bg-red-950\",\n  warning:\n    \"border-amber-100 bg-amber-50 dark:border-amber-900 dark:bg-amber-950\",\n  info: \"border-blue-100 bg-blue-50 dark:border-blue-900 dark:bg-blue-950\",\n}\n\nfunction BasicToast({\n  message,\n  type = \"info\",\n  duration = 3000,\n  onClose,\n  isVisible = true,\n  className = \"\",\n}: ToastProps) {\n  const [visible, setVisible] = useState(isVisible)\n\n  useEffect(() => {\n    setVisible(isVisible)\n  }, [isVisible])\n\n  useEffect(() => {\n    if (visible && duration > 0) {\n      const timer = setTimeout(() => {\n        setVisible(false)\n        onClose?.()\n      }, duration)\n      return () => clearTimeout(timer)\n    }\n  }, [visible, duration, onClose])\n\n  return (\n    <AnimatePresence>\n      {visible && (\n        <motion.div\n          className={`fixed top-4 right-4 z-50 flex w-80 items-center gap-3 rounded-lg border p-4 shadow-lg ${toastClasses[type]} ${className}`}\n          initial={{ opacity: 0, x: 50, scale: 0.8 }}\n          animate={{ opacity: 1, x: 0, scale: 1 }}\n          exit={{\n            opacity: 0,\n            x: 50,\n            scale: 0.8,\n            transition: { duration: 0.15 },\n          }}\n          transition={{ type: \"spring\", bounce: 0.25 }}\n        >\n          <div className=\"flex-shrink-0\">{toastIcons[type]}</div>\n          <p className=\"flex-1 text-sm\">{message}</p>\n          <button\n            onClick={() => {\n              setVisible(false)\n              onClose?.()\n            }}\n            className=\"flex-shrink-0 rounded-full p-1 transition-colors hover:bg-black/5 dark:hover:bg-white/10\"\n          >\n            <X className=\"h-4 w-4\" />\n          </button>\n        </motion.div>\n      )}\n    </AnimatePresence>\n  )\n}\n\nexport default function ToastDemo() {\n  const [showToast, setShowToast] = useState(false)\n  const [toastType, setToastType] = useState<ToastType>(\"success\")\n\n  const handleShowToast = (type: ToastType) => {\n    setToastType(type)\n    setShowToast(true)\n  }\n\n  return (\n    <div className=\"flex flex-col gap-4 p-4\">\n      <div className=\"flex flex-wrap gap-2\">\n        <button\n          onClick={() => handleShowToast(\"success\")}\n          className=\"rounded-md bg-emerald-500 px-3 py-1.5 text-sm text-white hover:bg-emerald-600\"\n        >\n          Success Toast\n        </button>\n        <button\n          onClick={() => handleShowToast(\"error\")}\n          className=\"rounded-md bg-red-500 px-3 py-1.5 text-sm text-white hover:bg-red-600\"\n        >\n          Error Toast\n        </button>\n        <button\n          onClick={() => handleShowToast(\"warning\")}\n          className=\"rounded-md bg-amber-500 px-3 py-1.5 text-sm text-white hover:bg-amber-600\"\n        >\n          Warning Toast\n        </button>\n        <button\n          onClick={() => handleShowToast(\"info\")}\n          className=\"rounded-md bg-blue-500 px-3 py-1.5 text-sm text-white hover:bg-blue-600\"\n        >\n          Info Toast\n        </button>\n      </div>\n\n      <AnimatePresence>\n        {showToast && (\n          <BasicToast\n            message={`This is a ${toastType} message example!`}\n            type={toastType}\n            duration={3000}\n            onClose={() => setShowToast(false)}\n          />\n        )}\n      </AnimatePresence>\n    </div>\n  )\n}\n",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "m.umairwaheedansari",
+    "slug": "toast-buttons",
+    "registry_url": "https://21st.dev/r/m.umairwaheedansari/toast-buttons",
+    "title": "Toast Buttons",
+    "description": "Simple design Toast Buttons",
+    "category": "border",
+    "category_group": "Marketing Blocks",
+    "downloads": 11,
+    "likes": 0
+  }
+}

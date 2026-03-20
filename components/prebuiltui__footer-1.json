@@ -1,0 +1,27 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "footer-1",
+  "type": "registry:component",
+  "title": "Footer 1",
+  "description": "A footer-1 component.",
+  "dependencies": [],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/ui/footer-1.tsx",
+      "content": "import { cn } from \"@/lib/utils\";\nimport { useState } from \"react\";\n\nexport default function Example() {\n    return (\n        <footer className=\"w-full bg-gradient-to-b from-[#1B004D] to-[#2E0A6F] text-white\">\n            <div className=\"max-w-7xl mx-auto px-6 py-16 flex flex-col items-center\">\n                <div className=\"flex items-center space-x-3 mb-6\">\n                    <img alt=\"\" className=\"h-11\"\n                        src=\"https://raw.githubusercontent.com/prebuiltui/prebuiltui/main/assets/dummyLogo/prebuiltuiLogoSquareShape.svg\" />\n                </div>\n                <p className=\"text-center max-w-xl text-sm font-normal leading-relaxed\">\n                    Empowering creators worldwide with the most advanced AI content creation tools. Transform your ideas\n                    into reality.\n                </p>\n            </div>\n            <div className=\"border-t border-[#3B1A7A]\">\n                <div className=\"max-w-7xl mx-auto px-6 py-6 text-center text-sm font-normal\">\n                    <a href=\"https://prebuiltui.com\">prebuiltui</a> ©2025. All rights reserved.\n                </div>\n            </div>\n        </footer>\n    );\n};",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "prebuiltui",
+    "slug": "footer-1",
+    "registry_url": "https://21st.dev/r/prebuiltui/footer-1",
+    "title": "Footer",
+    "description": "Here is Footer component ",
+    "category": "footer",
+    "category_group": "Marketing Blocks",
+    "downloads": 81,
+    "likes": 0
+  }
+}

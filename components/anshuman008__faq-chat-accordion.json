@@ -1,0 +1,32 @@
+{
+  "name": "faq-chat-accordion",
+  "type": "registry:ui",
+  "dependencies": [
+    "lucide-react",
+    "framer-motion",
+    "@radix-ui/react-accordion"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "/components/ui/faq-chat-accordion.tsx",
+      "content": "\"use client\";\n\nimport * as React from \"react\";\nimport { motion } from \"framer-motion\";\nimport * as Accordion from \"@radix-ui/react-accordion\";\nimport { Minus, Plus } from \"lucide-react\";\nimport { cn } from \"@/lib/utils\";\n\ninterface FAQItem {\n  id: number;\n  question: string;\n  answer: string;\n  icon?: string;\n  iconPosition?: \"left\" | \"right\";\n}\n\ninterface FaqAccordionProps {\n  data: FAQItem[];\n  className?: string;\n  timestamp?: string;\n  questionClassName?: string;\n  answerClassName?: string;\n}\n\nexport function FaqAccordion({\n  data,\n  className,\n  timestamp = \"Every day, 9:01 AM\",\n  questionClassName,\n  answerClassName,\n}: FaqAccordionProps) {\n  const [openItem, setOpenItem] = React.useState<string | null>(null);\n\n  return (\n    <div className={cn(\"p-4\", className)}>\n      {timestamp && (\n        <div className=\"mb-4 text-sm text-muted-foreground\">{timestamp}</div>\n      )}\n\n      <Accordion.Root\n        type=\"single\"\n        collapsible\n        value={openItem || \"\"}\n        onValueChange={(value) => setOpenItem(value)}\n      >\n        {data.map((item) => (\n          <Accordion.Item \n            value={item.id.toString()} \n            key={item.id} \n            className=\"mb-2\"\n          >\n            <Accordion.Header>\n              <Accordion.Trigger className=\"flex w-full items-center justify-start gap-x-4\">\n                <div\n                  className={cn(\n                    \"relative flex items-center space-x-2 rounded-xl p-2 transition-colors\",\n                    openItem === item.id.toString() \n                      ? \"bg-primary/20 text-primary\" \n                      : \"bg-muted hover:bg-primary/10\",\n                    questionClassName\n                  )}\n                >\n                  {item.icon && (\n                    <span\n                      className={cn(\n                        \"absolute bottom-6\",\n                        item.iconPosition === \"right\" ? \"right-0\" : \"left-0\"\n                      )}\n                      style={{\n                        transform: item.iconPosition === \"right\" \n                          ? \"rotate(7deg)\" \n                          : \"rotate(-4deg)\",\n                      }}\n                    >\n                      {item.icon}\n                    </span>\n                  )}\n                  <span className=\"font-medium\">{item.question}</span>\n                </div>\n\n                <span \n                  className={cn(\n                    \"text-muted-foreground\",\n                    openItem === item.id.toString() && \"text-primary\"\n                  )}\n                >\n                  {openItem === item.id.toString() ? (\n                    <Minus className=\"h-5 w-5\" />\n                  ) : (\n                    <Plus className=\"h-5 w-5\" />\n                  )}\n                </span>\n              </Accordion.Trigger>\n            </Accordion.Header>\n            <Accordion.Content asChild forceMount>\n              <motion.div\n                initial=\"collapsed\"\n                animate={openItem === item.id.toString() ? \"open\" : \"collapsed\"}\n                variants={{\n                  open: { opacity: 1, height: \"auto\" },\n                  collapsed: { opacity: 0, height: 0 },\n                }}\n                transition={{ duration: 0.4 }}\n                className=\"overflow-hidden\"\n              >\n                <div className=\"ml-7 mt-1 md:ml-16\">\n                  <div\n                    className={cn(\n                      \"relative max-w-xs rounded-2xl bg-primary px-4 py-2 text-primary-foreground\",\n                      answerClassName\n                    )}\n                  >\n                    {item.answer}\n                  </div>\n                </div>\n              </motion.div>\n            </Accordion.Content>\n          </Accordion.Item>\n        ))}\n      </Accordion.Root>\n    </div>\n  );\n}",
+      "type": "registry:ui",
+      "target": ""
+    }
+  ],
+  "tailwind": {
+    "config": {}
+  },
+  "_meta": {
+    "author": "anshuman008",
+    "slug": "faq-chat-accordion",
+    "registry_url": "https://21st.dev/r/anshuman008/faq-chat-accordion",
+    "title": "FAQ Chat Accordion",
+    "description": "FAQ Accordion component is a versatile and interactive UI element designed to display frequently asked questions in a collapsible format. It enhances user experience by allowing users to expand and collapse sections to view answers, making it ideal for FAQs, help sections, and more.\n\nFeatures\n- Collapsible Sections: Users can expand or collapse sections to view or hide answers.\n- Animated Transitions: Smooth animations using Framer Motion for opening and closing sections.\n- Customizable Icons: Supports custom icons for each question, with flexible positioning.\n- Theming Support: Fully integrated with shadcn/ui theming for consistent styling.\n- Responsive Design: Adapts to different screen sizes for a seamless experience.\n- Accessible: Keyboard navigation and screen reader friendly.\n- Customizable Styles: Easily customize question and answer styles with className props.\n\nExample Use Cases\n- FAQ Sections: Display frequently asked questions in a compact, user-friendly format.\n- Help Centers: Organize help topics and answers for easy navigation.\n- Product Details: Provide detailed product information in a structured manner.\n- Educational Content: Present educational material in a question-and-answer format.",
+    "category": "accordion",
+    "category_group": "UI Components",
+    "downloads": 936,
+    "likes": 17
+  }
+}

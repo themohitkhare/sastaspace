@@ -1,0 +1,39 @@
+{
+  "name": "card-with-grid-pattern",
+  "type": "registry:ui",
+  "dependencies": [
+    "framer-motion"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "/components/ui/card-with-grid-pattern.tsx",
+      "content": "import { cn } from '@/lib/utils'\nimport { motion } from \"framer-motion\"\n\ninterface GridPatternCardProps {\n  children: React.ReactNode\n  className?: string\n  patternClassName?: string\n  gradientClassName?: string\n}\n\nexport function GridPatternCard({ \n  children, \n  className,\n  patternClassName,\n  gradientClassName\n}: GridPatternCardProps) {\n  return (\n    <motion.div\n      className={cn(\n        \"border w-full rounded-md overflow-hidden\",\n        \"bg-white dark:bg-zinc-950\",\n        \"border-zinc-200 dark:border-zinc-900\",\n        className\n      )}\n      initial={{ opacity: 0, y: -20 }}\n      animate={{ opacity: 1, y: 0 }}\n      transition={{ duration: 0.8, ease: \"easeOut\" }}\n    >\n      <div className={cn(\n        \"size-full bg-repeat bg-[length:50px_50px]\",\n        \"bg-square-pattern-light dark:bg-square-pattern\",\n        patternClassName\n      )}>\n        <div className={cn(\n          \"size-full bg-gradient-to-tr\",\n          \"from-white via-white/[0.85] to-white\",\n          \"dark:from-zinc-950 dark:via-zinc-950/[.85] dark:to-zinc-950\",\n          gradientClassName\n        )}>\n          {children}\n        </div>\n      </div>\n    </motion.div>\n  )\n}\n\nexport function GridPatternCardBody({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {\n  return (\n    <div \n      className={cn(\"text-left p-4 md:p-6\", className)} \n      {...props} \n    />\n  )\n}",
+      "type": "registry:ui",
+      "target": ""
+    }
+  ],
+  "tailwind": {
+    "config": {
+      "theme": {
+        "extend": {
+          "backgroundImage": {
+            "grid-pattern": "",
+            "grid-pattern-light": ""
+          }
+        }
+      }
+    }
+  },
+  "_meta": {
+    "author": "Ali-Hussein-dev",
+    "slug": "card-with-grid-pattern",
+    "registry_url": "https://21st.dev/r/Ali-Hussein-dev/card-with-grid-pattern",
+    "title": "Card with Grid Pattern",
+    "description": "A minimal card component featuring a clean grid pattern of squares. The pattern creates a structured, geometric texture that's perfect for content organization and visual hierarchy.\n\nFeatures\n- Clean square grid pattern\n- 50px x 50px grid spacing\n- 3.5px stroke width\n- Dark/Light mode support\n- Smooth gradient overlay\n- Built with shadcn/ui theme system\n- Framer Motion entrance animation",
+    "category": "features",
+    "category_group": "Marketing Blocks",
+    "downloads": 199,
+    "likes": 6
+  }
+}

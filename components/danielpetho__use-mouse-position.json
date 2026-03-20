@@ -1,0 +1,33 @@
+{
+  "name": "use-mouse-position",
+  "type": "registry:hook",
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "/components/hooks/use-mouse-position.tsx",
+      "content": "import { RefObject, useEffect, useState } from \"react\";\n\nexport const useMousePosition = (\n  containerRef?: RefObject<HTMLElement | SVGElement>\n) => {\n  const [position, setPosition] = useState({ x: 0, y: 0 });\n\n  useEffect(() => {\n    const updatePosition = (x: number, y: number) => {\n      if (containerRef && containerRef.current) {\n        const rect = containerRef.current.getBoundingClientRect();\n        const relativeX = x - rect.left;\n        const relativeY = y - rect.top;\n\n        // Calculate relative position even when outside the container\n        setPosition({ x: relativeX, y: relativeY });\n      } else {\n        setPosition({ x, y });\n      }\n    };\n\n    const handleMouseMove = (ev: MouseEvent) => {\n      updatePosition(ev.clientX, ev.clientY);\n    };\n\n    const handleTouchMove = (ev: TouchEvent) => {\n      const touch = ev.touches[0];\n      updatePosition(touch.clientX, touch.clientY);\n    };\n\n    // Listen for both mouse and touch events\n    window.addEventListener(\"mousemove\", handleMouseMove);\n    window.addEventListener(\"touchmove\", handleTouchMove);\n\n    return () => {\n      window.removeEventListener(\"mousemove\", handleMouseMove);\n      window.removeEventListener(\"touchmove\", handleTouchMove);\n    };\n  }, [containerRef]);\n\n  return position;\n};\n",
+      "type": "registry:hook",
+      "target": ""
+    },
+    {
+      "path": "/hooks/use-mouse-position.tsx",
+      "content": "import { RefObject, useEffect, useState } from \"react\";\n\nexport const useMousePosition = (\n  containerRef?: RefObject<HTMLElement | SVGElement>\n) => {\n  const [position, setPosition] = useState({ x: 0, y: 0 });\n\n  useEffect(() => {\n    const updatePosition = (x: number, y: number) => {\n      if (containerRef && containerRef.current) {\n        const rect = containerRef.current.getBoundingClientRect();\n        const relativeX = x - rect.left;\n        const relativeY = y - rect.top;\n\n        // Calculate relative position even when outside the container\n        setPosition({ x: relativeX, y: relativeY });\n      } else {\n        setPosition({ x, y });\n      }\n    };\n\n    const handleMouseMove = (ev: MouseEvent) => {\n      updatePosition(ev.clientX, ev.clientY);\n    };\n\n    const handleTouchMove = (ev: TouchEvent) => {\n      const touch = ev.touches[0];\n      updatePosition(touch.clientX, touch.clientY);\n    };\n\n    // Listen for both mouse and touch events\n    window.addEventListener(\"mousemove\", handleMouseMove);\n    window.addEventListener(\"touchmove\", handleTouchMove);\n\n    return () => {\n      window.removeEventListener(\"mousemove\", handleMouseMove);\n      window.removeEventListener(\"touchmove\", handleTouchMove);\n    };\n  }, [containerRef]);\n\n  return position;\n};\n",
+      "type": "registry:hook",
+      "target": ""
+    }
+  ],
+  "tailwind": {
+    "config": {}
+  },
+  "_meta": {
+    "author": "danielpetho",
+    "slug": "use-mouse-position",
+    "registry_url": "https://21st.dev/r/danielpetho/use-mouse-position",
+    "title": "useMousePosition",
+    "description": "",
+    "category": "hook",
+    "category_group": "Marketing Blocks",
+    "downloads": 93,
+    "likes": 7
+  }
+}

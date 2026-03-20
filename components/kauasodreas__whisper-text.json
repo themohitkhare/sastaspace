@@ -1,0 +1,29 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "whisper-text",
+  "type": "registry:component",
+  "title": "Whisper Text",
+  "description": "A whisper-text component.",
+  "dependencies": [
+    "gsap"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/ui/whisper-text.tsx",
+      "content": "import React, { useLayoutEffect, useRef } from \"react\";\nimport { gsap } from \"gsap\";\nimport { ScrollTrigger } from \"gsap/ScrollTrigger\";\n\ngsap.registerPlugin(ScrollTrigger);\n\ninterface WhisperTextProps {\n  text: string;\n  className?: string;\n  delay?: number; \n  duration?: number; \n  x?: number;   \n  y?: number;  \n  triggerStart?: string;\n}\n\nconst WhisperText: React.FC<WhisperTextProps> = ({\n  text,\n  className = \"\",\n  delay = 80,\n  duration = 0.4,\n  x = 0,\n  y = 0,\n  triggerStart = \"top 90%\",\n}) => {\n  const containerRef = useRef<HTMLDivElement>(null);\n\n  useLayoutEffect(() => {\n    const ctx = gsap.context(() => {\n      const targets = gsap.utils.toArray<HTMLElement>(\"[data-word]\");\n\n      gsap.set(targets, { opacity: 0, x, y });\n\n      gsap.to(targets, {\n        scrollTrigger: {\n          trigger: containerRef.current,\n          start: triggerStart,\n          toggleActions: \"play none none none\",\n          once: true,\n        },\n        opacity: 1,\n        x: 0,\n        y: 0,\n        duration,\n        ease: \"power2.out\",\n        stagger: delay / 1000,\n      });\n    }, containerRef);\n\n    return () => ctx.revert();\n  }, [text, delay, duration, x, y, triggerStart]);\n\n  const renderWords = () =>\n    text.split(\" \").map((word, i) => (\n      <span\n        key={i}\n        data-word\n        className=\"inline-block whitespace-nowrap\"\n        style={{ position: \"relative\" }}\n      >\n        {word}\n      </span>\n    ));\n\n  return (\n    <div\n      ref={containerRef}\n      className={`relative inline-flex flex-wrap gap-x-2 ${className}`}\n      style={{ overflow: \"visible\" }}\n    >\n      {renderWords()}\n    </div>\n  );\n};\n\nexport default WhisperText;\n",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "kauasodreas",
+    "slug": "whisper-text",
+    "registry_url": "https://21st.dev/r/kauasodreas/whisper-text",
+    "title": "Whisper Text",
+    "description": "A scroll-triggered animation that reveals words with a smooth, staggered fade and slide, like a whisper on screen. Perfect for subtle UI transitions. Named “Whisper” for its soft and delicate entrance, quiet yet expressive.",
+    "category": "text",
+    "category_group": "Marketing Blocks",
+    "downloads": 29,
+    "likes": 0
+  }
+}

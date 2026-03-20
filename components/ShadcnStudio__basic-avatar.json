@@ -1,0 +1,32 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "basic-avatar",
+  "type": "registry:component",
+  "title": "Basic Avatar",
+  "description": "A basic-avatar component.",
+  "dependencies": [],
+  "registryDependencies": [
+    "https://21st.dev/r/shadcn/avatar",
+    "https://21st.dev/r/shadcn/tooltip",
+    "https://21st.dev/r/shadcn/dropdown-menu",
+    "https://21st.dev/r/shadcn/badge"
+  ],
+  "files": [
+    {
+      "path": "src/components/ui/basic-avatar.tsx",
+      "content": "import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'\n\nconst AvatarDemo = () => {\n  return (\n    <Avatar>\n      <AvatarImage src='https://cdn.shadcnstudio.com/ss-assets/avatar/avatar-5.png' alt='Hallie Richards' />\n      <AvatarFallback className='text-xs'>HR</AvatarFallback>\n    </Avatar>\n  )\n}\n\nexport default AvatarDemo\n",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "ShadcnStudio",
+    "slug": "basic-avatar",
+    "registry_url": "https://21st.dev/r/ShadcnStudio/basic-avatar",
+    "title": "Basic Avatar",
+    "description": "Here is Avatar component",
+    "category": "avatar",
+    "category_group": "UI Components",
+    "downloads": 39,
+    "likes": 0
+  }
+}

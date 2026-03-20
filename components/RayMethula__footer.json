@@ -1,0 +1,30 @@
+{
+  "name": "footer",
+  "type": "registry:block",
+  "dependencies": [
+    "lucide-react"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "/components/blocks/footer.tsx",
+      "content": "\"use client\";\n\nimport * as React from \"react\";\nimport { cn } from \"@/lib/utils\";\nimport { LucideIcon } from \"lucide-react\";\n\ninterface SocialLink {\n  name: string;\n  href: string;\n}\n\ninterface FooterLink {\n  name: string;\n  Icon: LucideIcon | React.FC<React.SVGProps<SVGSVGElement>>;\n  href?: string;\n}\n\ninterface FooterColumn {\n  title: string;\n  links: FooterLink[];\n}\n\ninterface FooterProps extends React.HTMLAttributes<HTMLDivElement> {\n  brand: {\n    name: string;\n    description: string;\n  };\n  socialLinks: SocialLink[];\n  columns: FooterColumn[];\n  copyright?: string;\n}\n\nexport const Footer = React.forwardRef<HTMLDivElement, FooterProps>(\n  ({ className, brand, socialLinks, columns, copyright, ...props }, ref) => {\n    return (\n      <div\n        ref={ref}\n        className={cn(\"pt-24\", className)}\n        {...props}\n      >\n        <div className=\"max-w-screen-xl mx-auto px-4 lg:px-8\">\n          <div className=\"grid grid-cols-1 lg:grid-cols-12\">\n            <div className=\"lg:col-span-4\">\n              <a href=\"#\" className=\"text-xl font-semibold\">\n                {brand.name}\n              </a>\n              <p className=\"text-sm text-foreground/60\">\n                {brand.description}\n              </p>\n\n              <p className=\"text-sm font-light text-foreground/55 mt-3.5\">\n                {socialLinks.map((link, index) => (\n                  <React.Fragment key={link.name}>\n                    <a\n                      className=\"hover:text-foreground/90\"\n                      target=\"_blank\"\n                      href={link.href}\n                      rel=\"noopener noreferrer\"\n                    >\n                      {link.name}\n                    </a>\n                    {index < socialLinks.length - 1 && \" • \"}\n                  </React.Fragment>\n                ))}\n              </p>\n            </div>\n\n            <div className=\"grid grid-cols-2 mt-16 md:grid-cols-3 lg:col-span-8 lg:justify-items-end lg:mt-0\">\n              {columns.map(({ title, links }) => (\n                <div key={title} className=\"last:mt-12 md:last:mt-0\">\n                  <h3 className=\"text-sm font-semibold\">{title}</h3>\n                  <ul className=\"mt-4 space-y-2.5\">\n                    {links.map(({ name, Icon, href }) => (\n                      <li key={name}>\n                        <a\n                          href={href || \"#\"}\n                          className=\"text-sm transition-all text-foreground/60 hover:text-foreground/90 group\"\n                        >\n                          <Icon className=\"inline stroke-2 h-4 mr-1.5 transition-all stroke-foreground/60 group-hover:stroke-foreground/90\" />\n                          {name}\n                        </a>\n                      </li>\n                    ))}\n                  </ul>\n                </div>\n              ))}\n            </div>\n          </div>\n\n          {copyright && (\n            <div className=\"mt-20 border-t pt-6 pb-8\">\n              <p className=\"text-xs text-foreground/55\">{copyright}</p>\n            </div>\n          )}\n        </div>\n      </div>\n    );\n  }\n);\n\nFooter.displayName = \"Footer\";",
+      "type": "registry:block",
+      "target": ""
+    }
+  ],
+  "tailwind": {
+    "config": {}
+  },
+  "_meta": {
+    "author": "RayMethula",
+    "slug": "footer",
+    "registry_url": "https://21st.dev/r/RayMethula/footer",
+    "title": "Footer",
+    "description": "Fotter with links",
+    "category": "footer",
+    "category_group": "Marketing Blocks",
+    "downloads": 617,
+    "likes": 3
+  }
+}

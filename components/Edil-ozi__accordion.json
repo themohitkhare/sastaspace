@@ -1,0 +1,31 @@
+{
+  "name": "accordion",
+  "type": "registry:ui",
+  "dependencies": [
+    "lucide-react",
+    "@radix-ui/react-accordion"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "/components/ui/accordion.tsx",
+      "content": "\"use client\"\n\nimport * as React from \"react\"\nimport * as AccordionPrimitive from \"@radix-ui/react-accordion\"\nimport { ChevronDown } from \"lucide-react\"\n\nimport { cn } from \"@/lib/utils\"\n\nconst Accordion = React.forwardRef<\n  React.ElementRef<typeof AccordionPrimitive.Root>,\n  React.ComponentPropsWithoutRef<typeof AccordionPrimitive.Root>\n>(({ className, ...props }, ref) => (\n  <AccordionPrimitive.Root\n    ref={ref}\n    className={cn(\"w-full\", className)}\n    {...props}\n  />\n))\nAccordion.displayName = \"Accordion\"\n\nconst AccordionItem = React.forwardRef<\n  React.ElementRef<typeof AccordionPrimitive.Item>,\n  React.ComponentPropsWithoutRef<typeof AccordionPrimitive.Item>\n>(({ className, ...props }, ref) => (\n  <AccordionPrimitive.Item\n    ref={ref}\n    className={cn(\n      \"box-content overflow-hidden border-b border-b-neutral-300 bg-gray-100\",\n      \"shadow-sm shadow-zinc-400 transition-all duration-200 ease-in-out\",\n      \"first:rounded-t-sm last:rounded-b-sm\",\n      \"dark:border-b-neutral-800 dark:bg-zinc-900 dark:shadow-zinc-950\",\n      \"data-[state=open]:border-b-0 data-[state=open]:first:mb-4 data-[state=open]:last:mt-4\",\n      \"data-[state=open]:not(:last-child):not(:first-child):my-4\",\n      \"data-[disabled]:bg-neutral-300 data-[disabled]:text-neutral-500 dark:data-[disabled]:bg-neutral-800\",\n      className\n    )}\n    {...props}\n  />\n))\nAccordionItem.displayName = \"AccordionItem\"\n\nconst AccordionTrigger = React.forwardRef<\n  React.ElementRef<typeof AccordionPrimitive.Trigger>,\n  React.ComponentPropsWithoutRef<typeof AccordionPrimitive.Trigger>\n>(({ className, children, ...props }, ref) => (\n  <AccordionPrimitive.Header className=\"flex\">\n    <AccordionPrimitive.Trigger\n      ref={ref}\n      className={cn(\n        \"flex flex-1 items-center justify-between p-4 font-medium transition-all\",\n        \"[&[data-state=open]>svg]:rotate-180\",\n        className\n      )}\n      {...props}\n    >\n      <span className=\"text-start\">{children}</span>\n      <ChevronDown className=\"h-4 w-4 shrink-0 transition-transform duration-200\" />\n    </AccordionPrimitive.Trigger>\n  </AccordionPrimitive.Header>\n))\nAccordionTrigger.displayName = \"AccordionTrigger\"\n\nconst AccordionContent = React.forwardRef<\n  React.ElementRef<typeof AccordionPrimitive.Content>,\n  React.ComponentPropsWithoutRef<typeof AccordionPrimitive.Content>\n>(({ className, children, ...props }, ref) => (\n  <AccordionPrimitive.Content\n    ref={ref}\n    className=\"overflow-hidden transition-all data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down\"\n    {...props}\n  >\n    <div className={cn(\"px-4 pb-5 pt-1 text-neutral-900 dark:text-neutral-300\", className)}>\n      {children}\n    </div>\n  </AccordionPrimitive.Content>\n))\nAccordionContent.displayName = \"AccordionContent\"\n\nexport { Accordion, AccordionItem, AccordionTrigger, AccordionContent }",
+      "type": "registry:ui",
+      "target": ""
+    }
+  ],
+  "tailwind": {
+    "config": {}
+  },
+  "_meta": {
+    "author": "Edil-ozi",
+    "slug": "accordion",
+    "registry_url": "https://21st.dev/r/Edil-ozi/accordion",
+    "title": "Accordion",
+    "description": "The Accordion component is a flexible and accessible UI element built using Radix UI primitives. It allows for the creation of collapsible sections, ideal for organizing content in a compact and user-friendly manner. The component supports both single and multiple expanded items, making it versatile for various use cases.\n\nKey features include:\nRadix UI Integration: Utilizes Radix UI for robust accessibility and state management.\nCustomizable Styles: Easily style the accordion using Tailwind CSS classes.\nAnimation Support: Smooth open and close animations enhance the user experience.\n\nTo enable animations, add the following to your tailwind.config.js:\n{\n  theme: {\n    extend: {\n      keyframes: {\n        \"accordion-down\": {\n          from: { height: \"0\" },\n          to: { height: \"var(--radix-accordion-content-height)\" },\n        },\n        \"accordion-up\": {\n          from: { height: \"var(--radix-accordion-content-height)\" },\n          to: { height: \"0\" },\n        },\n      },\n      animation: {\n        \"accordion-down\": \"accordion-down 0.2s ease-out\",\n        \"accordion-up\": \"accordion-up 0.2s ease-out\",\n      },\n    },\n  },\n}\n\nThis component is ideal for creating FAQ sections, feature lists, or any content that benefits from being organized in an expandable format.",
+    "category": "accordion",
+    "category_group": "UI Components",
+    "downloads": 26,
+    "likes": 0
+  }
+}

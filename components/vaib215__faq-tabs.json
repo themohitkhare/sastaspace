@@ -1,0 +1,30 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "faq-tabs",
+  "type": "registry:component",
+  "title": "Faq Tabs",
+  "description": "A faq-tabs component.",
+  "dependencies": [
+    "framer-motion",
+    "lucide-react"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/ui/faq-tabs.tsx",
+      "content": "import React, { useState } from 'react';\nimport { AnimatePresence, motion } from 'framer-motion';\nimport { Plus } from 'lucide-react';\nimport { cn } from '@/lib/utils';\n\n// Main reusable FAQ component\nexport const FAQ = ({ \n  title = \"FAQs\",\n  subtitle = \"Frequently Asked Questions\",\n  categories,\n  faqData,\n  className,\n  ...props \n}) => {\n  const categoryKeys = Object.keys(categories);\n  const [selectedCategory, setSelectedCategory] = useState(categoryKeys[0]);\n\n  return (\n    <section \n      className={cn(\n        \"relative overflow-hidden bg-background px-4 py-12 text-foreground\",\n        className\n      )}\n      {...props}\n    >\n      <FAQHeader title={title} subtitle={subtitle} />\n      <FAQTabs \n        categories={categories}\n        selected={selectedCategory} \n        setSelected={setSelectedCategory} \n      />\n      <FAQList \n        faqData={faqData}\n        selected={selectedCategory} \n      />\n    </section>\n  );\n};\n\nconst FAQHeader = ({ title, subtitle }) => (\n  <div className=\"relative z-10 flex flex-col items-center justify-center\">\n    <span className=\"mb-8 bg-gradient-to-r from-primary to-primary/60 bg-clip-text font-medium text-transparent\">\n      {subtitle}\n    </span>\n    <h2 className=\"mb-8 text-5xl font-bold\">{title}</h2>\n    <span className=\"absolute -top-[350px] left-[50%] z-0 h-[500px] w-[600px] -translate-x-[50%] rounded-full bg-gradient-to-r from-primary/10 to-primary/5 blur-3xl\" />\n  </div>\n);\n\nconst FAQTabs = ({ categories, selected, setSelected }) => (\n  <div className=\"relative z-10 flex flex-wrap items-center justify-center gap-4\">\n    {Object.entries(categories).map(([key, label]) => (\n      <button\n        key={key}\n        onClick={() => setSelected(key)}\n        className={cn(\n          \"relative overflow-hidden whitespace-nowrap rounded-md border px-3 py-1.5 text-sm font-medium transition-colors duration-500\",\n          selected === key\n            ? \"border-primary text-background\"\n            : \"border-border bg-transparent text-muted-foreground hover:text-foreground\"\n        )}\n      >\n        <span className=\"relative z-10\">{label}</span>\n        <AnimatePresence>\n          {selected === key && (\n            <motion.span\n              initial={{ y: \"100%\" }}\n              animate={{ y: \"0%\" }}\n              exit={{ y: \"100%\" }}\n              transition={{ duration: 0.5, ease: \"backIn\" }}\n              className=\"absolute inset-0 z-0 bg-gradient-to-r from-primary to-primary/80\"\n            />\n          )}\n        </AnimatePresence>\n      </button>\n    ))}\n  </div>\n);\n\nconst FAQList = ({ faqData, selected }) => (\n  <div className=\"mx-auto mt-12 max-w-3xl\">\n    <AnimatePresence mode=\"wait\">\n      {Object.entries(faqData).map(([category, questions]) => {\n        if (selected === category) {\n          return (\n            <motion.div\n              key={category}\n              initial={{ opacity: 0, y: 20 }}\n              animate={{ opacity: 1, y: 0 }}\n              exit={{ opacity: 0, y: 20 }}\n              transition={{ duration: 0.5, ease: \"backIn\" }}\n              className=\"space-y-4\"\n            >\n              {questions.map((faq, index) => (\n                <FAQItem key={index} {...faq} />\n              ))}\n            </motion.div>\n          );\n        }\n        return null;\n      })}\n    </AnimatePresence>\n  </div>\n);\n\nconst FAQItem = ({ question, answer }) => {\n  const [isOpen, setIsOpen] = useState(false);\n\n  return (\n    <motion.div\n      animate={isOpen ? \"open\" : \"closed\"}\n      className={cn(\n        \"rounded-xl border transition-colors\",\n        isOpen ? \"bg-muted/50\" : \"bg-card\"\n      )}\n    >\n      <button\n        onClick={() => setIsOpen(!isOpen)}\n        className=\"flex w-full items-center justify-between gap-4 p-4 text-left\"\n      >\n        <span\n          className={cn(\n            \"text-lg font-medium transition-colors\",\n            isOpen ? \"text-foreground\" : \"text-muted-foreground\"\n          )}\n        >\n          {question}\n        </span>\n        <motion.span\n          variants={{\n            open: { rotate: \"45deg\" },\n            closed: { rotate: \"0deg\" },\n          }}\n          transition={{ duration: 0.2 }}\n        >\n          <Plus\n            className={cn(\n              \"h-5 w-5 transition-colors\",\n              isOpen ? \"text-foreground\" : \"text-muted-foreground\"\n            )}\n          />\n        </motion.span>\n      </button>\n      <motion.div\n        initial={false}\n        animate={{ \n          height: isOpen ? \"auto\" : \"0px\", \n          marginBottom: isOpen ? \"16px\" : \"0px\" \n        }}\n        transition={{ duration: 0.3, ease: \"easeInOut\" }}\n        className=\"overflow-hidden px-4\"\n      >\n        <p className=\"text-muted-foreground\">{answer}</p>\n      </motion.div>\n    </motion.div>\n  );\n};",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "vaib215",
+    "slug": "faq-tabs",
+    "registry_url": "https://21st.dev/r/vaib215/faq-tabs",
+    "title": "FAQ tabs",
+    "description": "Replace the boring accordion with these cool animated ones.",
+    "category": "accordion",
+    "category_group": "UI Components",
+    "downloads": 136,
+    "likes": 0
+  }
+}

@@ -1,0 +1,86 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "aurora-section-hero",
+  "type": "registry:component",
+  "title": "Aurora Section Hero",
+  "description": "A aurora-section-hero component.",
+  "dependencies": [],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/ui/aurora-section-hero.tsx",
+      "content": "import React, { useState, useEffect, CSSProperties } from 'react'\n\nexport interface BackgroundSceneProps {\n  /** Number of animated light beams */\n  beamCount?: number\n}\n\nconst BACKGROUND_BEAM_COUNT = 60\n\nconst BackgroundScene: React.FC<BackgroundSceneProps> = ({\n  beamCount = BACKGROUND_BEAM_COUNT,\n}) => {\n  const [beams, setBeams] = useState<\n    Array<{ id: number; style: CSSProperties }>\n  >([])\n\n  useEffect(() => {\n    const generated = Array.from({ length: beamCount }).map((_, i) => {\n      const riseDur = Math.random() * 2 + 4    // 4–6s rise\n      const fadeDur = riseDur                  // sync fade\n      const dropDur = Math.random() * 3 + 3    // 3–6s drop\n\n      return {\n        id: i,\n        style: {\n          left: `${Math.random() * 100}%`,\n          width: `${Math.floor(Math.random() * 3) + 1}px`,\n          animationDelay: `${Math.random() * 5}s`,\n          animationDuration: `${riseDur}s, ${fadeDur}s, ${dropDur}s`,\n        },\n      }\n    })\n    setBeams(generated)\n  }, [beamCount])\n\n  return (\n    <div className=\"scene\" role=\"img\" aria-label=\"Animated digital data background\">\n      <div className=\"floor\" />\n      <div className=\"main-column\" />\n      <div className=\"light-stream-container\">\n        {beams.map((beam) => (\n          <div key={beam.id} className=\"light-beam\" style={beam.style} />\n        ))}\n      </div>\n    </div>\n  )\n}\n\nexport default BackgroundScene\n",
+      "type": "registry:component"
+    }
+  ],
+  "cssVars": {
+    "light": {
+      "--bg-color": "#000500",
+      "--light-color": "#00ff7f",
+      "--glow-color-1": "rgba(0, 255, 127, 0.8)",
+      "--glow-color-2": "rgba(60, 255, 157, 0.6)"
+    }
+  },
+  "css": {
+    "@keyframes rise": {
+      "0%": {
+        "transform": "translateY(100%)",
+        "opacity": "0"
+      },
+      "10%": {
+        "opacity": "1"
+      },
+      "100%": {
+        "transform": "translateY(-10%)",
+        "opacity": "0"
+      }
+    },
+    "@keyframes fade": {
+      "0%,100%": {
+        "opacity": "0"
+      },
+      "5%,80%": {
+        "opacity": "0.7"
+      }
+    },
+    "@keyframes floorGlow": {
+      "0%,100%": {
+        "transform": "scale(0.9)",
+        "opacity": "0.7"
+      },
+      "50%": {
+        "transform": "scale(1.1)",
+        "opacity": "1"
+      }
+    },
+    "@keyframes mainGlow": {
+      "from": {
+        "opacity": "0.6",
+        "filter": "blur(25px)"
+      },
+      "to": {
+        "opacity": "0.8",
+        "filter": "blur(15px)"
+      }
+    },
+    "@keyframes moveGrid": {
+      "from": {
+        "background-position": "0 0"
+      },
+      "to": {
+        "background-position": "-80px -40px"
+      }
+    }
+  },
+  "_meta": {
+    "author": "dhileepkumargm",
+    "slug": "aurora-section-hero",
+    "registry_url": "https://21st.dev/r/dhileepkumargm/aurora-section-hero",
+    "title": "Aurora Section hero",
+    "description": "A visually immersive animated background using CSS and React, featuring glowing floor grids, light beams, and a central column. Ideal for hero sections, landing pages, or data-themed UI compositions.\n\n",
+    "category": "hero",
+    "category_group": "Marketing Blocks",
+    "downloads": 0,
+    "likes": 0
+  }
+}

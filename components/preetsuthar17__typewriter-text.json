@@ -1,0 +1,27 @@
+{
+  "name": "typewriter-text",
+  "type": "registry:ui",
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "/components/ui/typewriter-text.tsx",
+      "content": "\"use client\";\r\n\r\nimport * as React from \"react\"\r\nimport { useEffect, useState } from \"react\";\r\n \r\nexport interface TypewriterProps {\r\n  text: string | string[];\r\n  speed?: number;\r\n  cursor?: string;\r\n  loop?: boolean;\r\n  deleteSpeed?: number;\r\n  delay?: number;\r\n  className?: string;\r\n}\r\n \r\nexport function Typewriter({\r\n  text,\r\n  speed = 100,\r\n  cursor = \"|\",\r\n  loop = false,\r\n  deleteSpeed = 50,\r\n  delay = 1500,\r\n  className,\r\n}: TypewriterProps) {\r\n  const [displayText, setDisplayText] = useState(\"\");\r\n  const [currentIndex, setCurrentIndex] = useState(0);\r\n  const [isDeleting, setIsDeleting] = useState(false);\r\n  const [textArrayIndex, setTextArrayIndex] = useState(0);\r\n \r\n  // Validate and process input text\r\n  const textArray = Array.isArray(text) ? text : [text];\r\n  const currentText = textArray[textArrayIndex] || \"\";\r\n \r\n  useEffect(() => {\r\n    if (!currentText) return;\r\n \r\n    const timeout = setTimeout(\r\n      () => {\r\n        if (!isDeleting) {\r\n          if (currentIndex < currentText.length) {\r\n            setDisplayText((prev) => prev + currentText[currentIndex]);\r\n            setCurrentIndex((prev) => prev + 1);\r\n          } else if (loop) {\r\n            setTimeout(() => setIsDeleting(true), delay);\r\n          }\r\n        } else {\r\n          if (displayText.length > 0) {\r\n            setDisplayText((prev) => prev.slice(0, -1));\r\n          } else {\r\n            setIsDeleting(false);\r\n            setCurrentIndex(0);\r\n            setTextArrayIndex((prev) => (prev + 1) % textArray.length);\r\n          }\r\n        }\r\n      },\r\n      isDeleting ? deleteSpeed : speed,\r\n    );\r\n \r\n    return () => clearTimeout(timeout);\r\n  }, [\r\n    currentIndex,\r\n    isDeleting,\r\n    currentText,\r\n    loop,\r\n    speed,\r\n    deleteSpeed,\r\n    delay,\r\n    displayText,\r\n    text,\r\n  ]);\r\n \r\n  return (\r\n    <span className={className}>\r\n      {displayText}\r\n      <span className=\"animate-pulse\">{cursor}</span>\r\n    </span>\r\n  );\r\n}",
+      "type": "registry:ui",
+      "target": ""
+    }
+  ],
+  "tailwind": {
+    "config": {}
+  },
+  "_meta": {
+    "author": "preetsuthar17",
+    "slug": "typewriter-text",
+    "registry_url": "https://21st.dev/r/preetsuthar17/typewriter-text",
+    "title": "Typewriter Text",
+    "description": "Animated Text component that types itself out like a typewriter.",
+    "category": "text",
+    "category_group": "Marketing Blocks",
+    "downloads": 987,
+    "likes": 16
+  }
+}

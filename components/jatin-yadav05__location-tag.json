@@ -1,0 +1,32 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "location-tag",
+  "type": "registry:component",
+  "title": "Location Tag",
+  "description": "A location-tag component.",
+  "dependencies": [],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/ui/location-tag.tsx",
+      "content": "\"use client\"\n\nimport { useState, useEffect } from \"react\"\n\ninterface LocationTagProps {\n  city?: string\n  country?: string\n  timezone?: string\n}\n\nexport function LocationTag({ city = \"San Francisco\", country = \"USA\", timezone = \"PST\" }: LocationTagProps) {\n  const [isHovered, setIsHovered] = useState(false)\n  const [currentTime, setCurrentTime] = useState(\"\")\n\n  useEffect(() => {\n    const updateTime = () => {\n      const now = new Date()\n      setCurrentTime(\n        now.toLocaleTimeString(\"en-US\", {\n          hour: \"2-digit\",\n          minute: \"2-digit\",\n          hour12: false,\n        }),\n      )\n    }\n    updateTime()\n    const interval = setInterval(updateTime, 1000)\n    return () => clearInterval(interval)\n  }, [])\n\n  return (\n    <button\n      onMouseEnter={() => setIsHovered(true)}\n      onMouseLeave={() => setIsHovered(false)}\n      className=\"group relative flex items-center gap-3 rounded-full border border-border/60 bg-secondary/50 px-4 py-2.5 transition-all duration-500 ease-out hover:border-foreground/20 hover:bg-secondary/80 hover:shadow-[0_0_20px_rgba(0,0,0,0.04)]\"\n    >\n      {/* Live pulse indicator */}\n      <div className=\"relative flex items-center justify-center\">\n        <span className=\"relative flex h-2 w-2\">\n          <span className=\"absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-500 opacity-75\" />\n          <span className=\"relative inline-flex h-2 w-2 rounded-full bg-emerald-500\" />\n        </span>\n      </div>\n\n      {/* Location text */}\n      <div className=\"flex items-center gap-2 overflow-hidden\">\n        <span\n          className=\"text-sm font-medium text-foreground transition-all duration-500\"\n          style={{\n            transform: isHovered ? \"translateY(-100%)\" : \"translateY(0)\",\n            opacity: isHovered ? 0 : 1,\n          }}\n        >\n          {city}, {country}\n        </span>\n\n        <span\n          className=\"absolute left-11 text-sm font-medium text-foreground transition-all duration-500\"\n          style={{\n            transform: isHovered ? \"translateY(0)\" : \"translateY(100%)\",\n            opacity: isHovered ? 1 : 0,\n          }}\n        >\n          {currentTime} {timezone}\n        </span>\n      </div>\n\n      {/* Arrow indicator */}\n      <svg\n        className=\"h-3 w-3 text-muted-foreground transition-all duration-300\"\n        style={{\n          transform: isHovered ? \"translateX(2px) rotate(-45deg)\" : \"translateX(0) rotate(0)\",\n          opacity: isHovered ? 1 : 0.5,\n        }}\n        fill=\"none\"\n        viewBox=\"0 0 24 24\"\n        stroke=\"currentColor\"\n        strokeWidth={2}\n      >\n        <path strokeLinecap=\"round\" strokeLinejoin=\"round\" d=\"M4.5 19.5l15-15m0 0H8.25m11.25 0v11.25\" />\n      </svg>\n    </button>\n  )\n}\n",
+      "type": "registry:component"
+    }
+  ],
+  "_source": {
+    "author": "jatin-yadav05",
+    "name": "location-tag",
+    "registry_url": "https://21st.dev/r/jatin-yadav05/location-tag"
+  },
+  "_meta": {
+    "author": "jatin-yadav05",
+    "slug": "location-tag",
+    "registry_url": "https://21st.dev/r/jatin-yadav05/location-tag",
+    "title": "Location Tag",
+    "description": "A compact, interactive location indicator with a live pulsing dot and smooth text-swap animation. Hover reveals your current local time.",
+    "category": "map",
+    "category_group": "Marketing Blocks",
+    "downloads": 88,
+    "likes": 0
+  }
+}

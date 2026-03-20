@@ -1,0 +1,29 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "faq-5",
+  "type": "registry:component",
+  "title": "Faq 5",
+  "description": "A faq-5 component.",
+  "dependencies": [],
+  "registryDependencies": [
+    "https://21st.dev/r/shadcn/badge"
+  ],
+  "files": [
+    {
+      "path": "src/components/ui/faq-5.tsx",
+      "content": "import { Badge } from \"@/components/ui/badge\";\n\nexport interface FaqItem {\n  question: string;\n  answer: string;\n}\n\nexport interface Faq5Props {\n  badge?: string;\n  heading?: string;\n  description?: string;\n  faqs?: FaqItem[];\n}\n\nconst defaultFaqs: FaqItem[] = [\n  {\n    question: \"What is a FAQ and why is it important?\",\n    answer:\n      \"FAQ stands for Frequently Asked Questions. It is a list that provides answers to common questions people may have about a specific product, service, or topic.\",\n  },\n  {\n    question: \"Why should I use a FAQ on my website or app?\",\n    answer:\n      \"Utilizing a FAQ section on your website or app is a practical way to offer instant assistance to your users or customers. Instead of waiting for customer support responses, they can find quick answers to commonly asked questions. \",\n  },\n  {\n    question: \"How do I effectively create a FAQ section?\",\n    answer:\n      \"Creating a FAQ section starts with gathering the most frequent questions you receive from your users or customers. Once you have a list, you need to write clear, detailed, and helpful answers to each question.\",\n  },\n  {\n    question: \"What are the benefits of having a well-maintained FAQ section?\",\n    answer:\n      \"There are numerous advantages to maintaining a robust FAQ section. Firstly, it provides immediate answers to common queries, which improves the user experience.\",\n  },\n];\n\nexport const Faq5 = ({\n  badge = \"FAQ\",\n  heading = \"Common Questions & Answers\",\n  description = \"Find out all the essential details about our platform and how it can serve your needs.\",\n  faqs = defaultFaqs,\n}: Faq5Props) => {\n  return (\n    <section className=\"py-32\">\n      <div className=\"container\">\n        <div className=\"text-center\">\n          <Badge className=\"text-xs font-medium\">{badge}</Badge>\n          <h1 className=\"mt-4 text-4xl font-semibold\">{heading}</h1>\n          <p className=\"mt-6 font-medium text-muted-foreground\">\n            {description}\n          </p>\n        </div>\n        <div className=\"mx-auto mt-14 max-w-screen-sm\">\n          {faqs.map((faq, index) => (\n            <div key={index} className=\"mb-8 flex gap-4\">\n              <span className=\"flex size-6 shrink-0 items-center justify-center rounded-sm bg-secondary font-mono text-xs text-primary\">\n                {index + 1}\n              </span>\n              <div>\n                <div className=\"mb-2 flex items-center justify-between\">\n                  <h3 className=\"font-medium\">{faq.question}</h3>\n                </div>\n                <p className=\"text-sm text-muted-foreground\">{faq.answer}</p>\n              </div>\n            </div>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n};\n\n",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "shadcnblockscom",
+    "slug": "faq-5",
+    "registry_url": "https://21st.dev/r/shadcnblockscom/faq-5",
+    "title": "Faq 5",
+    "description": "Center aligned FAQ with numbers and expanded text.",
+    "category": "features",
+    "category_group": "Marketing Blocks",
+    "downloads": 206,
+    "likes": 0
+  }
+}

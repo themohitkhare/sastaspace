@@ -1,0 +1,30 @@
+{
+  "name": "animated-slideshow",
+  "type": "registry:block",
+  "dependencies": [
+    "motion"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "/components/blocks/animated-slideshow.tsx",
+      "content": "\"use client\" \n\nimport * as React from \"react\"\nimport { HTMLMotionProps, MotionConfig, motion } from \"motion/react\"\nimport { cn } from \"@/lib/utils\"\n\ninterface TextStaggerHoverProps {\n  text: string\n  index: number\n}\ninterface HoverSliderImageProps {\n  index: number\n  imageUrl: string\n}\ninterface HoverSliderProps {}\ninterface HoverSliderContextValue {\n  activeSlide: number\n  changeSlide: (index: number) => void\n}\nfunction splitText(text: string) {\n  const words = text.split(\" \").map((word) => word.concat(\" \"))\n  const characters = words.map((word) => word.split(\"\")).flat(1)\n\n  return {\n    words,\n    characters,\n  }\n}\n\nconst HoverSliderContext = React.createContext<\n  HoverSliderContextValue | undefined\n>(undefined)\nfunction useHoverSliderContext() {\n  const context = React.useContext(HoverSliderContext)\n  if (context === undefined) {\n    throw new Error(\n      \"useHoverSliderContext must be used within a HoverSliderProvider\"\n    )\n  }\n  return context\n}\n\nexport const HoverSlider = React.forwardRef<\n  HTMLElement,\n  React.HTMLAttributes<HTMLElement> & HoverSliderProps\n>(({ children, className, ...props }, ref) => {\n  const [activeSlide, setActiveSlide] = React.useState<number>(0)\n  const changeSlide = React.useCallback(\n    (index: number) => setActiveSlide(index),\n    [setActiveSlide]\n  )\n  return (\n    <HoverSliderContext.Provider value={{ activeSlide, changeSlide }}>\n      <div className={className}>{children}</div>\n    </HoverSliderContext.Provider>\n  )\n})\nHoverSlider.displayName = \"HoverSlider\"\n\nconst WordStaggerHover = React.forwardRef<\n  HTMLSpanElement,\n  React.HTMLAttributes<HTMLSpanElement>\n>(({ children, className, ...props }, ref) => {\n  return (\n    <span\n      className={cn(\"relative inline-block origin-bottom overflow-hidden\")}\n      {...props}\n    >\n      {children}\n    </span>\n  )\n})\nWordStaggerHover.displayName = \"WordStaggerHover\"\n\nexport const TextStaggerHover = React.forwardRef<\n  HTMLElement,\n  React.HTMLAttributes<HTMLElement> & TextStaggerHoverProps\n>(({ text, index, children, className, ...props }, ref) => {\n  const { activeSlide, changeSlide } = useHoverSliderContext()\n  const { characters } = splitText(text)\n  const isActive = activeSlide === index\n  const handleMouse = () => changeSlide(index)\n  return (\n    <span\n      className={cn(\n        \"relative inline-block origin-bottom overflow-hidden\",\n        className\n      )}\n      {...props}\n      ref={ref}\n      onMouseEnter={handleMouse}\n    >\n      {characters.map((char, index) => (\n        <span\n          key={`${char}-${index}`}\n          className=\"relative inline-block overflow-hidden\"\n        >\n          <MotionConfig\n            transition={{\n              delay: index * 0.025,\n              duration: 0.3,\n              ease: [0.25, 0.46, 0.45, 0.94],\n            }}\n          >\n            <motion.span\n              className=\"inline-block opacity-20\"\n              initial={{ y: \"0%\" }}\n              animate={isActive ? { y: \"-110%\" } : { y: \"0%\" }}\n            >\n              {char}\n              {char === \" \" && index < characters.length - 1 && <>&nbsp;</>}\n            </motion.span>\n\n            <motion.span\n              className=\"absolute left-0 top-0 inline-block opacity-100\"\n              initial={{ y: \"110%\" }}\n              animate={isActive ? { y: \"0%\" } : { y: \"110%\" }}\n            >\n              {char}\n            </motion.span>\n          </MotionConfig>\n        </span>\n      ))}\n    </span>\n  )\n})\nTextStaggerHover.displayName = \"TextStaggerHover\"\n\nexport const clipPathVariants = {\n  visible: {\n    clipPath: \"polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%)\",\n  },\n  hidden: {\n    clipPath: \"polygon(0% 0%, 100% 0%, 100% 0%, 0% 0px)\",\n  },\n}\nexport const HoverSliderImageWrap = React.forwardRef<\n  HTMLDivElement,\n  React.HTMLAttributes<HTMLDivElement>\n>(({ className, ...props }, ref) => {\n  return (\n    <div\n      ref={ref}\n      className={cn(\n        \"grid  overflow-hidden [&>*]:col-start-1 [&>*]:col-end-1 [&>*]:row-start-1 [&>*]:row-end-1 [&>*]:size-full\",\n        className\n      )}\n      {...props}\n    />\n  )\n})\nHoverSliderImageWrap.displayName = \"HoverSliderImageWrap\"\n\nexport const HoverSliderImage = React.forwardRef<\n  HTMLImageElement,\n  HTMLMotionProps<\"img\"> & HoverSliderImageProps\n>(({ index, imageUrl, children, className, ...props }, ref) => {\n  const { activeSlide } = useHoverSliderContext()\n  return (\n    <motion.img\n      className={cn(\"inline-block align-middle\", className)}\n      transition={{ ease: [0.33, 1, 0.68, 1], duration: 0.8 }}\n      variants={clipPathVariants}\n      animate={activeSlide === index ? \"visible\" : \"hidden\"}\n      ref={ref}\n      {...props}\n    />\n  )\n})\nHoverSliderImage.displayName = \"HoverSliderImage\"\n",
+      "type": "registry:block",
+      "target": ""
+    }
+  ],
+  "tailwind": {
+    "config": {}
+  },
+  "_meta": {
+    "author": "youcefbnm",
+    "slug": "animated-slideshow",
+    "registry_url": "https://21st.dev/r/youcefbnm/animated-slideshow",
+    "title": "Animated Slideshow",
+    "description": "- Animated hover slider",
+    "category": "image",
+    "category_group": "Marketing Blocks",
+    "downloads": 356,
+    "likes": 0
+  }
+}

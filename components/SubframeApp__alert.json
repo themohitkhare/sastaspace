@@ -1,0 +1,29 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "alert",
+  "type": "registry:component",
+  "title": "Alert",
+  "description": "A alert component.",
+  "dependencies": [
+    "@subframe/core"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/ui/alert.tsx",
+      "content": "\"use client\";\n/*\n * Documentation:\n * Alert — https://app.subframe.com/library?component=Alert_3a65613d-d546-467c-80f4-aaba6a7edcd5\n * Icon Button — https://app.subframe.com/library?component=Icon+Button_af9405b1-8c54-4e01-9786-5aad308224f6\n */\n\nimport React from \"react\";\nimport * as SubframeCore from \"@subframe/core\";\nimport { FeatherInfo } from \"@subframe/core\";\n\n/** Локальные utils для этого файла */\nconst SubframeUtils = {\n  twClassNames: SubframeCore.createTwClassNames([\n    \"text-caption\",\n    \"text-caption-bold\",\n    \"text-body\",\n    \"text-body-bold\",\n    \"text-heading-3\",\n    \"text-heading-2\",\n    \"text-heading-1\",\n    \"text-monospace-body\",\n  ]),\n};\n\ninterface AlertRootProps\n  extends Omit<React.HTMLAttributes<HTMLDivElement>, \"title\"> {\n  variant?: \"brand\" | \"neutral\" | \"error\" | \"success\" | \"warning\";\n  icon?: React.ReactNode;\n  title?: React.ReactNode;\n  description?: React.ReactNode;\n  actions?: React.ReactNode;\n  className?: string;\n}\n\nconst AlertRoot = React.forwardRef<HTMLDivElement, AlertRootProps>(\n  function AlertRoot(\n    {\n      variant = \"neutral\",\n      icon = <FeatherInfo />,\n      title,\n      description,\n      actions,\n      className,\n      ...otherProps\n    }: AlertRootProps,\n    ref\n  ) {\n    return (\n      <div\n        className={SubframeUtils.twClassNames(\n          \"group/3a65613d flex w-full flex-col items-start gap-2 rounded-md border border-solid border-neutral-200 bg-neutral-50 pl-4 pr-3 py-3\",\n          {\n            \"border-warning-100 bg-warning-50\": variant === \"warning\",\n            \"border-success-100 bg-success-50\": variant === \"success\",\n            \"border-error-100 bg-error-50\": variant === \"error\",\n            \"border-brand-100 bg-brand-50\": variant === \"brand\",\n          },\n          className\n        )}\n        ref={ref}\n        {...otherProps}\n      >\n        <div className=\"flex w-full items-center gap-4\">\n          {icon ? (\n            <SubframeCore.IconWrapper\n              className={SubframeUtils.twClassNames(\n                \"text-heading-3 font-heading-3 text-neutral-800\",\n                {\n                  \"text-warning-800\": variant === \"warning\",\n                  \"text-success-800\": variant === \"success\",\n                  \"text-error-800\": variant === \"error\",\n                  \"text-brand-800\": variant === \"brand\",\n                }\n              )}\n            >\n              {icon}\n            </SubframeCore.IconWrapper>\n          ) : null}\n          <div className=\"flex grow shrink-0 basis-0 flex-col items-start\">\n            {title ? (\n              <span\n                className={SubframeUtils.twClassNames(\n                  \"w-full whitespace-pre-wrap text-body-bold font-body-bold text-default-font\",\n                  {\n                    \"text-warning-900\": variant === \"warning\",\n                    \"text-success-900\": variant === \"success\",\n                    \"text-error-900\": variant === \"error\",\n                    \"text-brand-900\": variant === \"brand\",\n                  }\n                )}\n              >\n                {title}\n              </span>\n            ) : null}\n            {description ? (\n              <span\n                className={SubframeUtils.twClassNames(\n                  \"w-full whitespace-pre-wrap text-caption font-caption text-subtext-color\",\n                  {\n                    \"text-warning-800\": variant === \"warning\",\n                    \"text-success-800\": variant === \"success\",\n                    \"text-error-800\": variant === \"error\",\n                    \"text-brand-800\": variant === \"brand\",\n                  }\n                )}\n              >\n                {description}\n              </span>\n            ) : null}\n          </div>\n          {actions ? (\n            <div className=\"flex items-center justify-end gap-1\">{actions}</div>\n          ) : null}\n        </div>\n      </div>\n    );\n  }\n);\n\nexport const Alert = AlertRoot;\nexport default Alert;\n",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "SubframeApp",
+    "slug": "alert",
+    "registry_url": "https://21st.dev/r/SubframeApp/alert",
+    "title": "Alert",
+    "description": "Here is Alert component",
+    "category": "alert",
+    "category_group": "UI Components",
+    "downloads": 0,
+    "likes": 0
+  }
+}

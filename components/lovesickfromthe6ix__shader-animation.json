@@ -1,0 +1,50 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "shader-animation",
+  "type": "registry:component",
+  "title": "Shader Animation",
+  "description": "A shader-animation component.",
+  "dependencies": [],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/ui/shader-animation.tsx",
+      "content": "import React, { useEffect, useRef, useState } from 'react';\n\nconst ShaderAnimation = () => {\n  const canvasRef = useRef(null);\n  const animationRef = useRef(null);\n  const mouseRef = useRef({ x: 0.5, y: 0.5 });\n  const [isInteractive, setIsInteractive] = useState(true);\n\n  useEffect(() => {\n    const canvas = canvasRef.current;\n    if (!canvas) return;\n\n    const gl = canvas.getContext('webgl');\n    if (!gl) {\n      console.error('WebGL not supported');\n      return;\n    }\n\n    // Vertex shader source\n    const vertexShaderSource = `\n      attribute vec2 a_position;\n      void main() {\n        gl_Position = vec4(a_position, 0.0, 1.0);\n      }\n    `;\n\n    // Fragment shader source with animated gradients\n    const fragmentShaderSource = `\n      precision mediump float;\n      \n      uniform vec2 u_resolution;\n      uniform float u_time;\n      uniform vec2 u_mouse;\n      \n      vec3 palette(float t) {\n        vec3 a = vec3(0.5, 0.5, 0.5);\n        vec3 b = vec3(0.5, 0.5, 0.5);\n        vec3 c = vec3(1.0, 1.0, 1.0);\n        vec3 d = vec3(0.263, 0.416, 0.557);\n        \n        return a + b * cos(6.28318 * (c * t + d));\n      }\n      \n      float noise(vec2 p) {\n        return sin(p.x * 10.0) * sin(p.y * 10.0);\n      }\n      \n      void main() {\n        vec2 uv = gl_FragCoord.xy / u_resolution.xy;\n        vec2 uv0 = uv;\n        uv = uv * 2.0 - 1.0;\n        uv.x *= u_resolution.x / u_resolution.y;\n        \n        float d = length(uv);\n        vec3 col = vec3(0.0);\n        \n        // Create multiple animated layers\n        for(float i = 0.0; i < 4.0; i++) {\n          uv = fract(uv * 1.5) - 0.5;\n          \n          d = length(uv) * exp(-length(uv0));\n          //d = abs(d);\n          vec3 color = palette(length(uv0) + i * 0.4 + u_time * 0.01);\n          \n          d = sin(d * 4.0 + u_time) / 36.0;\n          // d = abs(d);\n          \n          d = pow(0.005 / d, 1.5);\n          \n          // Mouse interaction\n          vec2 mouseEffect = u_mouse - uv0;\n          float mouseDist = length(mouseEffect);\n          d *= 1.0 + sin(mouseDist * 10.0 - u_time * 2.0) * 0.1;\n          \n          col += color * d;\n        }\n        \n        // Add wave distortion\n        float wave = sin(uv0.x * 2.0 + u_time) * 0.01;\n        col += vec3(wave);\n        \n        // Add gradient overlay\n        vec3 gradient1 = vec3(0.1, 0.2, 0.5);\n        vec3 gradient2 = vec3(0.9, 0.1, 0.4);\n        vec3 gradientMix = mix(gradient1, gradient2, uv0.y + sin(u_time) * 0.2);\n        col = mix(col, gradientMix, 0.3);\n        \n        gl_FragColor = vec4(col, 1.0);\n      }\n    `;\n\n    // Create and compile shaders\n    function createShader(gl, type, source) {\n      const shader = gl.createShader(type);\n      gl.shaderSource(shader, source);\n      gl.compileShader(shader);\n      \n      if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {\n        console.error('Shader compilation error:', gl.getShaderInfoLog(shader));\n        gl.deleteShader(shader);\n        return null;\n      }\n      \n      return shader;\n    }\n\n    const vertexShader = createShader(gl, gl.VERTEX_SHADER, vertexShaderSource);\n    const fragmentShader = createShader(gl, gl.FRAGMENT_SHADER, fragmentShaderSource);\n\n    // Create program\n    const program = gl.createProgram();\n    gl.attachShader(program, vertexShader);\n    gl.attachShader(program, fragmentShader);\n    gl.linkProgram(program);\n\n    if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {\n      console.error('Program linking error:', gl.getProgramInfoLog(program));\n      return;\n    }\n\n    // Set up geometry (full screen quad)\n    const positions = new Float32Array([\n      -1, -1,\n       1, -1,\n      -1,  1,\n       1,  1,\n    ]);\n\n    const positionBuffer = gl.createBuffer();\n    gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);\n    gl.bufferData(gl.ARRAY_BUFFER, positions, gl.STATIC_DRAW);\n\n    const positionLocation = gl.getAttribLocation(program, 'a_position');\n    const resolutionLocation = gl.getUniformLocation(program, 'u_resolution');\n    const timeLocation = gl.getUniformLocation(program, 'u_time');\n    const mouseLocation = gl.getUniformLocation(program, 'u_mouse');\n\n    // Handle resize\n    const handleResize = () => {\n      canvas.width = window.innerWidth;\n      canvas.height = window.innerHeight;\n      gl.viewport(0, 0, canvas.width, canvas.height);\n    };\n    \n    handleResize();\n    window.addEventListener('resize', handleResize);\n\n    // Handle mouse movement\n    const handleMouseMove = (e) => {\n      if (isInteractive) {\n        mouseRef.current.x = e.clientX / window.innerWidth;\n        mouseRef.current.y = 1.0 - (e.clientY / window.innerHeight);\n      }\n    };\n    \n    window.addEventListener('mousemove', handleMouseMove);\n\n    // Animation loop\n    let startTime = Date.now();\n    \n    const render = () => {\n      const currentTime = (Date.now() - startTime) * 0.001;\n      \n      gl.clearColor(0, 0, 0, 1);\n      gl.clear(gl.COLOR_BUFFER_BIT);\n\n      gl.useProgram(program);\n\n      gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);\n      gl.enableVertexAttribArray(positionLocation);\n      gl.vertexAttribPointer(positionLocation, 2, gl.FLOAT, false, 0, 0);\n\n      gl.uniform2f(resolutionLocation, canvas.width, canvas.height);\n      gl.uniform1f(timeLocation, currentTime);\n      gl.uniform2f(mouseLocation, mouseRef.current.x, mouseRef.current.y);\n\n      gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);\n\n      animationRef.current = requestAnimationFrame(render);\n    };\n\n    render();\n\n    // Cleanup\n    return () => {\n      if (animationRef.current) {\n        cancelAnimationFrame(animationRef.current);\n      }\n      window.removeEventListener('resize', handleResize);\n      window.removeEventListener('mousemove', handleMouseMove);\n    };\n  }, [isInteractive]);\n\n  return (\n    <div className=\"shader-container\">\n      <canvas ref={canvasRef} className=\"shader-canvas\" />\n      \n      <div className=\"controls\">\n        <button \n          className=\"interactive-toggle\"\n          onClick={() => setIsInteractive(!isInteractive)}\n        >\n          {isInteractive ? '🖱️ Interactive' : '🚫 Static'}\n        </button>\n      </div>\n      \n      <div className=\"content-overlay\">\n        <h1 className=\"title\">Shader Animation</h1>\n        <p className=\"subtitle\">WebGL-powered flowing gradients</p>\n      </div>\n    </div>\n  );\n};\n\nexport default ShaderAnimation;",
+      "type": "registry:component"
+    }
+  ],
+  "css": {
+    "@keyframes fadeInUp": {
+      "from": {
+        "opacity": "0",
+        "transform": "translateY(30px)"
+      },
+      "to": {
+        "opacity": "1",
+        "transform": "translateY(0)"
+      }
+    },
+    "@keyframes gradientShift": {
+      "0%": {
+        "background-position": "0% 50%"
+      },
+      "50%": {
+        "background-position": "100% 50%"
+      },
+      "100%": {
+        "background-position": "0% 50%"
+      }
+    }
+  },
+  "_meta": {
+    "author": "lovesickfromthe6ix",
+    "slug": "shader-animation",
+    "registry_url": "https://21st.dev/r/lovesickfromthe6ix/shader-animation",
+    "title": "Shader Animation",
+    "description": "Animated hero background with procedural gradient animation using webgl",
+    "category": "shader",
+    "category_group": "Marketing Blocks",
+    "downloads": 10,
+    "likes": 0
+  }
+}

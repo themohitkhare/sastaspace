@@ -1,0 +1,29 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "certificate",
+  "type": "registry:component",
+  "title": "Certificate",
+  "description": "A certificate component.",
+  "dependencies": [],
+  "registryDependencies": [
+    "https://21st.dev/r/designali-in/award"
+  ],
+  "files": [
+    {
+      "path": "src/components/ui/certificate.tsx",
+      "content": "import { Awards } from \"@/components/ui/award\"\n\nexport function Component() {\n  return (\n    <Awards\n      variant=\"certificate\"\n      title=\"Appreciation\"\n      subtitle=\"has successfully completed the mastry of design.\"\n      recipient=\"Ali Imam\"\n      date=\"June 2025\"  \n    />\n  )\n}\n",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "designali-in",
+    "slug": "certificate",
+    "registry_url": "https://21st.dev/r/designali-in/certificate",
+    "title": "Certificate",
+    "description": "Certificate, Award, Badge",
+    "category": "badge",
+    "category_group": "UI Components",
+    "downloads": 37,
+    "likes": 0
+  }
+}

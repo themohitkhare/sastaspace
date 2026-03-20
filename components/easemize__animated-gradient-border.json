@@ -1,0 +1,37 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "animated-gradient-border",
+  "type": "registry:component",
+  "title": "Animated Gradient Border",
+  "description": "A animated-gradient-border component.",
+  "dependencies": [],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/ui/animated-gradient-border.tsx",
+      "content": "import React, { CSSProperties, ReactNode, HTMLAttributes } from 'react';\n\ntype AnimationMode = 'auto-rotate' | 'rotate-on-hover' | 'stop-rotate-on-hover';\n\ninterface BorderRotateProps extends Omit<HTMLAttributes<HTMLDivElement>, 'className'> {\n  children: ReactNode;\n  className?: string;\n \n  // Animation customization\n  animationMode?: AnimationMode;\n  animationSpeed?: number; // Duration in seconds\n \n  // Color customization\n  gradientColors?: {\n    primary: string;\n    secondary: string;\n    accent: string;\n  };\n  backgroundColor?: string;\n \n  // Border customization\n  borderWidth?: number;\n  borderRadius?: number;\n \n  // Container styling\n  style?: CSSProperties;\n}\n\nconst defaultGradientColors = {\n  primary: '#584827',\n  secondary: '#c7a03c',\n  accent: '#f9de90'\n};\n\nconst BorderRotate: React.FC<BorderRotateProps> = ({\n  children,\n  className = '',\n  animationMode = 'auto-rotate',\n  animationSpeed = 5,\n  gradientColors = defaultGradientColors,\n  backgroundColor = '#2d230f',\n  borderWidth = 2,\n  borderRadius = 20,\n  style = {},\n  ...props\n}) => {\n  // Get animation class based on mode\n  const getAnimationClass = () => {\n    switch (animationMode) {\n      case 'auto-rotate':\n        return 'gradient-border-auto';\n      case 'rotate-on-hover':\n        return 'gradient-border-hover';\n      case 'stop-rotate-on-hover':\n        return 'gradient-border-stop-hover';\n      default:\n        return '';\n    }\n  };\n \n  const combinedStyle: CSSProperties = {\n    '--gradient-primary': gradientColors.primary,\n    '--gradient-secondary': gradientColors.secondary,\n    '--gradient-accent': gradientColors.accent,\n    '--bg-color': backgroundColor,\n    '--border-width': `${borderWidth}px`,\n    '--border-radius': `${borderRadius}px`,\n    '--animation-duration': `${animationSpeed}s`,\n    border: `${borderWidth}px solid transparent`,\n    borderRadius: `${borderRadius}px`,\n    backgroundImage: `\n      linear-gradient(${backgroundColor}, ${backgroundColor}),\n      conic-gradient(\n        from var(--gradient-angle, 0deg),\n        ${gradientColors.primary} 0%,\n        ${gradientColors.secondary} 37%,\n        ${gradientColors.accent} 30%,\n        ${gradientColors.secondary} 33%,\n        ${gradientColors.primary} 40%,\n        ${gradientColors.primary} 50%,\n        ${gradientColors.secondary} 77%,\n        ${gradientColors.accent} 80%,\n        ${gradientColors.secondary} 83%,\n        ${gradientColors.primary} 90%\n      )\n    `,\n    backgroundClip: 'padding-box, border-box',\n    backgroundOrigin: 'padding-box, border-box',\n    ...style,\n  } as CSSProperties;\n \n  return (\n    <div\n      className={`gradient-border-component ${getAnimationClass()} ${className}`}\n      style={combinedStyle}\n      {...props}\n    >\n      {children}\n    </div>\n  );\n};\n\nexport { BorderRotate };",
+      "type": "registry:component"
+    }
+  ],
+  "css": {
+    "@keyframes gradient-rotate": {
+      "from": {
+        "--gradient-angle": "0deg"
+      },
+      "to": {
+        "--gradient-angle": "360deg"
+      }
+    }
+  },
+  "_meta": {
+    "author": "easemize",
+    "slug": "animated-gradient-border",
+    "registry_url": "https://21st.dev/r/easemize/animated-gradient-border",
+    "title": "Animated Gradient Border ",
+    "description": "",
+    "category": "border",
+    "category_group": "Marketing Blocks",
+    "downloads": 224,
+    "likes": 0
+  }
+}

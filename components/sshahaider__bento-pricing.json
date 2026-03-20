@@ -1,0 +1,32 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "bento-pricing",
+  "type": "registry:component",
+  "title": "Bento Pricing",
+  "description": "A bento-pricing component.",
+  "dependencies": [
+    "lucide-react"
+  ],
+  "registryDependencies": [
+    "https://21st.dev/r/shadcn/badge",
+    "https://21st.dev/r/shadcn/button"
+  ],
+  "files": [
+    {
+      "path": "src/components/ui/bento-pricing.tsx",
+      "content": "'use client';\nimport React from 'react';\n\nimport { cn } from '@/lib/utils';\nimport { Button } from '@/components/ui/button';\nimport { Badge } from '@/components/ui/badge';\nimport { CheckIcon, SparklesIcon } from 'lucide-react';\n\ntype PricingCardProps = {\n\ttitleBadge: string;\n\tpriceLabel: string;\n\tpriceSuffix?: string;\n\tfeatures: string[];\n\tcta?: string;\n\tclassName?: string;\n};\n\nfunction FilledCheck() {\n\treturn (\n\t\t<div className=\"bg-primary text-primary-foreground rounded-full p-0.5\">\n\t\t\t<CheckIcon className=\"size-3\" strokeWidth={3} />\n\t\t</div>\n\t);\n}\n\nfunction PricingCard({\n\ttitleBadge,\n\tpriceLabel,\n\tpriceSuffix = '/month',\n\tfeatures,\n\tcta = 'Subscribe',\n\tclassName,\n}: PricingCardProps) {\n\treturn (\n\t\t<div\n\t\t\tclassName={cn(\n\t\t\t\t'bg-background border-foreground/10 relative overflow-hidden rounded-md border',\n\t\t\t\t'supports-[backdrop-filter]:bg-background/10 backdrop-blur',\n\t\t\t\tclassName,\n\t\t\t)}\n\t\t>\n\t\t\t<div className=\"flex items-center gap-3 p-4\">\n\t\t\t\t<Badge variant=\"secondary\">{titleBadge}</Badge>\n\t\t\t\t<div className=\"ml-auto\">\n\t\t\t\t\t<Button variant=\"outline\">{cta}</Button>\n\t\t\t\t</div>\n\t\t\t</div>\n\n\t\t\t<div className=\"flex items-end gap-2 px-4 py-2\">\n\t\t\t\t<span className=\"font-mono text-5xl font-semibold tracking-tight\">\n\t\t\t\t\t{priceLabel}\n\t\t\t\t</span>\n\t\t\t\t{priceLabel.toLowerCase() !== 'free' && (\n\t\t\t\t\t<span className=\"text-muted-foreground text-sm\">{priceSuffix}</span>\n\t\t\t\t)}\n\t\t\t</div>\n\n\t\t\t<ul className=\"text-muted-foreground grid gap-4 p-4 text-sm\">\n\t\t\t\t{features.map((f, i) => (\n\t\t\t\t\t<li key={i} className=\"flex items-center gap-3\">\n\t\t\t\t\t\t<FilledCheck />\n\t\t\t\t\t\t<span>{f}</span>\n\t\t\t\t\t</li>\n\t\t\t\t))}\n\t\t\t</ul>\n\t\t</div>\n\t);\n}\n\nexport function BentoPricing() {\n\treturn (\n\t\t<div className=\"grid grid-cols-1 gap-2 md:grid-cols-2 lg:grid-cols-8\">\n\t\t\t<div\n\t\t\t\tclassName={cn(\n\t\t\t\t\t'bg-background border-foreground/10 relative w-full overflow-hidden rounded-md border',\n\t\t\t\t\t'supports-[backdrop-filter]:bg-background/10 backdrop-blur',\n\t\t\t\t\t'lg:col-span-5',\n\t\t\t\t)}\n\t\t\t>\n\t\t\t\t<div className=\"pointer-events-none absolute top-0 left-1/2 -mt-2 -ml-20 h-full w-full [mask-image:linear-gradient(white,transparent)]\">\n\t\t\t\t\t<div className=\"from-foreground/5 to-foreground/2 absolute inset-0 bg-gradient-to-r [mask-image:radial-gradient(farthest-side_at_top,white,transparent)]\">\n\t\t\t\t\t\t<div\n\t\t\t\t\t\t\taria-hidden=\"true\"\n\t\t\t\t\t\t\tclassName={cn(\n\t\t\t\t\t\t\t\t'absolute inset-0 size-full mix-blend-overlay',\n\t\t\t\t\t\t\t\t'bg-[linear-gradient(to_right,--theme(--color-foreground/.1)_1px,transparent_1px)]',\n\t\t\t\t\t\t\t\t'bg-[size:24px]',\n\t\t\t\t\t\t\t)}\n\t\t\t\t\t\t/>\n\t\t\t\t\t</div>\n\t\t\t\t</div>\n\t\t\t\t<div className=\"flex items-center gap-3 p-4\">\n\t\t\t\t\t<Badge variant=\"secondary\">CREATORS SPECIAL</Badge>\n\t\t\t\t\t<Badge variant=\"outline\" className=\"hidden lg:flex\">\n\t\t\t\t\t\t<SparklesIcon className=\"me-1 size-3\" /> Most Recommended\n\t\t\t\t\t</Badge>\n\t\t\t\t\t<div className=\"ml-auto\">\n\t\t\t\t\t\t<Button>Subscribe</Button>\n\t\t\t\t\t</div>\n\t\t\t\t</div>\n\t\t\t\t<div className=\"flex flex-col p-4 lg:flex-row\">\n\t\t\t\t\t<div className=\"pb-4 lg:w-[30%]\">\n\t\t\t\t\t\t<span className=\"font-mono text-5xl font-semibold tracking-tight\">\n\t\t\t\t\t\t\t$19\n\t\t\t\t\t\t</span>\n\t\t\t\t\t\t<span className=\"text-muted-foreground text-sm\">/month</span>\n\t\t\t\t\t</div>\n\t\t\t\t\t<ul className=\"text-muted-foreground grid gap-4 text-sm lg:w-[70%]\">\n\t\t\t\t\t\t{[\n\t\t\t\t\t\t\t'Perfect for individual bloggers',\n\t\t\t\t\t\t\t'freelancers and entrepreneurs',\n\t\t\t\t\t\t\t'AI-Powered editing tools',\n\t\t\t\t\t\t\t'Basic Analytics to track content performance',\n\t\t\t\t\t\t].map((f, i) => (\n\t\t\t\t\t\t\t<li key={i} className=\"flex items-center gap-3\">\n\t\t\t\t\t\t\t\t<FilledCheck />\n\t\t\t\t\t\t\t\t<span className=\"leading-relaxed\">{f}</span>\n\t\t\t\t\t\t\t</li>\n\t\t\t\t\t\t))}\n\t\t\t\t\t</ul>\n\t\t\t\t</div>\n\t\t\t</div>\n\n\t\t\t<PricingCard\n\t\t\t\ttitleBadge=\"STARTERS\"\n\t\t\t\tpriceLabel=\"$0\"\n\t\t\t\tfeatures={[\n\t\t\t\t\t'Perfect for beginners',\n\t\t\t\t\t'Unlimited Content Generation',\n\t\t\t\t\t'AI-Powered editing tools',\n\t\t\t\t]}\n\t\t\t\tclassName=\"lg:col-span-3\"\n\t\t\t/>\n\n\t\t\t<PricingCard\n\t\t\t\ttitleBadge=\"TEAMS\"\n\t\t\t\tpriceLabel=\"$49\"\n\t\t\t\tfeatures={[\n\t\t\t\t\t'Ideal for small teams and agencies',\n\t\t\t\t\t'Collaborative features like shared projects',\n\t\t\t\t\t'Advanced Analytics to optimize content strategy',\n\t\t\t\t]}\n\t\t\t\tclassName=\"lg:col-span-4\"\n\t\t\t/>\n\n\t\t\t<PricingCard\n\t\t\t\ttitleBadge=\"ENTERPRISE\"\n\t\t\t\tpriceLabel=\"$99\"\n\t\t\t\tfeatures={[\n\t\t\t\t\t'Designed for large companies',\n\t\t\t\t\t'high-volume content creators',\n\t\t\t\t\t'dedicated account management',\n\t\t\t\t]}\n\t\t\t\tclassName=\"lg:col-span-4\"\n\t\t\t/>\n\t\t</div>\n\t);\n}\n",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "sshahaider",
+    "slug": "bento-pricing",
+    "registry_url": "https://21st.dev/r/sshahaider/bento-pricing",
+    "title": "Bento Pricing",
+    "description": "A clean and responsive pricing table with a bento-style layout, feature checklists, and call-to-action buttons. Ideal for SaaS apps, startups, and subscription websites, it makes plan comparison simple and visually engaging.",
+    "category": "features",
+    "category_group": "Marketing Blocks",
+    "downloads": 158,
+    "likes": 0
+  }
+}

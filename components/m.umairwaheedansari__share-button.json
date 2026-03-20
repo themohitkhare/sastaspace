@@ -1,0 +1,31 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "share-button",
+  "type": "registry:component",
+  "title": "Share Button",
+  "description": "A share-button component.",
+  "dependencies": [
+    "lucide-react",
+    "clsx",
+    "tailwind-merge"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/ui/share-button.tsx",
+      "content": "\"use client\"\n\nimport React, { useState } from \"react\"\nimport { Facebook, Link as LinkIcon, Linkedin, Twitter, LucideIcon } from \"lucide-react\"\nimport { clsx, ClassValue } from \"clsx\"\nimport { twMerge } from \"tailwind-merge\"\n\n// local cn utility\nfunction cn(...inputs: ClassValue[]) {\n  return twMerge(clsx(inputs))\n}\n\ninterface ShareLink {\n  icon: LucideIcon\n  href?: string\n  onClick?: () => void\n  label?: string\n}\n\ninterface ShareButtonProps\n  extends React.ButtonHTMLAttributes<HTMLButtonElement> {\n  links: ShareLink[]\n  children: React.ReactNode\n}\n\nconst ShareButton = ({\n  className,\n  links,\n  children,\n  ...props\n}: ShareButtonProps) => {\n  const [isHovered, setIsHovered] = useState(false)\n\n  return (\n    <div\n      className=\"relative inline-flex justify-center\"\n      onMouseEnter={() => setIsHovered(true)}\n      onMouseLeave={() => setIsHovered(false)}\n    >\n      {/* Main Button */}\n      <button\n        className={cn(\n          \"relative w-40 h-10 rounded-3xl px-4 py-2 flex items-center justify-center\",\n          \"bg-white dark:bg-black\",\n          \"hover:bg-gray-50 dark:hover:bg-gray-950\",\n          \"text-black dark:text-white\",\n          \"border border-black/10 dark:border-white/10\",\n          \"transition-all duration-300\",\n          isHovered ? \"opacity-0\" : \"opacity-100\",\n          className\n        )}\n        {...props}\n      >\n        <span className=\"flex items-center gap-2\">{children}</span>\n      </button>\n\n      {/* Hover Links */}\n      <div className=\"absolute inset-0 flex h-10 w-40 justify-center\">\n        {links.map((link, index) => {\n          const Icon = link.icon\n          return (\n            <button\n              type=\"button\"\n              key={index}\n              onClick={link.onClick}\n              className={cn(\n                \"h-10 w-10 flex items-center justify-center\",\n                \"bg-black dark:bg-white\",\n                \"text-white dark:text-black\",\n                \"transition-all duration-300\",\n                index === 0 && \"rounded-l-3xl\",\n                index === links.length - 1 && \"rounded-r-3xl\",\n                \"border-r border-white/10 last:border-r-0 dark:border-black/10\",\n                \"hover:bg-gray-900 dark:hover:bg-gray-100\",\n                isHovered\n                  ? \"translate-x-0 opacity-100\"\n                  : \"-translate-x-full opacity-0\",\n                index === 0 && \"transition-all duration-200\",\n                index === 1 && \"delay-[50ms] transition-all duration-200\",\n                index === 2 && \"delay-100 transition-all duration-200\",\n                index === 3 && \"delay-150 transition-all duration-200\"\n              )}\n            >\n              <Icon className=\"size-4\" />\n            </button>\n          )\n        })}\n      </div>\n    </div>\n  )\n}\n\n// Example usage\nexport default function ShareButtonDemo(): JSX.Element {\n  const shareLinks = [\n    {\n      icon: Twitter,\n      onClick: () => window.open(\"https://twitter.com/share\", \"_blank\"),\n      label: \"Share on Twitter\",\n    },\n    {\n      icon: Facebook,\n      onClick: () => window.open(\"https://facebook.com/share\", \"_blank\"),\n      label: \"Share on Facebook\",\n    },\n    {\n      icon: Linkedin,\n      onClick: () => window.open(\"https://linkedin.com/share\", \"_blank\"),\n      label: \"Share on LinkedIn\",\n    },\n    {\n      icon: LinkIcon,\n      onClick: () => navigator.clipboard.writeText(window.location.href),\n      label: \"Copy link\",\n    },\n  ]\n\n  return (\n    <div className=\"flex items-center justify-center h-[200px]\">\n      <ShareButton links={shareLinks} className=\"text-lg font-medium\">\n        <LinkIcon size={15} />\n        Share\n      </ShareButton>\n    </div>\n  )\n}\n",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "m.umairwaheedansari",
+    "slug": "share-button",
+    "registry_url": "https://21st.dev/r/m.umairwaheedansari/share-button",
+    "title": "Share Button",
+    "description": "A Uniquely animated share button",
+    "category": "accordion",
+    "category_group": "UI Components",
+    "downloads": 5,
+    "likes": 0
+  }
+}

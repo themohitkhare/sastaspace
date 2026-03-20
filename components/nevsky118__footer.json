@@ -1,0 +1,39 @@
+{
+  "name": "footer",
+  "type": "registry:ui",
+  "dependencies": [
+    "@radix-ui/react-slot",
+    "class-variance-authority"
+  ],
+  "registryDependencies": [
+    "https://21st.dev/r/originui/button"
+  ],
+  "files": [
+    {
+      "path": "/components/ui/footer.tsx",
+      "content": "import { Button } from \"@/components/ui/button\"\n\ninterface FooterProps {\n  logo: React.ReactNode\n  brandName: string\n  socialLinks: Array<{\n    icon: React.ReactNode\n    href: string\n    label: string\n  }>\n  mainLinks: Array<{\n    href: string\n    label: string\n  }>\n  legalLinks: Array<{\n    href: string\n    label: string\n  }>\n  copyright: {\n    text: string\n    license?: string\n  }\n}\n\nexport function Footer({\n  logo,\n  brandName,\n  socialLinks,\n  mainLinks,\n  legalLinks,\n  copyright,\n}: FooterProps) {\n  return (\n    <footer className=\"pb-6 pt-16 lg:pb-8 lg:pt-24\">\n      <div className=\"px-4 lg:px-8\">\n        <div className=\"md:flex md:items-start md:justify-between\">\n          <a\n            href=\"/\"\n            className=\"flex items-center gap-x-2\"\n            aria-label={brandName}\n          >\n            {logo}\n            <span className=\"font-bold text-xl\">{brandName}</span>\n          </a>\n          <ul className=\"flex list-none mt-6 md:mt-0 space-x-3\">\n            {socialLinks.map((link, i) => (\n              <li key={i}>\n                <Button\n                  variant=\"secondary\"\n                  size=\"icon\"\n                  className=\"h-10 w-10 rounded-full\"\n                  asChild\n                >\n                  <a href={link.href} target=\"_blank\" aria-label={link.label}>\n                    {link.icon}\n                  </a>\n                </Button>\n              </li>\n            ))}\n          </ul>\n        </div>\n        <div className=\"border-t mt-6 pt-6 md:mt-4 md:pt-8 lg:grid lg:grid-cols-10\">\n          <nav className=\"lg:mt-0 lg:col-[4/11]\">\n            <ul className=\"list-none flex flex-wrap -my-1 -mx-2 lg:justify-end\">\n              {mainLinks.map((link, i) => (\n                <li key={i} className=\"my-1 mx-2 shrink-0\">\n                  <a\n                    href={link.href}\n                    className=\"text-sm text-primary underline-offset-4 hover:underline\"\n                  >\n                    {link.label}\n                  </a>\n                </li>\n              ))}\n            </ul>\n          </nav>\n          <div className=\"mt-6 lg:mt-0 lg:col-[4/11]\">\n            <ul className=\"list-none flex flex-wrap -my-1 -mx-3 lg:justify-end\">\n              {legalLinks.map((link, i) => (\n                <li key={i} className=\"my-1 mx-3 shrink-0\">\n                  <a\n                    href={link.href}\n                    className=\"text-sm text-muted-foreground underline-offset-4 hover:underline\"\n                  >\n                    {link.label}\n                  </a>\n                </li>\n              ))}\n            </ul>\n          </div>\n          <div className=\"mt-6 text-sm leading-6 text-muted-foreground whitespace-nowrap lg:mt-0 lg:row-[1/3] lg:col-[1/4]\">\n            <div>{copyright.text}</div>\n            {copyright.license && <div>{copyright.license}</div>}\n          </div>\n        </div>\n      </div>\n    </footer>\n  )\n}\n",
+      "type": "registry:ui",
+      "target": ""
+    },
+    {
+      "path": "/components/ui/button.tsx",
+      "content": "import { Slot } from \"@radix-ui/react-slot\";\nimport { cva, type VariantProps } from \"class-variance-authority\";\nimport * as React from \"react\";\n\nimport { cn } from \"@/lib/utils\";\n\nconst buttonVariants = cva(\n  \"inline-flex items-center justify-center whitespace-nowrap rounded-lg text-sm font-medium transition-colors outline-offset-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring/70 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0\",\n  {\n    variants: {\n      variant: {\n        default: \"bg-primary text-primary-foreground shadow-sm shadow-black/5 hover:bg-primary/90\",\n        destructive:\n          \"bg-destructive text-destructive-foreground shadow-sm shadow-black/5 hover:bg-destructive/90\",\n        outline:\n          \"border border-input bg-background shadow-sm shadow-black/5 hover:bg-accent hover:text-accent-foreground\",\n        secondary:\n          \"bg-secondary text-secondary-foreground shadow-sm shadow-black/5 hover:bg-secondary/80\",\n        ghost: \"hover:bg-accent hover:text-accent-foreground\",\n        link: \"text-primary underline-offset-4 hover:underline\",\n      },\n      size: {\n        default: \"h-9 px-4 py-2\",\n        sm: \"h-8 rounded-lg px-3 text-xs\",\n        lg: \"h-10 rounded-lg px-8\",\n        icon: \"h-9 w-9\",\n      },\n    },\n    defaultVariants: {\n      variant: \"default\",\n      size: \"default\",\n    },\n  },\n);\n\nexport interface ButtonProps\n  extends React.ButtonHTMLAttributes<HTMLButtonElement>,\n    VariantProps<typeof buttonVariants> {\n  asChild?: boolean;\n}\n\nconst Button = React.forwardRef<HTMLButtonElement, ButtonProps>(\n  ({ className, variant, size, asChild = false, ...props }, ref) => {\n    const Comp = asChild ? Slot : \"button\";\n    return (\n      <Comp className={cn(buttonVariants({ variant, size, className }))} ref={ref} {...props} />\n    );\n  },\n);\nButton.displayName = \"Button\";\n\nexport { Button, buttonVariants };\n",
+      "type": "registry:ui",
+      "target": ""
+    }
+  ],
+  "tailwind": {
+    "config": {}
+  },
+  "_meta": {
+    "author": "nevsky118",
+    "slug": "footer",
+    "registry_url": "https://21st.dev/r/nevsky118/footer",
+    "title": "Footer",
+    "description": "Footer",
+    "category": "footer",
+    "category_group": "Marketing Blocks",
+    "downloads": 2233,
+    "likes": 5
+  }
+}

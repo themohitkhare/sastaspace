@@ -1,0 +1,33 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "toast",
+  "type": "registry:component",
+  "title": "Toast",
+  "description": "A toast component.",
+  "dependencies": [
+    "framer-motion",
+    "sonner",
+    "lucide-react"
+  ],
+  "registryDependencies": [
+    "https://21st.dev/r/shadcn/button"
+  ],
+  "files": [
+    {
+      "path": "src/components/ui/toast.tsx",
+      "content": "'use client'\n\nimport { forwardRef, useImperativeHandle, useRef } from 'react';\nimport { motion } from 'framer-motion';\nimport {\n  Toaster as SonnerToaster,\n  toast as sonnerToast,\n} from 'sonner';\nimport {\n  CheckCircle,\n  AlertCircle,\n  Info,\n  AlertTriangle,\n  X,\n} from 'lucide-react';\n\nimport { Button } from '@/components/ui/button';\nimport { cn } from '@/lib/utils';\n\ntype Variant = 'default' | 'success' | 'error' | 'warning';\ntype Position =\n  | 'top-left'\n  | 'top-center'\n  | 'top-right'\n  | 'bottom-left'\n  | 'bottom-center'\n  | 'bottom-right';\n\ninterface ActionButton {\n  label: string;\n  onClick: () => void;\n  variant?: 'default' | 'outline' | 'ghost';\n}\n\ninterface ToasterProps {\n  title?: string;\n  message: string;\n  variant?: Variant;\n  duration?: number;\n  position?: Position;\n  actions?: ActionButton;\n  onDismiss?: () => void;\n  highlightTitle?: boolean;\n}\n\nexport interface ToasterRef {\n  show: (props: ToasterProps) => void;\n}\n\nconst variantStyles: Record<Variant, string> = {\n  default: 'bg-card border-border text-foreground',\n  success: 'bg-card border-green-600/50',\n  error: 'bg-card border-destructive/50',\n  warning: 'bg-card border-amber-600/50',\n};\n\nconst titleColor: Record<Variant, string> = {\n  default: 'text-foreground',\n  success: 'text-green-600 dark:text-green-400',\n  error: 'text-destructive',\n  warning: 'text-amber-600 dark:text-amber-400',\n};\n\nconst iconColor: Record<Variant, string> = {\n  default: 'text-muted-foreground',\n  success: 'text-green-600 dark:text-green-400',\n  error: 'text-destructive',\n  warning: 'text-amber-600 dark:text-amber-400',\n};\n\nconst variantIcons: Record<Variant, React.ComponentType<{ className?: string }>> = {\n  default: Info,\n  success: CheckCircle,\n  error: AlertCircle,\n  warning: AlertTriangle,\n};\n\nconst toastAnimation = {\n  initial: { opacity: 0, y: 50, scale: 0.95 },\n  animate: { opacity: 1, y: 0, scale: 1 },\n  exit: { opacity: 0, y: 50, scale: 0.95 },\n};\n\nconst Toaster = forwardRef<ToasterRef, { defaultPosition?: Position }>(\n  ({ defaultPosition = 'bottom-right' }, ref) => {\n    const toastReference = useRef<ReturnType<typeof sonnerToast.custom> | null>(null);\n\n    useImperativeHandle(ref, () => ({\n      show({\n        title,\n        message,\n        variant = 'default',\n        duration = 4000,\n        position = defaultPosition,\n        actions,\n        onDismiss,\n        highlightTitle,\n      }) {\n        const Icon = variantIcons[variant];\n\n        toastReference.current = sonnerToast.custom(\n          (toastId) => (\n            <motion.div\n              variants={toastAnimation}\n              initial=\"initial\"\n              animate=\"animate\"\n              exit=\"exit\"\n              transition={{ duration: 0.3, ease: 'easeOut' }}\n              className={cn(\n                'flex items-center justify-between w-full max-w-xs p-3 rounded-xl border shadow-md',\n                variantStyles[variant]\n              )}\n            >\n              <div className=\"flex items-start gap-2\">\n                <Icon className={cn('h-4 w-4 mt-0.5 flex-shrink-0', iconColor[variant])} />\n                <div className=\"space-y-0.5\">\n                  {title && (\n                    <h3\n                      className={cn(\n                        'text-xs font-medium leading-none',\n                        titleColor[variant],\n                        highlightTitle && titleColor['success'] // override for meeting case\n                      )}\n                    >\n                      {title}\n                    </h3>\n                  )}\n                  <p className=\"text-xs text-muted-foreground\">{message}</p>\n                </div>\n              </div>\n\n              <div className=\"flex items-center gap-2\">\n                {actions?.label && (\n                  <Button\n                    variant={actions.variant || 'outline'}\n                    size=\"sm\"\n                    onClick={() => {\n                      actions.onClick();\n                      sonnerToast.dismiss(toastId);\n                    }}\n                    className={cn(\n                      'cursor-pointer',\n                      variant === 'success'\n                        ? 'text-green-600 border-green-600 hover:bg-green-600/10 dark:hover:bg-green-400/20'\n                        : variant === 'error'\n                        ? 'text-destructive border-destructive hover:bg-destructive/10 dark:hover:bg-destructive/20'\n                        : variant === 'warning'\n                        ? 'text-amber-600 border-amber-600 hover:bg-amber-600/10 dark:hover:bg-amber-400/20'\n                        : 'text-foreground border-border hover:bg-muted/10 dark:hover:bg-muted/20'\n                    )}\n                  >\n                    {actions.label}\n                  </Button>\n                )}\n\n                <button\n                  onClick={() => {\n                    sonnerToast.dismiss(toastId);\n                    onDismiss?.();\n                  }}\n                  className=\"rounded-full p-1 hover:bg-muted/50 dark:hover:bg-muted/30 transition-colors focus:outline-none focus:ring-2 focus:ring-ring\"\n                  aria-label=\"Dismiss notification\"\n                >\n                  <X className=\"h-3 w-3 text-muted-foreground\" />\n                </button>\n              </div>\n            </motion.div>\n          ),\n          { duration, position }\n        );\n      },\n    }));\n\n    return (\n      <SonnerToaster\n        position={defaultPosition}\n        toastOptions={{ unstyled: true, className: 'flex justify-end' }}\n      />\n    );\n  }\n);\n\nexport default Toaster;\n",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "arunachalam0606",
+    "slug": "toast",
+    "registry_url": "https://21st.dev/r/arunachalam0606/toast",
+    "title": "Toast",
+    "description": "The Toaster component is a customizable toast notification system built on top of the Sonner library. It provides a flexible, animated UI for in-app alerts, designed to match modern UX and design standards.",
+    "category": "alert",
+    "category_group": "UI Components",
+    "downloads": 404,
+    "likes": 0
+  }
+}

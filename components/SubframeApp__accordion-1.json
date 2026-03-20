@@ -1,0 +1,29 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "accordion-1",
+  "type": "registry:component",
+  "title": "Accordion 1",
+  "description": "A accordion-1 component.",
+  "dependencies": [
+    "@subframe/core"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/ui/accordion-1.tsx",
+      "content": "\"use client\";\n\nimport React from \"react\";\nimport * as SubframeCore from \"@subframe/core\";\nimport { FeatherChevronDown } from \"@subframe/core\";\n\nexport const SubframeUtils = {\n  twClassNames: SubframeCore.createTwClassNames([\n    \"text-caption\",\n    \"text-caption-bold\",\n    \"text-body\",\n    \"text-body-bold\",\n    \"text-heading-3\",\n    \"text-heading-2\",\n    \"text-heading-1\",\n    \"text-monospace-body\",\n  ]),\n};\n\ninterface ChevronProps\n  extends React.ComponentProps<typeof SubframeCore.Collapsible.Chevron> {\n  className?: string;\n}\n\nconst Chevron = React.forwardRef<\n  React.ElementRef<typeof FeatherChevronDown>,\n  ChevronProps\n>(function Chevron({ className, ...otherProps }: ChevronProps, ref) {\n  return (\n    <SubframeCore.Collapsible.Chevron {...otherProps}>\n      <FeatherChevronDown\n        className={SubframeUtils.twClassNames(\n          \"text-body font-body text-default-font\",\n          className\n        )}\n        ref={ref}\n      />\n    </SubframeCore.Collapsible.Chevron>\n  );\n});\n\ninterface ContentProps\n  extends React.ComponentProps<typeof SubframeCore.Collapsible.Content> {\n  children?: React.ReactNode;\n  className?: string;\n}\n\nconst Content = React.forwardRef<HTMLDivElement, ContentProps>(function Content(\n  { children, className, ...otherProps }: ContentProps,\n  ref\n) {\n  return children ? (\n    <SubframeCore.Collapsible.Content asChild {...otherProps}>\n      <div\n        className={SubframeUtils.twClassNames(\n          // было w-full → делаем гибким\n          \"flex w-auto flex-col items-start gap-2\",\n          className\n        )}\n        ref={ref}\n      >\n        {children}\n      </div>\n    </SubframeCore.Collapsible.Content>\n  ) : null;\n});\n\ninterface TriggerProps\n  extends React.ComponentProps<typeof SubframeCore.Collapsible.Trigger> {\n  children?: React.ReactNode;\n  className?: string;\n}\n\nconst Trigger = React.forwardRef<HTMLDivElement, TriggerProps>(function Trigger(\n  { children, className, ...otherProps }: TriggerProps,\n  ref\n) {\n  return children ? (\n    <SubframeCore.Collapsible.Trigger asChild {...otherProps}>\n      <div\n        className={SubframeUtils.twClassNames(\n          // было w-full → делаем гибким\n          \"flex w-auto cursor-pointer flex-col items-start gap-2\",\n          className\n        )}\n        ref={ref}\n      >\n        {children}\n      </div>\n    </SubframeCore.Collapsible.Trigger>\n  ) : null;\n});\n\ninterface AccordionRootProps\n  extends React.ComponentProps<typeof SubframeCore.Collapsible.Root> {\n  trigger?: React.ReactNode;\n  children?: React.ReactNode;\n  className?: string;\n}\n\nconst AccordionRoot = React.forwardRef<HTMLDivElement, AccordionRootProps>(\n  function AccordionRoot(\n    { trigger, children, className, ...otherProps }: AccordionRootProps,\n    ref\n  ) {\n    return (\n      <SubframeCore.Collapsible.Root asChild {...otherProps}>\n        <div\n          className={SubframeUtils.twClassNames(\n            // было w-full → теперь по содержимому; ширину можно задавать через className снаружи\n            \"group/d2e81e20 flex w-auto flex-col items-start rounded-md\",\n            className\n          )}\n          ref={ref}\n        >\n          <Trigger>\n            {trigger ? (\n              <div className=\"flex w-auto flex-col items-start group-data-[state=open]/d2e81e20:h-auto\">\n                {trigger}\n              </div>\n            ) : null}\n          </Trigger>\n          <Content>\n            {children ? (\n              <div className=\"flex w-auto flex-col items-start\">\n                {children}\n              </div>\n            ) : null}\n          </Content>\n        </div>\n      </SubframeCore.Collapsible.Root>\n    );\n  }\n);\n\nexport const Accordion = Object.assign(AccordionRoot, {\n  Chevron,\n  Content,\n  Trigger,\n});\n",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "SubframeApp",
+    "slug": "accordion-1",
+    "registry_url": "https://21st.dev/r/SubframeApp/accordion-1",
+    "title": "Accordion",
+    "description": "Here is Accordion component",
+    "category": "accordion",
+    "category_group": "UI Components",
+    "downloads": 0,
+    "likes": 0
+  }
+}

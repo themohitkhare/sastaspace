@@ -1,0 +1,31 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "accordion",
+  "type": "registry:component",
+  "title": "Accordion",
+  "description": "A accordion component.",
+  "dependencies": [
+    "@ark-ui/react",
+    "lucide-react",
+    "framer-motion"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/ui/accordion.tsx",
+      "content": "\"use client\"\n\nimport { Accordion } from \"@ark-ui/react/accordion\"\nimport { ChevronDownIcon } from \"lucide-react\"\nimport { motion, AnimatePresence } from \"framer-motion\"\n\nexport const Basic = () => {\n  return (\n    <Accordion.Root\n      defaultValue={[\"React\"]}\n      className=\"w-full max-w-md mx-auto bg-white shadow-lg rounded-2xl p-4\"\n    >\n      {[\"React\", \"Solid\", \"Vue\", \"Svelte\"].map((item) => (\n        <Accordion.Item\n          key={item}\n          value={item}\n          className=\"border-b last:border-none border-gray-200\"\n        >\n          <Accordion.ItemTrigger className=\"flex items-center justify-between w-full py-3 px-4 text-lg font-medium text-gray-800 hover:bg-gray-100 rounded-xl transition-all\">\n            <span>What is {item}?</span>\n            <Accordion.ItemIndicator>\n              <ChevronDownIcon className=\"h-5 w-5 transition-transform data-[state=open]:rotate-180\" />\n            </Accordion.ItemIndicator>\n          </Accordion.ItemTrigger>\n\n          <Accordion.ItemContent>\n            <AnimatePresence>\n              <motion.div\n                key={item}\n                initial={{ height: 0, opacity: 0 }}\n                animate={{ height: \"auto\", opacity: 1 }}\n                exit={{ height: 0, opacity: 0 }}\n                transition={{ duration: 0.25 }}\n                className=\"overflow-hidden px-4 pb-3 text-gray-600\"\n              >\n                {item} is a JavaScript library for building user interfaces.\n              </motion.div>\n            </AnimatePresence>\n          </Accordion.ItemContent>\n        </Accordion.Item>\n      ))}\n    </Accordion.Root>\n  )\n}\n",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "shailendrakumar19999",
+    "slug": "accordion",
+    "registry_url": "https://21st.dev/r/shailendrakumar19999/accordion",
+    "title": "Accordion",
+    "description": "This is Basic Accordion",
+    "category": "accordion",
+    "category_group": "UI Components",
+    "downloads": 6,
+    "likes": 0
+  }
+}

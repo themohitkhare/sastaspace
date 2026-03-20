@@ -1,0 +1,31 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "hero-section-5",
+  "type": "registry:component",
+  "title": "Hero Section 5",
+  "description": "A hero-section-5 component.",
+  "dependencies": [
+    "framer-motion"
+  ],
+  "registryDependencies": [
+    "https://21st.dev/r/shadcn/button"
+  ],
+  "files": [
+    {
+      "path": "src/components/ui/hero-section-5.tsx",
+      "content": "// components/ui/animated-roadmap.tsx\n\"use client\";\n\nimport * as React from \"react\";\nimport { motion, useScroll, useTransform } from \"framer-motion\";\nimport { cn } from \"@/lib/utils\"; // Assuming you have a `cn` utility from shadcn\n\n// Define the type for a single milestone\ninterface Milestone {\n  id: number;\n  name: string;\n  status: \"complete\" | \"in-progress\" | \"pending\";\n  position: {\n    top?: string;\n    left?: string;\n    right?: string;\n    bottom?: string;\n  };\n}\n\n// Define the props for the AnimatedRoadmap component\ninterface AnimatedRoadmapProps extends React.HTMLAttributes<HTMLDivElement> {\n  milestones: Milestone[];\n  mapImageSrc: string; // Add a prop for the map background image\n}\n\n// Sub-component for a single milestone marker\nconst MilestoneMarker = ({ milestone }: { milestone: Milestone }) => {\n  const statusClasses = {\n    complete: \"bg-green-500 border-green-700\",\n    \"in-progress\": \"bg-blue-500 border-blue-700 animate-pulse\",\n    pending: \"bg-muted border-border\",\n  };\n\n  return (\n    <motion.div\n      initial={{ opacity: 0, scale: 0.5 }}\n      whileInView={{ opacity: 1, scale: 1 }}\n      transition={{ duration: 0.5, delay: milestone.id * 0.3, ease: \"easeOut\" }}\n      viewport={{ once: true, amount: 0.8 }}\n      className=\"absolute flex items-center gap-4\"\n      style={milestone.position}\n    >\n      <div className=\"relative flex h-8 w-8 items-center justify-center\">\n        <div\n          className={cn(\n            \"absolute h-3 w-3 rounded-full border-2\",\n            statusClasses[milestone.status]\n          )}\n        />\n        <div className=\"absolute h-full w-full rounded-full bg-primary/10\" />\n      </div>\n      <div className=\"rounded-full border bg-card px-4 py-2 text-sm font-medium text-card-foreground shadow-sm\">\n        {milestone.name}\n      </div>\n    </motion.div>\n  );\n};\n\n// Main AnimatedRoadmap component\nconst AnimatedRoadmap = React.forwardRef<HTMLDivElement, AnimatedRoadmapProps>(\n  ({ className, milestones, mapImageSrc, ...props }, ref) => {\n    const targetRef = React.useRef<HTMLDivElement>(null);\n    const { scrollYProgress } = useScroll({\n      target: targetRef,\n      offset: [\"start end\", \"end start\"],\n    });\n\n    // Animate the path drawing based on scroll progress\n    const pathLength = useTransform(scrollYProgress, [0.15, 0.7], [0, 1]);\n\n    return (\n      <div\n        ref={targetRef}\n        className={cn(\"relative w-full max-w-4xl mx-auto py-24\", className)}\n        {...props}\n      >\n        {/* Background map image */}\n        <motion.div\n          initial={{ opacity: 0, y: 50 }}\n          whileInView={{ opacity: 1, y: 0 }}\n          transition={{ duration: 0.8, ease: \"easeOut\" }}\n          viewport={{ once: true, amount: 0.2 }}\n          className=\"absolute inset-0 top-10\"\n        >\n          <img\n            src={mapImageSrc}\n            alt=\"Product roadmap map\"\n            className=\"h-full w-full object-contain\"\n          />\n        </motion.div>\n\n        {/* SVG path for animation */}\n        <div className=\"relative h-[400px]\">\n          <svg\n            width=\"100%\"\n            height=\"100%\"\n            viewBox=\"0 0 800 400\"\n            preserveAspectRatio=\"none\"\n            className=\"absolute top-0 left-0\"\n          >\n            <motion.path\n              d=\"M 50 350 Q 200 50 400 200 T 750 100\"\n              fill=\"none\"\n              stroke=\"hsl(var(--primary))\"\n              strokeWidth=\"3\"\n              strokeDasharray=\"10 5\"\n              strokeLinecap=\"round\"\n              style={{ pathLength }}\n            />\n          </svg>\n\n          {/* Render each milestone */}\n          {milestones.map((milestone) => (\n            <MilestoneMarker key={milestone.id} milestone={milestone} />\n          ))}\n        </div>\n      </div>\n    );\n  }\n);\n\nAnimatedRoadmap.displayName = \"AnimatedRoadmap\";\n\nexport { AnimatedRoadmap };",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "ravikatiyar162",
+    "slug": "hero-section-5",
+    "registry_url": "https://21st.dev/r/ravikatiyar162/hero-section-5",
+    "title": "Hero Section",
+    "description": "Animated Roadmap\nThis component visualizes a series of milestones on a path, with animations that trigger on scroll. It's designed to be highly reusable—you can pass any number of milestones with different statuses and positions.",
+    "category": "hero",
+    "category_group": "Marketing Blocks",
+    "downloads": 67,
+    "likes": 0
+  }
+}

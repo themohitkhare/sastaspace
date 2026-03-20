@@ -1,0 +1,27 @@
+{
+  "name": "message-loading",
+  "type": "registry:ui",
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "/components/ui/message-loading.tsx",
+      "content": "// @hidden\nfunction MessageLoading() {\n  return (\n    <svg\n      width=\"24\"\n      height=\"24\"\n      viewBox=\"0 0 24 24\"\n      xmlns=\"http://www.w3.org/2000/svg\"\n      className=\"text-foreground\"\n    >\n      <circle cx=\"4\" cy=\"12\" r=\"2\" fill=\"currentColor\">\n        <animate\n          id=\"spinner_qFRN\"\n          begin=\"0;spinner_OcgL.end+0.25s\"\n          attributeName=\"cy\"\n          calcMode=\"spline\"\n          dur=\"0.6s\"\n          values=\"12;6;12\"\n          keySplines=\".33,.66,.66,1;.33,0,.66,.33\"\n        />\n      </circle>\n      <circle cx=\"12\" cy=\"12\" r=\"2\" fill=\"currentColor\">\n        <animate\n          begin=\"spinner_qFRN.begin+0.1s\"\n          attributeName=\"cy\"\n          calcMode=\"spline\"\n          dur=\"0.6s\"\n          values=\"12;6;12\"\n          keySplines=\".33,.66,.66,1;.33,0,.66,.33\"\n        />\n      </circle>\n      <circle cx=\"20\" cy=\"12\" r=\"2\" fill=\"currentColor\">\n        <animate\n          id=\"spinner_OcgL\"\n          begin=\"spinner_qFRN.begin+0.2s\"\n          attributeName=\"cy\"\n          calcMode=\"spline\"\n          dur=\"0.6s\"\n          values=\"12;6;12\"\n          keySplines=\".33,.66,.66,1;.33,0,.66,.33\"\n        />\n      </circle>\n    </svg>\n  );\n}\n\nexport { MessageLoading };\n",
+      "type": "registry:ui",
+      "target": ""
+    }
+  ],
+  "tailwind": {
+    "config": {}
+  },
+  "_meta": {
+    "author": "jakobhoeg",
+    "slug": "message-loading",
+    "registry_url": "https://21st.dev/r/jakobhoeg/message-loading",
+    "title": "Message loading",
+    "description": "Message Loading animation",
+    "category": "ai-chat",
+    "category_group": "UI Components",
+    "downloads": 1192,
+    "likes": 10
+  }
+}

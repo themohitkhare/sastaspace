@@ -1,0 +1,33 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "tilted-dock",
+  "type": "registry:component",
+  "title": "Tilted Dock",
+  "description": "A tilted-dock component.",
+  "dependencies": [
+    "framer-motion",
+    "lucide-react"
+  ],
+  "registryDependencies": [
+    "https://21st.dev/r/shadcn/button",
+    "https://21st.dev/r/shadcn/tooltip"
+  ],
+  "files": [
+    {
+      "path": "src/components/ui/tilted-dock.tsx",
+      "content": "\"use client\";\nimport { motion } from \"framer-motion\";\nimport { Home, Search, Bell, User, Settings } from \"lucide-react\";\nimport { useState, useEffect } from \"react\";\n\nconst icons = [\n  { id: 1, icon: <Home size={28} />, label: \"Home\" },\n  { id: 2, icon: <Search size={28} />, label: \"Search\" },\n  { id: 3, icon: <Bell size={28} />, label: \"Alerts\" },\n  { id: 4, icon: <User size={28} />, label: \"Profile\" },\n  { id: 5, icon: <Settings size={28} />, label: \"Settings\" },\n];\n\nexport default function TiltedDock() {\n  const [hovered, setHovered] = useState<number | null>(null);\n  const [mouse, setMouse] = useState({ x: 0, y: 0 });\n\n  useEffect(() => {\n    const handleMouseMove = (e: MouseEvent) => {\n      setMouse({ x: e.clientX / window.innerWidth - 0.5, y: e.clientY / window.innerHeight - 0.5 });\n    };\n    window.addEventListener(\"mousemove\", handleMouseMove);\n    return () => window.removeEventListener(\"mousemove\", handleMouseMove);\n  }, []);\n\n  return (\n    <div className=\"fixed bottom-10 left-1/2 -translate-x-1/2 z-50\">\n      <motion.div\n        className=\"flex gap-10 px-12 py-6 rounded-3xl \n                   backdrop-blur-2xl bg-white/30 dark:bg-black/30 \n                   border border-white/20 dark:border-white/10 \n                   shadow-[0_15px_40px_rgba(0,0,0,0.35)]\"\n        style={{\n          transformStyle: \"preserve-3d\",\n        }}\n        animate={{\n          rotateX: 18, // stage tilt\n          rotateY: mouse.x * 10, // subtle parallax left/right\n        }}\n        transition={{ type: \"spring\", stiffness: 80, damping: 20 }}\n      >\n        {icons.map((item) => (\n          <motion.div\n            key={item.id}\n            className=\"relative flex flex-col items-center justify-center\"\n            onHoverStart={() => setHovered(item.id)}\n            onHoverEnd={() => setHovered(null)}\n            animate={{\n              scale: hovered === item.id ? 1.4 : 1,\n              z: hovered === item.id ? 120 : hovered ? -20 : 0, // depth layers\n              opacity: hovered && hovered !== item.id ? 0.5 : 1,\n            }}\n            transition={{ type: \"spring\", stiffness: 200, damping: 18 }}\n            style={{ transformStyle: \"preserve-3d\" }}\n          >\n            {/* Icon */}\n            <motion.div\n              animate={{\n                rotateX: hovered === item.id ? -10 : 0,\n                rotateY: hovered === item.id ? 10 : 0,\n              }}\n              transition={{ type: \"spring\", stiffness: 150, damping: 15 }}\n              className=\"text-gray-900 dark:text-gray-100\"\n            >\n              {item.icon}\n            </motion.div>\n\n            {/* Label */}\n            <motion.span\n              className=\"absolute -bottom-8 text-xs font-medium \n                         text-gray-800 dark:text-gray-200\"\n              animate={{ opacity: hovered === item.id ? 1 : 0, y: hovered === item.id ? 0 : 5 }}\n              transition={{ duration: 0.3 }}\n            >\n              {item.label}\n            </motion.span>\n          </motion.div>\n        ))}\n      </motion.div>\n    </div>\n  );\n}\n",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "ruixen.ui",
+    "slug": "tilted-dock",
+    "registry_url": "https://21st.dev/r/ruixen.ui/tilted-dock",
+    "title": "Tilted Dock",
+    "description": "This 3D Tilted Dock with Depth Layers is a futuristic UI component that makes a simple dock feel alive and immersive. The dock sits on a slightly tilted glass-like stage, creating the illusion of depth. Each icon responds dynamically: when hovered, it floats closer with a smooth tilt, while inactive icons gently fade into the background. A subtle parallax effect makes the entire dock shift in response to mouse movement, giving it a cinematic and interactive feel. Designed with a morphic glass background, it adapts seamlessly to both dark and light themes, while labels appear elegantly without breaking the layout. This unique combination of tilt, depth, and parallax transforms the dock into a visually striking and engaging centerpiece for modern web interfaces.",
+    "category": "dock",
+    "category_group": "Marketing Blocks",
+    "downloads": 41,
+    "likes": 0
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "animated-tooltip",
+  "type": "registry:component",
+  "title": "Animated Tooltip",
+  "description": "A animated-tooltip component.",
+  "dependencies": [
+    "motion"
+  ],
+  "registryDependencies": [
+    "https://21st.dev/r/shadcn/tooltip",
+    "https://21st.dev/r/shadcn/avatar"
+  ],
+  "files": [
+    {
+      "path": "src/components/ui/animated-tooltip.tsx",
+      "content": "\"use client\";\n\nimport { motion, useTransform, useMotionValue, useSpring } from \"motion/react\";\n\ntype Item = {\n  id: number;\n  name: string;\n  designation: string;\n  image: string;\n};\n\nconst TooltipItem = ({ item }: { item: Item }) => {\n  const x = useMotionValue(0);\n\n  const rotate = useSpring(useTransform(x, [-100, 100], [-45, 45]), {\n    stiffness: 100,\n    damping: 15,\n  });\n\n  const translateX = useSpring(useTransform(x, [-100, 100], [-50, 50]), {\n    stiffness: 100,\n    damping: 15,\n  });\n\n  return (\n    <div className=\"group relative\">\n      <motion.div\n        style={{ translateX, rotate }}\n        className=\"pointer-events-none absolute -top-16 left-1/2 hidden -translate-x-1/2 flex-col items-center rounded-md bg-blue-500 px-4 py-2 text-xs shadow-xl group-hover:flex\"\n      >\n        <p className=\"whitespace-nowrap text-sm font-medium text-white\">\n          {item.name}\n        </p>\n        <p className=\"whitespace-nowrap text-xs text-white/50\">\n          {item.designation}\n        </p>\n      </motion.div>\n\n      <img\n        onMouseMove={(e) =>\n          x.set(e.nativeEvent.offsetX - e.currentTarget.offsetWidth / 2)\n        }\n        src={item.image}\n        alt={item.name}\n        width={32}\n        height={32}\n        className=\"h-8 w-8 rounded-full object-cover object-top transition duration-500 group-hover:z-30 group-hover:scale-105\"\n      />\n    </div>\n  );\n};\n\nconst AnimatedTooltipMotion = () => {\n  const items: Item[] = [\n    {\n      id: 1,\n      name: \"Aarav Mehta\",\n      designation: \"AI Researcher\",\n      image: \"https://images.shadcnspace.com/assets/profiles/user-1.jpg\",\n    },\n    {\n      id: 2,\n      name: \"Sofia Martinez\",\n      designation: \"Cloud Architect\",\n      image: \"https://images.shadcnspace.com/assets/profiles/user-2.jpg\",\n    },\n    {\n      id: 3,\n      name: \"Kenji Tanaka\",\n      designation: \"Cybersecurity Analyst\",\n      image: \"https://images.shadcnspace.com/assets/profiles/user-3.jpg\",\n    },\n    {\n      id: 4,\n      name: \"Amelia Rossi\",\n      designation: \"UX Strategist\",\n      image: \"https://images.shadcnspace.com/assets/profiles/user-4.jpg\",\n    },\n  ];\n\n  return (\n    <div className=\"flex items-center justify-center -space-x-2\">\n      {items.map((item) => (\n        <TooltipItem key={item.id} item={item} />\n      ))}\n    </div>\n  );\n};\n\nexport default AnimatedTooltipMotion;\n",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "shadcnspace",
+    "slug": "animated-tooltip",
+    "registry_url": "https://21st.dev/r/shadcnspace/animated-tooltip",
+    "title": "Animated Tooltip",
+    "description": "Here is animated tooltip component",
+    "category": "avatar",
+    "category_group": "UI Components",
+    "downloads": 3,
+    "likes": 0
+  }
+}

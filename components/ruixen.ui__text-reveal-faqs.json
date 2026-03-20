@@ -1,0 +1,56 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "text-reveal-faqs",
+  "type": "registry:component",
+  "title": "Text Reveal Faqs",
+  "description": "A text-reveal-faqs component.",
+  "dependencies": [
+    "next",
+    "framer-motion"
+  ],
+  "registryDependencies": [
+    "https://21st.dev/r/shadcn/accordion"
+  ],
+  "files": [
+    {
+      "path": "src/components/ui/text-reveal-faqs.tsx",
+      "content": "'use client'\n\nimport { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion'\nimport Link from 'next/link'\nimport { motion } from \"framer-motion\";\n\n\nexport default function FAQs() {\n  const faqItems = [\n    {\n      id: 'item-1',\n      question: 'What is Ruixen UI?',\n      answer: 'Ruixen UI is a modern, fully responsive design system that provides pre-built components, utilities, and layouts to help developers build scalable web applications quickly and efficiently.',\n    },\n    {\n      id: 'item-2',\n      question: 'Which platforms does Ruixen UI support?',\n      answer: 'Ruixen UI is built for web applications and works seamlessly with React, Next.js, and other modern JavaScript frameworks. It also supports dark mode and responsive layouts out of the box.',\n    },\n    {\n      id: 'item-3',\n      question: 'Can I customize Ruixen UI components?',\n      answer: 'Yes! All Ruixen UI components are fully customizable via props, CSS classes, and theme configuration. You can easily adapt colors, spacing, typography, and layout to match your brand.',\n    },\n    {\n      id: 'item-4',\n      question: 'Does Ruixen UI provide integration with third-party tools?',\n      answer: 'Absolutely. Ruixen UI includes ready-to-use integrations and patterns for popular tools and services, making it easier to connect your application with analytics, authentication, and workflow platforms.',\n    },\n    {\n      id: 'item-5',\n      question: 'Is there documentation and support available?',\n      answer: 'Yes, Ruixen UI comes with comprehensive documentation, live examples, and tutorials. Additionally, our community and support channels are available to help you implement components and resolve any issues.',\n    },\n  ];\n\n\n  return (\n    <section className=\"py-16 md:py-24\">\n      <div className=\"mx-auto max-w-5xl px-6\">\n        <div className=\"grid gap-8 md:grid-cols-5 md:gap-12\">\n          <div className=\"md:col-span-2\">\n            <h2 className=\"text-foreground text-4xl font-semibold\">FAQs</h2>\n            <p className=\"text-muted-foreground mt-4 text-balance text-lg\">\n              Everything you need to know about Ruixen UI\n            </p>\n            <p className=\"text-muted-foreground mt-6 hidden md:block\">\n              Can’t find what you’re looking for? Reach out to our{' '}\n              <Link\n                href=\"#\"\n                className=\"text-primary font-medium hover:underline\"\n              >\n                Ruixen UI support team\n              </Link>{' '}\n              for assistance.\n            </p>\n          </div>\n\n          <div className=\"md:col-span-3\">\n            <Accordion\n              type=\"single\"\n              collapsible>\n              {faqItems.map((item) => (\n                <AccordionItem\n                  key={item.id}\n                  value={item.id}\n                  className=\"border-b border-gray-200 dark:border-gray-600\">\n                  <AccordionTrigger className=\"cursor-pointer text-base font-medium hover:no-underline\">{item.question}</AccordionTrigger>\n                  <AccordionContent>\n                    <BlurredStagger text={item.answer} />\n                  </AccordionContent>\n                </AccordionItem>\n              ))}\n            </Accordion>\n          </div>\n\n          <p className=\"text-muted-foreground mt-6 md:hidden\">\n            Can't find what you're looking for? Contact our{' '}\n            <Link\n              href=\"#\"\n              className=\"text-primary font-medium hover:underline\">\n              customer support team\n            </Link>\n          </p>\n        </div>\n      </div>\n    </section>\n  )\n}\n\n \nexport const BlurredStagger = ({\n  text = \"built by ruixen.com\",\n}: {\n  text: string;\n}) => {\n  const headingText = text;\n \n  const container = {\n    hidden: { opacity: 0 },\n    show: {\n      opacity: 1,\n      transition: {\n        staggerChildren: 0.015,\n      },\n    },\n  };\n \n  const letterAnimation = {\n    hidden: {\n      opacity: 0,\n      filter: \"blur(10px)\",\n    },\n    show: {\n      opacity: 1,\n      filter: \"blur(0px)\",\n    },\n  };\n \n  return (\n    <>\n      <div className=\"w-full\">\n        <motion.p\n          variants={container}\n          initial=\"hidden\"\n          animate=\"show\"\n          className=\"text-base leading-relaxed break-words whitespace-normal\"\n        >\n          {headingText.split(\"\").map((char, index) => (\n            <motion.span\n              key={index}\n              variants={letterAnimation}\n              transition={{ duration: 0.3 }}\n              className=\"inline-block\"\n            >\n              {char === \" \" ? \"\\u00A0\" : char}\n            </motion.span>\n          ))}\n        </motion.p>\n      </div>\n    </>\n  );\n};",
+      "type": "registry:component"
+    }
+  ],
+  "cssVars": {
+    "theme": {
+      "--animate-accordion-down": "accordion-down 0.2s ease-out",
+      "--animate-accordion-up": "accordion-up 0.2s ease-out"
+    }
+  },
+  "css": {
+    "@keyframes accordion-down": {
+      "from": {
+        "height": "0"
+      },
+      "to": {
+        "height": "var(--radix-accordion-content-height)"
+      }
+    },
+    "@keyframes accordion-up": {
+      "from": {
+        "height": "var(--radix-accordion-content-height)"
+      },
+      "to": {
+        "height": "0"
+      }
+    }
+  },
+  "_meta": {
+    "author": "ruixen.ui",
+    "slug": "text-reveal-faqs",
+    "registry_url": "https://21st.dev/r/ruixen.ui/text-reveal-faqs",
+    "title": "textRevealFAQs",
+    "description": "The FAQs component is designed to provide clear and organized answers to common questions about Ruixen UI. It features a bold heading, a brief introductory text, and a link to the support team for additional help. The layout is responsive, with extra guidance visible on larger screens, making it easy for users to quickly find relevant information and get assistance when needed.",
+    "category": "accordion",
+    "category_group": "UI Components",
+    "downloads": 8,
+    "likes": 0
+  }
+}

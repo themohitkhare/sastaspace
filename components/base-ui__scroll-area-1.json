@@ -1,0 +1,29 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "scroll-area-1",
+  "type": "registry:component",
+  "title": "Scroll Area 1",
+  "description": "A scroll-area-1 component.",
+  "dependencies": [
+    "@base-ui-components/react"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/ui/scroll-area-1.tsx",
+      "content": "import * as React from 'react';\nimport { ScrollArea } from '@base-ui-components/react/scroll-area';\n\nexport default function ExampleScrollArea() {\n  return (\n    <ScrollArea.Root className=\"h-[8.5rem] w-96 max-w-[calc(100vw-8rem)]\">\n      <ScrollArea.Viewport className=\"h-full overscroll-contain rounded-md outline outline-1 -outline-offset-1 outline-gray-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-800\">\n        <div className=\"flex flex-col gap-4 py-3 pr-6 pl-4 text-sm leading-[1.375rem] text-gray-900\">\n          <p>\n            Vernacular architecture is building done outside any academic tradition,\n            and without professional guidance. It is not a particular architectural\n            movement or style, but rather a broad category, encompassing a wide range\n            and variety of building types, with differing methods of construction,\n            from around the world, both historical and extant and classical and\n            modern. Vernacular architecture constitutes 95% of the world's built\n            environment, as estimated in 1995 by Amos Rapoport, as measured against\n            the small percentage of new buildings every year designed by architects\n            and built by engineers.\n          </p>\n          <p>\n            This type of architecture usually serves immediate, local needs, is\n            constrained by the materials available in its particular region and\n            reflects local traditions and cultural practices. The study of vernacular\n            architecture does not examine formally schooled architects, but instead\n            that of the design skills and tradition of local builders, who were\n            rarely given any attribution for the work. More recently, vernacular\n            architecture has been examined by designers and the building industry in\n            an effort to be more energy conscious with contemporary design and\n            construction—part of a broader interest in sustainable design.\n          </p>\n        </div>\n      </ScrollArea.Viewport>\n      <ScrollArea.Scrollbar className=\"m-2 flex w-1 justify-center rounded bg-gray-200 opacity-0 transition-opacity delay-300 data-[hovering]:opacity-100 data-[hovering]:delay-0 data-[hovering]:duration-75 data-[scrolling]:opacity-100 data-[scrolling]:delay-0 data-[scrolling]:duration-75\">\n        <ScrollArea.Thumb className=\"w-full rounded bg-gray-500\" />\n      </ScrollArea.Scrollbar>\n    </ScrollArea.Root>\n  );\n}\n",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "base-ui",
+    "slug": "scroll-area-1",
+    "registry_url": "https://21st.dev/r/base-ui/scroll-area-1",
+    "title": "Scroll Area",
+    "description": "Here is Scroll Area component",
+    "category": "scroll-area",
+    "category_group": "Marketing Blocks",
+    "downloads": 2,
+    "likes": 0
+  }
+}

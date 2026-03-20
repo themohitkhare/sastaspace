@@ -1,0 +1,30 @@
+{
+  "name": "sticky-section-tabs",
+  "type": "registry:ui",
+  "dependencies": [
+    "clsx"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "/components/ui/sticky-section-tabs.tsx",
+      "content": "\"use client\" \n\nimport React, { Children, isValidElement } from 'react';\nimport clsx from 'clsx';\n\ninterface StickyTabItemProps {\n  title: string;\n  id: string | number;\n  children: React.ReactNode;\n}\n\nconst StickyTabItem: React.FC<StickyTabItemProps> = () => {\n  return null;\n};\n\ninterface StickyTabsProps {\n  children: React.ReactNode;\n  mainNavHeight?: string;\n  rootClassName?: string;\n  navSpacerClassName?: string;\n  sectionClassName?: string;\n  stickyHeaderContainerClassName?: string;\n  headerContentWrapperClassName?: string;\n  headerContentLayoutClassName?: string;\n  titleClassName?: string;\n  contentLayoutClassName?: string;\n}\n\nconst StickyTabs: React.FC<StickyTabsProps> & { Item: React.FC<StickyTabItemProps> } = ({\n  children,\n  mainNavHeight = '6em',\n  rootClassName = \"bg-black text-white\",\n  navSpacerClassName = \"border-b border-white/15 bg-black\",\n  sectionClassName = \"bg-[#131313]\",\n  stickyHeaderContainerClassName = \"shadow-lg\",\n  headerContentWrapperClassName = \"border-b border-t border-white/15 bg-black\",\n  headerContentLayoutClassName = \"mx-auto max-w-7xl px-4 py-5 sm:px-6 lg:px-8\",\n  titleClassName = \"my-0 text-2xl font-medium leading-none md:text-3xl lg:text-4xl\",\n  contentLayoutClassName = \"mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8\",\n}) => {\n  const stickyTopValue = `calc(${mainNavHeight} - 1px)`;\n  const navHeightStyle = { height: mainNavHeight };\n  const stickyHeaderStyle = { top: stickyTopValue };\n\n  return (\n    <div className={clsx(\"overflow-clip\", rootClassName)}>\n\n      <div\n        className={clsx(\n          \"sticky left-0 top-0 z-20 w-full\",\n          navSpacerClassName\n        )}\n        style={navHeightStyle}\n        aria-hidden=\"true\"\n      />\n\n      {Children.map(children, (child) => {\n        if (!isValidElement(child) || child.type !== StickyTabItem) {\n          if (process.env.NODE_ENV === 'development' && child != null) {\n            console.warn('StickyTabs component expects <StickyTabs.Item> components as direct children.');\n          }\n          return null;\n        }\n\n        const itemElement = child as React.ReactElement<StickyTabItemProps>;\n        const { title, id, children: itemContent } = itemElement.props;\n\n        return (\n          <section\n            key={id}\n            className={clsx(\n              \"relative overflow-clip\",\n              sectionClassName\n            )}\n          >\n            <div\n              className={clsx(\n                \"sticky z-10 -mt-px flex flex-col\",\n                stickyHeaderContainerClassName\n              )}\n              style={stickyHeaderStyle}\n            >\n              <div className={clsx(headerContentWrapperClassName)}>\n                <div className={clsx(headerContentLayoutClassName)}>\n                  <div className=\"flex items-center justify-between\">\n                    <h2 className={clsx(titleClassName)}>\n                      {title}\n                    </h2>\n                  </div>\n                </div>\n              </div>\n            </div>\n\n            <div className={clsx(contentLayoutClassName)}>\n              {itemContent}\n            </div>\n\n          </section>\n        );\n      })}\n    </div>\n  );\n};\n\nStickyTabs.Item = StickyTabItem;\n\nexport default StickyTabs;\n",
+      "type": "registry:ui",
+      "target": ""
+    }
+  ],
+  "tailwind": {
+    "config": {}
+  },
+  "_meta": {
+    "author": "aghasisahakyan1",
+    "slug": "sticky-section-tabs",
+    "registry_url": "https://21st.dev/r/aghasisahakyan1/sticky-section-tabs",
+    "title": "Sticky Section Tabs",
+    "description": "A container component that displays child sections with sticky headers. As the user scrolls, the header for the current section sticks below a defined navigation height, providing clear context and navigation for long content pages.",
+    "category": "scroll-area",
+    "category_group": "Marketing Blocks",
+    "downloads": 235,
+    "likes": 0
+  }
+}

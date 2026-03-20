@@ -1,0 +1,30 @@
+{
+  "name": "testimonial-cards",
+  "type": "registry:ui",
+  "dependencies": [
+    "framer-motion"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "/components/ui/testimonial-cards.tsx",
+      "content": "\"use client\";\n\nimport * as React from 'react';\nimport { motion } from 'framer-motion';\n\nexport function TestimonialCard ({ handleShuffle, testimonial, position, id, author }) {\n  const dragRef = React.useRef(0);\n  const isFront = position === \"front\";\n\n  return (\n    <motion.div\n      style={{\n        zIndex: position === \"front\" ? \"2\" : position === \"middle\" ? \"1\" : \"0\"\n      }}\n      animate={{\n        rotate: position === \"front\" ? \"-6deg\" : position === \"middle\" ? \"0deg\" : \"6deg\",\n        x: position === \"front\" ? \"0%\" : position === \"middle\" ? \"33%\" : \"66%\"\n      }}\n      drag={true}\n      dragElastic={0.35}\n      dragListener={isFront}\n      dragConstraints={{\n        top: 0,\n        left: 0,\n        right: 0,\n        bottom: 0\n      }}\n      onDragStart={(e) => {\n        dragRef.current = e.clientX;\n      }}\n      onDragEnd={(e) => {\n        if (dragRef.current - e.clientX > 150) {\n          handleShuffle();\n        }\n        dragRef.current = 0;\n      }}\n      transition={{ duration: 0.35 }}\n      className={`absolute left-0 top-0 grid h-[450px] w-[350px] select-none place-content-center space-y-6 rounded-2xl border-2 border-slate-700 bg-slate-800/20 p-6 shadow-xl backdrop-blur-md ${\n        isFront ? \"cursor-grab active:cursor-grabbing\" : \"\"\n      }`}\n    >\n      <img\n        src={`https://i.pravatar.cc/128?img=${id}`}\n        alt={`Avatar of ${author}`}\n        className=\"pointer-events-none mx-auto h-32 w-32 rounded-full border-2 border-slate-700 bg-slate-200 object-cover\"\n      />\n      <span className=\"text-center text-lg italic text-slate-400\">\"{testimonial}\"</span>\n      <span className=\"text-center text-sm font-medium text-indigo-400\">{author}</span>\n    </motion.div>\n  );\n};",
+      "type": "registry:ui",
+      "target": ""
+    }
+  ],
+  "tailwind": {
+    "config": {}
+  },
+  "_meta": {
+    "author": "vaib215",
+    "slug": "testimonial-cards",
+    "registry_url": "https://21st.dev/r/vaib215/testimonial-cards",
+    "title": "Testimonial Cards",
+    "description": "Draggable Testimonial Cards with Glassmorphism",
+    "category": "testimonials",
+    "category_group": "Marketing Blocks",
+    "downloads": 789,
+    "likes": 10
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "light-theme-tailwind-css-background-snippet",
+  "type": "registry:component",
+  "title": "Light Theme Tailwind Css Background Snippet",
+  "description": "A light-theme-tailwind-css-background-snippet component.",
+  "dependencies": [],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/ui/light-theme-tailwind-css-background-snippet.tsx",
+      "content": "import { cn } from \"@/lib/utils\";\n\nexport const RadialBackground = () => {\n  return (\n    <div className={cn(\"absolute inset-0 -z-10 size-full bg-white [background:radial-gradient(125%_125%_at_50%_10%,#fff_40%,#63e_100%)]\")} />\n  );\n};\n",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "bg.ibelick",
+    "slug": "light-theme-tailwind-css-background-snippet",
+    "registry_url": "https://21st.dev/r/bg.ibelick/light-theme-tailwind-css-background-snippet",
+    "title": "Light theme Tailwind CSS Background Snippet",
+    "description": "Light theme Tailwind CSS Background Snippet",
+    "category": "hero",
+    "category_group": "Marketing Blocks",
+    "downloads": 13,
+    "likes": 0
+  }
+}

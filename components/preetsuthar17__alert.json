@@ -1,0 +1,73 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "alert",
+  "type": "registry:component",
+  "title": "Alert",
+  "description": "A alert component.",
+  "dependencies": [
+    "class-variance-authority",
+    "lucide-react",
+    "motion"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/ui/alert.tsx",
+      "content": "\"use client\";\n\nimport * as React from \"react\";\nimport { cva, type VariantProps } from \"class-variance-authority\";\nimport { cn } from \"@/lib/utils\";\nimport { type LucideIcon, X } from \"lucide-react\";\nimport { motion, AnimatePresence } from \"motion/react\";\n\nconst alertVariants = cva(\n  \"relative w-full rounded-lg border p-4 text-sm transition-colors shadow-sm/2\",\n  {\n    variants: {\n      variant: {\n        default:\n          \"border-[hsl(var(--hu-border))] bg-[hsl(var(--hu-card))] text-[hsl(var(--hu-card-foreground))]\",\n        destructive:\n          \"border-[hsl(var(--hu-destructive))] bg-[hsl(var(--hu-destructive))]/10 text-[hsl(var(--hu-destructive))] [&>svg]:text-[hsl(var(--hu-destructive))]\",\n        warning:\n          \"border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-700 dark:bg-amber-950/30 dark:text-amber-200 [&>svg]:text-amber-600 dark:[&>svg]:text-amber-400\",\n        success:\n          \"border-green-200 bg-green-50 text-green-800 dark:border-green-700 dark:bg-green-950/30 dark:text-green-200 [&>svg]:text-green-600 dark:[&>svg]:text-green-400\",\n        info: \"border-blue-200 bg-blue-50 text-blue-800 dark:border-blue-700 dark:bg-blue-950/30 dark:text-blue-200 [&>svg]:text-blue-600 dark:[&>svg]:text-blue-400\",\n      },\n    },\n    defaultVariants: {\n      variant: \"default\",\n    },\n  }\n);\n\nexport interface AlertProps\n  extends React.HTMLAttributes<HTMLDivElement>,\n    VariantProps<typeof alertVariants> {\n  icon?: LucideIcon;\n  title?: string;\n  dismissible?: boolean;\n  onDismiss?: () => void;\n}\n\nconst Alert = React.forwardRef<HTMLDivElement, AlertProps>(\n  (\n    {\n      className,\n      variant,\n      icon: Icon,\n      title,\n      dismissible,\n      onDismiss,\n      children,\n      ...props\n    },\n    ref\n  ) => {\n    const [isVisible, setIsVisible] = React.useState(true);\n\n    const handleDismiss = () => {\n      setIsVisible(false);\n      setTimeout(() => {\n        onDismiss?.();\n      }, 150); // Match the exit animation duration\n    };\n\n    // Extract motion-conflicting props\n    const {\n      onDrag,\n      onDragStart,\n      onDragEnd,\n      onAnimationStart,\n      onAnimationEnd,\n      onAnimationIteration,\n      onTransitionEnd,\n      ...motionProps\n    } = props;\n\n    return (\n      <AnimatePresence>\n        {isVisible && (\n          <motion.div\n            ref={ref}\n            className={cn(alertVariants({ variant }), className)}\n            initial={{ opacity: 0, y: -10, scale: 0.95 }}\n            animate={{ opacity: 1, y: 0, scale: 1 }}\n            exit={{ opacity: 0, y: -10, scale: 0.95 }}\n            transition={{ duration: 0.15, ease: \"easeOut\" }}\n            role=\"alert\"\n            {...motionProps}\n          >\n            <div className=\"flex\">\n              {Icon && (\n                <div className=\"flex-shrink-0\">\n                  <Icon className=\"h-4 w-4 mt-0.5\" />\n                </div>\n              )}\n              <div className={cn(\"flex-1\", Icon && \"ml-3\")}>\n                {title && <h3 className=\"text-sm font-medium mb-1\">{title}</h3>}\n                <div\n                  className={cn(\"text-sm\", title && \"text-muted-foreground\")}\n                >\n                  {children}\n                </div>\n              </div>\n              {dismissible && (\n                <div className=\"flex-shrink-0 ml-3\">\n                  <button\n                    type=\"button\"\n                    className=\"inline-flex rounded-md p-1.5 transition-colors hover:bg-black/5 dark:hover:bg-white/5 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[hsl(var(--hu-ring))]\"\n                    onClick={handleDismiss}\n                    aria-label=\"Dismiss alert\"\n                  >\n                    <X className=\"h-4 w-4\" />\n                  </button>\n                </div>\n              )}\n            </div>\n          </motion.div>\n        )}\n      </AnimatePresence>\n    );\n  }\n);\n\nAlert.displayName = \"Alert\";\n\nexport { Alert, alertVariants };",
+      "type": "registry:component"
+    }
+  ],
+  "cssVars": {
+    "light": {
+      "--radius": "0.75rem",
+      "--card-radius": "1rem",
+      "--hu-background": "0, 0%, 100%",
+      "--hu-foreground": "0, 0%, 14%",
+      "--hu-card": "0, 0%, 99%",
+      "--hu-card-foreground": "0, 0%, 14%",
+      "--hu-primary": "0, 0%, 20%",
+      "--hu-primary-foreground": "0, 0%, 98%",
+      "--hu-secondary": "0, 0%, 97%",
+      "--hu-secondary-foreground": "0, 0%, 20%",
+      "--hu-muted": "0, 0%, 97%",
+      "--hu-muted-foreground": "0, 0%, 56%",
+      "--hu-accent": "0, 0%, 96%",
+      "--hu-accent-foreground": "0, 0%, 20%",
+      "--hu-destructive": "9, 96%, 47%",
+      "--hu-destructive-foreground": "0, 0%, 98%",
+      "--hu-border": "0, 0%, 92%",
+      "--hu-input": "0, 0%, 100%",
+      "--hu-ring": "0, 0%, 71%"
+    },
+    "dark": {
+      "--hu-background": "0, 0%, 7%",
+      "--hu-foreground": "0, 0%, 100%",
+      "--hu-card": "0, 0%, 9%",
+      "--hu-card-foreground": "0, 0%, 100%",
+      "--hu-primary": "0, 0%, 100%",
+      "--hu-primary-foreground": "0, 0%, 20%",
+      "--hu-secondary": "0, 0%, 15%",
+      "--hu-secondary-foreground": "0, 0%, 100%",
+      "--hu-muted": "0, 0%, 15%",
+      "--hu-muted-foreground": "0, 0%, 71%",
+      "--hu-accent": "0, 0%, 15%",
+      "--hu-accent-foreground": "0, 0%, 100%",
+      "--hu-destructive": "0, 84%, 50%",
+      "--hu-destructive-foreground": "0, 0%, 98%",
+      "--hu-border": "0, 0%, 100%, 10%",
+      "--hu-input": "0, 0%, 100%, 5%",
+      "--hu-ring": "0, 0%, 56%"
+    }
+  },
+  "_meta": {
+    "author": "preetsuthar17",
+    "slug": "alert",
+    "registry_url": "https://21st.dev/r/preetsuthar17/alert",
+    "title": "Alert",
+    "description": "A versatile alert component for displaying important messages, notifications, and status updates.",
+    "category": "alert",
+    "category_group": "UI Components",
+    "downloads": 31,
+    "likes": 0
+  }
+}

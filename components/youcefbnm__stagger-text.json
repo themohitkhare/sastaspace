@@ -1,0 +1,34 @@
+{
+  "name": "stagger-text",
+  "type": "registry:ui",
+  "dependencies": [
+    "motion"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "/components/ui/stagger-text.tsx",
+      "content": "\"use client\"\n\nimport * as React from \"react\"\nimport { HTMLMotionProps, Transition, motion, useInView } from \"motion/react\"\nimport { cn } from \"@/lib/utils\"\n\nconst easeTransitions = {\n  default: [0.25, 0.1, 0.25, 1],\n  transform: [0.42, 0, 0.58, 1], \n  opacity: [0.25, 0.1, 0.25, 1], \n  clipPath: [0.6, 0.04, 0.98, 0.335], \n}\nexport type TransformDirectionType = \"top\" | \"bottom\" | \"left\" | \"right\" | \"z\"\nexport const transformVariants = (direction?: TransformDirectionType) => ({\n  hidden: {\n    x: direction === \"left\" ? \"-100%\" : direction === \"right\" ? \"100%\" : 0,\n    y: direction === \"top\" ? \"-100%\" : direction === \"bottom\" ? \"100%\" : 0,\n    scale: direction === \"z\" ? 0 : 1,\n    opacity: 0,\n  },\n  visible: {\n    x: 0,\n    y: 0,\n    scale: 1,\n    opacity: 1,\n  },\n})\n\ninterface WordProps {\n  word: string\n  transition?: Transition\n  direction?: TransformDirectionType\n}\nconst transitionConfig = { ease: easeTransitions[\"default\"], duration: 0.5 }\nfunction Word({\n  word,\n  transition = transitionConfig,\n  direction = \"bottom\",\n}: WordProps) {\n  const characters = word.split(\"\")\n  return (\n    <span className=\"inline-block text-nowrap align-top\">\n      {characters.map((char, index) => (\n        <span key={index} className=\"inline-block\">\n          <motion.span\n            className=\"inline-block\"\n            variants={transformVariants(direction)}\n            transition={transition}\n          >\n            {char}\n          </motion.span>\n        </span>\n      ))}\n    </span>\n  )\n}\n\ninterface staggerTextProps extends HTMLMotionProps<\"div\"> {\n  text: string\n  stagger?: number\n  transition?: Transition\n  direction?: TransformDirectionType\n  className?: string\n}\nfunction StaggerText({\n  text,\n  stagger = 0.05,\n  transition,\n  direction,\n  className,\n  ...props\n}: staggerTextProps) {\n  const words = text.split(\" \")\n  const ref = React.useRef<HTMLDivElement>(null)\n  const isInView = useInView(ref, {\n    once: true,\n    amount: 0.3,\n  })\n\n  return (\n    <motion.div\n      ref={ref}\n      transition={{ staggerChildren: stagger }}\n      initial=\"hidden\"\n      animate={isInView ? \"visible\" : \"hidden\"}\n      className={cn(\"relative\", className)}\n      {...props}\n    >\n      {words.map((word, index) => (\n        <React.Fragment key={index}>\n          <Word transition={transition} direction={direction} word={word} />\n          {index < words.length - 1 && \" \"}\n        </React.Fragment>\n      ))}\n    </motion.div>\n  )\n}\n\nexport { StaggerText }\n",
+      "type": "registry:ui",
+      "target": ""
+    }
+  ],
+  "cssVars": {
+    "light": {},
+    "dark": {}
+  },
+  "tailwind": {
+    "config": {}
+  },
+  "_meta": {
+    "author": "youcefbnm",
+    "slug": "stagger-text",
+    "registry_url": "https://21st.dev/r/youcefbnm/stagger-text",
+    "title": "stagger text",
+    "description": "Animated component built with motion and tailwind.css to animate a series of letters with a staggered effect. \n\n### Props\n- `words`: An array of strings representing the words to be animated.\n- `stagger`: Optional, A number representing the delay between the animations of each letter, if not provided it will be 0.05s between each letter.\n- `transition`: Optional, object defining the transition properties for the animation.\n- `direction`:  Optional, A string indicating the direction of the animation, if not provided it will animate from bottom.\n- `className`: An optional string to apply additional tailwind classes.\n- `props`: any prop associated with \"<div>\" element.\n\n### Behavior\n- When the component is in view, it triggers the animation to change from the `hidden` state to the `visible` state in an orchestration pattern.\n### Example Usage\n```tsx\n<StaggerText\n  words={['Hello', 'world']}\n  stagger={0.1}\n  transition={{ duration: 0.5 }}\n  direction=\"\"top\"\n  className=\"my-custom-class\"\n/>",
+    "category": "text",
+    "category_group": "Marketing Blocks",
+    "downloads": 31,
+    "likes": 0
+  }
+}

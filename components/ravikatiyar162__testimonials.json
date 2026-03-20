@@ -1,0 +1,30 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "testimonials",
+  "type": "registry:component",
+  "title": "Testimonials",
+  "description": "A testimonials component.",
+  "dependencies": [
+    "framer-motion",
+    "lucide-react"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/ui/testimonials.tsx",
+      "content": "import { motion } from \"framer-motion\";\nimport { Quote } from \"lucide-react\";\n\n// TypeScript interface for a single testimonial object\ninterface Testimonial {\n  id: number;\n  quote: string;\n  name: string;\n  role: string;\n  imageSrc: string;\n}\n\n// TypeScript interface for the component's props\ninterface TestimonialSectionProps {\n  title: string;\n  subtitle: string;\n  testimonials: Testimonial[];\n}\n\n/**\n * A responsive section component to display customer testimonials.\n * It features a title, subtitle, and a grid of animated testimonial cards.\n */\nexport const TestimonialSection = ({\n  title,\n  subtitle,\n  testimonials,\n}: TestimonialSectionProps) => {\n  // Animation variants for the container to orchestrate staggered children animations\n  const containerVariants = {\n    hidden: {},\n    visible: {\n      transition: {\n        staggerChildren: 0.2,\n      },\n    },\n  };\n\n  // Animation variants for each testimonial card\n  const itemVariants = {\n    hidden: { opacity: 0, y: 20 },\n    visible: {\n      opacity: 1,\n      y: 0,\n      transition: {\n        duration: 0.5,\n        ease: \"easeOut\",\n      },\n    },\n  };\n\n  return (\n    <section className=\"w-full bg-background py-16 sm:py-24\">\n      <div className=\"container mx-auto max-w-6xl px-4 text-center\">\n        {/* Section Header */}\n        <h2 className=\"text-3xl font-bold tracking-tight text-foreground sm:text-4xl\">\n          {title}\n        </h2>\n        <p className=\"mx-auto mt-4 max-w-2xl text-lg text-muted-foreground\">\n          {subtitle}\n        </p>\n\n        {/* Testimonials Grid */}\n        <motion.div\n          className=\"mt-12 grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3\"\n          variants={containerVariants}\n          initial=\"hidden\"\n          whileInView=\"visible\"\n          viewport={{ once: true, amount: 0.2 }}\n        >\n          {testimonials.map((testimonial) => (\n            <motion.div\n              key={testimonial.id}\n              className=\"relative overflow-hidden rounded-lg bg-card shadow-sm\"\n              variants={itemVariants}\n            >\n              <div className=\"relative\">\n                <img\n                  src={testimonial.imageSrc}\n                  alt={testimonial.name}\n                  className=\"h-120 w-full object-cover\"\n                />\n                {/* Gradient overlay for text readability */}\n                <div className=\"absolute inset-0 bg-gradient-to-t from-black/70 via-black/40 to-transparent\" />\n              </div>\n\n              {/* Content within the card */}\n              <div className=\"absolute bottom-0 left-0 right-0 p-6 text-left text-white\">\n                <Quote\n                  className=\"mb-4 h-8 w-8 text-white/40\"\n                  aria-hidden=\"true\"\n                />\n                <blockquote className=\"text-base font-medium leading-relaxed\">\n                  {testimonial.quote}\n                </blockquote>\n                <figcaption className=\"mt-4\">\n                  <p className=\"font-semibold text-card-white/100\">\n                    &mdash; {testimonial.name},\n                    <span className=\"ml-1 text-white/60\">\n                      {testimonial.role}\n                    </span>\n                  </p>\n                </figcaption>\n              </div>\n            </motion.div>\n          ))}\n        </motion.div>\n      </div>\n    </section>\n  );\n};",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "ravikatiyar162",
+    "slug": "testimonials",
+    "registry_url": "https://21st.dev/r/ravikatiyar162/testimonials",
+    "title": "Testimonials",
+    "description": "Testimonials Section\nA responsive and animated component to showcase customer testimonials in a clean, grid-based layout.",
+    "category": "testimonials",
+    "category_group": "Marketing Blocks",
+    "downloads": 110,
+    "likes": 0
+  }
+}

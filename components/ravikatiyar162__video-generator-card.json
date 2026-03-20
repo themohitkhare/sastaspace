@@ -1,0 +1,46 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "video-generator-card",
+  "type": "registry:component",
+  "title": "Video Generator Card",
+  "description": "A video-generator-card component.",
+  "dependencies": [
+    "class-variance-authority",
+    "lucide-react"
+  ],
+  "registryDependencies": [
+    "https://21st.dev/r/shadcn/card",
+    "https://21st.dev/r/shadcn/button",
+    "https://21st.dev/r/shadcn/textarea"
+  ],
+  "files": [
+    {
+      "path": "src/components/ui/video-generator-card.tsx",
+      "content": "import * as React from \"react\"\nimport { cva, type VariantProps } from \"class-variance-authority\"\n\nimport { cn } from \"@/lib/utils\"\n\nimport { Card, CardContent, CardHeader } from \"@/components/ui/card\"\nimport { Button } from \"@/components/ui/button\"\nimport { Textarea } from \"@/components/ui/textarea\"\nimport { X, Plus, Zap, Image as ImageIcon, Mic, ArrowUp, Loader2 } from \"lucide-react\"\n\n// Prop types for the component\ninterface StoryboardImage {\n  src: string;\n  alt: string;\n}\n\ninterface VideoGeneratorCardProps {\n  storyboardImages: StoryboardImage[];\n  initialPrompt?: string;\n  onClose?: () => void;\n  onGenerate?: (prompt: string) => void;\n  isLoading?: boolean;\n  className?: string;\n}\n\n/**\n * A component that provides a user interface for generating video content\n * from a storyboard and a text prompt, inspired by modern AI tools.\n */\nconst VideoGeneratorCard = React.forwardRef<HTMLDivElement, VideoGeneratorCardProps>(\n  ({ storyboardImages, initialPrompt = \"\", onClose, onGenerate, isLoading = false, className }, ref) => {\n    // State to manage the prompt text\n    const [prompt, setPrompt] = React.useState(initialPrompt);\n\n    const handleGenerateClick = () => {\n      if (onGenerate) {\n        onGenerate(prompt);\n      }\n    };\n\n    return (\n      <Card ref={ref} className={cn(\"w-full max-w-md mx-auto bg-card/80 backdrop-blur-sm border-border/40 overflow-hidden shadow-2xl animate-fade-in\", className)}>\n        {/* Header with Close button and Drafts label */}\n        <CardHeader className=\"flex flex-row items-center justify-between p-3 border-b border-border/40\">\n          <Button variant=\"ghost\" size=\"icon\" className=\"h-8 w-8\" onClick={onClose} aria-label=\"Close\">\n            <X className=\"h-4 w-4\" />\n          </Button>\n          <span className=\"text-sm font-medium text-muted-foreground\">Drafts</span>\n        </CardHeader>\n\n        <CardContent className=\"p-4 space-y-4\">\n          {/* Storyboard Image Thumbnails */}\n          <div className=\"flex items-center gap-2\">\n            {storyboardImages.map((image, index) => (\n              <div key={index} className=\"relative w-20 h-20 rounded-lg overflow-hidden transition-transform duration-300 hover:scale-105 cursor-pointer\">\n                <img src={image.src} alt={image.alt} className=\"w-full h-full object-cover\" />\n              </div>\n            ))}\n          </div>\n\n          {/* Prompt Input Area */}\n          <Textarea\n            value={prompt}\n            onChange={(e) => setPrompt(e.target.value)}\n            placeholder=\"Use the storyboard to create a video...\"\n            className=\"bg-background/50 border-border/40 min-h-[80px] resize-none focus-visible:ring-primary/50\"\n          />\n\n          {/* Bottom Toolbar */}\n          <div className=\"flex items-center justify-between gap-2\">\n            <div className=\"flex items-center gap-1\">\n              <Button variant=\"ghost\" size=\"icon\" className=\"h-9 w-9\" aria-label=\"Add content\">\n                <Plus className=\"h-4 w-4\" />\n              </Button>\n              <Button variant=\"ghost\" size=\"icon\" className=\"h-9 w-9\" aria-label=\"Quick edit\">\n                <Zap className=\"h-4 w-4\" />\n              </Button>\n              {/* Media Type Toggle */}\n              <div className=\"flex items-center gap-1 bg-muted p-1 rounded-md\">\n                <Button size=\"sm\" variant=\"ghost\" className=\"h-7 px-2 text-muted-foreground\">\n                  <ImageIcon className=\"h-4 w-4 mr-1.5\" />\n                  Image\n                </Button>\n                <Button size=\"sm\" variant=\"secondary\" className=\"h-7 px-2 shadow-sm\">\n                  <svg viewBox=\"0 0 24 24\" fill=\"currentColor\" className=\"h-4 w-4 mr-1.5\"><path d=\"M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z\"></path></svg>\n                  Video\n                </Button>\n              </div>\n            </div>\n            \n            <div className=\"flex items-center gap-1\">\n              <Button variant=\"ghost\" size=\"icon\" className=\"h-9 w-9\" aria-label=\"Use microphone\">\n                <Mic className=\"h-4 w-4\" />\n              </Button>\n              <Button size=\"icon\" className=\"h-9 w-9 bg-primary hover:bg-primary/90\" onClick={handleGenerateClick} disabled={isLoading} aria-label=\"Generate video\">\n                {isLoading ? <Loader2 className=\"h-4 w-4 animate-spin\" /> : <ArrowUp className=\"h-4 w-4\" />}\n              </Button>\n            </div>\n          </div>\n        </CardContent>\n      </Card>\n    );\n  }\n);\nVideoGeneratorCard.displayName = \"VideoGeneratorCard\";\n\nexport { VideoGeneratorCard };",
+      "type": "registry:component"
+    }
+  ],
+  "css": {
+    "@keyframes fadeIn": {
+      "from": {
+        "opacity": "0",
+        "transform": "translateY(10px) scale(0.98)"
+      },
+      "to": {
+        "opacity": "1",
+        "transform": "translateY(0) scale(1)"
+      }
+    }
+  },
+  "_meta": {
+    "author": "ravikatiyar162",
+    "slug": "video-generator-card",
+    "registry_url": "https://21st.dev/r/ravikatiyar162/video-generator-card",
+    "title": "Video Generator Card",
+    "description": "This file contains the reusable VideoGeneratorCard component. It's built with shadcn/ui primitives and is fully typed with TypeScript. Props like storyboardImages, initialPrompt, onGenerate, and isLoading make it flexible for various use cases.",
+    "category": "video",
+    "category_group": "Marketing Blocks",
+    "downloads": 0,
+    "likes": 0
+  }
+}

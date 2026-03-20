@@ -1,0 +1,74 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "clean-testimonial",
+  "type": "registry:component",
+  "title": "Clean Testimonial",
+  "description": "A clean-testimonial component.",
+  "dependencies": [
+    "framer-motion"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/ui/clean-testimonial.tsx",
+      "content": "\"use client\"\n\nimport type React from \"react\"\n\nimport { useState, useCallback, useRef, useEffect } from \"react\"\nimport { motion, useMotionValue, useSpring, AnimatePresence } from \"framer-motion\"\n\nconst testimonials = [\n  {\n    quote: \"The attention to detail is unmatched. Every interaction feels intentional.\",\n    author: \"Sarah Chen\",\n    role: \"Design Director\",\n    company: \"Linear\",\n    avatar: \"https://hebbkx1anhila5yf.public.blob.vercel-storage.com/attachments/gen-images/public/professional-woman-minimal-portrait-JIXD2g3xUKSkFHnS0FEQZV7XFVRh96.png\",\n  },\n  {\n    quote: \"Finally, someone who understands that simplicity is the ultimate sophistication.\",\n    author: \"Marcus Webb\",\n    role: \"Creative Lead\",\n    company: \"Vercel\",\n    avatar: \"https://hebbkx1anhila5yf.public.blob.vercel-storage.com/attachments/gen-images/public/professional-woman-asian-portrait-minimal-3JNilSFq6Lws8Gujkq8ZsV4v5owg2j.jpg\",\n  },\n  {\n    quote: \"This work redefined our entire approach to digital experiences.\",\n    author: \"Elena Frost\",\n    role: \"Head of Product\",\n    company: \"Stripe\",\n    avatar: \"https://hebbkx1anhila5yf.public.blob.vercel-storage.com/attachments/gen-images/public/professional-man-minimal-portrait-iJTSwKlJgwle9ZhX3NdX2gDFF6hamm.png\",\n  },\n]\n\nfunction usePreloadImages(images: string[]) {\n  useEffect(() => {\n    images.forEach((src) => {\n      const img = new Image()\n      img.src = src\n    })\n  }, [images])\n}\n\nfunction SplitText({ text }: { text: string }) {\n  const words = text.split(\" \")\n\n  return (\n    <span className=\"inline\">\n      {words.map((word, i) => (\n        <motion.span\n          key={i}\n          initial={{ opacity: 0, y: 20, filter: \"blur(8px)\" }}\n          animate={{ opacity: 1, y: 0, filter: \"blur(0px)\" }}\n          transition={{\n            duration: 0.4,\n            delay: i * 0.03,\n            ease: [0.22, 1, 0.36, 1],\n          }}\n          className=\"inline-block mr-[0.25em]\"\n        >\n          {word}\n        </motion.span>\n      ))}\n    </span>\n  )\n}\n\nexport function Testimonial() {\n  const [activeIndex, setActiveIndex] = useState(0)\n  const [isHovered, setIsHovered] = useState(false)\n  const containerRef = useRef<HTMLDivElement>(null)\n\n  usePreloadImages(testimonials.map((t) => t.avatar))\n\n  const mouseX = useMotionValue(0)\n  const mouseY = useMotionValue(0)\n\n  const springConfig = { damping: 25, stiffness: 150 }\n  const cursorX = useSpring(mouseX, springConfig)\n  const cursorY = useSpring(mouseY, springConfig)\n\n  const handleMouseMove = useCallback(\n    (e: React.MouseEvent) => {\n      if (!containerRef.current) return\n      const rect = containerRef.current.getBoundingClientRect()\n      mouseX.set(e.clientX - rect.left)\n      mouseY.set(e.clientY - rect.top)\n    },\n    [mouseX, mouseY],\n  )\n\n  const handleNext = () => {\n    setActiveIndex((prev) => (prev + 1) % testimonials.length)\n  }\n\n  const currentTestimonial = testimonials[activeIndex]\n\n  return (\n    <div\n      ref={containerRef}\n      className=\"relative w-full max-w-xl mx-auto py-20 px-8\"\n      style={{ cursor: \"none\" }}\n      onMouseMove={handleMouseMove}\n      onMouseEnter={() => setIsHovered(true)}\n      onMouseLeave={() => setIsHovered(false)}\n      onClick={handleNext}\n    >\n      {/* Custom magnetic cursor */}\n      <motion.div\n        className=\"pointer-events-none absolute z-50 mix-blend-difference\"\n        style={{\n          x: cursorX,\n          y: cursorY,\n          translateX: \"-50%\",\n          translateY: \"-50%\",\n        }}\n      >\n        <motion.div\n          className=\"rounded-full bg-foreground flex items-center justify-center\"\n          animate={{\n            width: isHovered ? 80 : 0,\n            height: isHovered ? 80 : 0,\n            opacity: isHovered ? 1 : 0,\n          }}\n          transition={{ type: \"spring\", damping: 20, stiffness: 200 }}\n        >\n          <motion.span\n            className=\"text-background text-xs font-medium tracking-wider uppercase\"\n            animate={{ opacity: isHovered ? 1 : 0 }}\n            transition={{ delay: 0.1 }}\n          >\n            Next\n          </motion.span>\n        </motion.div>\n      </motion.div>\n\n      {/* Floating index indicator */}\n      <motion.div\n        className=\"absolute top-8 right-8 flex items-baseline gap-1 font-mono text-xs\"\n        initial={{ opacity: 0 }}\n        animate={{ opacity: 1 }}\n        transition={{ delay: 0.5 }}\n      >\n        <motion.span\n          className=\"text-2xl font-light text-foreground\"\n          key={activeIndex}\n          initial={{ y: 10, opacity: 0 }}\n          animate={{ y: 0, opacity: 1 }}\n          transition={{ duration: 0.3 }}\n        >\n          {String(activeIndex + 1).padStart(2, \"0\")}\n        </motion.span>\n        <span className=\"text-muted-foreground\">/</span>\n        <span className=\"text-muted-foreground\">{String(testimonials.length).padStart(2, \"0\")}</span>\n      </motion.div>\n\n      {/* Stacked avatar previews for other testimonials */}\n      <motion.div\n        className=\"absolute top-8 left-8 flex -space-x-2\"\n        initial={{ opacity: 0 }}\n        animate={{ opacity: 0.6 }}\n        transition={{ delay: 0.6 }}\n      >\n        {testimonials.map((t, i) => (\n          <motion.div\n            key={i}\n            className={`w-6 h-6 rounded-full border-2 border-background overflow-hidden transition-all duration-300 ${\n              i === activeIndex ? \"ring-1 ring-accent ring-offset-1 ring-offset-background\" : \"grayscale opacity-50\"\n            }`}\n            whileHover={{ scale: 1.1, opacity: 1 }}\n          >\n            <img src={t.avatar || \"/placeholder.svg\"} alt={t.author} className=\"w-full h-full object-cover\" />\n          </motion.div>\n        ))}\n      </motion.div>\n\n      {/* Main content */}\n      <div className=\"relative\">\n        <AnimatePresence mode=\"wait\">\n          <motion.blockquote\n            key={activeIndex}\n            initial={{ opacity: 0 }}\n            animate={{ opacity: 1 }}\n            exit={{ opacity: 0, transition: { duration: 0.2 } }}\n            className=\"text-xl md:text-2xl font-light leading-relaxed tracking-tight text-foreground\"\n          >\n            <SplitText text={currentTestimonial.quote} />\n          </motion.blockquote>\n        </AnimatePresence>\n\n        {/* Author with reveal line */}\n        <motion.div className=\"mt-12 relative\" layout>\n          <div className=\"flex items-center gap-4\">\n            {/* Avatar container with all images stacked */}\n            <div className=\"relative w-12 h-12\">\n              <motion.div\n                className=\"absolute -inset-1.5 rounded-full border border-accent/40\"\n                initial={{ opacity: 0 }}\n                animate={{ opacity: 1 }}\n                transition={{ duration: 0.5 }}\n              />\n              {testimonials.map((t, i) => (\n                <motion.img\n                  key={t.avatar}\n                  src={t.avatar}\n                  alt={t.author}\n                  className=\"absolute inset-0 w-12 h-12 rounded-full object-cover grayscale hover:grayscale-0 transition-[filter] duration-500\"\n                  animate={{\n                    opacity: i === activeIndex ? 1 : 0,\n                    zIndex: i === activeIndex ? 1 : 0,\n                  }}\n                  transition={{ duration: 0.4, ease: \"easeInOut\" }}\n                />\n              ))}\n            </div>\n\n            {/* Author info with accent line */}\n            <AnimatePresence mode=\"wait\">\n              <motion.div\n                key={activeIndex}\n                className=\"relative pl-4\"\n                initial={{ opacity: 0, x: -10 }}\n                animate={{ opacity: 1, x: 0 }}\n                exit={{ opacity: 0, x: 10 }}\n                transition={{ duration: 0.3 }}\n              >\n                <motion.div\n                  className=\"absolute left-0 top-0 bottom-0 w-px bg-accent\"\n                  initial={{ scaleY: 0 }}\n                  animate={{ scaleY: 1 }}\n                  transition={{ duration: 0.4, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}\n                  style={{ originY: 0 }}\n                />\n                <span className=\"block text-sm font-medium text-foreground tracking-wide\">\n                  {currentTestimonial.author}\n                </span>\n                <span className=\"block text-xs text-muted-foreground mt-0.5 font-mono uppercase tracking-widest\">\n                  {currentTestimonial.role} — {currentTestimonial.company}\n                </span>\n              </motion.div>\n            </AnimatePresence>\n          </div>\n        </motion.div>\n\n        {/* Progress bar */}\n        <div className=\"mt-16 h-px bg-border relative overflow-hidden\">\n          <motion.div\n            className=\"absolute inset-y-0 left-0 bg-accent\"\n            initial={{ width: \"0%\" }}\n            animate={{ width: `${((activeIndex + 1) / testimonials.length) * 100}%` }}\n            transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}\n          />\n        </div>\n      </div>\n\n      {/* Keyboard hint */}\n      <motion.div\n        className=\"absolute bottom-8 left-8 flex items-center gap-2\"\n        initial={{ opacity: 0 }}\n        animate={{ opacity: isHovered ? 0.4 : 0.2 }}\n        transition={{ duration: 0.3 }}\n      >\n        <span className=\"text-[10px] text-muted-foreground uppercase tracking-widest font-mono\">Click anywhere</span>\n      </motion.div>\n    </div>\n  )\n}\n",
+      "type": "registry:component"
+    }
+  ],
+  "cssVars": {
+    "theme": {
+      "--color-destructive-foreground": "var(--destructive-foreground)"
+    },
+    "light": {
+      "--background": "oklch(0.98 0.002 90)",
+      "--foreground": "oklch(0.12 0 0)",
+      "--card-foreground": "oklch(0.12 0 0)",
+      "--popover-foreground": "oklch(0.12 0 0)",
+      "--primary": "oklch(0.12 0 0)",
+      "--primary-foreground": "oklch(0.98 0 0)",
+      "--secondary": "oklch(0.96 0.002 90)",
+      "--secondary-foreground": "oklch(0.12 0 0)",
+      "--muted": "oklch(0.94 0.002 90)",
+      "--muted-foreground": "oklch(0.45 0 0)",
+      "--accent": "oklch(0.65 0.15 25)",
+      "--accent-foreground": "oklch(0.98 0 0)",
+      "--destructive-foreground": "oklch(0.577 0.245 27.325)",
+      "--border": "oklch(0.9 0.002 90)",
+      "--input": "oklch(0.9 0.002 90)",
+      "--ring": "oklch(0.12 0 0)",
+      "--radius": "0rem"
+    },
+    "dark": {
+      "--background": "oklch(0.1 0 0)",
+      "--foreground": "oklch(0.95 0 0)",
+      "--card": "oklch(0.12 0 0)",
+      "--card-foreground": "oklch(0.95 0 0)",
+      "--popover": "oklch(0.12 0 0)",
+      "--popover-foreground": "oklch(0.95 0 0)",
+      "--primary": "oklch(0.95 0 0)",
+      "--primary-foreground": "oklch(0.1 0 0)",
+      "--secondary": "oklch(0.18 0 0)",
+      "--secondary-foreground": "oklch(0.95 0 0)",
+      "--muted": "oklch(0.22 0 0)",
+      "--muted-foreground": "oklch(0.6 0 0)",
+      "--accent": "oklch(0.7 0.12 25)",
+      "--accent-foreground": "oklch(0.1 0 0)",
+      "--border": "oklch(0.22 0 0)",
+      "--input": "oklch(0.22 0 0)",
+      "--ring": "oklch(0.5 0 0)",
+      "--sidebar-border": "oklch(0.269 0 0)",
+      "--sidebar-ring": "oklch(0.439 0 0)"
+    }
+  },
+  "_meta": {
+    "author": "jatin-yadav05",
+    "slug": "clean-testimonial",
+    "registry_url": "https://21st.dev/r/jatin-yadav05/clean-testimonial",
+    "title": "Clean Testimonial",
+    "description": "Clean testimonial component with unique features.",
+    "category": "testimonials",
+    "category_group": "Marketing Blocks",
+    "downloads": 100,
+    "likes": 0
+  }
+}

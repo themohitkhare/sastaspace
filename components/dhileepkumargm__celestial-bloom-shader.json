@@ -1,0 +1,29 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "celestial-bloom-shader",
+  "type": "registry:component",
+  "title": "Celestial Bloom Shader",
+  "description": "A celestial-bloom-shader component.",
+  "dependencies": [
+    "three"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/ui/celestial-bloom-shader.tsx",
+      "content": "import React, { useEffect, useRef } from 'react';\nimport * as THREE from 'three';\n\nconst CelestialBloomShader = () => {\n  const containerRef = useRef(null);\n\n  useEffect(() => {\n    const container = containerRef.current;\n    if (!container) return;\n\n    // 1) Renderer + Scene + Camera + Clock\n    let renderer;\n    try {\n      renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });\n      renderer.setPixelRatio(window.devicePixelRatio);\n      container.appendChild(renderer.domElement);\n    } catch (err) {\n      console.error('WebGL not supported', err);\n      container.innerHTML = '<p style=\"color:white;text-align:center;\">Sorry, WebGL isn’t available.</p>';\n      return;\n    }\n\n    const scene = new THREE.Scene();\n    const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);\n    const clock = new THREE.Clock();\n\n    // 2) Shaders\n    const vertexShader = `\n      void main() {\n        gl_Position = vec4(position, 1.0);\n      }\n    `;\n\n    const fragmentShader = `\n      precision highp float;\n      uniform vec2 iResolution;\n      uniform float iTime;\n\n      float noise(vec2 st) {\n        return fract(sin(dot(st.xy, vec2(12.9898, 78.233))) * 43758.5453123);\n      }\n\n      float fbm(vec2 st) {\n        float value = 0.0;\n        float amplitude = 0.5;\n        for (int i = 0; i < 6; i++) {\n          value += amplitude * noise(st);\n          st *= 2.0;\n          amplitude *= 0.5;\n        }\n        return value;\n      }\n\n      void main() {\n        vec2 uv = (gl_FragCoord.xy * 2.0 - iResolution.xy) \n                  / min(iResolution.x, iResolution.y);\n        float t = iTime * 1.5;\n        float radius = length(uv);\n        float angle  = atan(uv.y, uv.x);\n\n        float petals     = 5.0;\n        float bloomShape = sin(angle * petals + t);\n        float distorted  = radius \n                         + bloomShape * 0.1 \n                         * fbm(uv * 3.0 + t * 0.1);\n\n        vec3 deepSpace = vec3(0.05, 0.0, 0.1);\n        vec3 nebula    = vec3(0.5, 0.2, 0.8);\n        vec3 star      = vec3(1.0, 1.0, 0.9);\n\n        float mixVal  = smoothstep(0.1, 0.6, distorted);\n        vec3  color   = mix(nebula, deepSpace, mixVal);\n\n        float coreGlow = smoothstep(0.1, 0.0, radius);\n        color = mix(color, star, coreGlow);\n\n        float twinkle = smoothstep(0.98, 0.99, fbm(uv * 10.0));\n        color = mix(color, star, twinkle * (1.0 - coreGlow));\n\n        gl_FragColor = vec4(color, 1.0);\n      }\n    `;\n\n    // 3) Material, Geometry, Mesh\n    const uniforms = {\n      iTime:       { value: 0 },\n      iResolution: { value: new THREE.Vector2() }\n    };\n    const material = new THREE.ShaderMaterial({ vertexShader, fragmentShader, uniforms });\n    const geometry = new THREE.PlaneGeometry(2, 2);\n    const mesh     = new THREE.Mesh(geometry, material);\n    scene.add(mesh);\n\n    // 4) Resize Handler\n    const onResize = () => {\n      const w = container.clientWidth;\n      const h = container.clientHeight;\n      renderer.setSize(w, h);\n      uniforms.iResolution.value.set(w, h);\n    };\n    window.addEventListener('resize', onResize);\n    onResize(); // set size before first frame\n\n    // 5) Animation Loop\n    renderer.setAnimationLoop(() => {\n      uniforms.iTime.value = clock.getElapsedTime();\n      renderer.render(scene, camera);\n    });\n\n    // 6) Cleanup\n    return () => {\n      window.removeEventListener('resize', onResize);\n\n      // stop loop\n      renderer.setAnimationLoop(null);\n\n      // remove canvas safely\n      const canvas = renderer.domElement;\n      if (canvas && canvas.parentNode) {\n        canvas.parentNode.removeChild(canvas);\n      }\n\n      // dispose\n      material.dispose();\n      geometry.dispose();\n      renderer.dispose();\n    };\n  }, []);\n\n  return (\n    <div\n      ref={containerRef}\n      style={{\n        position: 'fixed',\n        top: 0,\n        left: 0,\n        width: '100vw',\n        height: '100vh',\n        zIndex: -1,\n        pointerEvents: 'none'\n      }}\n      aria-label=\"Celestial Bloom animated background\"\n    />\n  );\n};\n\nexport default CelestialBloomShader;\n",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "dhileepkumargm",
+    "slug": "celestial-bloom-shader",
+    "registry_url": "https://21st.dev/r/dhileepkumargm/celestial-bloom-shader",
+    "title": "Celestial Bloom Shader",
+    "description": "A dynamic, animated WebGL shader that simulates the turbulent, glowing surface of Bloom . Built with React and Three.js.",
+    "category": "shader",
+    "category_group": "Marketing Blocks",
+    "downloads": 5,
+    "likes": 0
+  }
+}

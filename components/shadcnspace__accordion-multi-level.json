@@ -1,0 +1,56 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "accordion-multi-level",
+  "type": "registry:component",
+  "title": "Accordion Multi Level",
+  "description": "A accordion-multi-level component.",
+  "dependencies": [
+    "lucide-react"
+  ],
+  "registryDependencies": [
+    "https://21st.dev/r/shadcn/accordion",
+    "https://21st.dev/r/shadcn/collapsible"
+  ],
+  "files": [
+    {
+      "path": "src/components/ui/accordion-multi-level.tsx",
+      "content": "import {\n  Accordion,\n  AccordionContent,\n  AccordionItem,\n  AccordionTrigger,\n} from \"@/components/ui/accordion\";\nimport {\n  Collapsible,\n  CollapsibleContent,\n  CollapsibleTrigger,\n} from \"@/components/ui/collapsible\";\nimport { cn } from \"@/lib/utils\";\nimport { ChevronDown, FileText, Folder, Handshake, MinusIcon, PlusIcon, Users } from \"lucide-react\";\n\n// Static data instead of faker\nconst items = [\n  {\n    id: \"item-1\",\n    title: \"Company Overview\",\n    icon: FileText,\n    textColor: \"text-blue-500\",\n    bgColor: \"bg-blue-500/10\",\n    collapsibles: [\n      {\n        id: \"collapsible-1-1\",\n        title: \"Mission Statement\",\n        content:\n          \"Our mission is to deliver high-quality products that improve the lives of our customers.\",\n      },\n      {\n        id: \"collapsible-1-2\",\n        title: \"Core Values\",\n        content:\n          \"Integrity, innovation, and customer satisfaction are at the heart of everything we do.\",\n      },\n    ],\n  },\n  {\n    id: \"item-2\",\n    title: \"Products & Services\",\n    icon: Folder,\n    textColor: \"text-orange-400\",\n    bgColor: \"bg-orange-400/10\",\n    collapsibles: [\n      {\n        id: \"collapsible-2-1\",\n        title: \"Software Solutions\",\n        content:\n          \"We offer a range of software tools designed to enhance business efficiency and productivity.\",\n      },\n      {\n        id: \"collapsible-2-2\",\n        title: \"Consulting Services\",\n        content:\n          \"Our consulting team helps clients identify opportunities, streamline operations, and drive growth.\",\n      },\n    ],\n  },\n  {\n    id: \"item-3\",\n    title: \"Team & Culture\",\n    icon: Handshake,\n    textColor: \"text-teal-400\",\n    bgColor: \"bg-teal-400/10\",\n    collapsibles: [\n      {\n        id: \"collapsible-3-1\",\n        title: \"Leadership Team\",\n        content:\n          \"Our leadership team is composed of experienced professionals committed to innovation and growth.\",\n      },\n      {\n        id: \"collapsible-3-2\",\n        title: \"Work Environment\",\n        content:\n          \"We foster a collaborative and inclusive culture where everyone can thrive.\",\n      },\n    ],\n  },\n  {\n    id: \"item-4\",\n    title: \"Contact Information\",\n    icon: Users,\n    textColor: \"text-red-500\",\n    bgColor: \"bg-red-500/10\",\n    collapsibles: [\n      {\n        id: \"collapsible-4-1\",\n        title: \"Support\",\n        content:\n          \"Reach out to our support team via email or phone for any inquiries or assistance.\",\n      },\n      {\n        id: \"collapsible-4-2\",\n        title: \"Locations\",\n        content:\n          \"Our offices are located in New York, San Francisco, and London to serve clients globally.\",\n      },\n    ],\n  },\n];\n\nconst AccordionMultiLevelDemo = () => (\n  <div className=\"flex items-center justify-center max-w-md w-full\">\n    <Accordion\n      className=\"w-full -space-y-1\"\n      defaultValue={[items[0].id]}\n    >\n      {items.map((item) => (\n        <AccordionItem\n          className=\"overflow-hidden border bg-background first:rounded-t-lg last:rounded-b-lg last:border-b\"\n          key={item.id}\n          value={item.id}\n        >\n          <AccordionTrigger className=\"group px-4 py-3 hover:no-underline last:[&>svg]:hidden\">\n            <div className=\"flex w-full items-center justify-between gap-3\">\n              <div className=\"flex items-center gap-3\">\n                <div\n                  className={cn(\n                    \"p-2.5 rounded-xl\",\n                    item.bgColor,\n                    item.textColor\n                  )}\n                >\n                  <item.icon size={20} className=\"size-5\" />\n                </div>\n                <span className=\"flex-1 text-left\">{item.title}</span>\n              </div>\n              <div className=\"relative size-4 shrink-0\">\n                <PlusIcon className=\"absolute inset-0 size-4 text-muted-foreground transition-opacity duration-200 group-data-[panel-open]:opacity-0\" />\n                <MinusIcon className=\"absolute inset-0 size-4 text-muted-foreground opacity-0 transition-opacity duration-200 group-data-[panel-open]:opacity-100\" />\n              </div>\n            </div>\n          </AccordionTrigger>\n          <AccordionContent className=\"p-0\">\n            {item.collapsibles.map((collapsible) => (\n              <Collapsible\n                className=\"space-y-1 border-t border-border bg-accent px-4 py-3\"\n                key={collapsible.id}\n              >\n                <CollapsibleTrigger className=\"flex items-center gap-2 font-medium [&[data-state=open]>svg]:rotate-180\">\n                  <ChevronDown\n                    aria-hidden=\"true\"\n                    className=\"shrink-0 opacity-60 transition-transform duration-200\"\n                    size={16}\n                    strokeWidth={2}\n                  />\n                  {collapsible.title}\n                </CollapsibleTrigger>\n                <CollapsibleContent className=\"overflow-hidden ps-6 text-sm text-muted-foreground transition-all data-[state=closed]:animate-collapsible-up data-[state=open]:animate-collapsible-down\">\n                  {collapsible.content}\n                </CollapsibleContent>\n              </Collapsible>\n            ))}\n          </AccordionContent>\n        </AccordionItem>\n      ))}\n    </Accordion>\n  </div>\n);\n\nexport default AccordionMultiLevelDemo;\n",
+      "type": "registry:component"
+    }
+  ],
+  "cssVars": {
+    "theme": {
+      "--animate-accordion-down": "accordion-down 0.2s ease-out",
+      "--animate-accordion-up": "accordion-up 0.2s ease-out"
+    }
+  },
+  "css": {
+    "@keyframes accordion-down": {
+      "from": {
+        "height": "0"
+      },
+      "to": {
+        "height": "var(--radix-accordion-content-height)"
+      }
+    },
+    "@keyframes accordion-up": {
+      "from": {
+        "height": "var(--radix-accordion-content-height)"
+      },
+      "to": {
+        "height": "0"
+      }
+    }
+  },
+  "_meta": {
+    "author": "shadcnspace",
+    "slug": "accordion-multi-level",
+    "registry_url": "https://21st.dev/r/shadcnspace/accordion-multi-level",
+    "title": " Accordion Multi-level",
+    "description": "Here is accordion multi-level component",
+    "category": "accordion",
+    "category_group": "UI Components",
+    "downloads": 21,
+    "likes": 0
+  }
+}

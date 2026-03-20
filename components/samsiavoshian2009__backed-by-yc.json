@@ -1,0 +1,27 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "backed-by-yc",
+  "type": "registry:component",
+  "title": "Backed By Yc",
+  "description": "A backed-by-yc component.",
+  "dependencies": [],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/ui/backed-by-yc.tsx",
+      "content": "import { cn } from \"@/lib/utils\";\nimport { useEffect, useRef } from \"react\";\n\nexport const Component = () => {\n  const hostRef = useRef<HTMLDivElement | null>(null);\n\n  useEffect(() => {\n    const onMove = (e: MouseEvent) => {\n      const el = hostRef.current;\n      if (!el) return;\n      const r = el.getBoundingClientRect();\n      el.style.setProperty(\"--mx\", `${e.clientX - r.left}px`);\n      el.style.setProperty(\"--my\", `${e.clientY - r.top}px`);\n    };\n    window.addEventListener(\"mousemove\", onMove, { passive: true });\n    return () => window.removeEventListener(\"mousemove\", onMove);\n  }, []);\n\n  return (\n    <div className=\"min-h-[40vh] w-full flex items-center justify-center p-8\">\n      <div\n        ref={hostRef}\n        className={cn(\n          \"relative inline-flex items-center justify-center rounded-full\",\n          \"px-2 py-2 isolate select-none\"\n        )}\n        style={\n          {\n            [\"--mx\" as any]: \"50%\",\n            [\"--my\" as any]: \"50%\",\n          } as React.CSSProperties\n        }\n      >\n        {/* Subtle moving glow */}\n        <div\n          aria-hidden=\"true\"\n          className=\"pointer-events-none absolute inset-0 rounded-full\"\n        >\n          <div\n            className={cn(\n              \"absolute inset-0 rounded-full\",\n              \"bg-[radial-gradient(160px_80px_at_var(--mx)_var(--my),rgba(255,140,0,0.24),transparent_70%)]\",\n              \"blur-2xl\"\n            )}\n          />\n        </div>\n\n        {/* Glass pill */}\n        <div\n          className={cn(\n            \"relative z-10 rounded-full px-4 py-2\",\n            \"backdrop-blur-xl\",\n            \"bg-white/15\",\n            \"ring-1 ring-black/5 dark:ring-white/10\",\n            \"shadow-[0_8px_32px_rgba(0,0,0,0.08)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.3)]\"\n          )}\n        >\n          <div className=\"flex items-center gap-3\">\n            <span\n              className={cn(\n                \"h-6 w-6 shrink-0 rounded-md grid place-items-center\",\n                \"bg-[#FC6A21]\",\n                \"shadow-[0_2px_10px_rgba(252,106,33,0.55)]\"\n              )}\n              aria-hidden=\"true\"\n            >\n              <YCMonogram className=\"h-4 w-4 text-white\" />\n            </span>\n            <span className=\"text-sm md:text-base font-medium tracking-wide text-neutral-800 dark:text-white\">\n              Backed by Y Combinator\n            </span>\n          </div>\n        </div>\n      </div>\n    </div>\n  );\n};\n\nfunction YCMonogram(props: React.SVGProps<SVGSVGElement>) {\n  return (\n    <svg viewBox=\"0 0 24 24\" fill=\"none\" aria-hidden=\"true\" {...props}>\n      <path\n        d=\"M6 5h3.2l2.8 5 2.8-5H18l-4.6 8v6h-2.8v-6L6 5z\"\n        fill=\"currentColor\"\n      />\n    </svg>\n  );\n}",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "samsiavoshian2009",
+    "slug": "backed-by-yc",
+    "registry_url": "https://21st.dev/r/samsiavoshian2009/backed-by-yc",
+    "title": "Backed By YC",
+    "description": "A sleek glassmorphism “Backed by YC” pill with a subtle moving glow that follows the cursor—ready to drop straight into landing pages",
+    "category": "badge",
+    "category_group": "UI Components",
+    "downloads": 20,
+    "likes": 0
+  }
+}

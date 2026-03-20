@@ -1,0 +1,31 @@
+{
+  "name": "letter-swap",
+  "type": "registry:ui",
+  "dependencies": [
+    "lodash",
+    "framer-motion"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "/components/ui/letter-swap.tsx",
+      "content": "'use client'\n\nimport { useState } from \"react\"\nimport {\n  DynamicAnimationOptions,\n  motion,\n  stagger,\n  useAnimate,\n} from \"framer-motion\"\nimport { debounce } from \"lodash\"\n\ninterface TextProps {\n  label: string\n  reverse?: boolean\n  transition?: DynamicAnimationOptions\n  staggerDuration?: number\n  staggerFrom?: \"first\" | \"last\" | \"center\" | number\n  className?: string\n  onClick?: () => void\n}\n\nexport function LetterSwapForward({\n  label,\n  reverse = true,\n  transition = {\n    type: \"spring\",\n    duration: 0.7,\n  },\n  staggerDuration = 0.03,\n  staggerFrom = \"first\",\n  className,\n  onClick,\n  ...props\n}: TextProps) {\n  const [scope, animate] = useAnimate()\n  const [blocked, setBlocked] = useState(false)\n\n  const hoverStart = () => {\n    if (blocked) return\n\n    setBlocked(true)\n\n    // Function to merge user transition with stagger and delay\n    const mergeTransition = (baseTransition: DynamicAnimationOptions) => ({\n      ...baseTransition,\n      delay: stagger(staggerDuration, {\n        from: staggerFrom,\n      }),\n    })\n\n    animate(\n      \".letter\",\n      { y: reverse ? \"100%\" : \"-100%\" },\n      mergeTransition(transition)\n    ).then(() => {\n      animate(\n        \".letter\",\n        {\n          y: 0,\n        },\n        {\n          duration: 0,\n        }\n      ).then(() => {\n        setBlocked(false)\n      })\n    })\n\n    animate(\n      \".letter-secondary\",\n      {\n        top: \"0%\",\n      },\n      mergeTransition(transition)\n    ).then(() => {\n      animate(\n        \".letter-secondary\",\n        {\n          top: reverse ? \"-100%\" : \"100%\",\n        },\n        {\n          duration: 0,\n        }\n      )\n    })\n  }\n\n  return (\n    <span\n      className={`flex justify-center items-center relative overflow-hidden ${className}`}\n      onMouseEnter={hoverStart}\n      onClick={onClick}\n      ref={scope}\n      {...props}\n    >\n      <span className=\"sr-only\">{label}</span>\n\n      {label.split(\"\").map((letter: string, i: number) => {\n        return (\n          <span className=\"whitespace-pre relative flex\" key={i}>\n            <motion.span className={`relative letter`} style={{ top: 0 }}>\n              {letter}\n            </motion.span>\n            <motion.span\n              className=\"absolute letter-secondary\"\n              aria-hidden={true}\n              style={{ top: reverse ? \"-100%\" : \"100%\" }}\n            >\n              {letter}\n            </motion.span>\n          </span>\n        )\n      })}\n    </span>\n  )\n}\n\nexport function LetterSwapPingPong({\n  label,\n  reverse = true,\n  transition = {\n    type: \"spring\",\n    duration: 0.7,\n  },\n  staggerDuration = 0.03,\n  staggerFrom = \"first\",\n  className,\n  onClick,\n  ...props\n}: TextProps) {\n  const [scope, animate] = useAnimate()\n  const [isHovered, setIsHovered] = useState(false)\n\n  const mergeTransition = (baseTransition: DynamicAnimationOptions) => ({\n    ...baseTransition,\n    delay: stagger(staggerDuration, {\n      from: staggerFrom,\n    }),\n  })\n\n  const hoverStart = debounce(\n    () => {\n      if (isHovered) return\n      setIsHovered(true)\n\n      animate(\n        \".letter\",\n        { y: reverse ? \"100%\" : \"-100%\" },\n        mergeTransition(transition)\n      )\n\n      animate(\n        \".letter-secondary\",\n        {\n          top: \"0%\",\n        },\n        mergeTransition(transition)\n      )\n    },\n    100,\n    { leading: true, trailing: true }\n  )\n\n  const hoverEnd = debounce(\n    () => {\n      setIsHovered(false)\n\n      animate(\n        \".letter\",\n        {\n          y: 0,\n        },\n        mergeTransition(transition)\n      )\n\n      animate(\n        \".letter-secondary\",\n        {\n          top: reverse ? \"-100%\" : \"100%\",\n        },\n        mergeTransition(transition)\n      )\n    },\n    100,\n    { leading: true, trailing: true }\n  )\n\n  return (\n    <motion.span\n      className={`flex justify-center items-center relative overflow-hidden ${className}`}\n      onHoverStart={hoverStart}\n      onHoverEnd={hoverEnd}\n      onClick={onClick}\n      ref={scope}\n      {...props}\n    >\n      <span className=\"sr-only\">{label}</span>\n\n      {label.split(\"\").map((letter: string, i: number) => {\n        return (\n          <span className=\"whitespace-pre relative flex\" key={i}>\n            <motion.span className={`relative letter`} style={{ top: 0 }}>\n              {letter}\n            </motion.span>\n            <motion.span\n              className=\"absolute letter-secondary\"\n              aria-hidden={true}\n              style={{ top: reverse ? \"-100%\" : \"100%\" }}\n            >\n              {letter}\n            </motion.span>\n          </span>\n        )\n      })}\n    </motion.span>\n  )\n}",
+      "type": "registry:ui",
+      "target": ""
+    }
+  ],
+  "tailwind": {
+    "config": {}
+  },
+  "_meta": {
+    "author": "danielpetho",
+    "slug": "letter-swap",
+    "registry_url": "https://21st.dev/r/danielpetho/letter-swap",
+    "title": "Letter Swap",
+    "description": "A text component that swaps the letters vertically on hover.\n\nThere are two types of animations available for this component:\n1) Forward animation — plays the animation timeline once forward, when you hover over the text.\n2) Ping Pong animation — plays the animation timeline in a ping pong fashion. It plays once forward when you hover over the text, and once in the opposite direction when you hover away from the text.",
+    "category": "hero",
+    "category_group": "Marketing Blocks",
+    "downloads": 193,
+    "likes": 7
+  }
+}

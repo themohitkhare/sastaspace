@@ -1,0 +1,31 @@
+{
+  "name": "cvui-badge",
+  "type": "registry:ui",
+  "dependencies": [
+    "lucide-react",
+    "framer-motion"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "/components/ui/cvui-badge.tsx",
+      "content": "\"use client\";\n\nimport React from \"react\";\nimport { cn } from \"@/lib/utils\";\nimport { motion } from \"framer-motion\";\nimport { X, Loader2 } from \"lucide-react\";\n\ntype BadgeProps = {\n  label: string;\n  variant?: \"primary\" | \"secondary\" | \"success\" | \"warning\" | \"error\";\n  size?: \"small\" | \"medium\" | \"large\";\n  icon?: React.ReactNode;\n  onClick?: () => void;\n  removable?: boolean;\n  className?: string;\n  maxWidth?: string | number;\n  appearance?: \"solid\" | \"outline\" | \"subtle\";\n  onRemove?: () => void;\n  isLoading?: boolean;\n};\n\nexport const Badge = ({\n  label,\n  variant = \"primary\",\n  size = \"medium\",\n  icon,\n  onClick,\n  removable = false,\n  className,\n  maxWidth,\n  appearance = \"solid\",\n  onRemove,\n  isLoading = false,\n}: BadgeProps) => {\n  const variantStyles = {\n    primary: {\n      solid: \"bg-[#11111198] text-white\",\n      outline: \"border-2 border-[#11111198] text-[#11111198]\",\n      subtle: \"bg-[#11111140] text-[#11111198]\",\n    },\n    secondary: {\n      solid: \"bg-secondary text-secondary-foreground\",\n      outline: \"border-2 border-secondary text-secondary\",\n      subtle: \"bg-secondary/20 text-secondary\",\n    },\n    success: {\n      solid: \"bg-green-600 text-white\",\n      outline: \"border-2 border-green-600 text-green-600\",\n      subtle: \"bg-green-100 text-green-600\",\n    },\n    warning: {\n      solid: \"bg-yellow-500 text-white\",\n      outline: \"border-2 border-yellow-500 text-yellow-500\",\n      subtle: \"bg-yellow-100 text-yellow-500\",\n    },\n    error: {\n      solid: \"bg-destructive text-destructive-foreground\",\n      outline: \"border-2 border-destructive text-destructive\",\n      subtle: \"bg-destructive/20 text-destructive\",\n    },\n  };\n\n  const sizeStyles = {\n    small: \"text-xs px-2 py-1\",\n    medium: \"text-sm px-3 py-2\",\n    large: \"text-base px-4 py-3\",\n  };\n\n  const handleClick = (e: React.MouseEvent) => {\n    e.stopPropagation();\n    onClick?.();\n  };\n\n  const handleRemove = (e: React.MouseEvent) => {\n    e.stopPropagation();\n    onRemove?.();\n  };\n\n  return (\n    <motion.div\n      initial={{ opacity: 0, scale: 0.95, y: 10, filter: \"blur(10px)\" }}\n      animate={{ opacity: 1, scale: 1, y: 0, filter: \"blur(0px)\" }}\n      transition={{ duration: 0.4, ease: \"easeInOut\", type: \"spring\" }}\n      whileHover={{\n        scale: onClick ? 1.05 : 1,\n        backgroundColor: onClick ? \"#111111d1\" : undefined,\n        transition: {\n          duration: 0.2,\n          ease: \"easeInOut\",\n          type: \"spring\",\n        },\n      }}\n      onClick={handleClick}\n      style={{ maxWidth }}\n      className={cn(\n        \"rounded-xl font-medium shadow-[0_0_20px_rgba(0,0,0,0.2)] inline-flex items-center gap-2 backdrop-blur-sm\",\n        variantStyles[variant][appearance],\n        sizeStyles[size],\n        onClick && \"cursor-pointer\",\n        className\n      )}\n    >\n      {isLoading ? (\n        <motion.div\n          animate={{ rotate: 360 }}\n          transition={{\n            duration: 1,\n            ease: \"linear\",\n            repeat: Infinity,\n          }}\n          className=\"flex-shrink-0\"\n        >\n          <Loader2 className=\"h-4 w-4\" />\n        </motion.div>\n      ) : (\n        icon && <span className=\"flex-shrink-0\">{icon}</span>\n      )}\n      <span className=\"truncate\">{label}</span>\n      {removable && (\n        <motion.button\n          initial={{ opacity: 0, scale: 0.95, filter: \"blur(10px)\" }}\n          animate={{ opacity: 1, scale: 1, filter: \"blur(0px)\" }}\n          whileHover={{\n            scale: 1.1,\n            opacity: 1,\n            transition: {\n              duration: 0.2,\n              ease: \"easeInOut\",\n              type: \"spring\",\n            },\n          }}\n          className=\"p-1 opacity-60 hover:opacity-100 bg-[#11111198] hover:bg-[#11111198] rounded-md flex items-center justify-center\"\n          onClick={(e) => {\n            e.stopPropagation();\n            handleRemove(e);\n          }}\n        >\n          <X className=\"h-4 w-4\" />\n        </motion.button>\n      )}\n    </motion.div>\n  );\n};\n",
+      "type": "registry:ui",
+      "target": ""
+    }
+  ],
+  "tailwind": {
+    "config": {}
+  },
+  "_meta": {
+    "author": "chetanverma16",
+    "slug": "cvui-badge",
+    "registry_url": "https://21st.dev/r/chetanverma16/cvui-badge",
+    "title": "Badge ",
+    "description": "A customizable badge component with various styles and animations.",
+    "category": "badge",
+    "category_group": "UI Components",
+    "downloads": 57,
+    "likes": 0
+  }
+}

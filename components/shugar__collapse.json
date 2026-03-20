@@ -1,0 +1,49 @@
+{
+  "name": "collapse",
+  "type": "registry:ui",
+  "dependencies": [
+    "clsx"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "/components/ui/collapse.tsx",
+      "content": "import React, { useEffect, useRef, useState } from \"react\";\nimport clsx from \"clsx\";\n\ninterface CollapseProps {\n  size?: \"small\" | \"large\";\n  title: string;\n  defaultExpanded?: boolean;\n  children: React.ReactNode;\n  isOpen?: boolean;\n  onToggle?: () => void;\n  className?: string;\n}\n\ninterface CollapseGroupProps {\n  multiple?: boolean;\n  children: React.ReactNode;\n}\n\nconst ArrowIcon = () => (\n  <svg\n    height=\"16\"\n    strokeLinejoin=\"round\"\n    viewBox=\"0 0 16 16\"\n    width=\"16\"\n  >\n    <path\n      fillRule=\"evenodd\"\n      clipRule=\"evenodd\"\n      d=\"M14.0607 5.49999L13.5303 6.03032L8.7071 10.8535C8.31658 11.2441 7.68341 11.2441 7.29289 10.8535L2.46966 6.03032L1.93933 5.49999L2.99999 4.43933L3.53032 4.96966L7.99999 9.43933L12.4697 4.96966L13 4.43933L14.0607 5.49999Z\"\n    />\n  </svg>\n);\n\nconst Collapse = ({ size = \"large\", title, children, defaultExpanded, isOpen, onToggle, className }: CollapseProps) => {\n  const contentRef = useRef<HTMLDivElement>(null);\n  const [_isOpen, set_isOpen] = useState<boolean>(defaultExpanded || false);\n\n  useEffect(() => {\n    if (isOpen !== undefined) {\n      set_isOpen(isOpen);\n    }\n  }, [isOpen]);\n\n  return (\n    <div className={clsx(\"text-left border-y border-accents-2 overflow-hidden font-sans\", className)}>\n      <h3 className={clsx(\"text-gray-1000\", size === \"small\" ? \"text-base font-medium\" : \"text-2xl font-semibold\")}>\n        <button\n          onClick={onToggle && isOpen !== undefined ? onToggle : () => set_isOpen(!_isOpen)}\n          className=\"cursor-pointer w-full transition\"\n        >\n          <span className={clsx(\"flex justify-between items-center w-full\", size === \"small\" ? \"py-3\" : \"py-6\")}>\n            {title}\n            <span className={clsx(\"fill-gray-1000 flex duration-200\", _isOpen && \"rotate-180\")}>\n              <ArrowIcon />\n            </span>\n          </span>\n        </button>\n      </h3>\n      <div\n        ref={contentRef}\n        className=\"transition-all ease-in-out duration-200 overflow-hidden\"\n        style={{ maxHeight: _isOpen ? `${contentRef?.current?.scrollHeight}px` : 0 }}\n      >\n        <div>{children}</div>\n      </div>\n    </div>\n  );\n};\n\nconst CollapseGroup = ({ multiple = false, children }: CollapseGroupProps) => {\n  const collapses = React.Children.toArray(children).filter(\n    (child): child is React.ReactElement<CollapseProps> =>\n      React.isValidElement(child) && \"props\" in child\n  );\n\n  const [openStates, setOpenStates] = useState(() =>\n    collapses.map((child) => child.props.defaultExpanded || false)\n  );\n\n  const handleToggle = (index: number) => {\n    setOpenStates((prev) =>\n      multiple\n        ? prev.map((state, i) => (i === index ? !state : state))\n        : prev.map((state, i) => (i === index ? !state : false))\n    );\n  };\n\n  return (\n    <div className=\"border-t border-accents-2\">\n      {collapses.map((child, index) =>\n        React.cloneElement(child, {\n          isOpen: openStates[index],\n          onToggle: () => handleToggle(index),\n          className: \"border-t-0\"\n        })\n      )}\n    </div>\n  );\n};\n\nexport { CollapseGroup, Collapse };\n",
+      "type": "registry:ui",
+      "target": ""
+    }
+  ],
+  "cssVars": {
+    "light": {
+      "--ds-gray-1000": "hsla(0, 0%, 9%, 1)",
+      "--accents-2": "#eaeaea"
+    },
+    "dark": {
+      "--ds-gray-1000": "hsla(0, 0%, 93%, 1)",
+      "--accents-2": "#333333"
+    }
+  },
+  "tailwind": {
+    "config": {
+      "theme": {
+        "extend": {
+          "colors": {
+            "gray-1000": "var(--ds-gray-1000)",
+            "accents-2": "var(--accents-2)"
+          }
+        }
+      }
+    }
+  },
+  "_meta": {
+    "author": "shugar",
+    "slug": "collapse",
+    "registry_url": "https://21st.dev/r/shugar/collapse",
+    "title": "Collapse",
+    "description": "A set of headings, vertically stacked, that each reveal an related section of content. Commonly referred to as an accordion.",
+    "category": "accordion",
+    "category_group": "UI Components",
+    "downloads": 24,
+    "likes": 0
+  }
+}

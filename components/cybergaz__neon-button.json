@@ -1,0 +1,30 @@
+{
+  "name": "neon-button",
+  "type": "registry:ui",
+  "dependencies": [
+    "class-variance-authority"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "/components/ui/neon-button.tsx",
+      "content": "import React from 'react'\nimport { cn } from '@/lib/utils'\nimport { VariantProps, cva } from \"class-variance-authority\";\n\nconst buttonVariants = cva(\n    \"relative group border text-foreground mx-auto text-center rounded-full\",\n    {\n        variants: {\n            variant: {\n                default: \"bg-blue-500/5 hover:bg-blue-500/0 border-blue-500/20\",\n                solid: \"bg-blue-500 hover:bg-blue-600 text-white border-transparent hover:border-foreground/50 transition-all duration-200\",\n                ghost: \"border-transparent bg-transparent hover:border-zinc-600 hover:bg-white/10\",\n            },\n            size: {\n                default: \"px-7 py-1.5 \",\n                sm: \"px-4 py-0.5 \",\n                lg: \"px-10 py-2.5 \",\n            },\n        },\n        defaultVariants: {\n            variant: \"default\",\n            size: \"default\",\n        },\n    }\n);\n\nexport interface ButtonProps\n    extends React.ButtonHTMLAttributes<HTMLButtonElement>,\n    VariantProps<typeof buttonVariants> { neon?: boolean }\n\nconst Button = React.forwardRef<HTMLButtonElement, ButtonProps>(\n    ({ className, neon = true, size, variant, children, ...props }, ref) => {\n        return (\n            <button\n                className={cn(buttonVariants({ variant, size }), className)}\n                ref={ref}\n                {...props}\n            >\n                <span className={cn(\"absolute h-px opacity-0 group-hover:opacity-100 transition-all duration-500 ease-in-out inset-x-0 inset-y-0 bg-gradient-to-r w-3/4 mx-auto from-transparent dark:via-blue-500 via-blue-600 to-transparent hidden\", neon && \"block\")} />\n                {children}\n                <span className={cn(\"absolute group-hover:opacity-30 transition-all duration-500 ease-in-out inset-x-0 h-px -bottom-px bg-gradient-to-r w-3/4 mx-auto from-transparent dark:via-blue-500 via-blue-600 to-transparent hidden\", neon && \"block\")} />\n            </button>\n        );\n    }\n)\n\nButton.displayName = 'Button';\n\nexport { Button, buttonVariants };",
+      "type": "registry:ui",
+      "target": ""
+    }
+  ],
+  "tailwind": {
+    "config": {}
+  },
+  "_meta": {
+    "author": "cybergaz",
+    "slug": "neon-button",
+    "registry_url": "https://21st.dev/r/cybergaz/neon-button",
+    "title": "Neon Button",
+    "description": "a simple and clean neon bordered button with hover effect",
+    "category": "border",
+    "category_group": "Marketing Blocks",
+    "downloads": 1232,
+    "likes": 11
+  }
+}

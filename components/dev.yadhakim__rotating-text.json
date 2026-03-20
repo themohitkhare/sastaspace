@@ -1,0 +1,29 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "rotating-text",
+  "type": "registry:component",
+  "title": "Rotating Text",
+  "description": "A rotating-text component.",
+  "dependencies": [
+    "framer-motion"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/ui/rotating-text.tsx",
+      "content": "\"use client\";\n\nimport { cn } from \"@/lib/utils\";\nimport { motion, AnimatePresence } from \"framer-motion\";\nimport { useState, useEffect, useCallback } from \"react\";\n\ntype AnimationMode = \"slide\" | \"fade\" | \"blur\" | \"flip\" | \"drop\";\n\ninterface RotatingTextProps {\n  words: string[];\n  interval?: number;\n  mode?: AnimationMode;\n  className?: string;\n}\n\nconst animations: Record<\n  AnimationMode,\n  { initial: object; animate: object; exit: object }\n> = {\n  slide: {\n    initial: { y: \"100%\", opacity: 0 },\n    animate: { y: \"0%\", opacity: 1 },\n    exit: { y: \"-100%\", opacity: 0 },\n  },\n  fade: {\n    initial: { opacity: 0 },\n    animate: { opacity: 1 },\n    exit: { opacity: 0 },\n  },\n  blur: {\n    initial: { opacity: 0, filter: \"blur(12px)\" },\n    animate: { opacity: 1, filter: \"blur(0px)\" },\n    exit: { opacity: 0, filter: \"blur(12px)\" },\n  },\n  flip: {\n    initial: { rotateX: 90, opacity: 0 },\n    animate: { rotateX: 0, opacity: 1 },\n    exit: { rotateX: -90, opacity: 0 },\n  },\n  drop: {\n    initial: { y: \"-80%\", opacity: 0, scale: 0.8 },\n    animate: { y: \"0%\", opacity: 1, scale: 1 },\n    exit: { y: \"80%\", opacity: 0, scale: 0.8 },\n  },\n};\n\nexport function Component({\n  words,\n  interval = 2500,\n  mode = \"slide\",\n  className,\n}: RotatingTextProps) {\n  const [index, setIndex] = useState(0);\n\n  const next = useCallback(() => {\n    setIndex((i) => (i + 1) % words.length);\n  }, [words.length]);\n\n  useEffect(() => {\n    const id = setInterval(next, interval);\n    return () => clearInterval(id);\n  }, [next, interval]);\n\n  const { initial, animate, exit } = animations[mode];\n\n  return (\n    <span\n      className={cn(\n        \"relative inline-flex overflow-hidden\",\n        className\n      )}\n      style={{ perspective: mode === \"flip\" ? 600 : undefined }}\n    >\n      {/* invisible placeholder for width */}\n      <span className=\"invisible\">\n        {words.reduce((a, b) => (a.length > b.length ? a : b), \"\")}\n      </span>\n\n      <AnimatePresence mode=\"wait\">\n        <motion.span\n          key={words[index]}\n          className=\"absolute inset-0 flex items-center justify-center\"\n          initial={initial}\n          animate={animate}\n          exit={exit}\n          transition={{\n            duration: 0.5,\n            ease: [0.32, 0.72, 0, 1],\n          }}\n        >\n          {words[index]}\n        </motion.span>\n      </AnimatePresence>\n    </span>\n  );\n}",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "dev.yadhakim",
+    "slug": "rotating-text",
+    "registry_url": "https://21st.dev/r/dev.yadhakim/rotating-text",
+    "title": "Rotating Text",
+    "description": "Animated word rotator for hero headings — cycles through an array of words with 5 built-in animation modes: slide, fade, blur, flip, and drop. Inline-friendly — drop it inside any heading. Auto-sizes to the widest word to prevent layout shift. Configurable interval and animation style.",
+    "category": "hero",
+    "category_group": "Marketing Blocks",
+    "downloads": 33,
+    "likes": 0
+  }
+}

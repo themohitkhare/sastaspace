@@ -1,0 +1,38 @@
+{
+  "name": "testimonials-1",
+  "type": "registry:block",
+  "dependencies": [
+    "lucide-react"
+  ],
+  "registryDependencies": [
+    "https://21st.dev/r/shadcn/card"
+  ],
+  "files": [
+    {
+      "path": "/components/blocks/testimonials-1.tsx",
+      "content": "import { Card, CardHeader, CardFooter, CardContent } from \"@/components/ui/card\";\r\nimport { Star } from \"lucide-react\";\r\n\r\nexport interface Testimonial {\r\n  name: string;\r\n  role: string;\r\n  text: string;\r\n  avatar: string;\r\n  rating?: number;\r\n}\r\n\r\ninterface TestimonialsSectionProps {\r\n  title?: string;\r\n  subtitle?: string;\r\n  badgeText?: string;\r\n  testimonials: Testimonial[];\r\n}\r\n\r\nexport function TestimonialsSection({\r\n  title = \"Trusted by thousands of teams\",\r\n  subtitle = \"See what our customers have to say about us.\",\r\n  badgeText = \"Testimonials\",\r\n  testimonials,\r\n}: TestimonialsSectionProps) {\r\n  return (\r\n    <section id=\"testimonials\" className=\"w-full py-12 md:py-24 lg:py-32\">\r\n      <div className=\"container px-4 md:px-6\">\r\n        <div className=\"flex flex-col items-center justify-center space-y-4 text-center\">\r\n          <div className=\"space-y-2\">\r\n            <div className=\"inline-block rounded-lg bg-primary px-3 py-1 text-sm text-primary-foreground\">\r\n              {badgeText}\r\n            </div>\r\n            <h2 className=\"text-3xl font-bold tracking-tighter md:text-4xl/tight\">\r\n              {title}\r\n            </h2>\r\n            <p className=\"max-w-[900px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed\">\r\n              {subtitle}\r\n            </p>\r\n          </div>\r\n        </div>\r\n        <div className=\"mx-auto grid max-w-5xl gap-6 py-12 lg:grid-cols-2\">\r\n          {testimonials.map((t, i) => {\r\n            const stars = typeof t.rating === \"number\" ? t.rating : 0;\r\n            return (\r\n              <Card key={i} className=\"flex flex-col h-full\">\r\n                <CardHeader>\r\n                  <div className=\"flex items-center gap-2\">\r\n                    <div className=\"flex\">\r\n                      {Array.from({ length: stars }).map((_, idx) => (\r\n                        <Star\r\n                          key={idx}\r\n                          className={`h-4 w-4 ${\r\n                            idx < stars\r\n                              ? \"fill-primary text-primary\"\r\n                              : \"text-muted fill-muted\"\r\n                          }`}\r\n                        />\r\n                      ))}\r\n                    </div>\r\n                  </div>\r\n                </CardHeader>\r\n                <CardContent>\r\n                  <p className=\"text-muted-foreground\">\"{t.text}\"</p>\r\n                </CardContent>\r\n                <CardFooter className=\"mt-auto\">\r\n                  <div className=\"flex items-center gap-4\">\r\n                    <img\r\n                      src={t.avatar}\r\n                      alt={t.name}\r\n                      className=\"rounded-xl w-8 h-8 object-cover\"\r\n                    />\r\n                    <div>\r\n                      <p className=\"text-sm font-medium\">{t.name}</p>\r\n                      <p className=\"text-xs text-muted-foreground\">{t.role}</p>\r\n                    </div>\r\n                  </div>\r\n                </CardFooter>\r\n              </Card>\r\n            );\r\n          })}\r\n        </div>\r\n      </div>\r\n    </section>\r\n  );\r\n}\r\n",
+      "type": "registry:block",
+      "target": ""
+    },
+    {
+      "path": "/components/ui/card.tsx",
+      "content": "import * as React from \"react\"\n\nimport { cn } from \"@/lib/utils\"\n\nconst Card = React.forwardRef<\n  HTMLDivElement,\n  React.HTMLAttributes<HTMLDivElement>\n>(({ className, ...props }, ref) => (\n  <div\n    ref={ref}\n    className={cn(\n      \"rounded-lg border bg-card text-card-foreground shadow-sm\",\n      className,\n    )}\n    {...props}\n  />\n))\nCard.displayName = \"Card\"\n\nconst CardHeader = React.forwardRef<\n  HTMLDivElement,\n  React.HTMLAttributes<HTMLDivElement>\n>(({ className, ...props }, ref) => (\n  <div\n    ref={ref}\n    className={cn(\"flex flex-col space-y-1.5 p-6\", className)}\n    {...props}\n  />\n))\nCardHeader.displayName = \"CardHeader\"\n\nconst CardTitle = React.forwardRef<\n  HTMLParagraphElement,\n  React.HTMLAttributes<HTMLHeadingElement>\n>(({ className, ...props }, ref) => (\n  <h3\n    ref={ref}\n    className={cn(\n      \"text-2xl font-semibold leading-none tracking-tight\",\n      className,\n    )}\n    {...props}\n  />\n))\nCardTitle.displayName = \"CardTitle\"\n\nconst CardDescription = React.forwardRef<\n  HTMLParagraphElement,\n  React.HTMLAttributes<HTMLParagraphElement>\n>(({ className, ...props }, ref) => (\n  <p\n    ref={ref}\n    className={cn(\"text-sm text-muted-foreground\", className)}\n    {...props}\n  />\n))\nCardDescription.displayName = \"CardDescription\"\n\nconst CardContent = React.forwardRef<\n  HTMLDivElement,\n  React.HTMLAttributes<HTMLDivElement>\n>(({ className, ...props }, ref) => (\n  <div ref={ref} className={cn(\"p-6 pt-0\", className)} {...props} />\n))\nCardContent.displayName = \"CardContent\"\n\nconst CardFooter = React.forwardRef<\n  HTMLDivElement,\n  React.HTMLAttributes<HTMLDivElement>\n>(({ className, ...props }, ref) => (\n  <div\n    ref={ref}\n    className={cn(\"flex items-center p-6 pt-0\", className)}\n    {...props}\n  />\n))\nCardFooter.displayName = \"CardFooter\"\n\nexport { Card, CardHeader, CardFooter, CardTitle, CardDescription, CardContent }\n",
+      "type": "registry:ui",
+      "target": ""
+    }
+  ],
+  "tailwind": {
+    "config": {}
+  },
+  "_meta": {
+    "author": "axorax",
+    "slug": "testimonials-1",
+    "registry_url": "https://21st.dev/r/axorax/testimonials-1",
+    "title": "Testimonials 1",
+    "description": "Simple testimonials section with minimal cards",
+    "category": "testimonials",
+    "category_group": "Marketing Blocks",
+    "downloads": 54,
+    "likes": 0
+  }
+}

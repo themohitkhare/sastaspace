@@ -1,0 +1,29 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "fallback-avatar-one",
+  "type": "registry:component",
+  "title": "Fallback Avatar One",
+  "description": "A fallback-avatar-one component.",
+  "dependencies": [],
+  "registryDependencies": [
+    "https://21st.dev/r/shadcn/avatar"
+  ],
+  "files": [
+    {
+      "path": "src/components/ui/fallback-avatar-one.tsx",
+      "content": "\nimport { Avatar, AvatarFallback } from \"@/components/ui/avatar\";\nconst FallbackDemo = () => {\n  return (\n    <div className=\"flex items-center justify-center px-4\">\n      <Avatar>\n        <AvatarFallback className=\"bg-amber-200 text-amber-600 font-medium\">WP</AvatarFallback>\n      </Avatar>\n    </div>\n  );\n};\n\nexport default FallbackDemo;\n",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "shadcnspace",
+    "slug": "fallback-avatar-one",
+    "registry_url": "https://21st.dev/r/shadcnspace/fallback-avatar-one",
+    "title": "Fallback Avatar One",
+    "description": "Here is fallback avatar component.",
+    "category": "avatar",
+    "category_group": "UI Components",
+    "downloads": 0,
+    "likes": 0
+  }
+}

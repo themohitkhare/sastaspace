@@ -1,0 +1,29 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "avatar-one",
+  "type": "registry:component",
+  "title": "Avatar One",
+  "description": "A avatar-one component.",
+  "dependencies": [],
+  "registryDependencies": [
+    "https://21st.dev/r/shadcn/avatar"
+  ],
+  "files": [
+    {
+      "path": "src/components/ui/avatar-one.tsx",
+      "content": "import { Avatar, AvatarFallback, AvatarImage } from \"@/components/ui/avatar\";\nconst DefaultAvatarDemo = () => {\n  return (\n    <div className=\"flex items-center justify-center px-4\">\n      <div className=\"flex flex-row justify-center items-center gap-3\">\n        <Avatar>\n          <AvatarImage\n            src=\"https://images.shadcnspace.com/assets/profiles/user-1.jpg\"\n            alt=\"user\"\n          />\n          <AvatarFallback className=\"text-sm font-medium\">CN</AvatarFallback>\n        </Avatar>\n      </div>\n    </div>\n  );\n};\n\nexport default DefaultAvatarDemo;\n",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "shadcnspace",
+    "slug": "avatar-one",
+    "registry_url": "https://21st.dev/r/shadcnspace/avatar-one",
+    "title": "Avatar One",
+    "description": "Here is avatar component.",
+    "category": "avatar",
+    "category_group": "UI Components",
+    "downloads": 0,
+    "likes": 0
+  }
+}

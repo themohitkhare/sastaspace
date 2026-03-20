@@ -1,0 +1,79 @@
+{
+  "name": "shine-border",
+  "type": "registry:ui",
+  "dependencies": [
+    "dicons"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "/components/ui/shine-border.tsx",
+      "content": "\"use client\";\n\nimport { cn } from \"@/lib/utils\";\nimport type { ReactNode } from \"react\";\nimport { DIcons, ValidIcon } from \"dicons\";\n\ntype TColorProp = string | string[];\n\ninterface ShineBorderProps {\n  borderRadius?: number;\n  borderWidth?: number;\n  duration?: number;\n  color?: TColorProp;\n  className?: string;\n  children: React.ReactNode;\n}\n\n/**\n * @name Shine Border\n * @description It is an animated background border effect component with easy to use and configurable props.\n * @param borderRadius defines the radius of the border.\n * @param borderWidth defines the width of the border.\n * @param duration defines the animation duration to be applied on the shining border\n * @param color a string or string array to define border color.\n * @param className defines the class name to be applied to the component\n * @param children contains react node elements.\n */\nfunction ShineBorder({\n  borderRadius = 8,\n  borderWidth = 1,\n  duration = 14,\n  color = \"#000000\",\n  className,\n  children,\n}: ShineBorderProps) {\n  return (\n    <div\n      style={\n        {\n          \"--border-radius\": `${borderRadius}px`,\n        } as React.CSSProperties\n      }\n      className={cn(\n        \"relative grid h-full w-full place-items-center rounded-3xl bg-white p-3 text-black dark:bg-black dark:text-white\",\n        className,\n      )}\n    >\n      <div\n        style={\n          {\n            \"--border-width\": `${borderWidth}px`,\n            \"--border-radius\": `${borderRadius}px`,\n            \"--shine-pulse-duration\": `${duration}s`,\n            \"--mask-linear-gradient\": `linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)`,\n            \"--background-radial-gradient\": `radial-gradient(transparent,transparent, ${color instanceof Array ? color.join(\",\") : color},transparent,transparent)`,\n          } as React.CSSProperties\n        }\n        className={`before:bg-shine-size before:absolute before:inset-0 before:aspect-square before:size-full before:rounded-3xl before:p-[--border-width] before:will-change-[background-position] before:content-[\"\"] before:![-webkit-mask-composite:xor] before:[background-image:--background-radial-gradient] before:[background-size:300%_300%] before:![mask-composite:exclude] before:[mask:--mask-linear-gradient] motion-safe:before:animate-[shine-pulse_var(--shine-pulse-duration)_infinite_linear]`}\n      ></div>\n      {children}\n    </div>\n  );\n}\n\nexport function TimelineContainer({ children }: { children: ReactNode }) {\n  return (\n    // first:md:order-2 does not work\n    <div className=\"mx-auto flex max-w-md flex-col justify-center gap-3 md:order-2\">\n      {children}\n    </div>\n  );\n}\n\nexport function TimelineEvent({\n  label,\n  message,\n  icon,\n  isLast = false,\n}: Event & {\n  isLast?: boolean;\n}) {\n  const Icon = DIcons[icon.name];\n  return (\n    <div className=\"group relative -m-2 flex gap-4 border border-transparent p-2\">\n      <div className=\"relative\">\n        <div\n          className={cn(\n            \"rounded-full border bg-background p-2\",\n            icon.borderColor\n          )}\n        >\n          <Icon className={cn(\"h-4 w-4\", icon.textColor)} />\n        </div>\n        {!isLast ? (\n          <div className=\"absolute inset-x-0 mx-auto h-full w-[2px] bg-muted\" />\n        ) : null}\n      </div>\n      <div className=\"mt-1 flex flex-1 flex-col gap-1\">\n        <div className=\"flex items-center justify-between gap-4\">\n          <p className=\"text-lg font-semibold\">{label}</p>\n        </div>\n        <p className=\"text-xs text-muted-foreground\">{message}</p>\n      </div>\n    </div>\n  );\n}\n\nexport function Timeline() {\n  return (\n    <div className=\"w-3xl\">\n      <TimelineContainer>\n        {timeline.map((event, i) => (\n          <TimelineEvent\n            key={event.message}\n            isLast={i === timeline.length - 1}\n            {...event}\n          />\n        ))}\n      </TimelineContainer>\n    </div>\n  );\n}\n\ninterface Event {\n  label: string;\n  message: string;\n  icon: {\n    name: ValidIcon;\n    textColor: string;\n    borderColor: string;\n  };\n}\n\nconst timeline = [\n  {\n    label: \"Choose Your Design\",\n    message:\n      \"Browse and select a design that fits your needs, then access your personalized dashboard.\",\n    icon: {\n      name: \"Shapes\",\n      textColor: \"text-orange-500\",\n      borderColor: \"border-orange-500/40\",\n    },\n  },\n  {\n    label: \"Provide Your Brief\",\n    message: \"Share your design preferences and requirements with us.\",\n    icon: {\n      name: \"Send\",\n      textColor: \"text-amber-500\",\n      borderColor: \"border-amber-500/40\",\n    },\n  },\n  {\n    label: \"Receive Your Designs\",\n    message: \"Get your initial designs within 48 hours.\",\n    icon: {\n      name: \"Check\",\n      textColor: \"text-blue-500\",\n      borderColor: \"border-blue-500/40\",\n    },\n  },\n  {\n    label: \"Request Revisions\",\n    message:\n      \"We’re committed to perfection—request as many revisions as needed until you’re satisfied.\",\n    icon: {\n      name: \"Repeat\",\n      textColor: \"text-green-500\",\n      borderColor: \"border-green-500/40\",\n    },\n  },\n  {\n    label: \"Get Final Files\",\n    message: \"Once approved, we’ll deliver the final files to you.\",\n    icon: {\n      name: \"Download\",\n      textColor: \"text-green-500\",\n      borderColor: \"border-green-500/40\",\n    },\n  },\n] satisfies Event[];\n \n\n\nexport { ShineBorder, Timeline }\n",
+      "type": "registry:ui",
+      "target": ""
+    }
+  ],
+  "cssVars": {
+    "theme": {
+      "animate-border-beam": "border-beam calc(var(--duration)*1s) infinite linear"
+    }
+  },
+  "css": {
+    "@keyframes border-beam": {
+      "100%": {
+        "offset-distance": "100%"
+      }
+    },
+    "@keyframes shine-pulse": {
+      "0%": {
+        "background-position": "0% 0%"
+      },
+      "50%": {
+        "background-position": "100% 100%"
+      },
+      "to": {
+        "background-position": "0% 0%"
+      }
+    }
+  },
+  "tailwind": {
+    "config": {
+      "theme": {
+        "extend": {
+          "animation": {
+            "border-beam": "border-beam calc(var(--duration)*1s) infinite linear"
+          },
+          "keyframes": {
+            "border-beam": {
+              "100%": {
+                "offset-distance": "100%"
+              }
+            },
+            "shine-pulse": {
+              "0%": {
+                "background-position": "0% 0%"
+              },
+              "50%": {
+                "background-position": "100% 100%"
+              },
+              "to": {
+                "background-position": "0% 0%"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "_meta": {
+    "author": "designali-in",
+    "slug": "shine-border",
+    "registry_url": "https://21st.dev/r/designali-in/shine-border",
+    "title": "Shine Border",
+    "description": "Shine Border",
+    "category": "border",
+    "category_group": "Marketing Blocks",
+    "downloads": 569,
+    "likes": 0
+  }
+}

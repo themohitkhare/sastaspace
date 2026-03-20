@@ -1,0 +1,30 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "hero-4",
+  "type": "registry:component",
+  "title": "Hero 4",
+  "description": "A hero-4 component.",
+  "dependencies": [],
+  "registryDependencies": [
+    "https://21st.dev/r/shadcn/button",
+    "https://21st.dev/r/originui/avatar"
+  ],
+  "files": [
+    {
+      "path": "src/components/ui/hero-4.tsx",
+      "content": "// components/ui/hero-section.tsx\n\nimport * as React from \"react\";\nimport { cn } from \"@/lib/utils\"; // Assuming you have a `cn` utility from shadcn/ui\nimport { Button } from \"@/components/ui/button\"; // Using shadcn/ui Button\nimport { Avatar, AvatarFallback, AvatarImage } from \"@/components/ui/avatar\"; // Using shadcn/ui Avatar\n\n// Define the props interface for type safety and reusability\nexport interface HeroSectionProps extends React.HTMLAttributes<HTMLDivElement> {\n  title: React.ReactNode;\n  animatedTexts: string[];\n  subtitle: string;\n  infoBadgeText: string;\n  ctaButtonText: string;\n  socialProofText: string;\n  avatars: {\n    src: string;\n    alt: string;\n    fallback: string;\n  }[];\n}\n\nconst HeroSection = React.forwardRef<HTMLDivElement, HeroSectionProps>(\n  ({ className, title, animatedTexts, subtitle, infoBadgeText, ctaButtonText, socialProofText, avatars, ...props }, ref) => {\n    const [textIndex, setTextIndex] = React.useState(0);\n    const [displayText, setDisplayText] = React.useState(\"\");\n    const [isDeleting, setIsDeleting] = React.useState(false);\n\n    // Effect for the typewriter animation\n    React.useEffect(() => {\n      const fullText = animatedTexts[textIndex];\n\n      const handleTyping = () => {\n        if (isDeleting) {\n          // Deleting text\n          setDisplayText((prev) => prev.substring(0, prev.length - 1));\n        } else {\n          // Typing text\n          setDisplayText((prev) => fullText.substring(0, prev.length + 1));\n        }\n      };\n\n      const typingSpeed = isDeleting ? 75 : 150;\n      const typeInterval = setInterval(handleTyping, typingSpeed);\n\n      // Logic to switch between typing and deleting\n      if (!isDeleting && displayText === fullText) {\n        // Pause at the end of typing\n        setTimeout(() => setIsDeleting(true), 2000);\n      } else if (isDeleting && displayText === \"\") {\n        setIsDeleting(false);\n        // Move to the next text in the array\n        setTextIndex((prev) => (prev + 1) % animatedTexts.length);\n      }\n\n      // Cleanup interval on component unmount or state change\n      return () => clearInterval(typeInterval);\n    }, [displayText, isDeleting, textIndex, animatedTexts]);\n\n    return (\n      <section\n        className={cn(\"container mx-auto flex flex-col items-center justify-center text-center py-20 md:py-32\", className)}\n        ref={ref}\n        {...props}\n      >\n        <div className=\"max-w-4xl\">\n          {/* Main Heading */}\n          <h1 className=\"text-4xl font-bold tracking-tight text-foreground sm:text-5xl md:text-6xl lg:text-7xl\">\n            {title}\n            <span className=\"relative mt-2 block w-fit mx-auto\">\n              {/* Dashed border effect */}\n              <span className=\"absolute inset-0 -z-10 -m-2\">\n                <span className=\"absolute inset-0 border-2 border-dashed border-primary rounded-2xl\"></span>\n              </span>\n              {/* Animated Text */}\n              <span className=\"text-primary min-h-[1.2em] inline-block\">\n                {displayText}\n                <span className=\"animate-pulse\">|</span>\n              </span>\n            </span>\n          </h1>\n\n          {/* Subtitle */}\n          <p className=\"mt-6 text-lg leading-8 text-muted-foreground max-w-2xl mx-auto\">\n            {subtitle}\n          </p>\n        </div>\n\n        <div className=\"mt-10 flex flex-col items-center gap-6\">\n          {/* Info Badge */}\n          <div className=\"inline-flex items-center rounded-lg bg-secondary text-secondary-foreground px-3 py-1 text-sm font-medium\">\n            {infoBadgeText}\n          </div>\n\n          {/* CTA Button */}\n          <Button size=\"lg\" className=\"px-8 py-6 text-lg\">\n            {ctaButtonText}\n          </Button>\n\n          {/* Social Proof */}\n          <div className=\"mt-4 flex items-center justify-center\">\n            <div className=\"flex -space-x-4\">\n              {avatars.map((avatar, index) => (\n                <Avatar key={index} className=\"border-2 border-background\">\n                  <AvatarImage src={avatar.src} alt={avatar.alt} />\n                  <AvatarFallback>{avatar.fallback}</AvatarFallback>\n                </Avatar>\n              ))}\n            </div>\n            <p className=\"ml-4 text-sm font-medium text-muted-foreground\">\n              {socialProofText}\n            </p>\n          </div>\n        </div>\n      </section>\n    );\n  }\n);\n\nHeroSection.displayName = \"HeroSection\";\n\nexport { HeroSection };",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "ravikatiyar162",
+    "slug": "hero-4",
+    "registry_url": "https://21st.dev/r/ravikatiyar162/hero-4",
+    "title": "Hero",
+    "description": "Hero Section with Animated Text\nThis component provides a full hero section layout. It features a title, an animated subtitle that cycles through a list of phrases with a typewriter effect, a descriptive paragraph, an information badge, a primary call-to-action button, and a social proof element with stacked avatars.",
+    "category": "hero",
+    "category_group": "Marketing Blocks",
+    "downloads": 20,
+    "likes": 0
+  }
+}

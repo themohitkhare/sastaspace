@@ -1,0 +1,31 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "call-to-action",
+  "type": "registry:component",
+  "title": "Call To Action",
+  "description": "A call-to-action component.",
+  "dependencies": [
+    "next"
+  ],
+  "registryDependencies": [
+    "https://21st.dev/r/shadcn/button"
+  ],
+  "files": [
+    {
+      "path": "src/components/ui/call-to-action.tsx",
+      "content": "import { Button } from '@/components/ui/button'\nimport Link from 'next/link'\n\nexport default function CallToAction() {\n    return (\n        <section className=\"py-16 md:py-32\">\n            <div className=\"mx-auto max-w-5xl px-6\">\n                <div className=\"text-center\">\n                    <h2 className=\"text-balance text-4xl font-semibold lg:text-5xl\">Start Building</h2>\n                    <p className=\"mt-4\">Libero sapiente aliquam quibusdam aspernatur.</p>\n\n                    <div className=\"mt-12 flex flex-wrap justify-center gap-4\">\n                        <Button\n                            asChild\n                            size=\"lg\">\n                            <Link href=\"/\">\n                                <span>Get Started</span>\n                            </Link>\n                        </Button>\n\n                        <Button\n                            asChild\n                            size=\"lg\"\n                            variant=\"outline\">\n                            <Link href=\"/\">\n                                <span>Book Demo</span>\n                            </Link>\n                        </Button>\n                    </div>\n                </div>\n            </div>\n        </section>\n    )\n}",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "meschacirung",
+    "slug": "call-to-action",
+    "registry_url": "https://21st.dev/r/meschacirung/call-to-action",
+    "title": "Call to Action",
+    "description": "Here is Call to Action component",
+    "category": "call-to-action",
+    "category_group": "Marketing Blocks",
+    "downloads": 3,
+    "likes": 0
+  }
+}

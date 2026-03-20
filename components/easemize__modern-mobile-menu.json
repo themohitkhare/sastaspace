@@ -1,0 +1,72 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "modern-mobile-menu",
+  "type": "registry:component",
+  "title": "Modern Mobile Menu",
+  "description": "A modern-mobile-menu component.",
+  "dependencies": [
+    "lucide-react"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/ui/modern-mobile-menu.tsx",
+      "content": "import React, { useState, useRef, useEffect, useMemo } from 'react';\nimport { Home, Briefcase, Calendar, Shield, Settings } from 'lucide-react';\n\ntype IconComponentType = React.ElementType<{ className?: string }>;\nexport interface InteractiveMenuItem {\n  label: string;\n  icon: IconComponentType;\n}\n\nexport interface InteractiveMenuProps {\n  items?: InteractiveMenuItem[];\n  accentColor?: string;\n}\n\nconst defaultItems: InteractiveMenuItem[] = [\n    { label: 'home', icon: Home },\n    { label: 'strategy', icon: Briefcase },\n    { label: 'period', icon: Calendar },\n    { label: 'security', icon: Shield },\n    { label: 'settings', icon: Settings },\n];\n\nconst defaultAccentColor = 'var(--component-active-color-default)';\n\nconst InteractiveMenu: React.FC<InteractiveMenuProps> = ({ items, accentColor }) => {\n\n  const finalItems = useMemo(() => {\n     const isValid = items && Array.isArray(items) && items.length >= 2 && items.length <= 5;\n     if (!isValid) {\n        console.warn(\"InteractiveMenu: 'items' prop is invalid or missing. Using default items.\", items);\n        return defaultItems;\n     }\n     return items;\n  }, [items]);\n\n  const [activeIndex, setActiveIndex] = useState(0);\n\n  useEffect(() => {\n      if (activeIndex >= finalItems.length) {\n          setActiveIndex(0);\n      }\n  }, [finalItems, activeIndex]);\n\n  const textRefs = useRef<(HTMLElement | null)[]>([]);\n  const itemRefs = useRef<(HTMLButtonElement | null)[]>([]);\n\n  useEffect(() => {\n    const setLineWidth = () => {\n      const activeItemElement = itemRefs.current[activeIndex];\n      const activeTextElement = textRefs.current[activeIndex];\n\n      if (activeItemElement && activeTextElement) {\n        const textWidth = activeTextElement.offsetWidth;\n        activeItemElement.style.setProperty('--lineWidth', `${textWidth}px`);\n      }\n    };\n\n    setLineWidth();\n\n    window.addEventListener('resize', setLineWidth);\n    return () => {\n      window.removeEventListener('resize', setLineWidth);\n    };\n  }, [activeIndex, finalItems]);\n\n  const handleItemClick = (index: number) => {\n    setActiveIndex(index);\n  };\n\n  const navStyle = useMemo(() => {\n      const activeColor = accentColor || defaultAccentColor;\n      return { '--component-active-color': activeColor } as React.CSSProperties;\n  }, [accentColor]); \n\n  return (\n    <nav\n      className=\"menu\"\n      role=\"navigation\"\n      style={navStyle}\n    >\n      {finalItems.map((item, index) => {\n        const isActive = index === activeIndex;\n        const isTextActive = isActive;\n\n\n        const IconComponent = item.icon;\n\n        return (\n          <button\n            key={item.label}\n            className={`menu__item ${isActive ? 'active' : ''}`}\n            onClick={() => handleItemClick(index)}\n            ref={(el) => (itemRefs.current[index] = el)}\n            style={{ '--lineWidth': '0px' } as React.CSSProperties} \n          >\n            <div className=\"menu__icon\">\n              <IconComponent className=\"icon\" />\n            </div>\n            <strong\n              className={`menu__text ${isTextActive ? 'active' : ''}`}\n              ref={(el) => (textRefs.current[index] = el)}\n            >\n              {item.label}\n            </strong>\n          </button>\n        );\n      })}\n    </nav>\n  );\n};\n\nexport {InteractiveMenu}",
+      "type": "registry:component"
+    }
+  ],
+  "cssVars": {
+    "theme": {
+      "--color-chart-2": "var(--color-chart-2)",
+      "--color-chart-3": "var(--color-chart-3)",
+      "--color-chart-4": "var(--color-chart-4)",
+      "--color-chart-5": "var(--color-chart-5)"
+    },
+    "light": {
+      "--component-inactive-color": "var(--muted-foreground)",
+      "--component-bg": "var(--card)",
+      "--component-shadow": "var(--border)",
+      "--component-active-bg": "var(--secondary)",
+      "--component-line-inactive-color": "var(--border)",
+      "--component-active-color-default": "var(--accent-foreground)"
+    },
+    "dark": {
+      "--component-inactive-color": "var(--muted-foreground)",
+      "--component-bg": "var(--card)",
+      "--component-shadow": "var(--border)",
+      "--component-active-bg": "var(--secondary)",
+      "--component-line-inactive-color": "var(--muted-foreground)",
+      "--component-active-color-default": "var(--accent-foreground)"
+    }
+  },
+  "css": {
+    "@keyframes iconBounce": {
+      "0%, 100%": {
+        "transform": "translateY(0)"
+      },
+      "20%": {
+        "transform": "translateY(-0.3em)"
+      },
+      "40%": {
+        "transform": "translateY(0)"
+      },
+      "60%": {
+        "transform": "translateY(-0.1em)"
+      },
+      "80%": {
+        "transform": "translateY(0)"
+      }
+    }
+  },
+  "_meta": {
+    "author": "easemize",
+    "slug": "modern-mobile-menu",
+    "registry_url": "https://21st.dev/r/easemize/modern-mobile-menu",
+    "title": "Modern Mobile Menu",
+    "description": "Mobile Menu, Mobile Nav, Mobile Navbar, Mobile navigation, Modern Mobile Menu, Mobile Dock, Dock, Bottom Nav, Navigation, Menu",
+    "category": "dock",
+    "category_group": "Marketing Blocks",
+    "downloads": 814,
+    "likes": 0
+  }
+}

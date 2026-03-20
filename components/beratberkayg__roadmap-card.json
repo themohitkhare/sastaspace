@@ -1,0 +1,32 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "roadmap-card",
+  "type": "registry:component",
+  "title": "Roadmap Card",
+  "description": "A roadmap-card component.",
+  "dependencies": [
+    "framer-motion"
+  ],
+  "registryDependencies": [
+    "https://21st.dev/r/shadcn/card",
+    "https://21st.dev/r/shadcn/badge"
+  ],
+  "files": [
+    {
+      "path": "src/components/ui/roadmap-card.tsx",
+      "content": "\"use client\";\nimport { motion } from \"framer-motion\";\nimport { Card, CardContent, CardHeader, CardTitle, CardDescription } from \"@/components/ui/card\";\nimport { Badge } from \"@/components/ui/badge\";\n\nexport interface RoadmapItem {\n  quarter: string;\n  title: string;\n  description: string;\n  status?: \"done\" | \"in-progress\" | \"upcoming\";\n}\n\nexport interface RoadmapCardProps {\n  title?: string;\n  description?: string;\n  items: RoadmapItem[];\n}\n\nexport function RoadmapCard({\n  title = \"Product Roadmap\",\n  description = \"Upcoming features and releases\",\n  items,\n}: RoadmapCardProps) {\n  return (\n    <Card className=\"w-full max-w-4xl shadow-xl hover:shadow-lg transiton-all duration-300\">\n      <CardHeader>\n        <CardTitle>{title}</CardTitle>\n        <CardDescription >{description}</CardDescription>\n      </CardHeader>\n      <CardContent>\n        <div className=\"relative\">\n          {/* Timeline Line */}\n          <div className=\"absolute left-0 right-0 top-4 h-px bg-border\" />\n\n          <div className=\"flex justify-between\">\n          {items.map((item, index) => (\n              <motion.div\n                key={index}\n                className=\"relative pt-8 text-center w-1/4\"\n                initial={{ opacity: 0, y: 20 }}\n                animate={{ opacity: 1, y: 0 }}\n                transition={{ duration: 0.4, delay: index * 0.15 }}\n              >\n                {/* Timeline Dot */}\n                <motion.div\n                  whileHover={{ scale: 1.2 }}\n                  className={`absolute left-1/2 top-2 -translate-x-1/2 h-4 w-4 rounded-full flex items-center justify-center ${\n                    item.status === \"done\" || item.status === \"in-progress\"\n                      ? \"bg-primary\"\n                      : \"bg-muted\"\n                  }`}\n                >\n                  <div className=\"h-1.5 w-1.5 rounded-full bg-background\" />\n                </motion.div>\n\n                {/* Quarter */}\n                <Badge\n                  variant={\n                    item.status === \"done\" || item.status === \"in-progress\"\n                      ? \"default\"\n                      : \"outline\"\n                  }\n                  className=\"mb-1 text-[11px]\"\n                >\n                  {item.quarter}\n                </Badge>\n\n                {/* Title + Description */}\n                <h4 className=\"text-sm font-medium\">{item.title}</h4>\n                <p className=\"text-xs text-muted-foreground mt-1\">\n                  {item.description}\n                </p>\n              </motion.div>\n            ))}\n          </div>\n        </div>\n      </CardContent>\n    </Card>\n  );\n}\n",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "beratberkayg",
+    "slug": "roadmap-card",
+    "registry_url": "https://21st.dev/r/beratberkayg/roadmap-card",
+    "title": "Roadmap Card",
+    "description": "The RoadmapCard component is a minimal, animated product roadmap built with shadcn/ui and Framer Motion.\nIt displays key project milestones in a clean timeline format, supporting light and dark modes out-of-the-box.\n\nFeatures:\n\n📅 Display quarterly milestones with title, description, and status\n\n✨ Animated timeline dots with fade and slide-in effects\n\n🎨 Minimal, modern design with hover scale effect on dots\n\n🌗 Fully theme-aware (light/dark mode compatible)\n\n🔹 Reusable and dynamic via items prop\n\nIdeal for showcasing product plans, feature releases, or project timelines in a visually appealing and interactive way.",
+    "category": "badge",
+    "category_group": "UI Components",
+    "downloads": 11,
+    "likes": 0
+  }
+}

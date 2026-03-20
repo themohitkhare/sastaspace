@@ -1,0 +1,75 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "nebula-forgery",
+  "type": "registry:component",
+  "title": "Nebula Forgery",
+  "description": "A nebula-forgery component.",
+  "dependencies": [],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/ui/nebula-forgery.tsx",
+      "content": "import React from 'react';\n\n\nexport const Component = () => {\n     // Generate a random number within a range for animation delays/durations\n    const random = (min, max) => Math.random() * (max - min) + min;\n\n  return (\n\n            <main className=\"hero-section w-full h-screen\">\n                <div className=\"nebula-container\">\n                    <div className=\"proto-star\"></div>\n                    \n                    {/* Procedurally generate 8 streams of particles */}\n                    {[...Array(8)].map((_, i) => (\n                        <div key={`stream-${i}`} className=\"ejecta-stream\" style={{\n                            animationDelay: `${i * -2.5}s` // Stagger the stream rotations\n                        }}>\n                            {/* Generate 15 particles per stream */}\n                            {[...Array(15)].map((_, p) => {\n                                const angle = random(0, 360);\n                                const radius = random(200, 500);\n                                const distanceX = Math.cos(angle) * radius;\n                                const distanceY = Math.sin(angle) * radius;\n                                const duration = random(8, 15);\n                                const delay = random(-12, 0);\n\n                                return (\n                                    <div\n                                        key={`particle-${i}-${p}`}\n                                        className=\"particle\"\n                                        style={{\n                                            '--distance-x': distanceX,\n                                            '--distance-y': distanceY,\n                                            animationDuration: `${duration}s, ${duration}s`,\n                                            animationDelay: `${delay}s, ${delay}s`,\n                                        }}\n                                    ></div>\n                                );\n                            })}\n                        </div>\n                    ))}\n                </div>\n\n                {/* The content container is empty */}\n                <div className=\"relative z-10 text-center p-8 max-w-2xl\">\n                </div>\n            </main>\n  );\n};\n",
+      "type": "registry:component"
+    }
+  ],
+  "css": {
+    "@keyframes supernova-pulse": {
+      "0%": {
+        "transform": "translate(-50%, -50%) scale(1)",
+        "opacity": "1"
+      },
+      "50%": {
+        "transform": "translate(-50%, -50%) scale(1.5)",
+        "opacity": "0.8"
+      },
+      "100%": {
+        "transform": "translate(-50%, -50%) scale(1)",
+        "opacity": "1"
+      }
+    },
+    "@keyframes stream-rotate": {
+      "from": {
+        "transform": "rotate(0deg)"
+      },
+      "to": {
+        "transform": "rotate(360deg)"
+      }
+    },
+    "@keyframes particle-travel": {
+      "0%": {
+        "transform": "translate(0, 0)"
+      },
+      "100%": {
+        "transform": "translate(calc(var(--distance-x) * 1px), calc(var(--distance-y) * 1px)) rotate(360deg)"
+      }
+    },
+    "@keyframes particle-fade": {
+      "0%": {
+        "opacity": "1",
+        "background": "#fefefe",
+        "box-shadow": "0 0 8px #fff"
+      },
+      "50%": {
+        "background": "#ffab73",
+        "box-shadow": "0 0 15px #ffab73"
+      },
+      "100%": {
+        "opacity": "0",
+        "background": "#ff6b6b",
+        "box-shadow": "0 0 20px #ff6b6b"
+      }
+    }
+  },
+  "_meta": {
+    "author": "dhileepkumargm",
+    "slug": "nebula-forgery",
+    "registry_url": "https://21st.dev/r/dhileepkumargm/nebula-forgery",
+    "title": "NebulaForgery",
+    "description": "A procedurally animated starburst effect simulating a swirling nebula. Streams of particles erupt from a pulsing proto-star, forming dynamic, layered trails with color-shifting fades. Built with pure CSS and React, this component is ideal for immersive hero sections, ambient backgrounds, or generative UI art.",
+    "category": "hero",
+    "category_group": "Marketing Blocks",
+    "downloads": 0,
+    "likes": 0
+  }
+}

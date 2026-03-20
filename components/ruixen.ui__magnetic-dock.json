@@ -1,0 +1,32 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "magnetic-dock",
+  "type": "registry:component",
+  "title": "Magnetic Dock",
+  "description": "A magnetic-dock component.",
+  "dependencies": [
+    "framer-motion",
+    "lucide-react"
+  ],
+  "registryDependencies": [
+    "https://21st.dev/r/shadcn/card"
+  ],
+  "files": [
+    {
+      "path": "src/components/ui/magnetic-dock.tsx",
+      "content": "\"use client\";\nimport React, { useState } from \"react\";\nimport { motion } from \"framer-motion\";\nimport { cn } from \"@/lib/utils\";\nimport { Home, Search, Settings, User, Bell } from \"lucide-react\";\nimport { Card } from \"@/components/ui/card\";\n\nconst icons = [Home, Search, Bell, Settings, User];\n\ntype DockProps = {\n  position?: \"bottom\" | \"top\" | \"left\";\n};\n\nexport default function MagneticDock({ position = \"bottom\" }: DockProps) {\n  const [hoverIndex, setHoverIndex] = useState<number | null>(null);\n\n  const getTranslate = (index: number) => {\n    if (hoverIndex === null) return 0;\n    const distance = index - hoverIndex;\n    if (Math.abs(distance) > 2) return 0; // only nearby icons affected\n    return -distance * 18; // smoother magnetic pull\n  };\n\n  return (\n    <Card\n      className={cn(\n        \"fixed flex gap-6 p-4 rounded-2xl shadow-xl backdrop-blur-xl\",\n        \"bg-white/50 dark:bg-black/40 border border-white/20 dark:border-white/10\",\n        position === \"bottom\" &&\n          \"bottom-6 left-1/2 -translate-x-1/2 flex-row\",\n        position === \"top\" &&\n          \"top-6 left-1/2 -translate-x-1/2 flex-row\",\n        position === \"left\" &&\n          \"left-6 top-1/2 -translate-y-1/2 flex-col\"\n      )}\n    >\n      {icons.map((Icon, i) => (\n        <motion.button\n          key={i}\n          className=\"relative flex items-center justify-center\"\n          onMouseEnter={() => setHoverIndex(i)}\n          onMouseLeave={() => setHoverIndex(null)}\n          animate={{\n            y: position === \"left\" ? getTranslate(i) : 0,\n            x: position !== \"left\" ? getTranslate(i) : 0,\n            scale: hoverIndex === i ? 1.35 : 1,\n          }}\n          transition={{ type: \"spring\", stiffness: 250, damping: 18 }}\n        >\n          <Icon className=\"h-7 w-7 text-gray-700 dark:text-gray-200\" />\n        </motion.button>\n      ))}\n    </Card>\n  );\n}\n",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "ruixen.ui",
+    "slug": "magnetic-dock",
+    "registry_url": "https://21st.dev/r/ruixen.ui/magnetic-dock",
+    "title": "Magnetic Dock",
+    "description": "This Magnetic Dock component is a modern, interactive navigation dock designed with shadcn/ui, Framer Motion, and Lucide icons. It provides a smooth, playful magnetic effect, where nearby icons subtly shift as you hover, creating an elastic, physics-based interaction. The dock has a glassmorphic card background with blur and soft borders, making it look sleek in both light and dark themes. It is responsive to placement, allowing you to pin it to the bottom, top, or left of the screen, and it remains fixed even while scrolling. With its balance of clean spacing, elegant hover animations, and theme adaptability, this component feels futuristic yet professional, perfect for modern web dashboards or application layouts.",
+    "category": "dock",
+    "category_group": "Marketing Blocks",
+    "downloads": 6,
+    "likes": 0
+  }
+}

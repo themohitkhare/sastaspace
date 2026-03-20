@@ -1,0 +1,31 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "animated-loading-svg-text-shimmer",
+  "type": "registry:component",
+  "title": "Animated Loading Svg Text Shimmer",
+  "description": "A animated-loading-svg-text-shimmer component.",
+  "dependencies": [
+    "lucide-react"
+  ],
+  "registryDependencies": [
+    "https://21st.dev/r/shadcn/button"
+  ],
+  "files": [
+    {
+      "path": "src/components/ui/animated-loading-svg-text-shimmer.tsx",
+      "content": "import React, { useEffect, useRef, useState } from 'react';\nimport { ChevronRight } from 'lucide-react';\nimport { cn } from '@/lib/utils';\n\n// ---------------------------------------------------------------------------\n// Loader Component - Animated SVG Path Loader\n// ---------------------------------------------------------------------------\n\nlet cachedPathLength = 0;\nlet stylesInjected = false;\n\nconst LOADER_KEYFRAMES = `\n  @keyframes drawStroke {\n    0% {\n      stroke-dashoffset: var(--path-length);\n      animation-timing-function: ease-in-out;\n    }\n    50% {\n      stroke-dashoffset: 0;\n      animation-timing-function: ease-in-out;\n    }\n    100% {\n      stroke-dashoffset: calc(var(--path-length) * -1);\n    }\n  }\n`;\n\ninterface LoaderProps extends React.SVGProps<SVGSVGElement> {\n  size?: number | string;\n  strokeWidth?: number | string;\n}\n\nconst Loader = React.forwardRef<SVGSVGElement, LoaderProps>(\n  ({ className, size = 64, strokeWidth = 2, ...props }, ref) => {\n    const pathRef = useRef<SVGPathElement>(null);\n    const [pathLength, setPathLength] = useState<number>(cachedPathLength);\n\n    useEffect(() => {\n      if (typeof window !== 'undefined' && !stylesInjected) {\n        stylesInjected = true;\n        const style = document.createElement('style');\n        style.innerHTML = LOADER_KEYFRAMES;\n        document.head.appendChild(style);\n      }\n\n      if (!cachedPathLength && pathRef.current) {\n        cachedPathLength = pathRef.current.getTotalLength();\n        setPathLength(cachedPathLength);\n      }\n    }, []);\n\n    const isReady = pathLength > 0;\n\n    return (\n      <svg\n        ref={ref}\n        role=\"status\"\n        aria-label=\"Loading...\"\n        viewBox=\"0 0 19 19\"\n        fill=\"none\"\n        xmlns=\"http://www.w3.org/2000/svg\"\n        width={size}\n        height={size}\n        className={cn(\"text-current\", className)}\n        {...props}\n      >\n        <path\n          ref={pathRef}\n          d=\"M4.43431 2.42415C-0.789139 6.90104 1.21472 15.2022 8.434 15.9242C15.5762 16.6384 18.8649 9.23035 15.9332 4.5183C14.1316 1.62255 8.43695 0.0528911 7.51841 3.33733C6.48107 7.04659 15.2699 15.0195 17.4343 16.9241\"\n          stroke=\"currentColor\"\n          strokeWidth={strokeWidth}\n          strokeLinecap=\"round\"\n          style={isReady ? {\n            strokeDasharray: pathLength,\n            '--path-length': pathLength,\n          } as React.CSSProperties : undefined}\n          className={cn(\n            \"transition-opacity duration-300\",\n            isReady ? \"opacity-100 animate-[drawStroke_2.5s_infinite]\" : \"opacity-0\"\n          )}\n        />\n      </svg>\n    );\n  }\n);\n\nLoader.displayName = \"Loader\";\n\n// ---------------------------------------------------------------------------\n// Loading Breadcrumb Component - Animated Loading State with Shimmer Text\n// ---------------------------------------------------------------------------\n\ninterface LoadingBreadcrumbProps {\n  text?: string;\n  className?: string;\n}\n\nexport function LoadingBreadcrumb({ \n  text = \"Cooking\", \n  className \n}: LoadingBreadcrumbProps) {\n  return (\n    <>\n      <style>{`\n        @keyframes textShimmer {\n          0% { \n            background-position: -100% center;\n          }\n          100% { \n            background-position: 100% center;\n          }\n        }\n      `}</style>\n      \n      <div className={cn(\n        \"flex items-center gap-2 text-[15px] font-medium tracking-wide\",\n        className\n      )}>\n        <Loader \n          size={18} \n          strokeWidth={2.5} \n          className=\"text-zinc-600 dark:text-zinc-200\" \n        />\n        \n        <span \n          className=\"bg-clip-text text-transparent shimmer-text\"\n          style={{\n            backgroundSize: \"200% auto\",\n            animation: \"textShimmer 2s ease-in-out infinite\"\n          }}\n        >\n          {text}\n        </span>\n        \n        <ChevronRight size={16} className=\"text-zinc-400 dark:text-zinc-500\" />\n      </div>\n      \n      <style>{`\n        .shimmer-text {\n          background-image: linear-gradient(\n            90deg,\n            rgb(113 113 122) 0%,\n            rgb(113 113 122) 40%,\n            rgb(24 24 27) 50%,\n            rgb(113 113 122) 60%,\n            rgb(113 113 122) 100%\n          );\n        }\n        .dark .shimmer-text {\n          background-image: linear-gradient(\n            90deg,\n            rgb(161 161 170) 0%,\n            rgb(161 161 170) 40%,\n            rgb(255 255 255) 50%,\n            rgb(161 161 170) 60%,\n            rgb(161 161 170) 100%\n          );\n        }\n      `}</style>\n    </>\n  );\n}\n\n// ---------------------------------------------------------------------------\n// Example Usage\n// ---------------------------------------------------------------------------\n\nexport default function LoadingBreadcrumbDemo() {\n  return (\n    <div className=\"flex min-h-screen items-center justify-center p-8\">\n      <LoadingBreadcrumb />\n    </div>\n  );\n}",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "zochory",
+    "slug": "animated-loading-svg-text-shimmer",
+    "registry_url": "https://21st.dev/r/zochory/animated-loading-svg-text-shimmer",
+    "title": "Animated Loading SVG + Text Shimmer",
+    "description": "An animated loading breadcrumb component with a spinning SVG loader icon, shimmer text effect, and chevron. Perfect for indicating loading states in a visually appealing way.",
+    "category": "ai-chat",
+    "category_group": "UI Components",
+    "downloads": 12,
+    "likes": 0
+  }
+}

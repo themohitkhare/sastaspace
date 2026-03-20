@@ -1,0 +1,32 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "gooey-dock",
+  "type": "registry:component",
+  "title": "Gooey Dock",
+  "description": "A gooey-dock component.",
+  "dependencies": [
+    "framer-motion"
+  ],
+  "registryDependencies": [
+    "https://21st.dev/r/shadcn/button",
+    "https://21st.dev/r/shadcn/tooltip"
+  ],
+  "files": [
+    {
+      "path": "src/components/ui/gooey-dock.tsx",
+      "content": "\"use client\"\n\nimport * as React from \"react\"\nimport { cn } from \"@/lib/utils\"\nimport { Button } from \"@/components/ui/button\"\nimport {\n  Tooltip,\n  TooltipContent,\n  TooltipProvider,\n  TooltipTrigger,\n} from \"@/components/ui/tooltip\"\nimport { motion } from \"framer-motion\"\n\ninterface GooeyDockProps {\n  className?: string\n  items: {\n    icon: React.ComponentType<{ className?: string }>\n    label: string\n    onClick?: () => void\n  }[]\n}\n\nexport default function GooeyDock({ items, className }: GooeyDockProps) {\n  const [hovered, setHovered] = React.useState<number | null>(null)\n\n  return (\n    <div\n      className={cn(\"flex items-center justify-center w-full py-20\", className)}\n    >\n      {/* SVG goo filter */}\n      <svg className=\"absolute h-0 w-0\">\n        <defs>\n          <filter id=\"goo\">\n            <feGaussianBlur in=\"SourceGraphic\" stdDeviation=\"10\" result=\"blur\" />\n            <feColorMatrix\n              in=\"blur\"\n              mode=\"matrix\"\n              values=\"\n                1 0 0 0 0\n                0 1 0 0 0\n                0 0 1 0 0\n                0 0 0 20 -5\"\n              result=\"goo\"\n            />\n            <feBlend in=\"SourceGraphic\" in2=\"goo\" />\n          </filter>\n        </defs>\n      </svg>\n\n      <TooltipProvider delayDuration={100}>\n        <div className=\"relative flex gap-6 px-6 py-4\">\n          {items.map((item, i) => {\n            const isHovered = hovered === i\n\n            return (\n              <Tooltip key={item.label}>\n                <TooltipTrigger asChild>\n                  <motion.div\n                    onMouseEnter={() => setHovered(i)}\n                    onMouseLeave={() => setHovered(null)}\n                    animate={{\n                      scale: isHovered ? 1.2 : 1,\n                    }}\n                    transition={{\n                      type: \"spring\",\n                      stiffness: 300,\n                      damping: 20,\n                    }}\n                    className=\"relative\"\n                  >\n                    {/* Liquid blob background with goo filter */}\n                    <motion.div\n                      className=\"absolute inset-0 rounded-full bg-primary/40\"\n                      style={{ filter: \"url(#goo)\" }}\n                      animate={{\n                        scale: isHovered ? 1.8 : 1,\n                        opacity: isHovered ? 1 : 0.6,\n                      }}\n                      transition={{\n                        type: \"spring\",\n                        stiffness: 200,\n                        damping: 25,\n                      }}\n                    />\n\n                    {/* Icon button (not filtered) */}\n                    <Button\n                      variant=\"ghost\"\n                      size=\"icon\"\n                      className=\"relative rounded-full bg-background/80 backdrop-blur-xl\"\n                      onClick={item.onClick}\n                    >\n                      <item.icon className=\"h-6 w-6\" />\n                    </Button>\n                  </motion.div>\n                </TooltipTrigger>\n                <TooltipContent side=\"top\" className=\"text-xs\">\n                  {item.label}\n                </TooltipContent>\n              </Tooltip>\n            )\n          })}\n        </div>\n      </TooltipProvider>\n    </div>\n  )\n}\n",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "ruixen.ui",
+    "slug": "gooey-dock",
+    "registry_url": "https://21st.dev/r/ruixen.ui/gooey-dock",
+    "title": "Gooey Dock",
+    "description": "This Dock component is a modern, interactive navigation bar inspired by the macOS-style dock, built with React, Framer Motion, and shadcn/ui. It displays a row of circular icon buttons, each wrapped in a tooltip for clear labeling. The highlight of the component is the gooey liquid background effect: when a user hovers over an icon, a softly animated blob expands behind it, creating a smooth, fluid-like motion. Framer Motion handles the scaling and spring-based animations, making the hover transitions feel natural and responsive. To maintain clarity, only the background blobs are passed through an SVG goo filter, while the icons themselves remain crisp and sharp. This ensures a visually playful yet professional design that can be used for app shortcuts, quick actions, or feature navigation in dashboards. Overall, the component balances aesthetic depth with practical usability, giving users both an engaging interaction and a clear navigation experience.",
+    "category": "dock",
+    "category_group": "Marketing Blocks",
+    "downloads": 19,
+    "likes": 0
+  }
+}

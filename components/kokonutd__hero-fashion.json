@@ -1,0 +1,30 @@
+{
+  "name": "hero-fashion",
+  "type": "registry:block",
+  "dependencies": [
+    "motion"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "/components/blocks/hero-fashion.tsx",
+      "content": "\"use client\";\n\nimport { motion } from \"motion/react\";\n\nexport default function HomePage() {\n    return (\n        <div className=\"min-h-screen bg-white\">\n            <div className=\"container mx-auto px-4 py-12 md:py-24\">\n                <div className=\"grid md:grid-cols-2 gap-8 relative overflow-x-hidden\">\n                    <div className=\"md:order-2 relative\">\n                        <div className=\"absolute -z-10 w-72 h-72 rounded-full bg-[#f8b3c4] blur-3xl opacity-20 -top-10 -left-10\"></div>\n                        <img\n                            src=\"https://ferf1mheo22r9ira.public.blob.vercel-storage.com/portrait2-x5MjJSaQ9ed0HZrewEhH7TkZwjZ66K.jpeg\"\n                            alt=\"Fashion model\"\n                            className=\"rounded-2xl shadow-2xl w-full object-cover filter brightness-105\"\n                        />\n                    </div>\n                    <div className=\"md:order-1 flex flex-col justify-between\">\n                        <div className=\"flex flex-col h-full justify-between\">\n                            <h1 className=\"text-7xl font-bold text-black leading-tight tracking-tighter\">\n                                Kokonut.\n                            </h1>\n                            <ul className=\"space-y-2 tracking-tighter text-lg text-black/90\">\n                                {[\n                                    \"Ready-to-wear\",\n                                    \"Accessories\",\n                                    \"Footwear\",\n                                    \"Leather goods\",\n                                    \"Jewelry\",\n                                ].map((item, index) => (\n                                    <motion.li\n                                        key={item}\n                                        initial={{ opacity: 0.8 }}\n                                        whileHover={{\n                                            opacity: 1,\n                                            y: -3,\n                                            transition: {\n                                                duration: 0.4,\n                                                ease: \"easeOut\",\n                                            },\n                                        }}\n                                        transition={{\n                                            delay: index * 0.1,\n                                        }}\n                                    >\n                                        <a href=\"#\" className=\"cursor-pointer\">\n                                            {item}\n                                        </a>\n                                    </motion.li>\n                                ))}\n                            </ul>\n                            <div>\n                                <h2 className=\"text-2xl font-medium text-black mt-auto pt-8\">\n                                    SUMMER 2025\n                                </h2>\n                                <p className=\"text-lg text-black/95 max-w-md pt-4 tracking-tight\">\n                                    <a\n                                        href=\"https://kokonutui.com/\"\n                                        className=\"underline\"\n                                    >\n                                        \"The Bright Young\"\n                                    </a>{\" \"}\n                                    draws inspiration from Anglomania,\n                                    redefining sartorial elegance and school\n                                    uniforms with a nod to British heritage.\n                                    Suits of the collection are tailored out of\n                                    English cloth, crafted from 1920's inspired\n                                    cashmeres and wools, rewoven...\n                                </p>\n                            </div>\n                        </div>\n                    </div>\n                </div>\n            </div>\n        </div>\n    );\n}\n",
+      "type": "registry:block",
+      "target": ""
+    }
+  ],
+  "tailwind": {
+    "config": {}
+  },
+  "_meta": {
+    "author": "kokonutd",
+    "slug": "hero-fashion",
+    "registry_url": "https://21st.dev/r/kokonutd/hero-fashion",
+    "title": "Minimalist Hero Fashion",
+    "description": "Minimalist Hero for Fashion brand with minimalist animations. ",
+    "category": "hero",
+    "category_group": "Marketing Blocks",
+    "downloads": 75,
+    "likes": 0
+  }
+}

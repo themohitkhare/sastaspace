@@ -1,0 +1,30 @@
+{
+  "name": "animated-tooltip",
+  "type": "registry:ui",
+  "dependencies": [
+    "framer-motion"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "/components/ui/animated-tooltip.tsx",
+      "content": "\"use client\";\nimport Image from \"next/image\";\nimport React, { useState } from \"react\";\nimport {\n  motion,\n  useTransform,\n  AnimatePresence,\n  useMotionValue,\n  useSpring,\n} from \"framer-motion\";\nimport { cn } from \"@/lib/utils\";\n\nexport const AnimatedTooltip = ({\n  items,\n  className,\n}: {\n  items: {\n    id: number;\n    name: string;\n    designation: string;\n    image: string;\n  }[];\n  className?: string;\n}) => {\n  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);\n  const springConfig = { stiffness: 100, damping: 5 };\n  const x = useMotionValue(0);\n  const rotate = useSpring(\n    useTransform(x, [-100, 100], [-45, 45]),\n    springConfig\n  );\n  const translateX = useSpring(\n    useTransform(x, [-100, 100], [-50, 50]),\n    springConfig\n  );\n  const handleMouseMove = (event: any) => {\n    const halfWidth = event.target.offsetWidth / 2;\n    x.set(event.nativeEvent.offsetX - halfWidth);\n  };\n\n  return (\n    <div className={cn(\"flex items-center gap-2\", className)}>\n      {items.map((item) => (\n        <div\n          className=\"-mr-4 relative group\"\n          key={item.name}\n          onMouseEnter={() => setHoveredIndex(item.id)}\n          onMouseLeave={() => setHoveredIndex(null)}\n        >\n          <AnimatePresence mode=\"popLayout\">\n            {hoveredIndex === item.id && (\n              <motion.div\n                initial={{ opacity: 0, y: 20, scale: 0.6 }}\n                animate={{\n                  opacity: 1,\n                  y: 0,\n                  scale: 1,\n                  transition: {\n                    type: \"spring\",\n                    stiffness: 260,\n                    damping: 10,\n                  },\n                }}\n                exit={{ opacity: 0, y: 20, scale: 0.6 }}\n                style={{\n                  translateX: translateX,\n                  rotate: rotate,\n                  whiteSpace: \"nowrap\",\n                }}\n                className=\"absolute -top-16 -left-1/2 translate-x-1/2 flex text-xs flex-col items-center justify-center rounded-md bg-foreground z-50 shadow-xl px-4 py-2\"\n              >\n                <div className=\"absolute inset-x-10 z-30 w-[20%] -bottom-px bg-gradient-to-r from-transparent via-emerald-500 to-transparent h-px\" />\n                <div className=\"absolute left-10 w-[40%] z-30 -bottom-px bg-gradient-to-r from-transparent via-sky-500 to-transparent h-px\" />\n                <div className=\"font-bold text-background relative z-30 text-base\">\n                  {item.name}\n                </div>\n                <div className=\"text-muted-foreground text-xs\">\n                  {item.designation}\n                </div>\n              </motion.div>\n            )}\n          </AnimatePresence>\n          <Image\n            onMouseMove={handleMouseMove}\n            height={100}\n            width={100}\n            src={item.image}\n            alt={item.name}\n            className=\"object-cover !m-0 !p-0 object-top rounded-full h-14 w-14 border-2 group-hover:scale-105 group-hover:z-30 border-background relative transition duration-500\"\n          />\n        </div>\n      ))}\n    </div>\n  );\n};",
+      "type": "registry:ui",
+      "target": ""
+    }
+  ],
+  "tailwind": {
+    "config": {}
+  },
+  "_meta": {
+    "author": "aceternity",
+    "slug": "animated-tooltip",
+    "registry_url": "https://21st.dev/r/aceternity/animated-tooltip",
+    "title": "Animated Tooltip",
+    "description": "A cool tooltip that reveals on hover, follows mouse pointer\n\nFeatures:  \n-  Mouse Following: The tooltip moves and rotates with your cursor.  \n-  Spring Animation: Enjoy smooth, springy animations for a natural feel.  \n-  Hover Effects: Tooltips pop up with fade and scale effects when you hover.  \n-  Avatar Display: Circular profile pics with a stylish border.  \n-  Gradient Accents: Cool gradient lines add flair to the tooltip.  \n-  Group Layout: Stack avatars for a neat overlapping look.  \n-  Responsive Images: Next.js Image takes care of loading and optimizing images.  \n\nExample Use Cases:  \n-  Team Member Display: Show team info when you hover.  \n-  User Lists: Highlight user details in social features.  \n-  Contributor Sections: Feature project contributors.  \n-  Member Grids: Showcase community or organization members.  \n\nProps:  \n-  id: A unique identifier.  \n-  name: The display name.  \n-  designation: The role or title.  \n-  image: The avatar image URL.  ",
+    "category": "clients",
+    "category_group": "Marketing Blocks",
+    "downloads": 2093,
+    "likes": 61
+  }
+}

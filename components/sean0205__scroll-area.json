@@ -1,0 +1,45 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "scroll-area",
+  "type": "registry:component",
+  "title": "Scroll Area",
+  "description": "A scroll-area component.",
+  "dependencies": [
+    "radix-ui"
+  ],
+  "registryDependencies": [
+    "https://21st.dev/r/sean0205/avatar",
+    "https://21st.dev/r/sean0205/badge-2",
+    "https://21st.dev/r/sean0205/card"
+  ],
+  "files": [
+    {
+      "path": "src/components/ui/scroll-area.tsx",
+      "content": "'use client';\n\nimport * as React from 'react';\nimport { cn } from '@/lib/utils';\nimport { ScrollArea as ScrollAreaPrimitive } from 'radix-ui';\n\nfunction ScrollArea({\n  className,\n  viewportClassName,\n  children,\n  viewportRef,\n  ...props\n}: React.ComponentProps<typeof ScrollAreaPrimitive.Root> & {\n  viewportRef?: React.Ref<HTMLDivElement>;\n  viewportClassName?: string;\n}) {\n  return (\n    <ScrollAreaPrimitive.Root data-slot=\"scroll-area\" className={cn('relative overflow-hidden', className)} {...props}>\n      <ScrollAreaPrimitive.Viewport\n        ref={viewportRef}\n        className={cn('h-full w-full rounded-[inherit]', viewportClassName)}\n      >\n        {children}\n      </ScrollAreaPrimitive.Viewport>\n      <ScrollBar />\n      <ScrollAreaPrimitive.Corner />\n    </ScrollAreaPrimitive.Root>\n  );\n}\n\nfunction ScrollBar({\n  className,\n  orientation = 'vertical',\n  ...props\n}: React.ComponentProps<typeof ScrollAreaPrimitive.ScrollAreaScrollbar>) {\n  return (\n    <ScrollAreaPrimitive.ScrollAreaScrollbar\n      data-slot=\"scroll-area-scrollbar\"\n      orientation={orientation}\n      className={cn(\n        'flex touch-none select-none transition-colors',\n        orientation === 'vertical' && 'h-full w-2 border-l border-l-transparent p-[1px]',\n        orientation === 'horizontal' && 'h-2 flex-col border-t border-t-transparent p-[1px]',\n        className,\n      )}\n      {...props}\n    >\n      <ScrollAreaPrimitive.ScrollAreaThumb className=\"relative flex-1 rounded-full bg-border\" />\n    </ScrollAreaPrimitive.ScrollAreaScrollbar>\n  );\n}\n\nexport { ScrollArea, ScrollBar };\n",
+      "type": "registry:component"
+    }
+  ],
+  "cssVars": {
+    "theme": {
+      "--color-destructive-foreground": "var(--destructive-foreground)",
+      "--color-color-destructive-foreground": "var(----color-destructive-foreground)"
+    },
+    "light": {
+      "--destructive-foreground": "oklch(1 0 0)"
+    },
+    "dark": {
+      "--destructive-foreground": "oklch(1 0 0)"
+    }
+  },
+  "_meta": {
+    "author": "sean0205",
+    "slug": "scroll-area",
+    "registry_url": "https://21st.dev/r/sean0205/scroll-area",
+    "title": "Scroll Area",
+    "description": "Augments native scroll functionality for custom, cross-browser styling.",
+    "category": "scroll-area",
+    "category_group": "Marketing Blocks",
+    "downloads": 19,
+    "likes": 0
+  }
+}

@@ -1,0 +1,110 @@
+{
+  "name": "ai-input",
+  "type": "registry:ui",
+  "dependencies": [
+    "lucide-react",
+    "@radix-ui/react-slot",
+    "class-variance-authority",
+    "@radix-ui/react-label",
+    "@radix-ui/react-checkbox"
+  ],
+  "registryDependencies": [
+    "https://21st.dev/r/kokonutd/use-auto-resize-textarea",
+    "https://21st.dev/r/shadcn/textarea"
+  ],
+  "files": [
+    {
+      "path": "/components/ui/ai-input.tsx",
+      "content": "\"use client\";\n\nimport { CornerRightUp, Mic } from \"lucide-react\";\nimport { useState } from \"react\";\nimport { cn } from \"@/lib/utils\";\nimport { Textarea } from \"@/components/ui/textarea\";\nimport { useAutoResizeTextarea } from \"@/components/hooks/use-auto-resize-textarea\";\n\ninterface AIInputProps {\n  id?: string\n  placeholder?: string\n  minHeight?: number\n  maxHeight?: number\n  onSubmit?: (value: string) => void\n  className?: string\n}\n\nexport function AIInput({\n  id = \"ai-input\",\n  placeholder = \"Type your message...\",\n  minHeight = 52,\n  maxHeight = 200,\n  onSubmit,\n  className\n}: AIInputProps) {\n  const { textareaRef, adjustHeight } = useAutoResizeTextarea({\n    minHeight,\n    maxHeight,\n  });\n  const [inputValue, setInputValue] = useState(\"\");\n\n  const handleReset = () => {\n    if (!inputValue.trim()) return;\n    onSubmit?.(inputValue);\n    setInputValue(\"\");\n    adjustHeight(true);\n  };\n\n  return (\n    <div className={cn(\"w-full py-4\", className)}>\n      <div className=\"relative max-w-xl w-full mx-auto\">\n        <Textarea\n          id={id}\n          placeholder={placeholder}\n          className={cn(\n            \"max-w-xl bg-black/5 dark:bg-white/5 rounded-3xl pl-6 pr-16\",\n            \"placeholder:text-black/50 dark:placeholder:text-white/50\",\n            \"border-none ring-black/20 dark:ring-white/20\",\n            \"text-black dark:text-white text-wrap\",\n            \"overflow-y-auto resize-none\",\n            \"focus-visible:ring-0 focus-visible:ring-offset-0\",\n            \"transition-[height] duration-100 ease-out\",\n            \"leading-[1.2] py-[16px]\",\n            `min-h-[${minHeight}px]`,\n            `max-h-[${maxHeight}px]`,\n            \"[&::-webkit-resizer]:hidden\" // Скрываем ресайзер\n          )}\n          ref={textareaRef}\n          value={inputValue}\n          onChange={(e) => {\n            setInputValue(e.target.value);\n            adjustHeight();\n          }}\n          onKeyDown={(e) => {\n            if (e.key === \"Enter\" && !e.shiftKey) {\n              e.preventDefault();\n              handleReset();\n            }\n          }}\n        />\n\n        <div\n          className={cn(\n            \"absolute top-1/2 -translate-y-1/2 rounded-xl bg-black/5 dark:bg-white/5 py-1 px-1 transition-all duration-200\",\n            inputValue ? \"right-10\" : \"right-3\"\n          )}\n        >\n          <Mic className=\"w-4 h-4 text-black/70 dark:text-white/70\" />\n        </div>\n       <button\n  onClick={handleReset}\n  type=\"button\"\n  className={cn(\n    \"absolute top-1/2 -translate-y-1/2 right-3\",\n    \"rounded-xl bg-black/5 dark:bg-white/5 py-1 px-1\",\n    \"transition-all duration-200\",\n    inputValue \n      ? \"opacity-100 scale-100\" \n      : \"opacity-0 scale-95 pointer-events-none\"\n  )}\n>\n  <CornerRightUp className=\"w-4 h-4 text-black/70 dark:text-white/70\" />\n</button>\n      </div>\n    </div>\n  );\n}",
+      "type": "registry:ui",
+      "target": ""
+    },
+    {
+      "path": "/components/hooks/use-auto-resize-textarea.tsx",
+      "content": "import { useEffect, useRef, useCallback } from \"react\";\n\ninterface UseAutoResizeTextareaProps {\n    minHeight: number;\n    maxHeight?: number;\n}\n\nexport function useAutoResizeTextarea({\n    minHeight,\n    maxHeight,\n}: UseAutoResizeTextareaProps) {\n    const textareaRef = useRef<HTMLTextAreaElement>(null);\n\n    const adjustHeight = useCallback(\n        (reset?: boolean) => {\n            const textarea = textareaRef.current;\n            if (!textarea) return;\n\n            if (reset) {\n                textarea.style.height = `${minHeight}px`;\n                return;\n            }\n\n            // Temporarily shrink to get the right scrollHeight\n            textarea.style.height = `${minHeight}px`;\n\n            // Calculate new height\n            const newHeight = Math.max(\n                minHeight,\n                Math.min(\n                    textarea.scrollHeight,\n                    maxHeight ?? Number.POSITIVE_INFINITY\n                )\n            );\n\n            textarea.style.height = `${newHeight}px`;\n        },\n        [minHeight, maxHeight]\n    );\n\n    useEffect(() => {\n        // Set initial height\n        const textarea = textareaRef.current;\n        if (textarea) {\n            textarea.style.height = `${minHeight}px`;\n        }\n    }, [minHeight]);\n\n    // Adjust height on window resize\n    useEffect(() => {\n        const handleResize = () => adjustHeight();\n        window.addEventListener(\"resize\", handleResize);\n        return () => window.removeEventListener(\"resize\", handleResize);\n    }, [adjustHeight]);\n\n    return { textareaRef, adjustHeight };\n}\n",
+      "type": "registry:hook",
+      "target": ""
+    },
+    {
+      "path": "/hooks/use-auto-resize-textarea.tsx",
+      "content": "import { useEffect, useRef, useCallback } from \"react\";\n\ninterface UseAutoResizeTextareaProps {\n    minHeight: number;\n    maxHeight?: number;\n}\n\nexport function useAutoResizeTextarea({\n    minHeight,\n    maxHeight,\n}: UseAutoResizeTextareaProps) {\n    const textareaRef = useRef<HTMLTextAreaElement>(null);\n\n    const adjustHeight = useCallback(\n        (reset?: boolean) => {\n            const textarea = textareaRef.current;\n            if (!textarea) return;\n\n            if (reset) {\n                textarea.style.height = `${minHeight}px`;\n                return;\n            }\n\n            // Temporarily shrink to get the right scrollHeight\n            textarea.style.height = `${minHeight}px`;\n\n            // Calculate new height\n            const newHeight = Math.max(\n                minHeight,\n                Math.min(\n                    textarea.scrollHeight,\n                    maxHeight ?? Number.POSITIVE_INFINITY\n                )\n            );\n\n            textarea.style.height = `${newHeight}px`;\n        },\n        [minHeight, maxHeight]\n    );\n\n    useEffect(() => {\n        // Set initial height\n        const textarea = textareaRef.current;\n        if (textarea) {\n            textarea.style.height = `${minHeight}px`;\n        }\n    }, [minHeight]);\n\n    // Adjust height on window resize\n    useEffect(() => {\n        const handleResize = () => adjustHeight();\n        window.addEventListener(\"resize\", handleResize);\n        return () => window.removeEventListener(\"resize\", handleResize);\n    }, [adjustHeight]);\n\n    return { textareaRef, adjustHeight };\n}\n",
+      "type": "registry:hook",
+      "target": ""
+    },
+    {
+      "path": "/components/ui/textarea.tsx",
+      "content": "import * as React from \"react\"\n\nimport { cn } from \"@/lib/utils\"\n\nexport interface TextareaProps\n  extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {}\n\nconst Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(\n  ({ className, ...props }, ref) => {\n    return (\n      <textarea\n        className={cn(\n          \"flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50\",\n          className\n        )}\n        ref={ref}\n        {...props}\n      />\n    )\n  }\n)\nTextarea.displayName = \"Textarea\"\n\nexport { Textarea }\n",
+      "type": "registry:ui",
+      "target": ""
+    },
+    {
+      "path": "/components/ui/button.tsx",
+      "content": "import * as React from \"react\"\nimport { Slot } from \"@radix-ui/react-slot\"\nimport { cva, type VariantProps } from \"class-variance-authority\"\n\nimport { cn } from \"@/lib/utils\"\n\nconst buttonVariants = cva(\n  \"inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50\",\n  {\n    variants: {\n      variant: {\n        default: \"bg-primary text-primary-foreground hover:bg-primary/90\",\n        destructive:\n          \"bg-destructive text-destructive-foreground hover:bg-destructive/90\",\n        outline:\n          \"border border-input bg-background hover:bg-accent hover:text-accent-foreground\",\n        secondary:\n          \"bg-secondary text-secondary-foreground hover:bg-secondary/80\",\n        ghost: \"hover:bg-accent hover:text-accent-foreground\",\n        link: \"text-primary underline-offset-4 hover:underline\",\n      },\n      size: {\n        default: \"h-10 px-4 py-2\",\n        sm: \"h-9 rounded-md px-3\",\n        lg: \"h-11 rounded-md px-8\",\n        icon: \"h-10 w-10\",\n      },\n    },\n    defaultVariants: {\n      variant: \"default\",\n      size: \"default\",\n    },\n  },\n)\n\nexport interface ButtonProps\n  extends React.ButtonHTMLAttributes<HTMLButtonElement>,\n    VariantProps<typeof buttonVariants> {\n  asChild?: boolean\n}\n\nconst Button = React.forwardRef<HTMLButtonElement, ButtonProps>(\n  ({ className, variant, size, asChild = false, ...props }, ref) => {\n    const Comp = asChild ? Slot : \"button\"\n    return (\n      <Comp\n        className={cn(buttonVariants({ variant, size, className }))}\n        ref={ref}\n        {...props}\n      />\n    )\n  },\n)\nButton.displayName = \"Button\"\n\nexport { Button, buttonVariants }\n",
+      "type": "registry:ui",
+      "target": ""
+    },
+    {
+      "path": "/components/ui/label.tsx",
+      "content": "\"use client\"\n\nimport * as React from \"react\"\nimport * as LabelPrimitive from \"@radix-ui/react-label\"\nimport { cva, type VariantProps } from \"class-variance-authority\"\n\nimport { cn } from \"@/lib/utils\"\n\nconst labelVariants = cva(\n  \"text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70\",\n)\n\nconst Label = React.forwardRef<\n  React.ElementRef<typeof LabelPrimitive.Root>,\n  React.ComponentPropsWithoutRef<typeof LabelPrimitive.Root> &\n    VariantProps<typeof labelVariants>\n>(({ className, ...props }, ref) => (\n  <LabelPrimitive.Root\n    ref={ref}\n    className={cn(labelVariants(), className)}\n    {...props}\n  />\n))\nLabel.displayName = LabelPrimitive.Root.displayName\n\nexport { Label }\n",
+      "type": "registry:ui",
+      "target": ""
+    },
+    {
+      "path": "/components/ui/checkbox.tsx",
+      "content": "\"use client\"\n\nimport * as React from \"react\"\nimport * as CheckboxPrimitive from \"@radix-ui/react-checkbox\"\nimport { Check } from \"lucide-react\"\n\nimport { cn } from \"@/lib/utils\"\n\nconst Checkbox = React.forwardRef<\n  React.ElementRef<typeof CheckboxPrimitive.Root>,\n  React.ComponentPropsWithoutRef<typeof CheckboxPrimitive.Root>\n>(({ className, ...props }, ref) => (\n  <CheckboxPrimitive.Root\n    ref={ref}\n    className={cn(\n      \"peer h-4 w-4 shrink-0 rounded-sm border border-primary ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground\",\n      className,\n    )}\n    {...props}\n  >\n    <CheckboxPrimitive.Indicator\n      className={cn(\"flex items-center justify-center text-current\")}\n    >\n      <Check className=\"h-4 w-4\" />\n    </CheckboxPrimitive.Indicator>\n  </CheckboxPrimitive.Root>\n))\nCheckbox.displayName = CheckboxPrimitive.Root.displayName\n\nexport { Checkbox }\n",
+      "type": "registry:ui",
+      "target": ""
+    }
+  ],
+  "cssVars": {
+    "theme": {
+      "animate-fade-scale": "fade-scale 0.2s ease-out"
+    }
+  },
+  "css": {
+    "@keyframes fade-scale": {
+      "0%": {
+        "opacity": "0",
+        "transform": "translateY(-50%) scale(0.95)"
+      },
+      "100%": {
+        "opacity": "1",
+        "transform": "translateY(-50%) scale(1)"
+      }
+    }
+  },
+  "tailwind": {
+    "config": {
+      "theme": {
+        "extend": {
+          "keyframes": {
+            "fade-scale": {
+              "0%": {
+                "opacity": "0",
+                "transform": "translateY(-50%) scale(0.95)"
+              },
+              "100%": {
+                "opacity": "1",
+                "transform": "translateY(-50%) scale(1)"
+              }
+            }
+          },
+          "animation": {
+            "fade-scale": "fade-scale 0.2s ease-out"
+          }
+        }
+      }
+    }
+  },
+  "_meta": {
+    "author": "kokonutd",
+    "slug": "ai-input",
+    "registry_url": "https://21st.dev/r/kokonutd/ai-input",
+    "title": "AI Input",
+    "description": "A modern, animated textarea input component designed for AI chat interfaces. It features auto-resizing, a voice input toggle, and an animated submit button.\nFeatures:\n\t•\tAuto-resizing textarea\n\t•\tVoice input toggle\n\t•\tAnimated submit button\n\t•\tPress Enter to submit (Shift+Enter for a new line)\n\t•\tDark mode support\n\t•\tCustomizable height limits\n\t•\tSmooth animations\n\t•\tMobile responsiveness\n",
+    "category": "ai-chat",
+    "category_group": "UI Components",
+    "downloads": 841,
+    "likes": 8
+  }
+}

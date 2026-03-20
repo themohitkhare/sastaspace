@@ -1,0 +1,41 @@
+{
+  "name": "sparkles",
+  "type": "registry:ui",
+  "dependencies": [
+    "@tsparticles/slim",
+    "@tsparticles/react"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "/components/ui/sparkles.tsx",
+      "content": "\"use client\"\n\nimport { useEffect, useId, useState } from \"react\"\nimport Particles, { initParticlesEngine } from \"@tsparticles/react\"\nimport { loadSlim } from \"@tsparticles/slim\"\n\nexport function Sparkles({\n  className,\n  size = 1,\n  minSize = null,\n  density = 800,\n  speed = 1,\n  minSpeed = null,\n  opacity = 1,\n  opacitySpeed = 3,\n  minOpacity = null,\n  color = \"#FFFFFF\",\n  background = \"transparent\",\n  options = {},\n}) {\n  const [isReady, setIsReady] = useState(false)\n\n  useEffect(() => {\n    initParticlesEngine(async (engine) => {\n      await loadSlim(engine)\n    }).then(() => {\n      setIsReady(true)\n    })\n  }, [])\n\n  const id = useId()\n\n  const defaultOptions = {\n    background: {\n      color: {\n        value: background,\n      },\n    },\n    fullScreen: {\n      enable: false,\n      zIndex: 1,\n    },\n    fpsLimit: 120,\n    particles: {\n      color: {\n        value: color,\n      },\n      move: {\n        enable: true,\n        direction: \"none\",\n        speed: {\n          min: minSpeed || speed / 10,\n          max: speed,\n        },\n        straight: false,\n      },\n      number: {\n        value: density,\n      },\n      opacity: {\n        value: {\n          min: minOpacity || opacity / 10,\n          max: opacity,\n        },\n        animation: {\n          enable: true,\n          sync: false,\n          speed: opacitySpeed,\n        },\n      },\n      size: {\n        value: {\n          min: minSize || size / 2.5,\n          max: size,\n        },\n      },\n    },\n    detectRetina: true,\n  }\n\n  return isReady && <Particles id={id} options={{ ...defaultOptions, ...options }} className={className} />\n}\n",
+      "type": "registry:ui",
+      "target": ""
+    }
+  ],
+  "cssVars": {
+    "light": {
+      "--gradient-color": "#8350e8",
+      "--sparkles-color": "#8350e8"
+    },
+    "dark": {
+      "--gradient-color": "#8350e8",
+      "--sparkles-color": "#ffffff"
+    }
+  },
+  "tailwind": {
+    "config": {}
+  },
+  "_meta": {
+    "author": "lepikhinb",
+    "slug": "sparkles",
+    "registry_url": "https://21st.dev/r/lepikhinb/sparkles",
+    "title": "Sparkles",
+    "description": "Animated floating particles component.",
+    "category": "clients",
+    "category_group": "Marketing Blocks",
+    "downloads": 2419,
+    "likes": 0
+  }
+}

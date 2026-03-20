@@ -1,0 +1,35 @@
+{
+  "name": "animated-gradient-background",
+  "type": "registry:ui",
+  "dependencies": [
+    "framer-motion"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "/components/ui/animated-gradient-background.tsx",
+      "content": "import { motion } from \"framer-motion\";\r\nimport React, { useEffect, useRef } from \"react\";\r\n\r\ninterface AnimatedGradientBackgroundProps {\r\n   /** \r\n    * Initial size of the radial gradient, defining the starting width. \r\n    * @default 110\r\n    */\r\n   startingGap?: number;\r\n\r\n   /**\r\n    * Enables or disables the breathing animation effect.\r\n    * @default false\r\n    */\r\n   Breathing?: boolean;\r\n\r\n   /**\r\n    * Array of colors to use in the radial gradient.\r\n    * Each color corresponds to a stop percentage in `gradientStops`.\r\n    * @default [\"#0A0A0A\", \"#2979FF\", \"#FF80AB\", \"#FF6D00\", \"#FFD600\", \"#00E676\", \"#3D5AFE\"]\r\n    */\r\n   gradientColors?: string[];\r\n\r\n   /**\r\n    * Array of percentage stops corresponding to each color in `gradientColors`.\r\n    * The values should range between 0 and 100.\r\n    * @default [35, 50, 60, 70, 80, 90, 100]\r\n    */\r\n   gradientStops?: number[];\r\n\r\n   /**\r\n    * Speed of the breathing animation. \r\n    * Lower values result in slower animation.\r\n    * @default 0.02\r\n    */\r\n   animationSpeed?: number;\r\n\r\n   /**\r\n    * Maximum range for the breathing animation in percentage points.\r\n    * Determines how much the gradient \"breathes\" by expanding and contracting.\r\n    * @default 5\r\n    */\r\n   breathingRange?: number;\r\n\r\n   /**\r\n    * Additional inline styles for the gradient container.\r\n    * @default {}\r\n    */\r\n   containerStyle?: React.CSSProperties;\r\n\r\n   /**\r\n    * Additional class names for the gradient container.\r\n    * @default \"\"\r\n    */\r\n   containerClassName?: string;\r\n\r\n\r\n   /**\r\n    * Additional top offset for the gradient container form the top to have a more flexible control over the gradient.\r\n    * @default 0\r\n    */\r\n   topOffset?: number;\r\n}\r\n\r\n/**\r\n * AnimatedGradientBackground\r\n *\r\n * This component renders a customizable animated radial gradient background with a subtle breathing effect.\r\n * It uses `framer-motion` for an entrance animation and raw CSS gradients for the dynamic background.\r\n *\r\n *\r\n * @param {AnimatedGradientBackgroundProps} props - Props for configuring the gradient animation.\r\n * @returns JSX.Element\r\n */\r\nconst AnimatedGradientBackground: React.FC<AnimatedGradientBackgroundProps> = ({\r\n   startingGap = 125,\r\n   Breathing = false,\r\n   gradientColors = [\r\n      \"#0A0A0A\",\r\n      \"#2979FF\",\r\n      \"#FF80AB\",\r\n      \"#FF6D00\",\r\n      \"#FFD600\",\r\n      \"#00E676\",\r\n      \"#3D5AFE\"\r\n   ],\r\n   gradientStops = [35, 50, 60, 70, 80, 90, 100],\r\n   animationSpeed = 0.02,\r\n   breathingRange = 5,\r\n   containerStyle = {},\r\n   topOffset = 0,\r\n   containerClassName = \"\",\r\n}) => {\r\n\r\n\r\n\r\n   // Validation: Ensure gradientStops and gradientColors lengths match\r\n   if (gradientColors.length !== gradientStops.length) {\r\n      throw new Error(\r\n         `GradientColors and GradientStops must have the same length.\r\n     Received gradientColors length: ${gradientColors.length},\r\n     gradientStops length: ${gradientStops.length}`\r\n      );\r\n   }\r\n\r\n   const containerRef = useRef<HTMLDivElement | null>(null);\r\n\r\n   useEffect(() => {\r\n      let animationFrame: number;\r\n      let width = startingGap;\r\n      let directionWidth = 1;\r\n\r\n      const animateGradient = () => {\r\n         if (width >= startingGap + breathingRange) directionWidth = -1;\r\n         if (width <= startingGap - breathingRange) directionWidth = 1;\r\n\r\n         if (!Breathing) directionWidth = 0;\r\n         width += directionWidth * animationSpeed;\r\n\r\n         const gradientStopsString = gradientStops\r\n            .map((stop, index) => `${gradientColors[index]} ${stop}%`)\r\n            .join(\", \");\r\n\r\n         const gradient = `radial-gradient(${width}% ${width+topOffset}% at 50% 20%, ${gradientStopsString})`;\r\n\r\n         if (containerRef.current) {\r\n            containerRef.current.style.background = gradient;\r\n         }\r\n\r\n         animationFrame = requestAnimationFrame(animateGradient);\r\n      };\r\n\r\n      animationFrame = requestAnimationFrame(animateGradient);\r\n\r\n      return () => cancelAnimationFrame(animationFrame); // Cleanup animation\r\n   }, [startingGap, Breathing, gradientColors, gradientStops, animationSpeed, breathingRange, topOffset]);\r\n\r\n   return (\r\n      <motion.div\r\n         key=\"animated-gradient-background\"\r\n         initial={{\r\n            opacity: 0,\r\n            scale: 1.5,\r\n         }}\r\n         animate={{\r\n            opacity: 1,\r\n            scale: 1,\r\n            transition: {\r\n               duration: 2,\r\n               ease: [0.25, 0.1, 0.25, 1], // Cubic bezier easing\r\n             },\r\n         }}\r\n         className={`absolute inset-0 overflow-hidden ${containerClassName}`}\r\n      >\r\n         <div\r\n            ref={containerRef}\r\n            style={containerStyle}\r\n            className=\"absolute inset-0 transition-transform\"\r\n         />\r\n      </motion.div>\r\n   );\r\n};\r\n\r\nexport default AnimatedGradientBackground;",
+      "type": "registry:ui",
+      "target": ""
+    }
+  ],
+  "tailwind": {
+    "config": {}
+  },
+  "_source": {
+    "author": "hammamikhairi",
+    "name": "animated-gradient-background",
+    "registry_url": "https://21st.dev/r/hammamikhairi/animated-gradient-background"
+  },
+  "_meta": {
+    "author": "hammamikhairi",
+    "slug": "animated-gradient-background",
+    "registry_url": "https://21st.dev/r/hammamikhairi/animated-gradient-background",
+    "title": "Animated Gradient Background",
+    "description": "An animated Gradient Background",
+    "category": "hero",
+    "category_group": "Marketing Blocks",
+    "downloads": 1993,
+    "likes": 33
+  }
+}

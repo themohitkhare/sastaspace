@@ -1,0 +1,30 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "blogs",
+  "type": "registry:component",
+  "title": "Blogs",
+  "description": "A blogs component.",
+  "dependencies": [
+    "lucide-react",
+    "next"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/ui/blogs.tsx",
+      "content": "import { ArrowRight } from \"lucide-react\";\nimport Image from \"next/image\";\nimport Link from \"next/link\";\n\nconst articlesData = [\n  {\n    category: \"BRANDING\",\n    description:\n      \"Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nullam et lacinia mi.\",\n    image:\n      \"https://images.unsplash.com/photo-1558174685-430919a96c8d\",\n    publishDate: \"Dec 22, 2025\",\n    readMoreLink: \"#\",\n    title: \"A Beginner's Guide to Webflow to Development\",\n  },\n  {\n    category: \"ARTDIRECTION\",\n    description:\n      \"Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nullam et lacinia mi.\",\n    image:\n      \"https://images.unsplash.com/photo-1466228432269-af42b400b934\",\n    publishDate: \"Nov 11, 2025\",\n    readMoreLink: \"#\",\n    title: \"The Ultimate Checklist for SEO Performance\",\n  },\n  {\n    category: \"DESIGNSYSTEM\",\n    description:\n      \"Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nullam et lacinia mi.\",\n    image:\n      \"https://images.unsplash.com/photo-1605907126120-f68611516ecc\",\n    publishDate: \"Oct 9, 2025\",\n    readMoreLink: \"#\",\n    title: \"The Evolution of Design: From Past to Present\",\n  },\n];\nexport default function Component() {\n  return (\n    <section className=\"bg-white px-4 py-12 sm:py-16 md:py-20 dark:bg-black\">\n      <div className=\"mx-auto max-w-7xl\">\n        <div className=\"mb-8 text-center sm:mb-12\">\n          <p className=\"mb-3 font-medium text-gray-600 text-xs uppercase tracking-wider sm:mb-4 dark:text-gray-400\">\n            CAPTION\n          </p>\n          <h2 className=\"font-normal text-2xl text-gray-900 tracking-tight sm:text-3xl md:text-5xl dark:text-gray-100\">\n            Blog Articles\n          </h2>\n        </div>\n        <div className=\"grid gap-6 sm:gap-8 md:grid-cols-2 lg:grid-cols-3\">\n          {articlesData.map((article, index) => (\n            <div\n              className=\"cursor-pointer border border-gray-300/50 bg-white/50 shadow-none backdrop-blur-sm transition-shadow hover:shadow-md dark:border-gray-800/50 dark:bg-gray-950/50\"\n              key={index}\n            >\n              <div className=\"p-0\">\n                <div className=\"relative mb-4 sm:mb-6\">\n                  <Image\n                    alt={article.title}\n                    className=\"aspect-square h-64 w-full object-cover sm:h-72 md:h-80\"\n                    height={1080}\n                    src={article.image || \"/placeholder.svg\"}\n                    width={1920}\n                  />\n                  <p\n                    className=\"absolute top-0 left-0 rounded-none border-0 bg-white px-2 py-0.5 font-medium text-[10px] text-black uppercase backdrop-blur-sm sm:-top-0.5 sm:-left-0.5 sm:px-3 sm:py-1 sm:text-xs dark:bg-gray-950/90 dark:text-gray-200\"\n                    variant=\"secondary\"\n                  >\n                    #{article.category}\n                  </p>\n                </div>\n                <div className=\"px-3 pb-3 sm:px-4 sm:pb-4\">\n                  <h3 className=\"mb-2 font-normal text-base text-gray-900 tracking-tight sm:mb-2 sm:text-lg md:text-2xl dark:text-gray-100\">\n                    {article.title}\n                  </h3>\n                  <p className=\"mb-4 text-gray-600 text-xs leading-relaxed sm:mb-6 sm:text-sm dark:text-gray-400\">\n                    {article.description}\n                  </p>\n                  {/* Read More Link and Date */}\n                  <div className=\"flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between\">\n                    <Link\n                      className=\"group relative flex items-center overflow-hidden font-medium text-gray-900 text-xs transition-colors hover:text-gray-700 sm:text-sm dark:text-gray-100 dark:hover:text-gray-300\"\n                      href={article.readMoreLink}\n                    >\n                      <span className=\"mr-2 overflow-hidden rounded-none border border-gray-200 p-2 transition-colors duration-300 ease-in group-hover:bg-black group-hover:text-white sm:p-3 dark:border-gray-800 dark:group-hover:bg-white dark:group-hover:text-black\">\n                        <ArrowRight className=\"h-3 w-3 translate-x-0 opacity-100 transition-all duration-500 ease-in group-hover:translate-x-8 group-hover:opacity-0 sm:h-4 sm:w-4\" />\n                        <ArrowRight className=\"absolute top-1/2 -left-4 h-4 w-4 -translate-y-1/2 transition-all duration-500 ease-in-out group-hover:left-2 sm:-left-5 sm:h-4 sm:w-4 sm:group-hover:left-3\" />\n                      </span>\n                      Read more\n                    </Link>\n                    <span className=\"flex items-center gap-2 text-[10px] text-gray-500 sm:gap-3 sm:text-xs dark:text-gray-500\">\n                      {article.publishDate}\n                      <span className=\"w-6 border-gray-300 border-t sm:w-16 dark:border-gray-700\" />\n                    </span>\n                  </div>\n                </div>\n              </div>\n            </div>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n}\n",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "cnippet.dev",
+    "slug": "blogs",
+    "registry_url": "https://21st.dev/r/cnippet.dev/blogs",
+    "title": "Blogs",
+    "description": "A vertically stacked set of interactive headings that each reveal a section of content.",
+    "category": "hero",
+    "category_group": "Marketing Blocks",
+    "downloads": 19,
+    "likes": 0
+  }
+}

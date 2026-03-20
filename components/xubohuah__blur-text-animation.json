@@ -1,0 +1,27 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "blur-text-animation",
+  "type": "registry:component",
+  "title": "Blur Text Animation",
+  "description": "A blur-text-animation component.",
+  "dependencies": [],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/ui/blur-text-animation.tsx",
+      "content": "\"use client\";\n\nimport React, { useEffect, useRef, useState, useMemo } from \"react\";\n\ninterface WordData {\n  text: string;\n  duration: number;\n  delay: number;\n  blur: number;\n  scale?: number;\n}\n\ninterface BlurTextAnimationProps {\n  text?: string;\n  words?: WordData[];\n  className?: string;\n  fontSize?: string;\n  fontFamily?: string;\n  textColor?: string;\n  animationDelay?: number;\n}\n\nexport default function BlurTextAnimation({\n  text = \"Elegant blur animation that brings your words to life with cinematic transitions.\",\n  words,\n  className = \"\",\n  fontSize = \"text-4xl md:text-5xl lg:text-6xl\",\n  fontFamily = \"font-['Avenir_Next',_'Avenir',_system-ui,_sans-serif]\",\n  textColor = \"text-white\",\n  animationDelay = 4000\n}: BlurTextAnimationProps) {\n  const [isAnimating, setIsAnimating] = useState(false);\n  const animationTimeoutRef = useRef<NodeJS.Timeout>();\n  const resetTimeoutRef = useRef<NodeJS.Timeout>();\n\n  const textWords = useMemo(() => {\n    if (words) return words;\n    \n    const splitWords = text.split(\" \");\n    const totalWords = splitWords.length;\n    \n    return splitWords.map((word, index) => {\n      const progress = index / totalWords;\n      \n      const exponentialDelay = Math.pow(progress, 0.8) * 0.5;\n      \n      const baseDelay = index * 0.06;\n      \n      const microVariation = (Math.random() - 0.5) * 0.05;\n      \n      return {\n        text: word,\n        duration: 2.2 + Math.cos(index * 0.3) * 0.3,\n        delay: baseDelay + exponentialDelay + microVariation,\n        blur: 12 + Math.floor(Math.random() * 8),\n        scale: 0.9 + Math.sin(index * 0.2) * 0.05\n      };\n    });\n  }, [text, words]);\n\n  useEffect(() => {\n    const startAnimation = () => {\n      setTimeout(() => {\n        setIsAnimating(true);\n      }, 200);\n      \n      let maxTime = 0;\n      textWords.forEach(word => {\n        const totalTime = word.delay + word.duration;\n        maxTime = Math.max(maxTime, totalTime);\n      });\n      \n      animationTimeoutRef.current = setTimeout(() => {\n        setIsAnimating(false);\n        \n        resetTimeoutRef.current = setTimeout(() => {\n          startAnimation();\n        }, animationDelay);\n      }, (maxTime + 1) * 1000);\n    };\n\n    startAnimation();\n\n    return () => {\n      if (animationTimeoutRef.current) clearTimeout(animationTimeoutRef.current);\n      if (resetTimeoutRef.current) clearTimeout(resetTimeoutRef.current);\n    };\n  }, [textWords, animationDelay]);\n\n  return (\n    <div className={`flex items-center justify-center min-h-screen bg-black ${className}`}>\n      <div className=\"text-center max-w-5xl px-8\">\n        <p className={`${textColor} ${fontSize} ${fontFamily} font-light leading-relaxed tracking-wide`}>\n          {textWords.map((word, index) => (\n            <span\n              key={index}\n              className={`inline-block transition-all ${isAnimating ? 'opacity-100' : 'opacity-0'}`}\n              style={{\n                transitionDuration: `${word.duration}s`,\n                transitionDelay: `${word.delay}s`,\n                transitionTimingFunction: 'cubic-bezier(0.25, 0.46, 0.45, 0.94)',\n                filter: isAnimating \n                  ? 'blur(0px) brightness(1)' \n                  : `blur(${word.blur}px) brightness(0.6)`,\n                transform: isAnimating \n                  ? 'translateY(0) scale(1) rotateX(0deg)' \n                  : `translateY(20px) scale(${word.scale || 1}) rotateX(-15deg)`,\n                marginRight: '0.35em',\n                willChange: 'filter, transform, opacity',\n                transformStyle: 'preserve-3d',\n                backfaceVisibility: 'hidden',\n                textShadow: isAnimating \n                  ? '0 2px 8px rgba(255,255,255,0.1)' \n                  : '0 0 40px rgba(255,255,255,0.4)'\n              }}\n            >\n              {word.text}\n            </span>\n          ))}\n        </p>\n      </div>\n    </div>\n  );\n}\n\nexport function Component() {\n  return <BlurTextAnimation />;\n}",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "xubohuah",
+    "slug": "blur-text-animation",
+    "registry_url": "https://21st.dev/r/xubohuah/blur-text-animation",
+    "title": "BlurTextAnimation",
+    "description": "Elegant blur animation that brings your words to life with cinematic transitions.",
+    "category": "text",
+    "category_group": "Marketing Blocks",
+    "downloads": 9,
+    "likes": 0
+  }
+}

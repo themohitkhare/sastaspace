@@ -1,0 +1,33 @@
+{
+  "name": "use-debounced-dimensions",
+  "type": "registry:hook",
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "/components/hooks/use-debounced-dimensions.tsx",
+      "content": "import { useState, useEffect, RefObject } from 'react';\n\ninterface Dimensions {\nwidth: number;\nheight: number;\n}\n\nexport function useDimensions(ref: RefObject<HTMLElement | SVGElement>): Dimensions {\n  const [dimensions, setDimensions] = useState<Dimensions>({ width: 0, height: 0 });\n\nuseEffect(() => {\nlet timeoutId: NodeJS.Timeout;\n\n    const updateDimensions = () => {\n      if (ref.current) {\n        const { width, height } = ref.current.getBoundingClientRect();\n        setDimensions({ width, height });\n      }\n    };\n\n    const debouncedUpdateDimensions = () => {\n      clearTimeout(timeoutId);\n      timeoutId = setTimeout(updateDimensions, 250); // Wait 250ms after resize ends\n    };\n\n    // Initial measurement\n    updateDimensions();\n\n    window.addEventListener('resize', debouncedUpdateDimensions);\n\n    return () => {\n      window.removeEventListener('resize', debouncedUpdateDimensions);\n      clearTimeout(timeoutId);\n    };\n\n}, [ref]);\n\nreturn dimensions;\n}\n",
+      "type": "registry:hook",
+      "target": ""
+    },
+    {
+      "path": "/hooks/use-debounced-dimensions.tsx",
+      "content": "import { useState, useEffect, RefObject } from 'react';\n\ninterface Dimensions {\nwidth: number;\nheight: number;\n}\n\nexport function useDimensions(ref: RefObject<HTMLElement | SVGElement>): Dimensions {\n  const [dimensions, setDimensions] = useState<Dimensions>({ width: 0, height: 0 });\n\nuseEffect(() => {\nlet timeoutId: NodeJS.Timeout;\n\n    const updateDimensions = () => {\n      if (ref.current) {\n        const { width, height } = ref.current.getBoundingClientRect();\n        setDimensions({ width, height });\n      }\n    };\n\n    const debouncedUpdateDimensions = () => {\n      clearTimeout(timeoutId);\n      timeoutId = setTimeout(updateDimensions, 250); // Wait 250ms after resize ends\n    };\n\n    // Initial measurement\n    updateDimensions();\n\n    window.addEventListener('resize', debouncedUpdateDimensions);\n\n    return () => {\n      window.removeEventListener('resize', debouncedUpdateDimensions);\n      clearTimeout(timeoutId);\n    };\n\n}, [ref]);\n\nreturn dimensions;\n}\n",
+      "type": "registry:hook",
+      "target": ""
+    }
+  ],
+  "tailwind": {
+    "config": {}
+  },
+  "_meta": {
+    "author": "danielpetho",
+    "slug": "use-debounced-dimensions",
+    "registry_url": "https://21st.dev/r/danielpetho/use-debounced-dimensions",
+    "title": "useDimensions",
+    "description": "A custom React hook that tracks and returns the dimensions of a DOM element.\nThe dimensions are updated when the element is resized, with debouncing to improve performance.",
+    "category": "hook",
+    "category_group": "Marketing Blocks",
+    "downloads": 109,
+    "likes": 8
+  }
+}

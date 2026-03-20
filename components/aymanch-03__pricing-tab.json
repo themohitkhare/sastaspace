@@ -1,0 +1,39 @@
+{
+  "name": "pricing-tab",
+  "type": "registry:ui",
+  "dependencies": [
+    "framer-motion",
+    "class-variance-authority"
+  ],
+  "registryDependencies": [
+    "https://21st.dev/r/shadcn/badge"
+  ],
+  "files": [
+    {
+      "path": "/components/ui/pricing-tab.tsx",
+      "content": "\"use client\"\n\nimport * as React from \"react\"\nimport { motion } from \"framer-motion\"\n\nimport { cn } from \"@/lib/utils\"\nimport { Badge } from \"@/components/ui/badge\"\n\ninterface TabProps {\n  text: string\n  selected: boolean\n  setSelected: (text: string) => void\n  discount?: boolean\n}\n\nexport function Tab({\n  text,\n  selected,\n  setSelected,\n  discount = false,\n}: TabProps) {\n  return (\n    <button\n      onClick={() => setSelected(text)}\n      className={cn(\n        \"relative w-fit px-4 py-2 text-sm font-semibold capitalize\",\n        \"text-foreground transition-colors\",\n        discount && \"flex items-center justify-center gap-2.5\"\n      )}\n    >\n      <span className=\"relative z-10\">{text}</span>\n      {selected && (\n        <motion.span\n          layoutId=\"tab\"\n          transition={{ type: \"spring\", duration: 0.4 }}\n          className=\"absolute inset-0 z-0 rounded-full bg-background shadow-sm\"\n        />\n      )}\n      {discount && (\n        <Badge\n          variant=\"secondary\"\n          className={cn(\n            \"relative z-10 whitespace-nowrap shadow-none\",\n            selected && \"bg-muted\"\n          )}\n        >\n          Save 35%\n        </Badge>\n      )}\n    </button>\n  )\n}",
+      "type": "registry:ui",
+      "target": ""
+    },
+    {
+      "path": "/components/ui/badge.tsx",
+      "content": "import * as React from \"react\"\nimport { cva, type VariantProps } from \"class-variance-authority\"\n\nimport { cn } from \"@/lib/utils\"\n\nconst badgeVariants = cva(\n  \"inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2\",\n  {\n    variants: {\n      variant: {\n        default:\n          \"border-transparent bg-primary text-primary-foreground hover:bg-primary/80\",\n        secondary:\n          \"border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/80\",\n        destructive:\n          \"border-transparent bg-destructive text-destructive-foreground hover:bg-destructive/80\",\n        outline: \"text-foreground\",\n      },\n    },\n    defaultVariants: {\n      variant: \"default\",\n    },\n  },\n)\n\nexport interface BadgeProps\n  extends React.HTMLAttributes<HTMLDivElement>,\n    VariantProps<typeof badgeVariants> {}\n\nfunction Badge({ className, variant, ...props }: BadgeProps) {\n  return (\n    <div className={cn(badgeVariants({ variant }), className)} {...props} />\n  )\n}\n\nexport { Badge, badgeVariants }\n",
+      "type": "registry:ui",
+      "target": ""
+    }
+  ],
+  "tailwind": {
+    "config": {}
+  },
+  "_meta": {
+    "author": "aymanch-03",
+    "slug": "pricing-tab",
+    "registry_url": "https://21st.dev/r/aymanch-03/pricing-tab",
+    "title": "Pricing Tab",
+    "description": "An animated tab component with support for discount badges. Originally built for Dub.co's pricing frequency selector.\n\nFeatures\n- Smooth layout animations using Framer Motion\n- Optional discount badge support\n- Selected state with animated background\n- Dark mode support\n- Customizable text and callbacks",
+    "category": "pricing-section",
+    "category_group": "Marketing Blocks",
+    "downloads": 885,
+    "likes": 9
+  }
+}

@@ -1,0 +1,31 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "avatar-badge",
+  "type": "registry:component",
+  "title": "Avatar Badge",
+  "description": "A avatar-badge component.",
+  "dependencies": [
+    "lucide-react"
+  ],
+  "registryDependencies": [
+    "https://21st.dev/r/shadcn/avatar"
+  ],
+  "files": [
+    {
+      "path": "src/components/ui/avatar-badge.tsx",
+      "content": "\"use client\";\nimport { Avatar, AvatarFallback, AvatarImage } from \"@/components/ui/avatar\";\nimport { VerifiedIcon } from \"lucide-react\";\nconst BadgeAvatarDemo = () => {\n  return (\n    <div className=\"flex items-center justify-center px-4\">\n      <div className=\"flex flex-row justify-center items-center gap-3\">\n        <div className=\"relative w-fit\">\n          <Avatar >\n            <AvatarImage\n              alt=\"user\"\n              src=\"https://images.shadcnspace.com/assets/profiles/user-3.jpg\"\n            />\n            <AvatarFallback>SS</AvatarFallback>\n          </Avatar>\n          <span className=\"absolute -right-1 -bottom-1 flex size-3 items-center justify-center rounded-full bg-background\">\n            <VerifiedIcon className=\"size-full fill-blue-500 text-white\" />\n          </span>\n        </div>\n        \n      </div>\n    </div>\n  );\n};\n\nexport default BadgeAvatarDemo;\n",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "shadcnspace",
+    "slug": "avatar-badge",
+    "registry_url": "https://21st.dev/r/shadcnspace/avatar-badge",
+    "title": "Avatar Badge",
+    "description": "Here is avatar badge component.",
+    "category": "avatar",
+    "category_group": "UI Components",
+    "downloads": 3,
+    "likes": 0
+  }
+}

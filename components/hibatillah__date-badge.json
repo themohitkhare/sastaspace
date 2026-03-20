@@ -1,0 +1,94 @@
+{
+  "name": "date-badge",
+  "type": "registry:ui",
+  "dependencies": [
+    "date-fns",
+    "@radix-ui/react-tooltip",
+    "@radix-ui/react-slot",
+    "class-variance-authority"
+  ],
+  "registryDependencies": [
+    "https://21st.dev/r/shadcn/tooltip"
+  ],
+  "files": [
+    {
+      "path": "/components/ui/date-badge.tsx",
+      "content": "import { format, getDate } from \"date-fns\";\r\nimport { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from \"@/components/ui/tooltip\";\r\n\r\nexport function DateBadge({\r\n  date: rawDate,\r\n  time = false,\r\n  tooltip = true,\r\n}: {\r\n  date: string | Date;\r\n  time?: boolean;\r\n  tooltip?: boolean;\r\n}) {\r\n  const date = getDate(rawDate);\r\n  const month = format(rawDate, \"LLL\");\r\n  const fullDate = format(rawDate, time ? \"PPPP - kk:mm\" : \"PPPP\");\r\n\r\n  return (\r\n    <TooltipProvider>\r\n      <Tooltip>\r\n      <TooltipTrigger asChild>\r\n        <div className=\"bg-background/40 flex size-10 shrink-0 cursor-default flex-col items-center justify-center rounded-md border text-center\">\r\n          <span className=\"text-sm font-semibold leading-snug\">{date}</span>\r\n          <span className=\"text-muted-foreground text-xs leading-none\">\r\n            {month}\r\n          </span>\r\n        </div>\r\n      </TooltipTrigger>\r\n      <TooltipContent className=\"shadow-md\">\r\n        {fullDate}\r\n      </TooltipContent>\r\n    </Tooltip>\r\n    </TooltipProvider>\r\n  );\r\n}\r\n",
+      "type": "registry:ui",
+      "target": ""
+    },
+    {
+      "path": "/components/ui/tooltip.tsx",
+      "content": "\"use client\"\n\nimport * as React from \"react\"\nimport * as TooltipPrimitive from \"@radix-ui/react-tooltip\"\n\nimport { cn } from \"@/lib/utils\"\n\nconst TooltipProvider = TooltipPrimitive.Provider\n\nconst Tooltip = TooltipPrimitive.Root\n\nconst TooltipTrigger = TooltipPrimitive.Trigger\n\nconst TooltipContent = React.forwardRef<\n  React.ElementRef<typeof TooltipPrimitive.Content>,\n  React.ComponentPropsWithoutRef<typeof TooltipPrimitive.Content>\n>(({ className, sideOffset = 4, ...props }, ref) => (\n  <TooltipPrimitive.Content\n    ref={ref}\n    sideOffset={sideOffset}\n    className={cn(\n      \"z-50 overflow-hidden rounded-md border bg-popover px-3 py-1.5 text-sm text-popover-foreground shadow-md animate-in fade-in-0 zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2\",\n      className,\n    )}\n    {...props}\n  />\n))\nTooltipContent.displayName = TooltipPrimitive.Content.displayName\n\nexport { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider }\n",
+      "type": "registry:ui",
+      "target": ""
+    },
+    {
+      "path": "/components/ui/button.tsx",
+      "content": "import * as React from \"react\"\nimport { Slot } from \"@radix-ui/react-slot\"\nimport { cva, type VariantProps } from \"class-variance-authority\"\n\nimport { cn } from \"@/lib/utils\"\n\nconst buttonVariants = cva(\n  \"inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50\",\n  {\n    variants: {\n      variant: {\n        default: \"bg-primary text-primary-foreground hover:bg-primary/90\",\n        destructive:\n          \"bg-destructive text-destructive-foreground hover:bg-destructive/90\",\n        outline:\n          \"border border-input bg-background hover:bg-accent hover:text-accent-foreground\",\n        secondary:\n          \"bg-secondary text-secondary-foreground hover:bg-secondary/80\",\n        ghost: \"hover:bg-accent hover:text-accent-foreground\",\n        link: \"text-primary underline-offset-4 hover:underline\",\n      },\n      size: {\n        default: \"h-10 px-4 py-2\",\n        sm: \"h-9 rounded-md px-3\",\n        lg: \"h-11 rounded-md px-8\",\n        icon: \"h-10 w-10\",\n      },\n    },\n    defaultVariants: {\n      variant: \"default\",\n      size: \"default\",\n    },\n  },\n)\n\nexport interface ButtonProps\n  extends React.ButtonHTMLAttributes<HTMLButtonElement>,\n    VariantProps<typeof buttonVariants> {\n  asChild?: boolean\n}\n\nconst Button = React.forwardRef<HTMLButtonElement, ButtonProps>(\n  ({ className, variant, size, asChild = false, ...props }, ref) => {\n    const Comp = asChild ? Slot : \"button\"\n    return (\n      <Comp\n        className={cn(buttonVariants({ variant, size, className }))}\n        ref={ref}\n        {...props}\n      />\n    )\n  },\n)\nButton.displayName = \"Button\"\n\nexport { Button, buttonVariants }\n",
+      "type": "registry:ui",
+      "target": ""
+    }
+  ],
+  "cssVars": {
+    "light": {
+      "--background": "var(--color-zinc-100)",
+      "--foreground": "hsl(224 71.4% 4.1%)",
+      "--card": "var(--color-white)",
+      "--card-foreground": "hsl(224 71.4% 4.1%)",
+      "--popover": "hsl(0 0% 100%)",
+      "--popover-foreground": "hsl(224 71.4% 4.1%)",
+      "--primary": "var(--color-teal-600)",
+      "--primary-foreground": "hsl(210 20% 98%)",
+      "--secondary": "--alpha(var(--color-zinc-200) / 50%)",
+      "--secondary-foreground": "hsl(220.9 39.3% 11%)",
+      "--muted": "var(--color-zinc-100)",
+      "--muted-foreground": "hsl(220 8.9% 46.1%)",
+      "--accent": "var(--color-zinc-50)",
+      "--accent-foreground": "hsl(220.9 39.3% 11%)",
+      "--destructive": "var(--color-red-600)",
+      "--destructive-foreground": "hsl(210 20% 98%)",
+      "--icon-accent": "var(--color-teal-700)",
+      "--border": "--alpha(var(--color-zinc-300) / 70%)",
+      "--input": "hsl(220 13% 91%)",
+      "--ring": "hsl(224 71.4% 4.1%)",
+      "--radius": "0.6rem"
+    },
+    "dark": {
+      "--background": "var(--color-zinc-900)",
+      "--foreground": "hsl(210 20% 98%)",
+      "--card": "hsl(240, 4%, 13%)",
+      "--card-foreground": "hsl(210 20% 98%)",
+      "--popover": "var(--color-zinc-900)",
+      "--popover-foreground": "hsl(210 20% 98%)",
+      "--primary": "var(--color-teal-800)",
+      "--primary-foreground": "var(--color-zinc-50)",
+      "--secondary": "var(--color-zinc-800)",
+      "--secondary-foreground": "hsl(210 20% 98%)",
+      "--muted": "var(--color-zinc-700)",
+      "--muted-foreground": "hsl(217.9 10.6% 64.9%)",
+      "--accent": "var(--color-zinc-800)",
+      "--accent-foreground": "hsl(210 20% 98%)",
+      "--destructive": "var(--color-red-900)",
+      "--destructive-foreground": "hsl(210 20% 98%)",
+      "--icon-accent": "var(--color-teal-700)",
+      "--border": "var(--color-zinc-800)",
+      "--input": "var(--color-zinc-700)",
+      "--ring": "hsl(216 12.2% 83.9%)"
+    }
+  },
+  "tailwind": {
+    "config": {}
+  },
+  "_meta": {
+    "author": "hibatillah",
+    "slug": "date-badge",
+    "registry_url": "https://21st.dev/r/hibatillah/date-badge",
+    "title": "Date Badge",
+    "description": "Badge to display date shorten.",
+    "category": "badge",
+    "category_group": "UI Components",
+    "downloads": 6,
+    "likes": 0
+  }
+}

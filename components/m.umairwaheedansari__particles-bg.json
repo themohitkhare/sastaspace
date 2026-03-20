@@ -1,0 +1,27 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "particles-bg",
+  "type": "registry:component",
+  "title": "Particles Bg",
+  "description": "A particles-bg component.",
+  "dependencies": [],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/ui/particles-bg.tsx",
+      "content": "\"use client\";\n\nimport { useEffect, useCallback } from \"react\";\n\nexport default function ParticlesComponent() {\n  const initParticles = useCallback((isDark: boolean) => {\n    // cleanup old canvas\n    const oldCanvas = document.querySelector(\"#particles-js canvas\");\n    if (oldCanvas) oldCanvas.remove();\n\n    // @ts-ignore\n    if (window.pJSDom?.length > 0) {\n      // @ts-ignore\n      window.pJSDom.forEach((p) => p.pJS.fn.vendors.destroypJS());\n      // @ts-ignore\n      window.pJSDom = [];\n    }\n\n    const colors = isDark\n      ? {\n          particles: \"#00f5ff\",\n          lines: \"#00d9ff\",\n          accent: \"#0096c7\",\n        }\n      : {\n          particles: \"#0277bd\",\n          lines: \"#0288d1\",\n          accent: \"#039be5\",\n        };\n\n    // @ts-ignore\n    window.particlesJS(\"particles-js\", {\n      particles: {\n        number: { value: 140, density: { enable: true, value_area: 800 } },\n        color: { value: colors.particles },\n        shape: { type: \"circle\", stroke: { width: 0.5, color: colors.accent } },\n        opacity: {\n          value: 0.7,\n          random: true,\n          anim: { enable: true, speed: 1, opacity_min: 0.3 },\n        },\n        size: {\n          value: 3,\n          random: true,\n          anim: { enable: true, speed: 2, size_min: 1 },\n        },\n        line_linked: {\n          enable: true,\n          distance: 160,\n          color: colors.lines,\n          opacity: 0.4,\n          width: 1.2,\n        },\n        move: { enable: true, speed: 2, random: true, out_mode: \"bounce\" },\n      },\n      interactivity: {\n        detect_on: \"canvas\",\n        events: {\n          onhover: { enable: true, mode: \"grab\" },\n          onclick: { enable: true, mode: \"push\" },\n          resize: true,\n        },\n        modes: {\n          grab: { distance: 220, line_linked: { opacity: 0.8 } },\n          push: { particles_nb: 4 },\n          repulse: { distance: 180, duration: 0.4 },\n        },\n      },\n      retina_detect: true,\n    });\n  }, []);\n\n  useEffect(() => {\n    if (typeof window === \"undefined\") return;\n\n    const script = document.createElement(\"script\");\n    script.src =\n      \"https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js\";\n    script.async = true;\n    document.body.appendChild(script);\n\n    script.onload = () => {\n      const html = document.documentElement;\n      const detectDark = () =>\n        html.classList.contains(\"dark\") ||\n        html.getAttribute(\"data-theme\") === \"dark\";\n\n      // init first load\n      initParticles(detectDark());\n\n      // observe changes from 21st.dev theme button\n      const observer = new MutationObserver(() =>\n        initParticles(detectDark())\n      );\n      observer.observe(html, {\n        attributes: true,\n        attributeFilter: [\"class\", \"data-theme\"],\n      });\n    };\n\n    return () => {\n      document.body.removeChild(script);\n    };\n  }, [initParticles]);\n\n  return (\n    <div\n      id=\"particles-js\"\n      className={`\n        w-full h-screen absolute top-0 left-0\n        transition-colors duration-500\n        bg-gradient-to-tr from-[#e3f2fd] via-[#90caf9] to-[#64b5f6]\n        dark:from-[#000814] dark:via-[#003566] dark:to-[#0077b6]\n      `}\n    />\n  );\n}\n",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "m.umairwaheedansari",
+    "slug": "particles-bg",
+    "registry_url": "https://21st.dev/r/m.umairwaheedansari/particles-bg",
+    "title": "Particles BG",
+    "description": "It is a uniquely interactive Particle Background component. It connects the mouse pointer with particles, and on click, it creates more particles",
+    "category": "accordion",
+    "category_group": "UI Components",
+    "downloads": 18,
+    "likes": 0
+  }
+}

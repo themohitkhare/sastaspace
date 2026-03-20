@@ -1,0 +1,45 @@
+{
+  "name": "expandable-chat",
+  "type": "registry:ui",
+  "dependencies": [
+    "lucide-react",
+    "@radix-ui/react-slot",
+    "class-variance-authority"
+  ],
+  "registryDependencies": [
+    "https://21st.dev/r/shadcn/button"
+  ],
+  "files": [
+    {
+      "path": "/components/ui/expandable-chat.tsx",
+      "content": "\"use client\";\n\nimport React, { useRef, useState } from \"react\";\nimport { X, MessageCircle } from \"lucide-react\";\nimport { cn } from \"@/lib/utils\";\nimport { Button } from \"@/components/ui/button\";\n\nexport type ChatPosition = \"bottom-right\" | \"bottom-left\";\nexport type ChatSize = \"sm\" | \"md\" | \"lg\" | \"xl\" | \"full\";\n\nconst chatConfig = {\n  dimensions: {\n    sm: \"sm:max-w-sm sm:max-h-[500px]\",\n    md: \"sm:max-w-md sm:max-h-[600px]\",\n    lg: \"sm:max-w-lg sm:max-h-[700px]\",\n    xl: \"sm:max-w-xl sm:max-h-[800px]\",\n    full: \"sm:w-full sm:h-full\",\n  },\n  positions: {\n    \"bottom-right\": \"bottom-5 right-5\",\n    \"bottom-left\": \"bottom-5 left-5\",\n  },\n  chatPositions: {\n    \"bottom-right\": \"sm:bottom-[calc(100%+10px)] sm:right-0\",\n    \"bottom-left\": \"sm:bottom-[calc(100%+10px)] sm:left-0\",\n  },\n  states: {\n    open: \"pointer-events-auto opacity-100 visible scale-100 translate-y-0\",\n    closed:\n      \"pointer-events-none opacity-0 invisible scale-100 sm:translate-y-5\",\n  },\n};\n\ninterface ExpandableChatProps extends React.HTMLAttributes<HTMLDivElement> {\n  position?: ChatPosition;\n  size?: ChatSize;\n  icon?: React.ReactNode;\n}\n\nconst ExpandableChat: React.FC<ExpandableChatProps> = ({\n  className,\n  position = \"bottom-right\",\n  size = \"md\",\n  icon,\n  children,\n  ...props\n}) => {\n  const [isOpen, setIsOpen] = useState(false);\n  const chatRef = useRef<HTMLDivElement>(null);\n\n  const toggleChat = () => setIsOpen(!isOpen);\n\n  return (\n    <div\n      className={cn(`fixed ${chatConfig.positions[position]} z-50`, className)}\n      {...props}\n    >\n      <div\n        ref={chatRef}\n        className={cn(\n          \"flex flex-col bg-background border sm:rounded-lg shadow-md overflow-hidden transition-all duration-250 ease-out sm:absolute sm:w-[90vw] sm:h-[80vh] fixed inset-0 w-full h-full sm:inset-auto\",\n          chatConfig.chatPositions[position],\n          chatConfig.dimensions[size],\n          isOpen ? chatConfig.states.open : chatConfig.states.closed,\n          className,\n        )}\n      >\n        {children}\n        <Button\n          variant=\"ghost\"\n          size=\"icon\"\n          className=\"absolute top-2 right-2 sm:hidden\"\n          onClick={toggleChat}\n        >\n          <X className=\"h-4 w-4\" />\n        </Button>\n      </div>\n      <ExpandableChatToggle\n        icon={icon}\n        isOpen={isOpen}\n        toggleChat={toggleChat}\n      />\n    </div>\n  );\n};\n\nExpandableChat.displayName = \"ExpandableChat\";\n\nconst ExpandableChatHeader: React.FC<React.HTMLAttributes<HTMLDivElement>> = ({\n  className,\n  ...props\n}) => (\n  <div\n    className={cn(\"flex items-center justify-between p-4 border-b\", className)}\n    {...props}\n  />\n);\n\nExpandableChatHeader.displayName = \"ExpandableChatHeader\";\n\nconst ExpandableChatBody: React.FC<React.HTMLAttributes<HTMLDivElement>> = ({\n  className,\n  ...props\n}) => <div className={cn(\"flex-grow overflow-y-auto\", className)} {...props} />;\n\nExpandableChatBody.displayName = \"ExpandableChatBody\";\n\nconst ExpandableChatFooter: React.FC<React.HTMLAttributes<HTMLDivElement>> = ({\n  className,\n  ...props\n}) => <div className={cn(\"border-t p-4\", className)} {...props} />;\n\nExpandableChatFooter.displayName = \"ExpandableChatFooter\";\n\ninterface ExpandableChatToggleProps\n  extends React.ButtonHTMLAttributes<HTMLButtonElement> {\n  icon?: React.ReactNode;\n  isOpen: boolean;\n  toggleChat: () => void;\n}\n\nconst ExpandableChatToggle: React.FC<ExpandableChatToggleProps> = ({\n  className,\n  icon,\n  isOpen,\n  toggleChat,\n  ...props\n}) => (\n  <Button\n    variant=\"default\"\n    onClick={toggleChat}\n    className={cn(\n      \"w-14 h-14 rounded-full shadow-md flex items-center justify-center hover:shadow-lg hover:shadow-black/30 transition-all duration-300\",\n      className,\n    )}\n    {...props}\n  >\n    {isOpen ? (\n      <X className=\"h-6 w-6\" />\n    ) : (\n      icon || <MessageCircle className=\"h-6 w-6\" />\n    )}\n  </Button>\n);\n\nExpandableChatToggle.displayName = \"ExpandableChatToggle\";\n\nexport {\n  ExpandableChat,\n  ExpandableChatHeader,\n  ExpandableChatBody,\n  ExpandableChatFooter,\n};\n",
+      "type": "registry:ui",
+      "target": ""
+    },
+    {
+      "path": "/components/ui/button.tsx",
+      "content": "import * as React from \"react\"\nimport { Slot } from \"@radix-ui/react-slot\"\nimport { cva, type VariantProps } from \"class-variance-authority\"\n\nimport { cn } from \"@/lib/utils\"\n\nconst buttonVariants = cva(\n  \"inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50\",\n  {\n    variants: {\n      variant: {\n        default: \"bg-primary text-primary-foreground hover:bg-primary/90\",\n        destructive:\n          \"bg-destructive text-destructive-foreground hover:bg-destructive/90\",\n        outline:\n          \"border border-input bg-background hover:bg-accent hover:text-accent-foreground\",\n        secondary:\n          \"bg-secondary text-secondary-foreground hover:bg-secondary/80\",\n        ghost: \"hover:bg-accent hover:text-accent-foreground\",\n        link: \"text-primary underline-offset-4 hover:underline\",\n      },\n      size: {\n        default: \"h-10 px-4 py-2\",\n        sm: \"h-9 rounded-md px-3\",\n        lg: \"h-11 rounded-md px-8\",\n        icon: \"h-10 w-10\",\n      },\n    },\n    defaultVariants: {\n      variant: \"default\",\n      size: \"default\",\n    },\n  },\n)\n\nexport interface ButtonProps\n  extends React.ButtonHTMLAttributes<HTMLButtonElement>,\n    VariantProps<typeof buttonVariants> {\n  asChild?: boolean\n}\n\nconst Button = React.forwardRef<HTMLButtonElement, ButtonProps>(\n  ({ className, variant, size, asChild = false, ...props }, ref) => {\n    const Comp = asChild ? Slot : \"button\"\n    return (\n      <Comp\n        className={cn(buttonVariants({ variant, size, className }))}\n        ref={ref}\n        {...props}\n      />\n    )\n  },\n)\nButton.displayName = \"Button\"\n\nexport { Button, buttonVariants }\n",
+      "type": "registry:ui",
+      "target": ""
+    }
+  ],
+  "tailwind": {
+    "config": {}
+  },
+  "_source": {
+    "author": "jakobhoeg",
+    "name": "expandable-chat",
+    "registry_url": "https://21st.dev/r/jakobhoeg/expandable-chat"
+  },
+  "_meta": {
+    "author": "jakobhoeg",
+    "slug": "expandable-chat",
+    "registry_url": "https://21st.dev/r/jakobhoeg/expandable-chat",
+    "title": "Expandable Chat",
+    "description": "The ExpandableChat expandable-chat.tsx component gives an easily installable component for quickly creating a chat support ui feature.\n\nThere's an example repository here that gives you a ready-to-use chatbot with Vercel AI's SDK.\n\nhttps://github.com/jakobhoeg/shadcn-chat/tree/master/examples/shadcn-chat-example-vercel-ai",
+    "category": "ai-chat",
+    "category_group": "UI Components",
+    "downloads": 7291,
+    "likes": 60
+  }
+}

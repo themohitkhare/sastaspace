@@ -1,0 +1,30 @@
+{
+  "name": "avatar-group",
+  "type": "registry:ui",
+  "dependencies": [
+    "framer-motion"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "/components/ui/avatar-group.tsx",
+      "content": "\"use client\" \r\n\r\nimport * as React from \"react\"\r\nimport { useState } from \"react\";\r\nimport { motion, AnimatePresence } from \"framer-motion\";\r\n\r\nexport interface AvatarGroupProps {\r\n  avatars: { src: string; alt?: string; label?: string }[];\r\n  maxVisible?: number;\r\n  size?: number;\r\n  overlap?: number;\r\n}\r\n\r\nconst AvatarGroup = ({\r\n  avatars,\r\n  maxVisible = 5,\r\n  size = 40,\r\n  overlap = 14,\r\n}: AvatarGroupProps) => {\r\n  const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);\r\n  const visibleAvatars = avatars.slice(0, maxVisible);\r\n  const extraCount = avatars.length - maxVisible;\r\n\r\n  return (\r\n    <div className=\"flex items-center\">\r\n      <div className=\"flex -space-x-3\">\r\n        {visibleAvatars.map((avatar, idx) => {\r\n          const isHovered = hoveredIdx === idx;\r\n          return (\r\n            <div\r\n              key={idx}\r\n              className=\"border-4 border-background rounded-full bg-background transition-all duration-300 relative\"\r\n              style={{\r\n                width: size,\r\n                height: size,\r\n                zIndex: isHovered ? 100 : visibleAvatars.length - idx,\r\n                marginLeft: -overlap,\r\n                // boxShadow: isHovered\r\n                //   ? \"0 4px 16px rgba(0,0,0,0.10)\"\r\n                //   : undefined,\r\n                position: \"relative\",\r\n                transition:\r\n                  \"margin-left 0.3s cubic-bezier(0.4,0,0.2,1), z-index 0s, box-shadow 0.3s cubic-bezier(0.4,0,0.2,1), transform 0.3s cubic-bezier(0.4,0,0.2,1)\",\r\n                transform: isHovered ? \"translateY(-10px)\" : \"translateY(0)\",\r\n              }}\r\n              onMouseEnter={() => setHoveredIdx(idx)}\r\n              onMouseLeave={() => setHoveredIdx(null)}\r\n            >\r\n              <img\r\n                src={avatar.src}\r\n                alt={avatar.alt || `Avatar ${idx + 1}`}\r\n                width={size}\r\n                height={size}\r\n                className=\"rounded-full object-cover\"\r\n                draggable={false}\r\n              />\r\n              <AnimatePresence>\r\n                {isHovered && avatar.label && (\r\n                  <motion.div\r\n                    key=\"tooltip\"\r\n                    initial={{\r\n                      x: \"-50%\",\r\n                      y: 10,\r\n                      opacity: 0,\r\n                      scale: 0.7,\r\n                    }}\r\n                    animate={{\r\n                      x: \"-50%\", \r\n                      y: 0,\r\n                      opacity: 1,\r\n                      scale: 1,\r\n                    }}\r\n                    exit={{\r\n                      x: \"-50%\",\r\n                      y: 10,\r\n                      opacity: 0,\r\n                      scale: 0.7,\r\n                    }}\r\n                    transition={{\r\n                      type: \"spring\",\r\n                      stiffness: 400,\r\n                      damping: 24,\r\n                    }}\r\n                    className=\"absolute z-50 px-2 py-1 bg-primary text-primary-foreground text-xs rounded shadow-lg whitespace-nowrap pointer-events-none font-semibold\"\r\n                    style={{\r\n                      top: -size * 0.7,\r\n                      left: \"50%\",\r\n                    }}\r\n                  >\r\n                    {avatar.label}\r\n                  </motion.div>\r\n                )}\r\n              </AnimatePresence>\r\n            </div>\r\n          );\r\n        })}\r\n        {extraCount > 0 && (\r\n          <div\r\n            className=\"flex items-center justify-center bg-primary text-primary-foreground font-semibold border-4 border-background rounded-full\"\r\n            style={{\r\n              width: size,\r\n              height: size,\r\n              marginLeft: -overlap,\r\n              zIndex: 0,\r\n              fontSize: size * 0.32,\r\n              transition: \"margin-left 0.3s cubic-bezier(0.4,0,0.2,1)\",\r\n            }}\r\n          >\r\n            +{extraCount}\r\n          </div>\r\n        )}\r\n      </div>\r\n    </div>\r\n  );\r\n};\r\n\r\nexport { AvatarGroup };\r\n",
+      "type": "registry:ui",
+      "target": ""
+    }
+  ],
+  "tailwind": {
+    "config": {}
+  },
+  "_meta": {
+    "author": "preetsuthar17",
+    "slug": "avatar-group",
+    "registry_url": "https://21st.dev/r/preetsuthar17/avatar-group",
+    "title": "Avatar Group",
+    "description": "A component that displays a group of avatars.",
+    "category": "avatar",
+    "category_group": "UI Components",
+    "downloads": 178,
+    "likes": 0
+  }
+}

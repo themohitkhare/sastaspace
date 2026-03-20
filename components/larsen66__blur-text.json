@@ -1,0 +1,29 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "blur-text",
+  "type": "registry:component",
+  "title": "Blur Text",
+  "description": "A blur-text component.",
+  "dependencies": [
+    "framer-motion"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/ui/blur-text.tsx",
+      "content": "import { motion, AnimationProps, Transition } from 'framer-motion';\nimport { useEffect, useRef, useState, useMemo } from 'react';\n\nconst buildKeyframes = (from: object, steps: object[]): object => {\n  const keys = new Set([\n    ...Object.keys(from),\n    ...steps.flatMap((s) => Object.keys(s)),\n  ]);\n\n  const keyframes: { [key: string]: any[] } = {};\n  keys.forEach((k) => {\n    keyframes[k] = [\n      (from as any)[k],\n      ...steps.map((s) => (s as any)[k])\n    ];\n  });\n  return keyframes;\n};\n\ninterface BlurTextProps {\n  text?: string;\n  delay?: number;\n  className?: string;\n  animateBy?: 'words' | 'letters';\n  direction?: 'top' | 'bottom';\n  threshold?: number;\n  rootMargin?: string;\n  animationFrom?: object;\n  animationTo?: object[];\n  easing?: string | number[] | ((t: number) => number);\n  onAnimationComplete?: () => void;\n  stepDuration?: number;\n}\n\nexport const BlurText = ({\n  text = '',\n  delay = 200,\n  className = '',\n  animateBy = 'words',\n  direction = 'top',\n  threshold = 0.1,\n  rootMargin = '0px',\n  animationFrom,\n  animationTo,\n  easing = (t) => t,\n  onAnimationComplete,\n  stepDuration = 0.35,\n}: BlurTextProps) => {\n  const elements = useMemo(() => {\n    if (animateBy === 'words') {\n      return text.split(' ');\n    } else {\n      return text.split('');\n    }\n  }, [text, animateBy]);\n\n  const [inView, setInView] = useState(false);\n  const ref = useRef<HTMLParagraphElement>(null);\n\n  useEffect(() => {\n    const currentRef = ref.current;\n    if (!currentRef) return;\n\n    const observer = new IntersectionObserver(\n      ([entry]) => {\n        if (entry.isIntersecting) {\n          setInView(true);\n          observer.unobserve(currentRef);\n        }\n      },\n      { threshold, rootMargin }\n    );\n\n    observer.observe(currentRef);\n\n    return () => {\n      if (currentRef) {\n         observer.unobserve(currentRef);\n      }\n      observer.disconnect();\n    }\n  }, [threshold, rootMargin]);\n\n  const defaultFrom: AnimationProps['initial'] = useMemo(\n    () =>\n      direction === 'top'\n        ? { filter: 'blur(10px)', opacity: 0, y: -50 }\n        : { filter: 'blur(10px)', opacity: 0, y: 50 },\n    [direction]\n  );\n\n  const defaultTo: AnimationProps['animate'] = useMemo(\n    () => [\n      {\n        filter: 'blur(5px)',\n        opacity: 0.5,\n        y: direction === 'top' ? 5 : -5,\n      },\n      {\n        filter: 'blur(0px)',\n        opacity: 1,\n        y: 0,\n      },\n    ],\n    [direction]\n  );\n\n  const fromSnapshot = animationFrom ?? defaultFrom;\n  const toSnapshots = Array.isArray(animationTo) ? animationTo : (defaultTo as object[]);\n\n  const stepCount = toSnapshots.length + 1;\n  const totalDuration = stepDuration * (stepCount - 1);\n  const times = Array.from({ length: stepCount }, (_, i) =>\n    stepCount <= 1 ? 0 : i / (stepCount - 1)\n  );\n\n  return (\n    <p\n      ref={ref}\n      className={className}\n      style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center' }}\n    >\n      {elements.map((segment, index) => {\n        const animateKeyframes = buildKeyframes(fromSnapshot, toSnapshots);\n\n        const spanTransition: Transition = {\n          duration: totalDuration,\n          times: times as number[],\n          delay: inView ? (index * delay) / 1000 : 0,\n          ease: easing,\n        };\n\n        return (\n          <motion.span\n            className=\"inline-block will-change-[transform,filter,opacity]\"\n            key={index}\n            initial={fromSnapshot}\n            animate={inView ? animateKeyframes : fromSnapshot}\n            transition={spanTransition}\n            onAnimationComplete={\n              index === elements.length - 1 && inView ? onAnimationComplete : undefined\n            }\n            style={animateBy === 'words' ? { marginRight: '0.5em' } : {}}\n          >\n            {segment === ' ' ? '\\u00A0' : segment}\n          </motion.span>\n        );\n      })}\n    </p>\n  );\n};",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "larsen66",
+    "slug": "blur-text",
+    "registry_url": "https://21st.dev/r/larsen66/blur-text",
+    "title": "Blur Text",
+    "description": "Simple Blur text ",
+    "category": "text",
+    "category_group": "Marketing Blocks",
+    "downloads": 0,
+    "likes": 0
+  }
+}

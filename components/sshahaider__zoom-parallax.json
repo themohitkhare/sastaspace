@@ -1,0 +1,29 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "zoom-parallax",
+  "type": "registry:component",
+  "title": "Zoom Parallax",
+  "description": "A zoom-parallax component.",
+  "dependencies": [
+    "framer-motion"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/ui/zoom-parallax.tsx",
+      "content": "'use client';\n\nimport { useScroll, useTransform, motion } from 'framer-motion';\nimport { useRef } from 'react';\n\ninterface Image {\n\tsrc: string;\n\talt?: string;\n}\n\ninterface ZoomParallaxProps {\n\t/** Array of images to be displayed in the parallax effect max 7 images */\n\timages: Image[];\n}\n\nexport function ZoomParallax({ images }: ZoomParallaxProps) {\n\tconst container = useRef(null);\n\tconst { scrollYProgress } = useScroll({\n\t\ttarget: container,\n\t\toffset: ['start start', 'end end'],\n\t});\n\n\tconst scale4 = useTransform(scrollYProgress, [0, 1], [1, 4]);\n\tconst scale5 = useTransform(scrollYProgress, [0, 1], [1, 5]);\n\tconst scale6 = useTransform(scrollYProgress, [0, 1], [1, 6]);\n\tconst scale8 = useTransform(scrollYProgress, [0, 1], [1, 8]);\n\tconst scale9 = useTransform(scrollYProgress, [0, 1], [1, 9]);\n\n\tconst scales = [scale4, scale5, scale6, scale5, scale6, scale8, scale9];\n\n\treturn (\n\t\t<div ref={container} className=\"relative h-[300vh]\">\n\t\t\t<div className=\"sticky top-0 h-screen overflow-hidden\">\n\t\t\t\t{images.map(({ src, alt }, index) => {\n\t\t\t\t\tconst scale = scales[index % scales.length];\n\n\t\t\t\t\treturn (\n\t\t\t\t\t\t<motion.div\n\t\t\t\t\t\t\tkey={index}\n\t\t\t\t\t\t\tstyle={{ scale }}\n\t\t\t\t\t\t\tclassName={`absolute top-0 flex h-full w-full items-center justify-center ${index === 1 ? '[&>div]:!-top-[30vh] [&>div]:!left-[5vw] [&>div]:!h-[30vh] [&>div]:!w-[35vw]' : ''} ${index === 2 ? '[&>div]:!-top-[10vh] [&>div]:!-left-[25vw] [&>div]:!h-[45vh] [&>div]:!w-[20vw]' : ''} ${index === 3 ? '[&>div]:!left-[27.5vw] [&>div]:!h-[25vh] [&>div]:!w-[25vw]' : ''} ${index === 4 ? '[&>div]:!top-[27.5vh] [&>div]:!left-[5vw] [&>div]:!h-[25vh] [&>div]:!w-[20vw]' : ''} ${index === 5 ? '[&>div]:!top-[27.5vh] [&>div]:!-left-[22.5vw] [&>div]:!h-[25vh] [&>div]:!w-[30vw]' : ''} ${index === 6 ? '[&>div]:!top-[22.5vh] [&>div]:!left-[25vw] [&>div]:!h-[15vh] [&>div]:!w-[15vw]' : ''} `}\n\t\t\t\t\t\t>\n\t\t\t\t\t\t\t<div className=\"relative h-[25vh] w-[25vw]\">\n\t\t\t\t\t\t\t\t<img\n\t\t\t\t\t\t\t\t\tsrc={src || '/placeholder.svg'}\n\t\t\t\t\t\t\t\t\talt={alt || `Parallax image ${index + 1}`}\n\t\t\t\t\t\t\t\t\tclassName=\"h-full w-full object-cover\"\n\t\t\t\t\t\t\t\t/>\n\t\t\t\t\t\t\t</div>\n\t\t\t\t\t\t</motion.div>\n\t\t\t\t\t);\n\t\t\t\t})}\n\t\t\t</div>\n\t\t</div>\n\t);\n}\n",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "sshahaider",
+    "slug": "zoom-parallax",
+    "registry_url": "https://21st.dev/r/sshahaider/zoom-parallax",
+    "title": "Zoom Parallax",
+    "description": "A smooth scroll effect where images zoom in at different speeds for a cinematic feel.\nPerfect for hero sections or storytelling layouts that need extra visual depth.",
+    "category": "features",
+    "category_group": "Marketing Blocks",
+    "downloads": 24,
+    "likes": 0
+  }
+}

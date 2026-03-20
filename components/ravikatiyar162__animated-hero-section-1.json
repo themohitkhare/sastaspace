@@ -1,0 +1,31 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "animated-hero-section-1",
+  "type": "registry:component",
+  "title": "Animated Hero Section 1",
+  "description": "A animated-hero-section-1 component.",
+  "dependencies": [
+    "framer-motion"
+  ],
+  "registryDependencies": [
+    "https://21st.dev/r/shadcn/button"
+  ],
+  "files": [
+    {
+      "path": "src/components/ui/animated-hero-section-1.tsx",
+      "content": "import * as React from \"react\";\nimport { motion } from \"framer-motion\";\nimport { cn } from \"@/lib/utils\";\nimport { Button } from \"@/components/ui/button\";\n\n// Interface definitions remain the same\ninterface NavLink {\n  label: string;\n  href: string;\n}\n\ninterface AnimatedHeroProps {\n  backgroundImageUrl: string;\n  logo: React.ReactNode;\n  navLinks: NavLink[];\n  topRightAction?: React.ReactNode;\n  title: string;\n  description: string;\n  ctaButton: {\n    text: string;\n    onClick: () => void;\n  };\n  secondaryCta?: {\n    text: string;\n    onClick: () => void;\n  };\n  className?: string;\n}\n\n// Animation variants remain the same\nconst containerVariants = {\n  hidden: { opacity: 0 },\n  visible: {\n    opacity: 1,\n    transition: {\n      staggerChildren: 0.15,\n      delayChildren: 0.2,\n    },\n  },\n};\n\nconst itemVariants = {\n  hidden: { y: 20, opacity: 0 },\n  visible: {\n    y: 0,\n    opacity: 1,\n    transition: {\n      duration: 0.6,\n      ease: \"easeOut\",\n    },\n  },\n};\n\nexport const AnimatedHero = ({\n  backgroundImageUrl,\n  logo,\n  navLinks,\n  topRightAction,\n  title,\n  description,\n  ctaButton,\n  secondaryCta,\n  className,\n}: AnimatedHeroProps) => {\n  // Define the new reusable glass button style\n  const glassButtonClassName =\n    \"bg-white/10 backdrop-blur-sm border border-white/20 text-primary-foreground hover:bg-white/20 transition-colors\";\n\n  return (\n    <div\n      className={cn(\n        \"relative flex min-h-screen w-full flex-col items-center justify-center overflow-hidden bg-background\",\n        className\n      )}\n    >\n      <div\n        className=\"absolute inset-0 z-0 bg-cover bg-center\"\n        style={{ backgroundImage: `url(${backgroundImageUrl})` }}\n      >\n        <div className=\"absolute inset-0 bg-black/60\" />\n      </div>\n\n      <motion.header\n        initial={{ y: -100, opacity: 0 }}\n        animate={{ y: 0, opacity: 1 }}\n        transition={{ duration: 0.8, ease: \"easeOut\" }}\n        className=\"absolute top-0 z-20 flex h-20 w-full items-center justify-between px-6 md:px-12 text-white\"\n      >\n        <div className=\"flex items-center gap-2\">{logo}</div>\n        <nav className=\"hidden md:flex items-center gap-6\">\n          {navLinks.map((link) => (\n            <a\n              key={link.label}\n              href={link.href}\n              className=\"text-sm font-medium text-primary-foreground/80 transition-colors hover:text-primary-foreground\"\n            >\n              {link.label}\n            </a>\n          ))}\n        </nav>\n        <div className=\"hidden md:block\">{topRightAction}</div>\n      </motion.header>\n\n      <motion.div\n        variants={containerVariants}\n        initial=\"hidden\"\n        animate=\"visible\"\n        className=\"relative z-10 flex flex-col items-start justify-center text-left px-6 md:px-12 max-w-4xl w-full text-white\"\n      >\n        <motion.h1\n          variants={itemVariants}\n          className=\"text-4xl font-bold tracking-tight text-primary-foreground sm:text-5xl md:text-6xl lg:text-7xl\"\n        >\n          {title}\n        </motion.h1>\n        <motion.p\n          variants={itemVariants}\n          className=\"mt-6 max-w-2xl text-lg leading-8 text-primary-foreground/80\"\n        >\n          {description}\n        </motion.p>\n        <motion.div\n          variants={itemVariants}\n          className=\"mt-10 flex items-center gap-x-4\"\n        >\n          {/* UPDATED: Applied the new glass button style */}\n          <Button\n            onClick={ctaButton.onClick}\n            size=\"lg\"\n            className={glassButtonClassName}\n          >\n            {ctaButton.text}\n          </Button>\n          {/* UPDATED: Applied the new glass button style */}\n          {secondaryCta && (\n            <Button\n              onClick={secondaryCta.onClick}\n              size=\"lg\"\n              className={glassButtonClassName}\n            >\n              {secondaryCta.text}\n            </Button>\n          )}\n        </motion.div>\n      </motion.div>\n    </div>\n  );\n};",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "ravikatiyar162",
+    "slug": "animated-hero-section-1",
+    "registry_url": "https://21st.dev/r/ravikatiyar162/animated-hero-section-1",
+    "title": "Animated Hero Section",
+    "description": "Animated Hero Section\nDescription: A responsive, full-screen hero section with a background image and text elements that animate into view. It features a customizable navigation bar, title, description, and call-to-action buttons, making it highly reusable for various landing pages.",
+    "category": "hero",
+    "category_group": "Marketing Blocks",
+    "downloads": 58,
+    "likes": 0
+  }
+}

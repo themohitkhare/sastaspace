@@ -1,0 +1,27 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "gradient-background-4",
+  "type": "registry:component",
+  "title": "Gradient Background 4",
+  "description": "A gradient-background-4 component.",
+  "dependencies": [],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/ui/gradient-background-4.tsx",
+      "content": "import { cn } from \"@/lib/utils\";\nimport { useState } from \"react\";\n\nexport const Component = () => {\n  const [count, setCount] = useState(0);\n\n  return (\n    <div className=\"absolute inset-0 h-full w-full bg-background [background:radial-gradient(125%_125%_at_50%_-50%,#c7d2fe_40%,transparent_100%)] dark:[background:radial-gradient(125%_125%_at_50%_-50%,#6366f136_40%,transparent_100%)]\"></div>\n  );\n};\n",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "bg.ibelick",
+    "slug": "gradient-background-4",
+    "registry_url": "https://21st.dev/r/bg.ibelick/gradient-background-4",
+    "title": "Gradient Background 4",
+    "description": "Gradient Background 4",
+    "category": "hero",
+    "category_group": "Marketing Blocks",
+    "downloads": 15,
+    "likes": 0
+  }
+}

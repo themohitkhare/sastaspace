@@ -1,0 +1,40 @@
+{
+  "name": "hero-with-text-and-two-button",
+  "type": "registry:ui",
+  "dependencies": [
+    "lucide-react",
+    "@radix-ui/react-slot",
+    "class-variance-authority"
+  ],
+  "registryDependencies": [
+    "https://21st.dev/r/shadcn/button"
+  ],
+  "files": [
+    {
+      "path": "/components/ui/hero-with-text-and-two-button.tsx",
+      "content": "import { MoveRight, PhoneCall } from \"lucide-react\";\nimport { Button } from \"@/components/ui/button\"\n\nfunction Hero1() {\n  return (\n    <div className=\"w-full\">\n      <div className=\"container mx-auto\">\n        <div className=\"flex gap-8 py-20 lg:py-40 items-center justify-center flex-col\">\n          <div>\n            <Button variant=\"secondary\" size=\"sm\" className=\"gap-4\">\n              Read our launch article <MoveRight className=\"w-4 h-4\" />\n            </Button>\n          </div>\n          <div className=\"flex gap-4 flex-col\">\n            <h1 className=\"text-5xl md:text-7xl max-w-2xl tracking-tighter text-center font-regular\">\n              This is the start of something new\n            </h1>\n            <p className=\"text-lg md:text-xl leading-relaxed tracking-tight text-muted-foreground max-w-2xl text-center\">\n              Managing a small business today is already tough. Avoid further\n              complications by ditching outdated, tedious trade methods. Our goal\n              is to streamline SMB trade, making it easier and faster than ever.\n            </p>\n          </div>\n          <div className=\"flex flex-row gap-3\">\n            <Button size=\"lg\" className=\"gap-4\" variant=\"outline\">\n              Jump on a call <PhoneCall className=\"w-4 h-4\" />\n            </Button>\n            <Button size=\"lg\" className=\"gap-4\">\n              Sign up here <MoveRight className=\"w-4 h-4\" />\n            </Button>\n          </div>\n        </div>\n      </div>\n    </div>\n  );\n}\n\nexport { Hero1 };\n",
+      "type": "registry:ui",
+      "target": ""
+    },
+    {
+      "path": "/components/ui/button.tsx",
+      "content": "import * as React from \"react\"\nimport { Slot } from \"@radix-ui/react-slot\"\nimport { cva, type VariantProps } from \"class-variance-authority\"\n\nimport { cn } from \"@/lib/utils\"\n\nconst buttonVariants = cva(\n  \"inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50\",\n  {\n    variants: {\n      variant: {\n        default: \"bg-primary text-primary-foreground hover:bg-primary/90\",\n        destructive:\n          \"bg-destructive text-destructive-foreground hover:bg-destructive/90\",\n        outline:\n          \"border border-input bg-background hover:bg-accent hover:text-accent-foreground\",\n        secondary:\n          \"bg-secondary text-secondary-foreground hover:bg-secondary/80\",\n        ghost: \"hover:bg-accent hover:text-accent-foreground\",\n        link: \"text-primary underline-offset-4 hover:underline\",\n      },\n      size: {\n        default: \"h-10 px-4 py-2\",\n        sm: \"h-9 rounded-md px-3\",\n        lg: \"h-11 rounded-md px-8\",\n        icon: \"h-10 w-10\",\n      },\n    },\n    defaultVariants: {\n      variant: \"default\",\n      size: \"default\",\n    },\n  },\n)\n\nexport interface ButtonProps\n  extends React.ButtonHTMLAttributes<HTMLButtonElement>,\n    VariantProps<typeof buttonVariants> {\n  asChild?: boolean\n}\n\nconst Button = React.forwardRef<HTMLButtonElement, ButtonProps>(\n  ({ className, variant, size, asChild = false, ...props }, ref) => {\n    const Comp = asChild ? Slot : \"button\"\n    return (\n      <Comp\n        className={cn(buttonVariants({ variant, size, className }))}\n        ref={ref}\n        {...props}\n      />\n    )\n  },\n)\nButton.displayName = \"Button\"\n\nexport { Button, buttonVariants }\n",
+      "type": "registry:ui",
+      "target": ""
+    }
+  ],
+  "tailwind": {
+    "config": {}
+  },
+  "_meta": {
+    "author": "tommyjepsen",
+    "slug": "hero-with-text-and-two-button",
+    "registry_url": "https://21st.dev/r/tommyjepsen/hero-with-text-and-two-button",
+    "title": "Hero with text and two button",
+    "description": "Hero section with text and two button",
+    "category": "hero",
+    "category_group": "Marketing Blocks",
+    "downloads": 554,
+    "likes": 7
+  }
+}

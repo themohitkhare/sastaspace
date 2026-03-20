@@ -1,0 +1,32 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "futurastic-hero-section",
+  "type": "registry:component",
+  "title": "Futurastic Hero Section",
+  "description": "A futurastic-hero-section component.",
+  "dependencies": [
+    "@react-three/drei",
+    "@react-three/fiber",
+    "react-icons",
+    "framer-motion"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/ui/futurastic-hero-section.tsx",
+      "content": "import { Stars } from \"@react-three/drei\";\nimport { Canvas } from \"@react-three/fiber\";\nimport React, { useEffect } from \"react\";\nimport { FiArrowRight } from \"react-icons/fi\";\nimport {\n  useMotionTemplate,\n  useMotionValue,\n  motion,\n  animate,\n} from \"framer-motion\";\n\nconst COLORS_TOP = [\"#13FFAA\", \"#1E67C6\", \"#CE84CF\", \"#DD335C\"];\n\nexport const AuroraHero = () => {\n  const color = useMotionValue(COLORS_TOP[0]);\n\n  useEffect(() => {\n    animate(color, COLORS_TOP, {\n      ease: \"easeInOut\",\n      duration: 10,\n      repeat: Infinity,\n      repeatType: \"mirror\",\n    });\n  }, []);\n\n  const backgroundImage = useMotionTemplate`radial-gradient(125% 125% at 50% 0%, #020617 50%, ${color})`;\n  const border = useMotionTemplate`1px solid ${color}`;\n  const boxShadow = useMotionTemplate`0px 4px 24px ${color}`;\n\n  return (\n    <motion.section\n      style={{\n        backgroundImage,\n      }}\n      className=\"relative grid min-h-screen place-content-center overflow-hidden bg-gray-950 px-4 py-24 text-gray-200\"\n    >\n      <div className=\"relative z-10 flex flex-col items-center\">\n        <span className=\"mb-1.5 inline-block rounded-full bg-gray-600/50 px-3 py-1.5 text-sm\">\n          Beta Now Live!\n        </span>\n        <h1 className=\"max-w-3xl bg-gradient-to-br from-white to-gray-400 bg-clip-text text-center text-3xl font-medium leading-tight text-transparent sm:text-5xl sm:leading-tight md:text-7xl md:leading-tight\">\n          Decrease your SaaS churn by over 90%\n        </h1>\n        <p className=\"my-6 max-w-xl text-center text-base leading-relaxed md:text-lg md:leading-relaxed\">\n          Lorem ipsum, dolor sit amet consectetur adipisicing elit. Quae, et,\n          distinctio eum impedit nihil ipsum modi.\n        </p>\n        <motion.button\n          style={{\n            border,\n            boxShadow,\n          }}\n          whileHover={{\n            scale: 1.015,\n          }}\n          whileTap={{\n            scale: 0.985,\n          }}\n          className=\"group relative flex w-fit items-center gap-1.5 rounded-full bg-gray-950/10 px-4 py-2 text-gray-50 transition-colors hover:bg-gray-950/50\"\n        >\n          Start free trial\n          <FiArrowRight className=\"transition-transform group-hover:-rotate-45 group-active:-rotate-12\" />\n        </motion.button>\n      </div>\n\n      <div className=\"absolute inset-0 z-0\">\n        <Canvas>\n          <Stars radius={50} count={2500} factor={4} fade speed={2} />\n        </Canvas>\n      </div>\n    </motion.section>\n  );\n};",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "uniquesonu",
+    "slug": "futurastic-hero-section",
+    "registry_url": "https://21st.dev/r/uniquesonu/futurastic-hero-section",
+    "title": "Futurastic Hero Section",
+    "description": "AuroraHero: Dynamic Gradient & Starfield Hero Section\nCaptivate your audience from the moment they land on your page with AuroraHero, a stunning and interactive hero component for React. This component combines a mesmerizing, animated radial gradient background with a subtle, shimmering starfield, creating an immersive and modern visual experience that grabs attention.\n\nFeatures\nAnimated Aurora Gradient: The background features a beautiful radial gradient that smoothly transitions through a predefined palette of colors, creating a dynamic \"aurora\" effect that adds depth and visual interest. This animation is handled seamlessly by Framer Motion.\nSubtle Starfield Background: A captivating 3D starfield, powered by React Three Fiber and Drei, provides a subtle yet engaging backdrop, enhancing the cosmic and futuristic feel of the component.\nEngaging Call to Action: A prominent headline and descriptive text are accompanied by a call-to-action button that dynamically changes its border and box-shadow color to match the animating background gradient. The button also includes subtle hover and tap animations for improved user feedback.\nResponsive Design: The component is built with responsiveness in mind, ensuring it looks fantastic and performs well on various screen sizes.\nHow it Works\nAuroraHero leverages the power of:\n\nFramer Motion: For all the fluid animations, including the color transition of the background gradient, button border, and box-shadow. useMotionValue and useMotionTemplate are key here, linking the dynamic color to various CSS properties.\nReact Three Fiber & Drei: For rendering the performant and visually appealing 3D starfield, adding an extra layer of polish to the hero section.\nThis component is ideal for SaaS landing pages, product showcases, or any website where you want to make a bold, modern, and memorable first impression. Its elegant animations and engaging visuals are sure to leave a lasting impact on your visitors.",
+    "category": "hero",
+    "category_group": "Marketing Blocks",
+    "downloads": 904,
+    "likes": 0
+  }
+}

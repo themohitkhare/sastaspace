@@ -1,0 +1,30 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "ultra-quality-toast",
+  "type": "registry:component",
+  "title": "Ultra Quality Toast",
+  "description": "A ultra-quality-toast component.",
+  "dependencies": [
+    "@headlessui/react",
+    "@heroicons/react"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/ui/ultra-quality-toast.tsx",
+      "content": "\"use client\";\n\nimport React, {\n  createContext,\n  useContext,\n  useState,\n  ReactNode,\n  useCallback,\n} from \"react\";\nimport { Transition } from \"@headlessui/react\";\nimport { XMarkIcon } from \"@heroicons/react/20/solid\";\n\ntype ToastVariant = \"success\" | \"error\" | \"warning\" | \"info\";\n\ninterface Toast {\n  id: string;\n  title: string;\n  description?: string;\n  variant: ToastVariant;\n  duration?: number;\n}\n\ninterface ToastContextValue {\n  addToast: (toast: Omit<Toast, \"id\">) => void;\n}\n\nconst ToastContext = createContext<ToastContextValue | undefined>(undefined);\n\nexport function useToast() {\n  const ctx = useContext(ToastContext);\n  if (!ctx) throw new Error(\"useToast must be used within ToastProvider\");\n  return ctx;\n}\n\nexport function ToastProvider({ children }: { children: ReactNode }) {\n  const [toasts, setToasts] = useState<Toast[]>([]);\n\n  const removeToast = useCallback((id: string) => {\n    setToasts((arr) => arr.filter((t) => t.id !== id));\n  }, []);\n\n  const addToast = useCallback(\n    ({\n      title,\n      description,\n      variant,\n      duration = 4000,\n    }: Omit<Toast, \"id\">) => {\n      const id = Date.now().toString();\n      setToasts((arr) => [...arr, { id, title, description, variant, duration }]);\n      setTimeout(() => removeToast(id), duration);\n    },\n    [removeToast]\n  );\n\n  return (\n    <ToastContext.Provider value={{ addToast }}>\n      {children}\n      <div className=\"fixed top-5 right-5 space-y-2 z-50\">\n        {toasts.map((t) => (\n          <ToastItem key={t.id} toast={t} onClose={() => removeToast(t.id)} />\n        ))}\n      </div>\n    </ToastContext.Provider>\n  );\n}\n\nfunction variantStyles(variant: ToastVariant) {\n  switch (variant) {\n    case \"success\":\n      return \"bg-green-50 border-green-400 text-green-800\";\n    case \"error\":\n      return \"bg-red-50 border-red-400 text-red-800\";\n    case \"warning\":\n      return \"bg-yellow-50 border-yellow-400 text-yellow-800\";\n    case \"info\":\n    default:\n      return \"bg-blue-50 border-blue-400 text-blue-800\";\n  }\n}\n\nfunction ToastItem({\n  toast,\n  onClose,\n}: {\n  toast: Toast;\n  onClose: () => void;\n}) {\n  return (\n    <Transition\n      appear\n      show\n      as={React.Fragment}\n      enter=\"transform transition duration-200\"\n      enterFrom=\"opacity-0 translate-y-2\"\n      enterTo=\"opacity-100 translate-y-0\"\n      leave=\"transform transition duration-150\"\n      leaveFrom=\"opacity-100 translate-y-0\"\n      leaveTo=\"opacity-0 translate-y-2\"\n    >\n      <div\n        className={`max-w-sm w-full border-l-4 ${variantStyles(\n          toast.variant\n        )} shadow-lg rounded p-4 flex`}\n        role=\"alert\"\n        aria-live=\"assertive\"\n      >\n        <div className=\"flex-1\">\n          <p className=\"font-semibold\">{toast.title}</p>\n          {toast.description && <p className=\"text-sm mt-1\">{toast.description}</p>}\n        </div>\n        <button\n          onClick={onClose}\n          className=\"ml-3 text-gray-500 hover:text-gray-700 focus:outline-none\"\n          aria-label=\"Close notification\"\n        >\n          <XMarkIcon className=\"h-5 w-5\" />\n        </button>\n      </div>\n    </Transition>\n  );\n}\n",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "dhileepkumargm",
+    "slug": "ultra-quality-toast",
+    "registry_url": "https://21st.dev/r/dhileepkumargm/ultra-quality-toast",
+    "title": "UltraQualityToast",
+    "description": "An accessible, animated React notification toast system built with Tailwind CSS. Supports success, error, warning, and info variants with stacking, auto-dismiss, and manual close.",
+    "category": "alert",
+    "category_group": "UI Components",
+    "downloads": 3,
+    "likes": 0
+  }
+}

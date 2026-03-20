@@ -1,0 +1,30 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "hero-landing-page",
+  "type": "registry:component",
+  "title": "Hero Landing Page",
+  "description": "A hero-landing-page component.",
+  "dependencies": [
+    "lucide-react",
+    "next"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/ui/hero-landing-page.tsx",
+      "content": "'use client'\n\nimport { useEffect, useState } from \"react\"\nimport { ChevronDown, ArrowRight, Menu, X } from 'lucide-react'\nimport Link from \"next/link\"\n\nexport function TuringLanding() {\n  const [mobileOpen, setMobileOpen] = useState(false)\n\n  useEffect(() => {\n    function onKey(e: KeyboardEvent) {\n      if (e.key === \"Escape\") setMobileOpen(false)\n    }\n    window.addEventListener(\"keydown\", onKey)\n    return () => window.removeEventListener(\"keydown\", onKey)\n  }, [])\n\n  // Prevent body scroll when menu is open\n  useEffect(() => {\n    if (mobileOpen) {\n      document.body.style.overflow = \"hidden\"\n    } else {\n      document.body.style.overflow = \"\"\n    }\n  }, [mobileOpen])\n\n  return (\n    <div className=\"min-h-screen bg-[#0a0a0a] text-white overflow-x-hidden relative\">\n      {/* Subtle blue background gradient overlays */}\n      <div className=\"absolute inset-0 pointer-events-none\">\n        <div className=\"absolute inset-0 bg-gradient-to-r from-[rgba(0,132,255,0.15)] via-transparent to-transparent opacity-50\" />\n        <div className=\"absolute inset-0 bg-gradient-to-bl from-[rgba(0,132,255,0.1)] via-transparent to-transparent opacity-50\" />\n      </div>\n\n      {/* Main Content */}\n      <main className=\"main min-h-screen pt-[300px] pb-20 relative\">\n        {/* Hero Video Background */}\n        <video\n          className=\"hero-video absolute -top-[20%] left-0 w-full h-[120%] object-cover z-0 bg-[#111]\"\n          autoPlay\n          muted\n          loop\n          playsInline\n        >\n          <source\n            src=\"https://mybycketvercelprojecttest.s3.sa-east-1.amazonaws.com/animation-bg.mp4\"\n            type=\"video/mp4\"\n          />\n        </video>\n\n        <div className=\"content-wrapper max-w-[1400px] mx-auto px-[60px] flex justify-between items-end relative z-[2]\">\n          {/* Left Content */}\n          <div className=\"max-w-[800px]\">\n            <h1 className=\"text-[80px] font-light leading-[1.1] mb-8 tracking-[-2px]\">\n              Accelerate your\n              <br />\n              AGI deployment\n            </h1>\n            <p className=\"text-lg leading-relaxed text-[#b8b8b8] mb-12 font-normal\">\n              Trusted by global enterprises, we solve business challenges and\n              <br />\n              boost productivity through intelligent systems.\n            </p>\n            <div className=\"flex gap-5 items-center\">\n              <button className=\"flex items-center gap-2.5 bg-[#0084ff] text-white py-3.5 px-7 rounded-md text-base font-medium hover:bg-[#0066cc] hover:translate-x-0.5 transition-all duration-200\">\n                Get Started\n                <ArrowRight className=\"w-5 h-5\" />\n              </button>\n              <button className=\"bg-transparent text-[#b8b8b8] py-3.5 px-7 text-base font-medium hover:text-white transition-colors duration-200\">\n                Learn more\n              </button>\n            </div>\n          </div>\n\n          {/* Stats Section */}\n          <div className=\"flex gap-20 items-end\">\n            <div className=\"text-center\">\n              <div className=\"text-[64px] font-light leading-none mb-3\">40+</div>\n              <div className=\"text-base text-[#b8b8b8] font-normal\">Industries innovated</div>\n            </div>\n            <div className=\"text-center\">\n              <div className=\"text-[64px] font-light leading-none mb-3\">3M+</div>\n              <div className=\"text-base text-[#b8b8b8] font-normal\">Professionals available</div>\n            </div>\n          </div>\n        </div>\n      </main>\n    </div>\n  )\n}\n",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "minhxthanh",
+    "slug": "hero-landing-page",
+    "registry_url": "https://21st.dev/r/minhxthanh/hero-landing-page",
+    "title": "Hero Landing Page",
+    "description": "Hero Landing Page. Features a striking dark theme with video background",
+    "category": "hero",
+    "category_group": "Marketing Blocks",
+    "downloads": 35,
+    "likes": 0
+  }
+}

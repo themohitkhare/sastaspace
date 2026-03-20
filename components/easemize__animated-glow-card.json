@@ -1,0 +1,30 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "animated-glow-card",
+  "type": "registry:component",
+  "title": "Animated Glow Card",
+  "description": "A animated-glow-card component.",
+  "dependencies": [],
+  "registryDependencies": [
+    "https://21st.dev/r/tommyjepsen/animated-hero",
+    "https://21st.dev/r/kokonutd/x-gradient-card"
+  ],
+  "files": [
+    {
+      "path": "src/components/ui/animated-glow-card.tsx",
+      "content": "import React from 'react';\n\nconst CardCanvas = ({ children, className = \"\" }) => {\n  return (\n    <div className={`card-canvas ${className}`}>\n      <svg style={{ position: 'absolute', width: 0, height: 0 }}>\n        <filter width=\"3000%\" x=\"-1000%\" height=\"3000%\" y=\"-1000%\" id=\"unopaq\">\n          <feColorMatrix values=\"1 0 0 0 0 0 1 0 0 0 0 0 1 0 0 0 0 0 3 0\"></feColorMatrix>\n        </filter>\n      </svg>\n      <div className=\"card-backdrop\"></div>\n      {children}\n    </div>\n  );\n};\n\nconst Card = ({ children, className = \"\" }) => {\n  return (\n    <div className={`glow-card ${className}`}>\n      <div className=\"border-element border-left\"></div>\n      <div className=\"border-element border-right\"></div>\n      <div className=\"border-element border-top\"></div>\n      <div className=\"border-element border-bottom\"></div>\n      <div className=\"card-content\">\n        {children}\n      </div>\n    </div>\n  );\n};\n\nexport { CardCanvas, Card };",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "easemize",
+    "slug": "animated-glow-card",
+    "registry_url": "https://21st.dev/r/easemize/animated-glow-card",
+    "title": "Animated Glow Card",
+    "description": "A React component that renders a visually striking card with an animated, glowing border effect. This component uses an SVG filter (feColorMatrix) to achieve the customizable glow, enhancing UI elements with a modern and interactive feel. It includes a CardCanvas to house the SVG filter definition and a Card component for the main content display, complete with border elements. Ideal for drawing attention to featured content, calls to action, or simply adding a touch of dynamic visual flair to your application.",
+    "category": "border",
+    "category_group": "Marketing Blocks",
+    "downloads": 253,
+    "likes": 0
+  }
+}

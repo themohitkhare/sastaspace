@@ -1,0 +1,97 @@
+{
+  "name": "alert",
+  "type": "registry:ui",
+  "dependencies": [
+    "class-variance-authority"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "/components/ui/alert.tsx",
+      "content": "import { cva, type VariantProps } from \"class-variance-authority\"\r\n\r\nimport * as React from \"react\"\r\n\r\nimport { cn } from \"@/lib/utils\"\r\n\r\nconst alertVariants = cva(\r\n  \"relative w-full rounded-base shadow-shadow font-heading border-2 border-border p-4 [&>svg~*]:pl-7 [&>svg+div]:translate-y-[-3px] [&>svg]:absolute [&>svg]:left-4 [&>svg]:top-4 [&>svg]:text-mtext\",\r\n  {\r\n    variants: {\r\n      variant: {\r\n        default: \"bg-main text-mtext\",\r\n        destructive: \"bg-black text-white\",\r\n      },\r\n    },\r\n    defaultVariants: {\r\n      variant: \"default\",\r\n    },\r\n  },\r\n)\r\n\r\nconst Alert = React.forwardRef<\r\n  HTMLDivElement,\r\n  React.HTMLAttributes<HTMLDivElement> & VariantProps<typeof alertVariants>\r\n>(({ className, variant, ...props }, ref) => (\r\n  <div\r\n    ref={ref}\r\n    role=\"alert\"\r\n    className={cn(alertVariants({ variant }), className)}\r\n    {...props}\r\n  />\r\n))\r\nAlert.displayName = \"Alert\"\r\n\r\nconst AlertTitle = React.forwardRef<\r\n  HTMLParagraphElement,\r\n  React.HTMLAttributes<HTMLHeadingElement>\r\n>(({ className, ...props }, ref) => (\r\n  <h5\r\n    ref={ref}\r\n    className={cn(\"mb-1 leading-none tracking-tight\", className)}\r\n    {...props}\r\n  />\r\n))\r\nAlertTitle.displayName = \"AlertTitle\"\r\n\r\nconst AlertDescription = React.forwardRef<\r\n  HTMLParagraphElement,\r\n  React.HTMLAttributes<HTMLParagraphElement>\r\n>(({ className, ...props }, ref) => (\r\n  <div\r\n    ref={ref}\r\n    className={cn(\"text-sm font-base [&_p]:leading-relaxed\", className)}\r\n    {...props}\r\n  />\r\n))\r\nAlertDescription.displayName = \"AlertDescription\"\r\n\r\nexport { Alert, AlertTitle, AlertDescription }",
+      "type": "registry:ui",
+      "target": ""
+    }
+  ],
+  "cssVars": {
+    "light": {
+      "--main": "#88aaee",
+      "--overlay": "rgba(0, 0, 0, 0.8)",
+      "--bg": "#dfe5f2",
+      "--bw": "#fff",
+      "--blank": "#000",
+      "--border": "#000",
+      "--text": "#000",
+      "--mtext": "#000",
+      "--ring": "#000",
+      "--ring-offset": "#fff",
+      "--border-radius": "5px",
+      "--box-shadow-x": "4px",
+      "--box-shadow-y": "4px",
+      "--reverse-box-shadow-x": "-4px",
+      "--reverse-box-shadow-y": "-4px",
+      "--base-font-weight": "500",
+      "--heading-font-weight": "700",
+      "--shadow": "var(--box-shadow-x) var(--box-shadow-y) 0px 0px var(--border)"
+    },
+    "dark": {
+      "--bg": "#272933",
+      "--bw": "#212121",
+      "--blank": "#fff",
+      "--border": "#000",
+      "--text": "#e6e6e6",
+      "--mtext": "#000",
+      "--ring": "#fff",
+      "--ring-offset": "#000",
+      "--shadow": "var(--box-shadow-x) var(--box-shadow-y) 0px 0px var(--border)"
+    }
+  },
+  "tailwind": {
+    "config": {
+      "theme": {
+        "extend": {
+          "colors": {
+            "main": "var(--main)",
+            "overlay": "var(--overlay)",
+            "bg": "var(--bg)",
+            "bw": "var(--bw)",
+            "blank": "var(--blank)",
+            "text": "var(--text)",
+            "mtext": "var(--mtext)",
+            "border": "var(--border)",
+            "ring": "var(--ring)",
+            "ringOffset": "var(--ring-offset)",
+            "secondaryBlack": "#212121"
+          },
+          "borderRadius": {
+            "base": "5px"
+          },
+          "boxShadow": {
+            "shadow": "var(--shadow)"
+          },
+          "translate": {
+            "boxShadowX": "4px",
+            "boxShadowY": "4px",
+            "reverseBoxShadowX": "-4px",
+            "reverseBoxShadowY": "-4px"
+          },
+          "fontWeight": {
+            "base": "500",
+            "heading": "700"
+          }
+        }
+      }
+    }
+  },
+  "_meta": {
+    "author": "ekmas",
+    "slug": "alert",
+    "registry_url": "https://21st.dev/r/ekmas/alert",
+    "title": "Alert",
+    "description": "Neobrutalism-styled alert component.",
+    "category": "alert",
+    "category_group": "UI Components",
+    "downloads": 25,
+    "likes": 1
+  }
+}

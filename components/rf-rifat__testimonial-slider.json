@@ -1,0 +1,32 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "testimonial-slider",
+  "type": "registry:component",
+  "title": "Testimonial Slider",
+  "description": "A testimonial-slider component.",
+  "dependencies": [],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/ui/testimonial-slider.tsx",
+      "content": "// Happy Coding ",
+      "type": "registry:component"
+    }
+  ],
+  "cssVars": {
+    "dark": {
+      "--muted-foreground": "var(--light-100)"
+    }
+  },
+  "_meta": {
+    "author": "rf-rifat",
+    "slug": "testimonial-slider",
+    "registry_url": "https://21st.dev/r/rf-rifat/testimonial-slider",
+    "title": "Testimonial Slider",
+    "description": "Adaptive Layout: Automatically adjusts visible testimonials (1-3) based on screen size\n\nSmooth Animations: Spring-based transitions with drag-and-drop functionality\n\nAuto-Play: Rotates testimonials every 4 seconds with pause on interaction\n\nInteractive Controls: Navigation buttons and dot indicators with hover effects\n\nMobile Optimized: Touch-friendly swipe gestures with reduced swipe threshold\n\nVisual Feedback: Animated user avatars and active slide indicators\n\nAccessible: ARIA labels and keyboard-navigable controls\n\nModern Design: Gradient accents, card shadows, and clean typography\n\nPerformance: Optimized image loading with error fallbacks",
+    "category": "testimonials",
+    "category_group": "Marketing Blocks",
+    "downloads": 199,
+    "likes": 0
+  }
+}

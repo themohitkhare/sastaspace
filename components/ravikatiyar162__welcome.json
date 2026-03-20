@@ -1,0 +1,33 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "welcome",
+  "type": "registry:component",
+  "title": "Welcome",
+  "description": "A welcome component.",
+  "dependencies": [
+    "framer-motion",
+    "lucide-react"
+  ],
+  "registryDependencies": [
+    "https://21st.dev/r/originui/badge",
+    "https://21st.dev/r/shadcn/button"
+  ],
+  "files": [
+    {
+      "path": "src/components/ui/welcome.tsx",
+      "content": "import * as React from \"react\";\nimport { motion } from \"framer-motion\";\nimport { PlayCircle } from \"lucide-react\";\nimport { cn } from \"@/lib/utils\"; // Your utility for merging Tailwind classes\nimport { Button, type ButtonProps } from \"@/components/ui/button\";\nimport { Badge } from \"@/components/ui/badge\";\n\n// Define the type for an action item\nexport interface ActionItem {\n  icon: React.ReactNode;\n  label: string;\n  isBeta?: boolean;\n  onClick?: () => void;\n  buttonProps?: ButtonProps;\n}\n\n// Define the props for the main component\nexport interface WorkspaceWelcomeProps {\n  /** The name of the user to display in the welcome message. */\n  userName: string;\n  /** The source URL for the video thumbnail. */\n  videoThumbnail: string;\n  /** The title of the video, displayed over the thumbnail. */\n  videoTitle: string;\n  /** The description of the video. */\n  videoDescription: string;\n  /** An array of action items to be displayed as buttons. */\n  actions: ActionItem[];\n  /** A callback function to be invoked when the video card is clicked. */\n  onPlayVideo?: () => void;\n  /** Additional CSS class names for the component container. */\n  className?: string;\n}\n\nconst containerVariants = {\n  hidden: { opacity: 0 },\n  visible: {\n    opacity: 1,\n    transition: {\n      staggerChildren: 0.1,\n    },\n  },\n};\n\nconst itemVariants = {\n  hidden: { opacity: 0, y: 20 },\n  visible: {\n    opacity: 1,\n    y: 0,\n    transition: {\n      type: \"spring\",\n      stiffness: 100,\n      damping: 12,\n    },\n  },\n};\n\nexport const WorkspaceWelcome = React.forwardRef<HTMLDivElement, WorkspaceWelcomeProps>(\n  (\n    {\n      userName,\n      videoThumbnail,\n      videoTitle,\n      videoDescription,\n      actions,\n      onPlayVideo,\n      className,\n    },\n    ref\n  ) => {\n    return (\n      <motion.div\n        ref={ref}\n        className={cn(\n          \"flex w-full max-w-2xl flex-col items-center gap-8 rounded-lg p-4\",\n          className\n        )}\n        variants={containerVariants}\n        initial=\"hidden\"\n        animate=\"visible\"\n      >\n        {/* Welcome Header */}\n        <motion.h1\n          className=\"text-center text-2xl font-bold tracking-tight text-foreground md:text-3xl\"\n          variants={itemVariants}\n        >\n          Welcome to your workspace, {userName}! 👋\n        </motion.h1>\n\n        {/* Action Buttons */}\n        <motion.div\n          className=\"flex flex-wrap items-center justify-center gap-3\"\n          variants={itemVariants}\n        >\n          {actions.map((action, index) => (\n            <Button\n              key={index}\n              variant=\"outline\"\n              className=\"flex items-center gap-2\"\n              onClick={action.onClick}\n              {...action.buttonProps}\n            >\n              {action.icon}\n              <span className=\"font-medium\">{action.label}</span>\n              {action.isBeta && (\n                <Badge variant=\"secondary\" className=\"ml-1 px-1.5 py-0.5 text-xs\">\n                  BETA\n                </Badge>\n              )}\n            </Button>\n          ))}\n        </motion.div>\n\n        {/* Video Card */}\n        <motion.div\n          className=\"group relative w-full cursor-pointer overflow-hidden rounded-xl shadow-lg\"\n          onClick={onPlayVideo}\n          variants={itemVariants}\n          whileHover={{ scale: 1.02 }}\n          transition={{ type: \"spring\", stiffness: 300, damping: 20 }}\n        >\n          <img\n            src={videoThumbnail}\n            alt={videoTitle}\n            className=\"aspect-video w-full object-cover transition-transform duration-300 group-hover:scale-105\"\n          />\n          <div className=\"absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent\" />\n          <div className=\"absolute bottom-0 left-0 p-6 text-white\">\n            <h3 className=\"text-lg font-bold\">{videoTitle}</h3>\n            <p className=\"text-sm text-white/80\">{videoDescription}</p>\n          </div>\n          <div className=\"absolute inset-0 flex items-center justify-center\">\n            <PlayCircle className=\"h-16 w-16 text-white/80 transition-all duration-300 group-hover:scale-110 group-hover:text-white\" />\n          </div>\n        </motion.div>\n      </motion.div>\n    );\n  }\n);\n\nWorkspaceWelcome.displayName = \"WorkspaceWelcome\";",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "ravikatiyar162",
+    "slug": "welcome",
+    "registry_url": "https://21st.dev/r/ravikatiyar162/welcome",
+    "title": "Welcome",
+    "description": "Workspace Welcome\nThis component provides a welcoming dashboard view for users, featuring a personalized greeting, quick action buttons, and an introductory video card. It's designed to be easily configured via props.",
+    "category": "video",
+    "category_group": "Marketing Blocks",
+    "downloads": 12,
+    "likes": 0
+  }
+}

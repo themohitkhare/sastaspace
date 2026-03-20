@@ -1,0 +1,29 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "molten-core-shader",
+  "type": "registry:component",
+  "title": "Molten Core Shader",
+  "description": "A molten-core-shader component.",
+  "dependencies": [
+    "three"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/ui/molten-core-shader.tsx",
+      "content": "import React, { useEffect, useRef } from 'react';\nimport * as THREE from 'three';\n\nconst MoltenCoreShader = () => {\n  const containerRef = useRef(null);\n\n  useEffect(() => {\n    if (!containerRef.current || typeof THREE === 'undefined') return;\n\n    const scene = new THREE.Scene();\n    const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);\n    const clock = new THREE.Clock();\n\n    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;\n\n    const renderer = new THREE.WebGLRenderer({ alpha: true });\n    renderer.setPixelRatio(window.devicePixelRatio);\n    containerRef.current.appendChild(renderer.domElement);\n\n    const vertexShader = `\n      void main() {\n        gl_Position = vec4(position, 1.0);\n      }\n    `;\n\n    const fragmentShader = `\n      precision highp float;\n      uniform vec2 iResolution;\n      uniform float iTime;\n      uniform float theme;\n\n      float random(vec2 st) {\n        return fract(sin(dot(st.xy, vec2(12.9898,78.233))) * 43758.5453123);\n      }\n\n      float noise(vec2 st) {\n        vec2 i = floor(st);\n        vec2 f = fract(st);\n        float a = random(i);\n        float b = random(i + vec2(1.0, 0.0));\n        float c = random(i + vec2(0.0, 1.0));\n        float d = random(i + vec2(1.0, 1.0));\n        vec2 u = f * f * (3.0 - 2.0 * f);\n        return mix(a, b, u.x) + (c - a) * u.y * (1.0 - u.x) + (d - b) * u.y * u.x;\n      }\n\n      float fbm(vec2 st) {\n        float value = 0.0;\n        float amplitude = 0.5;\n        for (int i = 0; i < 6; i++) {\n          value += amplitude * noise(st);\n          st *= 2.0;\n          amplitude *= 0.5;\n        }\n        return value;\n      }\n\n      void main() {\n        vec2 uv = gl_FragCoord.xy / iResolution.xy;\n        uv.x *= iResolution.x / iResolution.y;\n\n        float t = iTime * 0.2;\n        vec2 motion = vec2(t * 0.5, t * 0.2);\n        vec2 q = uv * 3.0;\n\n        float n1 = fbm(q + motion);\n        float n2 = fbm(q * 2.0 - motion);\n        float combined_noise = n1 + n2 * 0.5;\n\n        vec3 color1 = vec3(0.1, 0.0, 0.0);\n        vec3 color2 = vec3(0.8, 0.2, 0.0);\n        vec3 color3 = vec3(1.0, 0.5, 0.0);\n        vec3 color4 = vec3(1.0, 0.9, 0.3);\n\n        vec3 lava = mix(color1, color2, smoothstep(0.3, 0.45, combined_noise));\n        lava = mix(lava, color3, smoothstep(0.5, 0.6, combined_noise));\n        lava = mix(lava, color4, smoothstep(0.7, 0.75, combined_noise));\n\n        float vignette = 1.0 - length(uv - 0.5) * 0.8;\n        lava *= vignette;\n\n        vec3 base = mix(vec3(1.0), vec3(0.0), theme); // white for light, black for dark\n        vec3 finalColor = mix(base, lava, 0.8);\n\n        gl_FragColor = vec4(finalColor, 1.0);\n      }\n    `;\n\n    const uniforms = {\n      iTime: { value: 0 },\n      iResolution: { value: new THREE.Vector2() },\n      theme: { value: prefersDark ? 1.0 : 0.0 }\n    };\n\n    const material = new THREE.ShaderMaterial({ vertexShader, fragmentShader, uniforms });\n    const geometry = new THREE.PlaneGeometry(2, 2);\n    const mesh = new THREE.Mesh(geometry, material);\n    scene.add(mesh);\n\n    const onResize = () => {\n      const { clientWidth, clientHeight } = containerRef.current;\n      renderer.setSize(clientWidth, clientHeight);\n      uniforms.iResolution.value.set(clientWidth, clientHeight);\n    };\n    onResize();\n    window.addEventListener('resize', onResize);\n\n    const animate = () => {\n      uniforms.iTime.value = clock.getElapsedTime();\n      renderer.render(scene, camera);\n      requestAnimationFrame(animate);\n    };\n    animate();\n\n    return () => {\n      window.removeEventListener('resize', onResize);\n      renderer.dispose();\n      geometry.dispose();\n      material.dispose();\n      if (containerRef.current && renderer.domElement) {\n        containerRef.current.removeChild(renderer.domElement);\n      }\n    };\n  }, []);\n\n  return (\n    <div\n      ref={containerRef}\n      className=\"shader-container\"\n      style={{\n        position: 'fixed',\n        top: 0,\n        left: 0,\n        width: '100vw',\n        height: '100vh',\n        zIndex: -1,\n        pointerEvents: 'none'\n      }}\n      aria-label=\"Molten Core animated background\"\n    />\n  );\n};\n\nexport default MoltenCoreShader;\n",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "dhileepkumargm",
+    "slug": "molten-core-shader",
+    "registry_url": "https://21st.dev/r/dhileepkumargm/molten-core-shader",
+    "title": "Molten Core Shader",
+    "description": "A dynamic, animated WebGL shader that simulates the turbulent, glowing surface of lava. Built with React and Three.js.",
+    "category": "shader",
+    "category_group": "Marketing Blocks",
+    "downloads": 2,
+    "likes": 0
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "hero-section-with-smooth-bg-shader",
+  "type": "registry:component",
+  "title": "Hero Section With Smooth Bg Shader",
+  "description": "A hero-section-with-smooth-bg-shader component.",
+  "dependencies": [
+    "@paper-design/shaders-react"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/ui/hero-section-with-smooth-bg-shader.tsx",
+      "content": "import { MeshGradient } from \"@paper-design/shaders-react\"\nimport { useEffect, useState } from \"react\"\n\ninterface HeroSectionProps {\n  title?: string\n  highlightText?: string\n  description?: string\n  buttonText?: string\n  onButtonClick?: () => void\n  colors?: string[]\n  distortion?: number\n  swirl?: number\n  speed?: number\n  offsetX?: number\n  className?: string\n  titleClassName?: string\n  descriptionClassName?: string\n  buttonClassName?: string\n  maxWidth?: string\n  veilOpacity?: string\n  fontFamily?: string\n  fontWeight?: number\n}\n\nexport function HeroSection({\n  title = \"Intelligent AI Agents for\",\n  highlightText = \"Smart Brands\",\n  description = \"Transform your brand and evolve it through AI-driven brand guidelines and always up-to-date core components.\",\n  buttonText = \"Join Waitlist\",\n  onButtonClick,\n  colors = [\"#72b9bb\", \"#b5d9d9\", \"#ffd1bd\", \"#ffebe0\", \"#8cc5b8\", \"#dbf4a4\"],\n  distortion = 0.8,\n  swirl = 0.6,\n  speed = 0.42,\n  offsetX = 0.08,\n  className = \"\",\n  titleClassName = \"\",\n  descriptionClassName = \"\",\n  buttonClassName = \"\",\n  maxWidth = \"max-w-6xl\",\n  veilOpacity = \"bg-white/20 dark:bg-black/25\",\n  fontFamily = \"Satoshi, sans-serif\",\n  fontWeight = 500,\n}: HeroSectionProps) {\n  const [dimensions, setDimensions] = useState({ width: 1920, height: 1080 })\n  const [mounted, setMounted] = useState(false)\n\n  useEffect(() => {\n    setMounted(true)\n    const update = () =>\n      setDimensions({\n        width: window.innerWidth,\n        height: window.innerHeight,\n      })\n    update()\n    window.addEventListener(\"resize\", update)\n    return () => window.removeEventListener(\"resize\", update)\n  }, [])\n\n  const handleButtonClick = () => {\n    if (onButtonClick) {\n      onButtonClick()\n    }\n  }\n\n  return (\n    <section className={`relative w-full min-h-screen overflow-hidden bg-background flex items-center justify-center ${className}`}>\n      <div className=\"fixed inset-0 w-screen h-screen\">\n        {mounted && (\n          <>\n            <MeshGradient\n              width={dimensions.width}\n              height={dimensions.height}\n              colors={colors}\n              distortion={distortion}\n              swirl={swirl}\n              grainMixer={0}\n              grainOverlay={0}\n              speed={speed}\n              offsetX={offsetX}\n            />\n            <div className={`absolute inset-0 pointer-events-none ${veilOpacity}`} />\n          </>\n        )}\n      </div>\n      \n      <div className={`relative z-10 ${maxWidth} mx-auto px-6 w-full`}>\n        <div className=\"text-center\">\n          <h1\n            className={`font-bold text-foreground text-balance text-4xl sm:text-5xl md:text-6xl xl:text-[80px] leading-tight sm:leading-tight md:leading-tight lg:leading-tight xl:leading-[1.1] mb-6 lg:text-7xl ${titleClassName}`}\n            style={{ fontFamily, fontWeight }}\n          >\n            {title} <span className=\"text-primary\">{highlightText}</span>\n          </h1>\n          <p className={`text-lg sm:text-xl text-white text-pretty max-w-2xl mx-auto leading-relaxed mb-10 px-4 ${descriptionClassName}`}>\n            {description}\n          </p>\n          <button\n            onClick={handleButtonClick}\n            className={`px-6 py-4 sm:px-8 sm:py-6 rounded-full border-4 bg-[rgba(63,63,63,1)] border-card text-sm sm:text-base text-white hover:bg-[rgba(63,63,63,0.9)] transition-colors ${buttonClassName}`}\n          >\n            {buttonText}\n          </button>\n        </div>\n      </div>\n    </section>\n  )\n}",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "moazamtrade",
+    "slug": "hero-section-with-smooth-bg-shader",
+    "registry_url": "https://21st.dev/r/moazamtrade/hero-section-with-smooth-bg-shader",
+    "title": "Hero section with smooth bg Shader",
+    "description": "Hero section with smooth Shader and data passing using props ",
+    "category": "features",
+    "category_group": "Marketing Blocks",
+    "downloads": 492,
+    "likes": 0
+  }
+}

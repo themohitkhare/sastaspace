@@ -1,0 +1,29 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "liquid-radio",
+  "type": "registry:component",
+  "title": "Liquid Radio",
+  "description": "A liquid-radio component.",
+  "dependencies": [],
+  "registryDependencies": [
+    "https://21st.dev/r/originui/radio-group"
+  ],
+  "files": [
+    {
+      "path": "src/components/ui/liquid-radio.tsx",
+      "content": "export function GlassFilter() {\n  return (\n    <svg className=\"hidden\">\n      <defs>\n        <filter\n          id=\"radio-glass\"\n          x=\"0%\"\n          y=\"0%\"\n          width=\"100%\"\n          height=\"100%\"\n          colorInterpolationFilters=\"sRGB\"\n        >\n          <feTurbulence\n            type=\"fractalNoise\"\n            baseFrequency=\"0.05 0.05\"\n            numOctaves=\"1\"\n            seed=\"1\"\n            result=\"turbulence\"\n          />\n          <feGaussianBlur in=\"turbulence\" stdDeviation=\"2\" result=\"blurredNoise\" />\n          <feDisplacementMap\n            in=\"SourceGraphic\"\n            in2=\"blurredNoise\"\n            scale=\"30\"\n            xChannelSelector=\"R\"\n            yChannelSelector=\"B\"\n            result=\"displaced\"\n          />\n          <feGaussianBlur in=\"displaced\" stdDeviation=\"2\" result=\"finalBlur\" />\n          <feComposite in=\"finalBlur\" in2=\"finalBlur\" operator=\"over\" />\n        </filter>\n      </defs>\n    </svg>\n  )\n}\n",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "xubohuah",
+    "slug": "liquid-radio",
+    "registry_url": "https://21st.dev/r/xubohuah/liquid-radio",
+    "title": "LiquidRadio",
+    "description": "A liquid glass radio is a sleek, modern radio component with a fluid, glass-like interface.",
+    "category": "features",
+    "category_group": "Marketing Blocks",
+    "downloads": 176,
+    "likes": 0
+  }
+}

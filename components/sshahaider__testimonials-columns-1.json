@@ -1,0 +1,30 @@
+{
+  "name": "testimonials-columns-1",
+  "type": "registry:block",
+  "dependencies": [
+    "motion"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "/components/blocks/testimonials-columns-1.tsx",
+      "content": "\"use client\";\nimport React from \"react\";\nimport { motion } from \"motion/react\";\n\n\nexport const TestimonialsColumn = (props: {\n  className?: string;\n  testimonials: typeof testimonials;\n  duration?: number;\n}) => {\n  return (\n    <div className={props.className}>\n      <motion.div\n        animate={{\n          translateY: \"-50%\",\n        }}\n        transition={{\n          duration: props.duration || 10,\n          repeat: Infinity,\n          ease: \"linear\",\n          repeatType: \"loop\",\n        }}\n        className=\"flex flex-col gap-6 pb-6 bg-background\"\n      >\n        {[\n          ...new Array(2).fill(0).map((_, index) => (\n            <React.Fragment key={index}>\n              {props.testimonials.map(({ text, image, name, role }, i) => (\n                <div className=\"p-10 rounded-3xl border shadow-lg shadow-primary/10 max-w-xs w-full\" key={i}>\n                  <div>{text}</div>\n                  <div className=\"flex items-center gap-2 mt-5\">\n                    <img\n                      width={40}\n                      height={40}\n                      src={image}\n                      alt={name}\n                      className=\"h-10 w-10 rounded-full\"\n                    />\n                    <div className=\"flex flex-col\">\n                      <div className=\"font-medium tracking-tight leading-5\">{name}</div>\n                      <div className=\"leading-5 opacity-60 tracking-tight\">{role}</div>\n                    </div>\n                  </div>\n                </div>\n              ))}\n            </React.Fragment>\n          )),\n        ]}\n      </motion.div>\n    </div>\n  );\n};\n\n;",
+      "type": "registry:block",
+      "target": ""
+    }
+  ],
+  "tailwind": {
+    "config": {}
+  },
+  "_meta": {
+    "author": "sshahaider",
+    "slug": "testimonials-columns-1",
+    "registry_url": "https://21st.dev/r/sshahaider/testimonials-columns-1",
+    "title": "Testimonials Columns",
+    "description": "an animated testimonials section where the testimonials are shown in columns",
+    "category": "clients",
+    "category_group": "Marketing Blocks",
+    "downloads": 5586,
+    "likes": 0
+  }
+}

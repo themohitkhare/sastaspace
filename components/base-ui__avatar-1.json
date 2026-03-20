@@ -1,0 +1,29 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "avatar-1",
+  "type": "registry:component",
+  "title": "Avatar 1",
+  "description": "A avatar-1 component.",
+  "dependencies": [
+    "@base-ui-components/react"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/ui/avatar-1.tsx",
+      "content": "import * as React from 'react';\nimport { Avatar } from '@base-ui-components/react/avatar';\n\nexport default function ExampleAvatar() {\n  return (\n    <div style={{ display: 'flex', gap: 20 }}>\n      <Avatar.Root className=\"inline-flex size-12 items-center justify-center overflow-hidden rounded-full bg-gray-100 align-middle text-base font-medium text-black select-none\">\n        <Avatar.Image\n          src=\"https://images.unsplash.com/photo-1543610892-0b1f7e6d8ac1?w=128&h=128&dpr=2&q=80\"\n          width=\"48\"\n          height=\"48\"\n          className=\"size-full object-cover\"\n        />\n        <Avatar.Fallback className=\"flex size-full items-center justify-center text-base\">\n          LT\n        </Avatar.Fallback>\n      </Avatar.Root>\n      <Avatar.Root className=\"inline-flex size-12 items-center justify-center overflow-hidden rounded-full bg-gray-100 align-middle text-base font-medium text-black select-none\">\n        LT\n      </Avatar.Root>\n    </div>\n  );\n}\n",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "base-ui",
+    "slug": "avatar-1",
+    "registry_url": "https://21st.dev/r/base-ui/avatar-1",
+    "title": "Avatar",
+    "description": "Here is Avatar component",
+    "category": "avatar",
+    "category_group": "UI Components",
+    "downloads": 1,
+    "likes": 0
+  }
+}

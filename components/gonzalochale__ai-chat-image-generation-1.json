@@ -1,0 +1,30 @@
+{
+  "name": "ai-chat-image-generation-1",
+  "type": "registry:ui",
+  "dependencies": [
+    "motion"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "/components/ui/ai-chat-image-generation-1.tsx",
+      "content": "\"use client\"\n\nimport * as React from \"react\"\nimport { cn } from \"@/lib/utils\";\nimport { motion } from \"motion/react\";\n\nexport interface ImageGenerationProps {\n  children: React.ReactNode;\n}\n\nexport const ImageGeneration = (\n  ({ children} : ImageGenerationProps) => {\n    const [progress, setProgress] = React.useState(0);\n    const [loadingState, setLoadingState] = React.useState<\n      \"starting\" | \"generating\" | \"completed\"\n    >(\"starting\");\n    const duration = 30000;\n\n    React.useEffect(() => {\n      const startingTimeout = setTimeout(() => {\n        setLoadingState(\"generating\");\n\n        const startTime = Date.now();\n\n        const interval = setInterval(() => {\n          const elapsedTime = Date.now() - startTime;\n          const progressPercentage = Math.min(\n            100,\n            (elapsedTime / duration) * 100\n          );\n\n          setProgress(progressPercentage);\n\n          if (progressPercentage >= 100) {\n            clearInterval(interval);\n            setLoadingState(\"completed\");\n          }\n        }, 16);\n\n        return () => clearInterval(interval);\n      }, 3000);\n\n      return () => clearTimeout(startingTimeout);\n    }, [duration]);\n\n    return (\n      <div className=\"flex flex-col gap-2\">\n        <motion.span\n          className=\"bg-[linear-gradient(110deg,var(--color-muted-foreground),35%,var(--color-foreground),50%,var(--color-muted-foreground),75%,var(--color-muted-foreground))] bg-[length:200%_100%] bg-clip-text text-transparent text-base font-medium\"\n          initial={{ backgroundPosition: \"200% 0\" }}\n          animate={{\n            backgroundPosition:\n              loadingState === \"completed\" ? \"0% 0\" : \"-200% 0\",\n          }}\n          transition={{\n            repeat: loadingState === \"completed\" ? 0 : Infinity,\n            duration: 3,\n            ease: \"linear\",\n          }}\n        >\n          {loadingState === \"starting\" && \"Getting started.\"}\n          {loadingState === \"generating\" && \"Creating image. May take a moment.\"}\n          {loadingState === \"completed\" && \"Image created.\"}\n        </motion.span>\n        <div className=\"relative rounded-xl border bg-card max-w-md overflow-hidden\">\n            {children}\n          <motion.div\n            className=\"absolute w-full h-[125%] -top-[25%] pointer-events-none backdrop-blur-3xl\"\n            initial={false}\n            animate={{\n              clipPath: `polygon(0 ${progress}%, 100% ${progress}%, 100% 100%, 0 100%)`,\n              opacity: loadingState === \"completed\" ? 0 : 1,\n            }}\n            style={{\n              clipPath: `polygon(0 ${progress}%, 100% ${progress}%, 100% 100%, 0 100%)`,\n              maskImage:\n                progress === 0\n                  ? \"linear-gradient(to bottom, black -5%, black 100%)\"\n                  : `linear-gradient(to bottom, transparent ${progress - 5}%, transparent ${progress}%, black ${progress + 5}%)`,\n              WebkitMaskImage:\n                progress === 0\n                  ? \"linear-gradient(to bottom, black -5%, black 100%)\"\n                  : `linear-gradient(to bottom, transparent ${progress - 5}%, transparent ${progress}%, black ${progress + 5}%)`,\n            }}\n          />\n        </div>\n      </div>\n    );\n  }\n);\n\nImageGeneration.displayName = \"ImageGeneration\";",
+      "type": "registry:ui",
+      "target": ""
+    }
+  ],
+  "tailwind": {
+    "config": {}
+  },
+  "_meta": {
+    "author": "gonzalochale",
+    "slug": "ai-chat-image-generation-1",
+    "registry_url": "https://21st.dev/r/gonzalochale/ai-chat-image-generation-1",
+    "title": "AI Chat Image Generation",
+    "description": "Simulates an AI Chat generating and image",
+    "category": "image",
+    "category_group": "Marketing Blocks",
+    "downloads": 264,
+    "likes": 0
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "bg-gredient",
+  "type": "registry:component",
+  "title": "Bg Gredient",
+  "description": "A bg-gredient component.",
+  "dependencies": [],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/ui/bg-gredient.tsx",
+      "content": "import { cn } from \"@/lib/utils\";\n\nexport const Component = ({ \n  className,\n  gradientFrom = \"#fff\",\n  gradientTo = \"#63e\",\n  gradientSize = \"125% 125%\",\n  gradientPosition = \"50% 10%\",\n  gradientStop = \"40%\"\n}) => {\n  return (\n    <div \n      className={cn(\n        \"absolute inset-0 w-full h-full -z-10 bg-white\",\n        className\n      )}\n      style={{\n        background: `radial-gradient(${gradientSize} at ${gradientPosition}, ${gradientFrom} ${gradientStop}, ${gradientTo} 100%)`\n      }}\n    />\n  );\n};",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "reuno-ui",
+    "slug": "bg-gredient",
+    "registry_url": "https://21st.dev/r/reuno-ui/bg-gredient",
+    "title": "BG GREDIENT ",
+    "description": "BG GREDIENT  FOR HEROS OR COMPONENTS ",
+    "category": "accordion",
+    "category_group": "UI Components",
+    "downloads": 228,
+    "likes": 0
+  }
+}

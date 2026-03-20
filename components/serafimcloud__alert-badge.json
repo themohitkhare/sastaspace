@@ -1,0 +1,44 @@
+{
+  "name": "alert-badge",
+  "type": "registry:ui",
+  "dependencies": [
+    "@remixicon/react",
+    "class-variance-authority"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "/components/ui/alert-badge.tsx",
+      "content": "import * as React from \"react\"\nimport { cva, type VariantProps } from \"class-variance-authority\"\nimport { cn } from \"@/lib/utils\"\nimport { IconType } from \"@remixicon/react\"\n\nconst alertBadgeVariants = cva(\n  \"inline-flex items-center gap-2.5 rounded-md px-2.5 py-1.5 text-tremor-label font-medium text-white\",\n  {\n    variants: {\n      variant: {\n        error: \"bg-red-500\",\n        success: \"bg-emerald-500\",\n        info: \"bg-blue-500\",\n      },\n    },\n    defaultVariants: {\n      variant: \"info\",\n    },\n  },\n)\n\ninterface AlertBadgeProps\n  extends React.HTMLAttributes<HTMLSpanElement>,\n    VariantProps<typeof alertBadgeVariants> {\n  icon?: IconType\n  label: string\n  action?: {\n    label: string\n    href: string\n    icon?: IconType\n  }\n}\n\nexport function AlertBadge({\n  className,\n  variant,\n  icon: Icon,\n  label,\n  action,\n  ...props\n}: AlertBadgeProps) {\n  return (\n    <span className={cn(alertBadgeVariants({ variant }), className)} {...props}>\n      <span className=\"inline-flex items-center gap-1.5\">\n        {Icon && <Icon className=\"size-4\" aria-hidden={true} />}\n        {label}\n      </span>\n      {action && (\n        <>\n          <span\n            className={cn(\n              \"h-5 w-px\",\n              variant === \"error\" && \"bg-red-400\",\n              variant === \"success\" && \"bg-emerald-400\",\n              variant === \"info\" && \"bg-blue-400\",\n            )}\n          />\n          <a href={action.href} className=\"inline-flex items-center gap-1.5\">\n            {action.label}\n            {action.icon && (\n              <action.icon className=\"size-4\" aria-hidden={true} />\n            )}\n          </a>\n        </>\n      )}\n    </span>\n  )\n}\n",
+      "type": "registry:ui",
+      "target": ""
+    }
+  ],
+  "tailwind": {
+    "config": {
+      "theme": {
+        "extend": {
+          "borderRadius": {
+            "tremor-full": "9999px"
+          },
+          "fontSize": {
+            "tremor-label": [
+              "0.75rem"
+            ]
+          }
+        }
+      }
+    }
+  },
+  "_meta": {
+    "author": "serafimcloud",
+    "slug": "alert-badge",
+    "registry_url": "https://21st.dev/r/serafimcloud/alert-badge",
+    "title": "Alert Badge",
+    "description": "Alert Badge inspired by Tremor",
+    "category": "alert",
+    "category_group": "UI Components",
+    "downloads": 83,
+    "likes": 3
+  }
+}

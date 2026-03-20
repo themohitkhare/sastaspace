@@ -1,0 +1,78 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "scroll-area",
+  "type": "registry:component",
+  "title": "Scroll Area",
+  "description": "A scroll-area component.",
+  "dependencies": [
+    "@radix-ui/react-scroll-area",
+    "class-variance-authority"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/ui/scroll-area.tsx",
+      "content": "\"use client\";\n\nimport * as React from \"react\";\nimport * as ScrollAreaPrimitive from \"@radix-ui/react-scroll-area\";\nimport { cva, type VariantProps } from \"class-variance-authority\";\nimport { cn } from \"@/lib/utils\";\n\nconst scrollAreaVariants = cva(\"relative overflow-hidden\", {\n  variants: {\n    orientation: {\n      vertical: \"h-full\",\n      horizontal: \"w-full\",\n      both: \"h-full w-full\",\n    },\n  },\n  defaultVariants: {\n    orientation: \"vertical\",\n  },\n});\n\nconst scrollBarVariants = cva(\"flex touch-none select-none transition-colors\", {\n  variants: {\n    orientation: {\n      vertical: \"h-full w-2.5 border-l border-l-transparent p-[1px]\",\n      horizontal: \"h-2.5 w-full border-t border-t-transparent p-[1px]\",\n    },\n  },\n  defaultVariants: {\n    orientation: \"vertical\",\n  },\n});\n\nexport interface ScrollAreaProps\n  extends React.ComponentPropsWithoutRef<typeof ScrollAreaPrimitive.Root>,\n    VariantProps<typeof scrollAreaVariants> {\n  scrollHideDelay?: number;\n  type?: \"auto\" | \"always\" | \"scroll\" | \"hover\";\n}\n\nconst ScrollArea = React.forwardRef<\n  React.ElementRef<typeof ScrollAreaPrimitive.Root>,\n  ScrollAreaProps\n>(\n  (\n    {\n      className,\n      children,\n      orientation,\n      scrollHideDelay = 600,\n      type = \"hover\",\n      ...props\n    },\n    ref\n  ) => (\n    <ScrollAreaPrimitive.Root\n      ref={ref}\n      className={cn(scrollAreaVariants({ orientation }), className)}\n      {...props}\n    >\n      <ScrollAreaPrimitive.Viewport className=\"h-full w-full rounded-[inherit]\">\n        {children}\n      </ScrollAreaPrimitive.Viewport>\n      <ScrollBar\n        orientation=\"vertical\"\n        type={type}\n        scrollHideDelay={scrollHideDelay}\n      />\n      {(orientation === \"horizontal\" || orientation === \"both\") && (\n        <ScrollBar\n          orientation=\"horizontal\"\n          type={type}\n          scrollHideDelay={scrollHideDelay}\n        />\n      )}\n      <ScrollAreaPrimitive.Corner />\n    </ScrollAreaPrimitive.Root>\n  )\n);\n\nScrollArea.displayName = ScrollAreaPrimitive.Root.displayName;\n\ninterface ScrollBarProps\n  extends React.ComponentPropsWithoutRef<\n    typeof ScrollAreaPrimitive.ScrollAreaScrollbar\n  > {\n  scrollHideDelay?: number;\n  type?: \"auto\" | \"always\" | \"scroll\" | \"hover\";\n}\n\nconst ScrollBar = React.forwardRef<\n  React.ElementRef<typeof ScrollAreaPrimitive.ScrollAreaScrollbar>,\n  ScrollBarProps\n>(\n  (\n    { className, orientation = \"vertical\", scrollHideDelay, type, ...props },\n    ref\n  ) => {\n    return (\n      <ScrollAreaPrimitive.ScrollAreaScrollbar\n        ref={ref}\n        orientation={orientation}\n        className={cn(\n          scrollBarVariants({ orientation }),\n          \"hover:bg-accent\",\n          className\n        )}\n        {...(scrollHideDelay && { scrollHideDelay })}\n        {...(type && { type })}\n        {...props}\n      >\n        <ScrollAreaPrimitive.ScrollAreaThumb className=\"relative flex-1 rounded-full bg-border hover:bg-foreground/30 transition-colors\" />\n      </ScrollAreaPrimitive.ScrollAreaScrollbar>\n    );\n  }\n);\n\nScrollBar.displayName = ScrollAreaPrimitive.ScrollAreaScrollbar.displayName;\n\nexport { ScrollArea, ScrollBar, scrollAreaVariants };",
+      "type": "registry:component"
+    }
+  ],
+  "cssVars": {
+    "light": {
+      "--hu-font-geist": "var(--font-geist)",
+      "--hu-font-jetbrains": "var(--font-jetbrains-mono)",
+      "--radius": "0.8rem",
+      "--card-radius": "1rem",
+      "--hu-background": "0, 0%, 100%",
+      "--hu-foreground": "0, 0%, 14%",
+      "--hu-card": "0, 0%, 99%",
+      "--hu-card-foreground": "0, 0%, 14%",
+      "--hu-primary": "235, 100%, 60%",
+      "--hu-primary-foreground": "0, 0%, 98%",
+      "--hu-secondary": "0, 0%, 97%",
+      "--hu-secondary-foreground": "0, 0%, 20%",
+      "--hu-muted": "0, 0%, 97%",
+      "--hu-muted-foreground": "0, 0%, 56%",
+      "--hu-accent": "0, 0%, 96%",
+      "--hu-accent-foreground": "0, 0%, 20%",
+      "--hu-destructive": "9, 96%, 47%",
+      "--hu-destructive-foreground": "0, 0%, 98%",
+      "--hu-border": "0, 0%, 92%",
+      "--hu-input": "0, 0%, 100%",
+      "--hu-ring": "0, 0%, 71%",
+      "--color-fd-background": "hsl(var(--hu-background))",
+      "--color-fd-card": "hsl(var(--hu-background))"
+    },
+    "dark": {
+      "--hu-background": "0, 0%, 7%",
+      "--hu-foreground": "0, 0%, 100%",
+      "--hu-card": "0, 0%, 9%",
+      "--hu-card-foreground": "0, 0%, 100%",
+      "--hu-primary": "235, 100%, 60%",
+      "--hu-primary-foreground": "0, 0%, 98%",
+      "--hu-secondary": "0, 0%, 15%",
+      "--hu-secondary-foreground": "0, 0%, 100%",
+      "--hu-muted": "0, 0%, 15%",
+      "--hu-muted-foreground": "0, 0%, 71%",
+      "--hu-accent": "0, 0%, 15%",
+      "--hu-accent-foreground": "0, 0%, 100%",
+      "--hu-destructive": "0, 84%, 50%",
+      "--hu-destructive-foreground": "0, 0%, 98%",
+      "--hu-border": "0, 0%, 100%, 10%",
+      "--hu-input": "0, 0%, 100%, 5%",
+      "--hu-ring": "0, 0%, 56%",
+      "--color-fd-background": "hsl(var(--hu-background))",
+      "--color-fd-card": "hsl(var(--hu-background))"
+    }
+  },
+  "_meta": {
+    "author": "preetsuthar17",
+    "slug": "scroll-area",
+    "registry_url": "https://21st.dev/r/preetsuthar17/scroll-area",
+    "title": "Scroll Area",
+    "description": "A customizable scroll area component with smooth scrolling and accessible scrollbars.",
+    "category": "scroll-area",
+    "category_group": "Marketing Blocks",
+    "downloads": 12,
+    "likes": 0
+  }
+}

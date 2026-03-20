@@ -1,0 +1,31 @@
+{
+  "name": "hero-gallery-scroll-animation",
+  "type": "registry:block",
+  "dependencies": [
+    "motion",
+    "class-variance-authority"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "/components/blocks/hero-gallery-scroll-animation.tsx",
+      "content": "\"use client\"\n\nimport * as React from \"react\"\nimport { VariantProps, cva } from \"class-variance-authority\"\nimport {\n  HTMLMotionProps,\n  MotionValue,\n  motion,\n  useScroll,\n  useTransform,\n} from \"motion/react\"\n\nimport { cn } from \"@/lib/utils\"\n\nconst bentoGridVariants = cva(\n  \"relative grid gap-4 [&>*:first-child]:origin-top-right [&>*:nth-child(3)]:origin-bottom-right [&>*:nth-child(4)]:origin-top-right\",\n  {\n    variants: {\n      variant: {\n        default: `\n          grid-cols-8 grid-rows-[1fr_0.5fr_0.5fr_1fr]\n          [&>*:first-child]:col-span-8 md:[&>*:first-child]:col-span-6 [&>*:first-child]:row-span-3\n          [&>*:nth-child(2)]:col-span-2 md:[&>*:nth-child(2)]:row-span-2 [&>*:nth-child(2)]:hidden md:[&>*:nth-child(2)]:block\n          [&>*:nth-child(3)]:col-span-2 md:[&>*:nth-child(3)]:row-span-2 [&>*:nth-child(3)]:hidden md:[&>*:nth-child(3)]:block\n          [&>*:nth-child(4)]:col-span-4 md:[&>*:nth-child(4)]:col-span-3\n          [&>*:nth-child(5)]:col-span-4 md:[&>*:nth-child(5)]:col-span-3\n        `,\n        threeCells: `\n          grid-cols-2 grid-rows-2\n          [&>*:first-child]:col-span-2\n      `,\n        fourCells: `\n        grid-cols-3 grid-rows-2\n        [&>*:first-child]:col-span-1\n        [&>*:nth-child(2)]:col-span-2\n        [&>*:nth-child(3)]:col-span-2\n      `,\n      },\n    },\n    defaultVariants: {\n      variant: \"default\",\n    },\n  }\n)\n\ninterface ContainerScrollContextValue {\n  scrollYProgress: MotionValue<number>\n}\nconst ContainerScrollContext = React.createContext<\n  ContainerScrollContextValue | undefined\n>(undefined)\nfunction useContainerScrollContext() {\n  const context = React.useContext(ContainerScrollContext)\n  if (!context) {\n    throw new Error(\n      \"useContainerScrollContext must be used within a ContainerScroll Component\"\n    )\n  }\n  return context\n}\nconst ContainerScroll = ({\n  children,\n  className,\n  ...props\n}: React.HTMLAttributes<HTMLDivElement>) => {\n  const scrollRef = React.useRef<HTMLDivElement>(null)\n  const { scrollYProgress } = useScroll({\n    target: scrollRef,\n  })\n  return (\n    <ContainerScrollContext.Provider value={{ scrollYProgress }}>\n      <div\n        ref={scrollRef}\n        className={cn(\"relative min-h-screen w-full\", className)}\n        {...props}\n      >\n        {children}\n      </div>\n    </ContainerScrollContext.Provider>\n  )\n}\n\nconst BentoGrid = React.forwardRef<\n  HTMLDivElement,\n  React.HTMLAttributes<HTMLDivElement> & VariantProps<typeof bentoGridVariants>\n>(({ variant, className, ...props }, ref) => {\n  return (\n    <div\n      ref={ref}\n      className={cn(bentoGridVariants({ variant }), className)}\n      {...props}\n    />\n  )\n})\nBentoGrid.displayName = \"BentoGrid\"\n\nconst BentoCell = React.forwardRef<HTMLDivElement, HTMLMotionProps<\"div\">>(\n  ({ className, style, ...props }, ref) => {\n    const { scrollYProgress } = useContainerScrollContext()\n    const translate = useTransform(scrollYProgress, [0.1, 0.9], [\"-35%\", \"0%\"])\n    const scale = useTransform(scrollYProgress, [0, 0.9], [0.5, 1])\n\n    return (\n      <motion.div\n        ref={ref}\n        className={className}\n        style={{ translate, scale, ...style }}\n        {...props}\n      ></motion.div>\n    )\n  }\n)\nBentoCell.displayName = \"BentoCell\"\n\nconst ContainerScale = React.forwardRef<HTMLDivElement, HTMLMotionProps<\"div\">>(\n  ({ className, style, ...props }, ref) => {\n    const { scrollYProgress } = useContainerScrollContext()\n    const opacity = useTransform(scrollYProgress, [0, 0.5], [1, 0])\n    const scale = useTransform(scrollYProgress, [0, 0.5], [1, 0])\n\n    const position = useTransform(scrollYProgress, (pos) =>\n      pos >= 0.6 ? \"absolute\" : \"fixed\"\n    )\n    return (\n      <motion.div\n        ref={ref}\n        className={cn(\"left-1/2 top-1/2  size-fit\", className)}\n        style={{\n          translate: \"-50% -50%\",\n          scale,\n          position,\n          opacity,\n          ...style,\n        }}\n        {...props}\n      />\n    )\n  }\n)\nContainerScale.displayName = \"ContainerScale\"\nexport { ContainerScroll, BentoGrid, BentoCell, ContainerScale }\n",
+      "type": "registry:block",
+      "target": ""
+    }
+  ],
+  "tailwind": {
+    "config": {}
+  },
+  "_meta": {
+    "author": "youcefbnm",
+    "slug": "hero-gallery-scroll-animation",
+    "registry_url": "https://21st.dev/r/youcefbnm/hero-gallery-scroll-animation",
+    "title": "Hero Gallery Scroll Animation",
+    "description": "ℹ️ Hero section with scroll trigger animation, that animate images on scroll,\n🧩 <ContainerScroll />  : React html attributes🧩 <BentoCell /> : variants: default: 5 cells | threeCells | fourCells\n🧩 <BentoCell /> : motion attributes\n<ContainerScale /> : scale back and fade out fourCells\n✅ Fully responsive ",
+    "category": "hero",
+    "category_group": "Marketing Blocks",
+    "downloads": 1323,
+    "likes": 0
+  }
+}

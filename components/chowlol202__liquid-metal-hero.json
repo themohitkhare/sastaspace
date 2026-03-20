@@ -1,0 +1,34 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "liquid-metal-hero",
+  "type": "registry:component",
+  "title": "Liquid Metal Hero",
+  "description": "A liquid-metal-hero component.",
+  "dependencies": [
+    "@paper-design/shaders-react",
+    "framer-motion"
+  ],
+  "registryDependencies": [
+    "https://21st.dev/r/shadcn/button",
+    "https://21st.dev/r/shadcn/badge",
+    "https://21st.dev/r/shadcn/card"
+  ],
+  "files": [
+    {
+      "path": "src/components/ui/liquid-metal-hero.tsx",
+      "content": "\"use client\";\n\nimport { LiquidMetal, liquidMetalPresets } from '@paper-design/shaders-react';\nimport { Button } from '@/components/ui/button';\nimport { Badge } from '@/components/ui/badge';\nimport { Card } from '@/components/ui/card';\nimport { motion } from 'framer-motion';\n\ninterface LiquidMetalHeroProps {\n  badge?: string;\n  title: string;\n  subtitle: string;\n  primaryCtaLabel: string;\n  secondaryCtaLabel?: string;\n  onPrimaryCtaClick: () => void;\n  onSecondaryCtaClick?: () => void;\n  features?: string[];\n}\n\nexport default function LiquidMetalHero({\n  badge,\n  title,\n  subtitle,\n  primaryCtaLabel,\n  secondaryCtaLabel,\n  onPrimaryCtaClick,\n  onSecondaryCtaClick,\n  features = [],\n}: LiquidMetalHeroProps) {\n  const containerVariants = {\n    hidden: { opacity: 0 },\n    visible: {\n      opacity: 1,\n      transition: {\n        delayChildren: 0.2,\n        staggerChildren: 0.15\n      }\n    }\n  };\n\n  const itemVariants = {\n    hidden: { opacity: 0, y: 30 },\n    visible: { \n      opacity: 1, \n      y: 0\n    }\n  };\n\n  const buttonVariants = {\n    hidden: { opacity: 0, scale: 0.9 },\n    visible: { \n      opacity: 1, \n      scale: 1\n    }\n  };\n\n  return (\n    <section className=\"relative min-h-screen flex items-center justify-center overflow-hidden\">\n      <LiquidMetal\n        {...liquidMetalPresets[2]}\n        style={{ position: \"fixed\", inset: 0, zIndex: -10 }}\n      />\n      \n      <div className=\"container mx-auto px-6 lg:px-8 max-w-7xl\">\n        <motion.div \n          className=\"text-center space-y-8\"\n          variants={containerVariants}\n          initial=\"hidden\"\n          animate=\"visible\"\n          transition={{ duration: 0.8, ease: [0.25, 0.1, 0.25, 1] }}\n        >\n          {badge && (\n            <motion.div \n              className=\"flex justify-center\"\n              variants={itemVariants}\n            >\n              <Badge \n                variant=\"secondary\" \n                className=\"bg-foreground/10 text-foreground border-foreground/20 hover:bg-foreground/20 transition-colors duration-300 backdrop-blur-sm\"\n              >\n                {badge}\n              </Badge>\n            </motion.div>\n          )}\n          \n          <motion.div \n            className=\"space-y-6\"\n            variants={itemVariants}\n          >\n            <motion.h1 \n              role=\"heading\" \n              aria-level={1}\n              className=\"text-5xl sm:text-6xl lg:text-7xl xl:text-8xl font-bold text-foreground leading-tight tracking-tight\"\n              variants={itemVariants}\n            >\n              {title}\n            </motion.h1>\n            \n            <motion.p \n              className=\"max-w-3xl mx-auto text-xl sm:text-2xl text-foreground/90 leading-relaxed\"\n              variants={itemVariants}\n            >\n              {subtitle}\n            </motion.p>\n          </motion.div>\n          \n          <motion.div \n            className=\"flex flex-col sm:flex-row gap-4 justify-center items-center\"\n            variants={buttonVariants}\n          >\n            <motion.div\n              whileHover={{ scale: 1.05 }}\n              whileTap={{ scale: 0.95 }}\n            >\n              <Button \n                onClick={onPrimaryCtaClick}\n                size=\"lg\"\n                className=\"bg-foreground text-background hover:bg-foreground/90 transition-all duration-300 shadow-2xl text-lg px-8 py-6 font-semibold\"\n              >\n                {primaryCtaLabel}\n              </Button>\n            </motion.div>\n            \n            {secondaryCtaLabel && onSecondaryCtaClick && (\n              <motion.div\n                whileHover={{ scale: 1.05 }}\n                whileTap={{ scale: 0.95 }}\n              >\n                <Button \n                  onClick={onSecondaryCtaClick}\n                  variant=\"outline\"\n                  size=\"lg\"\n                  className=\"border-foreground/30 text-foreground hover:bg-foreground/10 hover:border-foreground/50 transition-all duration-300 backdrop-blur-sm text-lg px-8 py-6 font-semibold\"\n                >\n                  {secondaryCtaLabel}\n                </Button>\n              </motion.div>\n            )}\n          </motion.div>\n          \n          {features.length > 0 && (\n            <motion.div \n              className=\"pt-12\"\n              variants={itemVariants}\n            >\n              <motion.div\n                whileHover={{ y: -4 }}\n                transition={{ duration: 0.3 }}\n              >\n                <Card className=\"bg-foreground/10 border-foreground/20 backdrop-blur-md shadow-2xl\">\n                  <div className=\"p-8\">\n                    <div className=\"grid grid-cols-1 md:grid-cols-3 gap-6\">\n                      {features.map((feature, index) => (\n                        <motion.div \n                          key={index}\n                          className=\"flex items-center justify-center text-center\"\n                          initial={{ opacity: 0, x: -20 }}\n                          animate={{ opacity: 1, x: 0 }}\n                          transition={{ \n                            duration: 0.6, \n                            delay: 0.8 + (index * 0.1)\n                          }}\n                        >\n                          <p className=\"text-foreground/90 font-medium text-lg\">\n                            {feature}\n                          </p>\n                        </motion.div>\n                      ))}\n                    </div>\n                  </div>\n                </Card>\n              </motion.div>\n            </motion.div>\n          )}\n        </motion.div>\n      </div>\n    </section>\n  );\n}",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "chowlol202",
+    "slug": "liquid-metal-hero",
+    "registry_url": "https://21st.dev/r/chowlol202/liquid-metal-hero",
+    "title": "Liquid Metal Hero",
+    "description": "Liquid metal hero section with nice animations and perfect for any website.",
+    "category": "hero",
+    "category_group": "Marketing Blocks",
+    "downloads": 2,
+    "likes": 0
+  }
+}

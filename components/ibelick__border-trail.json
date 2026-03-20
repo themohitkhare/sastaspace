@@ -1,0 +1,30 @@
+{
+  "name": "border-trail",
+  "type": "registry:ui",
+  "dependencies": [
+    "framer-motion"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "/components/ui/border-trail.tsx",
+      "content": "'use client';\nimport { cn } from '@/lib/utils';\nimport { motion, Transition } from 'framer-motion';\n\ntype BorderTrailProps = {\n  className?: string;\n  size?: number;\n  transition?: Transition;\n  delay?: number;\n  onAnimationComplete?: () => void;\n  style?: React.CSSProperties;\n};\n\nexport function BorderTrail({\n  className,\n  size = 60,\n  transition,\n  delay,\n  onAnimationComplete,\n  style,\n}: BorderTrailProps) {\n  const BASE_TRANSITION = {\n    repeat: Infinity,\n    duration: 5,\n    ease: 'linear',\n  };\n\n  return (\n    <div className='pointer-events-none absolute inset-0 rounded-[inherit] border border-transparent [mask-clip:padding-box,border-box] [mask-composite:intersect] [mask-image:linear-gradient(transparent,transparent),linear-gradient(#000,#000)]'>\n      <motion.div\n        className={cn('absolute aspect-square bg-zinc-500', className)}\n        style={{\n          width: size,\n          offsetPath: `rect(0 auto auto 0 round ${size}px)`,\n          ...style,\n        }}\n        animate={{\n          offsetDistance: ['0%', '100%'],\n        }}\n        transition={{\n          ...(transition ?? BASE_TRANSITION),\n          delay: delay,\n        }}\n        onAnimationComplete={onAnimationComplete}\n      />\n    </div>\n  );\n}\n",
+      "type": "registry:ui",
+      "target": ""
+    }
+  ],
+  "tailwind": {
+    "config": {}
+  },
+  "_meta": {
+    "author": "ibelick",
+    "slug": "border-trail",
+    "registry_url": "https://21st.dev/r/ibelick/border-trail",
+    "title": "Border Trail",
+    "description": "Animated border effect that moves along the edges of its parent container.",
+    "category": "border",
+    "category_group": "Marketing Blocks",
+    "downloads": 1069,
+    "likes": 7
+  }
+}

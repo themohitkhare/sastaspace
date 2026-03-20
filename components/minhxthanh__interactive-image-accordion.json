@@ -1,0 +1,27 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "interactive-image-accordion",
+  "type": "registry:component",
+  "title": "Interactive Image Accordion",
+  "description": "A interactive-image-accordion component.",
+  "dependencies": [],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/ui/interactive-image-accordion.tsx",
+      "content": "import React, { useState } from 'react';\n\n// --- Data for the image accordion ---\nconst accordionItems = [\n  {\n    id: 1,\n    title: 'Voice Assistant',\n    imageUrl: 'https://images.unsplash.com/photo-1628258334105-2a0b3d6efee1?q=80&w=1974&auto=format&fit=crop',\n  },\n  {\n    id: 2,\n    title: 'AI Image Generation',\n    imageUrl: 'https://images.unsplash.com/photo-1677756119517-756a188d2d94?q=80&w=2070&auto=format&fit=crop',\n  },\n  {\n    id: 3,\n    title: 'AI Chatbot + Local RAG',\n    imageUrl: 'https://images.unsplash.com/photo-1515879218367-8466d910aaa4?q=80&w=1974&auto=format&fit=crop',\n  },\n  {\n    id: 4,\n    title: 'AI Agent',\n    imageUrl: 'https://images.unsplash.com/photo-1526628953301-3e589a6a8b74?q=80&w=2090&auto=format&fit=crop',\n  },\n  {\n    id: 5,\n    title: 'Visual Understanding',\n    imageUrl: 'https://images.unsplash.com/photo-1554415707-6e8cfc93fe23?q=80&w=2070&auto=format&fit=crop',\n  },\n];\n\n// --- Accordion Item Component ---\nconst AccordionItem = ({ item, isActive, onMouseEnter }) => {\n  return (\n    <div\n      className={`\n        relative h-[450px] rounded-2xl overflow-hidden cursor-pointer\n        transition-all duration-700 ease-in-out\n        ${isActive ? 'w-[400px]' : 'w-[60px]'}\n      `}\n      onMouseEnter={onMouseEnter}\n    >\n      {/* Background Image */}\n      <img\n        src={item.imageUrl}\n        alt={item.title}\n        className=\"absolute inset-0 w-full h-full object-cover\"\n        onError={(e) => { e.target.onerror = null; e.target.src = 'https://placehold.co/400x450/2d3748/ffffff?text=Image+Error'; }}\n      />\n      {/* Dark overlay for better text readability */}\n      <div className=\"absolute inset-0 bg-black bg-opacity-40\"></div>\n\n      {/* Caption Text */}\n      <span\n        className={`\n          absolute text-white text-lg font-semibold whitespace-nowrap\n          transition-all duration-300 ease-in-out\n          ${\n            isActive\n              ? 'bottom-6 left-1/2 -translate-x-1/2 rotate-0' // Active state: horizontal, bottom-center\n              // Inactive state: vertical, positioned at the bottom, for all screen sizes\n              : 'w-auto text-left bottom-24 left-1/2 -translate-x-1/2 rotate-90'\n          }\n        `}\n      >\n        {item.title}\n      </span>\n    </div>\n  );\n};\n\n\n// --- Main App Component ---\nexport function LandingAccordionItem() {\n  const [activeIndex, setActiveIndex] = useState(4);\n\n  const handleItemHover = (index) => {\n    setActiveIndex(index);\n  };\n\n  return (\n    <div className=\"bg-white font-sans\">\n      <section className=\"container mx-auto px-4 py-12 md:py-24\">\n        <div className=\"flex flex-col md:flex-row items-center justify-between gap-12\">\n          \n          {/* Left Side: Text Content */}\n          <div className=\"w-full md:w-1/2 text-center md:text-left\">\n            <h1 className=\"text-4xl md:text-6xl font-bold text-gray-900 leading-tight tracking-tighter\">\n              Accelerate Gen-AI Tasks on Any Device\n            </h1>\n            <p className=\"mt-6 text-lg text-gray-600 max-w-xl mx-auto md:mx-0\">\n              Build high-performance AI apps on-device without the hassle of model compression or edge deployment.\n            </p>\n            <div className=\"mt-8\">\n              <a\n                href=\"#contact\"\n                className=\"inline-block bg-gray-900 text-white font-semibold px-8 py-3 rounded-lg shadow-lg hover:bg-gray-800 transition-colors duration-300\"\n              >\n                Contact Us\n              </a>\n            </div>\n          </div>\n\n          {/* Right Side: Image Accordion */}\n          <div className=\"w-full md:w-1/2\">\n            {/* Changed flex-col to flex-row to keep the layout consistent */}\n            <div className=\"flex flex-row items-center justify-center gap-4 overflow-x-auto p-4\">\n              {accordionItems.map((item, index) => (\n                <AccordionItem\n                  key={item.id}\n                  item={item}\n                  isActive={index === activeIndex}\n                  onMouseEnter={() => handleItemHover(index)}\n                />\n              ))}\n            </div>\n          </div>\n        </div>\n      </section>\n    </div>\n  );\n}\n",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "minhxthanh",
+    "slug": "interactive-image-accordion",
+    "registry_url": "https://21st.dev/r/minhxthanh/interactive-image-accordion",
+    "title": "Interactive Image Accordion",
+    "description": "Interactive Image Accordion",
+    "category": "hero",
+    "category_group": "Marketing Blocks",
+    "downloads": 112,
+    "likes": 0
+  }
+}

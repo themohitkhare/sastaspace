@@ -1,0 +1,60 @@
+{
+  "name": "use-elastic-line-events",
+  "type": "registry:hook",
+  "registryDependencies": [
+    "https://21st.dev/r/danielpetho/use-debounced-dimensions",
+    "https://21st.dev/r/danielpetho/use-mouse-position"
+  ],
+  "files": [
+    {
+      "path": "/components/hooks/use-elastic-line-events.tsx",
+      "content": "import { useState, useEffect } from \"react\"\nimport { useMousePosition } from \"@/components/hooks/use-mouse-position\"\nimport { useDimensions } from \"@/components/hooks/use-debounced-dimensions\"\n\ninterface ElasticLineEvents {\n  isGrabbed: boolean\n  controlPoint: { x: number; y: number }\n}\n\nexport function useElasticLineEvents(\n  containerRef: React.RefObject<SVGSVGElement>,\n  isVertical: boolean,\n  grabThreshold: number,\n  releaseThreshold: number,\n): ElasticLineEvents {\n  const { x, y } = useMousePosition(containerRef)\n  const dimensions = useDimensions(containerRef)\n  const [isGrabbed, setIsGrabbed] = useState(false)\n  const [controlPoint, setControlPoint] = useState({\n    x: dimensions.width / 2,\n    y: dimensions.height / 2,\n  })\n\n  useEffect(() => {\n    if (!containerRef.current) return\n\n    const { width, height } = dimensions\n\n    // Check if mouse is outside container bounds\n    const isOutsideBounds = x < 0 || x > width || y < 0 || y > height\n\n    if (isOutsideBounds) {\n      setIsGrabbed(false)\n      return\n    }\n\n    let distance: number\n    let newControlPoint: { x: number; y: number }\n\n    if (isVertical) {\n      const midX = width / 2\n      distance = Math.abs(x - midX)\n      newControlPoint = {\n        x: midX + 2.2 * (x - midX),\n        y: y,\n      }\n    } else {\n      const midY = height / 2\n      distance = Math.abs(y - midY)\n      newControlPoint = {\n        x: x,\n        y: midY + 2.2 * (y - midY),\n      }\n    }\n\n    setControlPoint(newControlPoint)\n\n    if (!isGrabbed && distance < grabThreshold) {\n      setIsGrabbed(true)\n    } else if (isGrabbed && distance > releaseThreshold) {\n      setIsGrabbed(false)\n    }\n  }, [x, y, isVertical, isGrabbed, grabThreshold, releaseThreshold, dimensions])\n\n  return { isGrabbed, controlPoint }\n}\n",
+      "type": "registry:hook",
+      "target": ""
+    },
+    {
+      "path": "/hooks/use-elastic-line-events.tsx",
+      "content": "import { useState, useEffect } from \"react\"\nimport { useMousePosition } from \"@/components/hooks/use-mouse-position\"\nimport { useDimensions } from \"@/components/hooks/use-debounced-dimensions\"\n\ninterface ElasticLineEvents {\n  isGrabbed: boolean\n  controlPoint: { x: number; y: number }\n}\n\nexport function useElasticLineEvents(\n  containerRef: React.RefObject<SVGSVGElement>,\n  isVertical: boolean,\n  grabThreshold: number,\n  releaseThreshold: number,\n): ElasticLineEvents {\n  const { x, y } = useMousePosition(containerRef)\n  const dimensions = useDimensions(containerRef)\n  const [isGrabbed, setIsGrabbed] = useState(false)\n  const [controlPoint, setControlPoint] = useState({\n    x: dimensions.width / 2,\n    y: dimensions.height / 2,\n  })\n\n  useEffect(() => {\n    if (!containerRef.current) return\n\n    const { width, height } = dimensions\n\n    // Check if mouse is outside container bounds\n    const isOutsideBounds = x < 0 || x > width || y < 0 || y > height\n\n    if (isOutsideBounds) {\n      setIsGrabbed(false)\n      return\n    }\n\n    let distance: number\n    let newControlPoint: { x: number; y: number }\n\n    if (isVertical) {\n      const midX = width / 2\n      distance = Math.abs(x - midX)\n      newControlPoint = {\n        x: midX + 2.2 * (x - midX),\n        y: y,\n      }\n    } else {\n      const midY = height / 2\n      distance = Math.abs(y - midY)\n      newControlPoint = {\n        x: x,\n        y: midY + 2.2 * (y - midY),\n      }\n    }\n\n    setControlPoint(newControlPoint)\n\n    if (!isGrabbed && distance < grabThreshold) {\n      setIsGrabbed(true)\n    } else if (isGrabbed && distance > releaseThreshold) {\n      setIsGrabbed(false)\n    }\n  }, [x, y, isVertical, isGrabbed, grabThreshold, releaseThreshold, dimensions])\n\n  return { isGrabbed, controlPoint }\n}\n",
+      "type": "registry:hook",
+      "target": ""
+    },
+    {
+      "path": "/components/hooks/use-debounced-dimensions.tsx",
+      "content": "import { useState, useEffect, RefObject } from 'react';\n\ninterface Dimensions {\nwidth: number;\nheight: number;\n}\n\nexport function useDimensions(ref: RefObject<HTMLElement | SVGElement>): Dimensions {\n  const [dimensions, setDimensions] = useState<Dimensions>({ width: 0, height: 0 });\n\nuseEffect(() => {\nlet timeoutId: NodeJS.Timeout;\n\n    const updateDimensions = () => {\n      if (ref.current) {\n        const { width, height } = ref.current.getBoundingClientRect();\n        setDimensions({ width, height });\n      }\n    };\n\n    const debouncedUpdateDimensions = () => {\n      clearTimeout(timeoutId);\n      timeoutId = setTimeout(updateDimensions, 250); // Wait 250ms after resize ends\n    };\n\n    // Initial measurement\n    updateDimensions();\n\n    window.addEventListener('resize', debouncedUpdateDimensions);\n\n    return () => {\n      window.removeEventListener('resize', debouncedUpdateDimensions);\n      clearTimeout(timeoutId);\n    };\n\n}, [ref]);\n\nreturn dimensions;\n}\n",
+      "type": "registry:hook",
+      "target": ""
+    },
+    {
+      "path": "/hooks/use-debounced-dimensions.tsx",
+      "content": "import { useState, useEffect, RefObject } from 'react';\n\ninterface Dimensions {\nwidth: number;\nheight: number;\n}\n\nexport function useDimensions(ref: RefObject<HTMLElement | SVGElement>): Dimensions {\n  const [dimensions, setDimensions] = useState<Dimensions>({ width: 0, height: 0 });\n\nuseEffect(() => {\nlet timeoutId: NodeJS.Timeout;\n\n    const updateDimensions = () => {\n      if (ref.current) {\n        const { width, height } = ref.current.getBoundingClientRect();\n        setDimensions({ width, height });\n      }\n    };\n\n    const debouncedUpdateDimensions = () => {\n      clearTimeout(timeoutId);\n      timeoutId = setTimeout(updateDimensions, 250); // Wait 250ms after resize ends\n    };\n\n    // Initial measurement\n    updateDimensions();\n\n    window.addEventListener('resize', debouncedUpdateDimensions);\n\n    return () => {\n      window.removeEventListener('resize', debouncedUpdateDimensions);\n      clearTimeout(timeoutId);\n    };\n\n}, [ref]);\n\nreturn dimensions;\n}\n",
+      "type": "registry:hook",
+      "target": ""
+    },
+    {
+      "path": "/components/hooks/use-mouse-position.tsx",
+      "content": "import { RefObject, useEffect, useState } from \"react\";\n\nexport const useMousePosition = (\n  containerRef?: RefObject<HTMLElement | SVGElement>\n) => {\n  const [position, setPosition] = useState({ x: 0, y: 0 });\n\n  useEffect(() => {\n    const updatePosition = (x: number, y: number) => {\n      if (containerRef && containerRef.current) {\n        const rect = containerRef.current.getBoundingClientRect();\n        const relativeX = x - rect.left;\n        const relativeY = y - rect.top;\n\n        // Calculate relative position even when outside the container\n        setPosition({ x: relativeX, y: relativeY });\n      } else {\n        setPosition({ x, y });\n      }\n    };\n\n    const handleMouseMove = (ev: MouseEvent) => {\n      updatePosition(ev.clientX, ev.clientY);\n    };\n\n    const handleTouchMove = (ev: TouchEvent) => {\n      const touch = ev.touches[0];\n      updatePosition(touch.clientX, touch.clientY);\n    };\n\n    // Listen for both mouse and touch events\n    window.addEventListener(\"mousemove\", handleMouseMove);\n    window.addEventListener(\"touchmove\", handleTouchMove);\n\n    return () => {\n      window.removeEventListener(\"mousemove\", handleMouseMove);\n      window.removeEventListener(\"touchmove\", handleTouchMove);\n    };\n  }, [containerRef]);\n\n  return position;\n};\n",
+      "type": "registry:hook",
+      "target": ""
+    },
+    {
+      "path": "/hooks/use-mouse-position.tsx",
+      "content": "import { RefObject, useEffect, useState } from \"react\";\n\nexport const useMousePosition = (\n  containerRef?: RefObject<HTMLElement | SVGElement>\n) => {\n  const [position, setPosition] = useState({ x: 0, y: 0 });\n\n  useEffect(() => {\n    const updatePosition = (x: number, y: number) => {\n      if (containerRef && containerRef.current) {\n        const rect = containerRef.current.getBoundingClientRect();\n        const relativeX = x - rect.left;\n        const relativeY = y - rect.top;\n\n        // Calculate relative position even when outside the container\n        setPosition({ x: relativeX, y: relativeY });\n      } else {\n        setPosition({ x, y });\n      }\n    };\n\n    const handleMouseMove = (ev: MouseEvent) => {\n      updatePosition(ev.clientX, ev.clientY);\n    };\n\n    const handleTouchMove = (ev: TouchEvent) => {\n      const touch = ev.touches[0];\n      updatePosition(touch.clientX, touch.clientY);\n    };\n\n    // Listen for both mouse and touch events\n    window.addEventListener(\"mousemove\", handleMouseMove);\n    window.addEventListener(\"touchmove\", handleTouchMove);\n\n    return () => {\n      window.removeEventListener(\"mousemove\", handleMouseMove);\n      window.removeEventListener(\"touchmove\", handleTouchMove);\n    };\n  }, [containerRef]);\n\n  return position;\n};\n",
+      "type": "registry:hook",
+      "target": ""
+    }
+  ],
+  "tailwind": {
+    "config": {}
+  },
+  "_meta": {
+    "author": "danielpetho",
+    "slug": "use-elastic-line-events",
+    "registry_url": "https://21st.dev/r/danielpetho/use-elastic-line-events",
+    "title": "useElasticLineEvents",
+    "description": "",
+    "category": "hook",
+    "category_group": "Marketing Blocks",
+    "downloads": 36,
+    "likes": 2
+  }
+}

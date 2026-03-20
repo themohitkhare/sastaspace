@@ -1,0 +1,32 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "footer-2",
+  "type": "registry:component",
+  "title": "Footer 2",
+  "description": "A footer-2 component.",
+  "dependencies": [
+    "lucide-react"
+  ],
+  "registryDependencies": [
+    "https://21st.dev/r/sshahaider/app-store-button",
+    "https://21st.dev/r/sshahaider/play-store-button"
+  ],
+  "files": [
+    {
+      "path": "src/components/ui/footer-2.tsx",
+      "content": "\"use client\";\n\nimport {\n  FacebookIcon,\n  InstagramIcon,\n  LinkedinIcon,\n  TwitterIcon,\n} from \"lucide-react\";\nimport { buttonVariants } from \"@/components/ui/button\";\nimport { PlayStoreButton } from \"@/components/ui/play-store-button\";\nimport { AppStoreButton } from \"@/components/ui/app-store-button\";\n\nconst footerLinks = [\n  {\n    title: \"Company\",\n    links: [\n      { href: \"#\", label: \"The Linomore Blog\" },\n      { href: \"#\", label: \"Engineering Blog\" },\n      { href: \"#\", label: \"Marketplace\" },\n      { href: \"#\", label: \"What’s New\" },\n      { href: \"#\", label: \"About\" },\n      { href: \"#\", label: \"Press\" },\n      { href: \"#\", label: \"Careers\" },\n      { href: \"#\", label: \"Link in Bio\" },\n      { href: \"#\", label: \"Social Good\" },\n    ],\n  },\n  {\n    title: \"Community\",\n    links: [\n      { href: \"#\", label: \"Linktree for Enterprise\" },\n      { href: \"#\", label: \"2023 Creator Report\" },\n      { href: \"#\", label: \"2022 Creator Report\" },\n      { href: \"#\", label: \"Charities\" },\n      { href: \"#\", label: \"What’s Trending\" },\n      { href: \"#\", label: \"Creator Profile Directory\" },\n      { href: \"#\", label: \"Explore Templates\" },\n    ],\n  },\n  {\n    title: \"Support\",\n    links: [\n      { href: \"#\", label: \"Help Topics\" },\n      { href: \"#\", label: \"Getting Started\" },\n      { href: \"#\", label: \"Linoree Pro\" },\n      { href: \"#\", label: \"Features & How-tos\" },\n      { href: \"#\", label: \"FAQs\" },\n      { href: \"#\", label: \"Report a Violation\" },\n    ],\n  },\n  {\n    title: \"Legal\",\n    links: [\n      { href: \"#\", label: \"Terms & Conditions\" },\n      { href: \"#\", label: \"Privacy Notice\" },\n      { href: \"#\", label: \"Cookie Notice\" },\n      { href: \"#\", label: \"Trust Center\" },\n      { href: \"#\", label: \"Cookie Preferences\" },\n      { href: \"#\", label: \"Transparency Report\" },\n      { href: \"#\", label: \"Law Enforcement Access Policy\" },\n    ],\n  },\n];\n\nconst socialLinks = [\n  { icon: FacebookIcon, href: \"#\" },\n  { icon: InstagramIcon, href: \"#\" },\n  { icon: LinkedinIcon, href: \"#\" },\n  { icon: TwitterIcon, href: \"#\" },\n];\n\nexport function Footer2() {\n  return (\n    <footer className=\"bg-card/60 border-t\">\n      <div className=\"max-w-6xl mx-auto px-4 lg:px-6\">\n        {/* Grid container with headings and links */}\n        <div className=\"grid grid-cols-2 md:grid-cols-4 gap-8 py-8\">\n          {footerLinks.map((item, i) => (\n            <div key={i}>\n              <h3 className=\"mb-4 text-xs\">{item.title}</h3>\n              <ul className=\"space-y-2 text-muted-foreground text-sm\">\n                {item.links.map((link) => (\n                  <li key={link.label}>\n                    <a href={link.href} className=\"hover:text-foreground\">\n                      {link.label}\n                    </a>\n                  </li>\n                ))}\n              </ul>\n            </div>\n          ))}\n        </div>\n        <div className=\"h-px bg-border\" />\n        {/* Social Buttons + App Links */}\n        <div className=\"py-5 flex flex-wrap items-center justify-between gap-4\">\n          <div className=\"flex gap-2 items-center\">\n            {socialLinks.map(({ icon: Icon, href }, i) => (\n              <a\n                href={href}\n                className={buttonVariants({\n                  variant: \"outline\",\n                  size: \"icon\",\n                })}\n                key={i}\n              >\n                <Icon className=\"size-5 text-muted-foreground\" />\n              </a>\n            ))}\n          </div>\n\n          <div className=\"flex gap-4\">\n            <a href=\"#\">\n              <AppStoreButton />\n            </a>\n\n            <a href=\"#\">\n              <PlayStoreButton />\n            </a>\n          </div>\n        </div>\n        <div className=\"h-px bg-border\" />\n        <div className=\"text-center text-xs text-muted-foreground py-4\">\n          <p>\n            © {new Date().getFullYear()}{\" \"}\n            <a\n              href=\"https://x.com/sshahaider\"\n              className=\"hover:text-foreground hover:underline\"\n            >\n              sshahaider\n            </a>\n            . All rights reserved.\n          </p>\n        </div>\n      </div>\n    </footer>\n  );\n}\n",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "sshahaider",
+    "slug": "footer-2",
+    "registry_url": "https://21st.dev/r/sshahaider/footer-2",
+    "title": "Footer 2",
+    "description": "a modern website footer featuring multi-column navigation, social media icons, and App Store & Google Play buttons. Perfect for SaaS, eCommerce, or blogs, it adds credibility, easy navigation, and mobile app links in one elegant layout.",
+    "category": "footer",
+    "category_group": "Marketing Blocks",
+    "downloads": 98,
+    "likes": 0
+  }
+}

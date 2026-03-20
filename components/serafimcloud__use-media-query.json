@@ -1,0 +1,33 @@
+{
+  "name": "use-media-query",
+  "type": "registry:hook",
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "/components/hooks/use-media-query.tsx",
+      "content": "import * as React from \"react\"\n\nexport function useMediaQuery(query: string) {\n  const [value, setValue] = React.useState(false)\n\n  React.useEffect(() => {\n    function onChange(event: MediaQueryListEvent) {\n      setValue(event.matches)\n    }\n\n    const result = matchMedia(query)\n    result.addEventListener(\"change\", onChange)\n    setValue(result.matches)\n\n    return () => result.removeEventListener(\"change\", onChange)\n  }, [query])\n\n  return value\n}\n\nexport function useIsMobile(): boolean {\n  return useMediaQuery(\"(max-width: 768px)\")\n}\n",
+      "type": "registry:hook",
+      "target": ""
+    },
+    {
+      "path": "/hooks/use-media-query.tsx",
+      "content": "import * as React from \"react\"\n\nexport function useMediaQuery(query: string) {\n  const [value, setValue] = React.useState(false)\n\n  React.useEffect(() => {\n    function onChange(event: MediaQueryListEvent) {\n      setValue(event.matches)\n    }\n\n    const result = matchMedia(query)\n    result.addEventListener(\"change\", onChange)\n    setValue(result.matches)\n\n    return () => result.removeEventListener(\"change\", onChange)\n  }, [query])\n\n  return value\n}\n\nexport function useIsMobile(): boolean {\n  return useMediaQuery(\"(max-width: 768px)\")\n}\n",
+      "type": "registry:hook",
+      "target": ""
+    }
+  ],
+  "tailwind": {
+    "config": {}
+  },
+  "_meta": {
+    "author": "serafimcloud",
+    "slug": "use-media-query",
+    "registry_url": "https://21st.dev/r/serafimcloud/use-media-query",
+    "title": "useMediaQuery",
+    "description": "useMediaQuery hook",
+    "category": "hook",
+    "category_group": "Marketing Blocks",
+    "downloads": 149,
+    "likes": 1
+  }
+}

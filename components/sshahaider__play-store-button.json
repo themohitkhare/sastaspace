@@ -1,0 +1,29 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "play-store-button",
+  "type": "registry:component",
+  "title": "Play Store Button",
+  "description": "A play-store-button component.",
+  "dependencies": [],
+  "registryDependencies": [
+    "https://21st.dev/r/shadcn/button"
+  ],
+  "files": [
+    {
+      "path": "src/components/ui/play-store-button.tsx",
+      "content": "import React from \"react\";\nimport { Button } from \"@/components/ui/button\";\nimport { cn } from \"@/lib/utils\";\n\ntype PlayStoreButtonProps = React.ComponentProps<typeof Button>;\n\nexport function PlayStoreButton({\n  className,\n  ...props\n}: Omit<PlayStoreButtonProps, \"children\">) {\n  return (\n    <Button className={cn(\"h-11 gap-2\", className)} {...props}>\n      <PlayStoreIcon className=\"size-5\" />\n      <div className=\"text-left flex flex-col items-start justify-center pr-2\">\n        <span className=\"text-[10px] leading-none font-light tracking-tighter\">\n          GET IT ON\n        </span>\n        <p className=\"text-base font-bold leading-none\">Google Play</p>\n      </div>\n    </Button>\n  );\n}\n\nfunction PlayStoreIcon({\n  fill = \"currentColor\",\n  ...props\n}: React.ComponentProps<\"svg\">) {\n  return (\n    <svg viewBox=\"0 0 24 24\" fill={fill} {...props}>\n      <path d=\"m21.762,9.942L4.67.378c-.721-.466-1.635-.504-2.393-.099-.768.411-1.246,1.208-1.246,2.08v19.282c0,.872.477,1.668,1.246,2.079.755.404,1.668.37,2.393-.098l17.092-9.564c.756-.423,1.207-1.192,1.207-2.058s-.451-1.635-1.207-2.058Zm-5.746-1.413l-2.36,2.36L5.302,2.534l10.714,5.995ZM2.604,21.906V2.094l9.941,9.906L2.604,21.906Zm2.698-.439l8.355-8.355,2.36,2.36-10.714,5.995Zm15.692-8.78l-3.552,1.987-2.674-2.674,2.674-2.674,3.552,1.987c.363.203.402.548.402.686s-.039.483-.402.686Z\" />\n    </svg>\n  );\n}\n",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "sshahaider",
+    "slug": "play-store-button",
+    "registry_url": "https://21st.dev/r/sshahaider/play-store-button",
+    "title": "Play Store Button",
+    "description": "A sleek, customizable CTA (Call to Action) that mimics the official Google Play style. With a built-in Google Play icon, bold typography, it’s perfect for apps, SaaS platforms, or landing pages that need to drive users to the Play Store. Designed with flexibility in mind, you can easily extend it with custom variants, sizes, or interactions while keeping a professional look.",
+    "category": "call-to-action",
+    "category_group": "Marketing Blocks",
+    "downloads": 106,
+    "likes": 0
+  }
+}

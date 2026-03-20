@@ -1,0 +1,27 @@
+{
+  "name": "aurora-button",
+  "type": "registry:ui",
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "/components/ui/aurora-button.tsx",
+      "content": "\"use client\"\n\nimport * as React from \"react\";\nimport { cn } from \"@/lib/utils\";\n\ninterface AuroraButtonProps\n  extends React.ButtonHTMLAttributes<HTMLButtonElement> {\n  className?: string;\n  children: React.ReactNode;\n  glowClassName?: string;\n}\n\nexport function AuroraButton({\n  className,\n  children,\n  glowClassName,\n  ...props\n}: AuroraButtonProps) {\n  return (\n    <div className=\"relative\">\n      {/* Gradient border container */}\n      <div\n        className={cn(\n          \"absolute -inset-[2px] rounded-lg bg-gradient-to-r from-purple-500 via-cyan-300 to-emerald-400 opacity-75 blur-lg transition-all\",\n          \"group-hover:opacity-100 group-hover:blur-xl\",\n          glowClassName\n        )}\n      />\n\n      {/* Button */}\n      <button\n        className={cn(\n          \"relative rounded-lg bg-slate-950/90 px-4 py-2\",\n          \"text-slate-100 shadow-xl\",\n          \"transition-all hover:bg-slate-950/70\",\n          \"group border border-slate-800\",\n          className\n        )}\n        {...props}\n      >\n        {children}\n      </button>\n    </div>\n  );\n}\n",
+      "type": "registry:ui",
+      "target": ""
+    }
+  ],
+  "tailwind": {
+    "config": {}
+  },
+  "_meta": {
+    "author": "abdulali254",
+    "slug": "aurora-button",
+    "registry_url": "https://21st.dev/r/abdulali254/aurora-button",
+    "title": "Aurora Button",
+    "description": "The AuroraButton is a customizable React component that creates a button with a beautiful, animated gradient border effect. When you hover over the button, the border glows with an aurora-like effect, using a blend of purple, cyan, and emerald colors. The button itself has a dark glass-like appearance with a transparent background, making it suitable for modern, elegant user interfaces.",
+    "category": "border",
+    "category_group": "Marketing Blocks",
+    "downloads": 506,
+    "likes": 7
+  }
+}

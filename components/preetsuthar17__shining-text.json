@@ -1,0 +1,30 @@
+{
+  "name": "shining-text",
+  "type": "registry:ui",
+  "dependencies": [
+    "motion"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "/components/ui/shining-text.tsx",
+      "content": "\"use client\" \r\n\r\nimport * as React from \"react\"\r\n\r\nimport { motion } from \"motion/react\";\r\n \r\nexport function ShiningText({text}) {\r\n  return (\r\n    <motion.h1\r\n      className=\"bg-[linear-gradient(110deg,#404040,35%,#fff,50%,#404040,75%,#404040)] bg-[length:200%_100%] bg-clip-text text-base font-regular text-transparent\"\r\n      initial={{ backgroundPosition: \"200% 0\" }}\r\n      animate={{ backgroundPosition: \"-200% 0\" }}\r\n      transition={{\r\n        repeat: Infinity,\r\n        duration: 2,\r\n        ease: \"linear\",\r\n      }}\r\n    >\r\n      {text}\r\n    </motion.h1>\r\n  );\r\n}",
+      "type": "registry:ui",
+      "target": ""
+    }
+  ],
+  "tailwind": {
+    "config": {}
+  },
+  "_meta": {
+    "author": "preetsuthar17",
+    "slug": "shining-text",
+    "registry_url": "https://21st.dev/r/preetsuthar17/shining-text",
+    "title": "Shining Text",
+    "description": "Animate text with a shining effect.",
+    "category": "text",
+    "category_group": "Marketing Blocks",
+    "downloads": 492,
+    "likes": 0
+  }
+}

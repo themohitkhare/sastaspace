@@ -1,0 +1,53 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "ruixen-accordian02",
+  "type": "registry:component",
+  "title": "Ruixen Accordian02",
+  "description": "A ruixen-accordian02 component.",
+  "dependencies": [],
+  "registryDependencies": [
+    "https://21st.dev/r/originui/accordion"
+  ],
+  "files": [
+    {
+      "path": "src/components/ui/ruixen-accordian02.tsx",
+      "content": "// components/Accordion_02.tsx\n\nimport {\n  Accordion,\n  AccordionContent,\n  AccordionItem,\n  AccordionTrigger,\n} from \"@/components/ui/accordion\"\n\nexport default function Accordion_02() {\n  return (\n    <div className=\"w-full max-w-6xl mx-auto px-4 py-20\">\n      <div className=\"flex flex-col md:flex-row gap-12 items-start\">\n        {/* Left Column */}\n        <div className=\"md:w-1/2\">\n          <h2 className=\"text-4xl font-bold mb-4\">Have questions?</h2>\n          <p className=\"text-muted-foreground text-lg\">\n            We're here to help you understand how everything works. If you still have\n            doubts, feel free to{\" \"}\n            <a href=\"/contact\" className=\"underline\">\n              reach out to our team\n            </a>\n            .\n          </p>\n        </div>\n\n        {/* Right Column */}\n        <div className=\"md:w-1/2 space-y-10\">\n          {/* General Section */}\n          <div>\n            <h3 className=\"text-lg font-semibold text-muted-foreground mb-2\">\n              General\n            </h3>\n            <Accordion type=\"multiple\" className=\"w-full\">\n              <AccordionItem value=\"gen-1\">\n                <AccordionTrigger>\n                  What is the purpose of this platform?\n                </AccordionTrigger>\n                <AccordionContent>\n                  Our platform is designed to simplify your workflow and save you hours every week using automation and AI-powered tools.\n                </AccordionContent>\n              </AccordionItem>\n              <AccordionItem value=\"gen-2\">\n                <AccordionTrigger>\n                  Is this service available worldwide?\n                </AccordionTrigger>\n                <AccordionContent>\n                  Yes, we support users across the globe. Some regional features may vary.\n                </AccordionContent>\n              </AccordionItem>\n            </Accordion>\n          </div>\n\n          {/* Billing Section */}\n          <div>\n            <h3 className=\"text-lg font-semibold text-muted-foreground mb-2\">\n              Billing\n            </h3>\n            <Accordion type=\"multiple\" className=\"w-full\">\n              <AccordionItem value=\"bill-1\">\n                <AccordionTrigger>\n                  Do you offer refunds?\n                </AccordionTrigger>\n                <AccordionContent>\n                  Yes, we offer a 7-day refund policy. If you're unsatisfied, just contact our support within that time frame.\n                </AccordionContent>\n              </AccordionItem>\n              <AccordionItem value=\"bill-2\">\n                <AccordionTrigger>\n                  Can I change my plan later?\n                </AccordionTrigger>\n                <AccordionContent>\n                  Absolutely! You can upgrade or downgrade your plan anytime from your account dashboard.\n                </AccordionContent>\n              </AccordionItem>\n            </Accordion>\n          </div>\n\n          {/* Technical Section */}\n          <div>\n            <h3 className=\"text-lg font-semibold text-muted-foreground mb-2\">\n              Technical\n            </h3>\n            <Accordion type=\"multiple\" className=\"w-full\">\n              <AccordionItem value=\"tech-1\">\n                <AccordionTrigger>\n                  Does this integrate with other tools?\n                </AccordionTrigger>\n                <AccordionContent>\n                  Yes! We support integrations with Slack, Notion, Zapier, and many more.\n                </AccordionContent>\n              </AccordionItem>\n              <AccordionItem value=\"tech-2\">\n                <AccordionTrigger>\n                  Is there an API available?\n                </AccordionTrigger>\n                <AccordionContent>\n                  Yes, our public API is available for all Pro users. Documentation can be found in the developer portal.\n                </AccordionContent>\n              </AccordionItem>\n            </Accordion>\n          </div>\n        </div>\n      </div>\n    </div>\n  )\n}\n",
+      "type": "registry:component"
+    }
+  ],
+  "cssVars": {
+    "theme": {
+      "--animate-accordion-down": "accordion-down 0.2s ease-out",
+      "--animate-accordion-up": "accordion-up 0.2s ease-out"
+    }
+  },
+  "css": {
+    "@keyframes accordion-down": {
+      "from": {
+        "height": "0"
+      },
+      "to": {
+        "height": "var(--radix-accordion-content-height)"
+      }
+    },
+    "@keyframes accordion-up": {
+      "from": {
+        "height": "var(--radix-accordion-content-height)"
+      },
+      "to": {
+        "height": "0"
+      }
+    }
+  },
+  "_meta": {
+    "author": "ruixen.ui",
+    "slug": "ruixen-accordian02",
+    "registry_url": "https://21st.dev/r/ruixen.ui/ruixen-accordian02",
+    "title": "RuixenAccordian02",
+    "description": "The Accordion_02 component is a responsive, two-column FAQ section built with Shadcn UI and Tailwind CSS in a Next.js + TypeScript environment. On the left, it features a bold heading and descriptive paragraph to introduce the FAQ section, encouraging users to explore or reach out for support. On the right, it displays a categorized accordion layout that neatly organizes common questions into sections like General, Billing, and Technical. Each accordion item can be expanded individually, providing users with a clean and interactive way to find relevant answers. Designed for scalability and clarity, this component enhances user experience on help or support pages while maintaining accessibility and responsiveness across devices.",
+    "category": "accordion",
+    "category_group": "UI Components",
+    "downloads": 48,
+    "likes": 0
+  }
+}

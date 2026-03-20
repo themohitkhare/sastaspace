@@ -1,0 +1,35 @@
+{
+  "name": "feature-section",
+  "type": "registry:block",
+  "dependencies": [
+    "framer-motion"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "/components/blocks/feature-section.tsx",
+      "content": "\"use client\"\n\nimport React, { useState, useEffect } from \"react\"\nimport { motion, AnimatePresence } from \"framer-motion\"\nimport Image from \"next/image\"\nimport { cn } from \"@/lib/utils\"\n\ninterface Feature {\n  step: string\n  title?: string\n  content: string\n  image: string\n}\n\ninterface FeatureStepsProps {\n  features: Feature[]\n  className?: string\n  title?: string\n  autoPlayInterval?: number\n  imageHeight?: string\n}\n\nexport function FeatureSteps({\n  features,\n  className,\n  title = \"How to get Started\",\n  autoPlayInterval = 3000,\n  imageHeight = \"h-[400px]\",\n}: FeatureStepsProps) {\n  const [currentFeature, setCurrentFeature] = useState(0)\n  const [progress, setProgress] = useState(0)\n\n  useEffect(() => {\n    const timer = setInterval(() => {\n      if (progress < 100) {\n        setProgress((prev) => prev + 100 / (autoPlayInterval / 100))\n      } else {\n        setCurrentFeature((prev) => (prev + 1) % features.length)\n        setProgress(0)\n      }\n    }, 100)\n\n    return () => clearInterval(timer)\n  }, [progress, features.length, autoPlayInterval])\n\n  return (\n    <div className={cn(\"p-8 md:p-12\", className)}>\n      <div className=\"max-w-7xl mx-auto w-full\">\n        <h2 className=\"text-3xl md:text-4xl lg:text-5xl font-bold mb-10 text-center\">\n          {title}\n        </h2>\n\n        <div className=\"flex flex-col md:grid md:grid-cols-2 gap-6 md:gap-10\">\n          <div className=\"order-2 md:order-1 space-y-8\">\n            {features.map((feature, index) => (\n              <motion.div\n                key={index}\n                className=\"flex items-center gap-6 md:gap-8\"\n                initial={{ opacity: 0.3 }}\n                animate={{ opacity: index === currentFeature ? 1 : 0.3 }}\n                transition={{ duration: 0.5 }}\n              >\n                <motion.div\n                  className={cn(\n                    \"w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center border-2\",\n                    index === currentFeature\n                      ? \"bg-primary border-primary text-primary-foreground scale-110\"\n                      : \"bg-muted border-muted-foreground\",\n                  )}\n                >\n                  {index <= currentFeature ? (\n                    <span className=\"text-lg font-bold\">✓</span>\n                  ) : (\n                    <span className=\"text-lg font-semibold\">{index + 1}</span>\n                  )}\n                </motion.div>\n\n                <div className=\"flex-1\">\n                  <h3 className=\"text-xl md:text-2xl font-semibold\">\n                    {feature.title || feature.step}\n                  </h3>\n                  <p className=\"text-sm md:text-lg text-muted-foreground\">\n                    {feature.content}\n                  </p>\n                </div>\n              </motion.div>\n            ))}\n          </div>\n\n          <div\n            className={cn(\n              \"order-1 md:order-2 relative h-[200px] md:h-[300px] lg:h-[400px] overflow-hidden rounded-lg\"\n            )}\n          >\n            <AnimatePresence mode=\"wait\">\n              {features.map(\n                (feature, index) =>\n                  index === currentFeature && (\n                    <motion.div\n                      key={index}\n                      className=\"absolute inset-0 rounded-lg overflow-hidden\"\n                      initial={{ y: 100, opacity: 0, rotateX: -20 }}\n                      animate={{ y: 0, opacity: 1, rotateX: 0 }}\n                      exit={{ y: -100, opacity: 0, rotateX: 20 }}\n                      transition={{ duration: 0.5, ease: \"easeInOut\" }}\n                    >\n                      <Image\n                        src={feature.image}\n                        alt={feature.step}\n                        className=\"w-full h-full object-cover transition-transform transform\"\n                        width={1000}\n                        height={500}\n                      />\n                      <div className=\"absolute bottom-0 left-0 right-0 h-2/3 bg-gradient-to-t from-background via-background/50 to-transparent\" />\n                    </motion.div>\n                  ),\n              )}\n            </AnimatePresence>\n          </div>\n        </div>\n      </div>\n    </div>\n  )\n}\n",
+      "type": "registry:block",
+      "target": ""
+    }
+  ],
+  "tailwind": {
+    "config": {}
+  },
+  "_source": {
+    "author": "ayushmxxn",
+    "name": "feature-section",
+    "registry_url": "https://21st.dev/r/ayushmxxn/feature-section"
+  },
+  "_meta": {
+    "author": "ayushmxxn",
+    "slug": "feature-section",
+    "registry_url": "https://21st.dev/r/ayushmxxn/feature-section",
+    "title": "Feature Section",
+    "description": "A sleek, animated feature section showcasing steps with engaging visuals and smooth transitions.\n\nFeatures\n- Auto-advancing steps with progress\n- Smooth animations and transitions\n- Responsive design\n- Image carousel with transitions\n- Customizable timing and appearance\n- shadcn/ui theme integration\n- Progress indicators\n- Checkmark for completed steps",
+    "category": "features",
+    "category_group": "Marketing Blocks",
+    "downloads": 4376,
+    "likes": 64
+  }
+}

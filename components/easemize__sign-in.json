@@ -1,0 +1,46 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "sign-in",
+  "type": "registry:component",
+  "title": "Sign In",
+  "description": "A sign-in component.",
+  "dependencies": [
+    "lucide-react"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/ui/sign-in.tsx",
+      "content": "import React, { useState } from 'react';\nimport { Eye, EyeOff } from 'lucide-react';\n\n// --- HELPER COMPONENTS (ICONS) ---\n\nconst GoogleIcon = () => (\n    <svg xmlns=\"http://www.w3.org/2000/svg\" className=\"h-5 w-5\" viewBox=\"0 0 48 48\">\n        <path fill=\"#FFC107\" d=\"M43.611 20.083H42V20H24v8h11.303c-1.649 4.657-6.08 8-11.303 8-6.627 0-12-5.373-12-12s12-5.373 12-12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 12.955 4 4 12.955 4 24s8.955 20 20 20 20-8.955 20-20c0-2.641-.21-5.236-.611-7.743z\" />\n        <path fill=\"#FF3D00\" d=\"M6.306 14.691l6.571 4.819C14.655 15.108 18.961 12 24 12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 16.318 4 9.656 8.337 6.306 14.691z\" />\n        <path fill=\"#4CAF50\" d=\"M24 44c5.166 0 9.86-1.977 13.409-5.192l-6.19-5.238C29.211 35.091 26.715 36 24 36c-5.202 0-9.619-3.317-11.283-7.946l-6.522 5.025C9.505 39.556 16.227 44 24 44z\" />\n        <path fill=\"#1976D2\" d=\"M43.611 20.083H42V20H24v8h11.303c-.792 2.237-2.231 4.166-4.087 5.571l6.19 5.238C42.022 35.026 44 30.038 44 24c0-2.641-.21-5.236-.611-7.743z\" />\n    </svg>\n);\n\n\n// --- TYPE DEFINITIONS ---\n\nexport interface Testimonial {\n  avatarSrc: string;\n  name: string;\n  handle: string;\n  text: string;\n}\n\ninterface SignInPageProps {\n  title?: React.ReactNode;\n  description?: React.ReactNode;\n  heroImageSrc?: string;\n  testimonials?: Testimonial[];\n  onSignIn?: (event: React.FormEvent<HTMLFormElement>) => void;\n  onGoogleSignIn?: () => void;\n  onResetPassword?: () => void;\n  onCreateAccount?: () => void;\n}\n\n// --- SUB-COMPONENTS ---\n\nconst GlassInputWrapper = ({ children }: { children: React.ReactNode }) => (\n  <div className=\"rounded-2xl border border-border bg-foreground/5 backdrop-blur-sm transition-colors focus-within:border-violet-400/70 focus-within:bg-violet-500/10\">\n    {children}\n  </div>\n);\n\nconst TestimonialCard = ({ testimonial, delay }: { testimonial: Testimonial, delay: string }) => (\n  <div className={`animate-testimonial ${delay} flex items-start gap-3 rounded-3xl bg-card/40 dark:bg-zinc-800/40 backdrop-blur-xl border border-white/10 p-5 w-64`}>\n    <img src={testimonial.avatarSrc} className=\"h-10 w-10 object-cover rounded-2xl\" alt=\"avatar\" />\n    <div className=\"text-sm leading-snug\">\n      <p className=\"flex items-center gap-1 font-medium\">{testimonial.name}</p>\n      <p className=\"text-muted-foreground\">{testimonial.handle}</p>\n      <p className=\"mt-1 text-foreground/80\">{testimonial.text}</p>\n    </div>\n  </div>\n);\n\n// --- MAIN COMPONENT ---\n\nexport const SignInPage: React.FC<SignInPageProps> = ({\n  title = <span className=\"font-light text-foreground tracking-tighter\">Welcome</span>,\n  description = \"Access your account and continue your journey with us\",\n  heroImageSrc,\n  testimonials = [],\n  onSignIn,\n  onGoogleSignIn,\n  onResetPassword,\n  onCreateAccount,\n}) => {\n  const [showPassword, setShowPassword] = useState(false);\n\n  return (\n    <div className=\"h-[100dvh] flex flex-col md:flex-row font-geist w-[100dvw]\">\n      {/* Left column: sign-in form */}\n      <section className=\"flex-1 flex items-center justify-center p-8\">\n        <div className=\"w-full max-w-md\">\n          <div className=\"flex flex-col gap-6\">\n            <h1 className=\"animate-element animate-delay-100 text-4xl md:text-5xl font-semibold leading-tight\">{title}</h1>\n            <p className=\"animate-element animate-delay-200 text-muted-foreground\">{description}</p>\n\n            <form className=\"space-y-5\" onSubmit={onSignIn}>\n              <div className=\"animate-element animate-delay-300\">\n                <label className=\"text-sm font-medium text-muted-foreground\">Email Address</label>\n                <GlassInputWrapper>\n                  <input name=\"email\" type=\"email\" placeholder=\"Enter your email address\" className=\"w-full bg-transparent text-sm p-4 rounded-2xl focus:outline-none\" />\n                </GlassInputWrapper>\n              </div>\n\n              <div className=\"animate-element animate-delay-400\">\n                <label className=\"text-sm font-medium text-muted-foreground\">Password</label>\n                <GlassInputWrapper>\n                  <div className=\"relative\">\n                    <input name=\"password\" type={showPassword ? 'text' : 'password'} placeholder=\"Enter your password\" className=\"w-full bg-transparent text-sm p-4 pr-12 rounded-2xl focus:outline-none\" />\n                    <button type=\"button\" onClick={() => setShowPassword(!showPassword)} className=\"absolute inset-y-0 right-3 flex items-center\">\n                      {showPassword ? <EyeOff className=\"w-5 h-5 text-muted-foreground hover:text-foreground transition-colors\" /> : <Eye className=\"w-5 h-5 text-muted-foreground hover:text-foreground transition-colors\" />}\n                    </button>\n                  </div>\n                </GlassInputWrapper>\n              </div>\n\n              <div className=\"animate-element animate-delay-500 flex items-center justify-between text-sm\">\n                <label className=\"flex items-center gap-3 cursor-pointer\">\n                  <input type=\"checkbox\" name=\"rememberMe\" className=\"custom-checkbox\" />\n                  <span className=\"text-foreground/90\">Keep me signed in</span>\n                </label>\n                <a href=\"#\" onClick={(e) => { e.preventDefault(); onResetPassword?.(); }} className=\"hover:underline text-violet-400 transition-colors\">Reset password</a>\n              </div>\n\n              <button type=\"submit\" className=\"animate-element animate-delay-600 w-full rounded-2xl bg-primary py-4 font-medium text-primary-foreground hover:bg-primary/90 transition-colors\">\n                Sign In\n              </button>\n            </form>\n\n            <div className=\"animate-element animate-delay-700 relative flex items-center justify-center\">\n              <span className=\"w-full border-t border-border\"></span>\n              <span className=\"px-4 text-sm text-muted-foreground bg-background absolute\">Or continue with</span>\n            </div>\n\n            <button onClick={onGoogleSignIn} className=\"animate-element animate-delay-800 w-full flex items-center justify-center gap-3 border border-border rounded-2xl py-4 hover:bg-secondary transition-colors\">\n                <GoogleIcon />\n                Continue with Google\n            </button>\n\n            <p className=\"animate-element animate-delay-900 text-center text-sm text-muted-foreground\">\n              New to our platform? <a href=\"#\" onClick={(e) => { e.preventDefault(); onCreateAccount?.(); }} className=\"text-violet-400 hover:underline transition-colors\">Create Account</a>\n            </p>\n          </div>\n        </div>\n      </section>\n\n      {/* Right column: hero image + testimonials */}\n      {heroImageSrc && (\n        <section className=\"hidden md:block flex-1 relative p-4\">\n          <div className=\"animate-slide-right animate-delay-300 absolute inset-4 rounded-3xl bg-cover bg-center\" style={{ backgroundImage: `url(${heroImageSrc})` }}></div>\n          {testimonials.length > 0 && (\n            <div className=\"absolute bottom-8 left-1/2 -translate-x-1/2 flex gap-4 px-8 w-full justify-center\">\n              <TestimonialCard testimonial={testimonials[0]} delay=\"animate-delay-1000\" />\n              {testimonials[1] && <div className=\"hidden xl:flex\"><TestimonialCard testimonial={testimonials[1]} delay=\"animate-delay-1200\" /></div>}\n              {testimonials[2] && <div className=\"hidden 2xl:flex\"><TestimonialCard testimonial={testimonials[2]} delay=\"animate-delay-1400\" /></div>}\n            </div>\n          )}\n        </section>\n      )}\n    </div>\n  );\n};  ",
+      "type": "registry:component"
+    }
+  ],
+  "css": {
+    "@keyframes fadeSlideIn": {
+      "to": {
+        "opacity": "1",
+        "filter": "blur(0px)",
+        "transform": "translateY(0px)"
+      }
+    },
+    "@keyframes slideRightIn": {
+      "to": {
+        "opacity": "1",
+        "filter": "blur(0px)",
+        "transform": "translateX(0px)"
+      }
+    },
+    "@keyframes testimonialIn": {
+      "to": {
+        "opacity": "1",
+        "filter": "blur(0px)",
+        "transform": "translateY(0px) scale(1)"
+      }
+    }
+  },
+  "_source": {
+    "author": "easemize",
+    "name": "sign-in",
+    "registry_url": "https://21st.dev/r/easemize/sign-in"
+  }
+}

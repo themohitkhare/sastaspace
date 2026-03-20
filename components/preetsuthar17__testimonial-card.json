@@ -1,0 +1,39 @@
+{
+  "name": "testimonial-card",
+  "type": "registry:ui",
+  "dependencies": [
+    "lucide-react",
+    "@radix-ui/react-avatar"
+  ],
+  "registryDependencies": [
+    "https://21st.dev/r/shadcn/avatar"
+  ],
+  "files": [
+    {
+      "path": "/components/ui/testimonial-card.tsx",
+      "content": "\"use client\"\n\nimport * as React from \"react\"\nimport { Star } from \"lucide-react\"\nimport { cn } from \"@/lib/utils\"\nimport { Avatar, AvatarFallback, AvatarImage } from \"@/components/ui/avatar\"\n\nexport interface TestimonialProps extends React.HTMLAttributes<HTMLDivElement> {\n  name: string\n  role: string\n  company?: string\n  testimonial: string\n  rating?: number\n  image?: string\n}\n\nconst Testimonial = React.forwardRef<HTMLDivElement, TestimonialProps>(\n  ({ name, role, company, testimonial, rating = 5, image, className, ...props }, ref) => {\n    return (\n      <div\n        ref={ref}\n        className={cn(\n          \"relative overflow-hidden rounded-2xl border border-primary/10 bg-background p-6 transition-all hover:shadow-lg dark:hover:shadow-primary/5 md:p-8\",\n          className\n        )}\n        {...props}\n      >\n        <div className=\"absolute right-6 top-6 text-6xl font-serif text-muted-foreground/20\">\n          \"\n        </div>\n\n        <div className=\"flex flex-col gap-4 justify-between h-full\">\n          {rating > 0 && (\n            <div className=\"flex gap-1\">\n              {Array.from({ length: 5 }).map((_, index) => (\n                <Star\n                  key={index}\n                  size={16}\n                  className={cn(\n                    index < rating\n                      ? \"fill-yellow-400 text-yellow-400\"\n                      : \"fill-muted text-muted\"\n                  )}\n                />\n              ))}\n            </div>\n          )}\n\n          <p className=\"text-pretty text-base text-muted-foreground\">\n            {testimonial}\n          </p>\n\n          <div className=\"flex items-center gap-4 justify-start\">\n            <div className=\"flex items-center gap-4\">\n              {image && (\n                <Avatar>\n                  <AvatarImage src={image} alt={name} height={48} width={48} />\n                  <AvatarFallback>{name[0]}</AvatarFallback>\n                </Avatar>\n              )}\n\n              <div className=\"flex flex-col\">\n                <h3 className=\"font-semibold text-foreground\">{name}</h3>\n                <p className=\"text-sm text-muted-foreground\">\n                  {role}\n                  {company && ` @ ${company}`}\n                </p>\n              </div>\n            </div>\n          </div>\n        </div>\n      </div>\n    )\n  }\n)\nTestimonial.displayName = \"Testimonial\"\n\nexport { Testimonial }",
+      "type": "registry:ui",
+      "target": ""
+    },
+    {
+      "path": "/components/ui/avatar.tsx",
+      "content": "\"use client\"\n\nimport * as React from \"react\"\nimport * as AvatarPrimitive from \"@radix-ui/react-avatar\"\n\nimport { cn } from \"@/lib/utils\"\n\nconst Avatar = React.forwardRef<\n  React.ElementRef<typeof AvatarPrimitive.Root>,\n  React.ComponentPropsWithoutRef<typeof AvatarPrimitive.Root>\n>(({ className, ...props }, ref) => (\n  <AvatarPrimitive.Root\n    ref={ref}\n    className={cn(\n      \"relative flex h-10 w-10 shrink-0 overflow-hidden rounded-full\",\n      className,\n    )}\n    {...props}\n  />\n))\nAvatar.displayName = AvatarPrimitive.Root.displayName\n\nconst AvatarImage = React.forwardRef<\n  React.ElementRef<typeof AvatarPrimitive.Image>,\n  React.ComponentPropsWithoutRef<typeof AvatarPrimitive.Image>\n>(({ className, ...props }, ref) => (\n  <AvatarPrimitive.Image\n    ref={ref}\n    className={cn(\"aspect-square h-full w-full\", className)}\n    {...props}\n  />\n))\nAvatarImage.displayName = AvatarPrimitive.Image.displayName\n\nconst AvatarFallback = React.forwardRef<\n  React.ElementRef<typeof AvatarPrimitive.Fallback>,\n  React.ComponentPropsWithoutRef<typeof AvatarPrimitive.Fallback>\n>(({ className, ...props }, ref) => (\n  <AvatarPrimitive.Fallback\n    ref={ref}\n    className={cn(\n      \"flex h-full w-full items-center justify-center rounded-full bg-muted\",\n      className,\n    )}\n    {...props}\n  />\n))\nAvatarFallback.displayName = AvatarPrimitive.Fallback.displayName\n\nexport { Avatar, AvatarImage, AvatarFallback }\n",
+      "type": "registry:ui",
+      "target": ""
+    }
+  ],
+  "tailwind": {
+    "config": {}
+  },
+  "_meta": {
+    "author": "preetsuthar17",
+    "slug": "testimonial-card",
+    "registry_url": "https://21st.dev/r/preetsuthar17/testimonial-card",
+    "title": "Testimonial Card",
+    "description": "A responsive testimonial card component with rating stars and author information.",
+    "category": "testimonials",
+    "category_group": "Marketing Blocks",
+    "downloads": 789,
+    "likes": 6
+  }
+}

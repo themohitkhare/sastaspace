@@ -1,0 +1,24 @@
+{
+  "name": "theme-toggle",
+  "type": "registry:ui",
+  "dependencies": [
+    "lucide-react"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "/components/ui/theme-toggle.tsx",
+      "content": "\"use client\"\n\nimport { useState } from \"react\"\nimport { Moon, Sun } from \"lucide-react\"\nimport { cn } from \"@/lib/utils\"\n\ninterface ThemeToggleProps {\n  className?: string\n}\n\nexport function ThemeToggle({ className }: ThemeToggleProps) {\n  const [isDark, setIsDark] = useState(true)\n\n  // next-themes\n  // const { resolvedTheme, setTheme } = useTheme()\n  // const isDark = resolvedTheme === \"dark\"\n  // onClick={() => setTheme(isDark ? \"light\" : \"dark\")}\n\n  return (\n    <div\n      className={cn(\n        \"flex w-16 h-8 p-1 rounded-full cursor-pointer transition-all duration-300\",\n        isDark \n          ? \"bg-zinc-950 border border-zinc-800\" \n          : \"bg-white border border-zinc-200\",\n        className\n      )}\n      onClick={() => setIsDark(!isDark)}\n      role=\"button\"\n      tabIndex={0}\n    >\n      <div className=\"flex justify-between items-center w-full\">\n        <div\n          className={cn(\n            \"flex justify-center items-center w-6 h-6 rounded-full transition-transform duration-300\",\n            isDark \n              ? \"transform translate-x-0 bg-zinc-800\" \n              : \"transform translate-x-8 bg-gray-200\"\n          )}\n        >\n          {isDark ? (\n            <Moon \n              className=\"w-4 h-4 text-white\" \n              strokeWidth={1.5}\n            />\n          ) : (\n            <Sun \n              className=\"w-4 h-4 text-gray-700\" \n              strokeWidth={1.5}\n            />\n          )}\n        </div>\n        <div\n          className={cn(\n            \"flex justify-center items-center w-6 h-6 rounded-full transition-transform duration-300\",\n            isDark \n              ? \"bg-transparent\" \n              : \"transform -translate-x-8\"\n          )}\n        >\n          {isDark ? (\n            <Sun \n              className=\"w-4 h-4 text-gray-500\" \n              strokeWidth={1.5}\n            />\n          ) : (\n            <Moon \n              className=\"w-4 h-4 text-black\" \n              strokeWidth={1.5}\n            />\n          )}\n        </div>\n      </div>\n    </div>\n  )\n}",
+      "type": "registry:ui",
+      "target": ""
+    }
+  ],
+  "tailwind": {
+    "config": {}
+  },
+  "_source": {
+    "author": "ayushmxxn",
+    "name": "theme-toggle",
+    "registry_url": "https://21st.dev/r/ayushmxxn/theme-toggle"
+  }
+}

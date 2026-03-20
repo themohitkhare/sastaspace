@@ -1,0 +1,35 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "modern-payment-form",
+  "type": "registry:component",
+  "title": "Modern Payment Form",
+  "description": "A modern-payment-form component.",
+  "dependencies": [
+    "react-icons",
+    "next"
+  ],
+  "registryDependencies": [
+    "https://21st.dev/r/originui/button",
+    "https://21st.dev/r/shadcn/label",
+    "https://21st.dev/r/shadcn/card",
+    "https://21st.dev/r/originui/input"
+  ],
+  "files": [
+    {
+      "path": "src/components/ui/modern-payment-form.tsx",
+      "content": "\"use client\";\n\nimport React from \"react\";\nimport { Card, CardContent } from \"@/components/ui/card\";\nimport { Button } from \"@/components/ui/button\";\nimport { Input } from \"@/components/ui/input\";\nimport { Label } from \"@/components/ui/label\";\nimport { FaPaypal } from \"react-icons/fa\";\nimport { FaApple } from \"react-icons/fa\";\nimport { FcGoogle } from \"react-icons/fc\";\nimport Link from \"next/link\";\n\nexport default function RuixenPaymentCard() {\n    return (\n        <div className=\"flex items-center justify-center p-4\">\n            <Card className=\"max-w-md w-full rounded-2xl shadow-lg\">\n                <CardContent className=\"p-6 space-y-6\">\n                    {/* Payment Options */}\n                    <div className=\"grid grid-cols-3 gap-4\">\n                        <Button variant=\"outline\" className=\"h-14 p-0 flex items-center justify-center\">\n                            <FaPaypal fontSize={24} />\n                            <span className=\"text-md\">PayPal</span>\n                        </Button>\n                        <Button variant=\"outline\" className=\"h-14 p-0 flex items-center justify-center\">\n                            <FaApple fontSize={24} />\n                            <span className=\"text-md\">Pay</span>\n                        </Button>\n                        <Button variant=\"outline\" className=\"h-14 p-0 flex items-center justify-center\">\n                            <FcGoogle fontSize={30} />\n                            <span className=\"text-md\">Pay</span>\n                        </Button>\n                    </div>\n\n                    {/* Separator */}\n                    <div className=\"flex items-center text-gray-500\">\n                        <hr className=\"flex-grow border-t border-gray-300\" />\n                        <span className=\"mx-2 text-xs font-medium\">or pay using credit card</span>\n                        <hr className=\"flex-grow border-t border-gray-300\" />\n                    </div>\n\n                    {/* Credit Card Form */}\n                    <div className=\"space-y-4\">\n                        <div className=\"space-y-1\">\n                            <Label htmlFor=\"cardholder-name\">Card holder full name</Label>\n                            <Input id=\"cardholder-name\" name=\"cardholderName\" placeholder=\"Enter your full name\" />\n                        </div>\n                        <div className=\"space-y-1\">\n                            <Label htmlFor=\"card-number\">Card Number</Label>\n                            <Input\n                                id=\"card-number\"\n                                name=\"cardNumber\"\n                                placeholder=\"0000 0000 0000 0000\"\n                                inputMode=\"numeric\"\n                            />\n                        </div>\n                        <div className=\"space-y-1\">\n                            <Label htmlFor=\"expiry\">Expiry Date / CVV</Label>\n                            <div className=\"flex gap-4\">\n                                <Input\n                                    id=\"expiry\"\n                                    name=\"expiryDate\"\n                                    placeholder=\"01/23\"\n                                />\n                                <Input\n                                    id=\"cvv\"\n                                    name=\"cvv\"\n                                    placeholder=\"CVV\"\n                                    inputMode=\"numeric\"\n                                    type=\"password\"\n                                />\n                            </div>\n                        </div>\n                    </div>\n\n                    <Button className=\"w-full\" size=\"lg\">\n                        <Link href=\"https://ruixen.com?utm_source=21st.dev&utm_medium=Form_02&utm_campaign=ruixen\" target=\"_blank\">\n                            Checkout\n                        </Link>\n                    </Button>\n                </CardContent>\n            </Card>\n        </div>\n    );\n}\n",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "ruixen.ui",
+    "slug": "modern-payment-form",
+    "registry_url": "https://21st.dev/r/ruixen.ui/modern-payment-form",
+    "title": "Modern Payment Form",
+    "description": "This modern Payment Modal UI component presents a sleek and user-friendly design for selecting payment options. With clear buttons for different payment methods like PayPal, users can quickly initiate their preferred transaction flow. The modal includes styled input fields for billing and card details, enhancing readability and usability. The layout is visually structured to guide users through the payment process step-by-step, offering both form validation and interactive feedback cues. ",
+    "category": "pricing-section",
+    "category_group": "Marketing Blocks",
+    "downloads": 49,
+    "likes": 0
+  }
+}

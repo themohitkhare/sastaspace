@@ -1,0 +1,60 @@
+{
+  "name": "chat-input",
+  "type": "registry:ui",
+  "dependencies": [
+    "lucide-react",
+    "@radix-ui/react-slot",
+    "class-variance-authority"
+  ],
+  "registryDependencies": [
+    "https://21st.dev/r/originui/button",
+    "https://21st.dev/r/originui/textarea",
+    "https://21st.dev/r/Alwurts/use-textarea-resize"
+  ],
+  "files": [
+    {
+      "path": "/components/ui/chat-input.tsx",
+      "content": "\"use client\";\n\nimport { Button } from \"@/components/ui/button\";\nimport { Textarea } from \"@/components/ui/textarea\";\nimport { cn } from \"@/lib/utils\";\nimport { useTextareaResize } from \"@/hooks/use-textarea-resize\";\nimport { ArrowUpIcon } from \"lucide-react\";\nimport type React from \"react\";\nimport { createContext, useContext } from \"react\";\n\ninterface ChatInputContextValue {\n\tvalue?: string;\n\tonChange?: React.ChangeEventHandler<HTMLTextAreaElement>;\n\tonSubmit?: () => void;\n\tloading?: boolean;\n\tonStop?: () => void;\n\tvariant?: \"default\" | \"unstyled\";\n\trows?: number;\n}\n\nconst ChatInputContext = createContext<ChatInputContextValue>({});\n\ninterface ChatInputProps extends Omit<ChatInputContextValue, \"variant\"> {\n\tchildren: React.ReactNode;\n\tclassName?: string;\n\tvariant?: \"default\" | \"unstyled\";\n\trows?: number;\n}\n\nfunction ChatInput({\n\tchildren,\n\tclassName,\n\tvariant = \"default\",\n\tvalue,\n\tonChange,\n\tonSubmit,\n\tloading,\n\tonStop,\n\trows = 1,\n}: ChatInputProps) {\n\tconst contextValue: ChatInputContextValue = {\n\t\tvalue,\n\t\tonChange,\n\t\tonSubmit,\n\t\tloading,\n\t\tonStop,\n\t\tvariant,\n\t\trows,\n\t};\n\n\treturn (\n\t\t<ChatInputContext.Provider value={contextValue}>\n\t\t\t<div\n\t\t\t\tclassName={cn(\n\t\t\t\t\tvariant === \"default\" &&\n\t\t\t\t\t\t\"flex flex-col items-end w-full p-2 rounded-2xl border border-input bg-transparent focus-within:ring-1 focus-within:ring-ring focus-within:outline-none\",\n\t\t\t\t\tvariant === \"unstyled\" && \"flex items-start gap-2 w-full\",\n\t\t\t\t\tclassName,\n\t\t\t\t)}\n\t\t\t>\n\t\t\t\t{children}\n\t\t\t</div>\n\t\t</ChatInputContext.Provider>\n\t);\n}\n\nChatInput.displayName = \"ChatInput\";\n\ninterface ChatInputTextAreaProps extends React.ComponentProps<typeof Textarea> {\n\tvalue?: string;\n\tonChange?: React.ChangeEventHandler<HTMLTextAreaElement>;\n\tonSubmit?: () => void;\n\tvariant?: \"default\" | \"unstyled\";\n}\n\nfunction ChatInputTextArea({\n\tonSubmit: onSubmitProp,\n\tvalue: valueProp,\n\tonChange: onChangeProp,\n\tclassName,\n\tvariant: variantProp,\n\t...props\n}: ChatInputTextAreaProps) {\n\tconst context = useContext(ChatInputContext);\n\tconst value = valueProp ?? context.value ?? \"\";\n\tconst onChange = onChangeProp ?? context.onChange;\n\tconst onSubmit = onSubmitProp ?? context.onSubmit;\n\tconst rows = context.rows ?? 1;\n\n\t// Convert parent variant to textarea variant unless explicitly overridden\n\tconst variant =\n\t\tvariantProp ?? (context.variant === \"default\" ? \"unstyled\" : \"default\");\n\n\tconst textareaRef = useTextareaResize(value, rows);\n\tconst handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {\n\t\tif (!onSubmit) {\n\t\t\treturn;\n\t\t}\n\t\tif (e.key === \"Enter\" && !e.shiftKey) {\n\t\t\tif (typeof value !== \"string\" || value.trim().length === 0) {\n\t\t\t\treturn;\n\t\t\t}\n\t\t\te.preventDefault();\n\t\t\tonSubmit();\n\t\t}\n\t};\n\n\treturn (\n\t\t<Textarea\n\t\t\tref={textareaRef}\n\t\t\t{...props}\n\t\t\tvalue={value}\n\t\t\tonChange={onChange}\n\t\t\tonKeyDown={handleKeyDown}\n\t\t\tclassName={cn(\n\t\t\t\t\"max-h-[400px] min-h-0 resize-none overflow-x-hidden\",\n\t\t\t\tvariant === \"unstyled\" &&\n\t\t\t\t\t\"border-none focus-visible:ring-0 focus-visible:ring-offset-0 shadow-none\",\n\t\t\t\tclassName,\n\t\t\t)}\n\t\t\trows={rows}\n\t\t/>\n\t);\n}\n\nChatInputTextArea.displayName = \"ChatInputTextArea\";\n\ninterface ChatInputSubmitProps extends React.ComponentProps<typeof Button> {\n\tonSubmit?: () => void;\n\tloading?: boolean;\n\tonStop?: () => void;\n}\n\nfunction ChatInputSubmit({\n\tonSubmit: onSubmitProp,\n\tloading: loadingProp,\n\tonStop: onStopProp,\n\tclassName,\n\t...props\n}: ChatInputSubmitProps) {\n\tconst context = useContext(ChatInputContext);\n\tconst loading = loadingProp ?? context.loading;\n\tconst onStop = onStopProp ?? context.onStop;\n\tconst onSubmit = onSubmitProp ?? context.onSubmit;\n\n\tif (loading && onStop) {\n\t\treturn (\n\t\t\t<Button\n\t\t\t\tonClick={onStop}\n\t\t\t\tclassName={cn(\n\t\t\t\t\t\"shrink-0 rounded-full p-1.5 h-fit border dark:border-zinc-600\",\n\t\t\t\t\tclassName,\n\t\t\t\t)}\n\t\t\t\t{...props}\n\t\t\t>\n\t\t\t\t<svg\n\t\t\t\t\txmlns=\"http://www.w3.org/2000/svg\"\n\t\t\t\t\twidth=\"24\"\n\t\t\t\t\theight=\"24\"\n\t\t\t\t\tviewBox=\"0 0 24 24\"\n\t\t\t\t\tfill=\"currentColor\"\n\t\t\t\t\tstroke=\"currentColor\"\n\t\t\t\t\tstrokeWidth=\"2\"\n\t\t\t\t\tstrokeLinecap=\"round\"\n\t\t\t\t\tstrokeLinejoin=\"round\"\n\t\t\t\t\taria-label=\"Stop\"\n\t\t\t\t>\n\t\t\t\t\t<title>Stop</title>\n\t\t\t\t\t<rect x=\"6\" y=\"6\" width=\"12\" height=\"12\" />\n\t\t\t\t</svg>\n\t\t\t</Button>\n\t\t);\n\t}\n\n\tconst isDisabled =\n\t\ttypeof context.value !== \"string\" || context.value.trim().length === 0;\n\n\treturn (\n\t\t<Button\n\t\t\tclassName={cn(\n\t\t\t\t\"shrink-0 rounded-full p-1.5 h-fit border dark:border-zinc-600\",\n\t\t\t\tclassName,\n\t\t\t)}\n\t\t\tdisabled={isDisabled}\n\t\t\tonClick={(event) => {\n\t\t\t\tevent.preventDefault();\n\t\t\t\tif (!isDisabled) {\n\t\t\t\t\tonSubmit?.();\n\t\t\t\t}\n\t\t\t}}\n\t\t\t{...props}\n\t\t>\n\t\t\t<ArrowUpIcon />\n\t\t</Button>\n\t);\n}\n\nChatInputSubmit.displayName = \"ChatInputSubmit\";\n\nexport { ChatInput, ChatInputTextArea, ChatInputSubmit };\n",
+      "type": "registry:ui",
+      "target": ""
+    },
+    {
+      "path": "/components/ui/button.tsx",
+      "content": "import { Slot } from \"@radix-ui/react-slot\";\nimport { cva, type VariantProps } from \"class-variance-authority\";\nimport * as React from \"react\";\n\nimport { cn } from \"@/lib/utils\";\n\nconst buttonVariants = cva(\n  \"inline-flex items-center justify-center whitespace-nowrap rounded-lg text-sm font-medium transition-colors outline-offset-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring/70 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0\",\n  {\n    variants: {\n      variant: {\n        default: \"bg-primary text-primary-foreground shadow-sm shadow-black/5 hover:bg-primary/90\",\n        destructive:\n          \"bg-destructive text-destructive-foreground shadow-sm shadow-black/5 hover:bg-destructive/90\",\n        outline:\n          \"border border-input bg-background shadow-sm shadow-black/5 hover:bg-accent hover:text-accent-foreground\",\n        secondary:\n          \"bg-secondary text-secondary-foreground shadow-sm shadow-black/5 hover:bg-secondary/80\",\n        ghost: \"hover:bg-accent hover:text-accent-foreground\",\n        link: \"text-primary underline-offset-4 hover:underline\",\n      },\n      size: {\n        default: \"h-9 px-4 py-2\",\n        sm: \"h-8 rounded-lg px-3 text-xs\",\n        lg: \"h-10 rounded-lg px-8\",\n        icon: \"h-9 w-9\",\n      },\n    },\n    defaultVariants: {\n      variant: \"default\",\n      size: \"default\",\n    },\n  },\n);\n\nexport interface ButtonProps\n  extends React.ButtonHTMLAttributes<HTMLButtonElement>,\n    VariantProps<typeof buttonVariants> {\n  asChild?: boolean;\n}\n\nconst Button = React.forwardRef<HTMLButtonElement, ButtonProps>(\n  ({ className, variant, size, asChild = false, ...props }, ref) => {\n    const Comp = asChild ? Slot : \"button\";\n    return (\n      <Comp className={cn(buttonVariants({ variant, size, className }))} ref={ref} {...props} />\n    );\n  },\n);\nButton.displayName = \"Button\";\n\nexport { Button, buttonVariants };\n",
+      "type": "registry:ui",
+      "target": ""
+    },
+    {
+      "path": "/components/ui/textarea.tsx",
+      "content": "import * as React from \"react\";\n\nimport { cn } from \"@/lib/utils\";\n\nconst Textarea = React.forwardRef<HTMLTextAreaElement, React.ComponentProps<\"textarea\">>(\n  ({ className, ...props }, ref) => {\n    return (\n      <textarea\n        className={cn(\n          \"flex min-h-[80px] w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground shadow-sm shadow-black/5 transition-shadow placeholder:text-muted-foreground/70 focus-visible:border-ring focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/20 disabled:cursor-not-allowed disabled:opacity-50\",\n          className,\n        )}\n        ref={ref}\n        {...props}\n      />\n    );\n  },\n);\nTextarea.displayName = \"Textarea\";\n\nexport { Textarea };\n",
+      "type": "registry:ui",
+      "target": ""
+    },
+    {
+      "path": "/components/hooks/use-textarea-resize.tsx",
+      "content": "\"use client\";\n\nimport { useLayoutEffect, useRef } from \"react\";\nimport type { ComponentProps } from \"react\";\n\nexport function useTextareaResize(\n\tvalue: ComponentProps<\"textarea\">[\"value\"],\n\trows = 1,\n) {\n\tconst textareaRef = useRef<HTMLTextAreaElement>(null);\n\n\t// biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>\n\tuseLayoutEffect(() => {\n\t\tconst textArea = textareaRef.current;\n\n\t\tif (textArea) {\n\t\t\t// Get the line height to calculate minimum height based on rows\n\t\t\tconst computedStyle = window.getComputedStyle(textArea);\n\t\t\tconst lineHeight = Number.parseInt(computedStyle.lineHeight, 10) || 20;\n\t\t\tconst padding =\n\t\t\t\tNumber.parseInt(computedStyle.paddingTop, 10) +\n\t\t\t\tNumber.parseInt(computedStyle.paddingBottom, 10);\n\n\t\t\t// Calculate minimum height based on rows\n\t\t\tconst minHeight = lineHeight * rows + padding;\n\n\t\t\t// Reset height to auto first to get the correct scrollHeight\n\t\t\ttextArea.style.height = \"0px\";\n\t\t\tconst scrollHeight = Math.max(textArea.scrollHeight, minHeight);\n\n\t\t\t// Set the final height\n\t\t\ttextArea.style.height = `${scrollHeight + 2}px`;\n\t\t}\n\t}, [textareaRef, value, rows]);\n\n\treturn textareaRef;\n}\n",
+      "type": "registry:hook",
+      "target": ""
+    },
+    {
+      "path": "/hooks/use-textarea-resize.tsx",
+      "content": "\"use client\";\n\nimport { useLayoutEffect, useRef } from \"react\";\nimport type { ComponentProps } from \"react\";\n\nexport function useTextareaResize(\n\tvalue: ComponentProps<\"textarea\">[\"value\"],\n\trows = 1,\n) {\n\tconst textareaRef = useRef<HTMLTextAreaElement>(null);\n\n\t// biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>\n\tuseLayoutEffect(() => {\n\t\tconst textArea = textareaRef.current;\n\n\t\tif (textArea) {\n\t\t\t// Get the line height to calculate minimum height based on rows\n\t\t\tconst computedStyle = window.getComputedStyle(textArea);\n\t\t\tconst lineHeight = Number.parseInt(computedStyle.lineHeight, 10) || 20;\n\t\t\tconst padding =\n\t\t\t\tNumber.parseInt(computedStyle.paddingTop, 10) +\n\t\t\t\tNumber.parseInt(computedStyle.paddingBottom, 10);\n\n\t\t\t// Calculate minimum height based on rows\n\t\t\tconst minHeight = lineHeight * rows + padding;\n\n\t\t\t// Reset height to auto first to get the correct scrollHeight\n\t\t\ttextArea.style.height = \"0px\";\n\t\t\tconst scrollHeight = Math.max(textArea.scrollHeight, minHeight);\n\n\t\t\t// Set the final height\n\t\t\ttextArea.style.height = `${scrollHeight + 2}px`;\n\t\t}\n\t}, [textareaRef, value, rows]);\n\n\treturn textareaRef;\n}\n",
+      "type": "registry:hook",
+      "target": ""
+    }
+  ],
+  "tailwind": {
+    "config": {}
+  },
+  "_meta": {
+    "author": "Alwurts",
+    "slug": "chat-input",
+    "registry_url": "https://21st.dev/r/Alwurts/chat-input",
+    "title": "Chat Input",
+    "description": "AI Chat Input",
+    "category": "ai-chat",
+    "category_group": "UI Components",
+    "downloads": 1278,
+    "likes": 11
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "name": "testimonial",
+  "type": "registry:ui",
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "/components/ui/testimonial.tsx",
+      "content": "\"use client\";\n\nimport * as React from \"react\";\nimport { cn } from \"@/lib/utils\";\nimport Image from \"next/image\";\n\ninterface TestimonialProps extends React.HTMLAttributes<HTMLDivElement> {\n  companyLogo?: string;\n  quote: string;\n  authorName: string;\n  authorPosition: string;\n  authorImage?: string;\n  highlightedText?: string;\n}\n\nexport const Testimonial = React.forwardRef<HTMLDivElement, TestimonialProps>(\n  ({ \n    className, \n    companyLogo,\n    quote,\n    authorName,\n    authorPosition,\n    authorImage,\n    highlightedText,\n    ...props \n  }, ref) => {\n    const formattedQuote = highlightedText\n      ? quote.replace(\n          highlightedText,\n          `<strong class=\"font-semibold\">${highlightedText}</strong>`\n        )\n      : quote;\n\n    return (\n      <div\n        ref={ref}\n        className={cn(\"py-16\", className)}\n        {...props}\n      >\n        <div className=\"max-w-screen-xl mx-auto px-4 lg:px-8\">\n          <div className=\"flex flex-col items-center\">\n            {companyLogo && (\n              <div className=\"mb-7 relative h-8 w-32\">\n                <Image\n                  src={companyLogo}\n                  alt=\"Company logo\"\n                  fill\n                  className=\"object-contain\"\n                />\n              </div>\n            )}\n            <p \n              className=\"max-w-xl text-balance text-center text-xl sm:text-2xl text-foreground\"\n              dangerouslySetInnerHTML={{ __html: `\"${formattedQuote}\"` }}\n            />\n            <h5 className=\"mt-5 font-medium text-muted-foreground\">\n              {authorName}\n            </h5>\n            <h5 className=\"mt-1.5 font-medium text-foreground/40\">\n              {authorPosition}\n            </h5>\n            {authorImage && (\n              <div className=\"mt-5 relative size-12 rounded-full overflow-hidden bg-muted\">\n                <Image\n                  src={authorImage}\n                  alt={authorName}\n                  fill\n                  className=\"object-cover\"\n                />\n              </div>\n            )}\n          </div>\n        </div>\n      </div>\n    );\n  }\n);\n\nTestimonial.displayName = \"Testimonial\";",
+      "type": "registry:ui",
+      "target": ""
+    }
+  ],
+  "tailwind": {
+    "config": {}
+  },
+  "_meta": {
+    "author": "RayMethula",
+    "slug": "testimonial",
+    "registry_url": "https://21st.dev/r/RayMethula/testimonial",
+    "title": "Testimonial",
+    "description": "Block with one testimonial",
+    "category": "testimonials",
+    "category_group": "Marketing Blocks",
+    "downloads": 168,
+    "likes": 0
+  }
+}

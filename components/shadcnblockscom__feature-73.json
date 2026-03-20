@@ -1,0 +1,29 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "feature-73",
+  "type": "registry:component",
+  "title": "Feature 73",
+  "description": "A feature-73 component.",
+  "dependencies": [
+    "lucide-react"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "src/components/ui/feature-73.tsx",
+      "content": "import { ArrowRight } from \"lucide-react\";\n\ninterface Feature {\n  id: string;\n  title: string;\n  description: string;\n  image: string;\n}\n\ninterface Feature73Props {\n  heading?: string;\n  description?: string;\n  linkUrl?: string;\n  linkText?: string;\n  features?: Feature[];\n}\n\nexport const Feature73 = ({\n  heading = \"Powerful Features\",\n  description = \"Discover the powerful features that make our platform stand out from the rest. Built with the latest technology and designed for maximum productivity.\",\n  linkUrl = \"https://www.shadcnblocks.com\",\n  linkText = \"Book a demo\",\n  features = [\n    {\n      id: \"feature-1\",\n      title: \"Modern Design\",\n      description:\n        \"Clean and intuitive interface built with the latest design principles. Optimized for the best user experience.\",\n      image: \"https://www.shadcnblocks.com/images/block/placeholder-1.svg\",\n    },\n    {\n      id: \"feature-2\",\n      title: \"Responsive Layout\",\n      description:\n        \"Fully responsive design that works seamlessly across all devices and screen sizes. Perfect for any platform.\",\n      image: \"https://www.shadcnblocks.com/images/block/placeholder-2.svg\",\n    },\n    {\n      id: \"feature-3\",\n      title: \"Easy Integration\",\n      description:\n        \"Simple integration process with comprehensive documentation and dedicated support team.\",\n      image: \"https://www.shadcnblocks.com/images/block/placeholder-3.svg\",\n    },\n  ],\n}: Feature73Props) => {\n  return (\n    <section className=\"py-32\">\n      <div className=\"container flex flex-col gap-16 lg:px-16\">\n        <div className=\"lg:max-w-sm\">\n          <h2 className=\"mb-3 text-xl font-semibold md:mb-4 md:text-4xl lg:mb-6\">\n            {heading}\n          </h2>\n          <p className=\"mb-8 text-muted-foreground lg:text-lg\">{description}</p>\n          <a\n            href={linkUrl}\n            className=\"group flex items-center text-xs font-medium md:text-base lg:text-lg\"\n          >\n            {linkText}\n            <ArrowRight className=\"ml-2 size-4 transition-transform group-hover:translate-x-1\" />\n          </a>\n        </div>\n        <div className=\"grid gap-6 md:grid-cols-2 lg:gap-8\">\n          {features[0] && (\n            <div className=\"flex flex-col overflow-clip rounded-xl border border-border md:col-span-2 md:grid md:grid-cols-2 md:gap-6 lg:gap-8\">\n              <div className=\"md:min-h-[24rem] lg:min-h-[28rem] xl:min-h-[32rem]\">\n                <img\n                  src={features[0].image}\n                  alt={features[0].title}\n                  className=\"aspect-[16/9] h-full w-full object-cover object-center\"\n                />\n              </div>\n              <div className=\"flex flex-col justify-center px-6 py-8 md:px-8 md:py-10 lg:px-10 lg:py-12\">\n                <h3 className=\"mb-3 text-lg font-semibold md:mb-4 md:text-2xl lg:mb-6\">\n                  {features[0].title}\n                </h3>\n                <p className=\"text-muted-foreground lg:text-lg\">\n                  {features[0].description}\n                </p>\n              </div>\n            </div>\n          )}\n          {features.slice(1).map((feature) => (\n            <div\n              key={feature.id}\n              className=\"flex flex-col overflow-clip rounded-xl border border-border\"\n            >\n              <div>\n                <img\n                  src={feature.image}\n                  alt={feature.title}\n                  className=\"aspect-[16/9] h-full w-full object-cover object-center\"\n                />\n              </div>\n              <div className=\"px-6 py-8 md:px-8 md:py-10 lg:px-10 lg:py-12\">\n                <h3 className=\"mb-3 text-lg font-semibold md:mb-4 md:text-2xl lg:mb-6\">\n                  {feature.title}\n                </h3>\n                <p className=\"text-muted-foreground lg:text-lg\">\n                  {feature.description}\n                </p>\n              </div>\n            </div>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n};\n",
+      "type": "registry:component"
+    }
+  ],
+  "_meta": {
+    "author": "shadcnblockscom",
+    "slug": "feature-73",
+    "registry_url": "https://21st.dev/r/shadcnblockscom/feature-73",
+    "title": "Feature 73",
+    "description": "Feature cards in grid layout with Featured card at the top.",
+    "category": "features",
+    "category_group": "Marketing Blocks",
+    "downloads": 46,
+    "likes": 0
+  }
+}

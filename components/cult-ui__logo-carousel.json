@@ -1,0 +1,30 @@
+{
+  "name": "logo-carousel",
+  "type": "registry:ui",
+  "dependencies": [
+    "framer-motion"
+  ],
+  "registryDependencies": [],
+  "files": [
+    {
+      "path": "/components/ui/logo-carousel.tsx",
+      "content": "\"use client\"\n\nimport React, {\n  useCallback,\n  useEffect,\n  useMemo,\n  useState,\n  type SVGProps,\n} from \"react\"\nimport { AnimatePresence, motion } from \"framer-motion\"\n\ninterface Logo {\n  name: string\n  id: number\n  img: React.ComponentType<React.SVGProps<SVGSVGElement>>\n}\n\ninterface LogoColumnProps {\n  logos: Logo[]\n  index: number\n  currentTime: number\n}\n\nconst shuffleArray = <T,>(array: T[]): T[] => {\n  const shuffled = [...array]\n  for (let i = shuffled.length - 1; i > 0; i--) {\n    const j = Math.floor(Math.random() * (i + 1))\n    ;[shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]\n  }\n  return shuffled\n}\n\nconst distributeLogos = (allLogos: Logo[], columnCount: number): Logo[][] => {\n  const shuffled = shuffleArray(allLogos)\n  const columns: Logo[][] = Array.from({ length: columnCount }, () => [])\n\n  shuffled.forEach((logo, index) => {\n    columns[index % columnCount].push(logo)\n  })\n\n  const maxLength = Math.max(...columns.map((col) => col.length))\n  columns.forEach((col) => {\n    while (col.length < maxLength) {\n      col.push(shuffled[Math.floor(Math.random() * shuffled.length)])\n    }\n  })\n\n  return columns\n}\n\nconst LogoColumn: React.FC<LogoColumnProps> = React.memo(\n  ({ logos, index, currentTime }) => {\n    const cycleInterval = 2000\n    const columnDelay = index * 200\n    const adjustedTime = (currentTime + columnDelay) % (cycleInterval * logos.length)\n    const currentIndex = Math.floor(adjustedTime / cycleInterval)\n    const CurrentLogo = useMemo(() => logos[currentIndex].img, [logos, currentIndex])\n\n    return (\n      <motion.div\n        className=\"relative h-14 w-24 overflow-hidden md:h-24 md:w-48\"\n        initial={{ opacity: 0, y: 50 }}\n        animate={{ opacity: 1, y: 0 }}\n        transition={{\n          delay: index * 0.1,\n          duration: 0.5,\n          ease: \"easeOut\",\n        }}\n      >\n        <AnimatePresence mode=\"wait\">\n          <motion.div\n            key={`${logos[currentIndex].id}-${currentIndex}`}\n            className=\"absolute inset-0 flex items-center justify-center\"\n            initial={{ y: \"10%\", opacity: 0, filter: \"blur(8px)\" }}\n            animate={{\n              y: \"0%\",\n              opacity: 1,\n              filter: \"blur(0px)\",\n              transition: {\n                type: \"spring\",\n                stiffness: 300,\n                damping: 20,\n                mass: 1,\n                bounce: 0.2,\n                duration: 0.5,\n              },\n            }}\n            exit={{\n              y: \"-20%\",\n              opacity: 0,\n              filter: \"blur(6px)\",\n              transition: {\n                type: \"tween\",\n                ease: \"easeIn\",\n                duration: 0.3,\n              },\n            }}\n          >\n            <CurrentLogo className=\"h-20 w-20 max-h-[80%] max-w-[80%] object-contain md:h-32 md:w-32\" />\n          </motion.div>\n        </AnimatePresence>\n      </motion.div>\n    )\n  }\n)\n\ninterface LogoCarouselProps {\n  columnCount?: number\n  logos: Logo[]\n}\n\nexport function LogoCarousel({ columnCount = 2, logos }: LogoCarouselProps) {\n  const [logoSets, setLogoSets] = useState<Logo[][]>([])\n  const [currentTime, setCurrentTime] = useState(0)\n\n  const updateTime = useCallback(() => {\n    setCurrentTime((prevTime) => prevTime + 100)\n  }, [])\n\n  useEffect(() => {\n    const intervalId = setInterval(updateTime, 100)\n    return () => clearInterval(intervalId)\n  }, [updateTime])\n\n  useEffect(() => {\n    const distributedLogos = distributeLogos(logos, columnCount)\n    setLogoSets(distributedLogos)\n  }, [logos, columnCount])\n\n  return (\n    <div className=\"flex space-x-4\">\n      {logoSets.map((logos, index) => (\n        <LogoColumn\n          key={index}\n          logos={logos}\n          index={index}\n          currentTime={currentTime}\n        />\n      ))}\n    </div>\n  )\n}\n\nexport { LogoColumn };\n",
+      "type": "registry:ui",
+      "target": ""
+    }
+  ],
+  "tailwind": {
+    "config": {}
+  },
+  "_meta": {
+    "author": "cult-ui",
+    "slug": "logo-carousel",
+    "registry_url": "https://21st.dev/r/cult-ui/logo-carousel",
+    "title": "Logo Carousel",
+    "description": "Logo Carousel",
+    "category": "clients",
+    "category_group": "Marketing Blocks",
+    "downloads": 4000,
+    "likes": 50
+  }
+}
