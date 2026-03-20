@@ -1,20 +1,35 @@
 # sastaspace/server.py
 from __future__ import annotations
 
+import asyncio
 import json
 import os
 import socket
 import subprocess
 import sys
 import time
+import time as time_mod
+from collections.abc import AsyncGenerator
 from pathlib import Path
+from uuid import uuid4
 
-from fastapi import FastAPI
+import nh3
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, HTMLResponse
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
+from fastapi.sse import EventSourceResponse, ServerSentEvent
+from pydantic import BaseModel
 from starlette.responses import Response
 
 from sastaspace.config import Settings
+from sastaspace.crawler import crawl
+from sastaspace.deployer import deploy
+from sastaspace.redesigner import redesign
+
+
+class RedesignRequest(BaseModel):
+    url: str
+
 
 _SITES_DIR: Path = Path("./sites")
 
@@ -31,6 +46,147 @@ def make_app(sites_dir: Path) -> FastAPI:
         allow_methods=["GET", "POST"],
         allow_headers=["Content-Type"],
     )
+
+    _rate_limit_store: dict[str, list[float]] = {}
+    _redesign_semaphore = asyncio.Semaphore(1)
+
+    def get_client_ip(request: Request) -> str:
+        """Extract client IP, preferring Cloudflare/proxy headers."""
+        cf_ip = request.headers.get("cf-connecting-ip")
+        if cf_ip:
+            return cf_ip
+        forwarded = request.headers.get("x-forwarded-for")
+        if forwarded:
+            return forwarded.split(",")[0].strip()
+        if request.client:
+            return request.client.host
+        return "unknown"
+
+    def _is_localhost(ip: str) -> bool:
+        return ip in ("127.0.0.1", "::1", "::ffff:127.0.0.1")
+
+    def is_rate_limited(ip: str) -> tuple[bool, int]:
+        now = time_mod.time()
+        timestamps = _rate_limit_store.get(ip, [])
+        timestamps = [t for t in timestamps if t > now - settings.rate_limit_window_seconds]
+        _rate_limit_store[ip] = timestamps
+        if len(timestamps) >= settings.rate_limit_max:
+            retry_after = int(timestamps[0] - (now - settings.rate_limit_window_seconds)) + 1
+            return (True, retry_after)
+        return (False, 0)
+
+    def record_request(ip: str) -> None:
+        _rate_limit_store.setdefault(ip, []).append(time_mod.time())
+
+    async def redesign_stream(url: str) -> AsyncGenerator[ServerSentEvent, None]:
+        job_id = str(uuid4())
+        async with _redesign_semaphore:
+            try:
+                # Step 1: Crawl
+                crawling_data = {
+                    "job_id": job_id,
+                    "message": "Crawling your site...",
+                    "progress": 10,
+                }
+                yield ServerSentEvent(
+                    data=json.dumps(crawling_data),
+                    event="crawling",
+                )
+                crawl_result = await crawl(url)
+                if crawl_result.error:
+                    err_msg = "Could not reach that website. Check the URL and try again."
+                    yield ServerSentEvent(
+                        data=json.dumps({"job_id": job_id, "error": err_msg}),
+                        event="error",
+                    )
+                    return
+
+                # Step 2: Redesign (sync -- use to_thread)
+                redesigning_data = {
+                    "job_id": job_id,
+                    "message": "Claude is redesigning...",
+                    "progress": 40,
+                }
+                yield ServerSentEvent(
+                    data=json.dumps(redesigning_data),
+                    event="redesigning",
+                )
+                html = await asyncio.to_thread(
+                    redesign,
+                    crawl_result,
+                    settings.claude_code_api_url,
+                    settings.claude_model,
+                )
+
+                # Sanitize with nh3
+                html = nh3.clean(html)
+
+                # Step 3: Deploy (sync -- use to_thread)
+                deploying_data = {
+                    "job_id": job_id,
+                    "message": "Deploying your redesign...",
+                    "progress": 80,
+                }
+                yield ServerSentEvent(
+                    data=json.dumps(deploying_data),
+                    event="deploying",
+                )
+                result = await asyncio.to_thread(deploy, url, html, settings.sites_dir)
+
+                # Step 4: Done
+                yield ServerSentEvent(
+                    data=json.dumps(
+                        {
+                            "job_id": job_id,
+                            "message": "Done!",
+                            "progress": 100,
+                            "url": f"/{result.subdomain}/",
+                            "subdomain": result.subdomain,
+                        }
+                    ),
+                    event="done",
+                )
+            except Exception:
+                err_data = {
+                    "job_id": job_id,
+                    "error": ("Redesign service unavailable. Please try again later."),
+                }
+                yield ServerSentEvent(
+                    data=json.dumps(err_data),
+                    event="error",
+                )
+                return
+
+    @app.post("/redesign")
+    async def redesign_endpoint(body: RedesignRequest, request: Request):
+        ip = get_client_ip(request)
+
+        # Rate limit check (localhost exempt)
+        if not _is_localhost(ip):
+            limited, retry_after = is_rate_limited(ip)
+            if limited:
+                return JSONResponse(
+                    status_code=429,
+                    content={
+                        "error": (
+                            f"Rate limit exceeded. Try again in {retry_after // 60 + 1} minutes."
+                        ),
+                        "retry_after": retry_after,
+                    },
+                )
+
+        # Record attempt (localhost exempt)
+        if not _is_localhost(ip):
+            record_request(ip)
+
+        # Concurrency check
+        if _redesign_semaphore.locked():
+            return JSONResponse(
+                status_code=429,
+                content={"error": "A redesign is already in progress. Please wait and try again."},
+            )
+
+        return EventSourceResponse(redesign_stream(body.url))
 
     @app.get("/", response_class=HTMLResponse)
     async def index() -> str:
