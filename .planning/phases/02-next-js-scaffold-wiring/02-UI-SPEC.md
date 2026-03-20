@@ -52,13 +52,15 @@ Exceptions: 44px minimum touch target for interactive elements (buttons, links) 
 | Role | Size | Weight | Line Height |
 |------|------|--------|-------------|
 | Body | 16px | 400 (regular) | 1.5 |
-| Label | 14px | 500 (medium) | 1.4 |
-| Heading | 24px | 600 (semibold) | 1.2 |
+| Label | 14px | 400 (regular) | 1.4 |
+| Heading | 24px | 700 (bold) | 1.2 |
 | Display | 36px | 700 (bold) | 1.1 |
 
 **Font family:** Inter, loaded via `next/font/google` with `subsets: ["latin"]`. Applied to `<body>` in root layout.
 
-**Phase 2 usage:** The placeholder page uses Display (36px bold) for "SastaSpace" title, Body (16px regular) for subtitle text, and Label (14px medium) for the button.
+**Weight rationale:** Two weights only -- 400 (regular) for running text (Body, Label) and 700 (bold) for emphasis text (Heading, Display). This reduces font file downloads and enforces a clear visual hierarchy through weight contrast alone.
+
+**Phase 2 usage:** The placeholder page uses Display (36px bold) for "SastaSpace" title, Body (16px regular) for subtitle text, and Label (14px regular) for the button.
 
 ---
 
