@@ -3,6 +3,7 @@ import json
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
+import pytest
 from fastapi.testclient import TestClient
 
 SAMPLE_HTML = "<!DOCTYPE html><html><body><h1>Acme</h1></body></html>"
@@ -152,3 +153,104 @@ def test_ensure_running_tries_next_port_when_in_use(tmp_path):
         port = ensure_running(sites, preferred_port=8080)
 
     assert port == 8081
+
+
+# --- Config tests ---
+
+
+def test_config_cors_origins_default():
+    """Settings() has cors_origins == ["http://localhost:3000"]."""
+    from sastaspace.config import Settings
+
+    s = Settings()
+    assert s.cors_origins == ["http://localhost:3000"]
+
+
+def test_config_rate_limit_defaults():
+    """Settings() has rate_limit_max == 3, rate_limit_window_seconds == 3600."""
+    from sastaspace.config import Settings
+
+    s = Settings()
+    assert s.rate_limit_max == 3
+    assert s.rate_limit_window_seconds == 3600
+
+
+def test_config_cors_origins_from_env(monkeypatch):
+    """CORS_ORIGINS="http://a.com,http://b.com" parses to list of 2."""
+    monkeypatch.setenv("CORS_ORIGINS", "http://a.com,http://b.com")
+    from sastaspace.config import Settings
+
+    s = Settings()
+    assert s.cors_origins == ["http://a.com", "http://b.com"]
+
+
+# --- CORS tests ---
+
+
+def test_cors_allows_configured_origin(test_client):
+    """OPTIONS preflight from http://localhost:3000 returns access-control-allow-origin header."""
+    resp = test_client.options(
+        "/redesign",
+        headers={
+            "Origin": "http://localhost:3000",
+            "Access-Control-Request-Method": "POST",
+        },
+    )
+    assert resp.headers.get("access-control-allow-origin") == "http://localhost:3000"
+
+
+def test_cors_blocks_unknown_origin(test_client):
+    """OPTIONS preflight from http://evil.com does NOT return ACAO matching evil.com."""
+    resp = test_client.options(
+        "/redesign",
+        headers={
+            "Origin": "http://evil.com",
+            "Access-Control-Request-Method": "POST",
+        },
+    )
+    assert resp.headers.get("access-control-allow-origin") != "http://evil.com"
+
+
+# --- Stub tests (Wave 0 scaffolds for Plan 01-02) ---
+
+
+@pytest.mark.skip(reason="Wave 0 stub -- implemented in Plan 01-02")
+def test_redesign_sse_stream(test_client):
+    """POST /redesign with valid URL returns 200 with content-type text/event-stream."""
+    pass
+
+
+@pytest.mark.skip(reason="Wave 0 stub -- implemented in Plan 01-02")
+def test_sse_event_names(test_client):
+    """SSE stream contains events named crawling, redesigning, deploying, done."""
+    pass
+
+
+@pytest.mark.skip(reason="Wave 0 stub -- implemented in Plan 01-02")
+def test_to_thread_wrapping(test_client):
+    """redesign() and deploy() are called via asyncio.to_thread (verify with mock)."""
+    pass
+
+
+@pytest.mark.skip(reason="Wave 0 stub -- implemented in Plan 01-02")
+def test_concurrency_cap(test_client):
+    """Second concurrent POST /redesign returns 429."""
+    pass
+
+
+@pytest.mark.skip(reason="Wave 0 stub -- implemented in Plan 01-02")
+def test_rate_limit(test_client):
+    """4th request within window returns 429."""
+    pass
+
+
+@pytest.mark.skip(reason="Wave 0 stub -- implemented in Plan 01-02")
+def test_rate_limit_localhost_exempt(test_client):
+    """Requests from 127.0.0.1 bypass rate limiting."""
+    pass
+
+
+@pytest.mark.skip(reason="Wave 0 stub -- implemented in Plan 01-02")
+def test_nh3_sanitization(test_client):
+    """HTML with <script>alert(1)</script> has script tags stripped in SSE done event."""
+    pass

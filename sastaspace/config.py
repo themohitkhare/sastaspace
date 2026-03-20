@@ -13,7 +13,7 @@ class Settings(BaseSettings):
     server_port: int = 8080
     claude_model: str = "claude-sonnet-4-5-20250929"
 
-    cors_origins: list[str] = ["http://localhost:3000"]
+    cors_origins: str | list[str] = ["http://localhost:3000"]
     rate_limit_max: int = 3
     rate_limit_window_seconds: int = 3600
 
