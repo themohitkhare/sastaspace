@@ -43,10 +43,11 @@ Plans:
   1. Running `make dev` starts both the FastAPI server and Next.js dev server, and both are accessible
   2. The Next.js app renders a placeholder page at localhost:3000 using shadcn/ui components styled with Tailwind v4
   3. Cloudflare tunnel ingress routes /api/* traffic to FastAPI and all other traffic to Next.js
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 02-01: TBD
+- [ ] 02-01-PLAN.md — Scaffold Next.js 16 in web/, install shadcn/ui + Tailwind v4 + Motion, create placeholder page
+- [ ] 02-02-PLAN.md — Wire Makefile dev target for concurrent servers, create Cloudflare tunnel ingress config
 
 ### Phase 3: Core UI -- Landing + Progress + Result
 **Goal**: Users can enter a URL, watch their site get redesigned in real time, and see the finished result
@@ -87,7 +88,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Secure API Foundation | 0/2 | Planning complete | - |
-| 2. Next.js Scaffold + Wiring | 0/0 | Not started | - |
+| 1. Secure API Foundation | 2/2 | Complete | - |
+| 2. Next.js Scaffold + Wiring | 0/2 | Planning complete | - |
 | 3. Core UI -- Landing + Progress + Result | 0/0 | Not started | - |
 | 4. Contact Form + Polish | 0/0 | Not started | - |
