@@ -1,1 +1,0 @@
-"""SastaSpace backend application."""

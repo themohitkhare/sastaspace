@@ -1,8 +1,0 @@
----
-alwaysApply: true
----
-# Rule: JavaScript Development (Atomic, Shared, & Exploration-First)
-- **EXPLORATION FIRST:** Before scaffolding a new component or view, the agent MUST inventory `frontends/shared/components` and the local `src/components`. If a visual or functional pattern already exists, it must be reused or refactored.
-- **Component Reusability:** New components should be designed as "Generic" first and "Project-Specific" second. If a component could be useful for another project (e.g., a "User Avatar"), place it in `frontends/shared/`.
-- **Zustand Store Discipline:** Before adding new state, check if a global store (like `useUserStore`) already exists. Prevent creating duplicate state for the same data.
-- **Standardized Exports:** Use named exports for all components to ensure the Agent can easily "find" and "auto-import" them in future prompts.

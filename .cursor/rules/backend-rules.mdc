@@ -1,9 +1,0 @@
----
-alwaysApply: true
----
-# Rule: Pythonic Development (Clean, Shared, & Exploration-First)
-- **EXPLORATION FIRST:** Before creating any new file, class, or utility, the agent MUST search the existing `backend/app/` directory. If a similar utility or service exists, the agent must propose extending it rather than creating a duplicate.
-- **Top-Level Imports Only:** All imports must be at the very top of the file. No inline imports.
-- **Dependency Injection:** Use FastAPI's `Depends()` for all database sessions and services.
-- **Service Layer Reusability:** Business logic (e.g., game rules, data processing) MUST be extracted into `backend/app/services/` so it can be reused across different project endpoints.
-- **Single Source of Truth:** Pydantic models in `backend/app/schemas/` are the truth. When they change, the agent must alert the user to update the frontend.

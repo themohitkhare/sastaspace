@@ -1,7 +1,0 @@
-#!/bin/sh
-# Pre-commit hook: run full local CI. Skip with: git commit --no-verify
-set -e
-root="$(git rev-parse --show-toplevel)"
-cd "$root"
-echo "Running make ci-fast (parallel)..."
-make ci-fast

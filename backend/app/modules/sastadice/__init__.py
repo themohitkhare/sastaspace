@@ -1,1 +1,0 @@
-"""SastaDice game module."""
