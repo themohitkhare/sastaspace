@@ -1,0 +1,175 @@
+{
+  "category": "hooks",
+  "category_group": "Marketing Blocks",
+  "gold": [
+    {
+      "file": "originui__use-image-upload.json",
+      "title": "useImageUpload",
+      "reason": "Handles drag-and-drop, file preview, and upload callback — directly enables polished image upload UIs common in profile, media, and CMS sections of real sites."
+    },
+    {
+      "file": "jakobhoeg__use-auto-scroll.json",
+      "title": "useAutoScroll",
+      "reason": "Drives auto-scrolling chat and feed UIs — essential utility for AI assistant and live-feed product demos on modern SaaS landing pages."
+    },
+    {
+      "file": "originui__use-pagination.json",
+      "title": "usePagination",
+      "reason": "Full pagination logic with ellipsis handling — production-grade utility needed by virtually every data-heavy page or blog listing section."
+    },
+    {
+      "file": "reuno-ui__loop-animation-hook.json",
+      "title": "Loop Animation Hook",
+      "reason": "Framer Motion loop animation controller — powers animated hero text cycles and rotating feature callouts; directly visual in impact unlike most hooks."
+    },
+    {
+      "file": "strlrd-29__use-copy-to-clipboard.json",
+      "title": "useCopyToClipboard",
+      "reason": "Copy-to-clipboard with state feedback — essential for code snippets, API key displays, and referral links on SaaS and developer-facing sites."
+    },
+    {
+      "file": "serafimcloud__use-media-query.json",
+      "title": "useMediaQuery",
+      "reason": "SSR-safe media query hook — foundational utility for responsive behavior in any production component; broadly applicable across all site types."
+    },
+    {
+      "file": "kokonutd__use-file-input.json",
+      "title": "useFileInput",
+      "reason": "File input with accept filter, max size validation, and file name state — directly supports styled file upload components used in onboarding and settings pages."
+    },
+    {
+      "file": "danielpetho__use-mouse-position.json",
+      "title": "useMousePosition",
+      "reason": "Mouse position tracking with configurable element scope — enables premium interactive effects (spotlight, magnetic buttons, parallax) seen on high-end marketing sites."
+    },
+    {
+      "file": "sshahaider__use-scroll.json",
+      "title": "Use Scroll",
+      "reason": "Scroll threshold detection for sticky nav and scroll-triggered UI — directly powers common header transparency and back-to-top patterns on virtually every site."
+    },
+    {
+      "file": "originui__use-slider-with-input.json",
+      "title": "useSliderWithInput",
+      "reason": "Synchronized slider + number input state — enables polished pricing and range filter controls common on SaaS pricing and filter pages."
+    }
+  ],
+  "silver": [
+    {
+      "file": "Alwurts__use-textarea-resize.json",
+      "title": "useTextareaResize",
+      "reason": "Auto-resizing textarea with min-rows support — useful for contact forms and chat inputs but limited to one specific input type."
+    },
+    {
+      "file": "Codehagen__use-expandable.json",
+      "title": "useExpandable",
+      "reason": "Expandable/collapsible state management — solid utility for FAQ accordions and read-more sections common on landing pages."
+    },
+    {
+      "file": "kokonutd__use-auto-resize-textarea.json",
+      "title": "useAutoResizeTextarea",
+      "reason": "Auto-resize textarea via ref — simpler variant of useTextareaResize; useful but duplicative and narrowly scoped."
+    },
+    {
+      "file": "kokonutd__use-tags.json",
+      "title": "useTags",
+      "reason": "Tag management with color support and max limit — useful for filter UIs and tag inputs in CMS and search-heavy sites."
+    },
+    {
+      "file": "originui__use-character-limit.json",
+      "title": "useCharacterLimit",
+      "reason": "Character count with limit enforcement for inputs — commonly needed in contact forms and profile pages."
+    },
+    {
+      "file": "serafimcloud__use-debounce.json",
+      "title": "useDebounce",
+      "reason": "Standard debounce hook for value changes — essential utility for search inputs but extremely common and available in many libraries."
+    },
+    {
+      "file": "serafimcloud__use-click-outside.json",
+      "title": "useClickOutside",
+      "reason": "Click-outside detection for modals and dropdowns — widely needed but a near-duplicate of useOnClickOutside in the same folder."
+    },
+    {
+      "file": "strlrd-29__use-debounce-callback.json",
+      "title": "useDebounceCallback",
+      "reason": "Debounce for callback functions via lodash — useful for search and input handlers, slightly more flexible than value debounce."
+    },
+    {
+      "file": "danielpetho__use-debounced-dimensions.json",
+      "title": "useDimensions",
+      "reason": "Debounced element dimensions via ResizeObserver — useful for responsive layout calculations in complex animated components."
+    },
+    {
+      "file": "danielpetho__use-screen-size.json",
+      "title": "useScreenSize",
+      "reason": "Window dimensions tracker — simple but broadly applicable for responsive logic not covered by CSS alone."
+    },
+    {
+      "file": "hihahihahoho__use-item-overflow.json",
+      "title": "useItemOverflow",
+      "reason": "Detects overflowing items in a container — useful for '+N more' patterns in tag lists and nav items but niche in scope."
+    },
+    {
+      "file": "strlrd-29__use-boolean.json",
+      "title": "useBoolean",
+      "reason": "Boolean state with toggle/set helpers — convenient shorthand but trivially simple; most developers inline this logic."
+    },
+    {
+      "file": "strlrd-29__use-toggle.json",
+      "title": "useToggle",
+      "reason": "Toggle boolean state with optional default — overlaps heavily with useBoolean; useful but redundant pairing."
+    }
+  ],
+  "bronze": [
+    {
+      "file": "danielpetho__use-elastic-line-events.json",
+      "title": "useElasticLineEvents",
+      "reason": "Elastic line physics mouse events — highly specialized animation hook for specific SVG line effects; not broadly applicable."
+    },
+    {
+      "file": "danielpetho__use-mouse-position-ref.json",
+      "title": "useMousePositionRef",
+      "reason": "Ref-based mouse position tracker to avoid re-renders — micro-optimization variant useful only in performance-critical animation code."
+    },
+    {
+      "file": "danielpetho__use-mouse-vector.json",
+      "title": "useMouseVector",
+      "reason": "Mouse movement vector/velocity tracking — very niche; only useful for physics-based cursor animations."
+    },
+    {
+      "file": "serafimcloud__useonclickoutside.json",
+      "title": "useOnClickOutside",
+      "reason": "Duplicate click-outside hook — near-identical to useClickOutside in the same folder; redundant."
+    },
+    {
+      "file": "shadcn__use-mobile.json",
+      "title": "Use Mobile",
+      "reason": "Single breakpoint mobile check — extremely minimal; useMediaQuery covers this and more."
+    },
+    {
+      "file": "strlrd-29__use-counter.json",
+      "title": "useCounter",
+      "reason": "Increment/decrement counter state — trivially simple utility with very limited standalone website-building value."
+    },
+    {
+      "file": "strlrd-29__use-interval.json",
+      "title": "useInterval",
+      "reason": "setInterval wrapper with cleanup — low-level primitive rarely needed directly when building marketing sites."
+    },
+    {
+      "file": "strlrd-29__use-isomorphic-layout-effect.json",
+      "title": "useIsomorphicLayoutEffect",
+      "reason": "SSR-safe layout effect shim — internal utility dependency, not a component a developer would consciously choose or evaluate."
+    },
+    {
+      "file": "strlrd-29__use-timeout.json",
+      "title": "useTimeout",
+      "reason": "setTimeout wrapper with cleanup — similar to useInterval; too low-level to provide direct marketing site value."
+    },
+    {
+      "file": "strlrd-29__use-unmount.json",
+      "title": "useUnmount",
+      "reason": "Cleanup callback on component unmount — internal lifecycle utility; no visual or marketing value."
+    }
+  ]
+}

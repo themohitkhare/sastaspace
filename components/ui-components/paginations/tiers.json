@@ -1,0 +1,120 @@
+{
+  "category": "paginations",
+  "category_group": "UI Components",
+  "gold": [
+    {
+      "file": "ruixen.ui__morphing-page-dots.json",
+      "title": "Morphing Page Dots",
+      "reason": "Morphing dot pagination indicator \u2014 visually stunning motion effect great for carousels and sliders on marketing sites."
+    },
+    {
+      "file": "ruixen.ui__sliding-pagination.json",
+      "title": "Sliding Pagination",
+      "reason": "Sliding animated pagination \u2014 smooth and polished transition between pages, elevates gallery and portfolio sections."
+    },
+    {
+      "file": "ruixen.ui__stack-pagination.json",
+      "title": "Stack Pagination",
+      "reason": "Stacked card pagination effect \u2014 distinctive visual metaphor impressive in product showcases."
+    },
+    {
+      "file": "ruixen.ui__wheel-pagination.json",
+      "title": "Wheel Pagination",
+      "reason": "Wheel-scroll pagination \u2014 unique interaction that stands out on immersive marketing sites."
+    },
+    {
+      "file": "ruixen.ui__animated-number-flip.json",
+      "title": "Animated Number Flip",
+      "reason": "Flip animation for page numbers \u2014 polished detail that elevates pagination from utility to delight."
+    },
+    {
+      "file": "ekmas__pagination.json",
+      "title": "Pagination",
+      "reason": "Neobrutalism-styled pagination \u2014 distinctive visual style that fits design-forward marketing sites."
+    },
+    {
+      "file": "originui__stepper.json",
+      "title": "Stepper",
+      "reason": "Stepper/progress pagination \u2014 essential for multi-step forms and onboarding flows on SaaS sites."
+    }
+  ],
+  "silver": [
+    {
+      "file": "originui__numbered-pagination.json",
+      "title": "Numbered Pagination",
+      "reason": "Numbered pagination with clean styling \u2014 reliable and well-designed for content-heavy pages."
+    },
+    {
+      "file": "originui__compact-pagination.json",
+      "title": "Compact Pagination",
+      "reason": "Space-efficient compact pagination \u2014 useful for tables and data-dense sections."
+    },
+    {
+      "file": "originui__joined-pagination.json",
+      "title": "Joined Pagination",
+      "reason": "Joined button-group pagination \u2014 clean segmented control style for navigation."
+    },
+    {
+      "file": "originui__text-pagination.json",
+      "title": "Pagination with text buttons",
+      "reason": "Text-button pagination \u2014 minimal and content-forward style for editorial sites."
+    },
+    {
+      "file": "ruixen.ui__icon-pagination.json",
+      "title": "Icon Pagination",
+      "reason": "Icon-only pagination \u2014 clean minimal navigation for image galleries."
+    },
+    {
+      "file": "ruixen.ui__scroll-pagination.json",
+      "title": "Scroll Pagination",
+      "reason": "Scroll-triggered pagination \u2014 useful for infinite-scroll and lazy-load patterns."
+    },
+    {
+      "file": "shugar__pagination.json",
+      "title": "Pagination",
+      "reason": "Clean prev/next pagination \u2014 well-described and production-ready."
+    },
+    {
+      "file": "uniquesonu__next-gen-pagination-accessible.json",
+      "title": "Next Gen Pagination Accessible",
+      "reason": "Accessible next-gen pagination \u2014 good a11y baseline for public-facing sites."
+    },
+    {
+      "file": "antdesign__pagination-ant.json",
+      "title": "Pagination Ant",
+      "reason": "Ant Design-style pagination \u2014 familiar enterprise pattern with good feature set."
+    }
+  ],
+  "bronze": [
+    {
+      "file": "originui__pagination.json",
+      "title": "Pagination",
+      "reason": "Base shadcn pagination enhancement \u2014 functional but standard."
+    },
+    {
+      "file": "reuno-ui__pagination.json",
+      "title": "Pagination",
+      "reason": "Generic pagination implementation \u2014 minimal differentiation from shadcn primitive."
+    },
+    {
+      "file": "ruixen.ui__ruixen-product-table-1.json",
+      "title": "Ruixen Product Table 1",
+      "reason": "Full product table misclassified in paginations \u2014 out of scope for this folder."
+    },
+    {
+      "file": "sean0205__pagination.json",
+      "title": "Pagination",
+      "reason": "Basic pagination wrapper \u2014 no notable enhancement above shadcn."
+    },
+    {
+      "file": "shadcn__pagination.json",
+      "title": "Pagination",
+      "reason": "Raw shadcn pagination primitive \u2014 base component with no visual enhancement."
+    },
+    {
+      "file": "originui__simple-pagination.json",
+      "title": "Simple Pagination",
+      "reason": "Minimal simple pagination \u2014 straightforward prev/next only, no visual distinction."
+    }
+  ]
+}

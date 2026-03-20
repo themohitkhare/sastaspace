@@ -1,0 +1,140 @@
+{
+  "category": "carousels",
+  "category_group": "UI Components",
+  "gold": [
+    {
+      "file": "daiwiikharihar17147__focus-rail.json",
+      "title": "Focus Rail",
+      "reason": "Stunning 3D card rail with depth, ambient background blur, drag-and-swipe, spring physics, and animated context panel. Directly usable for premium portfolios, product showcases, or immersive feature sections on marketing sites."
+    },
+    {
+      "file": "dev.yadhakim__elegant-carousel.json",
+      "title": "Elegant Carousel",
+      "reason": "Editorial split-panel carousel with full-bleed imagery, accent-colored progress bars per slide, Ken Burns zoom, and touch support. Ideal for fashion lookbooks, luxury brand storytelling, or portfolio hero sections."
+    },
+    {
+      "file": "avanishverma4__animated-carousel.json",
+      "title": "Animated Carousel",
+      "reason": "3D orbit carousel where images rotate in a cylinder with Framer Motion, pause-on-hover, and click-to-snap. Visually striking for photography studios, travel agencies, or any site needing a standout gallery hero."
+    },
+    {
+      "file": "minhxthanh__interactive-scrolling-story-component.json",
+      "title": "Interactive Scrolling Story Component",
+      "reason": "Full-page scroll-triggered feature reveal with sticky split-panel layout, smooth text transitions, and vertical image slider. Highly effective for SaaS landing pages, product feature walkthroughs, and storytelling sections."
+    },
+    {
+      "file": "uniquesonu__horizontal-scroll-carousel.json",
+      "title": "Horizontal Scroll Carousel",
+      "reason": "Scroll-hijacked horizontal card reveal using Framer Motion useScroll and useTransform with bold 450px image cards and text overlay. Perfect for case study sections, visual portfolios, and immersive landing pages."
+    },
+    {
+      "file": "ravikatiyar162__circular-gallery.json",
+      "title": "Circular Gallery",
+      "reason": "Auto-rotating 3D circular gallery synced to page scroll, with opacity depth falloff and glassmorphism card overlays. A head-turning centerpiece for portfolios, nature brands, or creative agencies."
+    },
+    {
+      "file": "youcefbnm__scroll-x-carousel.json",
+      "title": "Scroll X Carousel",
+      "reason": "Composable scroll-driven horizontal carousel with a progress indicator, built on Framer Motion's useScroll and useTransform. Versatile primitive for building premium scroll-storytelling sections on any marketing site."
+    },
+    {
+      "file": "cult-ui__loading-carousel.json",
+      "title": "Loading Carousel",
+      "reason": "Feature-rich autoplay carousel with text-scramble animation on slide change, progress bar, animated indicators, and configurable background tips overlay. High-quality, production-ready component for SaaS onboarding and feature announcement banners."
+    }
+  ],
+  "silver": [
+    {
+      "file": "easemize__logo-carousel.json",
+      "title": "Logo Carousel",
+      "reason": "Clean autoplay logo carousel with animated TextRoll title, configurable logo count, sizing props, and brightness inversion for dark mode. Standard but essential for 'Trusted By' sections on marketing sites."
+    },
+    {
+      "file": "uilayout.contact__progressive-carousel.json",
+      "title": "Progressive Carousel",
+      "reason": "Flexible headless carousel system with animated progress bars per slide and fast-forward transitions. Well-architected compound component pattern suitable for testimonial, feature, or image carousels."
+    },
+    {
+      "file": "minhxthanh__carousel-circular-image-gallery.json",
+      "title": "Carousel Circular Image Gallery",
+      "reason": "GSAP-powered circular clip-path reveal gallery with bounce animation and autoplay. Visually unique for photography or creative agency sites, though CDN-loaded GSAP dependency reduces plug-and-play convenience."
+    },
+    {
+      "file": "ravikatiyar162__offer-carousel.json",
+      "title": "Offer Carousel",
+      "reason": "Horizontally scrollable offer card carousel with hover lift animation, discount badge, brand logo footer, and contextual arrow navigation. Well-suited for e-commerce or travel booking landing pages."
+    },
+    {
+      "file": "youcefbnm__story.json",
+      "title": "Story",
+      "reason": "Instagram/Facebook-style autoplay story component with progress bars, pause/play controls, and slide transitions. Useful for testimonials-as-stories, product launches, or social-style content sections."
+    },
+    {
+      "file": "ibelick__carousel.json",
+      "title": "Carousel",
+      "reason": "Well-built generic carousel primitive with drag support, Framer Motion spring transitions, dot indicators, and external index control. High download count reflects broad utility; good base component for custom implementations."
+    },
+    {
+      "file": "isaiahbjork__ruler-carousel.json",
+      "title": "Ruler Carousel",
+      "reason": "Unique ruler-style brand carousel with animated spring-scroll, infinite looping, keyboard navigation, and prominent animated text labels. Creative approach for showcasing client brands or collections."
+    },
+    {
+      "file": "designali-in__carousel.json",
+      "title": "Carousel",
+      "reason": "Embla-based carousel with autoplay, progress bar animation, dot navigation, and play/pause toggle. Solid, production-ready general-purpose carousel for image or content slides."
+    },
+    {
+      "file": "lavikatiyar__offers-carousel.json",
+      "title": "Offers Carousel",
+      "reason": "Split-layout card with offer details on the left and a scrollable product card carousel on the right, with scroll-position-aware navigation arrows. Good for hotel, travel, or e-commerce promotional sections."
+    },
+    {
+      "file": "ravikatiyar162__sparks-carousel.json",
+      "title": "Sparks Carousel",
+      "reason": "Horizontally scrollable card carousel with stagger-in animation on mount, scroll-aware arrow buttons, and hover scale on images. Competent content discovery or category showcase component."
+    }
+  ],
+  "bronze": [
+    {
+      "file": "anubra266__carousel-1.json",
+      "title": "Carousel",
+      "reason": "Basic ark-ui carousel with previous/next controls and dot indicators using placeholder images. No animations, no visual polish — a bare-minimum starting point with minimal redesign value."
+    },
+    {
+      "file": "shailendrakumar19999__signature.json",
+      "title": "Carousel",
+      "reason": "Simple thumbnail strip carousel using ark-ui with minimal styling. Functional but plain; no differentiation from a default browser implementation. Better alternatives exist in this set."
+    },
+    {
+      "file": "sean0205__carousel.json",
+      "title": "Carousel",
+      "reason": "Standard Embla wrapper that replicates shadcn's default carousel API with minor button styling changes. Offers little beyond shadcn's own carousel component; too generic for redesign differentiation."
+    },
+    {
+      "file": "patrick-xin__onboarding-dialog.json",
+      "title": "Onboarding Dialog",
+      "reason": "Multi-step onboarding modal with animated dots and cross-fade. Primarily app-specific UX (SaaS onboarding flows) rather than a marketing carousel; limited use outside app interfaces."
+    },
+    {
+      "file": "ravikatiyar162__carousel.json",
+      "title": "Carousel",
+      "reason": "Horizontal scroll carousel specifically designed for shareholder reports with gradient image overlays. Too domain-specific (investor relations pages) to be broadly useful in website redesigns."
+    },
+    {
+      "file": "ravikatiyar162__product-card-3.json",
+      "title": "Product Card",
+      "reason": "Simple 3-item sliding product drop card inside a shadcn Card wrapper. Functional but basic, with CSS-only transform transition and no animations. Better suited as a dashboard widget than a marketing carousel."
+    },
+    {
+      "file": "dhileepkumargm__premium-process-timeline.json",
+      "title": "Premium Process Timeline",
+      "reason": "Step-by-step process timeline with phone mockup and animated progress line. Despite the 'carousel' categorization it functions as a tabbed process explainer — useful for agency sites but not a true visual carousel."
+    },
+    {
+      "file": "youcefbnm__product-card.json",
+      "title": "ProductCard",
+      "reason": "Product color-variant switcher with hover image swap. More of a product micro-interaction component than a carousel; narrow e-commerce use case with no scrolling or slide functionality."
+    }
+  ]
+}

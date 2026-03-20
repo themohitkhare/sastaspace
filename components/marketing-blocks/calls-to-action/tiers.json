@@ -1,0 +1,230 @@
+{
+  "category": "calls-to-action",
+  "category_group": "Marketing Blocks",
+  "gold": [
+    {
+      "file": "dillionverma__interactive-hover-button.json",
+      "title": "Interactive Hover Button",
+      "reason": "Highest downloads (3927) and likes (52) in the category. Polished hover animation with sliding fill and arrow reveal — universally applicable as a primary CTA on any SaaS, business, or portfolio site. Zero dependencies beyond lucide-react."
+    },
+    {
+      "file": "ibelick__glow-effect.json",
+      "title": "Glow Effect",
+      "reason": "Most downloaded (4585) and liked (64) component in the whole category. A flexible animated glow wrapper with 6 modes (rotate, pulse, breathe, colorShift, flowHorizontal, static) — acts as a powerful visual accent for buttons or hero sections on any modern site."
+    },
+    {
+      "file": "mikolajdobrucki__cta-with-glow.json",
+      "title": "CTA with Glow",
+      "reason": "Production-ready full CTA section block with shadcn design, badge, heading, button, and an animated radial glow that activates on hover. Clean structure, well-integrated with brand tokens, ideal for SaaS bottom-of-page CTAs."
+    },
+    {
+      "file": "mikolajdobrucki__cta-with-rectangle.json",
+      "title": "CTA with Rectangle",
+      "reason": "Complete CTA section block with staggered entrance animations, optional badge, title, description, glow effect, and smooth fade-in-up transitions. Covers the full pattern used in modern SaaS landing pages — drop-in ready."
+    },
+    {
+      "file": "dillionverma__shimmer-button.json",
+      "title": "Shimmer Button",
+      "reason": "High downloads (2707) and strong visual polish. A fully self-contained button with a conic-gradient shimmer animation traveling the perimeter — works dark/light, highly customizable via CSS variables. Standard marquee CTA button for SaaS hero sections."
+    },
+    {
+      "file": "tommyjepsen__call-to-action.json",
+      "title": "Call to action",
+      "reason": "Complete, production-ready CTA section with badge, headline, description, and dual CTAs (outline + primary) inside a rounded muted card. Clean shadcn/tailwind pattern, broadly applicable to any landing page."
+    },
+    {
+      "file": "muhammad-binsalman__ethereal-beams-hero.json",
+      "title": "Ethereal Beams Hero",
+      "reason": "Full hero section with 3D animated light beams (Three.js/r3f), glassmorphic pill nav, badge, headline, subtitle, dual CTA buttons, and stat counters. Visually impressive, production-quality — ideal for SaaS and tech startup hero sections."
+    },
+    {
+      "file": "shadcnblockscom__cta-4.json",
+      "title": "Cta 4",
+      "reason": "Well-structured two-column CTA section with headline, description, primary button on the left and a feature checklist on the right — a classic high-converting layout used on SaaS and product sites."
+    },
+    {
+      "file": "prebuiltui__call-to-action-1.json",
+      "title": "Call to Action",
+      "reason": "Visually rich full CTA block with gradient background, overlapping avatar social proof, gradient headline, and rounded pill CTA button. Strong conversion-focused design that works for community, SaaS, and startup sites."
+    },
+    {
+      "file": "kokonutd__button-colorful.json",
+      "title": "Button Colorful with Hover Effect",
+      "reason": "High downloads (1749). Elegant button with an indigo-to-pink gradient blur that fades in on hover — modern, dark/light compatible, and extremely versatile as a primary CTA button on any site."
+    },
+    {
+      "file": "aceternity__pulse-beams.json",
+      "title": "Pulse Beams",
+      "reason": "Distinctive animated SVG beam layout as seen on Next.js website. Highly configurable with customizable beam paths, gradient colors, and connection points — creates a striking hero backdrop. Strong brand recognition and production polish."
+    },
+    {
+      "file": "uniquesonu__modern-background-paths.json",
+      "title": "Modern Background Paths",
+      "reason": "Full hero section with 4 rotating animated SVG background patterns (neural, flow, geometric, spiral), animated per-letter title, and gradient-bordered CTA button. Complete, visually impressive, and highly differentiated."
+    }
+  ],
+  "silver": [
+    {
+      "file": "serafimcloud__hover-button.json",
+      "title": "Hover Button",
+      "reason": "Good downloads (1043) and likes (17). Sophisticated pointer-move-tracked glowing circle effect — visually distinct and well-coded, but requires a specific dark glassmorphic context to shine. Not universally applicable."
+    },
+    {
+      "file": "kokonutd__action-search-bar.json",
+      "title": "Action Search Bar",
+      "reason": "Good downloads (849) and likes (29). Polished Raycast-inspired animated command/search bar — high quality but situational, best suited for SaaS app dashboards or AI product landing pages."
+    },
+    {
+      "file": "kokonutd__magnetize-button.json",
+      "title": "Magnetize Button",
+      "reason": "Good downloads (864) and likes (22). Engaging particle-attraction animation on hover — violet-themed, well-structured, but the 'Hover me' label hardcodes demo text and it's more of a novelty button than a universal CTA."
+    },
+    {
+      "file": "aceternity__typewriter-effect.json",
+      "title": "Typewriter Effect",
+      "reason": "Good downloads (1112) and likes (21). Classic typewriter animation for hero headlines — useful text accent component, but it's a text primitive rather than a full CTA section."
+    },
+    {
+      "file": "kokonutd__hand-writing-text.json",
+      "title": "Hand Writing Text",
+      "reason": "Good downloads (1097) and likes (14). Animated SVG hand-drawn circle around a title with fade-in text — elegant and memorable, but niche (best for creative/portfolio sites) and limited to specific styling contexts."
+    },
+    {
+      "file": "kokonutd__modal-pricing.json",
+      "title": "Modal Pricing",
+      "reason": "Useful upgrade flow pattern — button triggers a modal with radio-group plan selection. Well-coded with shadcn dialog, radio group, and feature lists. Situational but valuable for SaaS upgrade CTAs."
+    },
+    {
+      "file": "chetanverma16__floating-action-menu.json",
+      "title": "Floating Action Menu",
+      "reason": "Good downloads (558) and likes (13). Polished floating action button with animated spring-reveal menu options — useful for app-like interfaces but too app-specific for pure marketing landing pages."
+    },
+    {
+      "file": "dillionverma__shiny-button.json",
+      "title": "Shiny Button",
+      "reason": "Good downloads (847). Framer-motion driven shine sweep animation looping across the button — elegant and dark/light aware, but similar to shimmer-button. A solid secondary option for CTA buttons."
+    },
+    {
+      "file": "uniquesonu__about-us-section.json",
+      "title": "About Us section",
+      "reason": "Full-featured About Us section with 3-column service grid, parallax background, animated center image, stat counters, and inline CTA. Impressive scope but branded for interior design/architecture firms, limiting adaptability."
+    },
+    {
+      "file": "shadcnblockscom__feature-1.json",
+      "title": "Feature 1",
+      "reason": "Clean two-column feature block with headline, description, dual buttons and image — useful but basic layout without any visual polish or animation. Good foundation but generic."
+    },
+    {
+      "file": "kokonutd__v0-ai-chat.json",
+      "title": "v0 AI Chat",
+      "reason": "High downloads (3581). Clone of Vercel v0 chat input UI with quick-action chips — very recognizable and polished, but extremely specific to AI product landing pages. Strong for that niche."
+    },
+    {
+      "file": "bundui__magnetic-button.json",
+      "title": "Magnetic Button",
+      "reason": "Good downloads (567) and likes (7). Clean magnetic hover wrapper that attracts button toward cursor — subtle and production-ready, but it's a behavioral wrapper rather than a styled CTA, requiring composition with other elements."
+    },
+    {
+      "file": "sshahaider__cta-3.json",
+      "title": "CTA 3",
+      "reason": "Clever design with corner plus-icon decorators, dashed center divider, and gradient background — distinctive layout for minimal CTA sections. Slightly too minimal to stand alone on most sites."
+    },
+    {
+      "file": "maxim.bort.devel__diced-hero-section.json",
+      "title": "Diced Hero Section",
+      "reason": "Full hero with 2-column layout, animated text entrance, and a 2x2 image grid with CSS mask clipping effects. Highly customizable and visually distinct, but depends on external image assets and a custom chronicle-button dependency."
+    },
+    {
+      "file": "ozantekin__get-started-button.json",
+      "title": "Get Started Button",
+      "reason": "Good downloads (668). Clever button with a sliding chevron panel on hover — clean and production-ready, but it's a single-use micro-interaction rather than a complete CTA component."
+    },
+    {
+      "file": "kokonutd__button-shiny.json",
+      "title": "Button Shiny",
+      "reason": "Good downloads (639). Deep purple gradient button with layered glassmorphic inner borders — visually striking but locked to a dark purple color scheme, limiting applicability to sites with that palette."
+    },
+    {
+      "file": "designali-in__calendar.json",
+      "title": "Calendar",
+      "reason": "Bento card with calendar UI and 'Book Now' CTA — niche but useful for portfolio/agency sites with booking flows. Has a hardcoded external cal.com link and rough code quality (random highlighted days)."
+    },
+    {
+      "file": "sean0205__hover-velocity-hero.json",
+      "title": "Hover Velocity Hero",
+      "reason": "Interactive background with parallax-reactive floating shapes and particles on hover — good visual quality and well-coded, but it's a background container without any CTA content baked in."
+    }
+  ],
+  "bronze": [
+    {
+      "file": "anurag-mishra22__animated-underline-text-one.json",
+      "title": "Animated Underline Text",
+      "reason": "Animated SVG wavy underline on hover for a heading — too minimal (heading primitive only, no CTA structure). Niche decoration effect for specific design styles."
+    },
+    {
+      "file": "axorax__cta-card-1.json",
+      "title": "CTA Card",
+      "reason": "Very low downloads (50) and zero likes. Has hardcoded 'Sigma Nuts' branding text left in the code. Basic card structure without meaningful polish or uniqueness."
+    },
+    {
+      "file": "brijr__call-to-action-1.json",
+      "title": "Call to Action",
+      "reason": "Extremely low downloads (11) and zero likes. Plain text + two links with lorem ipsum content — essentially a skeleton with no visual design or polish."
+    },
+    {
+      "file": "kokonutd__x-gradient-card.json",
+      "title": "X Gradient Card",
+      "reason": "Social proof embed styled as a tweet card with glassmorphic layers — too niche (Twitter/X post embed) to be a general CTA component. Hardcoded author avatars and content."
+    },
+    {
+      "file": "kokonutd__particle-button.json",
+      "title": "Particle Button",
+      "reason": "Simple particle burst animation on click — a fun micro-interaction but not a standalone CTA component. Low likes (4) and the effect is minor."
+    },
+    {
+      "file": "lovesickfromthe6ix__aurora-flow.json",
+      "title": "Aurora Flow",
+      "reason": "Three.js/r3f WebGL aurora shader background with non-Tailwind CSS classes — heavy dependencies (three, simplex-noise, react-three), very low downloads (106) and zero likes. Too exotic and heavyweight for typical website redesigns."
+    },
+    {
+      "file": "lovesickfromthe6ix__ethereal.json",
+      "title": "Ethereal",
+      "reason": "WebGL hero with post-processing and scrolling effects — extremely low downloads (13) and zero likes. Heavy and complex setup that is overkill for most customer website redesigns."
+    },
+    {
+      "file": "lovesickfromthe6ix__vhs-hero-section.json",
+      "title": "VHS Hero Section",
+      "reason": "Three.js distortion shader with glitch effects, VHS aesthetic, GSAP animations — extremely niche retro aesthetic, very low downloads (76) and zero likes. Only suitable for very specific creative/experimental sites."
+    },
+    {
+      "file": "meschacirung__call-to-action.json",
+      "title": "Call to Action",
+      "reason": "Bare minimum CTA — centered heading, single paragraph with placeholder lorem ipsum, two buttons. Zero polish, zero downloads (3), zero likes. No visual differentiation."
+    },
+    {
+      "file": "remcostoeten__interactive-empty-state.json",
+      "title": "Interactive Empty State",
+      "reason": "Animated empty state with three fanning icons — well-coded but fundamentally an empty state UI pattern for app dashboards, not a marketing CTA. Very low downloads (47) and zero likes."
+    },
+    {
+      "file": "serafimcloud__fey-button.json",
+      "title": "Fey.com Button",
+      "reason": "Very niche replica of Fey.com's specific trial button style with a hardcoded lock icon — too branded and specific to one product's design language. Low downloads (193) and low likes (3)."
+    },
+    {
+      "file": "sshahaider__app-store-button.json",
+      "title": "App Store Button",
+      "reason": "Single-purpose Apple App Store download button — only useful for mobile app landing pages. Zero likes. A useful utility but too narrow in scope for general website redesign."
+    },
+    {
+      "file": "sshahaider__play-store-button.json",
+      "title": "Play Store Button",
+      "reason": "Single-purpose Google Play Store download button — same limitations as the App Store button. Only for mobile app sites. Very low downloads (106) and zero likes."
+    },
+    {
+      "file": "sshahaider__text-disperse.json",
+      "title": "Text Disperse",
+      "reason": "Playful hover effect that scatters letters in random directions — a visual toy with extremely low downloads (1) and zero likes. Too exotic and max 13-character limitation makes it impractical for real CTAs."
+    }
+  ]
+}

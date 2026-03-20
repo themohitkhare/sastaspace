@@ -1,0 +1,65 @@
+{
+  "category": "tooltips",
+  "category_group": "UI Components",
+  "gold": [
+    {
+      "file": "shugar__switch.json",
+      "title": "Switch",
+      "reason": "71 downloads — context-driven segmented switch (tab-style toggle group) with size variants (small/medium/large) and shared context state. Elevates pricing toggles and view-mode switchers on marketing/SaaS pages."
+    },
+    {
+      "file": "shugar__tooltip.json",
+      "title": "Tooltip",
+      "reason": "58 downloads — multi-type tooltip (success/warning/error/violet/default) with directional positioning, delay, and box alignment options via react-tooltip. Immediately deployable with real design vocabulary."
+    },
+    {
+      "file": "serafimcloud__tooltip-icon-button.json",
+      "title": "Tooltip Icon Button",
+      "reason": "30 downloads, 1 like — a compound TooltipIconButton combining shadcn Button + Tooltip with configurable side placement, forwarded refs, and full prop passthrough — the kind of polished UI primitive that professional component libraries ship."
+    }
+  ],
+  "silver": [
+    {
+      "file": "airbnb__tooltip.json",
+      "title": "Tooltip",
+      "reason": "23 downloads — @visx/tooltip with bounds-aware positioning, custom styles, and a position indicator dot. Useful for data-viz contexts but heavyweight for standard UI use."
+    },
+    {
+      "file": "jolbol1__tooltip.json",
+      "title": "Tooltip [react-aria-components]",
+      "reason": "26 downloads, 2 likes — accessible react-aria tooltip with compose render props and animate-in/out transitions. Solid accessibility story but visually equivalent to shadcn baseline."
+    },
+    {
+      "file": "shadcnspace__contemt-tooltip.json",
+      "title": "Content Tooltip",
+      "reason": "Rich content tooltip demo with icon header, structured layout inside the popover — demonstrates a useful pattern for help/info popovers on SaaS dashboards."
+    },
+    {
+      "file": "shugar__context-card.json",
+      "title": "Context Card",
+      "reason": "15 downloads — react-tooltip-based context card with rich ReactNode content and directional support. The randomly-generated ID approach is a minor concern but the pattern is useful."
+    },
+    {
+      "file": "sean0205__tooltip.json",
+      "title": "Tooltip",
+      "reason": "17 downloads — CVA variant-aware tooltip with Radix primitive, data-slot attributes, and side offset control. Well-structured utility component."
+    }
+  ],
+  "bronze": [
+    {
+      "file": "shadcn__tooltip.json",
+      "title": "Tooltip",
+      "reason": "549 downloads but is a direct shadcn/ui primitive re-export with zero customisation. Included as a dependency by other components; not a standalone showcase piece."
+    },
+    {
+      "file": "base-ui__tooltip-1.json",
+      "title": "Tooltip 1",
+      "reason": "2 downloads — @base-ui-components/react tooltip with default gray styling. Library-specific wrapper with no design differentiation."
+    },
+    {
+      "file": "shadcnspace__error-tooltip.json",
+      "title": "Error Tooltip",
+      "reason": "3 downloads — wraps shadcn Tooltip with a single destructive color class override. Too minimal to merit standalone component status."
+    }
+  ]
+}

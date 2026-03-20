@@ -1,0 +1,70 @@
+{
+  "category": "sidebars",
+  "category_group": "UI Components",
+  "gold": [
+    {
+      "file": "dhileepkumargm__glassmorphism-sidebar.json",
+      "title": "Glassmorphism Sidebar",
+      "reason": "Full glassmorphism-styled sidebar with page routing, rich content panels, and a striking frosted-glass aesthetic — immediately elevates any modern website or SaaS landing experience."
+    },
+    {
+      "file": "preetsuthar17__sidebar.json",
+      "title": "Sidebar",
+      "reason": "Animated sidebar with framer-motion AnimatePresence, custom hamburger toggle, and icon-driven minimal nav — clean, modern, and directly usable as a site-level side navigation."
+    },
+    {
+      "file": "aceternity__sidebar.json",
+      "title": "Sidebar",
+      "reason": "Aceternity-style sidebar with AnimatePresence transitions, context-driven open/close, and Next.js Link integration — polished, production-quality, and recognisably premium."
+    },
+    {
+      "file": "uniquesonu__modern-side-bar.json",
+      "title": "Modern Side Bar",
+      "reason": "Feature-complete animated sidebar with collapse/expand, search, notifications, and dark/light transitions — visually rich and immediately deployable on real customer sites."
+    }
+  ],
+  "silver": [
+    {
+      "file": "andrewlu0__sidebar.json",
+      "title": "Sidebar",
+      "reason": "Animated sidebar with ScrollArea, badges, framer-motion, and a polished hierarchy — well-built and attractive but structured around an app/learning platform context."
+    },
+    {
+      "file": "uniquesonu__sidebar.json",
+      "title": "Sidebar",
+      "reason": "Clean collapsible sidebar with toggle, icon links, and basic sections — functional and clear, good quality but visually standard without strong differentiation."
+    },
+    {
+      "file": "shadcn__sidebar.json",
+      "title": "Sidebar",
+      "reason": "shadcn full sidebar primitive with variants, mobile support, and CVA — extremely well-engineered and accessible, but a headless building block rather than a distinctive visual component."
+    },
+    {
+      "file": "uniquesonu__dashboard-with-collapsible-sidebar.json",
+      "title": "Dashboard With Collapsible Sidebar",
+      "reason": "Collapsible sidebar paired with a full dashboard layout, dark/light mode, and rich icon nav — good quality but tightly coupled to a dashboard shell, limiting drop-in use."
+    },
+    {
+      "file": "jshguo__sidebar-component.json",
+      "title": "Sidebar Component",
+      "reason": "Comprehensive sidebar with search, deep nav tree, and multiple icon sections — clean and functional but heavily app/dashboard-oriented in structure."
+    }
+  ],
+  "bronze": [
+    {
+      "file": "rayimanoj8__chat-template.json",
+      "title": "Chat Template",
+      "reason": "Chat application sidebar shell — domain-specific messaging UI, not applicable as a general website or marketing site navigation component."
+    },
+    {
+      "file": "rayimanoj8__whatsapp-sidebar.json",
+      "title": "Whatsapp Sidebar",
+      "reason": "WhatsApp-style messaging sidebar — highly app-specific, clones a messaging product UI, no value for general website redesign."
+    },
+    {
+      "file": "vercel__announcement.json",
+      "title": "Announcement",
+      "reason": "Tooltip-wrapped announcement banner component — miscategorised as a sidebar; it is a notification/banner utility with no navigation function."
+    }
+  ]
+}

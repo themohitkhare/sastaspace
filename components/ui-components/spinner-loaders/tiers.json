@@ -1,0 +1,115 @@
+{
+  "category": "spinner-loaders",
+  "category_group": "UI Components",
+  "gold": [
+    {
+      "file": "itaizeilig__tetris-loader.json",
+      "title": "Tetris Loader",
+      "reason": "Tetris-block animated loader \u2014 highly memorable and playful, perfect for tech product loading screens and demos."
+    },
+    {
+      "file": "molecule-lab-rushil__orbital-loader.json",
+      "title": "Orbital Loader",
+      "reason": "Orbiting element loader \u2014 visually impressive and polished, great for full-page loading on marketing sites."
+    },
+    {
+      "file": "theritikk__luma-spin.json",
+      "title": "Luma Spin",
+      "reason": "Luma-style gradient spin loader \u2014 sleek and modern, echoes premium SaaS brand aesthetics."
+    },
+    {
+      "file": "anurag-mishra22__animated-loading-skeleton.json",
+      "title": "Animated Loading Skeleton",
+      "reason": "Animated skeleton loader \u2014 essential polished pattern that signals content quality while data loads."
+    },
+    {
+      "file": "info-mdshakeeb__preloader.json",
+      "title": "Preloader",
+      "reason": "Full-screen preloader \u2014 high-impact first impression component for premium marketing sites."
+    },
+    {
+      "file": "shehzammian919__quantum-pulse-loade.json",
+      "title": "Quantum Pulse Loader",
+      "reason": "Quantum pulse animation \u2014 distinctive and visually striking, fits futuristic tech/AI brand aesthetics."
+    }
+  ],
+  "silver": [
+    {
+      "file": "anurag-mishra22__loader-one.json",
+      "title": "Animated Loader",
+      "reason": "Cool animated loader \u2014 visually engaging alternative to standard spinners."
+    },
+    {
+      "file": "molecule-lab-rushil__morphing-square.json",
+      "title": "Morphing Square",
+      "reason": "Morphing square animation \u2014 clean geometric loader with smooth transitions."
+    },
+    {
+      "file": "molecule-lab-rushil__wave-loader.json",
+      "title": "Wave Loader",
+      "reason": "Wave animation loader \u2014 fluid and organic motion suitable for creative and media sites."
+    },
+    {
+      "file": "molecule-lab-rushil__bouncing-dots.json",
+      "title": "Bouncing Dots",
+      "reason": "Bouncing dots loader \u2014 familiar and friendly pattern for chat and content loading states."
+    },
+    {
+      "file": "kedhareswer.12110626__snow-ball-loading-spinner.json",
+      "title": "Snow Ball Loading Spinner",
+      "reason": "Snowball spin effect \u2014 unique and charming for seasonal or creative brand sites."
+    },
+    {
+      "file": "h0bb5__customizable-loader-spinner-transition.json",
+      "title": "Customizable Loader Spinner Transition",
+      "reason": "Customizable spinner with transitions \u2014 flexible baseline adaptable to any brand."
+    },
+    {
+      "file": "yadwinder__ios-spinner.json",
+      "title": "iOS Spinner",
+      "reason": "iOS-style spinner \u2014 familiar and trusted pattern that works across mobile-first marketing sites."
+    },
+    {
+      "file": "serafimcloud__spinner.json",
+      "title": "Loading Spinner",
+      "reason": "Clean spinner set with variants \u2014 well-designed utility for various loading contexts."
+    }
+  ],
+  "bronze": [
+    {
+      "file": "paceui__dot-loader.json",
+      "title": "Dot Loader",
+      "reason": "Basic dot loader \u2014 minimal and generic, limited visual impact for marketing sites."
+    },
+    {
+      "file": "preetsuthar17__loader.json",
+      "title": "Loader",
+      "reason": "Generic loader component \u2014 minimal above a CSS animation wrapper."
+    },
+    {
+      "file": "sean0205__progress.json",
+      "title": "Progress",
+      "reason": "Basic progress bar \u2014 utility component, shadcn primitive with minimal enhancement."
+    },
+    {
+      "file": "shugar__loading-dots.json",
+      "title": "Loading Dots",
+      "reason": "Standard loading dots \u2014 common pattern with no visual distinction."
+    },
+    {
+      "file": "shugar__spinner-1.json",
+      "title": "Spinner 1",
+      "reason": "Basic spinner variant \u2014 thin wrapper with minimal styling above native CSS."
+    },
+    {
+      "file": "shugar__spinner.json",
+      "title": "Spinner",
+      "reason": "Standard spinner \u2014 functional but generic, no marketing-site visual value."
+    },
+    {
+      "file": "sshahaider__spinner-1.json",
+      "title": "Spinner 1",
+      "reason": "Duplicate basic spinner \u2014 adds nothing beyond the primitive."
+    }
+  ]
+}

@@ -1,0 +1,55 @@
+{
+  "category": "empty-states",
+  "category_group": "UI Components",
+  "gold": [
+    {
+      "file": "isaiahbjork__glitchy-404-1.json",
+      "title": "Glitchy 404 1",
+      "reason": "Glitch-effect 404 page \u2014 visually striking and memorable, immediately elevates brand perception on error pages."
+    },
+    {
+      "file": "xubohuah__ghost-404-page.json",
+      "title": "ghost 404 page",
+      "reason": "Ghost-themed 404 with creative illustration approach \u2014 polished and delightful for marketing-quality error pages."
+    },
+    {
+      "file": "sshahaider__not-found-page-1.json",
+      "title": "Not Found Page 1",
+      "reason": "Full not-found page with polished layout \u2014 production-ready 404 that enhances overall site quality."
+    }
+  ],
+  "silver": [
+    {
+      "file": "sshahaider__not-found-page-2.json",
+      "title": "Not Found Page 2",
+      "reason": "Second not-found page variant \u2014 good quality alternative but similar in function to sibling component."
+    },
+    {
+      "file": "shailendrakumar19999__404-page-not-found.json",
+      "title": "404 Page Not Found",
+      "reason": "Clean 404 page layout \u2014 solid and reusable for most websites."
+    },
+    {
+      "file": "uniquesonu__empty-state-beautiful-accessible-no-data-states.json",
+      "title": "Empty State Beautiful Accessible No Data States",
+      "reason": "Accessible empty state with good styling \u2014 useful for data tables and content sections."
+    },
+    {
+      "file": "larsen66__empty-testimonial.json",
+      "title": "Empty Testimonial",
+      "reason": "Empty testimonial placeholder \u2014 useful for CMS-driven marketing pages when no content exists yet."
+    }
+  ],
+  "bronze": [
+    {
+      "file": "j1zuzz__empty.json",
+      "title": "Empty",
+      "reason": "Generic empty state with minimal styling \u2014 too basic for marketing site use."
+    },
+    {
+      "file": "shugar__combobox.json",
+      "title": "Combobox",
+      "reason": "Combobox misclassified in empty-states \u2014 not an empty state component."
+    }
+  ]
+}

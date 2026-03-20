@@ -1,0 +1,155 @@
+{
+  "category": "Dropdowns",
+  "category_group": "UI Components",
+  "gold": [
+    {
+      "file": "0xUrvish__smooth-dropdown.json",
+      "title": "Smooth Dropdown",
+      "reason": "Spring-animated dropdown with explicit smooth transitions — exactly the premium animated feel that differentiates redesigned sites from template clones."
+    },
+    {
+      "file": "aghasisahakyan1__3d-interactive-navbar.json",
+      "title": "3D Interactive Navbar",
+      "reason": "Three.js + Framer Motion 3D navbar with dropdown — extraordinarily unique and visually impressive, ideal for high-impact hero sections on portfolio/agency sites."
+    },
+    {
+      "file": "hurerag24__shifting-dropdown.json",
+      "title": "Shifting Dropdown",
+      "reason": "Animated shifting/morphing dropdown panel — dynamic panel-shift animation creates a memorable interaction pattern that impresses site visitors."
+    },
+    {
+      "file": "Shatlyk1011__animated-dropdown.json",
+      "title": "Animated Dropdown",
+      "reason": "Framer Motion animated dropdown with AnimatePresence — polished entrance/exit transitions from Emerald UI, ready-to-use premium interaction."
+    },
+    {
+      "file": "chetanverma16__dropdown-menu.json",
+      "title": "Dropdown Menu",
+      "reason": "Framer Motion animated dropdown menu with icon support and smooth AnimatePresence — clean premium dropdown applicable across all navigation use cases."
+    },
+    {
+      "file": "Codehagen__floating-action-panel.json",
+      "title": "Floating Action Panel",
+      "reason": "Spring-animated floating action panel with dual mode (actions/note) triggered by DOM position — highly polished, unique contextual dropdown perfect for rich website interactions."
+    },
+    {
+      "file": "koustubhayadiyala36__fluid-dropdown.json",
+      "title": "Fluid Dropdown",
+      "reason": "Fluid animated dropdown with smooth transitions — premium feel and visually distinctive design that elevates navigation menus on redesigned sites."
+    },
+    {
+      "file": "uniquesonu__animated-shifting-tab-component.json",
+      "title": "Animated Shifting Tab Component",
+      "reason": "Tab-style animated dropdown/navigation with smooth shifting indicator — polished animated tab pattern highly applicable to site navigation and section switching."
+    }
+  ],
+  "silver": [
+    {
+      "file": "arihantcodes_1f7b8c4d__profile-dropdown.json",
+      "title": "Profile Dropdown",
+      "reason": "User profile dropdown with avatar and action items — clean, commonly needed on any site with user accounts, good design quality."
+    },
+    {
+      "file": "aymanch-03__user-dropdown.json",
+      "title": "User Dropdown",
+      "reason": "User account dropdown menu — solid implementation of an essential pattern for authenticated site experiences."
+    },
+    {
+      "file": "ravikatiyar162__user-profile-dropdown.json",
+      "title": "User Profile Dropdown",
+      "reason": "Profile dropdown with user info display — well-designed and practical, good for membership and account-based sites."
+    },
+    {
+      "file": "andrewlu0__filters.json",
+      "title": "Filters",
+      "reason": "Multi-select filter dropdown with command palette and checkboxes — very useful for product/portfolio filtering on customer sites, functional but complex."
+    },
+    {
+      "file": "jolbol1__menu.json",
+      "title": "Menu (React Aria)",
+      "reason": "Accessible React Aria menu with keyboard support — excellent a11y foundation, clean design, strong for compliance-focused redesigns."
+    },
+    {
+      "file": "jolbol1__select.json",
+      "title": "Select (React Aria)",
+      "reason": "Accessible React Aria select component — well-built with good keyboard/screen reader support, practical for form-heavy sites."
+    },
+    {
+      "file": "originui__dropdown-menu.json",
+      "title": "Dropdown Menu (Origin UI)",
+      "reason": "Origin UI styled dropdown with custom pointer-down handling — better visual treatment than bare shadcn, solid for most site contexts."
+    },
+    {
+      "file": "al11o__inline-dropdown.json",
+      "title": "Inline Dropdown",
+      "reason": "Inline/text-embedded dropdown — useful pattern for inline content selection on content-rich pages, clean execution."
+    },
+    {
+      "file": "avanishverma4__combo-box.json",
+      "title": "Combo Box",
+      "reason": "Searchable combo box dropdown — essential for sites with large option sets, good implementation of a widely-needed pattern."
+    },
+    {
+      "file": "avanishverma4__dropdown-01.json",
+      "title": "Dropdown 01",
+      "reason": "Clean styled dropdown variant — functional with good design, usable across various site contexts."
+    },
+    {
+      "file": "ruixen.ui__ruixen-menu-options.json",
+      "title": "Ruixen Menu Options",
+      "reason": "Styled menu options dropdown — good design quality and clean execution, solid Silver for navigation and option menus."
+    },
+    {
+      "file": "samsiavoshian2009__language-selector-dropdown.json",
+      "title": "Language Selector Dropdown",
+      "reason": "Internationalization language picker dropdown — highly practical for multilingual sites, clean and focused implementation."
+    }
+  ],
+  "bronze": [
+    {
+      "file": "antdesign__dropdown.json",
+      "title": "Dropdown (Ant Design)",
+      "reason": "Ant Design library dropdown component — tied to Ant Design's opinionated system, difficult to customize for website redesign aesthetic goals."
+    },
+    {
+      "file": "deltacomponents__basic-dropdown.json",
+      "title": "Basic Dropdown",
+      "reason": "Explicitly 'basic' dropdown — minimal implementation without distinguishing design, meant as a foundation not a finished deliverable."
+    },
+    {
+      "file": "designali-in__theme-dropdown.json",
+      "title": "Theme Dropdown",
+      "reason": "Light/dark theme toggle dropdown — single-purpose utility (theme switching) with very limited applicability beyond that one use case."
+    },
+    {
+      "file": "ln-dev7__assignee-user.json",
+      "title": "Assignee User",
+      "reason": "Task assignee selector — highly app-specific to project management tools, not useful for general public-facing website redesigns."
+    },
+    {
+      "file": "Mazyar kawa__activity-dropdown.json",
+      "title": "Activity Dropdown",
+      "reason": "Activity feed/log dropdown — too specific to dashboard/app contexts to be valuable for customer website redesigns."
+    },
+    {
+      "file": "micka_design__select.json",
+      "title": "Select",
+      "reason": "Basic select component — minimal styling over a standard select pattern, no distinguishing design or animation."
+    },
+    {
+      "file": "minhxthanh__activity-dropdown.json",
+      "title": "Activity Dropdown",
+      "reason": "Another activity dropdown variant — app-specific and overlapping with other entries, low value for public-facing site redesigns."
+    },
+    {
+      "file": "shadcn__dropdown-menu.json",
+      "title": "Dropdown Menu",
+      "reason": "Bare shadcn DropdownMenu primitive — foundational Radix wrapper with no added design value, building block not a showcase component."
+    },
+    {
+      "file": "sshahaider__workspaces.json",
+      "title": "Workspaces",
+      "reason": "Workspace switcher dropdown — highly specific to multi-tenant SaaS apps, not applicable to customer website redesigns."
+    }
+  ]
+}

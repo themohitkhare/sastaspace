@@ -1,0 +1,125 @@
+{
+  "category": "scroll-area",
+  "category_group": "Marketing Blocks",
+  "gold": [
+    {
+      "file": "aceternity__timeline.json",
+      "title": "Timeline",
+      "reason": "9,313 downloads and 140 likes — highest engagement in the folder. Scroll-driven animated timeline with sticky header and progress beam is directly applicable to SaaS feature pages, product roadmaps, and onboarding flows. Framer Motion integration is clean and production-quality."
+    },
+    {
+      "file": "dillionverma__marquee.json",
+      "title": "Marquee",
+      "reason": "Highly versatile infinite-scroll marquee used on virtually every modern SaaS landing page for social proof, logo strips, and feature highlights. Clean, dependency-light implementation with vertical/horizontal support and pauseOnHover."
+    },
+    {
+      "file": "aceternity__sticky-scroll-reveal.json",
+      "title": "Sticky Scroll Reveal",
+      "reason": "1,315 downloads. Sticky container with scroll-linked text reveal is a signature pattern on premium SaaS sites (Linear, Stripe, etc.). Polished Framer Motion implementation makes it drop-in ready for feature explanation sections."
+    },
+    {
+      "file": "originui__dialog.json",
+      "title": "Dialog",
+      "reason": "8,969 downloads and 101 likes — second-highest engagement overall. Enhanced Radix UI dialog with refined styling is an essential primitive for any production website or SaaS product. Universally applicable and high design quality."
+    },
+    {
+      "file": "bundui__marquee-effect.json",
+      "title": "Marquee Effect",
+      "reason": "550 downloads, 12 likes. Scroll-velocity-aware marquee with Framer Motion physics creates an impressive, tactile feel. Ideal for hero sections and social-proof strips on SaaS and portfolio sites."
+    },
+    {
+      "file": "Edil-ozi__scroll-velocity.json",
+      "title": "Scroll Velocity",
+      "reason": "682 downloads, 12 likes. Velocity-responsive infinite horizontal scroll supporting both images and text is a modern, eye-catching pattern. Dark mode compatible and responsive — excellent for logo carousels and brand showcases."
+    }
+  ],
+  "silver": [
+    {
+      "file": "originui__tabs.json",
+      "title": "Tabs",
+      "reason": "2,595 downloads, 20 likes. Enhanced Radix UI tabs are broadly useful for any website, but tabs as a standalone primitive are less visually distinctive than marquees or timelines for a redesign tool."
+    },
+    {
+      "file": "bundui__text-gradient-scroll.json",
+      "title": "Text Gradient Scroll",
+      "reason": "481 downloads, 10 likes. Scroll-triggered opacity gradient per word/letter adds a premium feel to long-form content sections. Useful for editorial and marketing pages, but narrower use case than a full marquee or timeline."
+    },
+    {
+      "file": "ibelick__scroll-progress.json",
+      "title": "Scroll Progress",
+      "reason": "211 downloads, 9 likes. Animated scroll progress indicator with spring physics is a polished UX touch for blog posts and long-form pages. Clean implementation but serves a narrow, supplementary role."
+    },
+    {
+      "file": "danielpetho__scroll-and-swap-text.json",
+      "title": "Scroll and Swap Text",
+      "reason": "Good concept — vertically swapping letters on scroll is distinctive for hero headings. Lower download count (142) but the visual effect is sophisticated and applicable to portfolio or agency sites."
+    },
+    {
+      "file": "chowlol202__modern-timeline.json",
+      "title": "Modern Timeline",
+      "reason": "Supports vertical/horizontal layouts, animated progress, dark/light mode, and rich content. Excellent for SaaS roadmaps and onboarding, though lower adoption (54 downloads) suggests it is newer or less discovered."
+    },
+    {
+      "file": "Edil-ozi__horizontal-scroll-carousel.json",
+      "title": "Horizontal Scroll Carousel",
+      "reason": "295 downloads. Scroll-driven horizontal image carousel is visually engaging for portfolio and e-commerce sites. Next.js Image dependency makes it slightly less portable as a generic web component."
+    },
+    {
+      "file": "aghasisahakyan1__sticky-section-tabs.json",
+      "title": "Sticky Section Tabs",
+      "reason": "Useful pattern for long content pages with sticky section headers. Solid concept for documentation or feature-comparison pages, but implementation is minimal and download count is low (235)."
+    },
+    {
+      "file": "ui-layouts__sticky-scroll.json",
+      "title": "Sticky Scroll",
+      "reason": "Uses Lenis smooth-scroll library for a premium native-scroll feel. Good for agency and portfolio sites that need polished scroll behavior, but zero downloads and no description reduce confidence."
+    },
+    {
+      "file": "dillionverma__scroll-based-velocity.json",
+      "title": "Scroll Based Velocity",
+      "reason": "344 downloads. Velocity-responsive scrolling text is a compelling hero effect, but functionally overlaps with Edil-ozi__scroll-velocity. Good quality but more niche as a standalone effect."
+    }
+  ],
+  "bronze": [
+    {
+      "file": "ibelick__scroll-button.json",
+      "title": "Scroll Button",
+      "reason": "Floating button to return to the bottom of a container is too narrow and situational. Low downloads (42) confirm limited applicability for general website redesign."
+    },
+    {
+      "file": "nelwincatalogo__x-scroll.json",
+      "title": "XScroll",
+      "reason": "A thin wrapper around Radix ScrollArea adding only horizontal support. Useful as a utility but too simple and low-level to qualify as a marketing block for visual redesign."
+    },
+    {
+      "file": "preetsuthar17__scroll-area.json",
+      "title": "Scroll Area",
+      "reason": "CVA-styled scroll area with orientation variants. Useful as a UI primitive but not a marketing block — no visual personality and only 12 downloads."
+    },
+    {
+      "file": "sean0205__scroll-area.json",
+      "title": "Scroll Area",
+      "reason": "Thin wrapper around Radix ScrollArea. Minimal differentiation from the standard shadcn component; 19 downloads confirms limited unique value."
+    },
+    {
+      "file": "lina.sameer__scroll-area-1.json",
+      "title": "Scroll Area",
+      "reason": "Demo scroll area listing version tags. Essentially a usage example of shadcn ScrollArea with no original design. Only 3 downloads."
+    },
+    {
+      "file": "base-ui__scroll-area-1.json",
+      "title": "Scroll Area",
+      "reason": "Basic Base UI scroll area demo. Purely functional with no visual design contribution. Only 2 downloads."
+    },
+    {
+      "file": "itsankitverma__scroll-linked-spring-animation.json",
+      "title": "Scroll-linked Spring Animation",
+      "reason": "Simple scroll progress bar using spring physics. Minimal implementation with 3 downloads — more of a proof-of-concept than a production-ready block."
+    },
+    {
+      "file": "patrick.thomas.dunn1988__desert-drift.json",
+      "title": "Desert Drift",
+      "reason": "An iframe embedding a car-drifting scroll animation. Highly experimental and domain-specific — not applicable to general business or SaaS website redesign."
+    }
+  ]
+}

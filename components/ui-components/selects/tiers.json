@@ -1,0 +1,135 @@
+{
+  "category": "selects",
+  "category_group": "UI Components",
+  "gold": [
+    {
+      "file": "ruixen.ui__carousel3dselect.json",
+      "title": "Carousel3dselect",
+      "reason": "3D carousel-style select with perspective, radius, and color-coded options — a visually spectacular, one-of-a-kind component that immediately elevates any feature showcase or pricing selector."
+    },
+    {
+      "file": "ruixen.ui__color-emotion-select.json",
+      "title": "Color Emotion Select",
+      "reason": "Color-coded options with emoji indicators and custom trigger styling — a visually distinctive select great for mood, category, or tag selection on marketing sites."
+    },
+    {
+      "file": "ruixen.ui__live-preview-style-select.json",
+      "title": "Live Preview Style Select",
+      "reason": "Each option shows a live CSS preview of the style it represents — a rare, demo-quality component that visually communicates choices, ideal for theme or design-tool landing pages."
+    },
+    {
+      "file": "ruixen.ui__visual-grid-select.json",
+      "title": "Visual Grid Select",
+      "reason": "Grid of image/thumbnail previews inside a popover for selection — ideal for template, theme, or layout pickers on website-builder marketing pages."
+    },
+    {
+      "file": "ruixen.ui__tag-cloud-select.json",
+      "title": "Tag Cloud Select",
+      "reason": "Popularity-weighted tag cloud with color support and inline search — a visually rich multi-select that looks polished on interest or skill selectors on landing pages."
+    },
+    {
+      "file": "geekles007__select.json",
+      "title": "Select",
+      "reason": "Framer Motion animated dropdown with description text, icon slot, and disabled states — polished, feature-rich custom select that substantially upgrades the standard shadcn dropdown."
+    },
+    {
+      "file": "evansliaudet__animated-select-1.json",
+      "title": "Animated Select",
+      "reason": "Framer Motion animated option entrance and caret rotation — smooth, visually distinctive animated select that elevates any form or filter on a marketing site."
+    },
+    {
+      "file": "hsuanyi-chou__multiple-selector.json",
+      "title": "Multiple Selector",
+      "reason": "Fully-featured, composable multi-select with filtering, async loading, and tag chips — a production-quality component that handles real marketing site needs with visual polish."
+    }
+  ],
+  "silver": [
+    {
+      "file": "KaraBharat__multi-select-combobox.json",
+      "title": "Multi Select Combobox",
+      "reason": "Type-safe multi-select combobox with customizable options — well-built and reliable for forms, but visually standard shadcn conventions."
+    },
+    {
+      "file": "coss.com__combobox.json",
+      "title": "Combobox",
+      "reason": "Input combined with a predefined item list — a clean combobox pattern suitable for search-and-select fields in contact or filter forms."
+    },
+    {
+      "file": "fuma-nama__root-toggle.json",
+      "title": "Root Toggle",
+      "reason": "Section-switching select with icons, descriptions, active state tracking, and glass morphism — well-designed for site navigation selectors; slightly too app-nav specific for pure form use."
+    },
+    {
+      "file": "rudrodip__async-select.json",
+      "title": "Async Select",
+      "reason": "Async data loading select with React and shadcn/ui — a reliable pattern for dynamic dropdowns on forms, e.g. country or city selectors, but no notable visual upgrade."
+    },
+    {
+      "file": "osiris-balonga__member-selector.json",
+      "title": "Member Selector",
+      "reason": "People-picker select with avatar/member display — useful for team invite flows on SaaS marketing pages, with above-average visual richness."
+    },
+    {
+      "file": "flower0wine__multi-select.json",
+      "title": "Multi Select",
+      "reason": "Multi-select with tag chips — clean and functional for category or filter selection; follows standard patterns without strong visual differentiation."
+    },
+    {
+      "file": "originui__input-with-inner-tags.json",
+      "title": "Input with Inner Tags",
+      "reason": "Input field that accumulates selected tags inline — from a reputable library, clean and practical for newsletter interest or skill forms."
+    },
+    {
+      "file": "ruixen.ui__behavioral-history-select.json",
+      "title": "Behavioral History Select",
+      "reason": "Remembers and surfaces recent selections with a history section — a thoughtful UX enhancement useful on search or configuration forms."
+    },
+    {
+      "file": "shugar__select.json",
+      "title": "Select",
+      "reason": "Multi-size Vercel Geist-inspired select recreation — clean, well-engineered design-system-level component with good size variants."
+    },
+    {
+      "file": "anubra266__select-1.json",
+      "title": "Select 1",
+      "reason": "Ark UI based select with clean list collection API — solid accessibility and composition, slightly above shadcn baseline visually."
+    }
+  ],
+  "bronze": [
+    {
+      "file": "originui__select-native.json",
+      "title": "Select (Native)",
+      "reason": "Native HTML select styled to match shadcn/ui — functional but the browser-native element severely limits visual customization potential."
+    },
+    {
+      "file": "preetsuthar17__select.json",
+      "title": "Select",
+      "reason": "Generic select wrapper with no notable visual or functional additions over the shadcn Select primitive."
+    },
+    {
+      "file": "jollyshopland__select-1.json",
+      "title": "Select 1",
+      "reason": "react-aria-components based select — good accessibility foundation but visually indistinguishable from a default shadcn select."
+    },
+    {
+      "file": "shugar__select-1.json",
+      "title": "Select 1",
+      "reason": "Multi-size native-style select without the Geist polish of shugar__select — a more basic variant that adds little visual value."
+    },
+    {
+      "file": "base-ui__select-1.json",
+      "title": "Select 1",
+      "reason": "Base UI select component — accessibility-focused but visually minimal; no upgrade over shadcn defaults for marketing site redesign."
+    },
+    {
+      "file": "originui__breadcrumb.json",
+      "title": "Breadcrumb",
+      "reason": "This is a breadcrumb navigation component, not a select — misclassified in the selects folder and provides no value as a form input."
+    },
+    {
+      "file": "ravikatiyar162__baggage-add-on.json",
+      "title": "Baggage Add On",
+      "reason": "A travel-booking specific baggage selection UI — highly domain-specific, no practical utility for general marketing site redesigns."
+    }
+  ]
+}

@@ -1,0 +1,135 @@
+{
+  "category": "toggles",
+  "category_group": "UI Components",
+  "gold": [
+    {
+      "file": "deepaksslibra__liquid-toggle.json",
+      "title": "Liquid Toggle",
+      "reason": "Top performer (392 downloads, 8 likes) with hardware-accelerated CSS, multi-color variants (active/success/warning/danger), and a liquid morphing animation — visually stunning on pricing or settings pages."
+    },
+    {
+      "file": "sshahaider__toggle-theme.json",
+      "title": "Toggle Theme",
+      "reason": "Animated three-way theme switcher (system/light/dark) with framer-motion highlight indicator and 222 downloads — a polished, immediately deployable component that every SaaS navbar needs."
+    },
+    {
+      "file": "preetsuthar17__toolbar.json",
+      "title": "Toolbar",
+      "reason": "213 downloads — animated rich-text formatting toolbar with framer-motion, 12 formatting actions, active states, and tooltips. Elevates any SaaS editor or content-heavy page."
+    },
+    {
+      "file": "ravikatiyar162__sky-toggle.json",
+      "title": "Sky Toggle",
+      "reason": "53 downloads — a visually unique day/night sky toggle with animated clouds, stars SVG, and styled-components — memorable and polished for hero sections or landing page delighters."
+    },
+    {
+      "file": "serafimcloud__to-do-item.json",
+      "title": "Todo List Item",
+      "reason": "87 downloads, 4 likes — animated swipe-to-reveal delete with framer-motion layout animations, drag gesture, and smooth completion transition; production-ready for task management SaaS UIs."
+    },
+    {
+      "file": "johuniq__animated-theme-toggle.json",
+      "title": "Animated Theme Toggle",
+      "reason": "Motion-driven theme toggle with useMotionValue/useTransform for smooth icon morphing between sun and moon states — a refined, high-craft alternative to basic icon swaps."
+    },
+    {
+      "file": "maxim.bort.devel__shamayim-toggle-switch.json",
+      "title": "Shamayim Toggle Switch",
+      "reason": "Highly customisable toggle (16 pattern types, full color theming, mirrored mode, custom icons) — a premium showcase component that stands out in component libraries and marketing demos."
+    }
+  ],
+  "silver": [
+    {
+      "file": "Edil-ozi__toggle.json",
+      "title": "Toggle",
+      "reason": "171 downloads, 3 likes — clean minimal toggle using pure CSS sibling selectors with dark mode support. Solid and dependency-free but visually standard."
+    },
+    {
+      "file": "jolbol1__switch.json",
+      "title": "Switch [react-aria-components]",
+      "reason": "254 downloads, 4 likes — accessible switch built on react-aria with full keyboard/screen-reader support. Great for accessibility-conscious SaaS but not visually distinctive."
+    },
+    {
+      "file": "chetanverma16__switch.json",
+      "title": "Switch",
+      "reason": "67 downloads — framer-motion spring-animated switch with a clean dark/light pill design. Polished feel but limited configurability."
+    },
+    {
+      "file": "jatin-yadav05__bouncy-toggle.json",
+      "title": "Bouncy Toggle",
+      "reason": "31 downloads — press-scale bounce animation with label transition. Delightful micro-interaction suitable for settings or onboarding flows."
+    },
+    {
+      "file": "shugar__toggle.json",
+      "title": "Toggle",
+      "reason": "29 downloads — multi-color SVG-based toggle with 8 color themes. Useful but essentially duplicates shugar__toggle-1 with minor differences."
+    },
+    {
+      "file": "airbnb__toggle-nav.json",
+      "title": "Toggle Nav",
+      "reason": "Responsive animated data-viz navigation toggle using @visx/responsive with wavy line backgrounds — creative but niche; best suited for analytics dashboards."
+    },
+    {
+      "file": "easemize__material-design-3-switch.json",
+      "title": "Material Design 3 Switch",
+      "reason": "26 downloads — faithful MD3 physics spring animation with CVA variants (primary/destructive/success/warning) and check/X icons. Valuable for Material-aligned design systems."
+    },
+    {
+      "file": "shadcn__toggle-group.json",
+      "title": "Toggle Group",
+      "reason": "213 downloads — the canonical shadcn Radix toggle group. High usage, solid baseline, but a direct primitive re-export with minimal enhancement."
+    },
+    {
+      "file": "moumensoliman__elastic-switch-shadcnui.json",
+      "title": "Elastic Toggle Switch",
+      "reason": "Framer-motion layout spring toggle — minimal but the elastic feel is smooth. Compact and easy to drop into any form."
+    },
+    {
+      "file": "ravikatiyar162__toggle-switch.json",
+      "title": "Toggle Switch",
+      "reason": "30 downloads — styled-components inset-shadow toggle with smooth transition. Retro-tactile feel but styled-components dependency adds friction."
+    }
+  ],
+  "bronze": [
+    {
+      "file": "intentui__toggle.json",
+      "title": "Toggle",
+      "reason": "4 downloads — react-aria-components + tailwind-variants toggle group. Functional but heavily library-dependent and indistinguishable from the base primitive."
+    },
+    {
+      "file": "jolbol1__toggle.json",
+      "title": "Toggle Button [react-aria-components]",
+      "reason": "10 downloads — CVA toggle button wrapping AriaToggleButton with data-state variants. Structural utility component, not visually distinctive."
+    },
+    {
+      "file": "sean0205__collapsible.json",
+      "title": "Collapsible",
+      "reason": "10 downloads — thin Radix Collapsible wrapper with data-slot attributes. Not a toggle in the UI sense; purely a structural primitive re-export."
+    },
+    {
+      "file": "sean0205__toggle-group-1.json",
+      "title": "Toggle Group 1",
+      "reason": "7 downloads — Radix ToggleGroup wrapper with CVA variants. Near-identical to the official shadcn toggle-group with negligible differentiation."
+    },
+    {
+      "file": "shugar__toggle-1.json",
+      "title": "Toggle 1",
+      "reason": "18 downloads — duplicates shugar__toggle with the same 8-color SVG approach. No meaningful distinction from its sibling file."
+    },
+    {
+      "file": "base-ui__toggle-group.json",
+      "title": "Toggle Group",
+      "reason": "0 downloads — raw @base-ui-components/react toggle group with default gray styling. Library-specific wrapper with no design polish."
+    },
+    {
+      "file": "micka_design__switch.json",
+      "title": "Switch",
+      "reason": "0 downloads — the component code is actually a counter (increment/decrement buttons), not a switch at all. Misnamed and unusable as a toggle."
+    },
+    {
+      "file": "ravikatiyar162__star-wars-toggle-switch.json",
+      "title": "Star Wars Toggle Switch",
+      "reason": "11 downloads — novelty BB-8 themed toggle. Highly entertaining but too niche/branded for any real customer website redesign."
+    }
+  ]
+}

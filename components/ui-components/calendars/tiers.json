@@ -1,0 +1,395 @@
+{
+  "category": "calendars",
+  "category_group": "UI Components",
+  "gold": [
+    {
+      "file": "isaiahbjork__coach-scheduling-card.json",
+      "title": "Coach Scheduling Card",
+      "reason": "Full booking/appointment UX — animated day-strip, time slots, availability states, and Framer Motion transitions. Drop-in ready for any service-booking landing page."
+    },
+    {
+      "file": "ravikatiyar162__glass-calendar.json",
+      "title": "Glass Calendar",
+      "reason": "Glassmorphism aesthetic with motion animations, event management (add/edit), settings panel, and a visually striking frosted-glass surface. Stands out immediately on premium landing pages."
+    },
+    {
+      "file": "ahmedmayara__fullscreen-calendar.json",
+      "title": "Fullscreen Calendar",
+      "reason": "Spacious, Google Calendar-inspired full-page layout with event slots, search, and a + add button. Conveys product maturity and makes a strong impression in SaaS hero sections."
+    },
+    {
+      "file": "ruixen.ui__origami-fold-out-calendar.json",
+      "title": "Origami Fold Out Calendar",
+      "reason": "Accordion-driven fold-out interaction is visually distinctive and memorable — a great hook for any scheduling or availability feature on a marketing page."
+    },
+    {
+      "file": "ruixen.ui__heatmap-calendar.json",
+      "title": "Heatmap Calendar",
+      "reason": "GitHub-contribution-style heatmap with popover event details. Visually arresting data-storytelling pattern — ideal for SaaS dashboards, habit trackers, or analytics landing pages."
+    },
+    {
+      "file": "designali-in__git-hub-calendar.json",
+      "title": "Git Hub Calendar",
+      "reason": "Polished GitHub-style contribution heatmap with a custom color scale and date-range spanning. Distinctive visual identity that impresses immediately on portfolio or analytics pages."
+    },
+    {
+      "file": "ruixen.ui__event-constellation-calendar.json",
+      "title": "Event Constellation Calendar",
+      "reason": "Creative constellation/star-pattern metaphor for event plotting — genuinely unique visual concept that would make a landing page memorable."
+    },
+    {
+      "file": "ruixen.ui__particle-flow-calendar.json",
+      "title": "Particle Flow Calendar",
+      "reason": "Animated particle-flow visual language for events makes this a showpiece component — eye-catching for creative SaaS or productivity tool landing pages."
+    },
+    {
+      "file": "preetsuthar17__calender.json",
+      "title": "Calender",
+      "reason": "CVA-powered variant system with Framer Motion animations and a year/month Select switcher — polished and flexible, noticeably above a bare shadcn wrapper."
+    },
+    {
+      "file": "ruixen.ui__three-dwall-calendar.json",
+      "title": "Three Dwall Calendar",
+      "reason": "3D wall / depth perspective on calendar cells combined with HoverCard previews creates a visually premium spatial experience unique among these components."
+    },
+    {
+      "file": "arihantcodes_1f7b8c4d__event-calendar.json",
+      "title": "Event Calendar",
+      "reason": "Full event CRUD with Framer Motion animations, Dialog-based creation form, and color-coded events on a monthly grid — a complete, polished calendar widget."
+    },
+    {
+      "file": "chetanverma16__calendar.json",
+      "title": "Calendar",
+      "reason": "Custom-built (no react-day-picker dependency) with AnimatePresence month transitions, today highlighting, and a clean type-safe data model — visually refined and self-contained."
+    },
+    {
+      "file": "ruixen.ui__monthly-heatmap-calendar.json",
+      "title": "Monthly Heatmap Calendar",
+      "reason": "Month-scoped heat intensity grid with popover event detail — a focused, visually distinctive analytics widget ideal for habit-tracking or usage dashboards."
+    },
+    {
+      "file": "ruixen.ui__task-orbit-calendar.json",
+      "title": "Task Orbit Calendar",
+      "reason": "Orbital/radial metaphor for task distribution around calendar days is a creative differentiator that would make a productivity SaaS landing page stand out."
+    },
+    {
+      "file": "ruixen.ui__stacked-bar-calendar.json",
+      "title": "Stacked Bar Calendar",
+      "reason": "Combines calendar navigation with stacked bar visualisations per day — a unique data-rich pattern ideal for project management or analytics product pages."
+    },
+    {
+      "file": "ruixen.ui__priority-pyramid-calendar.json",
+      "title": "Priority Pyramid Calendar",
+      "reason": "Pyramid/tiered priority metaphor layered onto a calendar is visually novel and communicates sophistication for task-management SaaS landing pages."
+    },
+    {
+      "file": "ruixen.ui__pill-calendar.json",
+      "title": "Pill Calendar",
+      "reason": "Pill-shaped date cells built on react-aria-components with RangeCalendar support — clean, accessible, and visually distinctive alternative to rectangular day cells."
+    },
+    {
+      "file": "ruixen.ui__side-panel-multi-calendar.json",
+      "title": "Side Panel Multi Calendar",
+      "reason": "Split-panel layout combining calendar navigation with a scrollable event list — a polished booking-style UI pattern ready for appointment or tour-booking pages."
+    },
+    {
+      "file": "ruixen.ui__inbox-calendar.json",
+      "title": "Inbox Calendar",
+      "reason": "Calendar + scrollable inbox/event list with Badges and Separators creates a two-pane productivity UI that conveys product depth on a SaaS landing page."
+    },
+    {
+      "file": "ruixen.ui__event-path-calendar.json",
+      "title": "Event Path Calendar",
+      "reason": "Path/timeline metaphor connecting events across calendar days is a genuinely novel visual approach for event-planning or project-management product pages."
+    },
+    {
+      "file": "ruixen.ui__scheduler.json",
+      "title": "Scheduler",
+      "reason": "Full scheduler with time-slot selection, date picking, Label-annotated fields, and Card layout — a complete booking widget with clear visual hierarchy."
+    },
+    {
+      "file": "ruixen.ui__calendar-scheduler.json",
+      "title": "Calendar Scheduler",
+      "reason": "Calendar + time-slot card with CardFooter confirm action and cn-controlled slot states — a polished end-to-end appointment booking widget."
+    },
+    {
+      "file": "ruixen.ui__event-calendar.json",
+      "title": "Event Calendar",
+      "reason": "Full-featured event calendar with add/delete via Trash2, uuid-keyed events, and Card wrapper — clean, functional, and visually complete for landing pages."
+    }
+  ],
+  "silver": [
+    {
+      "file": "0xUrvish__day-picker.json",
+      "title": "Day Picker",
+      "reason": "Animated frequency-selector (Daily/Weekly/Monthly) with spring transitions and day-of-week toggles — creative interaction but narrowly utility-focused rather than a full calendar."
+    },
+    {
+      "file": "ruixen.ui__calendar-lume.json",
+      "title": "Calendar Lume",
+      "reason": "Adds animated year/month scroll-area navigation on top of the base Calendar — a meaningful visual upgrade over shadcn default with Framer Motion transitions."
+    },
+    {
+      "file": "ruixen.ui__calendar-planner.json",
+      "title": "Calendar Planner",
+      "reason": "Year-range-aware month grid planner with info annotations per month — useful planning widget with clear visual structure, though lower visual drama."
+    },
+    {
+      "file": "ruixen.ui__calendar-twin.json",
+      "title": "Calendar Twin",
+      "reason": "Dual side-by-side month view with shared navigation — practical range-selection pattern that reads as premium compared to a single-month default."
+    },
+    {
+      "file": "ruixen.ui__calendar-with-presets.json",
+      "title": "Calendar With Presets",
+      "reason": "DayPicker with preset quick-select buttons — adds real user value for booking pages though the base styling remains close to shadcn default."
+    },
+    {
+      "file": "ruixen.ui__chrono-select.json",
+      "title": "Chrono Select",
+      "reason": "Popover-triggered calendar with a clean CalendarIcon trigger button — well-structured date picker pattern, functional and tidy."
+    },
+    {
+      "file": "ruixen.ui__date-time-input.json",
+      "title": "Date Time Input",
+      "reason": "Calendar + time input in a popover with format() display — combines date and time selection cleanly, useful for appointment forms."
+    },
+    {
+      "file": "ruixen.ui__date-time-picker.json",
+      "title": "Date Time Picker",
+      "reason": "Date + Clock icon time picker in a popover — clean, standard date-time combination with good icon usage and clear formatting."
+    },
+    {
+      "file": "ruixen.ui__dropdown-multi-calendar.json",
+      "title": "Dropdown Multi Calendar",
+      "reason": "Multi-date selection with Badge display and Card layout — adds meaningful visual feedback for multi-booking scenarios."
+    },
+    {
+      "file": "ruixen.ui__dropdown-range-date-picker.json",
+      "title": "Dropdown Range Date Picker",
+      "reason": "Month/year Select dropdowns combined with range calendar in a popover — adds navigation affordances that improve on a plain DayPicker."
+    },
+    {
+      "file": "ruixen.ui__multi-month-calendar.json",
+      "title": "Multi Month Calendar",
+      "reason": "Multi-month DayPicker with year/month Select dropdowns for quick navigation — a solid range-picker upgrade for booking flows."
+    },
+    {
+      "file": "ruixen.ui__multi-select-calendar-card.json",
+      "title": "Multi Select Calendar Card",
+      "reason": "Multi-date selection displayed as Badges in a Card with footer confirmation — clean multi-booking widget pattern."
+    },
+    {
+      "file": "ruixen.ui__universal-date-picker.json",
+      "title": "Universal Date Picker",
+      "reason": "Preset date ranges (last 7/30/90 days, etc.) plus custom calendar with a CalendarIcon trigger — a production-grade analytics date picker."
+    },
+    {
+      "file": "hardik0110__mini-calendar.json",
+      "title": "Mini Calendar",
+      "reason": "Weekly strip view with date-fns navigation and highlighted selected day — compact, clean widget ideal for scheduling sidebars."
+    },
+    {
+      "file": "jolbol1__calendar.json",
+      "title": "Calendar [react-aria-components]",
+      "reason": "Accessible react-aria-components implementation with proper ARIA semantics — good quality, accessible, though visually standard."
+    },
+    {
+      "file": "jolbol1__date-picker.json",
+      "title": "Date Picker [react-aria-components]",
+      "reason": "Full react-aria DatePicker + DateRangePicker with Dialog/Popover — well-structured accessible implementation."
+    },
+    {
+      "file": "jolbol1__date-range-picker.json",
+      "title": "Date Range Picker [react-aria-components]",
+      "reason": "Accessible range picker built on react-aria-components — solid and correct, visually clean but not distinctive."
+    },
+    {
+      "file": "jolbol1__range-calendar.json",
+      "title": "Range Calendar [react-aria-components]",
+      "reason": "Accessible range calendar with react-aria — good quality accessible component, standard styling."
+    },
+    {
+      "file": "originui__calendar-rac.json",
+      "title": "Calendar [React-Area]",
+      "reason": "React-aria Calendar with clean cn-based styling — above a bare shadcn wrap but not visually distinctive."
+    },
+    {
+      "file": "originui__calendar.json",
+      "title": "Calendar [React Day Picker]",
+      "reason": "Well-structured DayPicker with buttonVariants — clean, polished, slightly above shadcn default."
+    },
+    {
+      "file": "originui__datefield-rac.json",
+      "title": "Date Field [React Area]",
+      "reason": "Segment-based date/time field via react-aria with TimeField support — functional and clean, good for form contexts."
+    },
+    {
+      "file": "coss.com__calendar.json",
+      "title": "Calendar",
+      "reason": "DayPicker with ChevronsUpDown navigation and custom cell sizing — a clean, thoughtful style upgrade over base shadcn."
+    },
+    {
+      "file": "shugar__calendar.json",
+      "title": "Calendar",
+      "reason": "Custom-built calendar with comprehensive date-fns usage covering intervals, weeks, and multi-view support — thorough implementation."
+    },
+    {
+      "file": "shailendrakumar19999__date-picker.json",
+      "title": "Date Picker",
+      "reason": "Ark-UI DatePicker with Portal and clear/prev/next controls — clean and functional, adds value over a plain input."
+    },
+    {
+      "file": "anubra266__calendar-1.json",
+      "title": "Calendar 1",
+      "reason": "Ark-UI DatePicker rendered inline with timezone support — functional accessible implementation, clean styling."
+    },
+    {
+      "file": "ruixen.ui__flexi-filter-table.json",
+      "title": "Flexi Filter Table",
+      "reason": "Table with integrated calendar-based date filtering and checkboxes — a useful data-management pattern though it's a table, not a calendar per se."
+    },
+    {
+      "file": "haydenbleasel__calendar.json",
+      "title": "Calendar",
+      "reason": "Feature-grid calendar with Popover/Command-based feature selector and event grouping by day — functional product calendar widget."
+    },
+    {
+      "file": "shadcn__calendar-with-booked-days.json",
+      "title": "Calendar With Booked Days",
+      "reason": "Extends shadcn calendar with booked-day highlighting — directly useful for booking pages, modest but purposeful upgrade."
+    },
+    {
+      "file": "shadcn__calendar-with-event-slots.json",
+      "title": "Calendar With Event Slots",
+      "reason": "Event slot indicators on calendar days — a practical booking/scheduling enhancement."
+    },
+    {
+      "file": "shadcn__calendar-with-time-pressets.json",
+      "title": "Calendar With Time Presets",
+      "reason": "Quick-select time presets alongside a calendar — useful composite for appointment booking pages."
+    },
+    {
+      "file": "shadcn__calendar-with-time-picker-inline.json",
+      "title": "Calendar With Time Picker Inline",
+      "reason": "Inline time picker integrated below the calendar — clean date+time selection pattern for booking forms."
+    },
+    {
+      "file": "shadcn__dual-calendar.json",
+      "title": "Dual Calendar",
+      "reason": "Side-by-side two-month calendar wrapper with forwardRef — practical range selection aid."
+    }
+  ],
+  "bronze": [
+    {
+      "file": "ShadcnStudio__calendar-1.json",
+      "title": "Calendar 1",
+      "reason": "Bare shadcn Calendar import with defaultMonth prop and a small caption label. No visual upgrade."
+    },
+    {
+      "file": "SubframeApp__calendar-1.json",
+      "title": "Calendar 1",
+      "reason": "Subframe internal component using proprietary SubframeCore — not portable or reusable outside Subframe ecosystem."
+    },
+    {
+      "file": "ravikatiyar162__economic-calendar.json",
+      "title": "Economic Calendar",
+      "reason": "Financial/trading event list widget — overly domain-specific (country codes, economic indicators) for general website redesign use."
+    },
+    {
+      "file": "shadcn__calendar-date-and-time-picker.json",
+      "title": "Calendar Date And Time Picker",
+      "reason": "Placeholder component with a counter example — code file is a stub, not a real implementation."
+    },
+    {
+      "file": "shadcn__calendar-date-and-time-range.json",
+      "title": "Calendar Date And Time Range",
+      "reason": "Placeholder stub component with counter — not a real implementation."
+    },
+    {
+      "file": "shadcn__calendar-date-picker.json",
+      "title": "Calendar Date Picker",
+      "reason": "Placeholder stub with counter — not a real implementation."
+    },
+    {
+      "file": "shadcn__calendar-date-time-range.json",
+      "title": "Calendar Date Time Range",
+      "reason": "Placeholder stub with counter — not a real implementation."
+    },
+    {
+      "file": "shadcn__calendar-day-picker.json",
+      "title": "Calendar Day Picker",
+      "reason": "Placeholder stub with counter — not a real implementation."
+    },
+    {
+      "file": "shadcn__calendar-input.json",
+      "title": "Calendar Input",
+      "reason": "Placeholder stub with counter — not a real implementation."
+    },
+    {
+      "file": "shadcn__calendar-with-day-button.json",
+      "title": "Calendar With Day Button",
+      "reason": "Placeholder stub with counter — not a real implementation."
+    },
+    {
+      "file": "shadcn__calendar-with-disabled-days.json",
+      "title": "Calendar With Disabled Days",
+      "reason": "Placeholder stub with counter — not a real implementation."
+    },
+    {
+      "file": "shadcn__calendar-with-disabled-weekends.json",
+      "title": "Calendar With Disabled Weekends",
+      "reason": "Placeholder stub with counter — not a real implementation."
+    },
+    {
+      "file": "shadcn__calendar-with-little-date.json",
+      "title": "Calendar With Little Date",
+      "reason": "Placeholder stub with counter — not a real implementation."
+    },
+    {
+      "file": "shadcn__calendar-with-localisation.json",
+      "title": "Calendar With Localisation",
+      "reason": "Placeholder stub with counter — not a real implementation."
+    },
+    {
+      "file": "shadcn__calendar-with-range-selection.json",
+      "title": "Calendar With Range Selection",
+      "reason": "Placeholder stub with counter — not a real implementation."
+    },
+    {
+      "file": "shadcn__calendar-with-start-end-month.json",
+      "title": "Calendar With Start End Month",
+      "reason": "Placeholder stub with counter — not a real implementation."
+    },
+    {
+      "file": "shadcn__calendar-with-time-piker.json",
+      "title": "Calendar With Time Piker",
+      "reason": "Placeholder stub with counter — not a real implementation."
+    },
+    {
+      "file": "shadcn__calendar.json",
+      "title": "Calendar",
+      "reason": "The raw shadcn base Calendar component — the baseline all others are compared against, no added value."
+    },
+    {
+      "file": "shadcn__multiple-months-calendar.json",
+      "title": "Multiple Months Calendar",
+      "reason": "Placeholder stub with counter — not a real implementation."
+    },
+    {
+      "file": "shadcn__multiple-months-range.json",
+      "title": "Multiple Months Range",
+      "reason": "Placeholder stub with counter — not a real implementation."
+    },
+    {
+      "file": "shadcn__range-selection-calendar-with-min.json",
+      "title": "Range Selection Calendar With Min",
+      "reason": "Placeholder stub with counter — not a real implementation."
+    },
+    {
+      "file": "shadcn__range-selection-calendar.json",
+      "title": "Range Selection Calendar",
+      "reason": "Placeholder stub with counter — not a real implementation."
+    }
+  ]
+}

@@ -1,0 +1,60 @@
+{
+  "category": "text-areas",
+  "category_group": "UI Components",
+  "gold": [
+    {
+      "file": "shugar__feedback.json",
+      "title": "Feedback",
+      "reason": "Full-featured feedback widget (125 downloads) with inline/default modes, Material-style design system, click-outside handling, and rich interactive states — production-ready for SaaS contact forms and NPS flows."
+    },
+    {
+      "file": "shadcnspace__textarea-with-floating-label.json",
+      "title": "Textarea With Floating Label",
+      "reason": "CSS-only animated floating label using modern :placeholder-shown and group-focus-within selectors — polished UX pattern seen on top-tier marketing and SaaS login/contact pages with zero JS overhead."
+    },
+    {
+      "file": "sean0205__textarea.json",
+      "title": "Textarea",
+      "reason": "CVA-powered multi-variant textarea with full aria-invalid support, ring/shadow focus states, readonly styling, and size variants — a solid design-system-grade primitive that elevates any form."
+    }
+  ],
+  "silver": [
+    {
+      "file": "shadcnspace__textarea-with-characters-left.json",
+      "title": "Textarea With Characters Left",
+      "reason": "Functional character counter with color-feedback at limit (teal highlight) — a common and useful UX pattern for bio/comment fields on business sites."
+    },
+    {
+      "file": "shadcnspace__feedback-textarea.json",
+      "title": "Feedback Textarea",
+      "reason": "Live validation with aria-invalid and contextual success/error messages — good controlled-input pattern but limited in visual distinction."
+    },
+    {
+      "file": "shadcnspace__textarea-with-icon.json",
+      "title": "Textarea With Icon",
+      "reason": "Icon-prefixed textarea with peer-based positioning — a recognizable UI pattern useful for address/message fields, though straightforward in implementation."
+    },
+    {
+      "file": "shugar__textarea.json",
+      "title": "Textarea",
+      "reason": "Multi-size variant textarea with integrated error state via a separate Error component (21 downloads) — well-structured but more of a utility primitive than a showcase component."
+    },
+    {
+      "file": "shadcnspace__auto-growing-textarea.json",
+      "title": "Auto Growing Textarea",
+      "reason": "Auto-growing via CSS field-sizing-content with clamped max-height — useful behaviour for comment/chat inputs, though minimal visual treatment."
+    }
+  ],
+  "bronze": [
+    {
+      "file": "ShadcnStudio__text-area.json",
+      "title": "Text Area",
+      "reason": "Bare wrapper that renders a single shadcn Textarea with a placeholder — no added functionality, logic, or styling beyond the primitive itself."
+    },
+    {
+      "file": "shadcnspace__required-textarea.json",
+      "title": "Required Textarea",
+      "reason": "Adds only a red asterisk required indicator to a label — too minimal to add meaningful value; better handled inline in any form component."
+    }
+  ]
+}

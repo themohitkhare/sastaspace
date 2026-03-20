@@ -1,0 +1,180 @@
+{
+  "category": "tables",
+  "category_group": "UI Components",
+  "gold": [
+    {
+      "file": "isaiahbjork__financial-markets-table.json",
+      "title": "Financial Markets Table",
+      "reason": "Framer Motion animated rows, theme-aware, real-time market data display with country flags and sparkline-style returns — looks premium on a fintech or SaaS landing page out of the box."
+    },
+    {
+      "file": "isaiahbjork__leads-data-table.json",
+      "title": "Leads Data Table",
+      "reason": "AnimatePresence-powered row transitions, sortable columns, status badges, and action menus — a compelling CRM/sales tool showcase component instantly recognisable on a SaaS marketing page."
+    },
+    {
+      "file": "isaiahbjork__contacts-table-with-modal.json",
+      "title": "Contacts Table With Modal",
+      "reason": "Framer Motion animations, slide-in contact detail modal, avatar support, theme-aware design — visually distinctive and perfect for a people-management or HR SaaS demo section."
+    },
+    {
+      "file": "moumensoliman__interactive-logs-table-shadcnui.json",
+      "title": "Interactive Logs Table",
+      "reason": "Observability-grade animated log panel with expandable rows, animated filter chips, and search — ideal for developer tools or DevOps SaaS showcases."
+    },
+    {
+      "file": "ruixen.ui__inline-analytics-table.json",
+      "title": "Inline Analytics Table",
+      "reason": "Embeds progress bars and TrendingUp/TrendingDown icons directly in cells alongside revenue figures — turns a plain table into a miniature analytics dashboard, very marketable."
+    },
+    {
+      "file": "isaiahbjork__resizable-table.json",
+      "title": "Resizable Table",
+      "reason": "Framer Motion + react-resizable columns with animated presence, download actions, and theme support — rare interactive capability that reads as premium product polish."
+    },
+    {
+      "file": "micka_design__table.json",
+      "title": "Table (micka_design)",
+      "reason": "Framer Motion + AnimatePresence on every row with custom context-based composition API — among the most technically sophisticated table primitives in the set, highly adaptable."
+    },
+    {
+      "file": "dhileepkumargm__ultra-quality-data-table.json",
+      "title": "Ultra Quality Data Table",
+      "reason": "Full pagination, sorting, status badge variants (Active/Pending/Banned), and mock-data generation — a complete self-contained data table ready for SaaS user management demos."
+    },
+    {
+      "file": "ruixen.ui__reorderable-table.json",
+      "title": "Reorderable Table",
+      "reason": "Drag-to-reorder rows with checkboxes and dropdown actions — an interactive capability that elevates any product page demo showing a task or workflow management tool."
+    },
+    {
+      "file": "isaiahbjork__server-management-table.json",
+      "title": "Server Management Table",
+      "reason": "AnimatePresence for row transitions, live Power/Pause/Play/Restart action buttons, theme-aware — immediately conveys an infrastructure or cloud SaaS product when shown in a landing page."
+    }
+  ],
+  "silver": [
+    {
+      "file": "ruixen.ui__product-table.json",
+      "title": "Product Table",
+      "reason": "Full TanStack Table integration with sorting, filtering, pagination, and column visibility — feature-complete and clean but no standout animations or visual flair."
+    },
+    {
+      "file": "ravikatiyar162__project-data-table.json",
+      "title": "Project Data Table",
+      "reason": "Framer Motion rows, avatars, and CVA badge variants in a project-tracking layout — good quality and reusable for project management or team dashboards."
+    },
+    {
+      "file": "hibatillah__data-table-filter.json",
+      "title": "Data Table Filter",
+      "reason": "Advanced faceted filtering, pagination, and multi-column sort using TanStack Table — technically impressive but visually conservative; great for functional demos."
+    },
+    {
+      "file": "ruixen.ui__column-collaboration-table.json",
+      "title": "Column Collaboration Table",
+      "reason": "Popover-based column editing with footer summaries — a unique UX pattern that differentiates it, though the overall aesthetic is standard shadcn."
+    },
+    {
+      "file": "ruixen.ui__minimisable-table.json",
+      "title": "Minimisable Table",
+      "reason": "Collapsible column groups with dropdown controls — adds a thoughtful UX layer; useful for dashboards but lacks animation polish for landing page hero use."
+    },
+    {
+      "file": "ruixen.ui__table-with-dialog.json",
+      "title": "Table With Dialog",
+      "reason": "Combines checkboxes, action dialogs, and a footer total row — a solid real-world pattern; functional and clean, not visually distinctive."
+    },
+    {
+      "file": "ruixen.ui__table-dialog.json",
+      "title": "Table Dialog",
+      "reason": "Badge-tagged rows with dropdown and modal integration — a common but well-executed admin pattern; reliable silver utility."
+    },
+    {
+      "file": "ruixen.ui__table-edit.json",
+      "title": "Table Edit",
+      "reason": "Inline editing with checkbox multi-select and dropdown actions — practical CRUD table; clean but deep in the dashboard category."
+    },
+    {
+      "file": "ln-dev7__member-list.json",
+      "title": "Member List",
+      "reason": "Avatar stacks, Radix tooltip for overflow members, and date formatting — a polished team-management component that works well in a product showcase."
+    },
+    {
+      "file": "arunachalam0606__animated-table-rows.json",
+      "title": "Animated Table Rows",
+      "reason": "Row entrance animations layered on standard shadcn Table primitives — a meaningful upgrade over static tables; usable in landing page feature sections."
+    },
+    {
+      "file": "arunachalam0606__animated-table.json",
+      "title": "Animated Table",
+      "reason": "Animated table wrapper building on shadcn primitives — similar to animated-table-rows; solid reusable base but less distinctive than the row-specific variant."
+    },
+    {
+      "file": "preetsuthar17__basic-data-table.json",
+      "title": "Basic Data Table",
+      "reason": "Self-contained sort, filter, and custom cell renderer — a clean generic solution but the name and scope signal basic utility rather than premium appeal."
+    },
+    {
+      "file": "ruixen.ui__fixed-header-footer-table.json",
+      "title": "Fixed Header Footer Table",
+      "reason": "Sticky header/footer with balance totals — a functional UX necessity done cleanly, but not visually exciting enough for Gold."
+    },
+    {
+      "file": "ruixen.ui__contributors-overview-table.json",
+      "title": "Contributors Overview Table",
+      "reason": "Status badges and balance columns in a contributors layout — clear and well-structured for an open-source or team tool showcase, but plain in styling."
+    }
+  ],
+  "bronze": [
+    {
+      "file": "shadcn__table.json",
+      "title": "Table (shadcn)",
+      "reason": "Bare shadcn Table primitive with no demo data or interactivity — a building block, not a showcase component."
+    },
+    {
+      "file": "shadcn__data-table.json",
+      "title": "Data Table (shadcn)",
+      "reason": "Reference shadcn data-table pattern — minimal styling, intended as a copy-paste base; too plain for direct customer website use."
+    },
+    {
+      "file": "fuma-nama__type-table.json",
+      "title": "Type Table",
+      "reason": "Documentation-style type-definition table with info popovers — highly specific to component library docs, not useful for customer-facing redesigns."
+    },
+    {
+      "file": "haydenbleasel__data-table.json",
+      "title": "Table (haydenbleasel)",
+      "reason": "Custom table header wrappers with dropdown sorting — functional but minimal, no visual differentiation from stock shadcn output."
+    },
+    {
+      "file": "jolbol1__table.json",
+      "title": "Table (react-aria-components)",
+      "reason": "React Aria accessible table with resizable columns — accessibility-first but visually identical to a plain HTML table; too utility-focused for landing pages."
+    },
+    {
+      "file": "jollyshopland__table.json",
+      "title": "Table (jollyshopland)",
+      "reason": "Another React Aria resizable table variant — same profile as jolbol1; no differentiated visual design."
+    },
+    {
+      "file": "sean0205__table.json",
+      "title": "Table (sean0205)",
+      "reason": "Minimal semantic table wrapper with data-slot attributes — a utility primitive with no demo context or interactive value."
+    },
+    {
+      "file": "shugar__table.json",
+      "title": "Table (shugar)",
+      "reason": "Composable sub-component table (Colgroup, Header, Body) with minimal Tailwind styling — a raw primitive, not a presentational component."
+    },
+    {
+      "file": "shailendrakumar19999__table.json",
+      "title": "Table (MUI DataGrid)",
+      "reason": "MUI DataGrid wrapper — imports Material UI into a Tailwind/shadcn ecosystem; ecosystem mismatch makes it impractical for most redesign projects."
+    },
+    {
+      "file": "shadcnblockscom__list-2.json",
+      "title": "List 2",
+      "reason": "A card-based list with icons and separators — not truly a table; mismatched category and better described as a feature list block."
+    }
+  ]
+}

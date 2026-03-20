@@ -1,0 +1,22 @@
+{
+  "category": "Maps",
+  "category_group": "Marketing Blocks",
+  "gold": [
+    {"file": "aceternity__world-map.json", "title": "World Map", "reason": "Programmatically generated world map with animated SVG lines and dots — production-ready global-reach section for SaaS and enterprise sites showcasing international presence."},
+    {"file": "dillionverma__globe.json", "title": "Globe", "reason": "High-performance auto-rotating interactive WebGL globe — polished, widely used on top SaaS landing pages to visualize global scale; immediately production-ready."},
+    {"file": "magicui__globe.json", "title": "globe", "reason": "MagicUI globe implementation — another high-quality interactive WebGL globe; strong alternative with slightly different styling defaults."},
+    {"file": "coderislive07__travel-connect-signin.json", "title": "Travel Connect Signin", "reason": "Full authentication portal with animated world map visualization, glowing routes, and modern sign-in form (16KB) — complete, visually stunning full-page section for travel/global SaaS products."}
+  ],
+  "silver": [
+    {"file": "Mazyar kawa__location-map.json", "title": "Location Map", "reason": "Animated location map with pulsing markers and smooth transitions — clean, practical for contact or office-location sections on business sites."},
+    {"file": "dev.yadhakim__interactive-globe.json", "title": "Interactive Globe", "reason": "Interactive globe component — quality globe variant; overlaps with dillionverma and magicui but offers different interaction model."},
+    {"file": "ruixen.ui__globe.json", "title": "Globe", "reason": "Ruixen globe variant — solid implementation; fourth globe option with minor differentiation."},
+    {"file": "lovesickfromthe6ix__interactive-map.json", "title": "Interactive Map", "reason": "Interactive map component — functional and engaging; good for location-based SaaS products."},
+    {"file": "jatin-yadav05__expand-map.json", "title": "Expand Map", "reason": "Expandable map component — useful interactive pattern for embedded map sections on contact or location pages."}
+  ],
+  "bronze": [
+    {"file": "jatin-yadav05__location-tag.json", "title": "Location Tag", "reason": "Small location tag UI element — atom-level component only; not a website section, too simple for standalone use."},
+    {"file": "larsen66__map.json", "title": "Map", "reason": "Basic map embed component — minimal implementation without interactive or visual differentiators."},
+    {"file": "shailendrakumar19999__map.json", "title": "Map", "reason": "Plain map component — another minimal implementation; no notable features to differentiate from standard iframe maps."}
+  ]
+}

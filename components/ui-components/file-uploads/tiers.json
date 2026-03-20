@@ -1,0 +1,19 @@
+{
+  "category": "file-uploads",
+  "category_group": "UI Components",
+  "gold": [
+    {
+      "file": "aceternity__file-upload.json",
+      "title": "File Upload",
+      "reason": "The highest-performing component in this folder (1333 downloads, 27 likes) — framer-motion stacked card animation on drag, react-dropzone integration, file list display, and a distinctive visual identity. A Gold showpiece for any SaaS onboarding or media upload flow."
+    }
+  ],
+  "silver": [
+    {
+      "file": "isaiahbjork__animated-download.json",
+      "title": "Animated Download",
+      "reason": "68 downloads — animated download button with scrambling alphabet text, framer-motion progress states, and reduced-motion support. Polished micro-interaction that elevates download CTAs on marketing/SaaS sites, though it is a button rather than a full upload component."
+    }
+  ],
+  "bronze": []
+}

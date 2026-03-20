@@ -1,0 +1,95 @@
+{
+  "category": "navigation-menus",
+  "category_group": "Marketing Blocks",
+  "gold": [
+    {
+      "file": "ayushmxxn__tubelight-navbar.json",
+      "title": "Tubelight Navbar",
+      "reason": "Visually distinctive floating pill navbar with a glowing 'tubelight' effect above the active tab using layered blur/glow divs, Framer Motion spring animations, responsive icon/text switching, and frosted glass background. Highly polished, unique aesthetic — a true drop-in premium component with 21,580 downloads and 137 likes."
+    },
+    {
+      "file": "jatin-yadav05__anime-navbar.json",
+      "title": "Anime Navbar",
+      "reason": "Unique dark floating pill navbar featuring an animated anime mascot character (bobbing face with blinking eyes, rosy cheeks, sparkle effects) that follows the active tab via Framer Motion layoutId. Pulsing glow effects on the active item, hover interactions with shine animation, and responsive mobile/desktop views. Exceptionally creative and memorable design."
+    },
+    {
+      "file": "aceternity__floating-navbar.json",
+      "title": "Floating Navbar",
+      "reason": "Scroll-aware floating navbar that hides on scroll-down and reveals on scroll-up using Framer Motion AnimatePresence. Fixed positioning with glassmorphism styling (dark/light border, shadow), compact pill shape, and smooth y-axis slide animation. Classic premium Aceternity UI component with 1,875 downloads."
+    },
+    {
+      "file": "aceternity__navbar-menu.json",
+      "title": "Navbar Menu",
+      "reason": "Sophisticated hover-activated mega-menu system with spring-physics animations, layoutId-based shared element transitions, and a floating dropdown with backdrop blur. Includes ProductItem and HoveredLink sub-components for rich content. 3,770 downloads and 61 likes — highly regarded animated menu primitive."
+    },
+    {
+      "file": "victorwelander__expandable-tabs.json",
+      "title": "Expandable Tabs",
+      "reason": "Elegant animated tab bar where tabs expand from icon-only to icon+label on click using Framer Motion spring transitions. Supports separators, click-outside collapse, customizable active color, and dark mode. Space-efficient compact navigation with 7,936 downloads and 170 likes — among the highest-rated components in this set."
+    },
+    {
+      "file": "holetarget__21st-navbar.json",
+      "title": "Simple Navbar with Dropdown",
+      "reason": "Feature-complete production navbar with animated 3D perspective dropdown menus (rotateX transform on open/close), glassmorphism sticky header, icon-enhanced dropdown items with descriptions, light/dark theme switching, and a custom CSS keyframe animation system. Highly configurable with TypeScript props interface."
+    }
+  ],
+  "silver": [
+    {
+      "file": "abdulali254__nav-header.json",
+      "title": "Nav Header",
+      "reason": "Animated pill-shaped nav with a sliding Framer Motion cursor that follows hover state using mix-blend-difference for the text inversion effect. Creative interaction but the component is just a bare nav list with no logo, auth buttons, or mobile responsiveness — functional and polished for a nav primitive but incomplete as a full header."
+    },
+    {
+      "file": "shadcnblockscom__shadcnblocks-com-navbar1.json",
+      "title": "Navbar with Dropdowns",
+      "reason": "Well-structured production-quality navbar with shadcn NavigationMenu dropdowns (icon + description items), a Sheet-based mobile slide-in menu with Accordion for nested items, and login/signup buttons. Clean and complete but entirely unstyled beyond shadcn defaults — no animations or distinctive visual design."
+    },
+    {
+      "file": "tommyjepsen__header.json",
+      "title": "Header",
+      "reason": "Solid responsive header with shadcn NavigationMenu mega-dropdowns (two-column layout with description + sublinks), mobile hamburger toggle expanding inline, centered logo, and CTA buttons. Good production quality but generic shadcn styling with no unique visual personality. 4,139 downloads."
+    },
+    {
+      "file": "sshahaider__header-3.json",
+      "title": "Header 3",
+      "reason": "Feature-rich header with scroll-triggered blur effect, full shadcn NavigationMenu dropdowns (two-column grid with icon+description items for Product and Company), animated mobile portal drawer, and CTA buttons. More complete than most sshahaider headers but still plain styling."
+    },
+    {
+      "file": "sshahaider__floating-header.json",
+      "title": "Floating Header",
+      "reason": "Clean sticky floating header with rounded pill design, backdrop blur glassmorphism, Sheet-based mobile drawer, and login/get-started buttons. Visually cleaner than a flat header due to the floating rounded container, but limited to three plain nav links with no dropdowns."
+    },
+    {
+      "file": "sshahaider__header-with-search.json",
+      "title": "Header with Search",
+      "reason": "Sticky header that adds an integrated search modal trigger (expanding from icon to labeled button at xl breakpoint) and Sheet mobile drawer. The search integration is a meaningful differentiator making this more useful than a plain header, though styling remains standard."
+    },
+    {
+      "file": "sshahaider__header-2.json",
+      "title": "Header 2",
+      "reason": "Responsive sticky header with scroll-triggered floating behavior (shrinks max-width, adds border/shadow, adjusts padding on scroll), inline mobile menu with zoom-in animation, and CTA buttons. The scroll-based layout transform adds a subtle premium touch beyond a static header."
+    }
+  ],
+  "bronze": [
+    {
+      "file": "shadcn__navigation-menu.json",
+      "title": "Navigation menu",
+      "reason": "Unstyled Radix UI navigation menu primitive (NavigationMenu, NavigationMenuList, NavigationMenuTrigger, NavigationMenuContent, etc.). This is a headless component kit, not a complete navigation block — no layout, no logo, no responsive behavior. A building block, not a drop-in navbar."
+    },
+    {
+      "file": "shadcn__menubar.json",
+      "title": "Menubar",
+      "reason": "Desktop application-style menubar primitive wrapping @radix-ui/react-menubar. Exports raw component parts (MenubarMenu, MenubarTrigger, MenubarContent, etc.) with no preset layout or visual design beyond shadcn tokens. Not a website navigation bar — mismatched use case for a marketing blocks category."
+    },
+    {
+      "file": "sshahaider__header-1.json",
+      "title": "Header 1",
+      "reason": "Basic sticky header with scroll blur effect, ghost-link nav items, and a mobile portal menu. Functional but minimal — plain styling with no dropdowns, no distinctive visual design, and lowest downloads/engagement in the sshahaider header series. Standard template-level quality."
+    },
+    {
+      "file": "sshahaider__simple-header.json",
+      "title": "Simple Header",
+      "reason": "The most minimal of the sshahaider headers — a straightforward sticky header with a logo, three ghost nav links, two buttons, and a Sheet mobile drawer. No scroll effects, no dropdowns, no animations beyond the sheet. Purely functional with no distinguishing visual qualities."
+    }
+  ]
+}

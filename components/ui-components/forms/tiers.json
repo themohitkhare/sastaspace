@@ -1,0 +1,150 @@
+{
+  "category": "forms",
+  "category_group": "UI Components",
+  "gold": [
+    {
+      "file": "avanishverma4__sign-up.json",
+      "title": "Sign Up",
+      "reason": "Split-screen layout with a dark gradient left panel (gray-900 to orange-900) and right-side form — a premium visual pattern that immediately elevates a landing page sign-up experience."
+    },
+    {
+      "file": "cult-ui__popover-form.json",
+      "title": "Popover Form",
+      "reason": "Animated popover with Framer Motion layout transitions and a shared layout ID — modern micro-interaction UX that makes feedback or contact forms feel polished and alive."
+    },
+    {
+      "file": "lavikatiyar__form.json",
+      "title": "Form",
+      "reason": "Domain-specific booking form with motion animations, icon-enhanced inputs (MapPin, CalendarDays, BedDouble), and a composable API — visually rich and directly usable for hospitality or travel SaaS websites."
+    },
+    {
+      "file": "ruixen.ui__success-login-card.json",
+      "title": "Success Login Card",
+      "reason": "Animated success state with checkmark/color-shift transitions after login — a rare component that handles the post-submit moment with premium motion design, making auth flows feel complete."
+    },
+    {
+      "file": "larsen66__feedback-widget.json",
+      "title": "Feedback Widget",
+      "reason": "Emoji-driven sentiment feedback widget with Radix ToggleGroup and markdown rendering — highly polished UX pattern with animated emoji states and real-world SaaS applicability."
+    },
+    {
+      "file": "ravikatiyar162__ride-booking-form.json",
+      "title": "Ride Booking Form",
+      "reason": "Full-featured booking form with Framer Motion, background image support, and structured pickup/dropoff/date/time fields — visually impressive and directly deployable for marketplace or booking websites."
+    },
+    {
+      "file": "0xUrvish__morphing-input.json",
+      "title": "Morphing Input",
+      "reason": "Input that morphs between states with smooth Motion animations and HugeIcons — a distinctive animated primitive that makes forms feel premium and interactive."
+    },
+    {
+      "file": "ephraimduncan__form-layout.json",
+      "title": "Form Layout",
+      "reason": "Structured multi-section form layout with a feature highlights panel, plan selector, and shadcn Card/Badge/Select components — a solid split-panel SaaS upgrade flow component."
+    }
+  ],
+  "silver": [
+    {
+      "file": "KarrixLee__unsave-popup.json",
+      "title": "Unsave Popup",
+      "reason": "Discord-inspired animated save-confirmation popup with shake animation on discard — clever micro-interaction useful for dashboard editors, but too niche for a full page redesign."
+    },
+    {
+      "file": "ibelick__morphing-popover.json",
+      "title": "Morphing Popover",
+      "reason": "Smooth popover with shared layout animations via MotionConfig and AnimatePresence — well-built primitive but requires composition to become a useful form UI."
+    },
+    {
+      "file": "ravikatiyar162__multi-step-form.json",
+      "title": "Multi Step Form",
+      "reason": "Animated multi-step form using Framer Motion and CVA variants — functional and visually decent but the multi-step pattern adds complexity without distinctive visual flair."
+    },
+    {
+      "file": "shadcnblockscom__contact-2.json",
+      "title": "Contact 2",
+      "reason": "Clean two-column contact section with contact details on the left and form on the right using shadcn inputs — good layout structure, but relies purely on utility classes with no animations."
+    },
+    {
+      "file": "prebuiltui__form-1.json",
+      "title": "Form 1",
+      "reason": "Indigo-accented contact form with a centered layout and clear label hierarchy — clean and presentable but minimal styling with no animation or special visual treatment."
+    },
+    {
+      "file": "sshahaider__create-workspace-modal.json",
+      "title": "Create Workspace Modal",
+      "reason": "Workspace creation modal with a custom Modal component system — good structure for SaaS app onboarding but niche and scoped to post-login flows."
+    },
+    {
+      "file": "dillionverma__confetti.json",
+      "title": "Confetti",
+      "reason": "Confetti animation component with a rich API (createPortal, forwardRef, global options) — fun celebration effect useful for form submission success states but not a form itself."
+    },
+    {
+      "file": "ruixen.ui__cloud-watch-form.json",
+      "title": "Cloud Watch Form",
+      "reason": "Animated eye/cursor-tracking login form with unique interactive eyes that follow mouse movement — creative concept and attention-grabbing but too gimmicky for most business websites."
+    },
+    {
+      "file": "anurag-mishra22__progress-indicator.json",
+      "title": "Progress Indicator",
+      "reason": "Framer Motion animated step progress indicator with CircleCheck icons — polished utility component for multi-step flows but only a progress UI, not a full form."
+    },
+    {
+      "file": "aceternity__framer-motion-switch.json",
+      "title": "Framer Motion Switch",
+      "reason": "Smooth liquid-animation toggle switch using Framer Motion — well-crafted primitive with great micro-interaction but too atomic for standalone use in a website redesign."
+    }
+  ],
+  "bronze": [
+    {
+      "file": "appvibed01__auth-switch.json",
+      "title": "Auth Switch",
+      "reason": "Placeholder counter component (increment/decrement) incorrectly filed as an auth-switch — no real auth or form UI present."
+    },
+    {
+      "file": "arihantcodes_1f7b8c4d__multistep-form.json",
+      "title": "Multistep Form",
+      "reason": "File only contains a bare cn() utility function with no actual form component — incomplete or broken component."
+    },
+    {
+      "file": "base-ui__input-1.json",
+      "title": "Input 1",
+      "reason": "Single unstyled Base UI input primitive — a bare HTML input wrapper with minimal class styling, not a usable form component."
+    },
+    {
+      "file": "jolbol1__field.json",
+      "title": "Form [react-aria-components]",
+      "reason": "React Aria field primitives with CVA variants — accessibility-focused infrastructure component, not a visual form design piece."
+    },
+    {
+      "file": "meschacirung__forgot-password.json",
+      "title": "Forgot Password",
+      "reason": "Basic forgot password page with shadcn Input/Label/Button and a Next.js Link — bare-bones utility flow with no visual distinction."
+    },
+    {
+      "file": "meschacirung__sign-up.json",
+      "title": "Sign Up",
+      "reason": "Contains only a counter increment/decrement placeholder — no sign-up form present, clearly broken or placeholder content."
+    },
+    {
+      "file": "minhxthanh__otp-verify.json",
+      "title": "Otp Verify",
+      "reason": "4-digit OTP input with basic ref management — niche verification flow with plain HTML inputs and no visual styling."
+    },
+    {
+      "file": "sean0205__form.json",
+      "title": "Form",
+      "reason": "Shadcn form wrapper re-export using Radix Slot and react-hook-form — pure utility infrastructure, identical to shadcn's own form primitive."
+    },
+    {
+      "file": "sean0205__input.json",
+      "title": "Input",
+      "reason": "CVA input with size variants — a useful primitive but too atomic and unstyled to add visual value in a website redesign."
+    },
+    {
+      "file": "shadcn__form.json",
+      "title": "Form",
+      "reason": "Bare shadcn/ui form primitive using react-hook-form Controller and Radix Label — this is the raw shadcn form infrastructure, not a designed component."
+    }
+  ]
+}

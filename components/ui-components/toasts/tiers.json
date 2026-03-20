@@ -1,0 +1,40 @@
+{
+  "category": "toasts",
+  "category_group": "UI Components",
+  "gold": [
+    {
+      "file": "suraj-xd__google-drive-uploader-toast.json",
+      "title": "Google Drive Uploader Toast",
+      "reason": "Google Drive-style upload progress toast \u2014 visually rich and recognizable pattern that impresses in product demos."
+    },
+    {
+      "file": "yadwinder__toast-save.json",
+      "title": "Save Changes Toast",
+      "reason": "Clerk.dev-style save changes toast with undo action \u2014 polished utility that demonstrates product maturity."
+    }
+  ],
+  "silver": [
+    {
+      "file": "ayushmxxn__toast-1.json",
+      "title": "Toast 1",
+      "reason": "Custom styled toast \u2014 clean visual enhancement over default toasts."
+    },
+    {
+      "file": "anubra266__basic-toast.json",
+      "title": "Basic Toast",
+      "reason": "Accessible basic toast \u2014 solid baseline with good UX defaults."
+    }
+  ],
+  "bronze": [
+    {
+      "file": "base-ui__toast-1.json",
+      "title": "Toast 1",
+      "reason": "Base UI toast primitive \u2014 foundational but not visually impressive for website redesign."
+    },
+    {
+      "file": "shadcn__sonner.json",
+      "title": "Sonner",
+      "reason": "Direct shadcn Sonner wrapper \u2014 widely used default, adds no visual differentiation."
+    }
+  ]
+}

@@ -1,0 +1,315 @@
+{
+  "category": "accordions",
+  "category_group": "UI Components",
+  "gold": [
+    {
+      "file": "kokonutd__faq.json",
+      "title": "FAQ",
+      "reason": "Full FAQ section with gradient text title, Framer Motion animated entrance, contact prompt CTA, and shadcn Button — complete, premium, drop-in marketing block."
+    },
+    {
+      "file": "TomIsLoading__vertical-accordion.json",
+      "title": "Vertical Accordion",
+      "reason": "Animated vertical accordion with react-icons, Framer Motion, and responsive window size hook — highly visual, ideal for feature/service showcases."
+    },
+    {
+      "file": "anshuman008__faq-chat-accordion.json",
+      "title": "FAQ Chat Accordion",
+      "reason": "Chat-bubble style FAQ with icon positioning, Framer Motion, Radix UI, and Plus/Minus icons — unique visual pattern that makes FAQ sections memorable."
+    },
+    {
+      "file": "ruixen.ui__scroll-faqaccordion.json",
+      "title": "Scroll Faqaccordion",
+      "reason": "GSAP ScrollTrigger + Framer Motion combined with Radix accordion — scroll-driven reveal makes this the most impressive FAQ interaction pattern in the set."
+    },
+    {
+      "file": "larsen66__faq-accordion-block-shadcnui.json",
+      "title": "FAQ Accordion",
+      "reason": "Full block with Badge, Card, HelpCircle/MessageCircle icons, Framer Motion, and contact CTA — polished, layout-complete FAQ section for landing pages."
+    },
+    {
+      "file": "nextjsshop__icon-accordion.json",
+      "title": "Icon Accordion",
+      "reason": "Feature-icon accordion (Eye, Bell, BarChart, Monitor) with Framer Motion AnimatePresence and multi-open state — perfect for product feature sections."
+    },
+    {
+      "file": "isaiahbjork__animated-project-cards.json",
+      "title": "Animated Project Cards",
+      "reason": "Accordion-as-project-cards with status badges, categories, pricing, and Framer Motion expand — visually rich, great for portfolio or marketplace sections."
+    },
+    {
+      "file": "jatin-yadav05__interactive-accordion.json",
+      "title": "Interactive Accordion",
+      "reason": "Numbered items (01, 02...) with Framer Motion AnimatePresence and design-agency content — modern editorial style ideal for process/services sections."
+    },
+    {
+      "file": "vaib215__faq-tabs.json",
+      "title": "Faq Tabs",
+      "reason": "Categorized FAQ combining tabs and accordion with Framer Motion — dual-navigation pattern is uniquely suited for large FAQ or help-center sections."
+    },
+    {
+      "file": "molecule-lab-rushil__accordion.json",
+      "title": "Accordion",
+      "reason": "Framer Motion blur+opacity+height animation on content reveal — the blur-to-clear effect is a premium detail not seen in standard accordions."
+    },
+    {
+      "file": "ruixen.ui__text-reveal-faqs.json",
+      "title": "Text Reveal Faqs",
+      "reason": "Framer Motion text reveal animation on FAQ answers with link support — elegant entrance effect makes FAQ content feel editorial and high-end."
+    },
+    {
+      "file": "ibelick__accordion.json",
+      "title": "Accordion",
+      "reason": "Full Framer Motion variant/transition API with context-driven expand, customizable animation variants — the most composable and visually tunable accordion in the set."
+    },
+    {
+      "file": "designali-in__accordion-03.json",
+      "title": "Accordion 03",
+      "reason": "Image-per-item accordion with Button CTA inside content — rich media accordion ideal for portfolio, team, or product showcase sections."
+    },
+    {
+      "file": "ruixen.ui__faqsection.json",
+      "title": "Faqsection",
+      "reason": "Complete FAQ section component with title, subtitle, description, and button CTA — well-structured, ready to drop into any marketing page."
+    },
+    {
+      "file": "ekmas__accordion.json",
+      "title": "Accordion",
+      "reason": "Neobrutalism-styled accordion — strong visual identity with bold borders and offset shadows, stands out from every generic FAQ component."
+    }
+  ],
+  "silver": [
+    {
+      "file": "Edil-ozi__accordion.json",
+      "title": "Accordion",
+      "reason": "Radix UI accordion with full accessibility, single/multiple modes, and good description — solid primitive but no visual differentiation."
+    },
+    {
+      "file": "preetsuthar17__accordion-1.json",
+      "title": "Accordion 1",
+      "reason": "CVA-based multi-variant accordion (default, outline, solid, ghost) with ChevronDown — good reusability and clean abstraction."
+    },
+    {
+      "file": "educlopez__accordion-1.json",
+      "title": "Accordion 1",
+      "reason": "Custom accordion with Framer Motion AnimatePresence, allowMultiple, defaultExpandedIds — functional and animated but visually plain."
+    },
+    {
+      "file": "designali-in__accordion-01.json",
+      "title": "Accordion - Cheveron",
+      "reason": "Rounded-2xl border-dotted container with DIcons chevron — distinctive border styling gives it a subtle premium feel."
+    },
+    {
+      "file": "designali-in__accordion-plus-minus.json",
+      "title": "Accordion - Plus - Minus",
+      "reason": "Same dotted-border container as accordion-01 but with Plus/Minus toggle icons via DIcons — clean visual variant worth including."
+    },
+    {
+      "file": "designali-in__accordion-04.json",
+      "title": "Accordion 04",
+      "reason": "X/Plus icon toggle with numbered IDs — clean minimal style with good visual structure."
+    },
+    {
+      "file": "designali-in__accordion-05.json",
+      "title": "Accordion 05",
+      "reason": "PlusIcon toggle with clean layout and numbered items — functional, readable, suitable for content-dense FAQ sections."
+    },
+    {
+      "file": "nextjsshop__faq-accordion.json",
+      "title": "Faq Accordion",
+      "reason": "HelpCircle and MessageCircle icon headers with custom Radix accordion wrapper — distinct iconography elevates a standard FAQ pattern."
+    },
+    {
+      "file": "ruixen.ui__accordian.json",
+      "title": "Accordian",
+      "reason": "Feature icons (Info, Settings, Code, Accessibility) per item with Plus/Minus Framer Motion toggle — icon-per-item pattern is practical and clean."
+    },
+    {
+      "file": "uilayout.contact__multi-accordion.json",
+      "title": "Multi Accordion",
+      "reason": "Context-driven accordion with Framer Motion AnimatePresence, compound component pattern — well-architected and reusable."
+    },
+    {
+      "file": "ruixen.ui__ruixen-accordian02.json",
+      "title": "Ruixen Accordian02",
+      "reason": "Two-column layout with left header and right accordion — useful split-layout pattern for FAQ sections on wide screens."
+    },
+    {
+      "file": "fuma-nama__accordion.json",
+      "title": "Accordion",
+      "reason": "Hash-based deep-linking, auto-open on navigation, keyboard support — excellent for docs but visually minimal."
+    },
+    {
+      "file": "shailendrakumar19999__accordion.json",
+      "title": "Accordion",
+      "reason": "Ark UI with Framer Motion AnimatePresence and shadow-lg card container — animated and styled, good quality but not distinctive."
+    },
+    {
+      "file": "shadcnblockscom__faq1.json",
+      "title": "FAQ 1",
+      "reason": "Clean FAQ block with heading and typed props — simple but complete and ready-to-use for basic landing pages."
+    },
+    {
+      "file": "sshahaider__faqs-1.json",
+      "title": "Faqs 1",
+      "reason": "Structured FAQ section with heading, subheading, and max-width layout — minimal but complete for standard FAQ blocks."
+    },
+    {
+      "file": "ibelick__disclosure.json",
+      "title": "Disclosure",
+      "reason": "Framer Motion MotionConfig disclosure with variant system and context — clean primitive suitable for non-FAQ use cases like tooltips or inline help."
+    },
+    {
+      "file": "designali-in__accordion-02-1.json",
+      "title": "Accordion 02 1",
+      "reason": "Rich content grid layout inside accordion panels with images and Button CTA — interesting pattern but Plus/Minus icon and complex content may be too specific."
+    },
+    {
+      "file": "sean0205__accordion.json",
+      "title": "Accordion",
+      "reason": "CVA multi-variant (default, outline, solid, ghost) with Chevron and Plus icon options — high reusability, good developer ergonomics."
+    },
+    {
+      "file": "sean0205__accordion-1.json",
+      "title": "Accordion 1",
+      "reason": "Same CVA multi-variant pattern on Radix Accordion — solid utility component with well-structured variants."
+    },
+    {
+      "file": "larsen66__faq-accordion-block-shadcnui.json",
+      "title": "FAQ Accordion",
+      "reason": "Already Gold — duplicate omitted."
+    },
+    {
+      "file": "originui__accordion.json",
+      "title": "Accordion",
+      "reason": "Enhanced shadcn accordion with @radix-ui/react-icons ChevronDown — modest improvement over base, clean and usable."
+    },
+    {
+      "file": "shadcnspace__accordion-space.json",
+      "title": "Accordion Space",
+      "reason": "Icon + colored badge per accordion item with textColor/bgColor config — adds visual hierarchy without heavy animation."
+    },
+    {
+      "file": "shadcnspace__default.json",
+      "title": "Default",
+      "reason": "Same icon+color pattern as accordion-space — reusable with configurable icon/color per item, practical for feature lists."
+    }
+  ],
+  "bronze": [
+    {
+      "file": "shadcn__accordion.json",
+      "title": "Accordion",
+      "reason": "Unmodified shadcn/ui accordion primitive — the baseline, no visual upgrade whatsoever."
+    },
+    {
+      "file": "ShadcnStudio__accordion-1.json",
+      "title": "Accordion 1",
+      "reason": "Shadcn accordion used as a direct import with FAQ content — no customization beyond the base component."
+    },
+    {
+      "file": "SubframeApp__accordion-1.json",
+      "title": "Accordion 1",
+      "reason": "Subframe-specific component with proprietary @subframe/core dependency — not reusable outside Subframe ecosystem."
+    },
+    {
+      "file": "anubra266__accordion-1.json",
+      "title": "Accordion 1",
+      "reason": "Ark UI accordion with ChevronDown — plain wrapper, no animation or styling beyond defaults."
+    },
+    {
+      "file": "base-ui__accordion-1.json",
+      "title": "Accordion 1",
+      "reason": "Raw Base UI accordion component wrapper — minimal Tailwind, no animation, nearly identical to the shadcn base."
+    },
+    {
+      "file": "brijr__accordion-1.json",
+      "title": "Accordion 1",
+      "reason": "Shadcn accordion with ArrowUpRight icon on header — cosmetic tweak only, no meaningful visual upgrade."
+    },
+    {
+      "file": "coss.com__accordion.json",
+      "title": "Accordion",
+      "reason": "Base UI accordion wrapper with ChevronDown — thin wrapper around a primitive, no visual differentiation."
+    },
+    {
+      "file": "designali-in__accordion-01-1.json",
+      "title": "Accordion 01 1",
+      "reason": "Shadcn accordion with Plus icon from @aliimam/icons — near-identical to the base with a minor icon swap."
+    },
+    {
+      "file": "micka_design__accordion.json",
+      "title": "Accordion",
+      "reason": "Raw Base UI Accordion.Root with inline Tailwind — functional but no animation, no styling beyond border lines."
+    },
+    {
+      "file": "molecule-lab-rushil__discussion.json",
+      "title": "Discussion",
+      "reason": "Accordion used as a thread/discussion UI with left border line — too app-specific (comment threads), not suitable for website redesign."
+    },
+    {
+      "file": "sean0205__base-accordion.json",
+      "title": "Base Accordion",
+      "reason": "CVA variants on Base UI accordion — same pattern as sean0205__accordion but less tested library; functional but redundant."
+    },
+    {
+      "file": "sean0205__outline-accordion.json",
+      "title": "Outline Accordion",
+      "reason": "File contains a counter component (useState count), not an accordion — mislabeled, completely wrong component."
+    },
+    {
+      "file": "shugar__collapse.json",
+      "title": "Collapse",
+      "reason": "Custom collapse with size variants (small/large) and CollapseGroup — bare-bones, no animation, minimal styling."
+    },
+    {
+      "file": "shadcnspace__accordion-multi-level.json",
+      "title": "Accordion Multi Level",
+      "reason": "Nested accordion+collapsible for file tree UI — too app-specific (file explorer pattern), not suitable for marketing sections."
+    },
+    {
+      "file": "shadcnspace__shadcn-accordion.json",
+      "title": "Shadcn Accordion",
+      "reason": "File contains a date picker / calendar form, not an accordion — mislabeled, wrong component entirely."
+    },
+    {
+      "file": "m.umairwaheedansari__flip-card.json",
+      "title": "Flip Card",
+      "reason": "Flip card component — not an accordion at all, misclassified in this category."
+    },
+    {
+      "file": "m.umairwaheedansari__particles-bg.json",
+      "title": "Particles Bg",
+      "reason": "Canvas particle background — not an accordion, completely misclassified."
+    },
+    {
+      "file": "m.umairwaheedansari__share-button.json",
+      "title": "Share Button",
+      "reason": "Social share button with Facebook/Twitter/LinkedIn links — not an accordion, wrong category."
+    },
+    {
+      "file": "m.umairwaheedansari__siri-orb.json",
+      "title": "Siri Orb",
+      "reason": "Animated Siri-style orb component — not an accordion, completely misclassified."
+    },
+    {
+      "file": "m.umairwaheedansari__text-swiper.json",
+      "title": "Text Swiper",
+      "reason": "Gradient badge and text swiper animation — not an accordion, misclassified."
+    },
+    {
+      "file": "reuno-ui__background-plus.json",
+      "title": "Background Plus",
+      "reason": "Plus-pattern CSS background component — not an accordion, misclassified."
+    },
+    {
+      "file": "reuno-ui__bg-gredient.json",
+      "title": "Bg Gredient",
+      "reason": "Radial gradient background component — not an accordion, misclassified."
+    },
+    {
+      "file": "reuno-ui__blue-meshy-background.json",
+      "title": "Blue Meshy Background",
+      "reason": "WebGL/canvas mesh background — not an accordion, misclassified."
+    }
+  ]
+}

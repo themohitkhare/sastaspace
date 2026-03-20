@@ -1,0 +1,1185 @@
+{
+  "category": "buttons",
+  "category_group": "UI Components",
+  "gold": [
+    {
+      "file": "0xUrvish__delete-button.json",
+      "title": "Delete Button",
+      "reason": "Animated countdown with per-letter staggered animations, lock icon morph, and spring-physics delete confirmation. Multi-state UX that is visually dramatic and memorable."
+    },
+    {
+      "file": "Adurotimi__save-button.json",
+      "title": "Save Button",
+      "reason": "Shimmer sweep gradient on idle, confetti burst on success state. 514 downloads validates high demand. Self-contained with no external CSS dependencies."
+    },
+    {
+      "file": "Shatlyk1011__interactive-hover-button.json",
+      "title": "Interactive Hover Button",
+      "reason": "Expanding dot fills the button on hover, arrow icon appears, full loading and success state transitions. Complete interactive lifecycle with polished spring physics."
+    },
+    {
+      "file": "Shatlyk1011__shiny-button.json",
+      "title": "Shiny Button",
+      "reason": "Blue gradient with heavy radial glow halo, animated background-position shimmer. Immediately eye-catching as a hero CTA with no external dependencies."
+    },
+    {
+      "file": "aliimam__liquid-glass-button.json",
+      "title": "Liquid Glass Button",
+      "reason": "SVG feTurbulence + feDisplacementMap creates genuine liquid distortion on hover. Also includes a MetalButton with realistic brushed metal layering. Technically unique."
+    },
+    {
+      "file": "cult-ui__bg-animated-button.json",
+      "title": "BG Animated Button",
+      "reason": "Spinning conic gradient border with multiple theme variants (purple, orange, teal). Continuous rotation creates unmistakable wow factor for any landing page CTA."
+    },
+    {
+      "file": "cult-ui__texture-button.json",
+      "title": "Texture Button",
+      "reason": "Layered gradient texture with depth shadow and inset highlight. 132 downloads. Sophisticated dark-mode premium aesthetic."
+    },
+    {
+      "file": "designali-in__liquid-glass-button.json",
+      "title": "Liquid Glass Button",
+      "reason": "2398 downloads validates it as the most-used glass button. Backdrop-blur morphism with animated border glow."
+    },
+    {
+      "file": "designali-in__shiny-button.json",
+      "title": "Shiny Button",
+      "reason": "CSS @property animates a conic gradient border in a continuous sweep. The rotating gradient border is visually striking and unique in the registry."
+    },
+    {
+      "file": "dillionverma__rainbow-button.json",
+      "title": "Rainbow Button",
+      "reason": "14,267 downloads and 108 likes — the most popular animated button in the registry. Continuously animated rainbow gradient background with blurred glow underlay."
+    },
+    {
+      "file": "isaiahbjork__hud-button.json",
+      "title": "HUD Button",
+      "reason": "Sci-fi HUD SVG clip-path shape with animated scanning dot trail and corner brackets. Unique futuristic aesthetic with no dependencies."
+    },
+    {
+      "file": "jakobhoeg__button.json",
+      "title": "Button",
+      "reason": "Four distinct premium variants: shine sweep, gooey morph, ring hover, link hover. 176 downloads. Covers multiple use-cases at Gold quality in a single component."
+    },
+    {
+      "file": "johuniq__joly-button.json",
+      "title": "Joly Button",
+      "reason": "10+ design variants (glass, neon, gradient, outline) with cursor-tracking radial highlight. One of the most versatile Gold components in the registry."
+    },
+    {
+      "file": "johuniq__liquid-metal-button.json",
+      "title": "Liquid Metal Button",
+      "reason": "Uses @paper-design/shaders WebGL shader for authentic flowing liquid metal effect. Technically the most advanced render technique in the entire registry."
+    },
+    {
+      "file": "lovesickfromthe6ix__gradient-button.json",
+      "title": "Gradient Button",
+      "reason": "Three.js + GSAP WebGL post-processing bloom effect. Animated gradient mesh rendered in real-time. Highest visual fidelity button in the registry."
+    },
+    {
+      "file": "magicui__rainbow-button.json",
+      "title": "Rainbow Button",
+      "reason": "Animated rainbow gradient with blurred colored glow below. Clean implementation of the rainbow pattern from a trusted registry author."
+    },
+    {
+      "file": "magicui__shimmer-button.json",
+      "title": "Shimmer Button",
+      "reason": "Spinning conic shimmer animation using CSS container-query units on dark background. The animating light sweep creates premium SaaS CTA feel."
+    },
+    {
+      "file": "maxim.bort.devel__fishy-button.json",
+      "title": "Fishy Button",
+      "reason": "Fish SVG swims through the button interior on hover using CSS offset-path animation. Delightfully unique and memorable with zero dependencies."
+    },
+    {
+      "file": "maxim.bort.devel__modern-retro-button.json",
+      "title": "Modern Retro Button",
+      "reason": "GSAP sweeping color bars + text flicker effect on hover. Retro-cinema aesthetic with high production value. Stands out strongly on dark backgrounds."
+    },
+    {
+      "file": "moazamtrade__animated-generate-button-shadcn-tailwind.json",
+      "title": "Animated Generate Button",
+      "reason": "Per-letter flicker scramble + rotating multi-layer gradient glow border. Complex multi-layer effect that creates premium AI/generative UI feel."
+    },
+    {
+      "file": "muhammad-binsalman__shiny-button-1.json",
+      "title": "Shiny Button",
+      "reason": "SVG feColorMatrix combined with multi-layer rotating conic gradient glow. Technically inventive approach producing a distinctive metallic halo."
+    },
+    {
+      "file": "pate1kiran__code-pen-home-skeuomorphism-in-the-dark-button.json",
+      "title": "Skeuomorphism in the Dark Button",
+      "reason": "Multi-layer skeuomorphic 3D button with realistic inset shadows, dark metal gradient, and surface highlight. Best skeuomorphic implementation in the registry."
+    },
+    {
+      "file": "reuno-ui__slide-button.json",
+      "title": "Slide Button",
+      "reason": "Spring-physics drag-to-send with loading and success states. 304 downloads. The swipe gesture mechanic adds unique interaction value for confirmation CTAs."
+    },
+    {
+      "file": "serafimcloud__gradient-button.json",
+      "title": "Gradient Button",
+      "reason": "6,277 downloads and 59 likes — the second most popular button in the registry. Clean rotating gradient with proven market demand."
+    },
+    {
+      "file": "theutkarshmail__3d-button.json",
+      "title": "3D Button",
+      "reason": "SVG splash rays animate outward, SVG path outline draws itself, staggered letter animations with blur-in. One of the most layered animated effects in the registry."
+    },
+    {
+      "file": "uilayout.contact__button-1.json",
+      "title": "Button 1",
+      "reason": "7 overlapping radial gradients with mix-blend-mode and animated scale/opacity create a uniquely organic liquid glow effect. Technically among the most sophisticated."
+    },
+    {
+      "file": "vaib215__wet-paint-button.json",
+      "title": "Wet Paint Button",
+      "reason": "Animated paint drip SVG effect below the button on hover. Highly unique visual concept with strong visual identity for creative/art-focused sites."
+    },
+    {
+      "file": "hari__button-8.json",
+      "title": "Button",
+      "reason": "tsparticles stars fly out from the button on hover over a blue-purple gradient. Particle burst CTA is visually spectacular and universally applicable."
+    },
+    {
+      "file": "easemize__material-design-3-button.json",
+      "title": "Material Design 3 Button",
+      "reason": "Full MD3 physics ripple engine with 5 official variants (filled, tonal, outlined, elevated, text). The most complete button system in the registry."
+    }
+  ],
+  "silver": [
+    {
+      "file": "0xUrvish__discover-button.json",
+      "title": "Discover Button",
+      "reason": "Expandable search input with spring animation. Clean and useful for nav or hero sections."
+    },
+    {
+      "file": "Shatlyk1011__button-colorful.json",
+      "title": "Button Colorful",
+      "reason": "Cyan-blue-purple gradient with animated blur glow on hover. Good for dark landing pages."
+    },
+    {
+      "file": "Shatlyk1011__motion-button.json",
+      "title": "Motion Button",
+      "reason": "Expanding circle fills button on hover with arrow reveal. Clean minimal interaction."
+    },
+    {
+      "file": "Shatlyk1011__shimmer-button.json",
+      "title": "Shimmer Button",
+      "reason": "CSS shimmer sweep animation. Straightforward but effective for gradient CTAs."
+    },
+    {
+      "file": "Shatlyk1011__social-button.json",
+      "title": "Social Button",
+      "reason": "Spring-animated share icons expand outward. Practical and polished social sharing UX."
+    },
+    {
+      "file": "abishek1512__button-1.json",
+      "title": "Button 1",
+      "reason": "Rotating CSS custom-property gradient border. 493 downloads confirms utility. Clean and dependency-free."
+    },
+    {
+      "file": "aghasisahakyan1__star-button.json",
+      "title": "Star Button",
+      "reason": "CSS offset-path light particle orbiting the button border. Star SVG background. Elegant and unusual motion."
+    },
+    {
+      "file": "arunachalam0606__corner-frame-animated-button-1.json",
+      "title": "Corner Frame Animated Button",
+      "reason": "Animated corner bracket frames appear on hover. Minimal but distinctive for tech interfaces."
+    },
+    {
+      "file": "arunachalam0606__morphing-arrow-button.json",
+      "title": "Morphing Arrow Button",
+      "reason": "Arrow icon morphs on hover. Clean motion pattern useful for navigation CTAs."
+    },
+    {
+      "file": "arunachalam0606__media-button.json",
+      "title": "Media Button",
+      "reason": "Video or GIF background reveals on hover inside the button. Unique content preview mechanic."
+    },
+    {
+      "file": "avanishverma4__button.json",
+      "title": "Button",
+      "reason": "3D Framer Motion spring with border-bottom depth shadow creates tactile press feedback."
+    },
+    {
+      "file": "axai-kaizoku__animated-theme-toggle.json",
+      "title": "Animated Theme Toggle",
+      "reason": "SVG path morphing sun-to-moon animation. Well-executed niche toggle."
+    },
+    {
+      "file": "axelwesselgren__plastic-button.json",
+      "title": "Plastic Button",
+      "reason": "Realistic plastic material with inset highlights and surface sheen. Excellent skeuomorphic CTA."
+    },
+    {
+      "file": "ayushmxxn__theme-toggle.json",
+      "title": "Theme Toggle",
+      "reason": "Sliding toggle with spring animation. 3,404 downloads validates wide usage."
+    },
+    {
+      "file": "badtzx0__glowing-button.json",
+      "title": "Glowing Button",
+      "reason": "Animated radial glow that pulses on hover. Simple but effective for dark-mode hero sections."
+    },
+    {
+      "file": "badtzx0__gradient-slide-button.json",
+      "title": "Gradient Slide Button",
+      "reason": "Gradient slides from background on hover. Clean transition pattern."
+    },
+    {
+      "file": "barvian__activity-with-number-flow.json",
+      "title": "Activity with Number Flow",
+      "reason": "Social action buttons with NumberFlow animated counters. Polished micro-interaction."
+    },
+    {
+      "file": "beratberkayg__animated-button.json",
+      "title": "Animated Button",
+      "reason": "Mouse-tracking global radial glow follows cursor position. Effective interactive feedback."
+    },
+    {
+      "file": "beratberkayg__button-1.json",
+      "title": "Button",
+      "reason": "Blurred gradient glow behind the button pulses on hover. Atmospheric CTA style."
+    },
+    {
+      "file": "beratberkayg__button.json",
+      "title": "Button",
+      "reason": "Glass button with shimmer sweep and icon. Clean modern SaaS aesthetic."
+    },
+    {
+      "file": "bundui__floating-button.json",
+      "title": "Floating Button",
+      "reason": "FAB with staggered spring-animated menu icon reveal. Good for mobile-first UIs."
+    },
+    {
+      "file": "chetanverma16__status-cycle-button.json",
+      "title": "Status Cycle Button",
+      "reason": "Auto-cycling text states with blur transition. Useful for dynamic CTA copy."
+    },
+    {
+      "file": "chowlol202__animated-gradient-button.json",
+      "title": "Animated Gradient Button",
+      "reason": "Animated gradient with smooth position transitions. Solid hero CTA option."
+    },
+    {
+      "file": "cult-ui__family-button.json",
+      "title": "Family Button",
+      "reason": "Spring-animated FAB with expanding menu. Polished radial menu pattern."
+    },
+    {
+      "file": "cult-ui__neumorph-button.json",
+      "title": "Neumorph Button",
+      "reason": "Neumorphic soft-shadow design with press state. Good for light mode SaaS."
+    },
+    {
+      "file": "daiwiikharihar17147__cinematic-glow-toggle.json",
+      "title": "Cinematic Glow Toggle",
+      "reason": "Spring toggle with neon glow color transition. Cinematic dark-mode aesthetic."
+    },
+    {
+      "file": "daiwiikharihar17147__toggle-switch.json",
+      "title": "Toggle Switch",
+      "reason": "Industrial draggable spring-physics switch with LED glow transition and cross-fade text labels. Highly polished skeuomorphic mechanic."
+    },
+    {
+      "file": "designali-in__metal-button.json",
+      "title": "Metal Button",
+      "reason": "Metallic gradient with brushed surface highlight. Premium dark-mode aesthetic."
+    },
+    {
+      "file": "dhileepkumargm__spotlight-button.json",
+      "title": "Spotlight Button",
+      "reason": "Spotlight radial gradient follows mouse. Clean cursor-tracking effect."
+    },
+    {
+      "file": "dillionverma__animated-subscribe-button.json",
+      "title": "Animated Subscribe Button",
+      "reason": "Multi-state subscribe flow with icon transitions. Good for newsletter CTAs."
+    },
+    {
+      "file": "dillionverma__ripple-button.json",
+      "title": "Ripple Button",
+      "reason": "Click-origin ripple with Framer Motion. Clean interaction feedback."
+    },
+    {
+      "file": "drdruide__destructive-button.json",
+      "title": "Destructive Button",
+      "reason": "Shake animation on hover with expanding red underline. Unique warning affordance."
+    },
+    {
+      "file": "easemize__glass-button.json",
+      "title": "Glass Button",
+      "reason": "Frosted glass with animated border glow. Versatile for dark interfaces."
+    },
+    {
+      "file": "easemize__hover-glow-button.json",
+      "title": "Hover Glow Button",
+      "reason": "Glow halo expands on hover. Solid glowing CTA pattern."
+    },
+    {
+      "file": "ekmas__button.json",
+      "title": "Button",
+      "reason": "Neobrutalism style with bold borders and shadow offset. 319 downloads. Strong editorial identity."
+    },
+    {
+      "file": "hardik0110__download-hover-button.json",
+      "title": "Download Hover Button",
+      "reason": "Icon-only button expands to icon + label on hover. Clean expand interaction."
+    },
+    {
+      "file": "ibelick__text-morph.json",
+      "title": "Text Morph",
+      "reason": "Text morphs between two strings with blur-in/out. Useful for dynamic CTAs."
+    },
+    {
+      "file": "jatin-yadav05__book-a-call-button.json",
+      "title": "Book a Call Button",
+      "reason": "Animated calendar icon with hover effects. Specific but polished for scheduling CTAs."
+    },
+    {
+      "file": "kokonutd__hold-and-release-button.json",
+      "title": "Hold and Release Button",
+      "reason": "Hold-to-confirm mechanic with circular progress. Useful for destructive action confirmation."
+    },
+    {
+      "file": "ln-dev7__flip-button.json",
+      "title": "Flip Button",
+      "reason": "3D flip animation reveals alternate text on hover. Clean interaction for toggle-style CTAs."
+    },
+    {
+      "file": "m.umairwaheedansari__star-button.json",
+      "title": "Star Button",
+      "reason": "Stars fly out from button edges on hover. Delightful micro-interaction for wishlist/favorite."
+    },
+    {
+      "file": "maxim.bort.devel__chronicle-button.json",
+      "title": "Chronicle Button",
+      "reason": "Staggered text character animations on hover. Polished type-based interaction."
+    },
+    {
+      "file": "maxim.bort.devel__halomot-button.json",
+      "title": "Halomot Button",
+      "reason": "Animated halo orbit effect. Dreamy aesthetic for creative brands."
+    },
+    {
+      "file": "micka_design__button.json",
+      "title": "Button",
+      "reason": "Multi-variant system including an animated infinity-path loader state. Versatile production-ready component."
+    },
+    {
+      "file": "minhxthanh__gradient-menu.json",
+      "title": "Gradient Menu",
+      "reason": "Expanding pill icons with per-item gradients and blurred glow. 373 downloads. Excellent for app nav bars."
+    },
+    {
+      "file": "minhxthanh__theme-toggle-buttons.json",
+      "title": "Theme Toggle Buttons",
+      "reason": "5 distinct animated SVG theme toggle variants with spring animations. A premium collection of toggle buttons."
+    },
+    {
+      "file": "minhxthanh__copy-code-button.json",
+      "title": "Copy Code Button",
+      "reason": "Blur-out/in text transition plus a fill progress indicator on copy. Highly polished utility button."
+    },
+    {
+      "file": "molecule-lab-rushil__expandable-button.json",
+      "title": "Expandable Button",
+      "reason": "Spring-powered icon-to-icon+text expansion. Good for compact UI that opens into navigation."
+    },
+    {
+      "file": "mrhyddenn__hover-button.json",
+      "title": "Hover Button",
+      "reason": "Individual letter tiles flip alternately on hover. Unique typographic hover mechanic."
+    },
+    {
+      "file": "muhammad-binsalman__stardust-button.json",
+      "title": "Stardust Button",
+      "reason": "Pearl finish with animated star icon swap on hover. Elegant premium e-commerce style."
+    },
+    {
+      "file": "mvp_Subha__button-github.json",
+      "title": "GitHub Button",
+      "reason": "Rainbow gradient GitHub star button. Polished social proof CTA for developer tools."
+    },
+    {
+      "file": "mvp_Subha__button-hover.json",
+      "title": "Button Hover",
+      "reason": "Expanding orange circle from corner fills button on hover. Clean and impactful."
+    },
+    {
+      "file": "n38693842__ripple-button.json",
+      "title": "Ripple Button",
+      "reason": "Mouse-origin ripple fills button on hover with AnimatePresence. Dark fill on light border creates strong contrast."
+    },
+    {
+      "file": "oldkong88__cartoon-button.json",
+      "title": "Cartoon Button",
+      "reason": "Colorful cartoon style with shine sweep and 3D hover lift. Excellent for playful or consumer product brands."
+    },
+    {
+      "file": "ozantekin__back-button.json",
+      "title": "Back Button",
+      "reason": "Arrow reveal with animated sliding panel on hover. Clean navigation button interaction."
+    },
+    {
+      "file": "ozantekin__bookmark-icon-button.json",
+      "title": "Bookmark Icon Button",
+      "reason": "Toggle bookmark with spring physics, particle burst, and radial glow on completion. Excellent micro-interaction."
+    },
+    {
+      "file": "ozantekin__heart-button.json",
+      "title": "Heart Button",
+      "reason": "Progressive fill heart + animated counter with AnimatePresence + particle burst at max. Complete interactive lifecycle."
+    },
+    {
+      "file": "paceui__dot-flow.json",
+      "title": "Dot Flow",
+      "reason": "GSAP animated dot matrix cycles through patterns while text blurs in/out. Unique loading/processing indicator."
+    },
+    {
+      "file": "preetsuthar17__shining-button.json",
+      "title": "Shining Button",
+      "reason": "Blue gradient with skewed blur beam sweep animation. Reliable polished CTA."
+    },
+    {
+      "file": "rafa-porto__publish-button.json",
+      "title": "Publish Button",
+      "reason": "Hold-to-publish with animated SVG circular progress ring. Premium interaction for content creation UIs."
+    },
+    {
+      "file": "ravikatiyar162__button.json",
+      "title": "Button",
+      "reason": "Rotating SVG concentric circle animation fills the button on hover. Unique orbital background mechanic."
+    },
+    {
+      "file": "reuno-ui__apple-play-button.json",
+      "title": "Apple Play Button",
+      "reason": "Apple-style expanding pill with smooth transition. Clean Apple-inspired aesthetic."
+    },
+    {
+      "file": "reuno-ui__interactive-button.json",
+      "title": "Interactive Button",
+      "reason": "Breathing multi-color radial glow pulses continuously. Organic ambient animation."
+    },
+    {
+      "file": "reuno-ui__music-toggle-btn.json",
+      "title": "Music Toggle Button",
+      "reason": "Animated waveform bars respond to playback with spring physics. Unique audio-visual interaction."
+    },
+    {
+      "file": "reuno-ui__share-button.json",
+      "title": "Share Button",
+      "reason": "Staggered slide-in share icons replace button text on hover. Clean reveal pattern for share actions."
+    },
+    {
+      "file": "ruixen.ui__confetti-button.json",
+      "title": "Confetti Button",
+      "reason": "Confetti burst on click. Great for celebration moments in onboarding or success states."
+    },
+    {
+      "file": "ruixen.ui__multi-state-morph-button.json",
+      "title": "Multi State Morph Button",
+      "reason": "Morphs through multiple states with smooth transitions. Good for async action feedback."
+    },
+    {
+      "file": "ruixen.ui__spark-button.json",
+      "title": "Spark Button",
+      "reason": "Spark particles fly from button on interaction. Energetic visual feedback."
+    },
+    {
+      "file": "ruixen.ui__swipe-to-confirm-button.json",
+      "title": "Swipe to Confirm Button",
+      "reason": "Swipe drag gesture for confirmation. Good for mobile-first destructive action UX."
+    },
+    {
+      "file": "serafimcloud__flip-button.json",
+      "title": "Flip Button",
+      "reason": "3D flip card animation on hover. Clean dimensional interaction."
+    },
+    {
+      "file": "serafimcloud__floating-action-button.json",
+      "title": "Floating Action Button",
+      "reason": "FAB with rotating icon and blur/scale reveal for menu items. 282 downloads, 13 likes. Polished mobile pattern."
+    },
+    {
+      "file": "serafimcloud__retro-button.json",
+      "title": "Retro Button",
+      "reason": "Retro 3D offset shadow with press animation. Good for editorial or retro brand aesthetics."
+    },
+    {
+      "file": "serafimcloud__ripple-button.json",
+      "title": "Ripple Button",
+      "reason": "Ripple click effect from serafimcloud. Clean and well-implemented."
+    },
+    {
+      "file": "serafimcloud__wood-cursor.json",
+      "title": "Wood Cursor Button",
+      "reason": "Custom wooden cursor image swap on button hover. Whimsical and memorable niche interaction."
+    },
+    {
+      "file": "shadcnspace__button-witn-icon.json",
+      "title": "Button With Icon",
+      "reason": "Arrow icon slides across the pill with rotation on hover. Clean animated CTA with icon motion."
+    },
+    {
+      "file": "skyleen77__flip-button.json",
+      "title": "Flip Button",
+      "reason": "4-directional spring flip animation based on mouse entry direction. Technically impressive directional detection."
+    },
+    {
+      "file": "uilayout.contact__button-2.json",
+      "title": "Button 2",
+      "reason": "Mouse-tracking radial glow spotlight over gradient background. Polished cursor-following effect."
+    },
+    {
+      "file": "uilayout.contact__button-3.json",
+      "title": "Button 3",
+      "reason": "Expanding dot blob fills button with arrow reveal. Well-executed fill animation."
+    },
+    {
+      "file": "uilayout.contact__button-4.json",
+      "title": "Button 4",
+      "reason": "3D layered shadow offset reveals on hover with spring. Tactile depth perception."
+    },
+    {
+      "file": "uilayout.contact__button-6.json",
+      "title": "Button 6",
+      "reason": "Animated gradient border with shine effect. Polished border animation."
+    },
+    {
+      "file": "uilayout.contact__button-magnetic.json",
+      "title": "Magnetic Button",
+      "reason": "Magnetic hover effect with mouse position tracking. Engaging physical metaphor for CTAs."
+    },
+    {
+      "file": "uniquesonu__amazing-button-component.json",
+      "title": "Amazing Button Component",
+      "reason": "Scramble text animation + scanning line sweep + floating particles + animated gradient glow. Multiple layered effects on hover."
+    },
+    {
+      "file": "uniquesonu__shimmer-button.json",
+      "title": "Shimmer Button",
+      "reason": "3D press effect + mouse-position-mapped shimmer particles + sweep highlight. Tactile and polished."
+    },
+    {
+      "file": "waleedkibhen__glow-button.json",
+      "title": "Glow Button",
+      "reason": "Animated glow halo on hover. Clean and effective for dark interfaces."
+    },
+    {
+      "file": "xubohuah__flow-button.json",
+      "title": "Flow Button",
+      "reason": "Smooth flowing gradient animation. Reliable animated gradient CTA."
+    },
+    {
+      "file": "xubohuah__theme-switch-button.json",
+      "title": "Theme Switch Button",
+      "reason": "Smooth spring-eased sun/moon icon swap with scale/translate transitions. 349 downloads. Clean theme toggle."
+    },
+    {
+      "file": "yashsehgal__3d-button.json",
+      "title": "3D Button",
+      "reason": "3D offset shadow with press animation. Good tactile button for neobrutalist UIs."
+    }
+  ],
+  "bronze": [
+    {
+      "file": "Codehagen__action-button.json",
+      "title": "Action Button",
+      "reason": "Simple loading state wrapper around shadcn Button. No visual distinctiveness."
+    },
+    {
+      "file": "Codehagen__button-group-with-icons.json",
+      "title": "Button Group with Icons",
+      "reason": "Standard shadcn button group. No animation or visual enhancement."
+    },
+    {
+      "file": "Codehagen__button-group.json",
+      "title": "Button Group",
+      "reason": "Basic horizontal button group layout. No distinctive styling."
+    },
+    {
+      "file": "Codehagen__previous-next-button-group.json",
+      "title": "Previous Next Button Group",
+      "reason": "Pagination control with minimal styling. Purely functional."
+    },
+    {
+      "file": "ShadcnStudio__buttons.json",
+      "title": "Buttons",
+      "reason": "Renders a single unstyled shadcn Button. Essentially a code sample."
+    },
+    {
+      "file": "SubframeApp__button-1.json",
+      "title": "Button",
+      "reason": "Comprehensive variant system but no visual animation or distinction beyond standard shadcn variants."
+    },
+    {
+      "file": "aceternity__button.json",
+      "title": "Button",
+      "reason": "Card wrapper component, not a standalone button. Misclassified in registry."
+    },
+    {
+      "file": "antdesign__button-ant.json",
+      "title": "Button Ant",
+      "reason": "Wraps antd Button component. Depends on the full Ant Design library."
+    },
+    {
+      "file": "arihantcodes_1f7b8c4d__base-button.json",
+      "title": "Base Button",
+      "reason": "Exact shadcn button copy. No additional value."
+    },
+    {
+      "file": "abishek1512__login-1.json",
+      "title": "Login",
+      "reason": "Full login page component. Not a button."
+    },
+    {
+      "file": "aghasisahakyan1__sign-in-flow-1.json",
+      "title": "Sign In Flow",
+      "reason": "Full sign-in page flow. Not a button component."
+    },
+    {
+      "file": "arunachalam0606__feedback-toast.json",
+      "title": "Feedback Toast",
+      "reason": "Feedback widget with toast. Not a standalone CTA button."
+    },
+    {
+      "file": "base-ui__button-1.json",
+      "title": "Button",
+      "reason": "Simple counter with plain base-ui buttons. Demo-style, not a button component."
+    },
+    {
+      "file": "beratberkayg__button-4.json",
+      "title": "Button 4",
+      "reason": "Radio button group with missing CSS classes. Incomplete component."
+    },
+    {
+      "file": "beratberkayg__code-snippet.json",
+      "title": "Code Snippet",
+      "reason": "Code display widget. Not a CTA button."
+    },
+    {
+      "file": "beratberkayg__feature-card.json",
+      "title": "Feature Card",
+      "reason": "Feature pricing card with button inside. Not a standalone button."
+    },
+    {
+      "file": "bundui__button.json",
+      "title": "Button",
+      "reason": "Only whileTap scale. Minimal interaction, no visual distinctiveness."
+    },
+    {
+      "file": "dailydischq__email-categories.json",
+      "title": "Email Categories",
+      "reason": "Email client navigation component. Not a CTA button."
+    },
+    {
+      "file": "devetaigabbai__depth-button.json",
+      "title": "Depth Button",
+      "reason": "shadcn wrapper with shine-large CSS class not defined in component. Incomplete."
+    },
+    {
+      "file": "designali-in__finger-scan-button.json",
+      "title": "Finger Scan Button",
+      "reason": "Biometric fingerprint scanning animation. Too app-specific for general website use."
+    },
+    {
+      "file": "float_ui__button-1.json",
+      "title": "Button",
+      "reason": "Plain icon button with no visual animation or styling beyond bare minimum."
+    },
+    {
+      "file": "flower0wine__button-group.json",
+      "title": "Button Group",
+      "reason": "Standard segmented button group layout. No animation or visual flair."
+    },
+    {
+      "file": "intentui__button-1.json",
+      "title": "Button",
+      "reason": "react-aria button with no visual animation. Accessibility-focused, minimal styling."
+    },
+    {
+      "file": "intentui__button7.json",
+      "title": "Button 7",
+      "reason": "react-aria variant with standard shadcn styling. No visual distinction."
+    },
+    {
+      "file": "jatin-yadav05__leather-button.json",
+      "title": "Leather Button",
+      "reason": "Leather texture button. Very niche skeuomorphic style with limited website applicability."
+    },
+    {
+      "file": "jefatura.frontend__button.json",
+      "title": "Button",
+      "reason": "shadcn copy with undefined shimmer/glow CSS classes. Incomplete."
+    },
+    {
+      "file": "jolbol1__button.json",
+      "title": "Button",
+      "reason": "react-aria shadcn-style button. No visual enhancement."
+    },
+    {
+      "file": "jollyshopland__button-1.json",
+      "title": "Button",
+      "reason": "react-aria copy with standard styling. No additional value."
+    },
+    {
+      "file": "ln-dev7__help-button.json",
+      "title": "Help Button",
+      "reason": "Help menu dropdown with search. Not a CTA button, it is a support widget."
+    },
+    {
+      "file": "manikandanbalakrishnan3__animated-sign-in.json",
+      "title": "Animated Sign In",
+      "reason": "Full login page with canvas animation. Not a button component."
+    },
+    {
+      "file": "moazamtrade__hover-animation-button.json",
+      "title": "Hover Animation Button",
+      "reason": "Uses styled-components dependency. Non-standard and heavier dependency for basic hover."
+    },
+    {
+      "file": "muhammad-binsalman__neon-button-counter.json",
+      "title": "Neon Button Counter",
+      "reason": "Presented as a counter demo app with neon styling. Not a standalone button component."
+    },
+    {
+      "file": "muhammad-binsalman__star-button.json",
+      "title": "Star Button",
+      "reason": "Star wishlist checkbox with scale hover. Too niche and basic for general CTA use."
+    },
+    {
+      "file": "muhammad-binsalman__wooden-cart-button.json",
+      "title": "Wooden Cart Button",
+      "reason": "Wooden cart button for e-commerce. Very niche aesthetic with limited applicability."
+    },
+    {
+      "file": "nextjsshop__animated-arrow-button.json",
+      "title": "Animated Arrow Button",
+      "reason": "Relies on external CSS from nextjsshop. Incomplete without separate stylesheet."
+    },
+    {
+      "file": "nextjsshop__arrow-dots-button.json",
+      "title": "Arrow Dots Button",
+      "reason": "Relies on external CSS classes. Not self-contained."
+    },
+    {
+      "file": "nextjsshop__nextjsshop-button.json",
+      "title": "Button",
+      "reason": "Relies on external CSS. Not self-contained."
+    },
+    {
+      "file": "nextjsshop__pixel-broke-button.json",
+      "title": "Pixel Broke Button",
+      "reason": "Relies on external CSS for animation. Not self-contained."
+    },
+    {
+      "file": "nextjsshop__pixel-button.json",
+      "title": "Pixel Button",
+      "reason": "Relies on external CSS. Not self-contained."
+    },
+    {
+      "file": "nextjsshop__sneaky-button.json",
+      "title": "Sneaky Button",
+      "reason": "Relies on external CSS. Not self-contained."
+    },
+    {
+      "file": "originui__input.json",
+      "title": "Input",
+      "reason": "Input field component. Not a button."
+    },
+    {
+      "file": "originui__textarea.json",
+      "title": "Textarea",
+      "reason": "Textarea component. Not a button."
+    },
+    {
+      "file": "ozantekin__brightness-control.json",
+      "title": "Brightness Control",
+      "reason": "Brightness +/- stepper. Functional utility, not a CTA button."
+    },
+    {
+      "file": "paceui__dot-flow.json",
+      "title": "Dot Flow",
+      "reason": "Animated status indicator with text cycling. More of a status widget than a CTA button."
+    },
+    {
+      "file": "prebuiltui__button-ui.json",
+      "title": "Button UI",
+      "reason": "Minimal rotating white gradient border. Incomplete — CSS variables referenced but not defined."
+    },
+    {
+      "file": "preetsuthar17__button.json",
+      "title": "Button",
+      "reason": "shadcn copy with custom design tokens. No visual animation or distinctiveness."
+    },
+    {
+      "file": "reuno-ui__animated-git-hub-button.json",
+      "title": "Animated GitHub Button",
+      "reason": "GitHub icon with hardcoded link. Niche and not reusable."
+    },
+    {
+      "file": "reuno-ui__countdown-button.json",
+      "title": "Countdown Button",
+      "reason": "Simple countdown timer button. Niche utility with minimal visual quality."
+    },
+    {
+      "file": "reuno-ui__dynamic-status-button.json",
+      "title": "Dynamic Status Button",
+      "reason": "Animated status text cycling. Niche utility pattern."
+    },
+    {
+      "file": "reuno-ui__multi-step-button.json",
+      "title": "Multi Step Button",
+      "reason": "Simple label change on click. Minimal visual quality."
+    },
+    {
+      "file": "reuno-ui__progress-button.json",
+      "title": "Progress Button",
+      "reason": "Standard loading/progress bar button. No visual distinctiveness."
+    },
+    {
+      "file": "reuno-ui__segmented-button-group.json",
+      "title": "Segmented Button Group",
+      "reason": "Standard segmented control. No animation or visual flair."
+    },
+    {
+      "file": "reuno-ui__split-action-button.json",
+      "title": "Split Action Button",
+      "reason": "Split button with dropdown. Functional but no visual wow factor."
+    },
+    {
+      "file": "reuno-ui__status-button.json",
+      "title": "Status Button",
+      "reason": "Pulsing dot indicator. Status badge, not a primary CTA button."
+    },
+    {
+      "file": "reuno-ui__theme-toggle-buttons.json",
+      "title": "Theme Toggle Buttons",
+      "reason": "Duplicate of minhxthanh version. Redundant."
+    },
+    {
+      "file": "ruixen.ui__avatar-action-button.json",
+      "title": "Avatar Action Button",
+      "reason": "Avatar with action button overlay. Too component-specific."
+    },
+    {
+      "file": "ruixen.ui__badge-button-combo.json",
+      "title": "Badge Button Combo",
+      "reason": "Badge attached to button. Standard UI pattern with no animation."
+    },
+    {
+      "file": "ruixen.ui__bottom-drawers.json",
+      "title": "Bottom Drawers",
+      "reason": "Bottom sheet drawer component. Not a button."
+    },
+    {
+      "file": "ruixen.ui__centered-feedback-drawer.json",
+      "title": "Centered Feedback Drawer",
+      "reason": "Feedback form drawer. Not a button."
+    },
+    {
+      "file": "ruixen.ui__checklist-button.json",
+      "title": "Checklist Button",
+      "reason": "Checklist with button. Not a standalone CTA button."
+    },
+    {
+      "file": "ruixen.ui__checkout-form.json",
+      "title": "Checkout Form",
+      "reason": "Full checkout form. Not a button."
+    },
+    {
+      "file": "ruixen.ui__confirmation-button.json",
+      "title": "Confirmation Button",
+      "reason": "Inline confirmation. Functional but minimal visual quality."
+    },
+    {
+      "file": "ruixen.ui__creat-account-form.json",
+      "title": "Create Account Form",
+      "reason": "Full account creation form. Not a button."
+    },
+    {
+      "file": "ruixen.ui__drawer-inner-content.json",
+      "title": "Drawer Inner Content",
+      "reason": "Drawer content component. Not a button."
+    },
+    {
+      "file": "ruixen.ui__expandable-content-button.json",
+      "title": "Expandable Content Button",
+      "reason": "Show more/less toggle. Utility component, no visual flair."
+    },
+    {
+      "file": "ruixen.ui__hover-preview-button.json",
+      "title": "Hover Preview Button",
+      "reason": "Image preview on hover. More of a link pattern than a CTA button."
+    },
+    {
+      "file": "ruixen.ui__icon-grid-button.json",
+      "title": "Icon Grid Button",
+      "reason": "Grid of icon buttons. No visual animation or distinctiveness."
+    },
+    {
+      "file": "ruixen.ui__icon-label-subtext-button.json",
+      "title": "Icon Label Subtext Button",
+      "reason": "Descriptive button layout. Standard list item pattern."
+    },
+    {
+      "file": "ruixen.ui__integration-hero.json",
+      "title": "Integration Hero",
+      "reason": "Integration showcase section with buttons. Not a button component."
+    },
+    {
+      "file": "ruixen.ui__minimal-payment-modal.json",
+      "title": "Minimal Payment Modal",
+      "reason": "Payment modal. Not a button."
+    },
+    {
+      "file": "ruixen.ui__neo-qrbutton-2.json",
+      "title": "Neo QR Button",
+      "reason": "QR code button. Very niche use case."
+    },
+    {
+      "file": "ruixen.ui__newsletter-form.json",
+      "title": "Newsletter Form",
+      "reason": "Newsletter subscription form. Not a button."
+    },
+    {
+      "file": "ruixen.ui__notification-button.json",
+      "title": "Notification Button",
+      "reason": "Notification badge button. Standard indicator, no animation."
+    },
+    {
+      "file": "ruixen.ui__nova-qrbutton.json",
+      "title": "Nova QR Button",
+      "reason": "QR code button variant. Very niche."
+    },
+    {
+      "file": "ruixen.ui__pricnig-cards03.json",
+      "title": "Pricing Cards",
+      "reason": "Pricing card section. Not a button component."
+    },
+    {
+      "file": "ruixen.ui__privacy-policy-modal.json",
+      "title": "Privacy Policy Modal",
+      "reason": "Legal modal. Not a button."
+    },
+    {
+      "file": "ruixen.ui__release-time-line.json",
+      "title": "Release Timeline",
+      "reason": "Timeline component. Not a button."
+    },
+    {
+      "file": "ruixen.ui__ruixen-btn04-1.json",
+      "title": "Ruixen Button",
+      "reason": "Basic button variant with minimal styling."
+    },
+    {
+      "file": "ruixen.ui__sign-in-card.json",
+      "title": "Sign In Card",
+      "reason": "Sign-in card. Not a button."
+    },
+    {
+      "file": "ruixen.ui__sign-in-form.json",
+      "title": "Sign In Form",
+      "reason": "Full sign-in form. Not a button."
+    },
+    {
+      "file": "ruixen.ui__smart-notify-button.json",
+      "title": "Smart Notify Button",
+      "reason": "Notification indicator button. Standard badge pattern."
+    },
+    {
+      "file": "ruixen.ui__social-auth-card.json",
+      "title": "Social Auth Card",
+      "reason": "Social authentication card. Not a button."
+    },
+    {
+      "file": "ruixen.ui__tooltip-button.json",
+      "title": "Tooltip Button",
+      "reason": "Standard button with tooltip wrapper. No visual enhancement."
+    },
+    {
+      "file": "ruixen.ui__tour-popover.json",
+      "title": "Tour Popover",
+      "reason": "Guided tour popover. Not a button."
+    },
+    {
+      "file": "ruixen.ui__visualizer-button.json",
+      "title": "Visualizer Button",
+      "reason": "Audio visualizer bars as button. Requires audio context, too app-specific."
+    },
+    {
+      "file": "sean0205__base-button.json",
+      "title": "Base Button",
+      "reason": "Comprehensive base-ui variant system. No visual animation or distinctiveness."
+    },
+    {
+      "file": "sean0205__button-1.json",
+      "title": "Button",
+      "reason": "Extended variant system with 303 downloads but no animation. Utility-only."
+    },
+    {
+      "file": "sean0205__button.json",
+      "title": "Button",
+      "reason": "Extended shadcn copy. No visual enhancement."
+    },
+    {
+      "file": "serafim__gradient-button.json",
+      "title": "Gradient Button",
+      "reason": "References CSS class gradient-button not defined in the component. Incomplete."
+    },
+    {
+      "file": "serafimcloud__hotkey.json",
+      "title": "Hotkey",
+      "reason": "Keyboard shortcut badge component. Not a button."
+    },
+    {
+      "file": "shadcn__button.json",
+      "title": "Button",
+      "reason": "The base shadcn button itself. The baseline from which all others extend."
+    },
+    {
+      "file": "shadcnspace__button-save.json",
+      "title": "Button Save",
+      "reason": "Green shadcn button with hover translate. Minimal visual quality."
+    },
+    {
+      "file": "shadcnspace__buttons.json",
+      "title": "Buttons",
+      "reason": "Renders shadcn Button variants list. Code sample, not a button component."
+    },
+    {
+      "file": "shadcnspace__figma-file-button.json",
+      "title": "Figma File Button",
+      "reason": "Gradient border wrapper around shadcn button with Figma icon. Niche use case."
+    },
+    {
+      "file": "shadcnspace__heartbeat-effect-button.json",
+      "title": "Heartbeat Effect Button",
+      "reason": "CSS heartbeat animation on button. Basic pulse with no visual distinctiveness."
+    },
+    {
+      "file": "shadcnspace__hover-blog-card.json",
+      "title": "Hover Blog Card",
+      "reason": "Blog card hover tooltip. Not a button component."
+    },
+    {
+      "file": "shadcnspace__outline-with-icon.json",
+      "title": "Outline With Icon",
+      "reason": "Outline shadcn buttons with icons. Minimal hover translate only."
+    },
+    {
+      "file": "shadcnspace__rounded-tooltip.json",
+      "title": "Rounded Tooltip",
+      "reason": "Button with rounded tooltip wrapper. No visual enhancement to button."
+    },
+    {
+      "file": "shadcnspace__shine-hover.json",
+      "title": "Shine Hover",
+      "reason": "Basic shine effect using external CSS. No self-contained animation."
+    },
+    {
+      "file": "shadcnspace__social-icon.json",
+      "title": "Social Icon",
+      "reason": "Scale hover on social icon buttons. Minimal interaction."
+    },
+    {
+      "file": "shadcnspace__textarea-with-button.json",
+      "title": "Textarea With Button",
+      "reason": "Textarea form with submit button. Not a button component."
+    },
+    {
+      "file": "shailendrakumar19999__animated-button.json",
+      "title": "Animated Button",
+      "reason": "Mixes JSX and HTML class/stroke-linejoin attributes. Code quality issues. Simple diagonal blob fill."
+    },
+    {
+      "file": "shugar__button-1.json",
+      "title": "Button",
+      "reason": "Vercel Geist design system copy with custom CSS vars. Standard utility button."
+    },
+    {
+      "file": "shugar__button.json",
+      "title": "Button",
+      "reason": "Vercel Geist button recreation. No visual animation."
+    },
+    {
+      "file": "shugar__note.json",
+      "title": "Note",
+      "reason": "Alert/notification note component. Not a button."
+    },
+    {
+      "file": "shugar__scroller-1.json",
+      "title": "Scroller",
+      "reason": "Scrollable container component. Not a button."
+    },
+    {
+      "file": "shugar__show-more-1.json",
+      "title": "Show More",
+      "reason": "Expand/collapse utility. Functional but minimal."
+    },
+    {
+      "file": "shugar__split-button.json",
+      "title": "Split Button",
+      "reason": "Vercel DS split button. Standard utility pattern."
+    },
+    {
+      "file": "shugar__toast.json",
+      "title": "Toast",
+      "reason": "Toast notification system. Not a button."
+    },
+    {
+      "file": "stvenchg__animated-vercel-like-button.json",
+      "title": "Animated Vercel-like Button",
+      "reason": "Basic Vercel-style button. Minimal animation, nothing distinctive."
+    },
+    {
+      "file": "thefathdev__win-98-button.json",
+      "title": "Win 98 Button",
+      "reason": "Windows 98 style button. Very niche retro aesthetic with limited general applicability."
+    },
+    {
+      "file": "uilayout.contact__button-5.json",
+      "title": "Button 5",
+      "reason": "Simple sliding color reveal. Minimal visual effect."
+    },
+    {
+      "file": "uilayout.contact__button-7.json",
+      "title": "Button 7",
+      "reason": "Simple expand-on-hover pill that reveals text. Basic CSS transition, no animation flair."
+    },
+    {
+      "file": "untitledui__button-1.json",
+      "title": "Button",
+      "reason": "Comprehensive react-aria system button. No visual animation or distinctiveness."
+    },
+    {
+      "file": "vaib215__flow-hover-button.json",
+      "title": "Flow Hover Button",
+      "reason": "Pure CSS blob fill on hover. Very basic single-effect button with no animation complexity."
+    },
+    {
+      "file": "vercel__actions.json",
+      "title": "Actions",
+      "reason": "Ghost icon button with tooltip wrapper. Standard toolbar button, no visual enhancement."
+    },
+    {
+      "file": "voxlet-ui__button-download.json",
+      "title": "Button Download",
+      "reason": "Download progress on shadcn Button. Functional but no visual distinctiveness."
+    },
+    {
+      "file": "waleedkibhen__spotlight-button.json",
+      "title": "Spotlight Button",
+      "reason": "Navigation bar component with spotlight effect. Not a standalone CTA button."
+    },
+    {
+      "file": "muditgoel1512__sign-in.json",
+      "title": "Sign In",
+      "reason": "Full sign-in page. Not a button component."
+    }
+  ]
+}

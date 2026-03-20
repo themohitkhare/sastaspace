@@ -1,0 +1,205 @@
+{
+  "category": "Dialogs & Modals",
+  "category_group": "UI Components",
+  "gold": [
+    {
+      "file": "aceternity__animated-modal.json",
+      "title": "Animated Modal",
+      "reason": "Framer Motion-powered animated modal with custom context provider and spring transitions — premium feel ideal for hero CTAs and contact overlays."
+    },
+    {
+      "file": "mlshv__animated-modal.json",
+      "title": "Animated Modal (Radix)",
+      "reason": "Polished animated dialog built on Radix Dialog + Motion with AnimatePresence — clean trigger-to-open animation that impresses site visitors."
+    },
+    {
+      "file": "ruixen.ui__auth-dialog.json",
+      "title": "Auth Dialog",
+      "reason": "Purpose-built auth modal (sign in / sign up) — exactly the kind of conversion-focused overlay every customer website needs."
+    },
+    {
+      "file": "ruixen.ui__identity-verification-dialog.json",
+      "title": "Identity Verification Dialog",
+      "reason": "Step-by-step verification flow in a modal — polished multi-step UX that works for onboarding and trust-building on business websites."
+    },
+    {
+      "file": "ruixen.ui__otpdialog.json",
+      "title": "OTP Dialog",
+      "reason": "OTP/verification code modal — high-value auth pattern with focused input UX that most landing pages benefit from."
+    },
+    {
+      "file": "sshahaider__auth-modal.json",
+      "title": "Auth Modal",
+      "reason": "Full-featured authentication modal with premium design — directly applicable as a sign-in/sign-up overlay for any customer website redesign."
+    },
+    {
+      "file": "serafimcloud__dotted-dialog.json",
+      "title": "Dotted Dialog",
+      "reason": "Distinctive dotted-border aesthetic on top of Radix Dialog — unique visual style that elevates standard dialogs and differentiates redesigned sites."
+    },
+    {
+      "file": "motion-primitives__transition-panel.json",
+      "title": "Transition Panel",
+      "reason": "Framer Motion multi-step panel transitions — perfect for multi-step modals (pricing, onboarding, wizard flows) with a premium animated feel."
+    },
+    {
+      "file": "molecule-lab-rushil__warp-dialog.json",
+      "title": "Warp Dialog",
+      "reason": "Creatively named with unique warp/distortion entrance animation — memorable modal experience ideal for showcasing redesigned website personality."
+    },
+    {
+      "file": "redpangilinan__credenza.json",
+      "title": "Credenza (Responsive Dialog+Drawer)",
+      "reason": "Automatically switches between Dialog on desktop and Drawer on mobile — highly practical responsive pattern that every website redesign needs."
+    },
+    {
+      "file": "originui__command.json",
+      "title": "Command Menu",
+      "reason": "cmdk-powered command palette modal — premium spotlight-style interaction pattern that impresses visitors and signals a professional, modern site."
+    },
+    {
+      "file": "shugar__command-menu.json",
+      "title": "Command Menu",
+      "reason": "Custom command-search modal — polished command palette variant that adds a high-end interactive experience to any redesigned site."
+    }
+  ],
+  "silver": [
+    {
+      "file": "arihantcodes_1f7b8c4d__responsive-modal.json",
+      "title": "Responsive Modal",
+      "reason": "Clean responsive modal with good mobile handling — functional and well-built but not visually distinctive enough for Gold."
+    },
+    {
+      "file": "ephraimduncan__dialog-modal.json",
+      "title": "Dialog Modal",
+      "reason": "Solid general-purpose dialog modal — clean implementation, reusable across many site contexts."
+    },
+    {
+      "file": "ephraimduncan__share-dialog.json",
+      "title": "Share Dialog",
+      "reason": "Share/social links dialog — practical and commonly needed but fairly standard in visual execution."
+    },
+    {
+      "file": "ephraimduncan__dialog-info.json",
+      "title": "Dialog Info",
+      "reason": "Informational dialog with clean layout — good utility for FAQ-style overlays and announcements on customer sites."
+    },
+    {
+      "file": "float_ui__modal-dialog.json",
+      "title": "Modal Dialog",
+      "reason": "Floating UI-inspired modal dialog — solid accessible implementation, good quality but not uniquely styled."
+    },
+    {
+      "file": "haydenbleasel__dialog-stack.json",
+      "title": "Dialog Stack",
+      "reason": "Stacked dialogs with Portal-managed z-layering — clever UX pattern for complex flows, useful for settings or multi-step confirmations."
+    },
+    {
+      "file": "info-mdshakeeb__responsive-modal.json",
+      "title": "Responsive Modal",
+      "reason": "Another solid responsive modal implementation — clean and reusable but overlaps with similar components."
+    },
+    {
+      "file": "victorwelander__nested-dialog.json",
+      "title": "Nested Dialog",
+      "reason": "Nested/layered dialog pattern — useful for confirmations inside modals, good quality but niche use-case."
+    },
+    {
+      "file": "originui__alert-dialog.json",
+      "title": "Alert Dialog",
+      "reason": "Origin UI styled alert dialog — cleaner than bare shadcn with better visual treatment, solid for delete confirmations and warnings."
+    },
+    {
+      "file": "mvp_Subha__terms-conditions.json",
+      "title": "Terms & Conditions",
+      "reason": "Terms modal with scrollable content area — practical and commonly needed on customer sites, though visually simple."
+    },
+    {
+      "file": "sshahaider__search-modal.json",
+      "title": "Search Modal",
+      "reason": "Spotlight-style search overlay — very useful on content-heavy sites, clean implementation but less polished than the command palette entries."
+    },
+    {
+      "file": "sshahaider__drawer.json",
+      "title": "Drawer",
+      "reason": "Slide-in drawer panel — essential UI pattern with good execution, widely applicable to site navigation and filters."
+    },
+    {
+      "file": "sshahaider__sheet.json",
+      "title": "Sheet",
+      "reason": "Side-panel sheet component — clean implementation of a common pattern used for settings, carts, and side menus."
+    },
+    {
+      "file": "ravikatiyar162__connect-wallet-modal.json",
+      "title": "Connect Wallet Modal",
+      "reason": "Crypto wallet connection modal — good quality and well-executed for Web3 projects; niche but increasingly common site need."
+    },
+    {
+      "file": "ruixen.ui__team-invite-dialog.json",
+      "title": "Team Invite Dialog",
+      "reason": "Team invitation modal with email input — good for SaaS-style sites, clean design but app-specific enough to limit broader applicability."
+    },
+    {
+      "file": "shugar__modal.json",
+      "title": "Modal",
+      "reason": "Clean general-purpose modal — well-structured and reusable, good baseline for any site but lacks standout visual character."
+    }
+  ],
+  "bronze": [
+    {
+      "file": "ephraimduncan__dialog-deactivate.json",
+      "title": "Dialog Deactivate",
+      "reason": "Account deactivation confirmation dialog — too app-specific, rarely needed in customer website redesigns."
+    },
+    {
+      "file": "ephraimduncan__dialog-projectstarter.json",
+      "title": "Dialog Projectstarter",
+      "reason": "Project creation starter dialog — overly specific to project-management apps, not useful for general website redesigns."
+    },
+    {
+      "file": "ephraimduncan__dialog-1.json",
+      "title": "Dialog 1",
+      "reason": "Generic dialog with no distinguishing features — bare Radix/shadcn wrapper with minimal design value."
+    },
+    {
+      "file": "ephraimduncan__dialog.json",
+      "title": "Dialog",
+      "reason": "Plain shadcn dialog wrapper — no added styling or animation, purely a primitive building block."
+    },
+    {
+      "file": "ephraimduncan__info-dialog.json",
+      "title": "Info Dialog",
+      "reason": "Basic informational dialog — too generic and minimal to provide meaningful differentiation in a redesign."
+    },
+    {
+      "file": "isaiahbjork__dashboard-card-with-modal.json",
+      "title": "Dashboard Card With Modal",
+      "reason": "Dashboard-specific card+modal combination — too tied to admin/app UI contexts to be useful for public-facing website redesigns."
+    },
+    {
+      "file": "itsankitverma__dialog-box.json",
+      "title": "Dialog Box",
+      "reason": "Basic dialog box — minimal implementation without distinctive design or animation."
+    },
+    {
+      "file": "sshahaider__invite-member-modal.json",
+      "title": "Invite Member Modal",
+      "reason": "Workspace member invitation modal — highly app-specific (SaaS team feature), not applicable for most customer website redesigns."
+    },
+    {
+      "file": "sshahaider__modal.json",
+      "title": "Modal",
+      "reason": "Basic modal wrapper — bare implementation without distinguishing animations or design patterns."
+    },
+    {
+      "file": "ruixen.ui__daily-tracker-dialog.json",
+      "title": "Daily Tracker Dialog",
+      "reason": "Daily habit/task tracker dialog — very niche app feature that has little relevance to general website redesigns."
+    },
+    {
+      "file": "shadcn__dialog.json",
+      "title": "Dialog",
+      "reason": "Bare shadcn Dialog primitive — foundational component with no added design value, used as a building block not a showcase component."
+    }
+  ]
+}

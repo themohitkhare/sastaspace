@@ -1,0 +1,145 @@
+{
+  "category": "clients",
+  "category_group": "Marketing Blocks",
+  "gold": [
+    {
+      "file": "aceternity__animated-testimonials.json",
+      "title": "Animated Testimonials",
+      "reason": "Full testimonial section with animated card transitions, avatar images, and navigation arrows — production-ready social proof block for any SaaS or business site."
+    },
+    {
+      "file": "meschacirung__customers-section.json",
+      "title": "Customers Section",
+      "reason": "Complete customers/social proof section with animated group reveal, logo display, and CTA link — drop-in marketing block for landing pages."
+    },
+    {
+      "file": "ruixen.ui__integrations-section.json",
+      "title": "Integrations Section",
+      "reason": "Full-width integrations showcase with real logos, CTA button, and clean layout — essential for SaaS marketing pages communicating ecosystem compatibility."
+    },
+    {
+      "file": "sshahaider__testimonials-columns-1.json",
+      "title": "Testimonials Columns",
+      "reason": "Multi-column scrolling testimonials with Framer Motion animation — visually impressive and immediately deployable as a social proof section."
+    },
+    {
+      "file": "ibelick__infinite-slider.json",
+      "title": "Infinite Slider",
+      "reason": "Smooth infinite-scroll marquee primitive with configurable speed, gap, and direction — the backbone of logo strips and client carousels used on virtually every SaaS site."
+    },
+    {
+      "file": "shadcnblockscom__logos3.json",
+      "title": "Logos 3",
+      "reason": "Auto-scrolling carousel logo strip built on Embla with shadcn/ui — polished, dependency-light, ready for 'trusted by' sections."
+    },
+    {
+      "file": "tommyjepsen__cases-with-infinite-scroll.json",
+      "title": "Cases with Infinite Scroll",
+      "reason": "Case study / portfolio carousel with infinite scroll and slide counter — excellent for showcasing client work on agency or SaaS sites."
+    },
+    {
+      "file": "vaib215__shuffle-grid.json",
+      "title": "Shuffle Grid",
+      "reason": "Hero-level two-column section with animated shuffling image grid and headline — visually striking full section ready for landing pages."
+    }
+  ],
+  "silver": [
+    {
+      "file": "Codehagen__logo-carousel.json",
+      "title": "Logo Carousel",
+      "reason": "Animated column-based logo carousel with Framer Motion — solid 'trusted by' component, slightly more complex to configure than simpler marquee alternatives."
+    },
+    {
+      "file": "RayMethula__brands.json",
+      "title": "Brands",
+      "reason": "Responsive brands/logo grid with configurable image height and className props — clean and reusable but less visually dynamic than animated alternatives."
+    },
+    {
+      "file": "cult-ui__logo-carousel.json",
+      "title": "Logo Carousel",
+      "reason": "SVG-based animated logo carousel with column layout — well-built but requires SVG components rather than image URLs, limiting drop-in usability."
+    },
+    {
+      "file": "ishamsu__retro-testimonial.json",
+      "title": "Retro Testimonial Carousel",
+      "reason": "Testimonial carousel with retro styling, image lightbox, and nav arrows — unique aesthetic that works for creative or agency sites but too niche for generic SaaS."
+    },
+    {
+      "file": "lukacho__marquee.json",
+      "title": "Marquee",
+      "reason": "Simple, lightweight marquee utility with pause-on-hover and direction control — useful primitive but requires wrapping with content to become a full section."
+    },
+    {
+      "file": "ruixen.ui__stack-feature-section.json",
+      "title": "Stack Feature Section",
+      "reason": "Tech stack showcase with icon grid and CTA — good for developer-facing products but the hardcoded React/AWS/Docker icons make it somewhat niche."
+    },
+    {
+      "file": "shadcnblockscom__about-3.json",
+      "title": "About 3",
+      "reason": "About section with dual image layout, breakout stat block, and CTA — complete page section but limited specifically to about/team pages."
+    },
+    {
+      "file": "shadcnblockscom__gallery4.json",
+      "title": "Gallery with image cards",
+      "reason": "Image carousel gallery with navigation buttons built on shadcn Carousel — polished but more of a gallery utility than a full marketing section."
+    },
+    {
+      "file": "sshahaider__logo-cloud-4.json",
+      "title": "Logo Cloud 4",
+      "reason": "Infinite slider logo cloud with progressive blur fade effect on edges — visually refined enhancement of the standard logo strip."
+    },
+    {
+      "file": "dillionverma__avatar-circles.json",
+      "title": "Avatar Circles",
+      "reason": "Stacked avatar circles with overflow count badge — useful social proof micro-component for hero sections but needs surrounding context."
+    },
+    {
+      "file": "dillionverma__interactive-icon-cloud.json",
+      "title": "Interactive Icon Cloud",
+      "reason": "3D rotating icon/tech logo cloud — visually impressive but very specific to tech/developer audiences and requires react-icon-cloud dependency."
+    }
+  ],
+  "bronze": [
+    {
+      "file": "aceternity__animated-tooltip.json",
+      "title": "Animated Tooltip",
+      "reason": "Animated avatar tooltip on hover — micro-component useful for team or contributor lists but too small to stand alone as a marketing block."
+    },
+    {
+      "file": "aceternity__glare-card.json",
+      "title": "Glare Card",
+      "reason": "Mouse-tracking glare effect card wrapper — a visual effect primitive with no standalone marketing value; must wrap other content."
+    },
+    {
+      "file": "kavikatiyar__email-client-card.json",
+      "title": "Email Client Card",
+      "reason": "Email client UI card with avatar and motion — highly app-specific component suited only for email or inbox product demos."
+    },
+    {
+      "file": "lepikhinb__sparkles.json",
+      "title": "Sparkles",
+      "reason": "Particle sparkle effect using tsParticles — decorative ambient effect, not a standalone section; depends on heavy particles library."
+    },
+    {
+      "file": "lovesickfromthe6ix__project-management-dashboard.json",
+      "title": "Project Management Dashboard",
+      "reason": "Full project management app UI — too complex and app-specific for a website redesign context; not a marketing block."
+    },
+    {
+      "file": "sshahaider__logo-cloud-2.json",
+      "title": "Logo Cloud 2",
+      "reason": "Static logo grid with plus-icon separators — minimal styling, no animation, very basic compared to other logo section options."
+    },
+    {
+      "file": "sshahaider__logo-cloud-3.json",
+      "title": "Logo Cloud 3",
+      "reason": "Infinite slider logo cloud — functional but thin wrapper around the infinite-slider primitive with little added value."
+    },
+    {
+      "file": "vaib215__spinning-logos.json",
+      "title": "Spinning Logos",
+      "reason": "Circular spinning orbit of Lucide icons — visually gimmicky with hardcoded icons (Facebook, YouTube, Gamepad), not suitable for real client sites."
+    }
+  ]
+}

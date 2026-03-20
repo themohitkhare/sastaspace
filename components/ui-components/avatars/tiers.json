@@ -1,0 +1,180 @@
+{
+  "category": "avatars",
+  "category_group": "UI Components",
+  "gold": [
+    {
+      "file": "haydenbleasel__stories-carousel.json",
+      "title": "Stories Carousel",
+      "reason": "Instagram-style stories carousel with video support and avatars \u2014 visually impressive and directly elevates marketing/social sections."
+    },
+    {
+      "file": "kokonutd__avatar-picker.json",
+      "title": "Avatar Picker",
+      "reason": "Animated avatar picker with polished interaction \u2014 great for onboarding flows and profile sections on business sites."
+    },
+    {
+      "file": "ozantekin__avatar-group-with-tooltip.json",
+      "title": "Avatar Group with Tooltip",
+      "reason": "Interactive avatar group with hover tooltips \u2014 classic social proof element that immediately elevates landing pages."
+    },
+    {
+      "file": "shadcnspace__animated-tooltip.json",
+      "title": "Animated Tooltip",
+      "reason": "Animated tooltip on avatar hover \u2014 polished micro-interaction ideal for team/contributor sections."
+    },
+    {
+      "file": "ravikatiyar162__orbiting-avatars.json",
+      "title": "Orbiting Avatars",
+      "reason": "Orbital animation of avatars \u2014 visually stunning hero decoration for SaaS and marketing sites."
+    },
+    {
+      "file": "coss.com__coss-avatar.json",
+      "title": "Avatar",
+      "reason": "Full-featured avatar with multiple sizes, border radius variants, and group stacking \u2014 production-ready component suite."
+    },
+    {
+      "file": "shadcnspace__animated-list.json",
+      "title": "Animated List",
+      "reason": "Animated list with avatar entries \u2014 smooth entrance animations that elevate notification/activity feed sections."
+    },
+    {
+      "file": "itsankitverma__personal-landing.json",
+      "title": "Personal Landing",
+      "reason": "Polished personal landing section with avatar presentation \u2014 works great for about/team sections on marketing sites."
+    },
+    {
+      "file": "ruixen.ui__avatar-smart-group.json",
+      "title": "Avatar Smart Group",
+      "reason": "Smart avatar grouping with overflow handling \u2014 sophisticated social proof widget for hero sections."
+    },
+    {
+      "file": "sshahaider__avatar-uploader.json",
+      "title": "Avatar Uploader",
+      "reason": "Drag-and-drop avatar upload with preview \u2014 polished UX component for profile and onboarding pages."
+    }
+  ],
+  "silver": [
+    {
+      "file": "chetanverma16__avatar-group.json",
+      "title": "Avatar Group",
+      "reason": "Solid avatar group with overlap stacking \u2014 useful but straightforward without distinguishing animations."
+    },
+    {
+      "file": "moumensoliman__avatar-hover-card.json",
+      "title": "Avatar Hover Card",
+      "reason": "Hover card on avatar \u2014 functional pattern but common; lacks visual distinction."
+    },
+    {
+      "file": "moumensoliman__avatar-with-name.json",
+      "title": "Avatar With Name",
+      "reason": "Avatar paired with name label \u2014 clean and reusable for team/author sections."
+    },
+    {
+      "file": "preetsuthar17__avatar-group.json",
+      "title": "Avatar Group",
+      "reason": "Another avatar group implementation \u2014 good quality but similar to others in the set."
+    },
+    {
+      "file": "shugar__avatar.json",
+      "title": "Avatar",
+      "reason": "Stacked avatars with group semantics \u2014 well-described and useful for social proof."
+    },
+    {
+      "file": "shadcnspace__avatar-badge.json",
+      "title": "Avatar Badge",
+      "reason": "Avatar with status badge overlay \u2014 useful for presence indicators in team sections."
+    },
+    {
+      "file": "ruixen.ui__ruixen-contributors-table.json",
+      "title": "Ruixen Contributors Table",
+      "reason": "Contributors table with avatars \u2014 good for open-source project pages and team displays."
+    },
+    {
+      "file": "ruixen.ui__mail-checker-input.json",
+      "title": "Mail Checker Input",
+      "reason": "Mail input with avatar suggestion \u2014 useful for invite flows but niche."
+    },
+    {
+      "file": "sshahaider__comments.json",
+      "title": "Comments",
+      "reason": "Comment thread with avatars \u2014 solid blog/community component but app-leaning."
+    },
+    {
+      "file": "preetsuthar17__avatar.json",
+      "title": "Avatar",
+      "reason": "Clean avatar component \u2014 standard implementation with good fallback handling."
+    },
+    {
+      "file": "shadcnspace__avatar-one.json",
+      "title": "Avatar One",
+      "reason": "Single avatar variant with styling \u2014 useful baseline component."
+    },
+    {
+      "file": "shadcnspace__fallback-avatar-one.json",
+      "title": "Fallback Avatar One",
+      "reason": "Fallback avatar with initials \u2014 clean but covers a narrow edge case."
+    },
+    {
+      "file": "shailendrakumar19999__avatar-chips.json",
+      "title": "Avatar Chips",
+      "reason": "Avatar chip pattern for selected users \u2014 useful for multi-select people pickers."
+    }
+  ],
+  "bronze": [
+    {
+      "file": "ShadcnStudio__basic-avatar.json",
+      "title": "Basic Avatar",
+      "reason": "Thin wrapper around shadcn avatar \u2014 adds no meaningful value above the primitive."
+    },
+    {
+      "file": "SubframeApp__avatar-2.json",
+      "title": "Avatar 2",
+      "reason": "Generic avatar variant with no distinguishing features."
+    },
+    {
+      "file": "arihantcodes_1f7b8c4d__avatar-1.json",
+      "title": "Avatar 1",
+      "reason": "Basic avatar implementation \u2014 minimal above shadcn primitive."
+    },
+    {
+      "file": "avanishverma4__avatar.json",
+      "title": "Avatar",
+      "reason": "Simple avatar with no notable enhancement."
+    },
+    {
+      "file": "base-ui__avatar-1.json",
+      "title": "Avatar 1",
+      "reason": "Base UI primitive avatar \u2014 foundational but not visually impressive for website redesign."
+    },
+    {
+      "file": "prebuiltui__avatar-square.json",
+      "title": "Avatar Square",
+      "reason": "Square variant only \u2014 too narrow in scope to justify Gold/Silver."
+    },
+    {
+      "file": "sean0205__base-avatar-1.json",
+      "title": "Base Avatar 1",
+      "reason": "Base-level avatar with no animation or group features."
+    },
+    {
+      "file": "shadcn__avatar.json",
+      "title": "Avatar",
+      "reason": "Raw shadcn/ui avatar primitive \u2014 included in the registry but too basic on its own."
+    },
+    {
+      "file": "shugar__avatar-1.json",
+      "title": "Avatar 1",
+      "reason": "Standard avatar \u2014 no notable enhancement over the base component."
+    },
+    {
+      "file": "originui__select.json",
+      "title": "Select",
+      "reason": "Select input misclassified in avatars folder \u2014 not an avatar component."
+    },
+    {
+      "file": "sshahaider__popover.json",
+      "title": "Popover",
+      "reason": "Popover misclassified in avatars folder \u2014 not an avatar component."
+    }
+  ]
+}

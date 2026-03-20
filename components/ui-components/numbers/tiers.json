@@ -1,0 +1,70 @@
+{
+  "category": "numbers",
+  "category_group": "UI Components",
+  "gold": [
+    {
+      "file": "barvian__number-flow.json",
+      "title": "Number Flow",
+      "reason": "Smooth number transition with localization and formatting \u2014 dependency-free, accessible, and visually impressive for stats sections."
+    },
+    {
+      "file": "easemize__flip-countdown.json",
+      "title": "Flip Countdown",
+      "reason": "Flip-card style countdown timer \u2014 visually dramatic and perfect for launch pages and limited-time offers."
+    },
+    {
+      "file": "tommyjepsen__stats-section.json",
+      "title": "Stats Section",
+      "reason": "Full animated stats section \u2014 ready-to-drop marketing block that immediately elevates social proof sections."
+    },
+    {
+      "file": "builduilabs__animated-counter.json",
+      "title": "Animated Counter",
+      "reason": "Smooth animated counter tied to React state \u2014 polished scroll-triggered number animation for metrics sections."
+    }
+  ],
+  "silver": [
+    {
+      "file": "ibelick__sliding-number.json",
+      "title": "Sliding Number",
+      "reason": "Sliding digit animation \u2014 clean motion effect for number displays on pricing and stat sections."
+    },
+    {
+      "file": "diriktv__animated-counter.json",
+      "title": "Animated Counter",
+      "reason": "Animated counter component \u2014 solid implementation for metrics and achievement displays."
+    },
+    {
+      "file": "reuno-ui__count-down-numbers.json",
+      "title": "Count Down Numbers",
+      "reason": "Countdown number display \u2014 useful for event pages and limited-time promotions."
+    },
+    {
+      "file": "reuno-ui__shuffle-number.json",
+      "title": "Shuffle Number",
+      "reason": "Shuffling number animation \u2014 eye-catching display effect for dynamic stats."
+    },
+    {
+      "file": "shailendrakumar19999__number-flip-counter.json",
+      "title": "Number Flip Counter",
+      "reason": "Flip counter animation \u2014 solid number transition for metrics and countdowns."
+    }
+  ],
+  "bronze": [
+    {
+      "file": "base-ui__number-field-1.json",
+      "title": "Number Field 1",
+      "reason": "Base UI number input field \u2014 form utility, not a display component for marketing sites."
+    },
+    {
+      "file": "jakapatb__7-segment-number.json",
+      "title": "7 Segment Number",
+      "reason": "7-segment LED display style \u2014 too niche/retro aesthetic for general marketing site use."
+    },
+    {
+      "file": "reuno-ui__countdown-number.json",
+      "title": "Countdown Number",
+      "reason": "Basic countdown number \u2014 similar to other countdown components but less feature-rich."
+    }
+  ]
+}

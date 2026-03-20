@@ -1,0 +1,165 @@
+{
+  "category": "badges",
+  "category_group": "UI Components",
+  "gold": [
+    {
+      "file": "aceternity__badge.json",
+      "title": "Badge",
+      "reason": "Animated badge with radial gradient hover and animated arrow \u2014 polished and immediately elevates hero announcement bars."
+    },
+    {
+      "file": "shugar__award-badge.json",
+      "title": "Product Hunt Badge",
+      "reason": "Product Hunt-style award badge \u2014 high-signal social proof element used widely on marketing sites."
+    },
+    {
+      "file": "karthikmudunuri__animated-badge.json",
+      "title": "Animated Badge",
+      "reason": "Animated badge with visual motion \u2014 eye-catching for feature callouts and hero sections."
+    },
+    {
+      "file": "isaiahbjork__animated-status-badge.json",
+      "title": "Animated Status Badge",
+      "reason": "Pulsing animated status indicator \u2014 polished live/online status display for SaaS landing pages."
+    },
+    {
+      "file": "samsiavoshian2009__backed-by-yc.json",
+      "title": "Backed By YC",
+      "reason": "YC-style investor credibility badge \u2014 high-impact trust signal for startup marketing pages."
+    },
+    {
+      "file": "designali-in__award.json",
+      "title": "Award",
+      "reason": "Decorative award badge \u2014 visually impressive for showcasing certifications or achievements."
+    },
+    {
+      "file": "jamesjara__bolt-new-badge.json",
+      "title": "Bolt New Badge",
+      "reason": "Bold new-feature badge with distinctive styling \u2014 great for product launch highlights."
+    },
+    {
+      "file": "ravikatiyar162__text-arc-effect.json",
+      "title": "Text Arc Effect",
+      "reason": "Curved text arc badge effect \u2014 visually distinctive decoration for logos and hero sections."
+    },
+    {
+      "file": "chetanverma16__cvui-badge.json",
+      "title": "Badge",
+      "reason": "Customizable badge with multiple styles and animations \u2014 versatile and polished for marketing use."
+    }
+  ],
+  "silver": [
+    {
+      "file": "serafimcloud__badge-delta.json",
+      "title": "Badge Delta",
+      "reason": "Delta/trend badge inspired by Tremor \u2014 clear metric display for stats sections."
+    },
+    {
+      "file": "serafimcloud__status-badge.json",
+      "title": "Status Badge",
+      "reason": "Status badge with semantic variants \u2014 clean and useful for feature lists and dashboards."
+    },
+    {
+      "file": "serafimcloud__filter-badge.json",
+      "title": "Filter Badge",
+      "reason": "Interactive filter badge \u2014 useful for tag/filter UI on product or blog pages."
+    },
+    {
+      "file": "uniquesonu__status-badge-beautiful-accessible-status-indicators.json",
+      "title": "Status Badge Beautiful Accessible Status Indicators",
+      "reason": "Accessible status indicators with beautiful styling \u2014 good for service status pages."
+    },
+    {
+      "file": "coss.com__coss-badge.json",
+      "title": "Badge",
+      "reason": "8 semantic variants including error/info/success \u2014 comprehensive badge set for production apps."
+    },
+    {
+      "file": "hibatillah__date-badge.json",
+      "title": "Date Badge",
+      "reason": "Compact date display badge \u2014 useful for blog posts and event listings."
+    },
+    {
+      "file": "devetaigabbai__beautiful-simple-badges.json",
+      "title": "Beautiful Simple Badges",
+      "reason": "Clean, minimal badge set \u2014 solid baseline for tagging and categorization."
+    },
+    {
+      "file": "ln-dev7__label-badges.json",
+      "title": "Label Badges",
+      "reason": "Label-style badges for categorization \u2014 reusable across content-heavy pages."
+    },
+    {
+      "file": "ln-dev7__project-badge.json",
+      "title": "Project Badge",
+      "reason": "Project status badge \u2014 good for portfolio and project showcase pages."
+    },
+    {
+      "file": "beratberkayg__product-card-1.json",
+      "title": "Product Card 1",
+      "reason": "Product card with integrated badge \u2014 useful for e-commerce and feature showcase."
+    },
+    {
+      "file": "beratberkayg__roadmap-card.json",
+      "title": "Roadmap Card",
+      "reason": "Roadmap card with status badge \u2014 fits product pages well."
+    },
+    {
+      "file": "sean0205__badge-variants.json",
+      "title": "Badge Variants",
+      "reason": "Multiple badge variants in one \u2014 useful as a component library baseline."
+    },
+    {
+      "file": "ruixen.ui__notifications-filter.json",
+      "title": "Notifications Filter",
+      "reason": "Notification filter badges \u2014 practical for notification centers and dashboards."
+    }
+  ],
+  "bronze": [
+    {
+      "file": "designali-in__certificate.json",
+      "title": "Certificate",
+      "reason": "Certificate-style badge \u2014 too niche for general website redesign use."
+    },
+    {
+      "file": "muhammad-binsalman__spider-verse-glitch-button.json",
+      "title": "Spider Verse Glitch Button",
+      "reason": "Very specific glitch aesthetic \u2014 novelty component with limited marketing site utility."
+    },
+    {
+      "file": "originui__button.json",
+      "title": "Button",
+      "reason": "Button misclassified in badges folder \u2014 not a badge component."
+    },
+    {
+      "file": "molecule-lab-rushil__voice-input.json",
+      "title": "Voice Input",
+      "reason": "Voice input misclassified in badges \u2014 not a badge component."
+    },
+    {
+      "file": "ruixen.ui__action-toolbar.json",
+      "title": "Action Toolbar",
+      "reason": "Action toolbar misclassified in badges \u2014 app-specific utility component."
+    },
+    {
+      "file": "sean0205__badge-2.json",
+      "title": "Badge 2",
+      "reason": "Generic badge variant \u2014 no notable enhancement above shadcn primitive."
+    },
+    {
+      "file": "sean0205__base-badge.json",
+      "title": "Base Badge",
+      "reason": "Base badge wrapper \u2014 minimal above shadcn primitive."
+    },
+    {
+      "file": "shugar__badge-1.json",
+      "title": "Badge 1",
+      "reason": "Standard badge with no distinguishing features."
+    },
+    {
+      "file": "suraj-xd__quick-tooltip-actions.json",
+      "title": "Quick Tooltip Actions",
+      "reason": "Tooltip actions component misclassified here \u2014 app-utility pattern."
+    }
+  ]
+}

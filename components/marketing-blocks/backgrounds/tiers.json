@@ -1,0 +1,230 @@
+{
+  "category": "backgrounds",
+  "category_group": "Marketing Blocks",
+  "gold": [
+    {
+      "file": "aceternity__aurora-background.json",
+      "title": "Aurora Background",
+      "reason": "Highly polished full-section hero background with CSS-only aurora animation, 28k downloads and 146 likes; instantly wows on any SaaS or portfolio site."
+    },
+    {
+      "file": "aceternity__background-gradient-animation.json",
+      "title": "Background Gradient Animation",
+      "reason": "Smooth, interactive multi-layered gradient animation with mouse tracking and fully customisable colours; 6.5k downloads and wide SaaS applicability."
+    },
+    {
+      "file": "aceternity__wavy-background.json",
+      "title": "Wavy Background",
+      "reason": "Full-screen animated simplex-noise wave background wrapping children; elegant, colourful, high download count (5.7k) and 50 likes."
+    },
+    {
+      "file": "aceternity__sparkles.json",
+      "title": "Sparkles",
+      "reason": "Production-ready configurable particle background using tsParticles; highest downloads in the set (17.6k) and 121 likes — a proven crowd-pleaser."
+    },
+    {
+      "file": "kokonutd__background-paths.json",
+      "title": "Background Paths",
+      "reason": "Full hero section with animated SVG path lines plus animated gradient title and CTA button; 14k downloads and 53 likes — complete, ready-to-ship."
+    },
+    {
+      "file": "kokonutd__shape-landing-hero.json",
+      "title": "Shape Landing Hero",
+      "reason": "Complete dark-mode hero section with floating translucent shapes, gradient headline, badge and body text; 16k downloads and 69 likes — visually striking."
+    },
+    {
+      "file": "dillionverma__flickering-grid.json",
+      "title": "Flickering Grid",
+      "reason": "Canvas-based flickering grid with viewport observer and resize handling; 3.9k downloads and 60 likes — popular, versatile SaaS hero backdrop."
+    },
+    {
+      "file": "aceternity__background-beams.json",
+      "title": "Background Beams",
+      "reason": "Animated SVG beam paths with framer-motion gradients sweeping along them; 3.6k downloads and 46 likes — clean and modern for SaaS hero sections."
+    },
+    {
+      "file": "danielpetho__animated-gradient-with-svg.json",
+      "title": "Animated Gradient With SVG",
+      "reason": "Multi-colour animated blob gradient using SVG circles and CSS variables; elegant tech-startup aesthetic, 1.6k downloads and 39 likes."
+    },
+    {
+      "file": "kokonutd__beams-background.json",
+      "title": "Beams Background",
+      "reason": "Full-screen canvas beam animation with pulsing coloured rays on dark background; complete hero section with motion headline and subtext — 4.6k downloads."
+    }
+  ],
+  "silver": [
+    {
+      "file": "aceternity__hero-highlight.json",
+      "title": "Hero Highlight",
+      "reason": "Interactive dot-pattern hero with mouse-tracking radial mask and animated text highlight span; solid utility but more of a building block than a full section."
+    },
+    {
+      "file": "aceternity__background-boxes.json",
+      "title": "Background Boxes",
+      "reason": "Isometric hover-colour grid background; visually impressive but the skew effect is very specific and may not suit all brand styles — 2.8k downloads."
+    },
+    {
+      "file": "aceternity__vortex.json",
+      "title": "Vortex Background",
+      "reason": "Simplex-noise particle vortex on canvas with framer-motion fade-in wrapper; dramatic CTA background — 2.4k downloads but dark/exotic in tone."
+    },
+    {
+      "file": "dillionverma__particles.json",
+      "title": "Particles",
+      "reason": "Mouse-reactive particle system with configurable colour, density and velocity; good general-purpose background — 3.6k downloads and 44 likes."
+    },
+    {
+      "file": "dillionverma__retro-grid.json",
+      "title": "Retro Grid",
+      "reason": "Animated scrolling 3D-perspective grid with gradient fade; clean and on-trend for SaaS landing pages — 1.9k downloads and 23 likes."
+    },
+    {
+      "file": "dillionverma__animated-grid-pattern.json",
+      "title": "Animated Grid Pattern",
+      "reason": "SVG grid with randomly fading highlighted squares; subtle and versatile background accent — 2.6k downloads and 27 likes."
+    },
+    {
+      "file": "aceternity__meteors.json",
+      "title": "Meteors",
+      "reason": "Simple CSS-animated meteor streak effect; effective additive overlay but only animates a single repeated element — 1.8k downloads."
+    },
+    {
+      "file": "aceternity__shooting-stars.json",
+      "title": "Shooting Stars",
+      "reason": "SVG shooting-star animation with gradient trail across the full viewport; nice accent effect but renders only one star at a time — 1.7k downloads."
+    },
+    {
+      "file": "danielpetho__gooey-filter.json",
+      "title": "Gooey Filter",
+      "reason": "SVG filter primitive that creates gooey blob merging on any children; clever utility with 2.5k downloads and 63 likes but is a modifier, not a standalone section."
+    },
+    {
+      "file": "mikolajdobrucki__glow.json",
+      "title": "Glow",
+      "reason": "Radial gradient glow overlay with positioning variants (top/bottom/center/above/below); well-engineered utility component but requires composition — 1k downloads."
+    },
+    {
+      "file": "aceternity__background-beams-with-collision.json",
+      "title": "Background Beams With Collision",
+      "reason": "Beam-collision particle explosion animation; visually interesting but heavy and niche, better as a card accent than a full hero background — 1.1k downloads."
+    },
+    {
+      "file": "sshahaider__bg-pattern.json",
+      "title": "BG Patterns",
+      "reason": "Six CSS gradient pattern variants (dots, grid, stripes, etc.) with eight mask modes; highly reusable utility — solid Silver for its range of applicability."
+    },
+    {
+      "file": "dillionverma__warp-background.json",
+      "title": "Warp Background",
+      "reason": "3D-perspective warp box with animated coloured beam borders on all four sides; distinctive but opinionated — good for feature callout sections."
+    },
+    {
+      "file": "sshahaider__gradient-background.json",
+      "title": "Gradient Background",
+      "reason": "Framer Motion cycling linear-gradient background with optional overlay and centered content slot; simple but clean and immediately usable — 62 downloads but well-built."
+    },
+    {
+      "file": "xubohuah__wave-background.json",
+      "title": "Wave Background",
+      "reason": "Dense interactive SVG wave lines responding to mouse velocity with simplex noise; impressive interaction design, niche dark aesthetic — useful for creative studios."
+    }
+  ],
+  "bronze": [
+    {
+      "file": "Kain0127__spiral-animation.json",
+      "title": "spiral-animation",
+      "reason": "Black canvas GSAP spiral with Chinese comments, no title/description, no real content slot — raw art piece rather than a usable marketing background."
+    },
+    {
+      "file": "aceternity__canvas-reveal-effect.json",
+      "title": "Canvas Reveal Effect",
+      "reason": "WebGL/Three.js dot-matrix shader effect; heavy dependency (three + @react-three/fiber), reveal-on-hover mechanic suits card components not full hero sections."
+    },
+    {
+      "file": "aceternity__radar-effect.json",
+      "title": "Radar Effect",
+      "reason": "Concentric-circle radar sweep with icon containers; only 35 downloads and 0 likes — niche tech/security widget, not a general marketing background."
+    },
+    {
+      "file": "aceternity__stars-background.json",
+      "title": "Stars Background",
+      "reason": "Canvas twinkling stars; extremely minimal, dark-only, very low downloads (402) — simple ambient filler that won't impress on most business sites."
+    },
+    {
+      "file": "danielpetho__pixel-trail.json",
+      "title": "Pixel Trail",
+      "reason": "Mouse-trail pixel grid that lights up on hover; interactive gimmick requiring pointer interaction — not suitable as a passive page background."
+    },
+    {
+      "file": "dillionverma__grid-pattern.json",
+      "title": "Grid Pattern",
+      "reason": "Static SVG grid pattern with optional highlighted squares; very basic, no animation — primarily a utility primitive, 3 likes."
+    },
+    {
+      "file": "easemize__spooky-smoke-animation.json",
+      "title": "Spooky Smoke Animation",
+      "reason": "WebGL2 GLSL smoke shader; halloween-themed name signals extreme niche, only 41 downloads and 0 likes — inappropriate for mainstream business redesigns."
+    },
+    {
+      "file": "jatin-yadav05__etheral-shadow.json",
+      "title": "Etheral Shadow",
+      "reason": "SVG turbulence displacement mask that loads an external Framer image URL; hard-coded external dependency and hardcoded 'Etheral Shadows' title text reduce reusability."
+    },
+    {
+      "file": "lukacho__tiles.json",
+      "title": "Tiles",
+      "reason": "Hover-colour tile grid using framer-motion; no description, 1 like, 950 downloads — similar to Background Boxes but simpler and less polished."
+    },
+    {
+      "file": "lyanchouss__asd.json",
+      "title": "Blueprint Shader Grid",
+      "reason": "WebGL2 GLSL scrolling blueprint grid shader named 'asd'; experimental/art piece with 52 downloads and 0 likes — too niche and hard to customise."
+    },
+    {
+      "file": "magicui__animated-beam.json",
+      "title": "animated-beam",
+      "reason": "SVG beam connecting two DOM refs via gradient animation; a connector utility for diagram-style UIs, not a standalone hero background component."
+    },
+    {
+      "file": "meghtrix__background-components.json",
+      "title": "Background Components",
+      "reason": "Trivially wraps a single yellow radial-gradient div; essentially a one-liner with 359 downloads and 0 likes — too simple to provide real design value."
+    },
+    {
+      "file": "sshahaider__dotted-surface.json",
+      "title": "Dotted Surface",
+      "reason": "Three.js 3D animated dot grid; heavy WebGL dependency for a subtle effect, 0 likes — overkill and not suitable for general marketing page redesigns."
+    },
+    {
+      "file": "sshahaider__falling-pattern.json",
+      "title": "Falling Pattern",
+      "reason": "CSS-gradient falling rain-line pattern with motion blur overlay; very low downloads (91) and 0 likes — interesting but too decorative and niche."
+    },
+    {
+      "file": "sshahaider__gradient-dots.json",
+      "title": "Gradient Dots",
+      "reason": "Hexagonal dot grid with full rainbow hue-rotate animation; overly colourful and jarring for typical business/SaaS sites — 106 downloads and 0 likes."
+    },
+    {
+      "file": "xubohuah__entropy.json",
+      "title": "Entropy",
+      "reason": "Fixed-size 400px canvas showing order-vs-chaos particle simulation; fixed dimensions and art-project framing make it unsuitable as a page background."
+    },
+    {
+      "file": "xubohuah__flickering-grid-hero.json",
+      "title": "FlickeringGridHero",
+      "reason": "Near-duplicate of dillionverma's FlickeringGrid with an inline cn() helper; redundant, lower quality, 351 downloads and 0 likes."
+    },
+    {
+      "file": "xubohuah__particle-text-effect.json",
+      "title": "ParticleTextEffect",
+      "reason": "Fixed 1000x500 canvas cycling through hardcoded words with particle physics; interactive toy rather than a background — unsuitable for automatic redesign use."
+    },
+    {
+      "file": "xubohuah__spiral-animation.json",
+      "title": "SpiralAnimation",
+      "reason": "Canvas GSAP 3D spiral with 5000 particles in black only, 1.2k downloads and 0 likes — duplicate of Kain0127's version, same niche black-canvas art style."
+    }
+  ]
+}

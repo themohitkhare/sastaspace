@@ -1,0 +1,65 @@
+{
+  "category": "notifications",
+  "category_group": "UI Components",
+  "gold": [
+    {
+      "file": "uilayout.contact__liquid-notification.json",
+      "title": "Liquid Notification",
+      "reason": "Liquid morphing animation on notification \u2014 visually stunning and memorable, perfect for showcasing product polish."
+    },
+    {
+      "file": "maxim.bort.devel__splashed-push-notifications.json",
+      "title": "Splashed Push Notifications",
+      "reason": "Splashed visual effect on push notification \u2014 distinctive animation that elevates landing page demo sections."
+    },
+    {
+      "file": "patrick-xin__vercel-notification-popover.json",
+      "title": "Vercel Notification Popover",
+      "reason": "Vercel-inspired notification popover \u2014 polished, production-quality UX pattern directly applicable to SaaS marketing sites."
+    },
+    {
+      "file": "chetanverma16__notification-popover.json",
+      "title": "Notification Popover",
+      "reason": "Framer Motion notification popover \u2014 smooth animated dropdown with professional feel."
+    }
+  ],
+  "silver": [
+    {
+      "file": "ahmedmayara__notifications-menu.json",
+      "title": "Notifications Menu",
+      "reason": "Full notifications menu with list and read states \u2014 solid app component useful for SaaS demos."
+    },
+    {
+      "file": "ruixen.ui__notification-inbox-popover.json",
+      "title": "Notification Inbox Popover",
+      "reason": "Inbox-style notification popover \u2014 well-structured for SaaS app notification centers."
+    },
+    {
+      "file": "hari__notification.json",
+      "title": "Notification",
+      "reason": "Clean single notification component \u2014 reusable building block for notification stacks."
+    },
+    {
+      "file": "lavikatiyar__alert-toast.json",
+      "title": "Alert Toast",
+      "reason": "Alert-style toast notification \u2014 functional and clean for user feedback flows."
+    },
+    {
+      "file": "ravikatiyar162__card-16.json",
+      "title": "Card 16",
+      "reason": "Card-based notification display \u2014 useful for notification dashboards."
+    }
+  ],
+  "bronze": [
+    {
+      "file": "originui__popover.json",
+      "title": "Popover",
+      "reason": "Generic popover wrapper \u2014 not notification-specific, misclassified here."
+    },
+    {
+      "file": "ruixen.ui__ruixen-popover-02.json",
+      "title": "Ruixen Popover 02",
+      "reason": "Generic popover variant \u2014 utility component without notification-specific value."
+    }
+  ]
+}

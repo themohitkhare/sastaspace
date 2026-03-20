@@ -1,0 +1,150 @@
+{
+  "category": "checkboxes",
+  "category_group": "UI Components",
+  "gold": [
+    {
+      "file": "ringlabs__animated-check-box.json",
+      "title": "Animated Check Box",
+      "reason": "Neon-glow checkbox with CSS animation on check — the glowing border effect is visually striking and makes a pricing or plan-selector feel premium and modern."
+    },
+    {
+      "file": "avanishverma4__checkbox-02.json",
+      "title": "Checkbox 02",
+      "reason": "Framer Motion animated card-style checkbox with label, description, and disabled state — a polished full-row selection pattern ideal for feature/plan selectors on pricing pages."
+    },
+    {
+      "file": "shugar__choicebox-1.json",
+      "title": "Choicebox 1",
+      "reason": "Flexible ChoiceboxGroup supporting both radio and checkbox modes in row/column layouts with visual card styling — a premium choice-card component ready for plan or feature selection pages."
+    },
+    {
+      "file": "preetsuthar17__checkbox.json",
+      "title": "Checkbox",
+      "reason": "CVA variant system with AnimatePresence Framer Motion on the indicator, multiple size/color variants — a polished, themeable checkbox that elevates any form."
+    },
+    {
+      "file": "skyleen77__radix-checkbox.json",
+      "title": "Radix Checkbox",
+      "reason": "Framer Motion animated check indicator on Radix primitive — smooth spring-driven check animation gives a tactile, premium feel."
+    },
+    {
+      "file": "skyleen77__radix-switch.json",
+      "title": "Radix Switch",
+      "reason": "Motion-animated switch with left/right/thumb icon slots on Radix Switch primitive — visually polished and functionally rich, great for settings or feature-toggle pages."
+    },
+    {
+      "file": "berlix__checkbox.json",
+      "title": "Checkbox",
+      "reason": "SVG-drawn animated checkmark with configurable color, size, and animation duration via motion — a designer-level custom checkbox that works beautifully in any branded context."
+    },
+    {
+      "file": "prebuiltui__checkbox-1.json",
+      "title": "Checkbox 1",
+      "reason": "CSS-only peer-based custom checkbox with smooth scale/opacity transitions and a styled label — elegant minimal approach that looks distinctly better than a browser default."
+    }
+  ],
+  "silver": [
+    {
+      "file": "Edil-ozi__custom-checkbox.json",
+      "title": "Custom Checkbox",
+      "reason": "Multiple style variants (default, gradient shadow, transformer, animate) using appearance-none and CSS — above-average visual variety though somewhat CSS-heavy."
+    },
+    {
+      "file": "ekmas__checkbox.json",
+      "title": "Checkbox",
+      "reason": "Neobrutalism-styled Radix checkbox with thick border and bold shadow — a distinctive design language that would suit bold/playful brand pages."
+    },
+    {
+      "file": "molecule-lab-rushil__animate-checkbox.json",
+      "title": "Animate Checkbox",
+      "reason": "Framer Motion animated indicator on Radix CheckboxPrimitive with controlled/uncontrolled state — clean animation, solid implementation."
+    },
+    {
+      "file": "sean0205__checkbox-1.json",
+      "title": "Checkbox 1",
+      "reason": "CVA-powered variant checkbox with size variants and indeterminate state via Minus icon — well-structured, type-safe, above shadcn baseline."
+    },
+    {
+      "file": "sean0205__checkbox.json",
+      "title": "Checkbox",
+      "reason": "CVA variants with group peer styling and Check/Minus icons — clean, variant-rich checkbox with good TypeScript hygiene."
+    },
+    {
+      "file": "jolbol1__checkbox.json",
+      "title": "Checkbox [react-aria-components]",
+      "reason": "Accessible react-aria Checkbox and CheckboxGroup with proper validation and Text slots — solid accessible implementation."
+    },
+    {
+      "file": "jollyshopland__checkbox-1.json",
+      "title": "Checkbox 1",
+      "reason": "React-aria-components checkbox with CheckboxGroup and validation — accessible, well-typed, clean."
+    },
+    {
+      "file": "originui__checkbox.json",
+      "title": "Checkbox",
+      "reason": "Enhanced Radix checkbox with improved cn styling — a step above the bare shadcn default with cleaner focus/checked states."
+    },
+    {
+      "file": "coss.com__checkbox-group.json",
+      "title": "Checkbox Group",
+      "reason": "Base-UI CheckboxGroup styled wrapper with indeterminate and nested group support — functional group component with meaningful accessibility additions."
+    },
+    {
+      "file": "base-ui__checkbox-group-1.json",
+      "title": "Checkbox Group 1",
+      "reason": "Base-UI CheckboxGroup with defaultValue and flex layout — accessible primitive, clean minimal styling."
+    },
+    {
+      "file": "anubra266__checkbox-1.json",
+      "title": "Checkbox 1",
+      "reason": "Ark-UI Checkbox with data-state checked/hover styling — accessible component from a solid primitive library."
+    },
+    {
+      "file": "SubframeApp__checkbox-group-1.json",
+      "title": "Checkbox Group 1",
+      "reason": "Subframe checkbox group with SubframeUtils helpers — structured group pattern, though tied to Subframe ecosystem."
+    }
+  ],
+  "bronze": [
+    {
+      "file": "ShadcnStudio__checkbox-1.json",
+      "title": "Checkbox 1",
+      "reason": "Bare shadcn Checkbox import with a Label — the absolute minimum wrapper, no visual upgrade."
+    },
+    {
+      "file": "SubframeApp__checkbox-1.json",
+      "title": "Checkbox 1",
+      "reason": "Subframe internal checkbox — not portable outside the Subframe ecosystem."
+    },
+    {
+      "file": "jolbol1__grid-list.json",
+      "title": "Grid List [react-aria-components]",
+      "reason": "A grid list with drag handles and selection — technically uses Checkbox but is primarily a data-list component, not a checkbox component."
+    },
+    {
+      "file": "jollyshopland__list-box.json",
+      "title": "List Box",
+      "reason": "A react-aria ListBox — a selection list primitive, not a checkbox. Misclassified in the checkbox folder."
+    },
+    {
+      "file": "larsen66__checkbox-group.json",
+      "title": "Checkbox Group",
+      "reason": "Placeholder stub with a counter — not a real implementation."
+    },
+    {
+      "file": "ruixen.ui__ruixen-table-basic.json",
+      "title": "Ruixen Table Basic",
+      "reason": "A data table that uses Checkbox for row selection — this is a table component, not a checkbox. Wrong category entirely."
+    },
+    {
+      "file": "shadcn__checkbox.json",
+      "title": "Checkbox",
+      "reason": "The raw shadcn base Checkbox — the baseline with no visual additions."
+    },
+    {
+      "file": "shugar__checkbox.json",
+      "title": "Checkbox",
+      "reason": "Basic custom checkbox with class conditionals and no animation — functional but no visual differentiation."
+    }
+  ]
+}
