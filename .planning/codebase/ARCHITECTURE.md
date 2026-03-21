@@ -4,132 +4,223 @@
 
 ## Pattern Overview
 
-**Overall:** Linear Pipeline with CLI Orchestration
+**Overall:** Decoupled multi-service pipeline — Python FastAPI backend, Next.js frontend, and a claude-code-api AI gateway, communicating via SSE streaming over HTTP.
 
 **Key Characteristics:**
-- Five single-responsibility modules wired together by the CLI
-- Each module exposes one public function or dataclass (crawl, redesign, deploy, ensure_running, Settings)
-- No dependency injection framework — dependencies are passed as plain function arguments
-- Async only at the crawl boundary; all other modules are synchronous
+- Three distinct services: FastAPI backend, Next.js frontend, claude-code-api gateway
+- Core product loop is a 3-step async pipeline: Crawl → Redesign (AI) → Deploy
+- Frontend communicates with backend exclusively via a single SSE endpoint (`POST /redesign`)
+- Backend stores redesigned sites as static HTML files on a persistent volume and serves them directly — no database
+- Site registry is a flat JSON file (`_registry.json`) on disk
+- The AI inference call goes through `claude-code-api`, an OpenAI-compatible proxy wrapping Claude Code CLI
+- A parallel CLI entrypoint (`sastaspace`) runs the same pipeline synchronously for local/dev use
 
 ## Layers
 
-**CLI (Orchestration):**
-- Purpose: Parses user commands, sequences the pipeline, and renders terminal output
+**CLI Layer:**
+- Purpose: Developer/local-use entry point for the full redesign pipeline
 - Location: `sastaspace/cli.py`
-- Contains: Click command group (`main`), five commands (`redesign`, `list`, `open`, `remove`, `serve`)
-- Depends on: `crawler`, `redesigner`, `deployer`, `server`, `config`
-- Used by: End users via `sastaspace` entrypoint defined in `pyproject.toml`
+- Contains: Click commands (`redesign`, `list`, `open`, `remove`, `serve`)
+- Depends on: `crawler`, `redesigner`, `deployer`, `server` modules, `config`
+- Used by: Developers directly via `sastaspace` CLI command (installed via `pyproject.toml`)
 
-**Config:**
-- Purpose: Centralises all environment-driven settings with defaults
-- Location: `sastaspace/config.py`
-- Contains: Single `Settings` class (pydantic-settings `BaseSettings`)
-- Depends on: Nothing internal
-- Used by: `cli.py` via lazy `_load_config()` call inside each command
-
-**Crawler:**
-- Purpose: Fetches a remote URL using a headless browser and extracts structured page data
-- Location: `sastaspace/crawler.py`
-- Contains: `CrawlResult` dataclass, `crawl()` async function, private HTML extraction helpers
-- Depends on: Playwright, BeautifulSoup4
-- Used by: `cli.py` (`redesign` command)
-
-**Redesigner:**
-- Purpose: Calls the Claude AI gateway with crawl data and returns a single-file HTML redesign
-- Location: `sastaspace/redesigner.py`
-- Contains: `redesign()` function, `RedesignError` exception, prompt constants, `_clean_html()`, `_validate_html()`
-- Depends on: `crawler.CrawlResult`, OpenAI SDK (pointed at claude-code-api gateway)
-- Used by: `cli.py` (`redesign` command)
-
-**Deployer:**
-- Purpose: Persists redesigned HTML to the filesystem and maintains a JSON registry
-- Location: `sastaspace/deployer.py`
-- Contains: `DeployResult` dataclass, `deploy()`, `derive_subdomain()`, `load_registry()`, `save_registry()`
-- Depends on: stdlib only (pathlib, json, re, os, datetime)
-- Used by: `cli.py` (`redesign`, `list`, `remove` commands)
-
-**Server:**
-- Purpose: Serves the local sites directory over HTTP for browser preview
+**HTTP API Layer (FastAPI):**
+- Purpose: Exposes the redesign pipeline as an HTTP service for the frontend
 - Location: `sastaspace/server.py`
-- Contains: `make_app()` factory, module-level `app` instance, `ensure_running()` subprocess manager
-- Depends on: FastAPI, uvicorn (spawned as subprocess)
-- Used by: `cli.py` (`redesign`, `open`, `serve` commands); spawned by `ensure_running()`
+- Contains: `POST /redesign` (SSE stream), `GET /` (registry admin dashboard), `GET /{subdomain}/` and `GET /{subdomain}/{path}` (static site serving)
+- Depends on: `crawler`, `redesigner`, `deployer`, `config`
+- Used by: Next.js frontend via `NEXT_PUBLIC_BACKEND_URL`
+
+**Pipeline Layer:**
+- Purpose: The three discrete steps of the AI redesign pipeline
+- Location: `sastaspace/crawler.py`, `sastaspace/redesigner.py`, `sastaspace/deployer.py`
+- Contains: `crawl()` (async), `redesign()` (sync, uses `asyncio.to_thread` in server), `deploy()` (sync)
+- Depends on: Playwright (crawl), OpenAI Python client → claude-code-api (redesign), stdlib only (deploy)
+- Used by: Both `server.py` and `cli.py`
+
+**Configuration Layer:**
+- Purpose: Centralised settings via pydantic-settings, reads from `.env` and environment
+- Location: `sastaspace/config.py`
+- Contains: `Settings` class with fields: `claude_code_api_url`, `sites_dir`, `server_port`, `claude_model`, `cors_origins`, `rate_limit_max`, `rate_limit_window_seconds`
+- `SASTASPACE_SITES_DIR` env var takes precedence over `.env` for `sites_dir` (used by Docker)
+
+**Frontend Layer (Next.js App Router):**
+- Purpose: Public web UI for submitting URLs and viewing AI redesign results
+- Location: `web/src/`
+- Contains: App Router pages, React components, SSE client library, hooks
+- Depends on: `NEXT_PUBLIC_BACKEND_URL` env var to reach the FastAPI backend
+
+**AI Gateway Layer (claude-code-api):**
+- Purpose: OpenAI-compatible API wrapper over Claude Code CLI
+- Location: `claude-code-api/` (separate git repo, also containerised in k8s)
+- Exposes: `POST /v1/chat/completions`, `GET /health` at port 8000
+- Used by: `sastaspace/redesigner.py` via `openai.OpenAI(base_url=api_url)` client
 
 ## Data Flow
 
-**Primary `redesign` command pipeline:**
+**Redesign Request (frontend-initiated):**
 
-1. User runs `sastaspace redesign <url>`
-2. `cli.py` calls `asyncio.run(crawl(url))` → returns `CrawlResult` with page title, HTML source, screenshot (base64 PNG), headings, links, colors, fonts, sections
-3. `CrawlResult.to_prompt_context()` serialises the crawl data into a markdown prompt string
-4. `cli.py` calls `redesign(crawl_result, api_url, model)` → sends system prompt + user text + screenshot image to Claude via OpenAI-compatible API → returns validated HTML string
-5. `cli.py` calls `deploy(url, html, sites_dir)` → writes `sites/{subdomain}/index.html` and `metadata.json`, appends to `sites/_registry.json` → returns `DeployResult`
-6. `cli.py` calls `ensure_running(sites_dir)` → checks if uvicorn is listening, spawns detached subprocess if not, returns port number
-7. Browser opens `http://localhost:{port}/{subdomain}/`
+1. User submits URL in `web/src/components/landing/hero-section.tsx`
+2. `useRedesign` hook (`web/src/hooks/use-redesign.ts`) calls `streamRedesign()` from `web/src/lib/sse-client.ts`
+3. `POST /redesign` hits FastAPI backend — backend checks rate limit and semaphore, returns SSE stream
+4. Backend acquires `_redesign_semaphore` (global concurrency = 1) via `asyncio.Semaphore`
+5. **Step 1 — Crawl:** `crawl(url)` launches headless Chromium via Playwright, returns `CrawlResult` dataclass (title, HTML, screenshot PNG as base64, colors, fonts, headings, nav links, sections)
+6. SSE event `crawling` emitted with `progress: 10`
+7. **Step 2 — Redesign:** `redesign(crawl_result, api_url, model)` called in thread (`asyncio.to_thread`). Builds structured prompt from `CrawlResult.to_prompt_context()`, sends to claude-code-api with screenshot as vision input via OpenAI SDK. Claude returns a complete single-file HTML document.
+8. SSE event `redesigning` emitted with `progress: 40`
+9. HTML sanitised with `nh3.clean()`
+10. **Step 3 — Deploy:** `deploy(url, html, sites_dir)` called in thread. Derives slug from URL hostname, writes `sites/{slug}/index.html` and `metadata.json`, atomically updates `sites/_registry.json`
+11. SSE event `deploying` emitted with `progress: 80`
+12. SSE event `done` emitted with `progress: 100`, `subdomain`, `url`
+13. Frontend `useRedesign` receives `done` event — `useEffect` in `app-flow.tsx` calls `router.push(/${subdomain})`
+14. Next.js `[subdomain]/page.tsx` renders `ResultView` which iframes `{NEXT_PUBLIC_BACKEND_URL}/{subdomain}/` — served by FastAPI directly from disk
 
-**Error Propagation:**
-- `crawl()` never raises; it sets `CrawlResult.error` on failure
-- `cli.py` checks `crawl_result.error` before continuing and exits with `SystemExit(1)`
-- `redesign()` raises `RedesignError` for invalid/truncated AI output or failed crawl input
-- `deploy()` raises filesystem exceptions directly (not caught — treated as unexpected)
+**Redesign Request (CLI-initiated):**
+
+1. `sastaspace redesign <url>` runs the same `crawl → redesign → deploy` sequence synchronously with Rich progress spinner
+2. `ensure_running()` spawns a detached uvicorn subprocess if preview server is not already listening on the port
+3. Browser opens `http://localhost:{port}/{subdomain}/`
+
+**State Management (frontend):**
+- All UI state lives in `useRedesign` hook as a discriminated union: `idle | connecting | progress | done | error`
+- SSE events (`crawling`, `redesigning`, `deploying`, `done`, `error`) drive all state transitions
+- On `done`, `useEffect` in `web/src/components/app-flow.tsx` calls `router.push(/${subdomain})` — no global state store needed
 
 ## Key Abstractions
 
 **CrawlResult:**
-- Purpose: Carries all data extracted from a crawled page, including a base64 screenshot for the multimodal AI call
+- Purpose: Structured representation of a crawled webpage; the data contract between crawler and redesigner
 - Location: `sastaspace/crawler.py`
-- Pattern: Python `@dataclass` with `error: str = ""` sentinel field; `to_prompt_context()` method serialises fields into a markdown prompt
+- Pattern: Python `@dataclass` with `error: str = ""` sentinel field; `to_prompt_context()` serialises to LLM-ready markdown
 
-**DeployResult:**
-- Purpose: Communicates the outcome of a deploy operation back to the CLI
-- Location: `sastaspace/deployer.py`
-- Pattern: Plain `@dataclass` — no methods
-
-**RedesignError:**
-- Purpose: Distinguishes AI output validation failures from unexpected exceptions
-- Location: `sastaspace/redesigner.py`
-- Pattern: Bare `Exception` subclass; caught explicitly in `cli.py`
+**RedesignState (frontend):**
+- Purpose: Discriminated union driving all UI transitions from idle to result
+- Location: `web/src/hooks/use-redesign.ts`
+- Pattern: TypeScript discriminated union: `{ status: "idle" } | { status: "connecting" } | { status: "progress"; currentStep, domain, steps } | { status: "done"; subdomain, originalUrl, domain } | { status: "error"; message, url }`
 
 **Settings:**
-- Purpose: Single source of truth for runtime configuration
+- Purpose: Runtime configuration via environment variables
 - Location: `sastaspace/config.py`
-- Pattern: pydantic-settings `BaseSettings`; reads `.env` file; all fields have defaults
+- Pattern: `pydantic_settings.BaseSettings` — all env vars read at startup with sensible defaults
+
+**make_app(sites_dir):**
+- Purpose: Factory function creating the FastAPI application bound to a specific sites directory
+- Location: `sastaspace/server.py`
+- Pattern: Allows tests and Docker to inject a custom `sites_dir`; module-level `app` is the uvicorn default instance
 
 ## Entry Points
 
-**CLI entrypoint:**
-- Location: `sastaspace/cli.py` — `main()` Click group
-- Triggers: `sastaspace` command installed via `[project.scripts]` in `pyproject.toml`
-- Responsibilities: Sequences pipeline, displays Rich progress/panels, handles errors
+**Backend HTTP server:**
+- Location: `sastaspace/server.py` — module-level `app = make_app(_settings.sites_dir)`
+- Triggers: `uvicorn sastaspace.server:app` (Docker CMD, CLI `serve` command, `ensure_running()` subprocess)
+- Responsibilities: Rate limiting (in-process dict), concurrency control (semaphore), SSE streaming, static site serving
 
-**ASGI app entrypoint:**
-- Location: `sastaspace/server.py` — module-level `app` object (created by `make_app()`)
-- Triggers: uvicorn subprocess spawned by `ensure_running()` or `serve` CLI command
-- Responsibilities: Serves `sites/` directory over HTTP; reads `SASTASPACE_SITES_DIR` env var to find sites root
+**Next.js application:**
+- Location: `web/src/app/layout.tsx`, `web/src/app/page.tsx`
+- Triggers: `node server.js` (Docker standalone) or `npm run dev`
+- Responsibilities: Landing page, real-time progress tracking via SSE, result display with iframe preview, contact form
 
-**Package install:**
-- Location: `pyproject.toml` `[project.scripts]` → `sastaspace.cli:main`
-- Dev runner: `uv run pytest tests/ -v` (see `Makefile`)
+**Contact API route:**
+- Location: `web/src/app/api/contact/route.ts`
+- Triggers: `POST /api/contact` from frontend contact form on result pages
+- Responsibilities: Honeypot check, Cloudflare Turnstile verification, email dispatch via Resend SDK
+
+**CLI:**
+- Location: `sastaspace/cli.py` — entrypoint `sastaspace.cli:main`
+- Triggers: `sastaspace <command>` installed via `[project.scripts]` in `pyproject.toml`
 
 ## Error Handling
 
-**Strategy:** Error-as-value at the crawl boundary; exceptions everywhere else
+**Strategy:** Errors are caught at pipeline boundaries and surfaced as SSE `error` events or `SystemExit(1)` in CLI. Individual pipeline steps raise exceptions; callers handle them.
 
 **Patterns:**
-- `CrawlResult.error` is set to the exception message string when crawl fails; caller checks before proceeding
-- `RedesignError` is raised for predictable AI output failures (empty, missing DOCTYPE, truncated)
-- Generic `Exception` from the OpenAI client is caught separately in `cli.py` with a distinct user message
-- `deploy()` uses atomic write-then-rename (`os.replace`) to avoid corrupt registry files
-- `ensure_running()` uses a polling loop (max 5 seconds) to confirm subprocess is listening before returning
+- `crawl()` sets `CrawlResult.error` on any exception — caller checks before proceeding (error-as-value)
+- `redesigner.py` raises `RedesignError` on invalid Claude output (missing DOCTYPE, missing `</html>`, empty response)
+- `server.py` wraps the entire `redesign_stream()` generator in a broad `except Exception` that emits a generic SSE `error` event
+- `cli.py` catches `RedesignError` and generic exceptions separately with distinct Rich error panels
+- Frontend `useRedesign`: `try/catch` around `for await` loop; aborted `AbortController` signals silently terminate the loop
+- `deploy()` uses atomic write-then-rename (`os.replace`) to prevent corrupt registry files on crash
 
 ## Cross-Cutting Concerns
 
-**Logging:** No structured logging. `cli.py` uses Rich console for user-facing output. `server.py` appends uvicorn stdout/stderr to `sites/.server.log` when running as a detached subprocess.
+**Logging:** No structured logging framework. Uvicorn access logs write to `sites/.server.log` when spawned as subprocess. `console.error` used in Next.js API route.
 
-**Validation:** HTML output from the AI is validated in `sastaspace/redesigner.py` (`_validate_html`) — checks for non-empty output, `<!DOCTYPE html>`, and closing `</html>` tag.
+**Validation:**
+- `nh3.clean()` sanitises AI-generated HTML before writing to disk
+- `_validate_html()` checks for DOCTYPE and `</html>` before accepting Claude's response
+- Frontend contact route: honeypot field check, field presence check, Cloudflare Turnstile token verification
 
-**Authentication:** The OpenAI client in `redesigner.py` is instantiated with `api_key="claude-code"` (literal string). Real auth is handled by the external claude-code-api gateway, which expects `ANTHROPIC_API_KEY` in the environment.
+**Rate limiting:** In-process dict (`_rate_limit_store`) keyed by client IP (`cf-connecting-ip` header preferred). Default: 3 requests per 3600-second window per IP. Localhost is exempt. Does not survive restarts.
+
+**Concurrency:** `asyncio.Semaphore(1)` limits simultaneous redesign jobs to 1. Frontend receives HTTP 429 if semaphore is already locked (checked before acquiring, not after).
+
+**Authentication:** Backend has no authentication. Security relies on rate limiting, single-concurrency semaphore, and Cloudflare Turnstile for the contact form.
+
+## Deployment Architecture
+
+**Production topology:**
+
+```
+Internet
+    |
+    v
+Cloudflare Edge  (DDoS protection, TLS termination, CDN cache)
+    |
+    v  QUIC/HTTP2 — zero open inbound ports on server
+cloudflared (systemd service)  — Cloudflare Zero Trust tunnel
+    |
+    v  HTTP to localhost:80
+microk8s nginx Ingress controller  (namespace: sastaspace)
+    |
+    |-- sastaspace.com / www.sastaspace.com ----> frontend Service :3000
+    |                                             (Next.js pod, k8s/frontend.yaml)
+    |
+    `-- api.sastaspace.com --------------------> backend Service :8080
+                                                  (FastAPI pod, k8s/backend.yaml)
+                                                      |
+                                                      v
+                                              claude-code-api Service :8000
+                                              (pod, k8s/claude-code-api.yaml)
+```
+
+**Kubernetes (microk8s, `sastaspace` namespace):**
+- All manifests in `k8s/` — 5 files: `namespace.yaml`, `backend.yaml`, `frontend.yaml`, `claude-code-api.yaml`, `ingress.yaml`
+- All deployments: 1 replica; resource limits 1Gi memory / 500m CPU; requests 256Mi / 100m
+- Backend uses a `PersistentVolumeClaim` (`sites-pvc`, 10Gi, `ReadWriteOnce`) mounted at `/data/sites` — this is where all redesigned HTML files live
+- All images pulled from local microk8s registry at `localhost:32000` (no Docker Hub)
+- Ingress: nginx with `proxy-body-size: 50m` and `proxy-read-timeout: 300` (required for long SSE streams)
+- `claude-code-api` pod mounts host path `/home/mkhare/.claude` read-only for Claude credentials
+
+**Docker (local dev / docker-compose):**
+- `docker-compose.yml`: three services — `backend`, `frontend`, `tests` (test profile only)
+- Backend: volume `sites_data` named volume at `/data/sites`; `CLAUDE_CODE_API_URL=http://host.docker.internal:8000/v1` (routes to host-side claude-code-api)
+- Frontend: `NEXT_PUBLIC_BACKEND_URL=http://localhost:8080`; waits for backend healthcheck (`service_healthy`)
+- `backend/Dockerfile`: Python 3.11-slim with Playwright/Chromium system deps; Playwright installs Chromium at build time
+- `web/Dockerfile`: Multi-stage Node 22 Alpine; Stage 1 builds Next.js in standalone mode; Stage 2 copies `.next/standalone`, `static`, `public` — minimal production image
+
+**CI/CD (GitHub Actions):**
+- Workflow: `.github/workflows/deploy.yml`
+- Trigger: push to `main` branch, or manual `workflow_dispatch`
+- Runner: `self-hosted, linux, amd64` — the production machine runs its own CI jobs
+- Pipeline steps: checkout → build 3 Docker images (backend, frontend, claude-code-api) → push to `localhost:32000` with both `:latest` and `:{git-sha}` tags → `kubectl apply -f k8s/` → rolling restart all 3 deployments → wait for rollout status (300s timeout each) → verify with pod/service/ingress listing
+
+**Manual deploy via Makefile:**
+- `make deploy`: rsync source to remote, build images on remote, apply k8s manifests, rolling restart
+- `make deploy-status`: `kubectl get pods,svc,ingress -n sastaspace`
+- `make deploy-logs`: tail combined logs from frontend + backend pods
+- `make deploy-down`: delete entire `sastaspace` namespace
+
+**Host-level services on production machine (non-k8s, systemd):**
+- `cloudflared` — Cloudflare tunnel routing public traffic to microk8s nginx port 80; survives reboot
+- `claude-code-api` — OpenAI-compatible Claude proxy on `localhost:8000` (also has a k8s containerised variant)
+- `docker` — container runtime
+- Firewall (UFW): only ports 22, 80, 443 open inbound; k8s API port 16443 and vLLM port 8001 are blocked
+
+**Observability stack (configured but not yet wired into docker-compose):**
+- `loki/` — Loki log aggregation config directory
+- `promtail/` — Promtail log shipper config directory
+- `grafana/provisioning/` — Grafana provisioning directory (empty — no dashboards provisioned)
+- No Prometheus metrics instrumentation in application code
 
 ---
 

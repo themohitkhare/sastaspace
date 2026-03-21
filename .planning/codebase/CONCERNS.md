@@ -2,154 +2,210 @@
 
 **Analysis Date:** 2026-03-21
 
+---
+
 ## Tech Debt
 
-**Hardcoded API key placeholder in redesigner:**
-- Issue: `api_key="claude-code"` is hardcoded as a string literal in `redesigner.py`. This is a dummy value used to satisfy the OpenAI client constructor when routing through the local claude-code-api gateway, but it makes the code brittle — if the gateway ever enforces auth, this breaks silently with a misleading error.
-- Files: `sastaspace/redesigner.py:92`
-- Impact: Any future real-key auth requirement causes a non-obvious failure; the error message in `cli.py` says "Check your ANTHROPIC_API_KEY in .env" but the key is never read from config for this code path.
-- Fix approach: Thread the actual API key from `Settings` through `cli.py` → `redesigner.redesign()` as a parameter, rather than using a hardcoded placeholder.
+**In-memory rate limiting resets on restart:**
+- Issue: `_rate_limit_store` is a plain `dict[str, list[float]]` allocated inside `make_app()`. Every pod restart or redeploy clears all tracked IPs. With a single replica, a deploy takes the rate limit back to zero for all users.
+- Files: `sastaspace/server.py` (lines 50, 68–79)
+- Impact: Determined users can bypass the 3-requests-per-hour limit by timing a request just after a deploy.
+- Fix approach: Back the store with Redis, or document the limitation clearly.
 
-**Default parameter mirrors config default, not config value:**
-- Issue: `redesign()` has `api_url: str = "http://localhost:8000/v1"` as a default parameter. This duplicates the default already in `Settings.claude_code_api_url`, creating two places that must stay in sync.
-- Files: `sastaspace/redesigner.py:80-81`, `sastaspace/config.py:10`
-- Impact: If the default URL is changed in `Settings`, callers using the default parameter continue pointing at the old URL.
-- Fix approach: Remove the default from `redesign()`'s signature; make it a required parameter. `cli.py` already passes `cfg.claude_code_api_url` explicitly.
+**`streamRedesign` defaults to `localhost:8080` instead of `NEXT_PUBLIC_BACKEND_URL`:**
+- Issue: `sse-client.ts` has `apiBase: string = "http://localhost:8080"` hardcoded as the default. The call site in `use-redesign.ts` passes `undefined`, so in production the SSE POST always targets `localhost:8080` from the user's browser rather than `api.sastaspace.com`.
+- Files: `web/src/lib/sse-client.ts` (line 8), `web/src/hooks/use-redesign.ts` (line 68)
+- Impact: The redesign flow is broken in production unless the browser happens to be on the same machine. The iframe and CTA link in `result-view.tsx` use `NEXT_PUBLIC_BACKEND_URL` correctly, but the SSE POST does not.
+- Fix approach: Change the default to `process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:8080"` in `sse-client.ts`, or pass the env var explicitly from `use-redesign.ts`.
 
-**`CLAUDE_MODEL` env var name mismatch between README and Settings:**
-- Issue: `README.md:45` documents the env var as `CLAUDE_MODEL` with default `claude-sonnet-4-20250514`. `Settings` in `config.py:13` uses field name `claude_model` (resolves to `CLAUDE_MODEL`) with default `claude-sonnet-4-5-20250929`. `.env.example:7` also shows `claude-sonnet-4-20250514`. The model names are inconsistent across all three files.
-- Files: `sastaspace/config.py:13`, `.env.example:7`, `README.md:45`
-- Impact: Users following the README or `.env.example` configure a model name that doesn't match what the code defaults to, causing confusion about which model actually runs.
-- Fix approach: Align all three to the same model string.
+**`NEXT_PUBLIC_BACKEND_URL` is baked at build time but set at runtime in k8s:**
+- Issue: `k8s/frontend.yaml` sets `NEXT_PUBLIC_BACKEND_URL=https://api.sastaspace.com` as a runtime env var. However, `NEXT_PUBLIC_*` variables are embedded into the Next.js bundle at build time — runtime env vars have no effect on the already-compiled static assets.
+- Files: `k8s/frontend.yaml` (lines 21–23), `web/src/components/result/result-view.tsx` (line 34)
+- Impact: `process.env.NEXT_PUBLIC_BACKEND_URL` resolves to `undefined` inside the running container, causing the iframe `src` to be a relative URL pointing to the Next.js origin instead of the backend. The preview iframe is broken in production.
+- Fix approach: Pass `NEXT_PUBLIC_BACKEND_URL` as a Docker build argument (`ARG` / `--build-arg`) in `web/Dockerfile` and in the CI build step, or proxy `/{subdomain}/` through Next.js to eliminate the dependency on the env var.
 
-**`_ensure_chromium` silently swallows all failures:**
-- Issue: The entire body of `_ensure_chromium()` is wrapped in a bare `except Exception: pass`. If Playwright binary installation fails for any reason (network, permissions, disk space), the function returns silently. The `crawl()` call that follows immediately fails with a cryptic browser-not-found error rather than a clear installation error.
-- Files: `sastaspace/crawler.py:15-29`
-- Impact: Debugging first-time setup failures is unnecessarily difficult.
-- Fix approach: Log a warning or re-raise with a descriptive message when the subprocess returns a non-zero exit code.
+**`claude-code-api` k8s manifest is missing from source control:**
+- Issue: `k8s/backend.yaml` hard-codes `CLAUDE_CODE_API_URL=http://claude-code-api:8000/v1`, expecting a `claude-code-api` Service in the cluster. No such manifest is tracked in git (`k8s/` contains only `backend.yaml`, `frontend.yaml`, `ingress.yaml`, `namespace.yaml`).
+- Files: `k8s/backend.yaml` (line 27), `k8s/` directory
+- Impact: Fresh cluster deploys fail silently — the backend pod starts but every redesign request errors because the `claude-code-api` service is unreachable. Must be provisioned manually each time.
+- Fix approach: Add `k8s/claude-code-api.yaml` to version control, or document the manual provisioning step in `docs/DEPLOYMENT.md`.
 
-**`--reload` flag in production `serve` command:**
-- Issue: `cli.py:201` passes `--reload` to uvicorn when the user runs `sastaspace serve`. The `--reload` flag is a development convenience that watches for file changes and restarts the server. It should not be the default for a user-facing production serve command.
-- Files: `sastaspace/cli.py:199-203`
-- Impact: Unnecessary file-watching overhead; unexpected server restarts if any file in the project directory changes while serving.
-- Fix approach: Remove `--reload` from the serve command, or add a `--dev` flag to enable it explicitly.
+**`make deploy` and CI workflow are inconsistent:**
+- Issue: `Makefile` `deploy` target only builds/restarts `backend` and `frontend`. The GitHub Actions workflow in `.github/workflows/deploy.yml` additionally builds, pushes, and restarts `claude-code-api`. The two deployment paths are out of sync.
+- Files: `Makefile` (lines 42–51), `.github/workflows/deploy.yml` (lines 34–65)
+- Impact: Manual deploys via `make deploy` leave `claude-code-api` on a stale image.
+- Fix approach: Align the Makefile to mirror the workflow, or deprecate one in favour of the other.
 
-**Relative `sites_dir` default in `cli.py` ignores config:**
-- Issue: `cli.py:24` defines `DEFAULT_SITES_DIR = Path("./sites")` as a module-level constant. If the user runs `sastaspace` from a directory other than the project root, this resolves to the wrong path. The `Settings.sites_dir` config field exists but is only used to pass the port and model — `sites_dir` itself is taken from the CLI constant, not from `Settings`, unless the user passes `--sites-dir`.
-- Files: `sastaspace/cli.py:24`, `sastaspace/config.py:11`
-- Impact: Silent data inconsistency — sites are written and read from different directories depending on working directory.
-- Fix approach: Fall back to `Settings().sites_dir` when `--sites-dir` is not provided, rather than the hardcoded `./sites` constant.
+**`sastaspace-env` k8s secret is undocumented and not created by any script:**
+- Issue: `k8s/backend.yaml` loads env from a Secret named `sastaspace-env` with `optional: true`. There is no documentation, Makefile target, or creation script for this Secret. Frontend secrets (Resend, Turnstile, `OWNER_EMAIL`) have no k8s counterpart at all.
+- Files: `k8s/backend.yaml` (lines 21–24), `docs/DEPLOYMENT.md`
+- Impact: Contact form and Turnstile verification silently fail in production unless the operator manually creates the Secret out-of-band.
+- Fix approach: Add a `k8s/secrets-template.yaml` (with placeholder values) or a documented `kubectl create secret generic sastaspace-env --from-env-file=.env` command in `docs/DEPLOYMENT.md`.
+
+**`_ensure_chromium()` dry-run check logic is inverted:**
+- Issue: In `crawler.py`, `_ensure_chromium()` runs `playwright install chromium --dry-run` and installs if `returncode != 0 AND "chromium" in stdout.lower()`. The dry-run exits 0 when Chromium IS installed, so the condition never triggers for genuinely missing Chromium.
+- Files: `sastaspace/crawler.py` (lines 15–29)
+- Impact: On a fresh environment without Chromium, the auto-install silently fails, causing all crawls to error.
+- Fix approach: Check `returncode != 0` alone, or parse the dry-run output for "will be installed" language.
+
+---
 
 ## Security Considerations
 
-**Path traversal in server asset route:**
-- Risk: `server.py:93` constructs `asset_path = sites_dir / subdomain / path` where both `subdomain` and `path` come directly from URL path parameters with no sanitization. A request to `GET /acme-com/../../_registry.json` would resolve to `sites_dir / "_registry.json"` and serve it (or any other file accessible to the server process).
-- Files: `sastaspace/server.py:91-99`
-- Current mitigation: None. FastAPI path parameters do not perform path canonicalization or sandbox checks.
-- Recommendations: Resolve `asset_path` and verify it is within `sites_dir / subdomain` using `Path.resolve()` and `Path.is_relative_to()` before serving. Apply the same check to the `subdomain` segment itself.
+**SSRF — no URL allowlist/blocklist on the `/redesign` endpoint:**
+- Risk: The `url` field in `RedesignRequest` is passed directly to Playwright with no validation. An attacker can submit `http://169.254.169.254/latest/meta-data/` (AWS metadata), `http://localhost:8000/` (claude-code-api admin), or any internal service address.
+- Files: `sastaspace/server.py` (lines 30–32, 96), `sastaspace/crawler.py` (line 133)
+- Current mitigation: Rate limiting (3 req/hour/IP). No URL scheme or address validation.
+- Recommendations: Block RFC1918 addresses, link-local (169.254.x.x), loopback, and non-HTTP(S) schemes before the crawl starts. Validate using `urllib.parse.urlparse` before passing to `crawl()`.
 
-**Subdomain path component not validated before filesystem access:**
-- Risk: `server.py:83` and `server.py:93` use the `subdomain` URL segment directly in filesystem path operations without verifying it contains only safe characters. A `subdomain` containing `..` or null bytes could escape the `sites_dir` sandbox.
-- Files: `sastaspace/server.py:82-89`
-- Current mitigation: None.
-- Recommendations: Validate `subdomain` against a strict allowlist regex (e.g., `^[a-z0-9][a-z0-9\-]{0,49}$`) matching `derive_subdomain()`'s output before any filesystem access.
+**Path traversal — subdomain parameter used as filesystem path component without containment check:**
+- Risk: The `{subdomain}` route parameter in `/serve_site` and `/serve_site_asset` is appended to `sites_dir` without verifying the resolved path stays within `sites_dir`. A crafted request to `GET /../../etc/passwd/` could escape the sites directory.
+- Files: `sastaspace/server.py` (lines 237–255)
+- Current mitigation: `derive_subdomain()` in `deployer.py` strips all non-alphanumeric chars except `-`, so deployer-created subdomains are safe. However, any direct HTTP request uses the raw URL parameter without going through the deployer.
+- Recommendations: Add `index_path.resolve().is_relative_to(sites_dir.resolve())` guards before serving files in both route handlers.
 
-**XSS via unsanitized `orig` URL in index page HTML:**
-- Risk: `server.py:41-44` directly interpolates the `original_url` value from `_registry.json` into raw HTML without escaping: `f"<td><a href='{orig}' target='_blank'>{orig}</a></td>"`. If `original_url` contains `'` or HTML special characters (e.g., `javascript:alert(1)` or `' onclick='...`), they are rendered unescaped.
-- Files: `sastaspace/server.py:33-44`
-- Current mitigation: None.
-- Recommendations: Use `html.escape()` on `orig`, `sub`, and `ts` before interpolating into the HTML template, or switch to a proper templating engine.
+**`claude-code-api` container mounts host `~/.claude` via `hostPath`:**
+- Risk: The k8s manifest (present on filesystem but not in git) mounts `/home/mkhare/.claude` from the host node into the container as a volume. This directory contains Claude authentication tokens and conversation history.
+- Files: `k8s/claude-code-api.yaml` (hostPath volume definition)
+- Current mitigation: Volume is `readOnly: true`.
+- Recommendations: Migrate Claude credentials to a k8s Secret. `hostPath` volumes are node-specific and will break on multi-node clusters or after re-imaging the server.
 
-**Redesigned HTML served without sanitization:**
-- Risk: The redesigned HTML output from the LLM is written to disk and served verbatim. A prompt injection attack (e.g., a crawled page that instructs the LLM to embed malicious JavaScript) would result in that script being served to any browser loading the preview.
-- Files: `sastaspace/redesigner.py:112-123`, `sastaspace/server.py:88-89`
-- Current mitigation: The system prompt instructs Claude not to add fake content, but this is not a security control.
-- Recommendations: Consider adding a content security policy header when serving redesigned pages, or running HTML through a sanitizer that strips `<script>` tags.
+**No `securityContext` on any k8s container:**
+- Risk: All deployments run with default security contexts — root user, writable root filesystem, all Linux capabilities retained.
+- Files: `k8s/backend.yaml`, `k8s/frontend.yaml`
+- Current mitigation: Cloudflare Tunnel limits external ingress surface.
+- Recommendations: Add `securityContext: runAsNonRoot: true`, `readOnlyRootFilesystem: true`, `allowPrivilegeEscalation: false`, and `capabilities: drop: [ALL]` to each container spec.
+
+**No liveness probes on any k8s deployment:**
+- Risk: All three deployments define only `readinessProbe`. If a container deadlocks (e.g., hangs in the `asyncio.Semaphore` or an SSE stream), it will pass readiness but never self-recover.
+- Files: `k8s/backend.yaml` (lines 35–43), `k8s/frontend.yaml` (lines 24–29)
+- Current mitigation: None. k8s will not restart a container that is passing readiness.
+- Recommendations: Add `livenessProbe` with `initialDelaySeconds: 60` targeting the same health endpoints.
+
+**No TLS block in the ingress manifest:**
+- Risk: `k8s/ingress.yaml` defines HTTP rules for all three hosts but has no `tls:` section. Without it, cert-manager cannot issue certificates automatically, and nginx serves plaintext HTTP inside the cluster.
+- Files: `k8s/ingress.yaml`
+- Current mitigation: TLS is terminated at Cloudflare edge. Traffic travels over the cloudflared tunnel (encrypted). End-to-end encryption exists via Cloudflare only — the cluster's nginx serves plaintext internally.
+- Recommendations: Add cert-manager `ClusterIssuer` annotation and `tls:` block to the ingress for defence in depth. The `cert-manager` addon is already enabled per `docs/DEPLOYMENT.md`.
+
+**Contact form email field lacks format validation:**
+- Risk: `route.ts` only checks `!email?.trim()` — any non-empty string is accepted. Malformed `replyTo` addresses are passed raw to Resend.
+- Files: `web/src/app/api/contact/route.ts` (line 27)
+- Current mitigation: `escapeHtml()` sanitizes content in the HTML email body. The `replyTo` value is not sanitized.
+- Recommendations: Add server-side email format validation (regex or `zod` schema) before sending.
+
+---
 
 ## Performance Bottlenecks
 
-**Hardcoded 2-second sleep in every crawl:**
-- Problem: `crawler.py:162` unconditionally calls `await asyncio.sleep(2)` after `page.goto()` returns with `networkidle`. For fast sites this adds 2 seconds of dead time per redesign.
-- Files: `sastaspace/crawler.py:162`
-- Cause: Belt-and-suspenders wait for JS to settle after `networkidle` — a reasonable idea but implemented with a fixed sleep rather than a smarter condition.
-- Improvement path: Replace with a configurable timeout or use `page.wait_for_function()` to detect stability dynamically.
+**Global semaphore serialises all redesign requests:**
+- Problem: `_redesign_semaphore = asyncio.Semaphore(1)` means only one redesign can run at a time globally. All other users receive an immediate 429.
+- Files: `sastaspace/server.py` (lines 51, 171–175)
+- Cause: Playwright is CPU/memory intensive; single semaphore prevents OOM. Intentional but queue-less.
+- Improvement path: Per-IP semaphore with a small global pool (e.g., 3 concurrent max), or queue-based processing with polling/SSE status updates.
 
-**Screenshot captures only top 800px:**
-- Problem: `crawler.py:166-168` limits the screenshot clip to `{"x":0,"y":0,"width":1280,"height":800}`. Long-form content pages (blogs, landing pages) are sent to the LLM with only the above-the-fold region, reducing redesign quality.
-- Files: `sastaspace/crawler.py:166-168`
-- Cause: Fixed viewport clip — no full-page screenshot option used.
-- Improvement path: Use `full_page=True` on `page.screenshot()` or increase height to capture more content before passing to the LLM.
+**Playwright `networkidle` + hard 2-second sleep on every crawl:**
+- Problem: `page.goto(url, wait_until="networkidle", timeout=30000)` followed by `await asyncio.sleep(2)` means every crawl takes at minimum 2 seconds after network quiescence, with a 30-second timeout before that.
+- Files: `sastaspace/crawler.py` (line 161)
+- Cause: Conservative wait to ensure SPAs are hydrated.
+- Improvement path: Switch to `wait_until="domcontentloaded"` with a shorter explicit wait for common SPA frameworks, or reduce the hard sleep to 0.5s.
 
-**`max_tokens=16000` may truncate large site redesigns:**
-- Problem: `redesigner.py:119` sets `max_tokens=16000`. Complex sites with many sections can produce HTML well in excess of this, resulting in truncated output that fails `_validate_html()` with a "missing closing </html> tag" error, requiring the user to retry.
-- Files: `sastaspace/redesigner.py:119`
-- Cause: Static limit with no retry or streaming logic.
-- Improvement path: Increase the limit (check model max), or implement a streaming + accumulation approach so truncation is detected earlier and the user is informed meaningfully.
+**`max_tokens=16000` requested on every redesign call:**
+- Problem: Each redesign requests 16,000 output tokens regardless of page complexity. Simple pages could be completed in 4,000–8,000 tokens.
+- Files: `sastaspace/redesigner.py` (line 119)
+- Cause: Defensive maximum to avoid truncation.
+- Improvement path: Attempt with 8,000 tokens, retry with 16,000 if `_validate_html()` detects truncation.
+
+---
 
 ## Fragile Areas
 
-**`ensure_running()` has a race condition:**
-- Files: `sastaspace/server.py:110-161`
-- Why fragile: The function checks if a port is free, then starts a subprocess to bind it. Between the check and the bind, another process could occupy the port. The 5-second polling loop with `time.sleep(0.2)` will silently time out and return a port that the server is not actually listening on, causing the CLI to print a preview URL that returns a connection error.
-- Safe modification: After the polling deadline, verify the port is actually listening before writing `.server_port` and returning; raise or warn if it is not.
-- Test coverage: The test `test_ensure_running_spawns_subprocess_when_not_listening` mocks both `_is_port_listening` and `time.time` to avoid exercising this race.
+**`ensure_running()` — subprocess-based server launch is fragile:**
+- Files: `sastaspace/server.py` (lines 266–317)
+- Why fragile: Polls for 5 seconds then unconditionally writes the port file, even if the server never started. On subsequent calls, a stale port file causes early return without checking liveness.
+- Safe modification: Assert `_is_port_listening(port)` before writing the port file. Add a PID file to detect dead-but-port-reused processes.
+- Test coverage: Not unit-tested; tested indirectly through CLI integration.
 
-**File handle leak in `ensure_running()`:**
-- Files: `sastaspace/server.py:148`
-- Why fragile: `stdout=open(log_file, "a")` opens a file handle and passes it to `subprocess.Popen` without storing a reference or closing it. On CPython this is usually collected by the GC, but it is technically a resource leak that can cause issues under load or in constrained environments.
-- Safe modification: Open the file explicitly, store it, and close it after `Popen` returns (or use a context manager with `Popen`).
-- Test coverage: Not tested; the test mocks `subprocess.Popen` entirely.
+**`deploy()` writes `index.html` non-atomically:**
+- Files: `sastaspace/deployer.py` (lines 80–81)
+- Why fragile: `index_path.write_text(html)` is not atomic. A crash mid-write leaves a truncated `index.html` while the registry records the entry as `"status": "deployed"`.
+- Safe modification: Write to a temp file first, then `os.replace()` — matching the pattern already used for `_registry.json`.
 
-**`_ensure_chromium()` detection logic is inverted:**
-- Files: `sastaspace/crawler.py:22-24`
-- Why fragile: The install check runs `playwright install chromium --dry-run` and installs only when `result.returncode != 0 AND b"chromium" in result.stdout`. This condition is ambiguous: a non-zero return code from `--dry-run` does not reliably indicate that Chromium is missing. The actual Playwright CLI behavior for `--dry-run` varies by version.
-- Safe modification: Use `playwright install chromium` unconditionally with a `--with-deps` flag, or check for the browser executable directly using `playwright._impl._driver.compute_driver_executable()`.
-- Test coverage: `_ensure_chromium` is not tested at all — the crawler tests mock `async_playwright` at a higher level.
+**`_registry.json` grows unboundedly:**
+- Files: `sastaspace/deployer.py` (lines 91–93), `sastaspace/server.py` (lines 181–199)
+- Why fragile: Every deploy appends to the registry with no cleanup policy. Under abuse the registry and stored sites could fill the 10Gi PVC.
+- Safe modification: Cap registry at N most-recent entries, or add a `sastaspace cleanup --older-than 30d` command.
 
-**`serve` command `--reload` starts server in the project working directory:**
-- Files: `sastaspace/cli.py:191-204`
-- Why fragile: Uvicorn's `--reload` mode watches the current working directory. Running `sastaspace serve` from different directories results in different watch roots, and the server module import path `sastaspace.server:app` only resolves if the package is on `sys.path`.
-- Safe modification: Pass `--reload-dir` explicitly, or remove `--reload` as noted above.
+**`serve_site_asset` falls back to `index.html` for all unresolved paths:**
+- Files: `sastaspace/server.py` (lines 247–255)
+- Why fragile: For any asset path that doesn't exist, the server returns `index.html` silently. Missing CSS/JS references in redesigned sites produce no 404 — they return HTML — making debugging very difficult.
+- Safe modification: Only fall back to `index.html` for extensionless paths (SPA routing convention), serve 404 for paths with file extensions that don't resolve.
 
-## Missing Critical Features
+---
 
-**No input validation on the `url` argument:**
-- Problem: The `redesign` CLI command accepts any string as `url` and passes it directly to `page.goto()`. Non-URL strings (e.g., bare hostnames, file paths, `javascript:` URIs) will cause cryptic errors from Playwright rather than a user-friendly validation message.
-- Blocks: Clean error UX; security (prevents `file://` local filesystem reads via Playwright).
+## Scaling Limits
 
-**No rate limiting or concurrency control:**
-- Problem: Multiple simultaneous invocations of `sastaspace redesign` will spawn multiple Playwright browser instances and fire multiple LLM requests simultaneously. There is no mutex, queue, or concurrency limit.
-- Blocks: Safe multi-user use; prevents accidental resource exhaustion on the local machine.
+**Single-replica deployments with no pod disruption budget:**
+- Current capacity: 1 replica each for `backend`, `frontend`.
+- Limit: Rolling restart on every deploy causes a brief outage. No `PodDisruptionBudget` means k8s may take down the single pod before the replacement is ready.
+- Files: `k8s/backend.yaml`, `k8s/frontend.yaml`
+- Scaling path: Add `PodDisruptionBudget` with `minAvailable: 1`. For multiple backend replicas, the PVC access mode must change (see below).
 
-**No coverage enforcement in CI:**
-- Problem: `pyproject.toml` and `Makefile` do not configure a coverage threshold. The `make ci` target runs `lint` and `test` but does not generate or gate on coverage reports.
-- Blocks: Detecting regressions in test coverage as the codebase grows.
+**PVC is `ReadWriteOnce` — blocks horizontal backend scaling:**
+- Current capacity: 10Gi single-node PVC (`ReadWriteOnce`).
+- Limit: Cannot run 2+ backend replicas simultaneously — second pod fails to mount the volume.
+- Files: `k8s/backend.yaml` (lines 65–75)
+- Scaling path: Switch to `ReadWriteMany` storage class (NFS or CephFS via microk8s), or move site file storage to object storage (S3/R2) and serve via signed URLs.
+
+---
+
+## Dependencies at Risk
+
+**`next: 16.2.1` — major version with breaking changes:**
+- Risk: Next.js 16 has breaking API changes. `web/AGENTS.md` explicitly warns that "APIs, conventions, and file structure may differ from training data."
+- Files: `web/package.json` (line 23), `web/CLAUDE.md`, `web/AGENTS.md`
+- Impact: AI-assisted code changes risk generating code against the Next.js 14/15 API rather than 16.
+- Migration plan: Document specific Next.js 16 breaking changes affecting this project in `web/AGENTS.md`.
+
+**`claude-code-api` is an unversioned repo clone, not a pinned dependency:**
+- Risk: The `claude-code-api/` directory is a full repository clone (excluded from git via `.gitignore`). No commit hash is pinned. The k8s image is built from whatever is in `~/claude-code-api` on the server.
+- Files: `.gitignore`, `k8s/backend.yaml` (line 27), `docs/DEPLOYMENT.md` (section 12)
+- Impact: Breaking upstream changes are invisible until the next build.
+- Migration plan: Pin the repo to a specific commit in `docs/DEPLOYMENT.md` and verify it during CI.
+
+---
 
 ## Test Coverage Gaps
 
-**`_ensure_chromium()` is entirely untested:**
-- What's not tested: The Chromium auto-install logic — both the happy path and the failure path.
-- Files: `sastaspace/crawler.py:15-29`
-- Risk: The inverted detection logic (see Fragile Areas) could silently skip installation and cause every crawl to fail on a fresh machine.
-- Priority: Medium
-
-**Server path traversal not tested:**
-- What's not tested: Requests to `GET /../../etc/passwd` or `GET /acme/../_registry.json` — whether the server correctly rejects or contains them.
-- Files: `sastaspace/server.py:91-99`
-- Risk: Security vulnerability exercised only in production.
+**No test for SSRF via `/redesign` endpoint:**
+- What's not tested: A request to `POST /redesign` with `url=http://169.254.169.254/` or `url=http://localhost:8000/`.
+- Files: `tests/test_server.py`, `sastaspace/server.py`
+- Risk: SSRF vulnerability is undetected and untestable regression.
 - Priority: High
 
-**`ensure_running()` timeout/failure path not tested:**
-- What's not tested: The scenario where the server subprocess starts but never binds the port within the 5-second window — the function's silent return of an unlistening port.
-- Files: `sastaspace/server.py:153-161`
-- Risk: Users get a preview URL that returns "connection refused" with no diagnostic.
+**No test verifying `streamRedesign` uses correct API base in production:**
+- What's not tested: That `use-redesign.ts` passes `NEXT_PUBLIC_BACKEND_URL` (not `undefined`) to `streamRedesign`.
+- Files: `web/src/__tests__/sse-client.test.ts`, `web/src/hooks/use-redesign.ts`
+- Risk: The hardcoded `localhost:8080` default is the active code path in production. Current tests always pass `apiBase` explicitly, masking the real production behaviour.
+- Priority: High
+
+**No test for path traversal in `serve_site` / `serve_site_asset`:**
+- What's not tested: That requests like `GET /../../etc/passwd/` are rejected.
+- Files: `tests/test_server.py`, `sastaspace/server.py` (lines 237–255)
+- Risk: Path traversal vulnerability is both unmitigated and untested.
+- Priority: High
+
+**`og-image.png` referenced in metadata but not present:**
+- What's not tested: `web/src/app/[subdomain]/page.tsx` hardcodes `images: ["/og-image.png"]` in OpenGraph metadata. The file does not exist in `web/public/`.
+- Files: `web/src/app/[subdomain]/page.tsx` (line 17), `web/public/`
+- Risk: Social share previews for all result pages show a broken image.
 - Priority: Medium
 
-**`redesign()` default parameter values not tested via config:**
-- What's not tested: That `cli.py` actually threads `cfg.claude_code_api_url` and `cfg.claude_model` into `redesign()` correctly — tests mock `redesign` entirely rather than asserting what arguments it receives.
-- Files: `sastaspace/cli.py:72`, `tests/test_cli.py:131-146`
-- Risk: A config wiring bug would not be caught by the test suite.
-- Priority: Low
+**Crawler tests are fully mocked — no test for `_ensure_chromium()` failure path:**
+- What's not tested: That the crawler handles a missing Chromium installation gracefully. That `wait_until="networkidle"` timeout (30s) path is handled.
+- Files: `tests/test_crawler.py`, `sastaspace/crawler.py`
+- Risk: Crawler startup failures in Docker (e.g., missing system libraries for Chromium) are not caught by CI.
+- Priority: Medium
 
 ---
 

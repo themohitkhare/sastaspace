@@ -2,301 +2,361 @@
 
 **Analysis Date:** 2026-03-21
 
-## Test Framework
+## Test Frameworks
+
+### Frontend (TypeScript/React)
+
+**Unit/Integration Runner:**
+- Vitest — config: `web/vitest.config.ts`
+- Environment: `jsdom`
+- Globals enabled (`globals: true`) — no need to import `describe`/`it`/`expect` in test files
+- Setup file: `web/vitest.setup.ts` — imports `@testing-library/jest-dom/vitest`
+- Path alias `@/` available in tests (mirrors production config)
+- E2E tests excluded from Vitest: `exclude: ['**/e2e/**']`
+
+**E2E Runner:**
+- Playwright — config: `web/playwright.config.ts`
+- Browser: Chromium only (`Desktop Chrome` device profile)
+- Sequential execution: `fullyParallel: false`, `workers: 1`
+- `BASE_URL` env var controls target — defaults to `http://localhost:3000`
+- Docker-aware: when `BASE_URL` is set, no `webServer` block is added (assumes app already running)
+
+### Backend (Python)
 
 **Runner:**
-- `pytest` 8.x
-- Config: `pyproject.toml` `[tool.pytest.ini_options]`
-- `asyncio_mode = "auto"` — all async tests run automatically without explicit `@pytest.mark.asyncio` decorator (though the decorator is still present in some tests)
-
-**Async support:**
-- `pytest-asyncio` 0.24.x
-
-**HTTP testing:**
-- `fastapi.testclient.TestClient` (synchronous HTTPX-based test client, no server startup)
+- pytest — config in `pyproject.toml` under `[tool.pytest.ini_options]`
+- `asyncio_mode = "auto"` — all async test functions run automatically without `@pytest.mark.asyncio`
+- Test discovery: `tests/` directory
 
 **Run Commands:**
 ```bash
-uv run pytest tests/ -v          # Run all tests with verbose output
-make test                         # Same via Makefile
-make ci                           # lint then test
-```
+# Frontend unit tests
+cd web && npm run test              # Run all Vitest tests once
+cd web && npm run test:coverage     # With coverage (vitest run --coverage)
 
-No watch mode or coverage commands are configured. No `--cov` flags in Makefile.
+# Frontend E2E tests
+cd web && npm run test:e2e          # Playwright headless
+cd web && npm run test:e2e:headed   # Playwright with browser visible
+
+# Backend tests
+uv run pytest tests/ -v            # Run all Python tests verbose
+make test                          # Same via Makefile
+
+# Full CI check (backend)
+make ci                            # lint + test
+
+# E2E in Docker (full stack)
+docker compose --profile test up   # Runs tests service after frontend is healthy
+```
 
 ## Test File Organization
 
-**Location:** Separate `tests/` directory at project root — not co-located with source
+**Frontend:**
+- Unit/integration tests: `web/src/__tests__/` (separate directory, not co-located)
+- Naming: `{subject}.test.ts` or `{subject}.test.tsx`
+- E2E tests: `web/e2e/` directory
+- E2E naming: `{feature}.spec.ts`
 
-**Naming:** `test_{module}.py` mirrors source module name exactly:
 ```
-sastaspace/crawler.py     → tests/test_crawler.py
-sastaspace/redesigner.py  → tests/test_redesigner.py
-sastaspace/deployer.py    → tests/test_deployer.py
-sastaspace/server.py      → tests/test_server.py
-sastaspace/cli.py         → tests/test_cli.py
-sastaspace/config.py      → tests/test_config.py
+web/
+├── src/
+│   └── __tests__/
+│       ├── contact-form.test.tsx      # Component test
+│       ├── url-input-form.test.tsx    # Component test
+│       ├── sse-client.test.ts         # Lib test
+│       ├── url-utils.test.ts          # Lib test
+│       └── api-contact.test.ts        # API route test
+└── e2e/
+    └── sastaspace.spec.ts             # Full E2E spec
 ```
 
-**`tests/__init__.py`:** Present but empty — makes `tests/` a package.
+**Backend:**
+- Tests in `tests/` at project root (not inside `sastaspace/` package)
+- Naming: `test_{module}.py` mirrors source module name
+- Shared fixtures in `tests/conftest.py`
+
+```
+tests/
+├── conftest.py           # Shared fixtures
+├── test_server.py        # FastAPI route tests
+├── test_crawler.py       # Crawler unit tests
+├── test_deployer.py      # Deployer unit tests
+├── test_redesigner.py    # Redesigner unit tests
+├── test_config.py        # Settings tests
+└── test_cli.py           # CLI tests
+```
 
 ## Test Structure
 
-**Suite Organization:**
-```python
-# tests/test_deployer.py
+**Frontend Vitest — suite organization:**
+```typescript
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 
-# --- derive_subdomain tests ---
+describe('ComponentName or functionName', () => {
+  beforeEach(() => {
+    vi.restoreAllMocks()
+    vi.stubEnv('ENV_VAR', 'value')
+  })
 
-def test_derive_subdomain_simple():
-    assert derive_subdomain("https://acme.com") == "acme-com"
-
-# --- deploy() tests ---
-
-def test_deploy_creates_index_html(tmp_path):
-    ...
-
-# --- load_registry tests ---
-
-def test_load_registry_returns_empty_list_when_missing(tmp_path):
-    ...
+  it('describes the expected behavior', () => {
+    // arrange -> act -> assert
+  })
+})
 ```
 
-Comment headers (`# --- name ---`) group tests by function under test within a single file.
+**Frontend Playwright — test organization:**
+```typescript
+import { test, expect, type Page } from "@playwright/test";
 
-**Naming:**
-- `test_{what it does}` describing the expected behavior: `test_deploy_creates_index_html`, `test_crawl_handles_timeout_error`, `test_raises_on_missing_doctype`
-- Names are complete sentences describing the assertion, not the code path
+// Helper functions defined at top of file
+async function hasHorizontalScroll(page: Page): Promise<boolean> { ... }
 
-**Docstrings on tests:**
-Used selectively on non-obvious tests to clarify intent:
-```python
-def test_raises_on_crawl_error():
-    """redesign() raises before calling the API when CrawlResult.error is set."""
+// Section comments using ASCII art dividers
+// --- 1. Section title --------------------------------------------------------
+test.describe("Feature - context", () => {
+  test.beforeEach(async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await page.goto(BASE);
+  });
+
+  test("describes behavior", async ({ page }) => {
+    await expect(page.getByRole("heading", { name: /text/i })).toBeVisible();
+  });
+});
 ```
 
-## Mocking
-
-**Framework:** `unittest.mock` — `patch`, `MagicMock`, `AsyncMock`
-
-**Import pattern:**
+**Backend pytest — test organization:**
 ```python
-from unittest.mock import AsyncMock, MagicMock, patch
-```
+# tests/test_module.py
+from unittest.mock import AsyncMock, patch
+import pytest
 
-**Async mocking (Playwright):**
-Context managers and async methods are mocked by configuring `__aenter__` and `__aexit__` on the mock:
-```python
-with patch("sastaspace.crawler.async_playwright") as mock_pw:
-    mock_pw.return_value.__aenter__ = AsyncMock(return_value=mock_pw.return_value)
-    mock_pw.return_value.__aexit__ = AsyncMock(return_value=False)
-    mock_pw.return_value.chromium.launch = AsyncMock(return_value=mock_browser)
-    mock_browser.new_context = AsyncMock(return_value=mock_context)
-    mock_context.new_page = AsyncMock(return_value=mock_page)
-```
-
-**OpenAI client mocking:**
-A builder function creates a fully configured mock chain:
-```python
-def make_mock_client(response_text: str):
-    mock_message = MagicMock()
-    mock_message.content = response_text
-    mock_choice = MagicMock()
-    mock_choice.message = mock_message
-    mock_response = MagicMock()
-    mock_response.choices = [mock_choice]
-    mock_client = MagicMock()
-    mock_client.chat.completions.create.return_value = mock_response
-    return mock_client
-
-with patch("sastaspace.redesigner.OpenAI", return_value=mock_client):
-    result = redesign(make_crawl_result())
-```
-
-**subprocess / side-effect mocking:**
-`side_effect` is used to control stateful behavior across repeated calls:
-```python
-call_count = {"n": 0}
-
-def mock_listening(port):
-    call_count["n"] += 1
-    return call_count["n"] > 2
-
-with patch("sastaspace.server._is_port_listening", side_effect=mock_listening):
-    ...
-```
-
-**`patch` scope:** All patches use `with patch(...)` context managers scoped to individual test functions. No module-level patches.
-
-**Multi-patch pattern (Python 3.10+ parenthesized `with`):**
-```python
-with (
-    patch("sastaspace.cli.crawl", mock_crawl),
-    patch("sastaspace.cli.redesign", mock_redesign),
-    patch("sastaspace.cli.ensure_running", mock_ensure),
-    patch("sastaspace.cli.webbrowser.open"),
-):
-    result = runner.invoke(...)
-```
-
-**What is mocked:**
-- External I/O: Playwright browser launch, OpenAI API client, subprocess spawning, `webbrowser.open`, `time.sleep`, `time.time`
-- Dependencies at their import sites in the module under test (e.g., `"sastaspace.redesigner.OpenAI"` not `"openai.OpenAI"`)
-
-**What is NOT mocked:**
-- Filesystem operations — all file I/O runs against `tmp_path` (pytest's real temp directory fixture)
-- Pure logic functions: `derive_subdomain()`, `_clean_html()`, `_validate_html()`
-- `Settings` defaults (tested directly, with `monkeypatch.setenv` for overrides)
-
-## Fixtures and Factories
-
-**Pytest built-in fixtures used:**
-- `tmp_path` — real temporary directory, used in `test_deployer.py`, `test_server.py`, `test_cli.py`
-- `monkeypatch` — used in `test_config.py` and `test_cli.py` for env var overrides
-
-**Local fixtures defined in `test_cli.py`:**
-```python
-@pytest.fixture
-def runner():
-    return CliRunner()
-
-@pytest.fixture
-def sites_dir(tmp_path):
-    d = tmp_path / "sites"
-    d.mkdir()
-    return d
-```
-
-**Builder functions (not fixtures):**
-Module-level helper functions construct test data objects and are called directly:
-```python
-# tests/test_crawler.py
-def make_mock_page(title="Test Site", meta_desc="A test site", html="...", screenshot_bytes=b"..."):
-    page = AsyncMock()
-    page.title = AsyncMock(return_value=title)
-    ...
-    return page
-
-# tests/test_redesigner.py
-def make_crawl_result(url="https://acme.com", title="Acme", screenshot_b64=None):
-    return CrawlResult(url=url, title=title, ...)
-
-def make_mock_client(response_text: str):
-    ...
-
-# tests/test_server.py
-def make_test_sites(tmp_path: Path) -> Path:
-    ...
-
+# Helper factory functions at top of file
 def make_test_client(sites_dir: Path):
     from sastaspace.server import make_app
     app = make_app(sites_dir)
     return TestClient(app)
+
+# --- Section separator comments ---
+
+def test_function_name(tmp_path):
+    # Arrange
+    result = deploy(url="https://acme.com", html=HTML, sites_dir=tmp_path)
+    # Assert
+    assert result.subdomain == "acme-com"
 ```
 
-**Constants in test files:**
-```python
-SAMPLE_HTML = "<!DOCTYPE html><html><body>hi</body></html>"
-FAKE_PNG_B64 = base64.b64encode(b"\x89PNG\r\n\x1a\n" + b"\x00" * 20).decode()
+## Mocking
+
+**Frontend — Vitest mocking patterns:**
+
+Third-party UI libraries mocked at module level to avoid rendering complexity:
+```typescript
+// Mock animation library
+vi.mock('motion/react', () => ({
+  AnimatePresence: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+  motion: {
+    div: ({ children, ...props }: React.HTMLAttributes<HTMLDivElement>) => <div {...props}>{children}</div>,
+  },
+}))
+
+// Mock icon library
+vi.mock('lucide-react', () => ({
+  Loader2: () => <svg data-testid="loader-icon" />,
+}))
+
+// Mock CAPTCHA widget
+vi.mock('@marsidev/react-turnstile', () => ({
+  Turnstile: () => null,
+}))
 ```
+
+Environment variables mocked via `vi.stubEnv`:
+```typescript
+beforeEach(() => {
+  vi.restoreAllMocks()
+  vi.stubEnv('NEXT_PUBLIC_ENABLE_TURNSTILE', 'false')
+  vi.stubEnv('RESEND_API_KEY', 'test-key')
+})
+```
+
+External SDK mocked before import (critical ordering — mock must precede import of the module under test):
+```typescript
+// vi.mock hoisting means this executes before the import below
+vi.mock('resend', () => ({
+  Resend: function () {
+    return { emails: { send: mockSend } }
+  },
+}))
+import { POST } from '@/app/api/contact/route'
+```
+
+`fetch` mocked via `vi.spyOn` for network calls:
+```typescript
+vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+  ok: true,
+  body: createSSEStream(chunks),
+} as unknown as Response)
+```
+
+**Frontend — Playwright route interception:**
+```typescript
+await page.route("**/redesign", async (route) => {
+  await route.fulfill({
+    status: 200,
+    contentType: "text/event-stream",
+    body: sseBody,
+  });
+});
+```
+
+**Backend — Python mocking patterns:**
+
+`unittest.mock.patch` as context manager (parenthesized for multi-patch):
+```python
+with (
+    patch("sastaspace.server.crawl", new_callable=AsyncMock, return_value=mock_crawl_result) as m_crawl,
+    patch("sastaspace.server.redesign", return_value=mock_html) as m_redesign,
+    patch("sastaspace.server.deploy", return_value=mock_deploy_result) as m_deploy,
+):
+    app = make_app(tmp_sites)
+    client = TestClient(app)
+```
+
+Mock page object factory for Playwright browser pages:
+```python
+def make_mock_page(title="Test Site", ...):
+    page = AsyncMock()
+    page.title = AsyncMock(return_value=title)
+    page.content = AsyncMock(return_value=html)
+    return page
+```
+
+## Fixtures and Factories
+
+**Backend — pytest fixtures in `tests/conftest.py`:**
+```python
+@pytest.fixture
+def tmp_sites(tmp_path):
+    """Create a temporary sites directory."""
+    sites = tmp_path / "sites"
+    sites.mkdir()
+    return sites
+
+@pytest.fixture
+def mock_crawl_result():
+    """A successful CrawlResult for testing."""
+    return CrawlResult(url="https://example.com", ...)
+
+@pytest.fixture
+def redesign_client(tmp_sites, mock_crawl_result, mock_deploy_result):
+    """TestClient with mocked pipeline functions for /redesign testing."""
+    # Patches crawl/redesign/deploy and yields a TestClient
+    ...
+    yield client
+```
+
+**Frontend — helper factories are local to each test file (no shared fixtures):**
+```typescript
+// API route tests: inline request factory
+function makeRequest(body: Record<string, unknown>): NextRequest {
+  return new NextRequest('http://localhost:3000/api/contact', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  })
+}
+
+// SSE tests: stream factory
+function createSSEStream(chunks: string[]): ReadableStream<Uint8Array> { ... }
+
+// E2E tests: SSE payload builder
+function buildSSE(events: Array<{ event: string; data: Record<string, unknown> }>): string { ... }
+```
+
+`tmp_path` pytest built-in fixture used universally for filesystem isolation — no custom temp directory logic.
 
 ## Coverage
 
-**Requirements:** None enforced — no `--cov` flag, no minimum threshold configured
+**Requirements:** No enforced coverage threshold detected.
 
 **View Coverage:**
 ```bash
-uv run pytest tests/ --cov=sastaspace --cov-report=term-missing
+cd web && npm run test:coverage    # Vitest HTML/text coverage report
 ```
-(Not configured in Makefile; must be run manually)
 
 ## Test Types
 
-**Unit Tests:**
-- Pure function tests with no mocking: `test_deployer.py` (all `derive_subdomain`, `load_registry` tests), `test_config.py`, `test_redesigner.py` HTML cleaning/validation tests
-- Scope: single function, single behavior per test
+**Unit Tests (Vitest / pytest):**
+- Scope: individual functions and pure logic
+- `web/src/__tests__/url-utils.test.ts` — tests `validateUrl` and `extractDomain` with no mocking
+- `web/src/__tests__/sse-client.test.ts` — tests SSE stream parsing with mocked `fetch`
+- `tests/test_deployer.py` — tests `derive_subdomain` and `deploy()` with real `tmp_path` filesystem
+- `tests/test_crawler.py` — tests internal extraction helpers with real `BeautifulSoup` objects
 
-**Integration Tests:**
-- CLI pipeline tests in `test_cli.py` that invoke `Click` commands end-to-end via `CliRunner`, with only external I/O mocked
-- FastAPI route tests in `test_server.py` using `TestClient` against a real `make_app()` instance with real `tmp_path` filesystem
+**Integration Tests (Vitest / pytest TestClient):**
+- Scope: component rendering + behavior, or API route with mocked external services
+- `web/src/__tests__/contact-form.test.tsx` — renders `ContactForm`, fires DOM events, asserts output
+- `web/src/__tests__/api-contact.test.ts` — calls Next.js Route Handler directly via `NextRequest`
+- `tests/test_server.py` — calls FastAPI routes via `TestClient` with real filesystem via `tmp_path`
 
-**Async Tests:**
-- `test_crawler.py` tests for `crawl()` are `async def` with `@pytest.mark.asyncio`; pytest-asyncio runs them via `asyncio_mode = "auto"`
-
-**E2E Tests:** Not present — no real network calls or browser automation in tests
+**E2E Tests (Playwright):**
+- Scope: full browser against running application stack
+- File: `web/e2e/sastaspace.spec.ts`
+- Sections covered: landing page desktop (1280px), landing page mobile (375px), result page structure, contact form presence/fields/layout, contact form client-side validation, contact form mobile (375px), API routes via `request` fixture, iframe recursion detection, landing-to-progress transition, SSE progress flow with mocked backend
+- Runs against `http://localhost:3000` locally or `http://frontend:3000` in Docker network
 
 ## Common Patterns
 
-**Async test:**
-```python
-@pytest.mark.asyncio
-async def test_crawl_returns_crawl_result():
-    """crawl() should return a CrawlResult with title and screenshot populated."""
-    mock_page = make_mock_page(title="Acme Inc", html="<html><body><h1>Acme</h1></body></html>")
-
-    with patch("sastaspace.crawler.async_playwright") as mock_pw:
-        ...
-        result = await crawl("https://acme.com")
-
-    assert isinstance(result, CrawlResult)
-    assert result.error == ""
+**Async Testing (Vitest):**
+```typescript
+it('yields parsed SSE events', async () => {
+  // mock fetch before calling async generator
+  const events = []
+  for await (const event of streamRedesign('https://test.com', 'http://localhost:8080')) {
+    events.push(event)
+  }
+  expect(events[0].event).toBe('crawling')
+})
 ```
 
-**Exception testing:**
+**Async Testing (pytest with asyncio_mode = "auto"):**
 ```python
-def test_raises_on_empty_response():
-    mock_client = make_mock_client("")
-
-    with patch("sastaspace.redesigner.OpenAI", return_value=mock_client):
-        with pytest.raises(RedesignError, match="empty"):
-            redesign(make_crawl_result())
+# No decorator needed — asyncio_mode = "auto" handles it
+async def test_crawl_returns_result():
+    result = await crawl("https://example.com")
+    assert result.url == "https://example.com"
 ```
 
-**Verifying a mock was NOT called:**
-```python
-def test_raises_on_crawl_error():
-    bad_result = make_crawl_result()
-    bad_result.error = "Timeout"
-
-    mock_client = make_mock_client("")
-    with patch("sastaspace.redesigner.OpenAI", return_value=mock_client):
-        with pytest.raises(RedesignError, match="crawl failed"):
-            redesign(bad_result)
-
-    mock_client.chat.completions.create.assert_not_called()
+**Error/Status Testing (API routes):**
+```typescript
+it('returns 400 when name is missing', async () => {
+  const req = makeRequest({ name: '', email: 'test@test.com', message: 'Hello', ... })
+  const res = await POST(req)
+  expect(res.status).toBe(400)
+  const data = await res.json()
+  expect(data.error).toBe('All fields are required')
+})
 ```
 
-**Inspecting call arguments:**
-```python
-def test_client_called_with_image_when_screenshot_present():
-    mock_client = make_mock_client(SAMPLE_HTML)
-
-    with patch("sastaspace.redesigner.OpenAI", return_value=mock_client):
-        redesign(make_crawl_result(screenshot_b64=FAKE_PNG_B64))
-
-    call_kwargs = mock_client.chat.completions.create.call_args.kwargs
-    user_content = call_kwargs["messages"][-1]["content"]
-    image_blocks = [c for c in user_content if c.get("type") == "image_url"]
-    assert len(image_blocks) == 1
+**Responsive/Layout Testing (Playwright):**
+```typescript
+// Always set viewport explicitly before navigation
+await page.setViewportSize({ width: 375, height: 812 });
+// Check element dimensions
+const box = await btn.boundingBox();
+expect(box!.height).toBeGreaterThanOrEqual(44);
 ```
 
-**Filesystem-based test with `tmp_path`:**
-```python
-def test_deploy_creates_index_html(tmp_path):
-    result = deploy(url="https://acme.com", html=SAMPLE_HTML, sites_dir=tmp_path)
-    index = tmp_path / result.subdomain / "index.html"
-    assert index.exists()
-    assert index.read_text() == SAMPLE_HTML
-```
+**What to Mock:**
+- Third-party UI widgets that fail in jsdom: animations (`motion/react`), CAPTCHA (`@marsidev/react-turnstile`)
+- External network calls: `fetch`, `Resend` email SDK
+- Playwright/Chromium browser when testing crawler logic in Python
+- Pipeline dependencies in FastAPI route tests: `crawl`, `redesign`, `deploy`
 
-**`monkeypatch.setenv` for config overrides:**
-```python
-def test_settings_override_port(monkeypatch):
-    monkeypatch.setenv("SERVER_PORT", "9090")
-    s = Settings()
-    assert s.server_port == 9090
-```
-
----
-
-*Testing analysis: 2026-03-21*
+**What NOT to Mock:**
+- Pure utility functions (`validateUrl`, `extractDomain`, `derive_subdomain`) — use real inputs
+- Filesystem operations — use `tmp_path` for real isolation
+- FastAPI request/response cycle — use `TestClient` directly
+- DOM and React rendering — use `@testing-library/react` with real jsdom
+- BeautifulSoup HTML parsing — use real HTML strings in Python unit tests

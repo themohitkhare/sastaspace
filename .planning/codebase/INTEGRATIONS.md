@@ -5,39 +5,54 @@
 ## APIs & External Services
 
 **AI / LLM:**
-- claude-code-api (local gateway) — OpenAI-compatible HTTP API gateway that proxies to Claude
-  - SDK/Client: `openai` Python SDK (`sastaspace/redesigner.py` line 7)
-  - Base URL: `http://localhost:8000/v1` (configurable via `CLAUDE_CODE_API_URL`)
-  - Auth: `api_key="claude-code"` (hardcoded dummy value; auth is handled by the gateway)
-  - Model: configurable via `CLAUDE_MODEL` env var (default: `claude-sonnet-4-5-20250929`)
-  - Usage: `client.chat.completions.create(...)` with multimodal content (screenshot base64 + text)
+- claude-code-api (self-hosted gateway) — OpenAI-compatible HTTP proxy for Claude
+  - SDK/Client: `openai` Python SDK (`sastaspace/redesigner.py`)
+  - Base URL: `http://localhost:8000/v1` in dev; `http://claude-code-api:8000/v1` in k8s
+  - Auth: `api_key="claude-code"` (dummy; actual auth handled by gateway via `~/.claude` mount)
+  - Model: `claude-sonnet-4-5-20250929` (configurable via `CLAUDE_MODEL`)
+  - Call: `client.chat.completions.create(...)` with multimodal content (base64 screenshot + text)
   - Max tokens: 16,000 per request
-  - This is NOT the official Anthropic API; it is a local proxy. `ANTHROPIC_API_KEY` is consumed by the gateway, not this app.
+  - Gateway image: `localhost:32000/sastaspace-claude-code-api:latest` (deployed as k8s pod)
+  - Gateway auth: `~/.claude` directory mounted from host as `hostPath` volume in `k8s/claude-code-api.yaml`
 
-**Web Crawling (external sites, arbitrary URLs):**
-- Any public URL — Playwright headless Chromium makes requests to arbitrary target websites
+**Email:**
+- Resend — transactional email delivery for contact form submissions
+  - SDK/Client: `resend` npm package (`web/src/app/api/contact/route.ts`)
+  - Auth: `RESEND_API_KEY` env var (server-only, never exposed to browser)
+  - From address: `noreply@sastaspace.com`
+  - Destination: `OWNER_EMAIL` env var
+  - Triggered by: POST to `/api/contact` in Next.js
+
+**Bot Protection:**
+- Cloudflare Turnstile — invisible CAPTCHA on contact form
+  - Client: `@marsidev/react-turnstile` (`web/src/components/result/contact-form.tsx`)
+  - Server verification: POST to `https://challenges.cloudflare.com/turnstile/v0/siteverify`
+  - Credentials: `NEXT_PUBLIC_TURNSTILE_SITE_KEY` (public) + `TURNSTILE_SECRET_KEY` (server-only)
+  - Feature flag: set `NEXT_PUBLIC_ENABLE_TURNSTILE=false` to disable (dev convenience)
+
+**Web Crawling (arbitrary external URLs):**
+- Playwright headless Chromium — visits arbitrary target URLs supplied by users
   - Implementation: `sastaspace/crawler.py`, `async def crawl(url: str)`
-  - Browser: Chromium via `playwright.async_api.async_playwright`
-  - UA string: Chrome 120 on macOS (set in `sastaspace/crawler.py` line 153)
-  - Timeout: 30 seconds per page load (`wait_until="networkidle"`)
+  - UA: Chrome 120 on macOS
+  - Timeout: 30s per page load (`wait_until="networkidle"`)
 
-**Google Fonts:**
-- Referenced in system prompt (`sastaspace/redesigner.py` line 27): AI-generated HTML uses `@import` from `fonts.googleapis.com`
-- This is a passive dependency — the generated HTML files make outbound requests when served in a browser. The Python code itself makes no direct Google Fonts calls.
+**Google Fonts (passive):**
+- AI-generated HTML uses `@import` from `fonts.googleapis.com` per system prompt in `sastaspace/redesigner.py`
+- No server-side calls; outbound request happens in the user's browser when viewing the redesigned site
 
 ## Data Storage
 
 **Databases:**
-- None — no database. All persistence is via local filesystem.
+- None — no database anywhere in the stack
 
 **File Storage:**
-- Local filesystem — all redesigned sites saved to `sites/{subdomain}/index.html`
-- Registry: `sites/_registry.json` — JSON array tracking all deployed redesigns with subdomain, original URL, timestamp, status
-- Per-site metadata: `sites/{subdomain}/metadata.json`
-- Server state: `sites/.server_port` — persisted port number for the running preview server
-- Server logs: `sites/.server.log` — appended to by detached uvicorn subprocess
-- Default path: `./sites` (configurable via `SITES_DIR` env var)
-- Implementation: `sastaspace/deployer.py`
+- Local filesystem / PersistentVolumeClaim (10Gi, `ReadWriteOnce`) in k8s
+  - Redesigned sites: `/data/sites/{subdomain}/index.html` (k8s) / `./sites/{subdomain}/index.html` (local)
+  - Registry: `sites/_registry.json` — JSON array of all deployed redesigns (subdomain, original URL, timestamp)
+  - Per-site metadata: `sites/{subdomain}/metadata.json`
+  - Server state: `sites/.server_port`, `sites/.server.log` (local dev only)
+  - Implementation: `sastaspace/deployer.py`
+  - k8s PVC claim: `sites-pvc` in `k8s/backend.yaml`, mounted at `/data/sites`
 
 **Caching:**
 - None
@@ -45,44 +60,79 @@
 ## Authentication & Identity
 
 **Auth Provider:**
-- None — this is a local developer tool with no user authentication
-- The claude-code-api gateway handles Anthropic API key auth externally
+- No user authentication in the application
+- Backend rate-limits by IP: 3 requests per 3600 seconds; localhost is exempt
+- Concurrency limited: `asyncio.Semaphore(1)` — only one redesign at a time
+- Claude authentication: handled entirely by the claude-code-api gateway (reads `~/.claude`)
 
 ## Monitoring & Observability
 
-**Error Tracking:**
-- None
+**Log Aggregation:**
+- Loki — configuration at `loki/loki-config.yml`
+- Promtail — log shipping, configuration at `promtail/promtail-config.yml`
 
-**Logs:**
-- Uvicorn subprocess logs appended to `sites/.server.log` when server runs in background (`sastaspace/server.py` line 134)
-- Foreground `serve` command streams uvicorn logs directly to terminal
-- CLI errors surfaced via Rich `Panel` with `[red]...[/red]` formatting
+**Dashboards:**
+- Grafana — provisioning config at `grafana/provisioning/`
+
+**Application Logs:**
+- Backend: uvicorn stdout/stderr, visible in k8s via `kubectl logs`
+- Frontend: Next.js stdout
+- `make deploy-logs` tails both pod log streams
+
+**Error Tracking:**
+- No external error tracking (no Sentry or equivalent)
 
 ## CI/CD & Deployment
 
 **Hosting:**
-- Local machine only — no cloud deployment
+- Production: self-hosted Linux server running MicroK8s at `sastaspace.com` / `api.sastaspace.com`
+- Images served from local Docker registry at `localhost:32000` (MicroK8s built-in)
 
 **CI Pipeline:**
-- `make ci` runs `make lint` then `make test` (see `Makefile`)
-- Lint: `uv run ruff check` + `uv run ruff format --check`
-- Test: `uv run pytest tests/ -v`
-- No GitHub Actions or external CI configuration detected
+- GitHub Actions: `.github/workflows/deploy.yml`
+- Trigger: push to `main`, or manual `workflow_dispatch`
+- Runner: self-hosted (`linux, amd64`) — the production server itself
+- Steps: checkout → build 3 Docker images → push to `localhost:32000` → `kubectl apply -f k8s/` → rolling restart → rollout verification
+- No separate staging environment
+
+**Local CI:**
+- `make ci` = `make lint` + `make test`
+- Ruff checks + pytest for Python
+- No automated frontend test run in CI currently
+
+**Tunnel / Reverse Proxy:**
+- nginx Ingress controller (MicroK8s) routes:
+  - `sastaspace.com` + `www.sastaspace.com` → frontend:3000
+  - `api.sastaspace.com` → backend:8080
+- Proxy body size: 50MB, read timeout: 300s (`k8s/ingress.yaml`)
+- Cloudflare Zero Trust tunnel config template at `cloudflared/config.yml` (not yet activated — placeholder UUIDs)
 
 ## Environment Configuration
 
-**Required env vars (for full functionality):**
-- `ANTHROPIC_API_KEY` — consumed by the external claude-code-api gateway process, not directly by this Python code
+**Required env vars for full production functionality:**
+- `RESEND_API_KEY` — Resend email API key
+- `OWNER_EMAIL` — contact form destination
+- `NEXT_PUBLIC_TURNSTILE_SITE_KEY` — Cloudflare Turnstile public key
+- `TURNSTILE_SECRET_KEY` — Cloudflare Turnstile secret
+- `ANTHROPIC_API_KEY` — consumed by claude-code-api gateway (via Kubernetes `sastaspace-env` secret)
 
-**Optional env vars (with defaults):**
-- `CLAUDE_CODE_API_URL` — gateway base URL (default: `http://localhost:8000/v1`)
-- `SITES_DIR` — output directory (default: `./sites`)
-- `SERVER_PORT` — preview server port (default: `8080`)
-- `CLAUDE_MODEL` — Claude model identifier (default: `claude-sonnet-4-5-20250929`)
+**Optional with defaults:**
+- `CLAUDE_CODE_API_URL` (default: `http://localhost:8000/v1`)
+- `SASTASPACE_SITES_DIR` (default: `./sites`)
+- `SERVER_PORT` (default: `8080`)
+- `CLAUDE_MODEL` (default: `claude-sonnet-4-5-20250929`)
+- `CORS_ORIGINS` (default: `http://localhost:3000`)
+- `NEXT_PUBLIC_BACKEND_URL` (default: unset in production; set to `http://localhost:8080` in dev)
+- `NEXT_PUBLIC_BASE_URL` (default: `https://sastaspace.com`)
 
-**Secrets location:**
-- `.env` file at project root (gitignored); template at `.env.example`
-- `pydantic-settings` loads `.env` automatically via `sastaspace/config.py`
+**Secrets in k8s:**
+- Kubernetes secret `sastaspace-env` in namespace `sastaspace`
+- Backend pod loads it via `envFrom.secretRef` (`k8s/backend.yaml`)
+- Frontend env vars are baked into the Docker image at build time (`NEXT_PUBLIC_*`) or set via k8s manifest env
+
+**Secrets in local dev:**
+- `.env` at project root (gitignored); template at `.env.example`
+- `web/.env.example` has frontend-specific template
 
 ## Webhooks & Callbacks
 
@@ -90,7 +140,9 @@
 - None
 
 **Outgoing:**
-- None (generated HTML may cause browsers to call `fonts.googleapis.com`, but no server-side outbound webhooks)
+- Resend API call on each contact form submission (POST from Next.js API route server-side)
+- Cloudflare Turnstile verification (POST from Next.js API route server-side)
+- All other outbound HTTP is from Playwright crawling user-supplied URLs (user-initiated, not webhook)
 
 ---
 
