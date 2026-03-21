@@ -54,20 +54,24 @@ services:
   claude-code-api:
     build:
       context: ./claude-code-api
-      dockerfile: Dockerfile
+      dockerfile: docker/Dockerfile
     ports:
       - "8000:8000"
     env_file:
       - path: .env
         required: false
+    environment:
+      - WRITE_CLAUDE_CONFIG=true
+    volumes:
+      - ${HOME}/.claude:/home/claudeuser/.claude:ro
     networks:
       - sastaspace
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
-      interval: 10s
-      timeout: 5s
+      interval: 30s
+      timeout: 10s
       retries: 5
-      start_period: 10s
+      start_period: 30s
     restart: unless-stopped
 
   tests:

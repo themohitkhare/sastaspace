@@ -27,20 +27,17 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 WORKDIR /app
 
-# Install uv
-RUN pip install --no-cache-dir uv
+# Copy project files
+COPY pyproject.toml ./
 
-# Copy dependency files first (cache layer)
-COPY pyproject.toml uv.lock ./
+# Copy application source (needed for pip install -e or direct install)
+COPY sastaspace/ ./sastaspace/
 
-# Install Python deps (no dev deps)
-RUN uv sync --no-dev --frozen
+# Install Python deps via pip (simpler than uv in Docker)
+RUN pip install --no-cache-dir .
 
 # Install Playwright + Chromium browser
-RUN uv run playwright install chromium
-
-# Copy application source
-COPY sastaspace/ ./sastaspace/
+RUN playwright install chromium
 
 # Persistent sites volume mount point
 ENV SASTASPACE_SITES_DIR=/data/sites
@@ -50,4 +47,4 @@ EXPOSE 8080
 HEALTHCHECK --interval=10s --timeout=5s --retries=5 --start-period=15s \
     CMD curl -f http://localhost:8080/ || exit 1
 
-CMD ["uv", "run", "uvicorn", "sastaspace.server:app", "--host", "0.0.0.0", "--port", "8080"]
+CMD ["uvicorn", "sastaspace.server:app", "--host", "0.0.0.0", "--port", "8080"]

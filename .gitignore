@@ -22,7 +22,5 @@ web/.next/
 web/.next/dev/
 
 # claude-code-api — clone from https://github.com/codingworkflow/claude-code-api
-# Dockerfile is tracked; repo contents are cloned by user
-claude-code-api/*
-!claude-code-api/Dockerfile
-!claude-code-api/.gitkeep
+# User clones the repo; uses its own docker/Dockerfile
+claude-code-api/
