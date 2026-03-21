@@ -38,12 +38,12 @@ class Settings(BaseSettings):
     ollama_api_key: str = "ollama"
 
     # Free tier model assignments (Ollama)
-    free_crawl_analyst_model: str = "glm4:latest"
-    free_design_strategist_model: str = "glm4:latest"
-    free_copywriter_model: str = "glm4:latest"
-    free_component_selector_model: str = "glm4:latest"
-    free_html_generator_model: str = "glm4:latest"
-    free_quality_reviewer_model: str = "glm4:latest"
+    free_crawl_analyst_model: str = "glm-4.7-flash:latest"
+    free_design_strategist_model: str = "glm-4.7-flash:latest"
+    free_copywriter_model: str = "glm-4.7-flash:latest"
+    free_component_selector_model: str = "glm-4.7-flash:latest"
+    free_html_generator_model: str = "glm-4.7-flash:latest"
+    free_quality_reviewer_model: str = "glm-4.7-flash:latest"
 
     cors_origins: str | list[str] = ["http://localhost:3000"]
     rate_limit_max: int = 3
