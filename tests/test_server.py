@@ -503,3 +503,169 @@ def test_error_redesign_failure(tmp_sites, mock_crawl_result):
         error_events = [e for e in events if e.get("event") == "error"]
         assert len(error_events) >= 1
         assert "Redesign service unavailable" in error_events[0]["data"]["error"]
+
+
+# --- get_client_ip coverage ---
+
+
+def test_get_client_ip_cf_connecting_ip(tmp_sites, mock_crawl_result, mock_deploy_result):
+    """Line 57: get_client_ip returns cf-connecting-ip header."""
+    mock_html = "<html><body>OK</body></html>"
+    with (
+        patch("sastaspace.server.crawl", new_callable=AsyncMock, return_value=mock_crawl_result),
+        patch("sastaspace.server.redesign", return_value=mock_html),
+        patch("sastaspace.server.deploy", return_value=mock_deploy_result),
+    ):
+        from sastaspace.server import make_app
+
+        app = make_app(tmp_sites)
+        client = TestClient(app)
+        # cf-connecting-ip should be used; since it's a non-localhost IP, rate limiting applies
+        resp = client.post(
+            "/redesign",
+            json={"url": "https://example.com"},
+            headers={"cf-connecting-ip": "5.6.7.8"},
+        )
+        assert resp.status_code == 200
+
+
+def test_get_client_ip_unknown_no_client(tmp_sites, mock_crawl_result, mock_deploy_result):
+    """Line 63: get_client_ip returns 'unknown' when request.client is None."""
+    mock_html = "<html><body>OK</body></html>"
+    with (
+        patch("sastaspace.server.crawl", new_callable=AsyncMock, return_value=mock_crawl_result),
+        patch("sastaspace.server.redesign", return_value=mock_html),
+        patch("sastaspace.server.deploy", return_value=mock_deploy_result),
+    ):
+        from sastaspace.server import make_app
+
+        app = make_app(tmp_sites)
+        client = TestClient(app)
+
+        # Patch Request.client to return None to hit the "unknown" branch
+        with patch("starlette.requests.Request.client", new_callable=lambda: property(lambda self: None)):
+            resp = client.post("/redesign", json={"url": "https://example.com"})
+            # Should succeed since "unknown" is not localhost, rate limiting applies
+            # but first request should be under the limit
+            assert resp.status_code == 200
+
+
+# --- index route registry decode error ---
+
+
+def test_index_with_corrupt_registry(tmp_path):
+    """Lines 186-187: index route handles registry JSON decode error."""
+    sites = tmp_path / "sites"
+    sites.mkdir()
+    (sites / "_registry.json").write_text("not json {{{")
+    client = make_test_client(sites)
+    resp = client.get("/")
+    assert resp.status_code == 200
+    assert "No sites" in resp.text
+
+
+# --- serve_site_asset route ---
+
+
+def test_serve_site_asset_existing_file(tmp_path):
+    """Lines 249-250: serve_site_asset returns existing asset file."""
+    sites = make_test_sites(tmp_path)
+    (sites / "acme-com" / "style.css").write_text("body { color: red; }")
+    client = make_test_client(sites)
+    resp = client.get("/acme-com/style.css")
+    assert resp.status_code == 200
+    assert "color: red" in resp.text
+
+
+def test_serve_site_asset_fallback_index(tmp_path):
+    """Lines 253-254: serve_site_asset falls back to index.html for unknown paths."""
+    sites = make_test_sites(tmp_path)
+    client = make_test_client(sites)
+    resp = client.get("/acme-com/some/nested/path")
+    assert resp.status_code == 200
+    assert "<h1>Acme</h1>" in resp.text
+
+
+def test_serve_site_asset_404(tmp_path):
+    """Line 255: serve_site_asset returns 404 when no index.html exists."""
+    sites = tmp_path / "sites"
+    sites.mkdir()
+    (sites / "ghost").mkdir()
+    # No index.html in ghost/
+    client = make_test_client(sites)
+    resp = client.get("/ghost/some-file.js")
+    assert resp.status_code == 404
+
+
+# --- _is_port_listening ---
+
+
+def test_is_port_listening_false():
+    """Lines 261-263: _is_port_listening returns False for unused port."""
+    from sastaspace.server import _is_port_listening
+
+    # Use a very unlikely port
+    assert _is_port_listening(19999) is False
+
+
+# --- ensure_running port_file ValueError/OSError ---
+
+
+def test_ensure_running_port_file_value_error(tmp_path):
+    """Lines 281-282: ensure_running handles ValueError from corrupt port file."""
+    sites = tmp_path / "sites"
+    sites.mkdir()
+    (sites / ".server_port").write_text("not-a-number")
+
+    call_count = {"n": 0}
+
+    def mock_listening(port):
+        call_count["n"] += 1
+        return call_count["n"] > 2
+
+    with (
+        patch("sastaspace.server._is_port_listening", side_effect=mock_listening),
+        patch("sastaspace.server.subprocess.Popen", return_value=MagicMock()),
+        patch("sastaspace.server.time.sleep"),
+        patch("sastaspace.server.time.time", side_effect=[0.0, 0.5, 1.0, 10.0]),
+    ):
+        from sastaspace.server import ensure_running
+
+        port = ensure_running(sites, preferred_port=8080)
+
+    assert isinstance(port, int)
+
+
+def test_ensure_running_port_file_os_error(tmp_path):
+    """Lines 281-282: ensure_running handles OSError from port file."""
+    sites = tmp_path / "sites"
+    sites.mkdir()
+    # Create a valid port file that will raise OSError when read
+    port_file = sites / ".server_port"
+    port_file.write_text("8080")
+
+    call_count = {"n": 0}
+
+    def mock_listening(port):
+        call_count["n"] += 1
+        return call_count["n"] > 2
+
+    original_read_text = Path.read_text
+
+    def patched_read_text(self, *args, **kwargs):
+        if self.name == ".server_port":
+            raise OSError("disk error")
+        return original_read_text(self, *args, **kwargs)
+
+    with (
+        patch.object(Path, "read_text", patched_read_text),
+        patch("sastaspace.server._is_port_listening", side_effect=mock_listening),
+        patch("sastaspace.server.subprocess.Popen", return_value=MagicMock()),
+        patch("sastaspace.server.time.sleep"),
+        patch("sastaspace.server.time.time", side_effect=[0.0, 0.5, 1.0, 10.0]),
+    ):
+        from sastaspace.server import ensure_running
+
+        port = ensure_running(sites, preferred_port=8080)
+
+    assert isinstance(port, int)

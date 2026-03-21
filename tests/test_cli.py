@@ -179,6 +179,85 @@ def test_redesign_shows_error_on_crawl_failure(runner, sites_dir, monkeypatch):
     assert "Could not connect" in result.output
 
 
+def test_redesign_crawl_exception(runner, sites_dir, monkeypatch):
+    """Lines 52-55: Exception handler when crawl raises."""
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant-test")
+
+    mock_crawl = AsyncMock(side_effect=Exception("DNS resolution failed"))
+
+    with patch("sastaspace.cli.crawl", mock_crawl):
+        result = runner.invoke(
+            main,
+            ["redesign", "https://bad.com", "--sites-dir", str(sites_dir)],
+        )
+
+    assert result.exit_code != 0
+    assert "Crawl failed" in result.output
+
+
+def test_redesign_redesign_error(runner, sites_dir, monkeypatch):
+    """Lines 73-76: RedesignError handler during redesign."""
+    from sastaspace.redesigner import RedesignError
+
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant-test")
+
+    mock_crawl = AsyncMock(return_value=make_mock_crawl_result())
+
+    with (
+        patch("sastaspace.cli.crawl", mock_crawl),
+        patch("sastaspace.cli.redesign", side_effect=RedesignError("no HTML found")),
+    ):
+        result = runner.invoke(
+            main,
+            ["redesign", "https://acme.com", "--sites-dir", str(sites_dir)],
+        )
+
+    assert result.exit_code != 0
+    assert "Redesign failed" in result.output
+
+
+def test_redesign_generic_exception(runner, sites_dir, monkeypatch):
+    """Lines 77-85: Generic Exception handler during redesign."""
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant-test")
+
+    mock_crawl = AsyncMock(return_value=make_mock_crawl_result())
+
+    with (
+        patch("sastaspace.cli.crawl", mock_crawl),
+        patch("sastaspace.cli.redesign", side_effect=Exception("API key invalid")),
+    ):
+        result = runner.invoke(
+            main,
+            ["redesign", "https://acme.com", "--sites-dir", str(sites_dir)],
+        )
+
+    assert result.exit_code != 0
+    assert "Claude API error" in result.output
+
+
+def test_redesign_opens_browser(runner, sites_dir, monkeypatch):
+    """Line 109: webbrowser.open is called when --no-open is NOT passed."""
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant-test")
+
+    mock_crawl = AsyncMock(return_value=make_mock_crawl_result())
+    mock_redesign = MagicMock(return_value=SAMPLE_HTML)
+    mock_ensure = MagicMock(return_value=8080)
+
+    with (
+        patch("sastaspace.cli.crawl", mock_crawl),
+        patch("sastaspace.cli.redesign", mock_redesign),
+        patch("sastaspace.cli.ensure_running", mock_ensure),
+        patch("sastaspace.cli.webbrowser.open") as mock_open,
+    ):
+        result = runner.invoke(
+            main,
+            ["redesign", "https://acme.com", "--sites-dir", str(sites_dir)],
+        )
+
+    assert result.exit_code == 0, result.output
+    mock_open.assert_called_once()
+
+
 def test_redesign_custom_subdomain(runner, sites_dir, monkeypatch):
     monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant-test")
 

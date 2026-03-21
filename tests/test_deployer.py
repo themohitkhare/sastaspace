@@ -108,3 +108,19 @@ def test_load_registry_returns_list(tmp_path):
     registry = load_registry(tmp_path)
     assert isinstance(registry, list)
     assert len(registry) == 1
+
+
+def test_load_registry_handles_corrupt_json(tmp_path):
+    """Lines 55-56: load_registry returns [] on json.JSONDecodeError."""
+    registry_path = tmp_path / "_registry.json"
+    registry_path.write_text("not valid json {{{")
+    registry = load_registry(tmp_path)
+    assert registry == []
+
+
+def test_load_registry_handles_os_error(tmp_path):
+    """Lines 55-56: load_registry returns [] on OSError."""
+    registry_path = tmp_path / "_registry.json"
+    registry_path.mkdir()  # directory instead of file -> OSError on read_text()
+    registry = load_registry(tmp_path)
+    assert registry == []
