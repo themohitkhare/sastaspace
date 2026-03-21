@@ -197,7 +197,16 @@ def make_app(sites_dir: Path) -> FastAPI:
                     message="Redesigning...",
                 )
 
-                if tier == "premium":
+                if settings.use_agno_pipeline:
+                    from sastaspace.redesigner import agno_redesign
+
+                    html = await asyncio.to_thread(
+                        agno_redesign,
+                        crawl_result,
+                        settings,
+                        tier,
+                    )
+                elif tier == "premium":
                     from sastaspace.redesigner import redesign_premium
 
                     html = await asyncio.to_thread(
