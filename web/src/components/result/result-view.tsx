@@ -12,6 +12,7 @@ export function ResultView({ subdomain }: ResultViewProps) {
   const domain = subdomain.replace(/-/g, ".");
   const originalUrl = `https://${domain}`;
   const headerText = `${domain} has been redesigned`;
+  const previewUrl = `/${subdomain}/preview`;
 
   return (
     <motion.div
@@ -27,14 +28,16 @@ export function ResultView({ subdomain }: ResultViewProps) {
 
         <div className="relative w-full aspect-[4/3] sm:aspect-video rounded-xl overflow-hidden border border-border">
           <iframe
-            src={`${process.env.NEXT_PUBLIC_BACKEND_URL ?? ""}/${subdomain}/`}
+            src={previewUrl}
             sandbox="allow-scripts"
             className="w-full h-full"
             title="Your redesigned site preview"
           />
           <div className="absolute inset-0 backdrop-blur-md bg-background/30 flex flex-col items-center justify-center gap-4">
             <a
-              href={`${process.env.NEXT_PUBLIC_BACKEND_URL ?? ""}/${subdomain}/`}
+              href={previewUrl}
+              target="_blank"
+              rel="noopener noreferrer"
               className="inline-flex items-center justify-center rounded-lg bg-accent text-accent-foreground text-base font-medium h-12 px-8 transition-all hover:bg-accent/90 active:translate-y-px"
             >
               Take me to the future
