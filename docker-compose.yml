@@ -9,16 +9,15 @@ services:
       - path: .env
         required: false
     environment:
-      - CLAUDE_CODE_API_URL=http://claude-code-api:8000/v1
+      - CLAUDE_CODE_API_URL=http://host.docker.internal:8000/v1
       - CORS_ORIGINS=http://localhost:3000
       - SASTASPACE_SITES_DIR=/data/sites
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     volumes:
       - sites_data:/data/sites
     networks:
       - sastaspace
-    depends_on:
-      claude-code-api:
-        condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/"]
       interval: 10s
@@ -47,29 +46,6 @@ services:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:3000/"]
       interval: 10s
       timeout: 5s
-      retries: 5
-      start_period: 30s
-    restart: unless-stopped
-
-  claude-code-api:
-    build:
-      context: ./claude-code-api
-      dockerfile: docker/Dockerfile
-    ports:
-      - "8000:8000"
-    env_file:
-      - path: .env
-        required: false
-    environment:
-      - WRITE_CLAUDE_CONFIG=true
-    volumes:
-      - ${HOME}/.claude:/home/claudeuser/.claude:ro
-    networks:
-      - sastaspace
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
-      interval: 30s
-      timeout: 10s
       retries: 5
       start_period: 30s
     restart: unless-stopped
