@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Production Ship
 status: planning
-stopped_at: Completed 06-01-PLAN.md
-last_updated: "2026-03-21T10:43:09.850Z"
+stopped_at: Completed 05-01-PLAN.md (checkpoint pending human verification)
+last_updated: "2026-03-21T10:44:01.930Z"
 last_activity: 2026-03-21 — Roadmap created for v2.0
 progress:
   total_phases: 4
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 3
-  completed_plans: 1
+  completed_plans: 2
   percent: 0
 ---
 
@@ -48,6 +48,7 @@ Progress: [░░░░░░░░░░] 0%
 
 *Updated after each plan completion*
 | Phase 06 P01 | 2min | 2 tasks | 6 files |
+| Phase 05 P01 | 3min | 2 tasks | 9 files |
 
 ## Accumulated Context
 
@@ -63,6 +64,7 @@ Recent decisions affecting current work:
 - [v1.0]: Resend for contact form email delivery
 - [Phase 06]: MetadataRoute types for robots.ts/sitemap.ts per Next.js conventions
 - [Phase 06]: Feature flags use \!== 'false' pattern for opt-out defaults
+- [Phase 05]: python:3.11-slim for backend (Playwright needs glibc), multi-stage Next.js standalone build, env_file with required:false
 
 ### Pending Todos
 
@@ -74,8 +76,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-21T10:43:09.848Z
-Stopped at: Completed 06-01-PLAN.md
+Last session: 2026-03-21T10:44:01.928Z
+Stopped at: Completed 05-01-PLAN.md (checkpoint pending human verification)
 Resume file: None
 
 ## Parallelization Note

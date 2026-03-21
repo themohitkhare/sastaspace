@@ -9,13 +9,13 @@ Requirements for production ship. Each maps to roadmap phases.
 
 ### Docker
 
-- [ ] **DOCK-01**: `docker compose up` starts backend (FastAPI), frontend (Next.js), and claude-code-api gateway as separate containers
-- [ ] **DOCK-02**: Backend container includes Playwright and Chromium for website crawling
-- [ ] **DOCK-03**: Frontend container builds Next.js in production mode and serves via `next start`
-- [ ] **DOCK-04**: Containers share a Docker network so frontend can reach backend and backend can reach claude-code-api
-- [ ] **DOCK-05**: Environment variables are configured via `.env` file and docker-compose env_file directive
-- [ ] **DOCK-06**: Health checks verify each service is responsive before marking container healthy
-- [ ] **DOCK-07**: Sites directory is persisted via Docker volume so redesigns survive container restarts
+- [x] **DOCK-01**: `docker compose up` starts backend (FastAPI), frontend (Next.js), and claude-code-api gateway as separate containers
+- [x] **DOCK-02**: Backend container includes Playwright and Chromium for website crawling
+- [x] **DOCK-03**: Frontend container builds Next.js in production mode and serves via `next start`
+- [x] **DOCK-04**: Containers share a Docker network so frontend can reach backend and backend can reach claude-code-api
+- [x] **DOCK-05**: Environment variables are configured via `.env` file and docker-compose env_file directive
+- [x] **DOCK-06**: Health checks verify each service is responsive before marking container healthy
+- [x] **DOCK-07**: Sites directory is persisted via Docker volume so redesigns survive container restarts
 
 ### Testing
 
@@ -65,13 +65,13 @@ Requirements for production ship. Each maps to roadmap phases.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| DOCK-01 | Phase 5 | Pending |
-| DOCK-02 | Phase 5 | Pending |
-| DOCK-03 | Phase 5 | Pending |
-| DOCK-04 | Phase 5 | Pending |
-| DOCK-05 | Phase 5 | Pending |
-| DOCK-06 | Phase 5 | Pending |
-| DOCK-07 | Phase 5 | Pending |
+| DOCK-01 | Phase 5 | Complete |
+| DOCK-02 | Phase 5 | Complete |
+| DOCK-03 | Phase 5 | Complete |
+| DOCK-04 | Phase 5 | Complete |
+| DOCK-05 | Phase 5 | Complete |
+| DOCK-06 | Phase 5 | Complete |
+| DOCK-07 | Phase 5 | Complete |
 | SEO-01 | Phase 6 | Complete |
 | SEO-02 | Phase 6 | Complete |
 | SEO-03 | Phase 7 | Pending |

@@ -33,7 +33,7 @@
   4. Environment configuration lives in a single `.env` file — no secrets hardcoded in Dockerfiles or compose
 **Plans**: 1 plan
 Plans:
-- [ ] 05-01-PLAN.md — Dockerfiles, docker-compose.yml, networking, volumes, health checks, .env config
+- [x] 05-01-PLAN.md — Dockerfiles, docker-compose.yml, networking, volumes, health checks, .env config
 
 ### Phase 6: SEO + Feature Flags
 **Goal**: The site is discoverable by search engines and shareable on social media, with Turnstile controllable via environment variable
