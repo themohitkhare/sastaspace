@@ -72,6 +72,7 @@ deploy-monitoring:
 	@echo "→ Syncing code to $(REMOTE_USER)@$(REMOTE_HOST):$(REMOTE_DIR)..."
 	@rsync -az --delete $(RSYNC_EXCLUDE) . $(REMOTE_USER)@$(REMOTE_HOST):$(REMOTE_DIR)
 	@echo "→ Applying monitoring manifests..."
+	@$(SSH) "sudo microk8s kubectl apply -f $(REMOTE_DIR)/k8s/monitoring/namespace.yaml"
 	@$(SSH) "sudo microk8s kubectl apply -f $(REMOTE_DIR)/k8s/monitoring/"
 	@echo "✓ Monitoring deployed. Dashboard: https://monitor.sastaspace.com"
 
