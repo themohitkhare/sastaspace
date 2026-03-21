@@ -54,6 +54,8 @@ Grafana (:3001) ← built-in login
 ### Node Exporter
 
 - DaemonSet — runs on every node
+- Requires host access: `hostNetwork: true`, `hostPID: true`
+- Mounts `/proc` and `/sys` as read-only from host (needed for real host metrics, not container metrics)
 - Exposes host-level metrics: CPU, memory, disk, network
 - Service on port 9100
 - Prometheus auto-scrapes via service discovery
@@ -111,7 +113,7 @@ Grafana (:3001) ← built-in login
 ```
 k8s/monitoring/
 ├── namespace.yaml          # monitoring namespace
-├── prometheus.yaml         # Deployment + ConfigMap + RBAC + Service
+├── prometheus.yaml         # Deployment + PVC + ConfigMap + RBAC + Service
 ├── node-exporter.yaml      # DaemonSet + Service
 ├── blackbox-exporter.yaml  # Deployment + ConfigMap + Service
 ├── loki.yaml               # Deployment + PVC + ConfigMap + Service
@@ -124,29 +126,35 @@ k8s/monitoring/
 
 ### `k8s/backend.yaml`
 
-Add Prometheus scrape annotations to the backend Deployment:
+Add Prometheus scrape annotations to the **pod template** (not Deployment-level metadata):
 
 ```yaml
-metadata:
-  annotations:
-    prometheus.io/scrape: "true"
-    prometheus.io/port: "8080"
+spec:
+  template:
+    metadata:
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8080"
 ```
 
 ### `k8s/frontend.yaml`
 
-Add Prometheus scrape annotations to the frontend Deployment:
+Add Prometheus scrape annotations to the **pod template** (not Deployment-level metadata):
 
 ```yaml
-metadata:
-  annotations:
-    prometheus.io/scrape: "true"
-    prometheus.io/port: "3000"
+spec:
+  template:
+    metadata:
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "3000"
 ```
+
+**Note:** Prometheus pod-based service discovery reads annotations from pod metadata, not Deployment metadata. Placing them on the Deployment would silently fail.
 
 ### `Makefile`
 
-Add monitoring deployment targets:
+Add monitoring deployment targets. **Note:** `kubectl apply -f <dir>` is non-recursive, so `k8s-apply` will NOT deploy monitoring resources. Monitoring is deployed separately via `deploy-monitoring`:
 
 ```makefile
 deploy-monitoring:
@@ -161,9 +169,11 @@ monitoring-logs:
 
 ### Cloudflare Tunnel
 
-Add `monitor.sastaspace.com` route to the tunnel ingress config:
+Add `monitor.sastaspace.com` route to the tunnel ingress config. This is managed via the Cloudflare dashboard (Zero Trust > Networks > Tunnels > sastaspace-prod > Public Hostname) or via API:
 
-```json
+```bash
+# Add to existing tunnel ingress rules via Cloudflare API
+# (see docs/DEPLOYMENT.md section 11 for full API example)
 {"hostname": "monitor.sastaspace.com", "service": "http://localhost:80"}
 ```
 
@@ -187,18 +197,27 @@ When adding a new service to the cluster:
 - Grafana built-in login (admin user + password from k8s Secret)
 - No ingress-level basic auth (KISS — single login layer)
 - Grafana supports adding additional users via its admin panel if needed later
+- Admin secret created out-of-band on the server before first deploy:
+  ```bash
+  sudo microk8s kubectl create secret generic grafana-admin \
+    --namespace monitoring \
+    --from-literal=admin-password='<your-password>'
+  ```
 
 ## Resource Budget
 
-| Component         | Memory | CPU  |
-|-------------------|--------|------|
-| Prometheus        | 512Mi  | 200m |
-| Grafana           | 256Mi  | 100m |
-| Loki              | 256Mi  | 100m |
-| Promtail          | 128Mi  | 50m  |
-| Node Exporter     | 64Mi   | 50m  |
-| Blackbox Exporter | 32Mi   | 25m  |
-| **Total**         | **~1.25Gi** | **525m** |
+Values shown as request / limit. Limits set higher than requests to absorb spikes without OOM kills:
+
+| Component         | Memory (req/limit) | CPU (req/limit) |
+|-------------------|---------------------|-----------------|
+| Prometheus        | 512Mi / 1Gi         | 200m / 500m     |
+| Grafana           | 256Mi / 512Mi       | 100m / 300m     |
+| Loki              | 256Mi / 512Mi       | 100m / 300m     |
+| Promtail          | 128Mi / 256Mi       | 50m / 100m      |
+| Node Exporter     | 64Mi / 128Mi        | 50m / 100m      |
+| Blackbox Exporter | 32Mi / 64Mi         | 25m / 50m       |
+| **Total requests**| **~1.25Gi**         | **525m**        |
+| **Total limits**  | **~2.5Gi**          | **1350m**       |
 
 ## First Login Flow
 
