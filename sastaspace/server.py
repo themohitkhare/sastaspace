@@ -56,7 +56,7 @@ _redesign_requests_total = Counter(
 
 class RedesignRequest(BaseModel):
     url: str
-    tier: str = "standard"  # "standard" or "premium"
+    tier: str = "free"  # "free", "standard", or "premium"
 
 
 _SITES_DIR: Path = Path("./sites")
@@ -303,7 +303,7 @@ def make_app(sites_dir: Path) -> FastAPI:
             pass  # DB unavailable — proceed with redesign
 
         # Validate tier
-        tier = body.tier if body.tier in ("standard", "premium") else "standard"
+        tier = body.tier if body.tier in ("free", "standard", "premium") else "free"
 
         # Rate limit check (localhost exempt)
         if not _is_localhost(ip):
