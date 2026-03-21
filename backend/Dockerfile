@@ -55,7 +55,11 @@ ENV SASTASPACE_SITES_DIR=/data/sites
 
 EXPOSE 8080
 
+# Copy entrypoint script (must be done before USER switch, then chown)
+COPY --chown=appuser:appuser backend/entrypoint.sh ./entrypoint.sh
+RUN chmod +x ./entrypoint.sh
+
 HEALTHCHECK --interval=10s --timeout=5s --retries=5 --start-period=15s \
     CMD curl -f http://localhost:8080/ || exit 1
 
-CMD ["uvicorn", "sastaspace.server:app", "--host", "0.0.0.0", "--port", "8080"]
+ENTRYPOINT ["./entrypoint.sh"]

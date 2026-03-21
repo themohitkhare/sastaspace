@@ -1,0 +1,56 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: worker
+  namespace: sastaspace
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: worker
+  template:
+    metadata:
+      labels:
+        app: worker
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+      containers:
+      - name: worker
+        image: localhost:32000/sastaspace-backend:latest
+        securityContext:
+          allowPrivilegeEscalation: false
+        env:
+        - name: MODE
+          value: "worker"
+        - name: CLAUDE_CODE_API_URL
+          value: "http://claude-code-api:8000/v1"
+        - name: SASTASPACE_SITES_DIR
+          value: "/data/sites"
+        - name: REDIS_URL
+          value: "redis://redis:6379"
+        - name: MONGODB_URL
+          value: "mongodb://mongodb:27017"
+        - name: MONGODB_DB
+          value: "sastaspace"
+        envFrom:
+        - secretRef:
+            name: sastaspace-env
+            optional: true
+        volumeMounts:
+        - name: sites-data
+          mountPath: /data/sites
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "200m"
+          limits:
+            memory: "2Gi"
+            cpu: "1000m"
+      volumes:
+      - name: sites-data
+        persistentVolumeClaim:
+          claimName: sites-pvc

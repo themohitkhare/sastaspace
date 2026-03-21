@@ -48,8 +48,8 @@ deploy:
 	@echo "→ Applying k8s manifests..."
 	@$(MAKE) k8s-apply
 	@echo "→ Rolling restart..."
-	@$(SSH) "sudo microk8s kubectl rollout restart deployment/backend deployment/frontend -n sastaspace"
-	@$(SSH) "sudo microk8s kubectl rollout status deployment/backend deployment/frontend -n sastaspace"
+	@$(SSH) "sudo microk8s kubectl rollout restart deployment/backend deployment/frontend deployment/worker -n sastaspace"
+	@$(SSH) "sudo microk8s kubectl rollout status deployment/backend deployment/frontend deployment/worker -n sastaspace"
 	@echo "✓ Deployed. Site: https://sastaspace.com"
 
 k8s-apply:

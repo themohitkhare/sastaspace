@@ -28,6 +28,8 @@ spec:
             name: sastaspace-env
             optional: true
         env:
+        - name: MODE
+          value: "server"
         - name: CLAUDE_CODE_API_URL
           value: "http://claude-code-api:8000/v1"
         - name: CORS_ORIGINS
