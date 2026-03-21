@@ -33,12 +33,12 @@
 
 ### Frontend — Progress Experience
 
-- [ ] **PROG-01**: On form submit, page transitions to progress view (no full page reload)
-- [ ] **PROG-02**: SSE client connects via `fetch()` + `ReadableStream` (NOT `EventSource` — Cloudflare buffers GET SSE)
-- [ ] **PROG-03**: Named step display: each SSE event updates a visible step indicator
-- [ ] **PROG-04**: Animated progress bar advances through steps (determinate, not indeterminate spinner)
-- [ ] **PROG-05**: Estimated time remaining shown ("~45 seconds")
-- [ ] **PROG-06**: Error state handled gracefully with retry option
+- [x] **PROG-01**: On form submit, page transitions to progress view (no full page reload)
+- [x] **PROG-02**: SSE client connects via `fetch()` + `ReadableStream` (NOT `EventSource` — Cloudflare buffers GET SSE)
+- [x] **PROG-03**: Named step display: each SSE event updates a visible step indicator
+- [x] **PROG-04**: Animated progress bar advances through steps (determinate, not indeterminate spinner)
+- [x] **PROG-05**: Estimated time remaining shown ("~45 seconds")
+- [x] **PROG-06**: Error state handled gracefully with retry option
 
 ### Frontend — Result Page
 
