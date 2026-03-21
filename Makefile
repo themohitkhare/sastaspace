@@ -42,7 +42,7 @@ deploy:
 	@echo "→ Building images on remote..."
 	@$(SSH) "cd $(REMOTE_DIR) && \
 	  docker build -t $(REGISTRY)/sastaspace-backend:latest -f backend/Dockerfile . && \
-	  docker build -t $(REGISTRY)/sastaspace-frontend:latest -f web/Dockerfile web/ && \
+	  docker build -t $(REGISTRY)/sastaspace-frontend:latest --build-arg NEXT_PUBLIC_BACKEND_URL=https://api.sastaspace.com -f web/Dockerfile web/ && \
 	  docker push $(REGISTRY)/sastaspace-backend:latest && \
 	  docker push $(REGISTRY)/sastaspace-frontend:latest"
 	@echo "→ Applying k8s manifests..."

@@ -12,6 +12,10 @@ RUN npm ci
 # Copy source
 COPY . .
 
+# Build-time env vars (NEXT_PUBLIC_* are inlined at build, not runtime)
+ARG NEXT_PUBLIC_BACKEND_URL=http://localhost:8080
+ENV NEXT_PUBLIC_BACKEND_URL=${NEXT_PUBLIC_BACKEND_URL}
+
 # Build Next.js in standalone mode
 RUN npm run build
 
