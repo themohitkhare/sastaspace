@@ -318,5 +318,5 @@ def ensure_running(sites_dir: Path, preferred_port: int = 8080) -> int:
 
 
 # Default app instance used by uvicorn when spawned as subprocess
-_default_sites_dir = Path(os.environ.get("SASTASPACE_SITES_DIR", "./sites"))
-app = make_app(_default_sites_dir)
+_settings = Settings()
+app = make_app(_settings.sites_dir)

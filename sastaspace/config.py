@@ -10,6 +10,17 @@ class Settings(BaseSettings):
 
     claude_code_api_url: str = "http://localhost:8000/v1"
     sites_dir: Path = Path("./sites")
+
+    @field_validator("sites_dir", mode="before")
+    @classmethod
+    def resolve_sites_dir(cls, v):
+        import os
+
+        # SASTASPACE_SITES_DIR takes precedence (used by Docker/server.py)
+        env_val = os.environ.get("SASTASPACE_SITES_DIR")
+        if env_val:
+            return Path(env_val)
+        return v
     server_port: int = 8080
     claude_model: str = "claude-sonnet-4-5-20250929"
 
