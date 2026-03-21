@@ -70,6 +70,20 @@ services:
       start_period: 10s
     restart: unless-stopped
 
+  tests:
+    build:
+      context: ./web
+      dockerfile: Dockerfile.test
+    profiles:
+      - test
+    environment:
+      - BASE_URL=http://frontend:3000
+    networks:
+      - sastaspace
+    depends_on:
+      frontend:
+        condition: service_healthy
+
 networks:
   sastaspace:
     driver: bridge

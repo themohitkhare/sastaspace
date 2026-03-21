@@ -1,6 +1,7 @@
 import { test, expect, type Page } from "@playwright/test";
 
-const BASE = "http://localhost:3000";
+// Use baseURL from playwright config (supports both local and Docker)
+const BASE = process.env.BASE_URL || "http://localhost:3000";
 const RESULT_URL = `${BASE}/example-com`;
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
