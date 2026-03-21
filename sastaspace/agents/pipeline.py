@@ -23,11 +23,14 @@ from sastaspace.agents.metrics import (
     redesign_pipeline_total,
 )
 from sastaspace.agents.models import (
+    ComponentSelection,
     DesignBrief,
     QualityReport,
     SiteAnalysis,
 )
 from sastaspace.agents.prompts import (
+    COMPONENT_SELECTOR_SYSTEM,
+    COMPONENT_SELECTOR_USER_TEMPLATE,
     CRAWL_ANALYST_SYSTEM,
     CRAWL_ANALYST_USER_TEMPLATE,
     DESIGN_STRATEGIST_SYSTEM,
@@ -141,11 +144,80 @@ def _run_design_strategist(
         raise RedesignError(f"DesignStrategist returned invalid JSON: {exc}") from exc
 
 
+def _run_component_selector(
+    site_analysis: SiteAnalysis, design_brief: DesignBrief, settings: Settings
+) -> ComponentSelection:
+    """Run the ComponentSelector agent to pick the best UI components."""
+    import os
+
+    model = _create_model(settings.design_strategist_model, settings)  # Use same model as strategist
+
+    # Load the marketing component catalog
+    catalog_path = os.path.join(os.path.dirname(__file__), "..", "..", "components", "marketing-catalog.json")
+    try:
+        with open(catalog_path) as f:
+            catalog = f.read()
+    except FileNotFoundError:
+        logger.warning("Component catalog not found at %s, skipping component selection", catalog_path)
+        return ComponentSelection(strategy="No catalog available")
+
+    user_prompt = COMPONENT_SELECTOR_USER_TEMPLATE.format(
+        brand_name=site_analysis.brand.name or "Unknown",
+        industry=site_analysis.brand.industry or "Unknown",
+        primary_goal=site_analysis.primary_goal or "conversion",
+        target_audience=site_analysis.target_audience or "general",
+        section_count=len(site_analysis.content_sections),
+        strengths=", ".join(site_analysis.strengths[:5]) or "N/A",
+        weaknesses=", ".join(site_analysis.weaknesses[:5]) or "N/A",
+        design_direction=design_brief.design_direction,
+        primary_color=design_brief.colors.primary,
+        accent_color=design_brief.colors.accent,
+        heading_font=design_brief.typography.heading_font,
+        body_font=design_brief.typography.body_font,
+        layout_strategy=design_brief.layout_strategy,
+        conversion_strategy=design_brief.conversion_strategy,
+        component_catalog=catalog,
+    )
+    raw = _run_agent("component_selector", COMPONENT_SELECTOR_SYSTEM, user_prompt, model)
+    try:
+        data = _extract_json(raw)
+        selection = ComponentSelection.model_validate(data)
+        logger.info(
+            "ComponentSelector selected %d components: %s",
+            len(selection.selected),
+            ", ".join(c.name for c in selection.selected),
+        )
+        return selection
+    except (json.JSONDecodeError, ValueError) as exc:
+        logger.warning("ComponentSelector returned invalid JSON, continuing without: %s", exc)
+        return ComponentSelection(strategy="Parse failed, continuing without components")
+
+
+def _load_component_source(file_path: str) -> str:
+    """Load the source code from a component JSON file."""
+    import os
+
+    full_path = os.path.join(os.path.dirname(__file__), "..", "..", "components", file_path)
+    try:
+        with open(full_path) as f:
+            data = json.load(f)
+        # Extract source from files[].content
+        sources = []
+        for file_entry in data.get("files", []):
+            content = file_entry.get("content", "")
+            if content:
+                sources.append(f"// File: {file_entry.get('path', 'unknown')}\n{content}")
+        return "\n\n".join(sources) if sources else ""
+    except (FileNotFoundError, json.JSONDecodeError):
+        return ""
+
+
 def _run_html_generator(
     design_brief: DesignBrief,
     crawl_result: CrawlResult,
     settings: Settings,
     quality_feedback: str = "",
+    component_selection: ComponentSelection | None = None,
 ) -> str:
     """Run the HTMLGenerator agent to produce HTML."""
     model = _create_model(settings.html_generator_model, settings)
@@ -156,13 +228,31 @@ def _run_html_generator(
             feedback=quality_feedback,
         )
 
+    # Load selected component source code
+    component_context = ""
+    if component_selection and component_selection.selected:
+        comp_sources = []
+        for comp in component_selection.selected:
+            source = _load_component_source(comp.file)
+            if source:
+                comp_sources.append(
+                    f"### Component: {comp.name} ({comp.category})\n"
+                    f"Rationale: {comp.rationale}\n"
+                    f"Source code:\n```tsx\n{source[:3000]}\n```"
+                )
+        if comp_sources:
+            component_context = (
+                "\n\n## Reference UI Components (adapt these patterns for the HTML output)\n"
+                + "\n\n".join(comp_sources)
+            )
+
     user_prompt = HTML_GENERATOR_USER_TEMPLATE.format(
         design_brief_json=design_brief.model_dump_json(indent=2),
         crawl_context=crawl_result.to_prompt_context(),
         title=crawl_result.title,
         meta_description=crawl_result.meta_description,
         quality_feedback=feedback_section,
-    )
+    ) + component_context
     raw = _run_agent("html_generator", HTML_GENERATOR_SYSTEM, user_prompt, model)
     html = _clean_html(raw)
     _validate_html(html)
@@ -206,6 +296,38 @@ def _run_quality_reviewer(
         return QualityReport(passed=True, overall_score=7, strengths=["Could not parse review"])
 
 
+def _run_normalizer(
+    html: str, design_brief: DesignBrief, settings: Settings
+) -> str:
+    """Normalize the HTML for cohesive design + apply premium psychology principles.
+
+    Combines two concepts:
+    1. ANF "Normalize" — unify typography, colors, spacing from assembled components
+    2. Premium Psychology — engineer the halo effect, reduce cognitive load, add micro-interactions
+    """
+    from sastaspace.agents.prompts import NORMALIZER_SYSTEM, NORMALIZER_USER_TEMPLATE
+
+    model = _create_model(settings.html_generator_model, settings)
+
+    user_prompt = NORMALIZER_USER_TEMPLATE.format(
+        heading_font=design_brief.typography.heading_font,
+        body_font=design_brief.typography.body_font,
+        primary_color=design_brief.colors.primary,
+        accent_color=design_brief.colors.accent,
+        background_color=design_brief.colors.background,
+        html=html,
+    )
+    raw = _run_agent("normalizer", NORMALIZER_SYSTEM, user_prompt, model)
+    normalized = _clean_html(raw)
+
+    try:
+        _validate_html(normalized)
+        return normalized
+    except RedesignError:
+        logger.warning("Normalizer output invalid, keeping original HTML")
+        return html
+
+
 def run_redesign_pipeline(crawl_result: CrawlResult, settings: Settings) -> str:
     """
     Execute the full Agno multi-agent redesign pipeline.
@@ -236,10 +358,14 @@ def run_redesign_pipeline(crawl_result: CrawlResult, settings: Settings) -> str:
         site_analysis = _run_crawl_analyst(crawl_result, settings)
 
         # Step 2: Design Strategist
-        logger.info("Pipeline step 2/4: DesignStrategist")
+        logger.info("Pipeline step 2/5: DesignStrategist")
         design_brief = _run_design_strategist(site_analysis, crawl_result, settings)
 
-        # Step 3 & 4: HTMLGenerator + QualityReviewer with retry loop
+        # Step 3: Component Selector — picks best UI components for this business
+        logger.info("Pipeline step 3/5: ComponentSelector")
+        component_selection = _run_component_selector(site_analysis, design_brief, settings)
+
+        # Step 4 & 5: HTMLGenerator + QualityReviewer with retry loop
         html = ""
         quality_report = None
         quality_feedback = ""
@@ -250,7 +376,9 @@ def run_redesign_pipeline(crawl_result: CrawlResult, settings: Settings) -> str:
                 attempt,
                 MAX_QUALITY_RETRIES + 1,
             )
-            html = _run_html_generator(design_brief, crawl_result, settings, quality_feedback)
+            html = _run_html_generator(
+                design_brief, crawl_result, settings, quality_feedback, component_selection
+            )
 
             logger.info("Pipeline step 4/4: QualityReviewer (attempt %d)", attempt)
             quality_report = _run_quality_reviewer(html, design_brief, site_analysis, settings)
@@ -285,6 +413,10 @@ def run_redesign_pipeline(crawl_result: CrawlResult, settings: Settings) -> str:
                 redesign_guardrail_triggers_total.labels(
                     guardrail_name="quality_review", action="accept_low_quality"
                 ).inc()
+
+        # Step 6: Normalizer — ensure cohesive design
+        logger.info("Pipeline step 6/6: Normalizer")
+        html = _run_normalizer(html, design_brief, settings)
 
         return html
 

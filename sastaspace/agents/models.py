@@ -84,6 +84,27 @@ class DesignBrief(BaseModel):
     animations: list[str] = Field(default_factory=list)
 
 
+# --- Component Selector output ---
+
+
+class SelectedComponent(BaseModel):
+    """A component selected from the library for use in the redesign."""
+
+    category: str = ""  # e.g. "heroes", "testimonials", "pricing-sections"
+    name: str = ""  # component name from the catalog
+    file: str = ""  # path to the JSON file containing the source code
+    rationale: str = ""  # why this component was selected for this business
+    conversion_impact: str = ""  # how it helps sell/convert
+
+
+class ComponentSelection(BaseModel):
+    """Selected components from the library — output of the ComponentSelector agent."""
+
+    selected: list[SelectedComponent] = Field(default_factory=list)
+    strategy: str = ""  # overall component selection strategy
+    rejected_alternatives: list[str] = Field(default_factory=list)  # what was considered but not chosen
+
+
 # --- Quality Reviewer output ---
 
 

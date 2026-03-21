@@ -1,0 +1,728 @@
+{
+ "announcements": [
+  {
+   "name": "hero-badge",
+   "title": "Hero Badge",
+   "description": "A versatile, animated badge component for highlighting new features, announcements, or important links.\n\nFeatures:\n\t\u2022\tSmooth entrance animations\n\t\u2022\tIc",
+   "file": "marketing-blocks/announcements/Codehagen__hero-badge.json"
+  },
+  {
+   "name": "hero-pill",
+   "title": "Hero Pill",
+   "description": "A stunning and interactive announcement banner featuring smooth animations and customizable content.\n\nFeatures:\n\t\u2022\tFluid entrance animations\n\t\u2022\tCustom",
+   "file": "marketing-blocks/announcements/Codehagen__hero-pill.json"
+  },
+  {
+   "name": "highlighter",
+   "title": "Highlighter",
+   "description": "Highlighter, Particle, CTA",
+   "file": "marketing-blocks/announcements/designali-in__highlighter.json"
+  },
+  {
+   "name": "animated-shiny-text",
+   "title": "Animated Shiny Text",
+   "description": "A light glare effect which pans across text making it appear as if it is shimmering.",
+   "file": "marketing-blocks/announcements/dillionverma__animated-shiny-text.json"
+  },
+  {
+   "name": "banner",
+   "title": "Banner",
+   "description": "A versatile notification banner component with gradient background and grid pattern overlay. Originally designed for Dub.co's domain claim notificatio",
+   "file": "marketing-blocks/announcements/dubinc__banner.json"
+  },
+  {
+   "name": "announcement",
+   "title": "Announcement",
+   "description": "A compound badge designed to display an announcement.",
+   "file": "marketing-blocks/announcements/haydenbleasel__announcement.json"
+  },
+  {
+   "name": "hero-pill",
+   "title": "Hero Pill",
+   "description": "A pill-shaped component for highlighting key features or messages with optional icons and animations.\n\nFeatures\n- Optional leading icon\n- Smooth entra",
+   "file": "marketing-blocks/announcements/originui__hero-pill.json"
+  },
+  {
+   "name": "upgrade-banner",
+   "title": "Upgrade Banner",
+   "description": "An animated promotional banner component with floating gear icons and hover effects. Inspired by Vercel's upgrade prompts.\n\nFeatures\n- Smooth entrance",
+   "file": "marketing-blocks/announcements/victorwelander__upgrade-banner.json"
+  }
+ ],
+ "backgrounds": [
+  {
+   "name": "aurora-background",
+   "title": "Aurora Background",
+   "description": "A subtle Aurora or Southern Lights background for your website.",
+   "file": "marketing-blocks/backgrounds/aceternity__aurora-background.json"
+  },
+  {
+   "name": "background-beams-with-collision",
+   "title": "Background Beams With Collision",
+   "description": "Exploding beams in the background",
+   "file": "marketing-blocks/backgrounds/aceternity__background-beams-with-collision.json"
+  },
+  {
+   "name": "background-beams",
+   "title": " Background Beams",
+   "description": "Multiple background beams that follow a path of SVG, makes a good hero section background.",
+   "file": "marketing-blocks/backgrounds/aceternity__background-beams.json"
+  },
+  {
+   "name": "background-boxes",
+   "title": "Background Boxes",
+   "description": "A full width background box container that highlights on hover",
+   "file": "marketing-blocks/backgrounds/aceternity__background-boxes.json"
+  },
+  {
+   "name": "background-gradient-animation",
+   "title": "Background Gradient Animation",
+   "description": "A smooth and elegant background gradient animation that changes the gradient position over time.",
+   "file": "marketing-blocks/backgrounds/aceternity__background-gradient-animation.json"
+  },
+  {
+   "name": "canvas-reveal-effect",
+   "title": "Canvas Reveal Effect",
+   "description": "A dot background that expands on hover, as seen on Clerk's website\n\nFeatures:\n-  Animated Reveal: Smooth animations grab users' attention as content p",
+   "file": "marketing-blocks/backgrounds/aceternity__canvas-reveal-effect.json"
+  },
+  {
+   "name": "hero-highlight",
+   "title": "Hero Highlight",
+   "description": "A background effect with a text highlight component, perfect for hero sections.",
+   "file": "marketing-blocks/backgrounds/aceternity__hero-highlight.json"
+  },
+  {
+   "name": "meteors",
+   "title": "Meteors",
+   "description": "A group of beams in the background of a container, sort of like meteors.",
+   "file": "marketing-blocks/backgrounds/aceternity__meteors.json"
+  },
+  {
+   "name": "radar-effect",
+   "title": "Radar Effect",
+   "description": "A rotating radar animation with concentric circles and floating icons. Great for tech or security themed sections.",
+   "file": "marketing-blocks/backgrounds/aceternity__radar-effect.json"
+  },
+  {
+   "name": "shooting-stars",
+   "title": "Shooting Stars",
+   "description": "A shooting star animation, as seen on figmaplug.in",
+   "file": "marketing-blocks/backgrounds/aceternity__shooting-stars.json"
+  }
+ ],
+ "calls-to-action": [
+  {
+   "name": "pulse-beams",
+   "title": "Pulse Beams",
+   "description": "Multiple beams that converge into a single point, as seen on Next.js website",
+   "file": "marketing-blocks/calls-to-action/aceternity__pulse-beams.json"
+  },
+  {
+   "name": "typewriter-effect",
+   "title": "Typewriter Effect",
+   "description": "Text generates as if it is being typed on the screen.",
+   "file": "marketing-blocks/calls-to-action/aceternity__typewriter-effect.json"
+  },
+  {
+   "name": "animated-underline-text-one",
+   "title": "Animated Underline Text",
+   "description": "Animated Underline Text",
+   "file": "marketing-blocks/calls-to-action/anurag-mishra22__animated-underline-text-one.json"
+  },
+  {
+   "name": "cta-card-1",
+   "title": "CTA Card",
+   "description": "Simple, minimal call to action card",
+   "file": "marketing-blocks/calls-to-action/axorax__cta-card-1.json"
+  },
+  {
+   "name": "call-to-action-1",
+   "title": "Call To Action 1",
+   "description": "A call-to-action-1 component.",
+   "file": "marketing-blocks/calls-to-action/brijr__call-to-action-1.json"
+  },
+  {
+   "name": "magnetic-button",
+   "title": "Magnetic Button",
+   "description": "A Magnetic Button is a UI component designed to enhance user interaction. When a user's cursor or touch input approaches the button, it subtly moves t",
+   "file": "marketing-blocks/calls-to-action/bundui__magnetic-button.json"
+  },
+  {
+   "name": "floating-action-menu",
+   "title": "Floating Action Menu",
+   "description": "A floating action menu component made with framer motion and tailwind css.",
+   "file": "marketing-blocks/calls-to-action/chetanverma16__floating-action-menu.json"
+  },
+  {
+   "name": "interactive-hover-button",
+   "title": "Interactive Hover Button",
+   "description": "A visually engaging button component that responds to hover with dynamic transitions, adapting smoothly between light and dark modes for enhanced user",
+   "file": "marketing-blocks/calls-to-action/dillionverma__interactive-hover-button.json"
+  },
+  {
+   "name": "shimmer-button",
+   "title": "Shimmer Button",
+   "description": "A button with a shimmering light which travels around the perimeter.",
+   "file": "marketing-blocks/calls-to-action/dillionverma__shimmer-button.json"
+  },
+  {
+   "name": "shiny-button",
+   "title": "Shiny Button",
+   "description": "A shiny button component with dynamic styles in the dark mode or light mode.",
+   "file": "marketing-blocks/calls-to-action/dillionverma__shiny-button.json"
+  }
+ ],
+ "clients": [
+  {
+   "name": "logo-carousel",
+   "title": "Logo Carousel",
+   "description": "A smooth, animated logo carousel component with support for multiple columns and customizable transitions.\n\nFeatures:\n\t\u2022\tSmooth animations with spring",
+   "file": "marketing-blocks/clients/Codehagen__logo-carousel.json"
+  },
+  {
+   "name": "animated-testimonials",
+   "title": "Animated Testimonials",
+   "description": "Minimal testimonials sections with image and quote.\n\nFeatures:\n-  Image Carousel: Enjoy smooth animated image transitions with cool 3D rotation effect",
+   "file": "marketing-blocks/clients/aceternity__animated-testimonials.json"
+  },
+  {
+   "name": "animated-tooltip",
+   "title": "Animated Tooltip",
+   "description": "A cool tooltip that reveals on hover, follows mouse pointer\n\nFeatures:  \n-  Mouse Following: The tooltip moves and rotates with your cursor.  \n-  Spri",
+   "file": "marketing-blocks/clients/aceternity__animated-tooltip.json"
+  },
+  {
+   "name": "glare-card",
+   "title": "Glare Card",
+   "description": "A glare effect that happens on hover, as seen on Linear's website",
+   "file": "marketing-blocks/clients/aceternity__glare-card.json"
+  },
+  {
+   "name": "avatar-circles",
+   "title": "Avatar Circles",
+   "description": "Overlapping circles of avatars.",
+   "file": "marketing-blocks/clients/dillionverma__avatar-circles.json"
+  },
+  {
+   "name": "interactive-icon-cloud",
+   "title": "Interactive Icon Cloud",
+   "description": "An interactive 3D tag cloud component",
+   "file": "marketing-blocks/clients/dillionverma__interactive-icon-cloud.json"
+  },
+  {
+   "name": "infinite-slider",
+   "title": "Infinite Slider",
+   "description": "Infinite scrolling slider component that smoothly loops through its children. It supports both horizontal and vertical directions, with customizable s",
+   "file": "marketing-blocks/clients/ibelick__infinite-slider.json"
+  },
+  {
+   "name": "retro-testimonial",
+   "title": "Retro Testimonial Carousel",
+   "description": "Retro Animated Testimonial is a sleek carousel of vintage-inspired cards, each featuring a user\u2019s photo, name, role, and feedback over a stylish backg",
+   "file": "marketing-blocks/clients/ishamsu__retro-testimonial.json"
+  },
+  {
+   "name": "email-client-card",
+   "title": "Email Client Card",
+   "description": "A email-client-card component.",
+   "file": "marketing-blocks/clients/kavikatiyar__email-client-card.json"
+  },
+  {
+   "name": "sparkles",
+   "title": "Sparkles",
+   "description": "Animated floating particles component.",
+   "file": "marketing-blocks/clients/lepikhinb__sparkles.json"
+  }
+ ],
+ "comparisons": [
+  {
+   "name": "compare",
+   "title": "Compare",
+   "description": "A comparison component between two images, slide or drag to compare",
+   "file": "marketing-blocks/comparisons/aceternity__compare.json"
+  },
+  {
+   "name": "image-comparison",
+   "title": "Image Comparison",
+   "description": "A image-comparison component.",
+   "file": "marketing-blocks/comparisons/bundui__image-comparison.json"
+  },
+  {
+   "name": "lightning-split",
+   "title": "Lightning Split",
+   "description": "A lightning-split component.",
+   "file": "marketing-blocks/comparisons/cinquinandy__lightning-split.json"
+  },
+  {
+   "name": "code-comparison",
+   "title": "Code Comparison",
+   "description": "A component which compares two code snippets.",
+   "file": "marketing-blocks/comparisons/dillionverma__code-comparison.json"
+  },
+  {
+   "name": "image-comparison",
+   "title": "Image Comparison",
+   "description": "Interactively compare two images with a draggable slider to reveal differences.",
+   "file": "marketing-blocks/comparisons/ibelick__image-comparison.json"
+  },
+  {
+   "name": "assisted-password-confirmation",
+   "title": "Assisted Password Confirmation",
+   "description": "Password confirmation component with visual feedback and animations for matching or incorrect inputs",
+   "file": "marketing-blocks/comparisons/ln-dev7__assisted-password-confirmation.json"
+  },
+  {
+   "name": "table",
+   "title": "Table",
+   "description": "Shadcn table with enhanced appearance",
+   "file": "marketing-blocks/comparisons/originui__table.json"
+  },
+  {
+   "name": "comparison-table",
+   "title": "Comparison Table",
+   "description": "A comparison-table component.",
+   "file": "marketing-blocks/comparisons/ruixen.ui__comparison-table.json"
+  },
+  {
+   "name": "feature-with-image-comparison",
+   "title": "Feature with Image Comparison",
+   "description": "Feature block with Image Comparison",
+   "file": "marketing-blocks/comparisons/tommyjepsen__feature-with-image-comparison.json"
+  }
+ ],
+ "features": [
+  {
+   "name": "feature-carousel",
+   "title": "Feature Carousel",
+   "description": "A feature-carousel component.",
+   "file": "marketing-blocks/features/0xUrvish__feature-carousel.json"
+  },
+  {
+   "name": "card-with-cross-patter",
+   "title": "Card with Cross Patter",
+   "description": "A striking card component featuring a pattern of intersecting diagonal lines that form X shapes. This pattern creates a bold, geometric texture that's",
+   "file": "marketing-blocks/features/Ali-Hussein-dev__card-with-cross-patter.json"
+  },
+  {
+   "name": "card-with-ellipsis-pattern",
+   "title": "Card with Ellipsis Pattern",
+   "description": "A versatile card component featuring an elegant ellipsis dot pattern background and gradient overlay. The distinctive dot pattern creates a subtle yet",
+   "file": "marketing-blocks/features/Ali-Hussein-dev__card-with-ellipsis-pattern.json"
+  },
+  {
+   "name": "card-with-grid-ellipsis-pattern",
+   "title": "Card with Grid Ellipsis Pattern",
+   "description": "A sophisticated card component featuring a grid pattern with ellipsis dots at intersections. The pattern combines rectangular grid sections with promi",
+   "file": "marketing-blocks/features/Ali-Hussein-dev__card-with-grid-ellipsis-pattern.json"
+  },
+  {
+   "name": "card-with-grid-pattern",
+   "title": "Card with Grid Pattern",
+   "description": "A minimal card component featuring a clean grid pattern of squares. The pattern creates a structured, geometric texture that's perfect for content org",
+   "file": "marketing-blocks/features/Ali-Hussein-dev__card-with-grid-pattern.json"
+  },
+  {
+   "name": "card-with-lines-patter",
+   "title": "Card With Lines Patter",
+   "description": "A modern card component featuring a diagonal lines pattern. The pattern creates a dynamic visual texture through intersecting diagonal lines, perfect ",
+   "file": "marketing-blocks/features/Ali-Hussein-dev__card-with-lines-patter.json"
+  },
+  {
+   "name": "card-with-noise-patter",
+   "title": "Card with Noise Patter ",
+   "description": "A sophisticated dark card component featuring an organic noise texture created with SVG filters. The pattern provides a premium, tactile feel with a s",
+   "file": "marketing-blocks/features/Ali-Hussein-dev__card-with-noise-patter.json"
+  },
+  {
+   "name": "card",
+   "title": "Card",
+   "description": "A versatile card component that supports multiple design variants while maintaining consistency with the shadcn/ui design system.\n\nFeatures\n- 8 unique",
+   "file": "marketing-blocks/features/Ali-Hussein-dev__card.json"
+  },
+  {
+   "name": "display-cards",
+   "title": "Display Cards",
+   "description": "A visually appealing stacked card layout with hover animations and grayscale effects.\n\nFeatures:\n\t\u2022\tStacked card layout\n\t\u2022\tHover animations\n\t\u2022\tGraysca",
+   "file": "marketing-blocks/features/Codehagen__display-cards.json"
+  },
+  {
+   "name": "cpu-architecture",
+   "title": "CPU Architecture",
+   "description": "A simple CPU architecture animation",
+   "file": "marketing-blocks/features/LegionWebDev__cpu-architecture.json"
+  }
+ ],
+ "footers": [
+  {
+   "name": "flickering-footer",
+   "title": "Flickering Footer",
+   "description": "A flickering-footer component.",
+   "file": "marketing-blocks/footers/aghasisahakyan1__flickering-footer.json"
+  },
+  {
+   "name": "footer-section",
+   "title": "Footer section",
+   "description": "Basic footer section with theme toggle",
+   "file": "marketing-blocks/footers/arihantcodes_1f7b8c4d__footer-section.json"
+  },
+  {
+   "name": "large-name-footer",
+   "title": "Large Name Footer",
+   "description": "Footer section with large logo",
+   "file": "marketing-blocks/footers/arihantcodes_1f7b8c4d__large-name-footer.json"
+  },
+  {
+   "name": "stacked-circular-footer",
+   "title": "Stacked Circular Footer",
+   "description": "Stacked Circular Footer Section",
+   "file": "marketing-blocks/footers/arihantcodes_1f7b8c4d__stacked-circular-footer.json"
+  },
+  {
+   "name": "underline-animation",
+   "title": "Underline Animation",
+   "description": "A component that animates a text underline.\n\nThese underline animations work differently from typical CSS underline animations. Instead of animating t",
+   "file": "marketing-blocks/footers/danielpetho__underline-animation.json"
+  },
+  {
+   "name": "modem-animated-footer",
+   "title": "Modem Animated Footer",
+   "description": "A modem-animated-footer component.",
+   "file": "marketing-blocks/footers/decodewithdeepak__modem-animated-footer.json"
+  },
+  {
+   "name": "vercel-footer",
+   "title": "Vercel Footer",
+   "description": "A vercel-footer component.",
+   "file": "marketing-blocks/footers/designali-in__vercel-footer.json"
+  },
+  {
+   "name": "magnetic",
+   "title": "Magnetic",
+   "description": "A magnetic effect for elements that allows them to be attracted to the mouse cursor.",
+   "file": "marketing-blocks/footers/ibelick__magnetic.json"
+  },
+  {
+   "name": "neo-minimal-footer",
+   "title": "Neo Minimal Footer",
+   "description": "A neo-minimal-footer component.",
+   "file": "marketing-blocks/footers/m.kumailalirajpoot__neo-minimal-footer.json"
+  },
+  {
+   "name": "hover-footer",
+   "title": "Hover Footer",
+   "description": "A hover-footer component.",
+   "file": "marketing-blocks/footers/mdafsarx__hover-footer.json"
+  }
+ ],
+ "heroes": [
+  {
+   "name": "hero",
+   "title": "Hero",
+   "description": "Hero Section with Appear Animation and Hero Badge",
+   "file": "marketing-blocks/heroes/Codehagen__hero.json"
+  },
+  {
+   "name": "background-ripple-effect",
+   "title": "Background Ripple Effect",
+   "description": "A Hero component where background cells once clicked, create a ripple effect",
+   "file": "marketing-blocks/heroes/aceternity__background-ripple-effect.json"
+  },
+  {
+   "name": "container-scroll-animation",
+   "title": "Container Scroll Animation",
+   "description": "A scroll animation that rotates in 3d on scroll. Perfect for hero or marketing sections.",
+   "file": "marketing-blocks/heroes/aceternity__container-scroll-animation.json"
+  },
+  {
+   "name": "cover",
+   "title": "Cover",
+   "description": "A Cover component that wraps any children, providing beams and space effect, hover to reveal speed.",
+   "file": "marketing-blocks/heroes/aceternity__cover.json"
+  },
+  {
+   "name": "flip-words",
+   "title": "Flip Words",
+   "description": "A component that flips through a list of words",
+   "file": "marketing-blocks/heroes/aceternity__flip-words.json"
+  },
+  {
+   "name": "google-gemini-effect",
+   "title": "Google Gemini Effect",
+   "description": "An effect of SVGs as seen on the Google Gemini Website",
+   "file": "marketing-blocks/heroes/aceternity__google-gemini-effect.json"
+  },
+  {
+   "name": "hero-parallax",
+   "title": "Hero Parallax",
+   "description": "A scroll effect with rotation, translation and opacity animations.",
+   "file": "marketing-blocks/heroes/aceternity__hero-parallax.json"
+  },
+  {
+   "name": "images-slider",
+   "title": "Images Slider",
+   "description": "A full page slider with images that can be navigated with the keyboard.",
+   "file": "marketing-blocks/heroes/aceternity__images-slider.json"
+  },
+  {
+   "name": "lamp",
+   "title": "Lamp",
+   "description": "A lamp effect as seen on linear, great for section headers.",
+   "file": "marketing-blocks/heroes/aceternity__lamp.json"
+  },
+  {
+   "name": "link-preview",
+   "title": "Link Preview",
+   "description": "Dynamic link previews for your anchor tags",
+   "file": "marketing-blocks/heroes/aceternity__link-preview.json"
+  }
+ ],
+ "navigation-menus": [
+  {
+   "name": "nav-header",
+   "title": "Nav Header",
+   "description": "This is a modern, interactive navigation header component built with React, TypeScript, and Framer Motion. Here's a breakdown of its functionality and",
+   "file": "marketing-blocks/navigation-menus/abdulali254__nav-header.json"
+  },
+  {
+   "name": "floating-navbar",
+   "title": "Floating Navbar",
+   "description": "A sticky Navbar that hides on scroll, reveals when scrolled up.",
+   "file": "marketing-blocks/navigation-menus/aceternity__floating-navbar.json"
+  },
+  {
+   "name": "navbar-menu",
+   "title": "Navbar Menu",
+   "description": "A navbar menu that animates its children on hover, makes a beautiful bignav",
+   "file": "marketing-blocks/navigation-menus/aceternity__navbar-menu.json"
+  },
+  {
+   "name": "tubelight-navbar",
+   "title": "Tubelight Navbar",
+   "description": "A sleek and modern navigation bar component with smooth animations and a dynamic indicator. Perfect for primary navigation in web applications.\n\nFeatu",
+   "file": "marketing-blocks/navigation-menus/ayushmxxn__tubelight-navbar.json"
+  },
+  {
+   "name": "21st-navbar",
+   "title": "Simple Navbar with Dropdown",
+   "description": "A modern, fully-customizable React navigation bar with smooth dropdown animations and seamless dark mode support. Features include animated dropdowns ",
+   "file": "marketing-blocks/navigation-menus/holetarget__21st-navbar.json"
+  },
+  {
+   "name": "anime-navbar",
+   "title": "Anime Navbar",
+   "description": "The AnimeNavBar is a responsive, animated navigation bar built with React, Framer Motion, and Tailwind CSS. It supports hover effects, active state hi",
+   "file": "marketing-blocks/navigation-menus/jatin-yadav05__anime-navbar.json"
+  },
+  {
+   "name": "menubar",
+   "title": "Menubar",
+   "description": "A visually persistent menu common in desktop applications that provides quick access to a consistent set of commands.",
+   "file": "marketing-blocks/navigation-menus/shadcn__menubar.json"
+  },
+  {
+   "name": "navigation-menu",
+   "title": "Navigation menu",
+   "description": "A collection of links for navigating websites.",
+   "file": "marketing-blocks/navigation-menus/shadcn__navigation-menu.json"
+  },
+  {
+   "name": "shadcnblocks-com-navbar1",
+   "title": "Navbar with Dropdowns",
+   "description": "A classic shadcn style navbar with dropdowns and mobile slide in menu.",
+   "file": "marketing-blocks/navigation-menus/shadcnblockscom__shadcnblocks-com-navbar1.json"
+  },
+  {
+   "name": "floating-header",
+   "title": "Floating Header",
+   "description": "A floating-header component.",
+   "file": "marketing-blocks/navigation-menus/sshahaider__floating-header.json"
+  }
+ ],
+ "pricing-sections": [
+  {
+   "name": "pricing",
+   "title": "Pricing",
+   "description": "A dynamic pricing section with animated cards, confetti effects, and monthly/yearly toggle.\n\nFeatures:\n\t\u2022\tAnimated pricing cards using Framer Motion\n\t",
+   "file": "marketing-blocks/pricing-sections/Codehagen__pricing.json"
+  },
+  {
+   "name": "pricing-card",
+   "title": "Pricing Card",
+   "description": "A modern, responsive pricing card component for displaying subscription plans.\nSupports discounts, feature lists, multiple variants, and dark/light mo",
+   "file": "marketing-blocks/pricing-sections/Edil-ozi__pricing-card.json"
+  },
+  {
+   "name": "pricing-section",
+   "title": "Pricing Section",
+   "description": "A comprehensive pricing section component that combines animated tabs and pricing cards. Originally built for Dub.co's pricing page.\n\nFeatures\n- Month",
+   "file": "marketing-blocks/pricing-sections/aymanch-03__pricing-section.json"
+  },
+  {
+   "name": "pricing-tab",
+   "title": "Pricing Tab",
+   "description": "An animated tab component with support for discount badges. Originally built for Dub.co's pricing frequency selector.\n\nFeatures\n- Smooth layout animat",
+   "file": "marketing-blocks/pricing-sections/aymanch-03__pricing-tab.json"
+  },
+  {
+   "name": "pricing-card",
+   "title": "Pricing Card",
+   "description": "A modern, animated pricing card component with features and perks sections.\n\nFeatures:\n\t\u2022\tSmooth animations on scroll\n\t\u2022\tResponsive layout\n\t\u2022\tCustomiz",
+   "file": "marketing-blocks/pricing-sections/bankkroll__pricing-card.json"
+  },
+  {
+   "name": "single-pricing-card",
+   "title": "Single Pricing Card",
+   "description": "A super clean single pricing card with features and testimonials.",
+   "file": "marketing-blocks/pricing-sections/bankkroll__single-pricing-card.json"
+  },
+  {
+   "name": "pricing-section",
+   "title": "Pricing Section",
+   "description": "A pricing-section component.",
+   "file": "marketing-blocks/pricing-sections/brijr__pricing-section.json"
+  },
+  {
+   "name": "modern-pricing-table",
+   "title": "Modern Pricing Table",
+   "description": "A modern-pricing-table component.",
+   "file": "marketing-blocks/pricing-sections/chowlol202__modern-pricing-table.json"
+  },
+  {
+   "name": "animated-pricing-page",
+   "title": "Animated Pricing Page",
+   "description": "A animated-pricing-page component.",
+   "file": "marketing-blocks/pricing-sections/dhileepkumargm__animated-pricing-page.json"
+  },
+  {
+   "name": "animated-glassy-pricing",
+   "title": "Animated Glassy Pricing",
+   "description": "A animated-glassy-pricing component.",
+   "file": "marketing-blocks/pricing-sections/easemize__animated-glassy-pricing.json"
+  }
+ ],
+ "testimonials": [
+  {
+   "name": "testimonial-carousel",
+   "title": "Testimonial Carousel",
+   "description": "Testimonial Carousel with company logo and avatar",
+   "file": "marketing-blocks/testimonials/RayMethula__testimonial-carousel.json"
+  },
+  {
+   "name": "testimonial",
+   "title": "Testimonial",
+   "description": "Block with one testimonial",
+   "file": "marketing-blocks/testimonials/RayMethula__testimonial.json"
+  },
+  {
+   "name": "testimonial",
+   "title": "Testimonial",
+   "description": "Dragable testimonial, where user can swap to change",
+   "file": "marketing-blocks/testimonials/anurag-mishra22__testimonial.json"
+  },
+  {
+   "name": "testimonial-v2",
+   "title": "Testimonial V2",
+   "description": "A testimonial-v2 component.",
+   "file": "marketing-blocks/testimonials/avanishverma4__testimonial-v2.json"
+  },
+  {
+   "name": "testimonials-1",
+   "title": "Testimonials 1",
+   "description": "Simple testimonials section with minimal cards",
+   "file": "marketing-blocks/testimonials/axorax__testimonials-1.json"
+  },
+  {
+   "name": "3d-book-testimonial",
+   "title": "3d Book Testimonial",
+   "description": "A 3d-book-testimonial component.",
+   "file": "marketing-blocks/testimonials/ayushmxxn__3d-book-testimonial.json"
+  },
+  {
+   "name": "testimonials",
+   "title": "Testimonials",
+   "description": "This Username Testimonial Displays user testimonials with profile images, usernames, feedback text, and a link to their social media.",
+   "file": "marketing-blocks/testimonials/ayushmxxn__testimonials.json"
+  },
+  {
+   "name": "typewriter-testimonial",
+   "title": "Typewriter Testimonial",
+   "description": "A typewriter-testimonial component.",
+   "file": "marketing-blocks/testimonials/ayushmxxn__typewriter-testimonial.json"
+  },
+  {
+   "name": "animated-testimonials",
+   "title": "Animated Testimonials",
+   "description": "A clean animated testimonials section",
+   "file": "marketing-blocks/testimonials/bankkroll__animated-testimonials.json"
+  },
+  {
+   "name": "simple-animated-testimonials",
+   "title": "Simple Animated Testimonials",
+   "description": "Clean simple animated testimonials",
+   "file": "marketing-blocks/testimonials/bankkroll__simple-animated-testimonials.json"
+  }
+ ],
+ "cards": [
+  {
+   "name": "bento-card",
+   "title": "Bento Card",
+   "description": "An interactive bento card with animated tabs and workspace preview.",
+   "file": "ui-components/cards/0xUrvish__bento-card.json"
+  },
+  {
+   "name": "pricing-card",
+   "title": "Pricing Card",
+   "description": "An animated pricing card with interactive hover effects.",
+   "file": "ui-components/cards/0xUrvish__pricing-card.json"
+  },
+  {
+   "name": "expandable-card",
+   "title": "Expandable Card",
+   "description": "An interactive, expandable card component for displaying project status and details with smooth animations.\n\nNotes:\n\t\u2022\tBuilt with Framer Motion for sm",
+   "file": "ui-components/cards/Codehagen__expandable-card.json"
+  },
+  {
+   "name": "tilt-card",
+   "title": "Tilt Card",
+   "description": "A tilt-card component.",
+   "file": "ui-components/cards/JurreHoutkamp__tilt-card.json"
+  },
+  {
+   "name": "stacked-article-cards",
+   "title": "Stacked Article Cards",
+   "description": "A stacked-article-cards component.",
+   "file": "ui-components/cards/Mazyar kawa__stacked-article-cards.json"
+  },
+  {
+   "name": "playing-card",
+   "title": "Playing Card",
+   "description": "A playing-card component.",
+   "file": "ui-components/cards/Northstrix__playing-card.json"
+  },
+  {
+   "name": "card-studio",
+   "title": "Card Studio",
+   "description": "A card-studio component.",
+   "file": "ui-components/cards/ShadcnStudio__card-studio.json"
+  },
+  {
+   "name": "team-member-card",
+   "title": "Team Member Card",
+   "description": "An animated team member card with hover effects revealing social links and role details.",
+   "file": "ui-components/cards/Shatlyk1011__team-member-card.json"
+  },
+  {
+   "name": "clip-path-links",
+   "title": "Clip Path Links",
+   "description": "A clip-path-links component.",
+   "file": "ui-components/cards/TomIsLoading__clip-path-links.json"
+  },
+  {
+   "name": "carousel-card-1",
+   "title": "Carousel card",
+   "description": "UI component for card with carousel effects",
+   "file": "ui-components/cards/abishek1512__carousel-card-1.json"
+  }
+ ]
+}
