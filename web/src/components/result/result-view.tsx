@@ -22,10 +22,10 @@ export function ResultView({ subdomain, isShareable }: ResultViewProps) {
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
       transition={{ duration: 0.4, ease: "easeOut" }}
-      className="min-h-screen flex flex-col items-center px-4 pt-16"
+      className="min-h-screen flex flex-col items-center px-4 pt-24"
     >
-      <div className="w-full max-w-3xl flex flex-col items-center">
-        <h1 className="text-[28px] sm:text-[40px] font-semibold leading-[1.1] text-foreground text-center mb-8">
+      <div className="w-full max-w-4xl flex flex-col items-center">
+        <h1 className="font-heading text-[clamp(1.75rem,5vw,3rem)] leading-[1.1] text-foreground text-center mb-8">
           {headerText}
         </h1>
 
@@ -39,7 +39,7 @@ export function ResultView({ subdomain, isShareable }: ResultViewProps) {
           <div className="absolute inset-0 backdrop-blur-md bg-background/30 flex flex-col items-center justify-center gap-4">
             <a
               href={`${process.env.NEXT_PUBLIC_BACKEND_URL ?? ""}/${subdomain}/`}
-              className="inline-flex items-center justify-center rounded-lg bg-primary text-primary-foreground text-sm font-medium h-11 px-6 transition-all hover:bg-primary/80 active:translate-y-px"
+              className="inline-flex items-center justify-center rounded-lg bg-accent text-accent-foreground text-base font-medium h-12 px-8 transition-all hover:bg-accent/90 active:translate-y-px"
             >
               Take me to the future
             </a>
@@ -57,8 +57,8 @@ export function ResultView({ subdomain, isShareable }: ResultViewProps) {
         </a>
 
         {/* Contact form section — per D-01 */}
-        <hr className="border-border w-full max-w-3xl mt-12" />
-        <div className="mt-12 w-full flex flex-col items-center pb-16">
+        <hr className="border-border w-full max-w-3xl mt-16" />
+        <div className="mt-16 w-full flex flex-col items-center pb-16">
           <ContactForm subdomain={subdomain} />
         </div>
       </div>

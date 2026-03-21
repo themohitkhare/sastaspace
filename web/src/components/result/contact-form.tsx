@@ -91,7 +91,7 @@ export function ContactForm({ subdomain }: ContactFormProps) {
             transition={{ duration: 0.2 }}
             className="w-full flex flex-col items-center"
           >
-            <h2 className="text-2xl font-semibold text-foreground text-center mb-8">
+            <h2 className="font-heading text-[clamp(1.5rem,3vw,2rem)] text-foreground text-center mb-8">
               Like what you see? Let&apos;s build the real thing.
             </h2>
             <form onSubmit={handleSubmit} noValidate className="w-full max-w-xl space-y-4">
@@ -209,7 +209,7 @@ export function ContactForm({ subdomain }: ContactFormProps) {
               {/* Submit button — per D-05 */}
               <Button
                 type="submit"
-                className="w-full h-11 mt-6"
+                className="w-full h-11 mt-6 bg-accent text-accent-foreground hover:bg-accent/90"
                 disabled={status === "submitting"}
               >
                 {status === "submitting" ? (
@@ -231,7 +231,7 @@ export function ContactForm({ subdomain }: ContactFormProps) {
             transition={{ duration: 0.2 }}
             className="py-16 text-center"
           >
-            <h2 className="text-2xl font-semibold text-foreground">
+            <h2 className="font-heading text-2xl text-foreground">
               Thanks, I&apos;ll be in touch.
             </h2>
             <p className="text-base text-muted-foreground mt-2">
