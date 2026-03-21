@@ -304,6 +304,18 @@ async def redesign_handler(
             job_id, "discovery", {"job_id": job_id, "items": _discovery_items}
         )
 
+    # Emit screenshot for before/after reveal — skip if too large for SSE
+    _MAX_SCREENSHOT_B64 = 500_000  # ~375KB raw PNG
+    if (
+        crawl_result.screenshot_base64
+        and len(crawl_result.screenshot_base64) <= _MAX_SCREENSHOT_B64
+    ):
+        await job_service.publish_status(
+            job_id,
+            "screenshot",
+            {"job_id": job_id, "screenshot_base64": crawl_result.screenshot_base64},
+        )
+
     # Step 2: Redesigning
     logger.info("JOB STEP 2/3: Redesigning | job=%s pipeline=%s", job_id, pipeline)
     await update_job(

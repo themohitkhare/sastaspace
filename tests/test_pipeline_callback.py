@@ -214,3 +214,116 @@ async def test_redesign_handler_emits_discovery(job_service, tmp_path):
     labels = [i["label"] for i in discovery_events[0]["items"]]
     assert "Title" in labels
     assert "Colors" in labels
+
+
+async def test_redesign_handler_emits_screenshot(job_service, tmp_path):
+    """Emits screenshot event when screenshot is present and not too large."""
+    from unittest.mock import AsyncMock, patch
+
+    from sastaspace.crawler import CrawlResult
+    from sastaspace.database import create_job
+    from sastaspace.deployer import DeployResult
+
+    job_id = "screenshot-test-1"
+    await create_job(job_id=job_id, url="https://example.com", client_ip="1.1.1.1")
+
+    crawl_result = CrawlResult(
+        url="https://example.com",
+        title="Example",
+        meta_description="",
+        favicon_url="",
+        html_source="<html></html>",
+        screenshot_base64="iVBORw0KGgo=",  # small fake base64
+        headings=[],
+        navigation_links=[],
+        text_content="",
+        images=[],
+        colors=[],
+        fonts=[],
+        sections=[],
+        error="",
+    )
+    deploy_result = DeployResult(
+        subdomain="example-com",
+        index_path=tmp_path / "example-com" / "index.html",
+        sites_dir=tmp_path,
+    )
+    mock_html = "<!DOCTYPE html><html><body>Done</body></html>"
+    screenshot_events = []
+
+    original_publish = job_service.publish_status
+
+    async def capture(jid, event, data):
+        if event == "screenshot":
+            screenshot_events.append(data)
+        return await original_publish(jid, event, data)
+
+    job_service.publish_status = capture
+
+    with (
+        patch("sastaspace.crawler.crawl", new_callable=AsyncMock, return_value=crawl_result),
+        patch("sastaspace.redesigner.agno_redesign", return_value=mock_html),
+        patch("sastaspace.deployer.deploy", return_value=deploy_result),
+    ):
+        from sastaspace.jobs import redesign_handler
+
+        await redesign_handler(job_id, "https://example.com", "standard", job_service)
+
+    assert len(screenshot_events) == 1
+    assert screenshot_events[0]["screenshot_base64"] == "iVBORw0KGgo="
+
+
+async def test_redesign_handler_skips_large_screenshot(job_service, tmp_path):
+    """Does not emit screenshot if base64 exceeds 500KB."""
+    from unittest.mock import AsyncMock, patch
+
+    from sastaspace.crawler import CrawlResult
+    from sastaspace.database import create_job
+    from sastaspace.deployer import DeployResult
+
+    job_id = "screenshot-test-2"
+    await create_job(job_id=job_id, url="https://example.com", client_ip="1.1.1.1")
+
+    crawl_result = CrawlResult(
+        url="https://example.com",
+        title="Example",
+        meta_description="",
+        favicon_url="",
+        html_source="<html></html>",
+        screenshot_base64="A" * (500_001),  # 500KB+ — too large
+        headings=[],
+        navigation_links=[],
+        text_content="",
+        images=[],
+        colors=[],
+        fonts=[],
+        sections=[],
+        error="",
+    )
+    deploy_result = DeployResult(
+        subdomain="example-com",
+        index_path=tmp_path / "example-com" / "index.html",
+        sites_dir=tmp_path,
+    )
+    mock_html = "<!DOCTYPE html><html><body>Done</body></html>"
+    screenshot_events = []
+
+    original_publish = job_service.publish_status
+
+    async def capture(jid, event, data):
+        if event == "screenshot":
+            screenshot_events.append(data)
+        return await original_publish(jid, event, data)
+
+    job_service.publish_status = capture
+
+    with (
+        patch("sastaspace.crawler.crawl", new_callable=AsyncMock, return_value=crawl_result),
+        patch("sastaspace.redesigner.agno_redesign", return_value=mock_html),
+        patch("sastaspace.deployer.deploy", return_value=deploy_result),
+    ):
+        from sastaspace.jobs import redesign_handler
+
+        await redesign_handler(job_id, "https://example.com", "standard", job_service)
+
+    assert len(screenshot_events) == 0  # skipped — too large
