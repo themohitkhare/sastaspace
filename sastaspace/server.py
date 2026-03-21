@@ -333,8 +333,11 @@ def make_app(sites_dir: Path) -> FastAPI:
             if existing and existing.get("subdomain"):
                 logger.info(
                     "DEDUP HIT | url=%s hash=%s subdomain=%s",
-                    body.url, uhash, existing["subdomain"],
+                    body.url,
+                    uhash,
+                    existing["subdomain"],
                 )
+
                 # Return existing redesign immediately as SSE done event
                 async def cached_stream():
                     done_data = {

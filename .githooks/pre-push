@@ -1,0 +1,23 @@
+#!/bin/bash
+# Pre-push hook: runs lint + format check + tests before pushing.
+# Catches CI failures locally before they waste runner time.
+#
+# Install: git config core.hooksPath .githooks
+
+set -e
+
+echo "🔍 Pre-push: running lint + format + tests..."
+
+# Lint
+echo "  → ruff check"
+uv run ruff check sastaspace/ tests/ || { echo "❌ Lint failed"; exit 1; }
+
+# Format check
+echo "  → ruff format --check"
+uv run ruff format --check sastaspace/ tests/ || { echo "❌ Format check failed. Run: uv run ruff format sastaspace/ tests/"; exit 1; }
+
+# Tests
+echo "  → pytest"
+uv run pytest tests/ -q --tb=short || { echo "❌ Tests failed"; exit 1; }
+
+echo "✅ Pre-push checks passed"
