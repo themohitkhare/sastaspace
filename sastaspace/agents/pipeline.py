@@ -93,12 +93,18 @@ def _extract_json(text: str) -> dict:
     return obj
 
 
-def _create_model(model_id: str, settings: Settings) -> OpenAILike:
-    """Create an Agno OpenAILike model instance."""
+def _create_model(model_id: str, settings: Settings, *, use_ollama: bool = False) -> OpenAILike:
+    """Create an Agno OpenAILike model instance.
+
+    Args:
+        model_id: The model identifier string.
+        settings: Application settings with API credentials.
+        use_ollama: If True, route to the local Ollama endpoint (free tier).
+    """
     return OpenAILike(
         id=model_id,
-        api_key=settings.claude_code_api_key,
-        base_url=settings.claude_code_api_url,
+        api_key=settings.ollama_api_key if use_ollama else settings.claude_code_api_key,
+        base_url=settings.ollama_url if use_ollama else settings.claude_code_api_url,
     )
 
 
@@ -142,7 +148,7 @@ def _run_agent(
                     delay,
                 )
                 time.sleep(delay)
-            agent = Agent(model=model, instructions=system_prompt)
+            agent = Agent(model=model, instructions=system_prompt, tools=[])
             response = agent.run(user_prompt)
             content = response.content or ""
             if content:
@@ -203,9 +209,13 @@ def _run_agent(
         redesign_agent_duration_seconds.labels(agent_name=name, status=status).observe(duration)
 
 
-def _run_crawl_analyst(crawl_result: CrawlResult, settings: Settings) -> SiteAnalysis:
+def _run_crawl_analyst(
+    crawl_result: CrawlResult, settings: Settings, tier: str = "premium"
+) -> SiteAnalysis:
     """Run the CrawlAnalyst agent to produce a SiteAnalysis."""
-    model = _create_model(settings.crawl_analyst_model, settings)
+    use_ollama = tier == "free"
+    model_id = settings.free_crawl_analyst_model if use_ollama else settings.crawl_analyst_model
+    model = _create_model(model_id, settings, use_ollama=use_ollama)
     user_prompt = CRAWL_ANALYST_USER_TEMPLATE.format(
         crawl_context=crawl_result.to_prompt_context(),
         title=crawl_result.title,
@@ -227,14 +237,25 @@ def _run_crawl_analyst(crawl_result: CrawlResult, settings: Settings) -> SiteAna
         return result
     except (json.JSONDecodeError, ValueError) as exc:
         redesign_guardrail_triggers_total.labels(guardrail_name="json_parse", action="fail").inc()
+        if raw:
+            logger.error(
+                "PARSE FAIL | agent=crawl_analyst full_content=%.500s", raw.replace("\n", " ")
+            )
         raise RedesignError(f"CrawlAnalyst returned invalid JSON: {exc}") from exc
 
 
 def _run_design_strategist(
-    site_analysis: SiteAnalysis, crawl_result: CrawlResult, settings: Settings
+    site_analysis: SiteAnalysis,
+    crawl_result: CrawlResult,
+    settings: Settings,
+    tier: str = "premium",
 ) -> DesignBrief:
     """Run the DesignStrategist agent to produce a DesignBrief."""
-    model = _create_model(settings.design_strategist_model, settings)
+    use_ollama = tier == "free"
+    model_id = (
+        settings.free_design_strategist_model if use_ollama else settings.design_strategist_model
+    )
+    model = _create_model(model_id, settings, use_ollama=use_ollama)
     user_prompt = DESIGN_STRATEGIST_USER_TEMPLATE.format(
         site_analysis_json=site_analysis.model_dump_json(indent=2),
         colors=", ".join(crawl_result.colors[:10]) or "not detected",
@@ -257,14 +278,23 @@ def _run_design_strategist(
         return result
     except (json.JSONDecodeError, ValueError) as exc:
         redesign_guardrail_triggers_total.labels(guardrail_name="json_parse", action="fail").inc()
+        if raw:
+            logger.error(
+                "PARSE FAIL | agent=design_strategist full_content=%.500s", raw.replace("\n", " ")
+            )
         raise RedesignError(f"DesignStrategist returned invalid JSON: {exc}") from exc
 
 
 def _run_copywriter(
-    site_analysis: SiteAnalysis, design_brief: DesignBrief, settings: Settings
+    site_analysis: SiteAnalysis,
+    design_brief: DesignBrief,
+    settings: Settings,
+    tier: str = "premium",
 ) -> CopywriterOutput:
     """Run the Copywriter agent to produce conversion-optimized copy."""
-    model = _create_model(settings.design_strategist_model, settings)
+    use_ollama = tier == "free"
+    model_id = settings.free_copywriter_model if use_ollama else settings.design_strategist_model
+    model = _create_model(model_id, settings, use_ollama=use_ollama)
 
     # Format content sections for the copywriter
     sections_text = (
@@ -292,6 +322,10 @@ def _run_copywriter(
         logger.info("Copywriter produced headline: %s", copy.headline[:50])
         return copy
     except (json.JSONDecodeError, ValueError) as exc:
+        if raw:
+            logger.error(
+                "PARSE FAIL | agent=copywriter full_content=%.500s", raw.replace("\n", " ")
+            )
         logger.warning("Copywriter returned invalid JSON, continuing without: %s", exc)
         return CopywriterOutput()
 
@@ -335,13 +369,19 @@ def _prefilter_catalog(catalog_json: str, site_analysis: SiteAnalysis) -> str:
 
 
 def _run_component_selector(
-    site_analysis: SiteAnalysis, design_brief: DesignBrief, settings: Settings
+    site_analysis: SiteAnalysis,
+    design_brief: DesignBrief,
+    settings: Settings,
+    tier: str = "premium",
 ) -> ComponentSelection:
     """Run the ComponentSelector agent to pick the best UI components."""
     import os
 
-    # Use same model as strategist
-    model = _create_model(settings.design_strategist_model, settings)
+    use_ollama = tier == "free"
+    model_id = (
+        settings.free_component_selector_model if use_ollama else settings.design_strategist_model
+    )
+    model = _create_model(model_id, settings, use_ollama=use_ollama)
 
     # Load the marketing component catalog
     catalog_path = os.path.join(
@@ -387,6 +427,11 @@ def _run_component_selector(
         )
         return selection
     except (json.JSONDecodeError, ValueError) as exc:
+        if raw:
+            logger.error(
+                "PARSE FAIL | agent=component_selector full_content=%.500s",
+                raw.replace("\n", " "),
+            )
         logger.warning("ComponentSelector returned invalid JSON, continuing without: %s", exc)
         return ComponentSelection(strategy="Parse failed, continuing without components")
 
@@ -417,9 +462,12 @@ def _run_html_generator(
     quality_feedback: str = "",
     component_selection: ComponentSelection | None = None,
     copywriter_output: CopywriterOutput | None = None,
+    tier: str = "premium",
 ) -> str:
     """Run the HTMLGenerator agent to produce HTML."""
-    model = _create_model(settings.html_generator_model, settings)
+    use_ollama = tier == "free"
+    model_id = settings.free_html_generator_model if use_ollama else settings.html_generator_model
+    model = _create_model(model_id, settings, use_ollama=use_ollama)
 
     feedback_section = ""
     if quality_feedback:
@@ -495,9 +543,14 @@ def _run_quality_reviewer(
     design_brief: DesignBrief,
     site_analysis: SiteAnalysis,
     settings: Settings,
+    tier: str = "premium",
 ) -> QualityReport:
     """Run the QualityReviewer agent to evaluate the HTML."""
-    model = _create_model(settings.quality_reviewer_model, settings)
+    use_ollama = tier == "free"
+    model_id = (
+        settings.free_quality_reviewer_model if use_ollama else settings.quality_reviewer_model
+    )
+    model = _create_model(model_id, settings, use_ollama=use_ollama)
     html_lower = html.lower()
 
     user_prompt = QUALITY_REVIEWER_USER_TEMPLATE.format(
@@ -531,11 +584,17 @@ def _run_quality_reviewer(
         return result
     except (json.JSONDecodeError, ValueError) as exc:
         redesign_guardrail_triggers_total.labels(guardrail_name="json_parse", action="fail").inc()
+        if raw:
+            logger.error(
+                "PARSE FAIL | agent=quality_reviewer full_content=%.500s", raw.replace("\n", " ")
+            )
         logger.warning("QualityReviewer returned invalid JSON, assuming pass: %s", exc)
         return QualityReport(passed=True, overall_score=7, strengths=["Could not parse review"])
 
 
-def _run_normalizer(html: str, design_brief: DesignBrief, settings: Settings) -> str:
+def _run_normalizer(
+    html: str, design_brief: DesignBrief, settings: Settings, tier: str = "premium"
+) -> str:
     """Normalize the HTML for cohesive design + apply premium psychology principles.
 
     Combines two concepts:
@@ -544,7 +603,9 @@ def _run_normalizer(html: str, design_brief: DesignBrief, settings: Settings) ->
     """
     from sastaspace.agents.prompts import NORMALIZER_SYSTEM, NORMALIZER_USER_TEMPLATE
 
-    model = _create_model(settings.html_generator_model, settings)
+    use_ollama = tier == "free"
+    model_id = settings.free_html_generator_model if use_ollama else settings.html_generator_model
+    model = _create_model(model_id, settings, use_ollama=use_ollama)
 
     user_prompt = NORMALIZER_USER_TEMPLATE.format(
         heading_font=design_brief.typography.heading_font,
@@ -569,6 +630,7 @@ def run_redesign_pipeline(
     crawl_result: CrawlResult,
     settings: Settings,
     progress_callback: ProgressCallback = None,
+    tier: str = "premium",
 ) -> str:
     """
     Execute the full Agno multi-agent redesign pipeline.
@@ -579,6 +641,8 @@ def run_redesign_pipeline(
     Args:
         crawl_result: The crawled website data.
         settings: Application settings with model config.
+        progress_callback: Optional callable(event, data) fired before each agent stage.
+        tier: Redesign tier — "free" (Ollama) or "premium" (Claude).
 
     Returns:
         The final redesigned HTML string.
@@ -606,30 +670,29 @@ def run_redesign_pipeline(
     if crawl_result.error:
         raise RedesignError(f"Cannot redesign — crawl failed: {crawl_result.error}")
 
-    tier = "agno"
     pipeline_start = time.monotonic()
     status = "success"
 
     try:
         # Step 1: Crawl Analyst
-        logger.info("Pipeline step 1/7: CrawlAnalyst")
+        logger.info("Pipeline step 1/7: CrawlAnalyst (tier=%s)", tier)
         _emit("crawl_analyst")
-        site_analysis = _run_crawl_analyst(crawl_result, settings)
+        site_analysis = _run_crawl_analyst(crawl_result, settings, tier)
 
         # Step 2: Design Strategist
-        logger.info("Pipeline step 2/7: DesignStrategist")
+        logger.info("Pipeline step 2/7: DesignStrategist (tier=%s)", tier)
         _emit("design_strategist")
-        design_brief = _run_design_strategist(site_analysis, crawl_result, settings)
+        design_brief = _run_design_strategist(site_analysis, crawl_result, settings, tier)
 
         # Step 3: Copywriter — writes conversion-optimized copy
-        logger.info("Pipeline step 3/7: Copywriter")
+        logger.info("Pipeline step 3/7: Copywriter (tier=%s)", tier)
         _emit("copywriter")
-        copywriter_output = _run_copywriter(site_analysis, design_brief, settings)
+        copywriter_output = _run_copywriter(site_analysis, design_brief, settings, tier)
 
         # Step 4: Component Selector — picks best UI components for this business
-        logger.info("Pipeline step 4/7: ComponentSelector")
+        logger.info("Pipeline step 4/7: ComponentSelector (tier=%s)", tier)
         _emit("component_selector")
-        component_selection = _run_component_selector(site_analysis, design_brief, settings)
+        component_selection = _run_component_selector(site_analysis, design_brief, settings, tier)
 
         # Step 5 & 6: HTMLGenerator + QualityReviewer with retry loop
         html = ""
@@ -650,11 +713,14 @@ def run_redesign_pipeline(
                 quality_feedback,
                 component_selection,
                 copywriter_output,
+                tier,
             )
 
             logger.info("Pipeline step 6/7: QualityReviewer (attempt %d)", attempt)
             _emit("quality_reviewer")
-            quality_report = _run_quality_reviewer(html, design_brief, site_analysis, settings)
+            quality_report = _run_quality_reviewer(
+                html, design_brief, site_analysis, settings, tier
+            )
 
             if quality_report.passed:
                 logger.info(
@@ -687,10 +753,10 @@ def run_redesign_pipeline(
                     guardrail_name="quality_review", action="accept_low_quality"
                 ).inc()
 
-        # Step 6: Normalizer — ensure cohesive design
-        logger.info("Pipeline step 7/7: Normalizer")
+        # Step 7: Normalizer — ensure cohesive design
+        logger.info("Pipeline step 7/7: Normalizer (tier=%s)", tier)
         _emit("normalizer")
-        html = _run_normalizer(html, design_brief, settings)
+        html = _run_normalizer(html, design_brief, settings, tier)
 
         return html
 
