@@ -35,11 +35,58 @@ jobs:
       - name: Run tests (parallel)
         run: uv run pytest tests/ -n auto -q --tb=short
 
+  security:
+    name: Security Scan
+    runs-on: [self-hosted, linux, amd64]
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Ensure uv is installed
+        run: |
+          if ! command -v uv &>/dev/null; then
+            curl -LsSf https://astral.sh/uv/install.sh | sh
+          fi
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+      - name: Python dependency audit (pip-audit)
+        run: |
+          uv tool run pip-audit --requirement <(uv export --no-dev --format requirements-txt) \
+            --vulnerability-service osv \
+            --output json \
+            --output-file pip-audit-report.json || true
+          uv tool run pip-audit --requirement <(uv export --no-dev --format requirements-txt) \
+            --vulnerability-service osv \
+            --strict
+
+      - name: npm audit (high+ only)
+        working-directory: web
+        run: npm audit --audit-level=high --omit=dev
+
+      - name: Ensure Trivy is installed
+        run: |
+          if ! command -v trivy &>/dev/null; then
+            curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh \
+              | sudo sh -s -- -b /usr/local/bin
+          fi
+
+      - name: Trivy — filesystem scan (repo secrets & misconfigs)
+        run: |
+          trivy fs . \
+            --scanners secret,misconfig \
+            --exit-code 1 \
+            --severity HIGH,CRITICAL \
+            --ignorefile .trivyignore \
+            --skip-dirs node_modules,.git \
+            --quiet
+
   deploy:
     name: Build & Deploy
     runs-on: [self-hosted, linux, amd64]
     timeout-minutes: 30
-    needs: test
+    needs: [test, security]
     if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
 
     steps:
@@ -48,6 +95,13 @@ jobs:
         with:
           clean: true
 
+      - name: Ensure Trivy is installed
+        run: |
+          if ! command -v trivy &>/dev/null; then
+            curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh \
+              | sudo sh -s -- -b /usr/local/bin
+          fi
+
       - name: Build backend image
         run: |
           docker build \
@@ -55,12 +109,30 @@ jobs:
             -t localhost:32000/sastaspace-backend:${{ github.sha }} \
             -f backend/Dockerfile .
 
+      - name: Trivy — scan backend image
+        run: |
+          trivy image \
+            --exit-code 1 \
+            --severity HIGH,CRITICAL \
+            --ignorefile .trivyignore \
+            --quiet \
+            localhost:32000/sastaspace-backend:latest
+
       - name: Build frontend image
         run: |
           docker build \
             -t localhost:32000/sastaspace-frontend:latest \
             -t localhost:32000/sastaspace-frontend:${{ github.sha }} \
             -f web/Dockerfile web/
+
+      - name: Trivy — scan frontend image
+        run: |
+          trivy image \
+            --exit-code 1 \
+            --severity HIGH,CRITICAL \
+            --ignorefile .trivyignore \
+            --quiet \
+            localhost:32000/sastaspace-frontend:latest
 
       - name: Push images to local registry
         run: |
