@@ -12,9 +12,6 @@ spec:
     metadata:
       labels:
         app: frontend
-      annotations:
-        prometheus.io/scrape: "true"
-        prometheus.io/port: "3000"
     spec:
       containers:
       - name: frontend
