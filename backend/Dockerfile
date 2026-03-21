@@ -37,16 +37,17 @@ RUN useradd -m -u 1000 appuser && mkdir -p /data/sites && chown appuser /data/si
 COPY pyproject.toml uv.lock ./
 COPY sastaspace/ ./sastaspace/
 
-# Install Python deps using uv with frozen lockfile — installs to system Python,
-# no pip/wheel/jaraco.context involved in the install process
-ENV UV_SYSTEM_PYTHON=1
+# Install Python deps using uv with frozen lockfile into a virtualenv
 RUN uv sync --frozen --no-dev --no-editable
+
+# Add venv to PATH so all installed entrypoints (uvicorn, playwright) are accessible
+ENV PATH="/app/.venv/bin:$PATH"
 
 # Switch to non-root user for Playwright install so browsers land in ~/.cache
 USER appuser
 ENV HOME=/home/appuser
 
-# Install Playwright + Chromium browser (installs to /home/appuser/.cache)
+# Install Playwright + Chromium browser (uses .venv/bin/playwright, installs to ~/.cache)
 RUN playwright install chromium
 
 # Persistent sites volume mount point
