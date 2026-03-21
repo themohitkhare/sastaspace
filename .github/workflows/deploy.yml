@@ -53,13 +53,8 @@ jobs:
 
       - name: Python dependency audit (pip-audit)
         run: |
-          uv tool run pip-audit --requirement <(uv export --no-dev --format requirements-txt) \
-            --vulnerability-service osv \
-            --output json \
-            --output-file pip-audit-report.json || true
-          uv tool run pip-audit --requirement <(uv export --no-dev --format requirements-txt) \
-            --vulnerability-service osv \
-            --strict
+          uv export --no-dev --no-editable --format requirements-txt > /tmp/requirements-audit.txt
+          uv tool run pip-audit --requirement /tmp/requirements-audit.txt --vulnerability-service osv
 
       - name: npm audit (high+ only)
         working-directory: web
