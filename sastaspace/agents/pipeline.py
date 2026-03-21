@@ -478,7 +478,10 @@ def _run_quality_reviewer(
         issues_summary = ", ".join(f"[{i.severity}]{i.description[:40]}" for i in result.issues[:5])
         logger.info(
             "AGENT RESULT | agent=quality_reviewer passed=%s score=%d issues=%d details=%s",
-            result.passed, result.overall_score, len(result.issues), issues_summary[:200] or "none",
+            result.passed,
+            result.overall_score,
+            len(result.issues),
+            issues_summary[:200] or "none",
         )
         return result
     except (json.JSONDecodeError, ValueError) as exc:
