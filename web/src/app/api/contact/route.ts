@@ -28,21 +28,28 @@ export async function POST(request: NextRequest) {
       return Response.json({ error: "All fields are required" }, { status: 400 });
     }
 
-    // 3. Turnstile verification (per D-09)
-    const turnstileRes = await fetch(
-      "https://challenges.cloudflare.com/turnstile/v0/siteverify",
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          secret: process.env.TURNSTILE_SECRET_KEY,
-          response: turnstileToken,
-        }),
+    // 3. Turnstile verification (per D-09; conditional per FLAG-02)
+    const turnstileEnabled =
+      process.env.NEXT_PUBLIC_ENABLE_TURNSTILE !== "false";
+    if (turnstileEnabled) {
+      const turnstileRes = await fetch(
+        "https://challenges.cloudflare.com/turnstile/v0/siteverify",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            secret: process.env.TURNSTILE_SECRET_KEY,
+            response: turnstileToken,
+          }),
+        }
+      );
+      const turnstileData = await turnstileRes.json();
+      if (!turnstileData.success) {
+        return Response.json(
+          { error: "Verification failed" },
+          { status: 400 }
+        );
       }
-    );
-    const turnstileData = await turnstileRes.json();
-    if (!turnstileData.success) {
-      return Response.json({ error: "Verification failed" }, { status: 400 });
     }
 
     // 4. Send email via Resend (per D-15, D-16, D-17)

@@ -15,6 +15,8 @@ interface ContactFormProps {
 type FormStatus = "idle" | "submitting" | "success" | "error";
 
 export function ContactForm({ subdomain }: ContactFormProps) {
+  const turnstileEnabled =
+    process.env.NEXT_PUBLIC_ENABLE_TURNSTILE !== "false";
   const [status, setStatus] = useState<FormStatus>("idle");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -185,17 +187,19 @@ export function ContactForm({ subdomain }: ContactFormProps) {
                 onChange={(e) => setHoneypot(e.target.value)}
               />
 
-              {/* Invisible Turnstile — per D-09, D-11 */}
-              <Turnstile
-                ref={turnstileRef}
-                siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY!}
-                onSuccess={setTurnstileToken}
-                onExpire={() => {
-                  setTurnstileToken(null);
-                  turnstileRef.current?.reset();
-                }}
-                options={{ size: "invisible" }}
-              />
+              {/* Invisible Turnstile — per D-09, D-11; conditional per FLAG-01 */}
+              {turnstileEnabled && (
+                <Turnstile
+                  ref={turnstileRef}
+                  siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY!}
+                  onSuccess={setTurnstileToken}
+                  onExpire={() => {
+                    setTurnstileToken(null);
+                    turnstileRef.current?.reset();
+                  }}
+                  options={{ size: "invisible" }}
+                />
+              )}
 
               {/* Server error display */}
               {serverError && (

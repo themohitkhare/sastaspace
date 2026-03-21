@@ -1,0 +1,78 @@
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    ports:
+      - "${SERVER_PORT:-8080}:8080"
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      - CLAUDE_CODE_API_URL=http://claude-code-api:8000/v1
+      - CORS_ORIGINS=http://localhost:3000
+      - SASTASPACE_SITES_DIR=/data/sites
+    volumes:
+      - sites_data:/data/sites
+    networks:
+      - sastaspace
+    depends_on:
+      claude-code-api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./web
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      - NEXT_PUBLIC_BACKEND_URL=http://localhost:8080
+    networks:
+      - sastaspace
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+
+  claude-code-api:
+    build:
+      context: ./claude-code-api
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    env_file:
+      - path: .env
+        required: false
+    networks:
+      - sastaspace
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
+
+networks:
+  sastaspace:
+    driver: bridge
+
+volumes:
+  sites_data:
