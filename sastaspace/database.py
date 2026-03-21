@@ -185,12 +185,3 @@ async def list_sites(limit: int = 100) -> list[dict]:
     for d in docs:
         d.pop("_id", None)
     return docs
-
-
-async def count_recent_jobs(client_ip: str, window_seconds: int) -> int:
-    """Count jobs created by an IP within the last N seconds."""
-    cutoff = datetime.now(UTC).timestamp() - window_seconds
-    cutoff_iso = datetime.fromtimestamp(cutoff, tz=UTC).isoformat()
-    return await _get_db()["jobs"].count_documents(
-        {"client_ip": client_ip, "created_at": {"$gt": cutoff_iso}}
-    )

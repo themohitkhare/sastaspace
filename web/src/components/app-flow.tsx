@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect } from "react";
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "motion/react";
 import { HeroSection } from "@/components/landing/hero-section";
@@ -9,23 +9,8 @@ import { ProgressView } from "@/components/progress/progress-view";
 import { useRedesign } from "@/hooks/use-redesign";
 
 export function AppFlow() {
-  const { state, start, retry, reset } = useRedesign();
+  const { state, start, retry } = useRedesign();
   const router = useRouter();
-
-  const handleSubmit = useCallback(
-    (url: string) => {
-      start(url);
-    },
-    [start]
-  );
-
-  const handleRetry = useCallback(() => {
-    retry();
-  }, [retry]);
-
-  const handleReset = useCallback(() => {
-    reset();
-  }, [reset]);
 
   // Navigate to result page when done
   useEffect(() => {
@@ -44,7 +29,7 @@ export function AppFlow() {
           exit={{ opacity: 0, y: -20 }}
           transition={{ duration: 0.3, ease: "easeInOut" }}
         >
-          <HeroSection onSubmit={handleSubmit} />
+          <HeroSection onSubmit={start} />
           <section className="py-12 px-4">
             <HowItWorks />
           </section>
@@ -63,8 +48,7 @@ export function AppFlow() {
         >
           <ProgressView
             state={state}
-            onRetry={handleRetry}
-            onReset={handleReset}
+            onRetry={retry}
           />
         </motion.div>
       )}

@@ -81,14 +81,16 @@ def _validate_html(html: str) -> None:
         raise RedesignError("Response missing closing </html> tag — output appears to be truncated")
 
 
-def redesign(
+def _redesign_with_prompts(
     crawl_result: CrawlResult,
-    api_url: str = "http://localhost:8000/v1",
-    model: str = "claude-sonnet-4-5-20250929",
-    api_key: str = "claude-code",
+    system_prompt: str,
+    user_template: str,
+    max_tokens: int,
+    api_url: str,
+    model: str,
+    api_key: str,
 ) -> str:
-    """
-    Use the claude-code-api gateway to redesign a crawled website into a single HTML file.
+    """Internal: call the claude-code-api gateway with the given prompts.
 
     Raises:
         RedesignError: if crawl_result.error is set or Claude's output is invalid.
@@ -98,7 +100,7 @@ def redesign(
 
     client = OpenAI(base_url=api_url, api_key=api_key)
 
-    user_text = USER_PROMPT_TEMPLATE.format(
+    user_text = user_template.format(
         crawl_context=crawl_result.to_prompt_context(),
         title=crawl_result.title,
         meta_description=crawl_result.meta_description,
@@ -119,16 +121,33 @@ def redesign(
     response = client.chat.completions.create(
         model=model,
         messages=[
-            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_content},
         ],
-        max_tokens=16000,
+        max_tokens=max_tokens,
     )
 
     raw = response.choices[0].message.content or ""
     html = _clean_html(raw)
     _validate_html(html)
     return html
+
+
+def redesign(
+    crawl_result: CrawlResult,
+    api_url: str = "http://localhost:8000/v1",
+    model: str = "claude-sonnet-4-5-20250929",
+    api_key: str = "claude-code",
+) -> str:
+    """
+    Use the claude-code-api gateway to redesign a crawled website into a single HTML file.
+
+    Raises:
+        RedesignError: if crawl_result.error is set or Claude's output is invalid.
+    """
+    return _redesign_with_prompts(
+        crawl_result, SYSTEM_PROMPT, USER_PROMPT_TEMPLATE, 16000, api_url, model, api_key
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -293,39 +312,42 @@ def redesign_premium(
     Raises:
         RedesignError: if crawl_result.error is set or Claude's output is invalid.
     """
-    if crawl_result.error:
-        raise RedesignError(f"Cannot redesign — crawl failed: {crawl_result.error}")
-
-    client = OpenAI(base_url=api_url, api_key=api_key)
-
-    user_text = PREMIUM_USER_PROMPT_TEMPLATE.format(
-        crawl_context=crawl_result.to_prompt_context(),
-        title=crawl_result.title,
-        meta_description=crawl_result.meta_description,
-        colors=", ".join(crawl_result.colors[:10]) or "not detected",
-        fonts=", ".join(crawl_result.fonts[:5]) or "not detected",
+    return _redesign_with_prompts(
+        crawl_result,
+        PREMIUM_SYSTEM_PROMPT,
+        PREMIUM_USER_PROMPT_TEMPLATE,
+        20000,
+        api_url,
+        model,
+        api_key,
     )
 
-    user_content: list = []
-    if crawl_result.screenshot_base64:
-        user_content.append(
-            {
-                "type": "image_url",
-                "image_url": {"url": f"data:image/png;base64,{crawl_result.screenshot_base64}"},
-            }
+
+# ---------------------------------------------------------------------------
+# Unified redesign dispatcher
+# ---------------------------------------------------------------------------
+
+
+def run_redesign(
+    crawl_result: CrawlResult,
+    settings,
+    tier: str = "standard",
+    progress_callback: Callable[[str, dict], None] | None = None,
+) -> str:
+    """Dispatch to the appropriate redesign function based on settings and tier."""
+    if settings.use_agno_pipeline:
+        return agno_redesign(crawl_result, settings, tier, progress_callback)
+    elif tier == "premium":
+        return redesign_premium(
+            crawl_result,
+            settings.claude_code_api_url,
+            settings.claude_model,
+            settings.claude_code_api_key,
         )
-    user_content.append({"type": "text", "text": user_text})
-
-    response = client.chat.completions.create(
-        model=model,
-        messages=[
-            {"role": "system", "content": PREMIUM_SYSTEM_PROMPT},
-            {"role": "user", "content": user_content},
-        ],
-        max_tokens=20000,
-    )
-
-    raw = response.choices[0].message.content or ""
-    html = _clean_html(raw)
-    _validate_html(html)
-    return html
+    else:
+        return redesign(
+            crawl_result,
+            settings.claude_code_api_url,
+            settings.claude_model,
+            settings.claude_code_api_key,
+        )

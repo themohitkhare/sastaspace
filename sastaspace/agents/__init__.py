@@ -2,7 +2,6 @@
 """Agno multi-agent redesign pipeline for SastaSpace."""
 
 from sastaspace.agents.models import (
-    AgnoRedesignResult,
     BrandProfile,
     ColorPalette,
     Component,
@@ -16,7 +15,6 @@ from sastaspace.agents.models import (
 from sastaspace.agents.pipeline import run_redesign_pipeline
 
 __all__ = [
-    "AgnoRedesignResult",
     "BrandProfile",
     "ColorPalette",
     "Component",

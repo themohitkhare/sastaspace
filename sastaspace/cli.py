@@ -204,43 +204,6 @@ def serve_cmd(sites_dir: str | None) -> None:
     )
 
 
-@main.command("worker")
-@click.option("--name", default=None, help="Worker name (defaults to worker-<pid>)")
-def worker_cmd(name: str | None) -> None:
-    """Start a Redis Stream worker to process redesign jobs."""
-    import os
-
-    cfg = _load_config()
-
-    from sastaspace.database import init_db, set_db_path
-    from sastaspace.jobs import JobService, redesign_handler
-
-    worker_name = name or f"worker-{os.getpid()}"
-
-    async def run():
-        set_db_path(cfg.db_path)
-        await init_db()
-
-        job_service = JobService(redis_url=cfg.redis_url)
-        await job_service.connect()
-
-        console.print(f"[bold green]Worker {worker_name} started[/bold green]")
-        console.print(f"Redis: {cfg.redis_url}")
-        console.print("Waiting for jobs... Press Ctrl+C to stop.\n")
-
-        try:
-            await job_service.process_messages(
-                consumer_name=worker_name,
-                handler=redesign_handler,
-            )
-        except KeyboardInterrupt:
-            pass
-        finally:
-            await job_service.close()
-
-    asyncio.run(run())
-
-
 def _load_config():
     from sastaspace.config import Settings
 

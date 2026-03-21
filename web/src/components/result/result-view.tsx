@@ -6,16 +6,12 @@ import { ContactForm } from "@/components/result/contact-form";
 
 interface ResultViewProps {
   subdomain: string;
-  isShareable?: boolean;
 }
 
-export function ResultView({ subdomain, isShareable }: ResultViewProps) {
+export function ResultView({ subdomain }: ResultViewProps) {
   const domain = subdomain.replace(/-/g, ".");
   const originalUrl = `https://${domain}`;
-
-  const headerText = isShareable
-    ? `${domain} has been redesigned`
-    : `Your new ${domain} is ready`;
+  const headerText = `${domain} has been redesigned`;
 
   return (
     <motion.div

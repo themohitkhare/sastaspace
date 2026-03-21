@@ -2,7 +2,6 @@
 
 from sastaspace.database import (
     JobStatus,
-    count_recent_jobs,
     create_job,
     get_job,
     init_db,
@@ -85,18 +84,6 @@ async def test_register_and_list_sites():
     sites = await list_sites()
     assert len(sites) == 1
     assert sites[0]["subdomain"] == "example-com"
-
-
-async def test_count_recent_jobs():
-    await create_job(job_id="c1", url="https://a.com", client_ip="5.5.5.5")
-    await create_job(job_id="c2", url="https://b.com", client_ip="5.5.5.5")
-    await create_job(job_id="c3", url="https://c.com", client_ip="6.6.6.6")
-
-    count = await count_recent_jobs("5.5.5.5", window_seconds=3600)
-    assert count == 2
-
-    count_other = await count_recent_jobs("6.6.6.6", window_seconds=3600)
-    assert count_other == 1
 
 
 async def test_create_job_with_tier():

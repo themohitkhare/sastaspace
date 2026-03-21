@@ -7,23 +7,20 @@ import { StepIndicator } from "@/components/progress/step-indicator";
 import { ActivityFeed } from "@/components/progress/activity-feed";
 import { DiscoveryGrid } from "@/components/progress/discovery-grid";
 import { SiteScreenshot } from "@/components/progress/site-screenshot";
+import { STEPS } from "@/hooks/use-redesign";
 import type { RedesignState } from "@/hooks/use-redesign";
 
 const STEP_LABELS: Record<string, (domain: string) => string> = {
-  crawling: (d) => `Analyzing ${d}`,
-  redesigning: () => "Redesigning your site with AI",
-  deploying: (d) => `Preparing your new ${d}`,
+  ...Object.fromEntries(STEPS.map((s) => [s.name, s.label])),
   done: () => "Your redesign is ready!",
 };
 
 interface ProgressViewProps {
   state: RedesignState & { status: "progress" | "error" | "connecting" };
   onRetry: () => void;
-  onReset: () => void;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-export function ProgressView({ state, onRetry, onReset }: ProgressViewProps) {
+export function ProgressView({ state, onRetry }: ProgressViewProps) {
   if (state.status === "error") {
     const isRateLimit =
       state.message.toLowerCase().includes("rate limit") ||
@@ -55,7 +52,6 @@ export function ProgressView({ state, onRetry, onReset }: ProgressViewProps) {
     );
   }
 
-  // Connecting or progress state
   const isConnecting = state.status === "connecting";
   const domain = isConnecting ? "" : state.domain;
   const currentStep = isConnecting ? "connecting" : state.currentStep;

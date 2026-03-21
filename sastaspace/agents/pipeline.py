@@ -612,12 +612,12 @@ def run_redesign_pipeline(
 
     try:
         # Step 1: Crawl Analyst
-        logger.info("Pipeline step 1/4: CrawlAnalyst")
+        logger.info("Pipeline step 1/7: CrawlAnalyst")
         _emit("crawl_analyst")
         site_analysis = _run_crawl_analyst(crawl_result, settings)
 
         # Step 2: Design Strategist
-        logger.info("Pipeline step 2/5: DesignStrategist")
+        logger.info("Pipeline step 2/7: DesignStrategist")
         _emit("design_strategist")
         design_brief = _run_design_strategist(site_analysis, crawl_result, settings)
 
@@ -638,7 +638,7 @@ def run_redesign_pipeline(
 
         for attempt in range(1, MAX_QUALITY_RETRIES + 2):  # max retries + 1 initial
             logger.info(
-                "Pipeline step 3/4: HTMLGenerator (attempt %d/%d)",
+                "Pipeline step 5/7: HTMLGenerator (attempt %d/%d)",
                 attempt,
                 MAX_QUALITY_RETRIES + 1,
             )
@@ -652,7 +652,7 @@ def run_redesign_pipeline(
                 copywriter_output,
             )
 
-            logger.info("Pipeline step 4/4: QualityReviewer (attempt %d)", attempt)
+            logger.info("Pipeline step 6/7: QualityReviewer (attempt %d)", attempt)
             _emit("quality_reviewer")
             quality_report = _run_quality_reviewer(html, design_brief, site_analysis, settings)
 
@@ -688,7 +688,7 @@ def run_redesign_pipeline(
                 ).inc()
 
         # Step 6: Normalizer — ensure cohesive design
-        logger.info("Pipeline step 6/6: Normalizer")
+        logger.info("Pipeline step 7/7: Normalizer")
         _emit("normalizer")
         html = _run_normalizer(html, design_brief, settings)
 

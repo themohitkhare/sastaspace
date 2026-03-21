@@ -175,16 +175,3 @@ class QualityReport(BaseModel):
     issues: list[QualityIssue] = Field(default_factory=list)
     feedback_for_regeneration: str = ""  # specific instructions if passed=False
     strengths: list[str] = Field(default_factory=list)
-
-
-# --- Pipeline result wrapper ---
-
-
-class AgnoRedesignResult(BaseModel):
-    """Final result from the Agno multi-agent pipeline."""
-
-    html: str
-    site_analysis: SiteAnalysis | None = None
-    design_brief: DesignBrief | None = None
-    quality_report: QualityReport | None = None
-    retry_count: int = 0

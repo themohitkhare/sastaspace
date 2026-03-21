@@ -21,12 +21,9 @@ spec:
         image: localhost:32000/sastaspace-frontend:latest
         securityContext:
           allowPrivilegeEscalation: false
-          readOnlyRootFilesystem: true
         ports:
         - containerPort: 3000
-        env:
-        - name: NEXT_PUBLIC_BACKEND_URL
-          value: "https://api.sastaspace.com"
+        # NEXT_PUBLIC_BACKEND_URL is set via --build-arg at image build time (see CI workflow)
         readinessProbe:
           httpGet:
             path: /

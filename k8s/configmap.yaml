@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: sastaspace-config
+  namespace: sastaspace
+data:
+  CLAUDE_CODE_API_URL: "http://192.168.0.38:8000/v1"
+  SASTASPACE_SITES_DIR: "/data/sites"
+  REDIS_URL: "redis://redis:6379"
+  MONGODB_URL: "mongodb://mongodb:27017"
+  MONGODB_DB: "sastaspace"

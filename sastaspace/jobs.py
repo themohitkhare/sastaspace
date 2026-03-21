@@ -347,36 +347,15 @@ async def redesign_handler(
             pass  # never crash the pipeline thread over a UI event
 
     # Choose redesign function based on tier / pipeline setting
-    if settings.use_agno_pipeline:
-        from sastaspace.redesigner import agno_redesign
+    from sastaspace.redesigner import run_redesign
 
-        html = await asyncio.to_thread(
-            agno_redesign,
-            crawl_result,
-            settings,
-            tier,
-            _on_agent_progress,
-        )
-    elif tier == "premium":
-        from sastaspace.redesigner import redesign_premium
-
-        html = await asyncio.to_thread(
-            redesign_premium,
-            crawl_result,
-            api_url=settings.claude_code_api_url,
-            model=settings.claude_model,
-            api_key=settings.claude_code_api_key,
-        )
-    else:
-        from sastaspace.redesigner import redesign
-
-        html = await asyncio.to_thread(
-            redesign,
-            crawl_result,
-            api_url=settings.claude_code_api_url,
-            model=settings.claude_model,
-            api_key=settings.claude_code_api_key,
-        )
+    html = await asyncio.to_thread(
+        run_redesign,
+        crawl_result,
+        settings,
+        tier,
+        _on_agent_progress,
+    )
 
     redesign_duration = _time.monotonic() - redesign_start
     logger.info(

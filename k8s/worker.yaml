@@ -14,10 +14,6 @@ spec:
     metadata:
       labels:
         app: worker
-      annotations:
-        prometheus.io/scrape: "true"
-        prometheus.io/port: "8080"
-        prometheus.io/path: "/metrics"
     spec:
       securityContext:
         runAsNonRoot: true
@@ -30,17 +26,9 @@ spec:
         env:
         - name: MODE
           value: "worker"
-        - name: CLAUDE_CODE_API_URL
-          value: "http://192.168.0.38:8000/v1"
-        - name: SASTASPACE_SITES_DIR
-          value: "/data/sites"
-        - name: REDIS_URL
-          value: "redis://redis:6379"
-        - name: MONGODB_URL
-          value: "mongodb://mongodb:27017"
-        - name: MONGODB_DB
-          value: "sastaspace"
         envFrom:
+        - configMapRef:
+            name: sastaspace-config
         - secretRef:
             name: sastaspace-env
             optional: true

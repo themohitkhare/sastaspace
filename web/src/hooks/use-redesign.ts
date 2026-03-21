@@ -32,7 +32,7 @@ export type RedesignState =
   | { status: "done"; subdomain: string; originalUrl: string; domain: string; tier: RedesignTier }
   | { status: "error"; message: string; url: string };
 
-const STEPS = [
+export const STEPS = [
   { name: "crawling", label: (d: string) => `Analyzing ${d}` },
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   { name: "redesigning", label: (_d: string) => "Redesigning your site with AI" },
@@ -53,6 +53,10 @@ const STEP_INTERMEDIATE_VALUES: Record<string, number> = {
   redesigning: 50,
   deploying: 60,
 };
+
+const STEP_NAMES = STEPS.map((s) => s.name);
+
+const GENERIC_ERROR_MESSAGE = "We couldn't redesign that site right now. This can happen with very large or complex websites.";
 
 export function useRedesign() {
   const [state, setState] = useState<RedesignState>({ status: "idle" });
@@ -81,14 +85,12 @@ export function useRedesign() {
         for await (const event of streamJobStatus(jobId, controller.signal)) {
           if (controller.signal.aborted) return;
 
-          const stepNames = STEPS.map((s) => s.name);
-
           if (
             event.event === "crawling" ||
             event.event === "redesigning" ||
             event.event === "deploying"
           ) {
-            const eventIndex = stepNames.indexOf(event.event);
+            const eventIndex = STEP_NAMES.indexOf(event.event);
             const updatedSteps = makeInitialSteps(domain).map((step, i) => {
               if (i < eventIndex) {
                 return { ...step, value: 100, status: "done" as const };
@@ -115,7 +117,6 @@ export function useRedesign() {
               screenshot: prev.status === "progress" ? prev.screenshot : undefined,
             }));
           } else if (event.event === "done") {
-            // Set all steps to done
             const doneSteps = makeInitialSteps(domain).map((step) => ({
               ...step,
               value: 100,
@@ -189,8 +190,7 @@ export function useRedesign() {
         if (controller.signal.aborted) return;
         setState({
           status: "error",
-          message:
-            "We couldn't redesign that site right now. This can happen with very large or complex websites.",
+          message: GENERIC_ERROR_MESSAGE,
           url,
         });
       }
@@ -226,8 +226,7 @@ export function useRedesign() {
         if (controller.signal.aborted) return;
         setState({
           status: "error",
-          message:
-            "We couldn't redesign that site right now. This can happen with very large or complex websites.",
+          message: GENERIC_ERROR_MESSAGE,
           url,
         });
       }

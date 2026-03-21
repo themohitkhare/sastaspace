@@ -95,7 +95,6 @@ export function ContactForm({ subdomain }: ContactFormProps) {
               Like what you see? Let&apos;s build the real thing.
             </h2>
             <form onSubmit={handleSubmit} noValidate className="w-full max-w-xl space-y-4">
-              {/* Name field */}
               <div>
                 <Label htmlFor="contact-name" className="mb-2">
                   Name
@@ -120,7 +119,6 @@ export function ContactForm({ subdomain }: ContactFormProps) {
                 )}
               </div>
 
-              {/* Email field */}
               <div>
                 <Label htmlFor="contact-email" className="mb-2">
                   Email

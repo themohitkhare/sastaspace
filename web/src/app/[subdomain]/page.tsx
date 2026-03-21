@@ -30,5 +30,5 @@ export default async function ResultPage({
   params: Promise<{ subdomain: string }>;
 }) {
   const { subdomain } = await params;
-  return <ResultView subdomain={subdomain} isShareable />;
+  return <ResultView subdomain={subdomain} />;
 }

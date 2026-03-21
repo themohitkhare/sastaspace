@@ -10,7 +10,6 @@ import socket
 import subprocess
 import sys
 import time
-import time as time_mod
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -39,7 +38,7 @@ from sastaspace.database import (
 )
 from sastaspace.deployer import deploy
 from sastaspace.jobs import JobService
-from sastaspace.redesigner import redesign
+from sastaspace.redesigner import run_redesign
 
 # Module-level job service reference — updated during lifespan, patchable in tests
 svc: JobService | None = None
@@ -140,7 +139,7 @@ def make_app(sites_dir: Path) -> FastAPI:
         return ip in ("127.0.0.1", "::1", "::ffff:127.0.0.1")
 
     def is_rate_limited(ip: str) -> tuple[bool, int]:
-        now = time_mod.time()
+        now = time.time()
         timestamps = _rate_limit_store.get(ip, [])
         timestamps = [t for t in timestamps if t > now - settings.rate_limit_window_seconds]
         _rate_limit_store[ip] = timestamps
@@ -150,11 +149,7 @@ def make_app(sites_dir: Path) -> FastAPI:
         return (False, 0)
 
     def record_request(ip: str) -> None:
-        _rate_limit_store.setdefault(ip, []).append(time_mod.time())
-
-    def _sse_event(data_str: str, event: str) -> bytes:
-        """Format a single SSE event as bytes."""
-        return format_sse_event(data_str=data_str, event=event)
+        _rate_limit_store.setdefault(ip, []).append(time.time())
 
     # ---- SSE stream (inline fallback when Redis is unavailable) ----
 
@@ -176,7 +171,7 @@ def make_app(sites_dir: Path) -> FastAPI:
                     "message": "Crawling your site...",
                     "progress": 10,
                 }
-                yield _sse_event(json.dumps(crawling_data), "crawling")
+                yield format_sse_event(data_str=json.dumps(crawling_data), event="crawling")
 
                 await update_job(
                     job_id, status=JobStatus.CRAWLING.value, progress=10, message="Crawling..."
@@ -185,9 +180,9 @@ def make_app(sites_dir: Path) -> FastAPI:
                 if crawl_result.error:
                     err_msg = "Could not reach that website. Check the URL and try again."
                     await update_job(job_id, status=JobStatus.FAILED.value, error=err_msg)
-                    yield _sse_event(
-                        json.dumps({"job_id": job_id, "error": err_msg}),
-                        "error",
+                    yield format_sse_event(
+                        data_str=json.dumps({"job_id": job_id, "error": err_msg}),
+                        event="error",
                     )
                     return
 
@@ -197,7 +192,7 @@ def make_app(sites_dir: Path) -> FastAPI:
                     "message": "Claude is redesigning...",
                     "progress": 40,
                 }
-                yield _sse_event(json.dumps(redesigning_data), "redesigning")
+                yield format_sse_event(data_str=json.dumps(redesigning_data), event="redesigning")
 
                 await update_job(
                     job_id,
@@ -206,33 +201,7 @@ def make_app(sites_dir: Path) -> FastAPI:
                     message="Redesigning...",
                 )
 
-                if settings.use_agno_pipeline:
-                    from sastaspace.redesigner import agno_redesign
-
-                    html = await asyncio.to_thread(
-                        agno_redesign,
-                        crawl_result,
-                        settings,
-                        tier,
-                    )
-                elif tier == "premium":
-                    from sastaspace.redesigner import redesign_premium
-
-                    html = await asyncio.to_thread(
-                        redesign_premium,
-                        crawl_result,
-                        settings.claude_code_api_url,
-                        settings.claude_model,
-                        settings.claude_code_api_key,
-                    )
-                else:
-                    html = await asyncio.to_thread(
-                        redesign,
-                        crawl_result,
-                        settings.claude_code_api_url,
-                        settings.claude_model,
-                        settings.claude_code_api_key,
-                    )
+                html = await asyncio.to_thread(run_redesign, crawl_result, settings, tier)
 
                 # AI-generated HTML is trusted output — do not sanitize with nh3
                 # as it strips <script> tags and event handlers that are part
@@ -244,7 +213,7 @@ def make_app(sites_dir: Path) -> FastAPI:
                     "message": "Deploying your redesign...",
                     "progress": 80,
                 }
-                yield _sse_event(json.dumps(deploying_data), "deploying")
+                yield format_sse_event(data_str=json.dumps(deploying_data), event="deploying")
 
                 await update_job(
                     job_id,
@@ -271,7 +240,7 @@ def make_app(sites_dir: Path) -> FastAPI:
                     subdomain=result.subdomain,
                     html_path=str(result.index_path),
                 )
-                yield _sse_event(json.dumps(done_data), "done")
+                yield format_sse_event(data_str=json.dumps(done_data), event="done")
             except Exception:
                 err_data = {
                     "job_id": job_id,
@@ -282,7 +251,7 @@ def make_app(sites_dir: Path) -> FastAPI:
                     status=JobStatus.FAILED.value,
                     error="Redesign service unavailable",
                 )
-                yield _sse_event(json.dumps(err_data), "error")
+                yield format_sse_event(data_str=json.dumps(err_data), event="error")
                 return
 
     # ---- SSE stream via Redis Pub/Sub ----
@@ -295,7 +264,7 @@ def make_app(sites_dir: Path) -> FastAPI:
         async for update in svc.subscribe_job(job_id):
             event_name = update.get("event", "message")
             data = update.get("data", update)
-            yield _sse_event(json.dumps(data), event_name)
+            yield format_sse_event(data_str=json.dumps(data), event=event_name)
 
     # ---- API Endpoints ----
 
@@ -336,7 +305,7 @@ def make_app(sites_dir: Path) -> FastAPI:
                         "url": f"/{existing['subdomain']}/",
                         "subdomain": existing["subdomain"],
                     }
-                    yield _sse_event(json.dumps(done_data), "done")
+                    yield format_sse_event(data_str=json.dumps(done_data), event="done")
 
                 return EventSourceResponse(cached_stream())
         except Exception:
@@ -403,7 +372,7 @@ def make_app(sites_dir: Path) -> FastAPI:
                             "progress": 100,
                         }
                     )
-                    yield _sse_event(payload, "done")
+                    yield format_sse_event(data_str=payload, event="done")
                 else:
                     payload = json.dumps(
                         {
@@ -411,7 +380,7 @@ def make_app(sites_dir: Path) -> FastAPI:
                             "error": job.get("error", "Job failed"),
                         }
                     )
-                    yield _sse_event(payload, "error")
+                    yield format_sse_event(data_str=payload, event="error")
 
             return EventSourceResponse(_terminal())
 

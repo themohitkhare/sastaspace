@@ -86,13 +86,9 @@ def redesign_client(tmp_sites, mock_crawl_result, mock_deploy_result):
             return_value=mock_crawl_result,
         ) as m_crawl,
         patch(
-            "sastaspace.server.redesign",
-            return_value=mock_html,
-        ) as m_redesign,
-        patch(
             "sastaspace.redesigner.agno_redesign",
             return_value=mock_html,
-        ),
+        ) as m_redesign,
         patch(
             "sastaspace.server.deploy",
             return_value=mock_deploy_result,

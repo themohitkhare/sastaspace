@@ -3,13 +3,10 @@ FROM node:22-alpine AS builder
 
 WORKDIR /app
 
-# Copy dependency files first (cache layer)
 COPY package.json package-lock.json ./
 
-# Install deps
 RUN npm ci
 
-# Copy source
 COPY . .
 
 # Build-time env vars (NEXT_PUBLIC_* are inlined at build, not runtime)
@@ -28,12 +25,8 @@ ENV NODE_ENV=production
 ENV HOSTNAME=0.0.0.0
 ENV PORT=3000
 
-# Upgrade Alpine packages and npm to patch CVEs:
-# - zlib CVE-2026-22184 (fixed in 1.3.2-r0)
-# - glob/minimatch/tar CVEs in npm's bundled tools (fixed in npm@latest)
-RUN apk upgrade --no-cache && npm install -g npm@latest
+RUN apk upgrade --no-cache
 
-# Copy standalone output (owned by root during build)
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/public ./public
