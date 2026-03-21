@@ -79,7 +79,7 @@ Plans:
 
 Plans:
 - [x] 04-01-PLAN.md — Contact form API route (Resend + Turnstile + honeypot), ContactForm component, ResultView integration
-- [ ] 04-02-PLAN.md — Mobile polish pass at 375px + human verification of contact form flow
+- [x] 04-02-PLAN.md — Mobile polish pass at 375px + human verification of contact form flow
 
 ## Progress
 
@@ -91,4 +91,4 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4
 | 1. Secure API Foundation | 2/2 | Complete | - |
 | 2. Next.js Scaffold + Wiring | 2/2 | Complete | - |
 | 3. Core UI -- Landing + Progress + Result | 3/3 | Complete | - |
-| 4. Contact Form + Polish | 0/2 | Planning complete | - |
+| 4. Contact Form + Polish | 2/2 | Complete | - |
