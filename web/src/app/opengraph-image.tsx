@@ -15,14 +15,31 @@ export default function OgImage() {
           width: "100%",
           height: "100%",
           display: "flex",
+          flexDirection: "column",
           alignItems: "center",
           justifyContent: "center",
-          background: "linear-gradient(135deg, #111111 0%, #1a1a1a 50%, #111111 100%)",
-          fontFamily: "Inter, sans-serif",
+          background: "#0a0a0a",
+          fontFamily: "Inter, system-ui, sans-serif",
           position: "relative",
+          overflow: "hidden",
         }}
       >
-        {/* Subtle grid pattern overlay */}
+        {/* Radial gradient bloom — indigo center glow */}
+        <div
+          style={{
+            position: "absolute",
+            top: "-200px",
+            left: "50%",
+            width: "900px",
+            height: "900px",
+            borderRadius: "50%",
+            background: "radial-gradient(circle, rgba(99,102,241,0.15) 0%, rgba(99,102,241,0.04) 40%, transparent 70%)",
+            transform: "translateX(-50%)",
+            display: "flex",
+          }}
+        />
+
+        {/* Grid pattern — visible but subtle */}
         <div
           style={{
             position: "absolute",
@@ -31,95 +48,82 @@ export default function OgImage() {
             right: 0,
             bottom: 0,
             display: "flex",
-            opacity: 0.03,
+            opacity: 0.06,
             backgroundImage:
-              "linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)",
-            backgroundSize: "40px 40px",
+              "linear-gradient(rgba(255,255,255,0.15) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.15) 1px, transparent 1px)",
+            backgroundSize: "60px 60px",
           }}
         />
 
-        {/* Left side: Logo mark */}
+        {/* Small S mark as supporting element */}
         <div
           style={{
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            marginRight: "60px",
+            width: "56px",
+            height: "56px",
+            background: "linear-gradient(135deg, #7c3aed 0%, #4f46e5 50%, #3730a3 100%)",
+            borderRadius: "12px",
+            marginBottom: "32px",
           }}
         >
           <svg
-            width="180"
-            height="180"
+            width="32"
+            height="32"
             viewBox="0 0 100 100"
-            fill="none"
             xmlns="http://www.w3.org/2000/svg"
           >
             <path
-              d="M70 25C70 25 65 10 50 10C35 10 25 22 25 32C25 52 70 42 70 62C70 75 58 90 43 90C28 90 22 75 22 75"
-              stroke="#6366f1"
-              strokeWidth="9"
+              d="M68 28C68 14 56 6 44 6C32 6 22 14 22 26C22 38 32 42 44 46C56 50 68 54 68 66C68 78 56 86 44 86C32 86 22 78 22 64"
+              stroke="rgba(255,255,255,0.95)"
+              strokeWidth="16"
               strokeLinecap="round"
               fill="none"
             />
-            <circle cx="70" cy="25" r="5" fill="#e0e0e0" />
           </svg>
         </div>
 
-        {/* Right side: Text */}
+        {/* Main title — large, gradient-like appearance */}
         <div
           style={{
+            fontSize: "88px",
+            fontWeight: 800,
+            color: "#fafafa",
+            letterSpacing: "-4px",
+            lineHeight: 1,
             display: "flex",
-            flexDirection: "column",
-            alignItems: "flex-start",
           }}
         >
-          <div
-            style={{
-              fontSize: "64px",
-              fontWeight: 700,
-              color: "#fafafa",
-              letterSpacing: "-2px",
-              lineHeight: 1.1,
-            }}
-          >
-            SastaSpace
-          </div>
-          <div
-            style={{
-              fontSize: "24px",
-              color: "#888888",
-              marginTop: "12px",
-              maxWidth: "420px",
-              lineHeight: 1.4,
-            }}
-          >
-            See your website redesigned by AI in 60 seconds
-          </div>
-          {/* Blue accent line */}
-          <div
-            style={{
-              width: "60px",
-              height: "3px",
-              background: "#6366f1",
-              marginTop: "24px",
-              borderRadius: "2px",
-            }}
-          />
+          SastaSpace
         </div>
 
-        {/* Bottom-right subtle branding */}
+        {/* Tagline — larger, more readable */}
+        <div
+          style={{
+            fontSize: "30px",
+            fontWeight: 400,
+            color: "#9ca3af",
+            marginTop: "20px",
+            letterSpacing: "-0.5px",
+            display: "flex",
+          }}
+        >
+          See your website redesigned by AI in 60 seconds
+        </div>
+
+        {/* Bottom gradient line — premium glint */}
         <div
           style={{
             position: "absolute",
-            bottom: "24px",
-            right: "32px",
-            fontSize: "14px",
-            color: "#555555",
+            bottom: "0",
+            left: "0",
+            right: "0",
+            height: "2px",
+            background: "linear-gradient(90deg, transparent 0%, #6366f1 30%, #8b5cf6 50%, #6366f1 70%, transparent 100%)",
             display: "flex",
           }}
-        >
-          sastaspace.com
-        </div>
+        />
       </div>
     ),
     {

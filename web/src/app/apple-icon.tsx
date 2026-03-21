@@ -16,27 +16,38 @@ export default function AppleIcon() {
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          background: "linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%)",
+          background: "linear-gradient(135deg, #7c3aed 0%, #4f46e5 50%, #3730a3 100%)",
           borderRadius: "36px",
+          position: "relative",
         }}
       >
+        {/* Inner glow for material depth */}
+        <div
+          style={{
+            position: "absolute",
+            top: "1px",
+            left: "1px",
+            right: "1px",
+            bottom: "1px",
+            borderRadius: "35px",
+            border: "1px solid rgba(255,255,255,0.12)",
+            display: "flex",
+          }}
+        />
         <svg
-          width="120"
-          height="120"
+          width="110"
+          height="110"
           viewBox="0 0 100 100"
-          fill="none"
           xmlns="http://www.w3.org/2000/svg"
         >
-          {/* Stylized S lettermark */}
+          {/* Bold filled S — geometric, balanced */}
           <path
-            d="M70 25C70 25 65 10 50 10C35 10 25 22 25 32C25 52 70 42 70 62C70 75 58 90 43 90C28 90 22 75 22 75"
-            stroke="#6366f1"
-            strokeWidth="10"
+            d="M68 28C68 14 56 6 44 6C32 6 22 14 22 26C22 38 32 42 44 46C56 50 68 54 68 66C68 78 56 86 44 86C32 86 22 78 22 64"
+            stroke="rgba(255,255,255,0.95)"
+            strokeWidth="14"
             strokeLinecap="round"
             fill="none"
           />
-          {/* Accent dot */}
-          <circle cx="70" cy="25" r="5" fill="#e0e0e0" />
         </svg>
       </div>
     ),

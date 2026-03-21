@@ -7,18 +7,18 @@ export default function manifest(): MetadataRoute.Manifest {
     description: "See your website redesigned by AI in 60 seconds",
     start_url: "/",
     display: "standalone",
-    background_color: "#1a1a1a",
-    theme_color: "#1a1a1a",
+    background_color: "#0a0a0a",
+    theme_color: "#4f46e5",
     icons: [
       {
-        src: "/icon-192.png",
+        src: "/icon-192.svg",
         sizes: "192x192",
-        type: "image/png",
+        type: "image/svg+xml",
       },
       {
-        src: "/icon-512.png",
+        src: "/icon-512.svg",
         sizes: "512x512",
-        type: "image/png",
+        type: "image/svg+xml",
       },
     ],
   };
