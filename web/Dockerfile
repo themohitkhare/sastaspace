@@ -25,7 +25,8 @@ ENV NODE_ENV=production
 ENV HOSTNAME=0.0.0.0
 ENV PORT=3000
 
-RUN apk upgrade --no-cache
+# Patch Alpine CVEs and remove npm (not needed at runtime — eliminates bundled CVEs)
+RUN apk upgrade --no-cache && npm cache clean --force && rm -rf /usr/local/lib/node_modules/npm /usr/local/bin/npm /usr/local/bin/npx
 
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
