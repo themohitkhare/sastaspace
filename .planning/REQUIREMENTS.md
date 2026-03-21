@@ -19,12 +19,12 @@ Requirements for production ship. Each maps to roadmap phases.
 
 ### Testing
 
-- [ ] **TEST-01**: E2E Playwright test loads landing page and verifies hero section, URL input, and how-it-works section render
-- [ ] **TEST-02**: E2E test submits an invalid URL and verifies inline validation error appears
-- [ ] **TEST-03**: E2E test submits a valid URL and verifies progress view appears with step indicators
-- [ ] **TEST-04**: E2E test verifies result page renders with iframe preview and contact form
-- [ ] **TEST-05**: E2E test verifies contact form validation (empty submit shows errors)
-- [ ] **TEST-06**: E2E tests run in Docker via `docker compose run tests` or equivalent
+- [x] **TEST-01**: E2E Playwright test loads landing page and verifies hero section, URL input, and how-it-works section render
+- [x] **TEST-02**: E2E test submits an invalid URL and verifies inline validation error appears
+- [x] **TEST-03**: E2E test submits a valid URL and verifies progress view appears with step indicators
+- [x] **TEST-04**: E2E test verifies result page renders with iframe preview and contact form
+- [x] **TEST-05**: E2E test verifies contact form validation (empty submit shows errors)
+- [x] **TEST-06**: E2E tests run in Docker via `docker compose run tests` or equivalent
 
 ### Feature Flags
 
@@ -80,12 +80,12 @@ Requirements for production ship. Each maps to roadmap phases.
 | FLAG-02 | Phase 6 | Complete |
 | ASSET-01 | Phase 7 | Pending |
 | ASSET-02 | Phase 7 | Pending |
-| TEST-01 | Phase 8 | Pending |
-| TEST-02 | Phase 8 | Pending |
-| TEST-03 | Phase 8 | Pending |
-| TEST-04 | Phase 8 | Pending |
-| TEST-05 | Phase 8 | Pending |
-| TEST-06 | Phase 8 | Pending |
+| TEST-01 | Phase 8 | Complete |
+| TEST-02 | Phase 8 | Complete |
+| TEST-03 | Phase 8 | Complete |
+| TEST-04 | Phase 8 | Complete |
+| TEST-05 | Phase 8 | Complete |
+| TEST-06 | Phase 8 | Complete |
 
 **Coverage:**
 - v2 requirements: 21 total
