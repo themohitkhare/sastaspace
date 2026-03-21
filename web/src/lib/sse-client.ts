@@ -8,7 +8,7 @@ export type SSEEvent = {
 /** Submit a redesign request. Returns job_id (Redis path) or throws. */
 export async function submitRedesign(
   url: string,
-  tier: "standard" | "premium" = "standard",
+  tier: "free" | "standard" | "premium" = "free",
   signal?: AbortSignal
 ): Promise<string> {
   const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:8080"
