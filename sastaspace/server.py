@@ -312,7 +312,43 @@ def make_app(sites_dir: Path) -> FastAPI:
 
     @app.post("/redesign")
     async def redesign_endpoint(body: RedesignRequest, request: Request):
+        from sastaspace.database import find_site_by_url_hash
+        from sastaspace.urls import is_valid_url, normalize_url, url_hash
+
         ip = get_client_ip(request)
+
+        # Validate and normalize URL
+        valid, normalized_or_error = is_valid_url(body.url)
+        if not valid:
+            return JSONResponse(
+                status_code=400,
+                content={"error": normalized_or_error},
+            )
+        body.url = normalized_or_error
+
+        # Check for existing redesign (dedup by URL hash)
+        uhash = url_hash(body.url)
+        try:
+            existing = await find_site_by_url_hash(uhash)
+            if existing and existing.get("subdomain"):
+                logger.info(
+                    "DEDUP HIT | url=%s hash=%s subdomain=%s",
+                    body.url, uhash, existing["subdomain"],
+                )
+                # Return existing redesign immediately as SSE done event
+                async def cached_stream():
+                    done_data = {
+                        "job_id": "cached",
+                        "message": "Done!",
+                        "progress": 100,
+                        "url": f"/{existing['subdomain']}/",
+                        "subdomain": existing["subdomain"],
+                    }
+                    yield _sse_event(json.dumps(done_data), "done")
+
+                return EventSourceResponse(cached_stream())
+        except Exception:
+            pass  # DB unavailable — proceed with redesign
 
         # Validate tier
         tier = body.tier if body.tier in ("standard", "premium") else "standard"

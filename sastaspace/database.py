@@ -47,6 +47,7 @@ async def init_db() -> None:
     await jobs.create_index("client_ip")
     sites = db["sites"]
     await sites.create_index("subdomain", unique=True)
+    await sites.create_index("url_hash")
     await sites.create_index("created_at")
 
 
@@ -148,24 +149,33 @@ async def register_site(
     job_id: str,
     html_path: str,
     tier: str = "standard",
+    url_hash: str = "",
 ) -> None:
     """Register a deployed site (upsert by subdomain)."""
     now = datetime.now(UTC).isoformat()
+    doc = {
+        "subdomain": subdomain,
+        "original_url": original_url,
+        "job_id": job_id,
+        "tier": tier,
+        "html_path": html_path,
+        "updated_at": now,
+    }
+    if url_hash:
+        doc["url_hash"] = url_hash
     await _get_db()["sites"].update_one(
         {"subdomain": subdomain},
-        {
-            "$set": {
-                "subdomain": subdomain,
-                "original_url": original_url,
-                "job_id": job_id,
-                "tier": tier,
-                "html_path": html_path,
-                "updated_at": now,
-            },
-            "$setOnInsert": {"created_at": now},
-        },
+        {"$set": doc, "$setOnInsert": {"created_at": now}},
         upsert=True,
     )
+
+
+async def find_site_by_url_hash(url_hash: str) -> dict | None:
+    """Find an existing site by URL hash. Returns the site doc or None."""
+    doc = await _get_db()["sites"].find_one({"url_hash": url_hash})
+    if doc:
+        doc.pop("_id", None)
+    return doc
 
 
 async def list_sites(limit: int = 100) -> list[dict]:

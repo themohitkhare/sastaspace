@@ -362,13 +362,16 @@ async def redesign_handler(
         total_duration,
     )
 
-    # Register in DB
+    # Register in DB with URL hash for dedup
+    from sastaspace.urls import url_hash
+
     await register_site(
         subdomain=result.subdomain,
         original_url=url,
         job_id=job_id,
         html_path=str(result.index_path),
         tier=tier,
+        url_hash=url_hash(url),
     )
 
     # Step 4: Done
