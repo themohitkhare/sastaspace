@@ -65,13 +65,33 @@ Requirements for production ship. Each maps to roadmap phases.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| (populated during roadmap creation) | | |
+| DOCK-01 | Phase 5 | Pending |
+| DOCK-02 | Phase 5 | Pending |
+| DOCK-03 | Phase 5 | Pending |
+| DOCK-04 | Phase 5 | Pending |
+| DOCK-05 | Phase 5 | Pending |
+| DOCK-06 | Phase 5 | Pending |
+| DOCK-07 | Phase 5 | Pending |
+| SEO-01 | Phase 6 | Pending |
+| SEO-02 | Phase 6 | Pending |
+| SEO-03 | Phase 7 | Pending |
+| SEO-04 | Phase 6 | Pending |
+| FLAG-01 | Phase 6 | Pending |
+| FLAG-02 | Phase 6 | Pending |
+| ASSET-01 | Phase 7 | Pending |
+| ASSET-02 | Phase 7 | Pending |
+| TEST-01 | Phase 8 | Pending |
+| TEST-02 | Phase 8 | Pending |
+| TEST-03 | Phase 8 | Pending |
+| TEST-04 | Phase 8 | Pending |
+| TEST-05 | Phase 8 | Pending |
+| TEST-06 | Phase 8 | Pending |
 
 **Coverage:**
-- v2 requirements: 17 total
-- Mapped to phases: 0
-- Unmapped: 17
+- v2 requirements: 21 total
+- Mapped to phases: 21
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-03-21*
-*Last updated: 2026-03-21 after initial definition*
+*Last updated: 2026-03-21 after roadmap creation*
