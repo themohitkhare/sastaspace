@@ -6,7 +6,7 @@
 
 | | |
 |---|---|
-| **IP** | 192.168.0.38 |
+| **IP** | <SERVER_IP> |
 | **OS** | Ubuntu 24.04 LTS |
 | **CPU** | AMD Ryzen 9 7900X |
 | **GPU** | AMD RX 7900 XTX (gfx1100, 20GB VRAM) |
@@ -20,14 +20,14 @@
 After OS reinstall the host key changes. Clear the old one:
 
 ```bash
-ssh-keygen -R 192.168.0.38
-ssh mkhare@192.168.0.38   # accept new key
+ssh-keygen -R <SERVER_IP>
+ssh mkhare@<SERVER_IP>   # accept new key
 ```
 
 ### Passwordless SSH
 
 ```bash
-ssh-copy-id mkhare@192.168.0.38
+ssh-copy-id mkhare@<SERVER_IP>
 ```
 
 ### Enable Root SSH (optional)
@@ -36,7 +36,7 @@ ssh-copy-id mkhare@192.168.0.38
 sudo nano /etc/ssh/sshd_config
 # Set: PermitRootLogin yes
 sudo systemctl restart sshd
-ssh-copy-id root@192.168.0.38
+ssh-copy-id root@<SERVER_IP>
 ```
 
 ---
@@ -228,8 +228,8 @@ Tunnel routes public traffic to the microk8s nginx ingress without exposing any 
 | | |
 |---|---|
 | **Name** | sastaspace-prod |
-| **Tunnel ID** | `REDACTED_TUNNEL_ID` |
-| **Account ID** | `REDACTED_CF_ACCOUNT_ID` |
+| **Tunnel ID** | `<TUNNEL_ID>` |
+| **Account ID** | `<CF_ACCOUNT_ID>` |
 | **Zone** | sastaspace.com |
 
 ### Install cloudflared
@@ -254,7 +254,7 @@ Get the tunnel token from the Cloudflare dashboard or re-create via API:
 
 ```bash
 CF_TOKEN="<your-api-token>"
-ACCOUNT_ID="REDACTED_CF_ACCOUNT_ID"
+ACCOUNT_ID="<CF_ACCOUNT_ID>"
 
 # Create tunnel
 curl -X POST "https://api.cloudflare.com/client/v4/accounts/$ACCOUNT_ID/cfd_tunnel" \
@@ -383,7 +383,7 @@ make deploy-down   # delete sastaspace namespace
 Configure remote target if different from default:
 
 ```bash
-make deploy REMOTE_HOST=192.168.0.38 REMOTE_USER=mkhare
+make deploy REMOTE_HOST=<SERVER_IP> REMOTE_USER=mkhare
 ```
 
 ---
@@ -399,7 +399,7 @@ Browser / API client
         │
         ▼ QUIC / HTTP2
   cloudflared (systemd, /etc/systemd/system/cloudflared.service)
-  Tunnel: REDACTED_TUNNEL_ID
+  Tunnel: <TUNNEL_ID>
         │
         ▼ HTTP
   localhost:80
