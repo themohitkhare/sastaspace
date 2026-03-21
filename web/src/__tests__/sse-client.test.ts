@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { streamRedesign } from '@/lib/sse-client'
+import { submitRedesign, streamJobStatus } from '@/lib/sse-client'
 
 // Helper to create a ReadableStream from SSE text chunks
 function createSSEStream(chunks: string[]): ReadableStream<Uint8Array> {
@@ -21,7 +21,59 @@ beforeEach(() => {
   vi.restoreAllMocks()
 })
 
-describe('streamRedesign', () => {
+describe('submitRedesign', () => {
+  it('returns job_id on success', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+      ok: true,
+      json: async () => ({ job_id: 'test-job-123' }),
+    } as unknown as Response)
+
+    const jobId = await submitRedesign('https://example.com')
+    expect(jobId).toBe('test-job-123')
+  })
+
+  it('throws on non-ok response', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+      ok: false,
+      status: 500,
+    } as unknown as Response)
+
+    await expect(submitRedesign('https://example.com')).rejects.toThrow(
+      'Redesign request failed: 500'
+    )
+  })
+
+  it('throws when no job_id in response', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+      ok: true,
+      json: async () => ({}),
+    } as unknown as Response)
+
+    await expect(submitRedesign('https://example.com')).rejects.toThrow(
+      'No job_id returned from server'
+    )
+  })
+
+  it('sends POST to correct URL with body', async () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+      ok: true,
+      json: async () => ({ job_id: 'abc' }),
+    } as unknown as Response)
+
+    await submitRedesign('https://example.com', 'premium')
+
+    expect(fetchSpy).toHaveBeenCalledWith(
+      'http://localhost:8080/redesign',
+      expect.objectContaining({
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: 'https://example.com', tier: 'premium' }),
+      })
+    )
+  })
+})
+
+describe('streamJobStatus', () => {
   it('yields parsed SSE events', async () => {
     const sseChunks = [
       'event: crawling\ndata: {"status":"started"}\n\n',
@@ -34,7 +86,7 @@ describe('streamRedesign', () => {
     } as unknown as Response)
 
     const events = []
-    for await (const event of streamRedesign('https://test.com', 'http://localhost:8080')) {
+    for await (const event of streamJobStatus('test-job-123')) {
       events.push(event)
     }
 
@@ -52,28 +104,12 @@ describe('streamRedesign', () => {
     } as unknown as Response)
 
     const events = []
-    for await (const event of streamRedesign('https://test.com')) {
+    for await (const event of streamJobStatus('job-1')) {
       events.push(event)
     }
 
     expect(events).toHaveLength(1)
     expect(events[0].event).toBe('message')
-  })
-
-  it('skips events with empty data', async () => {
-    const sseChunks = ['event: crawling\n\n']
-
-    vi.spyOn(globalThis, 'fetch').mockResolvedValue({
-      ok: true,
-      body: createSSEStream(sseChunks),
-    } as unknown as Response)
-
-    const events = []
-    for await (const event of streamRedesign('https://test.com')) {
-      events.push(event)
-    }
-
-    expect(events).toHaveLength(0)
   })
 
   it('skips malformed JSON data silently', async () => {
@@ -88,7 +124,7 @@ describe('streamRedesign', () => {
     } as unknown as Response)
 
     const events = []
-    for await (const event of streamRedesign('https://test.com')) {
+    for await (const event of streamJobStatus('job-1')) {
       events.push(event)
     }
 
@@ -99,33 +135,19 @@ describe('streamRedesign', () => {
   it('throws on non-ok HTTP response', async () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValue({
       ok: false,
-      status: 500,
-      json: async () => ({ error: 'Server error' }),
+      status: 404,
+      body: null,
     } as unknown as Response)
 
     await expect(async () => {
-      for await (const _ of streamRedesign('https://test.com')) {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      for await (const _ of streamJobStatus('nonexistent')) {
         // consume
       }
-    }).rejects.toThrow('Server error')
-  })
-
-  it('throws generic HTTP error when response body has no error field', async () => {
-    vi.spyOn(globalThis, 'fetch').mockResolvedValue({
-      ok: false,
-      status: 502,
-      json: async () => ({}),
-    } as unknown as Response)
-
-    await expect(async () => {
-      for await (const _ of streamRedesign('https://test.com')) {
-        // consume
-      }
-    }).rejects.toThrow('HTTP 502')
+    }).rejects.toThrow('Stream failed: 404')
   })
 
   it('handles chunked SSE data split across reads', async () => {
-    // Split a single event across two chunks
     const sseChunks = [
       'event: crawling\ndata: {"sta',
       'tus":"started"}\n\n',
@@ -137,31 +159,11 @@ describe('streamRedesign', () => {
     } as unknown as Response)
 
     const events = []
-    for await (const event of streamRedesign('https://test.com')) {
+    for await (const event of streamJobStatus('job-1')) {
       events.push(event)
     }
 
     expect(events).toHaveLength(1)
     expect(events[0]).toEqual({ event: 'crawling', data: { status: 'started' } })
-  })
-
-  it('sends POST request with correct URL and body', async () => {
-    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
-      ok: true,
-      body: createSSEStream([]),
-    } as unknown as Response)
-
-    for await (const _ of streamRedesign('https://example.com', 'http://api.test')) {
-      // consume
-    }
-
-    expect(fetchSpy).toHaveBeenCalledWith(
-      'http://api.test/redesign',
-      expect.objectContaining({
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url: 'https://example.com' }),
-      })
-    )
   })
 })

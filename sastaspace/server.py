@@ -16,7 +16,7 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 from uuid import uuid4
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
 from fastapi.sse import EventSourceResponse, format_sse_event
@@ -40,6 +40,9 @@ from sastaspace.database import (
 from sastaspace.deployer import deploy
 from sastaspace.jobs import JobService, redesign_handler
 from sastaspace.redesigner import redesign
+
+# Module-level job service reference — updated during lifespan, patchable in tests
+svc: JobService | None = None
 
 logger = logging.getLogger(__name__)
 
@@ -67,11 +70,9 @@ def make_app(sites_dir: Path) -> FastAPI:
     _rate_limit_store: dict[str, list[float]] = {}
     _redesign_semaphore = asyncio.Semaphore(1)
 
-    # Job service (Redis) — initialized on startup
-    _job_service_holder: dict[str, JobService | None] = {"svc": None}
-
     @asynccontextmanager
     async def lifespan(app: FastAPI):
+        global svc
         # --- Startup ---
         set_mongo_url(settings.mongodb_url, settings.mongodb_db)
         try:
@@ -90,9 +91,9 @@ def make_app(sites_dir: Path) -> FastAPI:
         # Connect Redis job service (if Redis is available)
         if settings.redis_url:
             try:
-                svc = JobService(redis_url=settings.redis_url)
-                await svc.connect()
-                _job_service_holder["svc"] = svc
+                _svc = JobService(redis_url=settings.redis_url)
+                await _svc.connect()
+                svc = _svc
                 logger.info("Redis job service connected at %s", settings.redis_url)
 
                 # Start background worker
@@ -107,9 +108,9 @@ def make_app(sites_dir: Path) -> FastAPI:
         yield
 
         # --- Shutdown ---
-        svc = _job_service_holder["svc"]
         if svc:
             await svc.close()
+            svc = None
         await close_db()
 
     app = FastAPI(title="SastaSpace Preview Server", lifespan=lifespan)
@@ -159,7 +160,6 @@ def make_app(sites_dir: Path) -> FastAPI:
 
     async def _run_worker():
         """Background worker that processes jobs from Redis Stream."""
-        svc = _job_service_holder["svc"]
         if svc:
             await svc.process_messages(
                 consumer_name=f"worker-{os.getpid()}",
@@ -299,7 +299,6 @@ def make_app(sites_dir: Path) -> FastAPI:
 
     async def redis_job_stream(job_id: str) -> AsyncGenerator[bytes, None]:
         """Stream job status updates from Redis Pub/Sub as SSE events."""
-        svc = _job_service_holder["svc"]
         if not svc:
             return
 
@@ -375,12 +374,11 @@ def make_app(sites_dir: Path) -> FastAPI:
         if not _is_localhost(ip):
             record_request(ip)
 
-        # If Redis is available, use async job queue
-        svc = _job_service_holder["svc"]
-        if svc:
+        # If Redis is available, use async job queue — return job_id immediately
+        if svc is not None:
             _redesign_requests_total.labels(status="started").inc()
             job_id = await svc.enqueue(url=body.url, client_ip=ip, tier=tier)
-            return EventSourceResponse(redis_job_stream(job_id))
+            return {"job_id": job_id}
 
         # Fallback: inline processing (no Redis)
         # Concurrency check
@@ -395,6 +393,42 @@ def make_app(sites_dir: Path) -> FastAPI:
         return EventSourceResponse(redesign_stream(body.url, tier))
 
     # ---- Job status endpoints ----
+
+    @app.get("/jobs/{job_id}/stream")
+    async def job_stream_endpoint(job_id: str):
+        """SSE stream for a specific job. Reconnectable."""
+        job = await get_job(job_id)
+        if job is None:
+            raise HTTPException(status_code=404, detail="Job not found")
+
+        if job["status"] in (JobStatus.DONE.value, JobStatus.FAILED.value):
+
+            async def _terminal():
+                if job["status"] == JobStatus.DONE.value:
+                    payload = json.dumps(
+                        {
+                            "job_id": job_id,
+                            "subdomain": job.get("subdomain", ""),
+                            "url": job.get("url", ""),
+                            "progress": 100,
+                        }
+                    )
+                    yield _sse_event(payload, "done")
+                else:
+                    payload = json.dumps(
+                        {
+                            "job_id": job_id,
+                            "error": job.get("error", "Job failed"),
+                        }
+                    )
+                    yield _sse_event(payload, "error")
+
+            return EventSourceResponse(_terminal())
+
+        if svc is None:
+            raise HTTPException(status_code=503, detail="Job queue unavailable")
+
+        return EventSourceResponse(redis_job_stream(job_id))
 
     @app.get("/jobs/{job_id}")
     async def get_job_status(job_id: str):

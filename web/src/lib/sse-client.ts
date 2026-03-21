@@ -1,72 +1,62 @@
-export type SSEEvent = {
-  event: string;
-  data: Record<string, unknown>;
-};
+// web/src/lib/sse-client.ts
 
-export async function* streamRedesign(
+export type SSEEvent = {
+  event: string
+  data: Record<string, unknown>
+}
+
+/** Submit a redesign request. Returns job_id (Redis path) or throws. */
+export async function submitRedesign(
   url: string,
-  apiBase: string = "http://localhost:8080",
-  signal?: AbortSignal,
-  tier: "standard" | "premium" = "standard"
-): AsyncGenerator<SSEEvent> {
-  const response = await fetch(`${apiBase}/redesign`, {
+  tier: "standard" | "premium" = "standard",
+  signal?: AbortSignal
+): Promise<string> {
+  const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:8080"
+  const resp = await fetch(`${backendUrl}/redesign`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ url, tier }),
     signal,
-  });
+  })
+  if (!resp.ok) throw new Error(`Redesign request failed: ${resp.status}`)
+  const data = (await resp.json()) as { job_id?: string }
+  if (data.job_id) return data.job_id
+  throw new Error("No job_id returned from server")
+}
 
-  if (!response.ok) {
-    const errorBody = await response.json().catch(() => ({}));
-    throw new Error(
-      (errorBody as Record<string, string>).error ||
-        (errorBody as Record<string, string>).detail ||
-        `HTTP ${response.status}`
-    );
-  }
+/** Stream status events for a job. Reconnectable. */
+export async function* streamJobStatus(
+  jobId: string,
+  signal?: AbortSignal
+): AsyncGenerator<SSEEvent> {
+  const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:8080"
+  const resp = await fetch(`${backendUrl}/jobs/${jobId}/stream`, { signal })
+  if (!resp.ok || !resp.body) throw new Error(`Stream failed: ${resp.status}`)
 
-  const reader = response
-    .body!.pipeThrough(new TextDecoderStream())
-    .getReader();
+  const reader = resp.body.getReader()
+  const decoder = new TextDecoder()
+  let buffer = ""
+  let currentEvent = "message"
 
-  let buffer = "";
+  while (true) {
+    const { done, value } = await reader.read()
+    if (done) break
+    buffer += decoder.decode(value, { stream: true })
+    const lines = buffer.split("\n")
+    buffer = lines.pop() ?? ""
 
-  try {
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-
-      buffer += value;
-
-      const parts = buffer.split("\n\n");
-      // Keep the last part as buffer (may be incomplete)
-      buffer = parts.pop()!;
-
-      for (const block of parts) {
-        if (!block.trim()) continue;
-
-        let eventName = "message";
-        let dataStr = "";
-
-        for (const line of block.split("\n")) {
-          if (line.startsWith("event:")) {
-            eventName = line.slice(6).trim();
-          } else if (line.startsWith("data:")) {
-            dataStr = line.slice(5).trim();
-          }
-        }
-
-        if (!dataStr) continue;
-
+    for (const line of lines) {
+      if (line.startsWith("event:")) {
+        currentEvent = line.slice(6).trim()
+      } else if (line.startsWith("data:")) {
         try {
-          const data = JSON.parse(dataStr) as Record<string, unknown>;
-          yield { event: eventName, data };
+          const data = JSON.parse(line.slice(5).trim()) as Record<string, unknown>
+          yield { event: currentEvent, data }
+          currentEvent = "message"
         } catch {
-          // Skip malformed events silently
+          // skip malformed
         }
       }
     }
-  } finally {
-    reader.releaseLock();
   }
 }
