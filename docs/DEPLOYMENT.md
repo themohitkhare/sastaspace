@@ -6,7 +6,7 @@
 
 | | |
 |---|---|
-| **IP** | <SERVER_IP> |
+| **IP** | `192.168.0.38` |
 | **OS** | Ubuntu 24.04 LTS |
 | **CPU** | AMD Ryzen 9 7900X |
 | **GPU** | AMD RX 7900 XTX (gfx1100, 20GB VRAM) |
@@ -42,14 +42,14 @@ security add-generic-password -a sastaspace -s <service-name> -w "<value>" -U
 After OS reinstall the host key changes. Clear the old one:
 
 ```bash
-ssh-keygen -R <SERVER_IP>
-ssh mkhare@<SERVER_IP>   # accept new key
+ssh-keygen -R 192.168.0.38
+ssh mkhare@192.168.0.38   # accept new key
 ```
 
 ### Passwordless SSH
 
 ```bash
-ssh-copy-id mkhare@<SERVER_IP>
+ssh-copy-id mkhare@192.168.0.38
 ```
 
 ### Enable Root SSH (optional)
@@ -58,7 +58,7 @@ ssh-copy-id mkhare@<SERVER_IP>
 sudo nano /etc/ssh/sshd_config
 # Set: PermitRootLogin yes
 sudo systemctl restart sshd
-ssh-copy-id root@<SERVER_IP>
+ssh-copy-id root@192.168.0.38
 ```
 
 ---
@@ -250,8 +250,8 @@ Tunnel routes public traffic to the microk8s nginx ingress without exposing any 
 | | |
 |---|---|
 | **Name** | sastaspace-prod |
-| **Tunnel ID** | `<TUNNEL_ID>` |
-| **Account ID** | `<CF_ACCOUNT_ID>` |
+| **Tunnel ID** | `b3d36ee8-8bd2-4289-83a0-bf2ab53aa3b8` |
+| **Account ID** | stored in Cloudflare dashboard |
 | **Zone** | sastaspace.com |
 
 ### Install cloudflared
@@ -286,7 +286,7 @@ curl -X POST "https://api.cloudflare.com/client/v4/accounts/$ACCOUNT_ID/cfd_tunn
   -d '{"name":"sastaspace-prod","config_src":"cloudflare"}'
 
 # Configure ingress (routes to microk8s nginx)
-curl -X PUT "https://api.cloudflare.com/client/v4/accounts/$ACCOUNT_ID/cfd_tunnel/<TUNNEL_ID>/configurations" \
+curl -X PUT "https://api.cloudflare.com/client/v4/accounts/$ACCOUNT_ID/cfd_tunnel/b3d36ee8-8bd2-4289-83a0-bf2ab53aa3b8/configurations" \
   -H "Authorization: Bearer $CF_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
@@ -304,7 +304,7 @@ curl -X PUT "https://api.cloudflare.com/client/v4/accounts/$ACCOUNT_ID/cfd_tunne
 
 ### DNS records
 
-All CNAMEs point to `<TUNNEL_ID>.cfargotunnel.com` (proxied):
+All CNAMEs point to `b3d36ee8-8bd2-4289-83a0-bf2ab53aa3b8.cfargotunnel.com` (proxied):
 - `sastaspace.com`
 - `www.sastaspace.com`
 - `*.sastaspace.com`
@@ -378,10 +378,22 @@ Located in `k8s/` directory:
 
 ```
 k8s/
-├── namespace.yaml     # sastaspace namespace
-├── backend.yaml       # FastAPI deployment + service + PVC
-├── frontend.yaml      # Next.js deployment + service
-└── ingress.yaml       # nginx ingress rules for all hostnames
+├── namespace.yaml           # sastaspace namespace
+├── backend.yaml             # FastAPI deployment + service + sites PVC (10Gi)
+├── frontend.yaml            # Next.js deployment + service
+├── mongodb.yaml             # MongoDB deployment + service + PVC (5Gi)
+├── redis.yaml               # Redis deployment + service + PVC (2Gi, appendonly)
+├── ingress.yaml             # nginx ingress rules (sastaspace.com, api.*, www.*)
+└── monitoring/
+    ├── namespace.yaml       # monitoring namespace
+    ├── grafana.yaml         # Grafana deployment + service
+    ├── prometheus.yaml      # Prometheus deployment + service + config
+    ├── loki.yaml            # Loki deployment + service
+    ├── promtail.yaml        # Promtail DaemonSet (log shipper)
+    ├── node-exporter.yaml   # node-exporter DaemonSet (host metrics)
+    ├── kube-state-metrics.yaml  # kube-state-metrics deployment
+    ├── blackbox-exporter.yaml   # blackbox-exporter deployment
+    └── ingress.yaml         # nginx ingress for monitor.sastaspace.com → Grafana
 ```
 
 ### Local image registry
@@ -408,7 +420,7 @@ make deploy-down   # delete sastaspace namespace
 Configure remote target if different from default:
 
 ```bash
-make deploy REMOTE_HOST=<SERVER_IP> REMOTE_USER=mkhare
+make deploy REMOTE_HOST=192.168.0.38 REMOTE_USER=mkhare
 ```
 
 ### Monitoring stack
@@ -433,7 +445,64 @@ make deploy-monitoring
 
 ---
 
-## 15. Traffic Architecture
+## 15. CI/CD Pipeline (GitHub Actions)
+
+The pipeline runs on a **self-hosted runner** on the server itself (192.168.0.38).
+
+### Jobs
+
+| Job | Trigger | What it does |
+|-----|---------|-------------|
+| `test` | push/PR to main | lint (ruff), run pytest with uv |
+| `security` | push/PR to main | pip-audit, npm audit, Trivy fs scan |
+| `deploy` | push to main only | build images, Trivy image scan, push to registry, apply k8s manifests, rolling restart |
+
+### Workflow: `.github/workflows/deploy.yml`
+
+- `test` and `security` run in **parallel**
+- `deploy` runs only after **both** pass (`needs: [test, security]`)
+- Deploy builds backend + frontend images, tags with `latest` and `${{ github.sha }}`
+- Images pushed to microk8s local registry (`localhost:32000`)
+- Manifests applied: `kubectl apply -f k8s/namespace.yaml && kubectl apply -f k8s/`
+- Rolling restart with status wait (300s timeout)
+
+### Security scanning
+
+```bash
+# Python CVEs (OSV database)
+uv export --no-dev --no-editable --no-emit-project --format requirements-txt > /tmp/requirements-audit.txt
+uv tool run pip-audit --requirement /tmp/requirements-audit.txt --vulnerability-service osv
+
+# npm CVEs (high+ only)
+npm audit --audit-level=high --omit=dev
+
+# Trivy: repo secrets + k8s misconfigs
+trivy fs . --scanners secret,misconfig --exit-code 1 --severity HIGH,CRITICAL \
+  --ignorefile .trivyignore --skip-dirs node_modules,.git
+
+# Trivy: container image CVEs (per image after build)
+trivy image --exit-code 1 --severity HIGH,CRITICAL --ignorefile .trivyignore \
+  localhost:32000/sastaspace-backend:latest
+```
+
+Suppressions are documented in `.trivyignore` with justifications.
+
+### Self-hosted runner
+
+The GitHub Actions runner is registered on the server. To check or restart it:
+```bash
+# Status
+sudo systemctl status actions.runner.*
+
+# Re-register if needed (get token from GitHub repo → Settings → Actions → Runners)
+cd ~/actions-runner
+./config.sh --url https://github.com/<org>/<repo> --token <TOKEN>
+sudo ./svc.sh install && sudo ./svc.sh start
+```
+
+---
+
+## 16. Traffic Architecture
 
 ```
 Browser / API client
@@ -444,7 +513,7 @@ Browser / API client
         │
         ▼ QUIC / HTTP2
   cloudflared (systemd, /etc/systemd/system/cloudflared.service)
-  Tunnel: <TUNNEL_ID>
+  Tunnel: b3d36ee8-8bd2-4289-83a0-bf2ab53aa3b8
         │
         ▼ HTTP
   localhost:80
@@ -472,7 +541,7 @@ systemd services on host:
 
 ---
 
-## 16. Service Health Checks
+## 17. Service Health Checks
 
 ```bash
 # Cloudflare tunnel
@@ -496,7 +565,7 @@ sudo docker logs vllm-coder --tail 20
 
 ---
 
-## 17. Useful Commands
+## 18. Useful Commands
 
 ```bash
 # Tail all app logs
