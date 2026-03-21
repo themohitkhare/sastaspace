@@ -126,6 +126,32 @@ def redesign(
 
 
 # ---------------------------------------------------------------------------
+# Agno multi-agent pipeline redesign
+# ---------------------------------------------------------------------------
+
+
+def agno_redesign(crawl_result: CrawlResult, settings) -> str:
+    """Redesign using Agno multi-agent pipeline.
+
+    Uses a sequential pipeline of specialized agents:
+    CrawlAnalyst -> DesignStrategist -> HTMLGenerator -> QualityReviewer
+
+    Args:
+        crawl_result: The crawled website data.
+        settings: Application settings (sastaspace.config.Settings).
+
+    Returns:
+        The final redesigned HTML string.
+
+    Raises:
+        RedesignError: if crawl_result.error is set or pipeline fails.
+    """
+    from sastaspace.agents.pipeline import run_redesign_pipeline
+
+    return run_redesign_pipeline(crawl_result, settings)
+
+
+# ---------------------------------------------------------------------------
 # Premium redesign — sales psychology & conversion-optimized
 # ---------------------------------------------------------------------------
 
