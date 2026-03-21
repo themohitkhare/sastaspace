@@ -409,3 +409,108 @@ test.describe("Landing → progress transition", () => {
     expect(await hasHorizontalScroll(page)).toBe(false);
   });
 });
+
+// ─── 10. SSE progress view with mocked backend (TEST-03) ────────────────────
+
+test.describe("SSE progress flow (mocked backend)", () => {
+  /**
+   * Helper: Build an SSE text payload from an array of events.
+   * Each event is { event: string, data: object }.
+   */
+  function buildSSE(events: Array<{ event: string; data: Record<string, unknown> }>): string {
+    return events
+      .map((e) => `event: ${e.event}\ndata: ${JSON.stringify(e.data)}\n\n`)
+      .join("");
+  }
+
+  test("valid URL triggers progress view with crawling, redesigning, deploying steps", async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 900 });
+
+    // Intercept POST /redesign to the backend and return a mocked SSE stream
+    await page.route("**/redesign", async (route) => {
+      const sseBody = buildSSE([
+        { event: "crawling", data: { status: "crawling" } },
+        { event: "redesigning", data: { status: "redesigning" } },
+        { event: "deploying", data: { status: "deploying" } },
+        { event: "done", data: { subdomain: "example-com" } },
+      ]);
+
+      await route.fulfill({
+        status: 200,
+        contentType: "text/event-stream",
+        body: sseBody,
+      });
+    });
+
+    await page.goto(BASE);
+
+    // Fill and submit a valid URL
+    await page.getByPlaceholder("yourwebsite.com").fill("https://example.com");
+    await page.getByRole("button", { name: /Redesign My Site/i }).click();
+
+    // The progress view should appear — verify step labels are rendered
+    // The SSE events trigger step indicators; at least the step labels should show
+    // "Analyzing example.com", "Redesigning your site with AI", "Preparing your new example.com"
+    // After "done", the app navigates to /example-com
+    // We verify the landing page disappears (progress view takes over)
+    await expect(page.getByPlaceholder("yourwebsite.com")).not.toBeVisible({ timeout: 5000 });
+
+    // Eventually navigates to result page after done event
+    await page.waitForURL("**/example-com", { timeout: 10000 });
+  });
+
+  test("progress view shows step indicators during SSE stream", async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 900 });
+
+    // Intercept and hold the SSE stream so we can check the progress view state
+    await page.route("**/redesign", async (route) => {
+      // Only send crawling and redesigning — do NOT send done, so progress view stays visible
+      const sseBody = buildSSE([
+        { event: "crawling", data: { status: "crawling" } },
+        { event: "redesigning", data: { status: "redesigning" } },
+      ]);
+
+      await route.fulfill({
+        status: 200,
+        contentType: "text/event-stream",
+        body: sseBody,
+      });
+    });
+
+    await page.goto(BASE);
+    await page.getByPlaceholder("yourwebsite.com").fill("https://example.com");
+    await page.getByRole("button", { name: /Redesign My Site/i }).click();
+
+    // Wait for the progress view to render with step indicators
+    // The progress view shows step labels like "Analyzing example.com"
+    await expect(page.getByText(/Analyzing example\.com/i)).toBeVisible({ timeout: 5000 });
+    await expect(page.getByText(/Redesigning your site with AI/i)).toBeVisible({ timeout: 5000 });
+    await expect(page.getByText(/Preparing your new example\.com/i)).toBeVisible({ timeout: 5000 });
+  });
+
+  test("SSE error event shows error message", async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 900 });
+
+    await page.route("**/redesign", async (route) => {
+      const sseBody = buildSSE([
+        { event: "crawling", data: { status: "crawling" } },
+        { event: "error", data: { error: "Site could not be crawled" } },
+      ]);
+
+      await route.fulfill({
+        status: 200,
+        contentType: "text/event-stream",
+        body: sseBody,
+      });
+    });
+
+    await page.goto(BASE);
+    await page.getByPlaceholder("yourwebsite.com").fill("https://example.com");
+    await page.getByRole("button", { name: /Redesign My Site/i }).click();
+
+    // Error view should appear with "Something went wrong"
+    await expect(page.getByText(/Something went wrong/i)).toBeVisible({ timeout: 5000 });
+    // "Try again" button should be visible
+    await expect(page.getByRole("button", { name: /Try again/i })).toBeVisible();
+  });
+});
