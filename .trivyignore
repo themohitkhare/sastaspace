@@ -45,3 +45,14 @@ CVE-2026-25210
 # Improper parse of mailto URIs. Debian has deferred this fix.
 # xdg-utils is required by Playwright/Chromium for browser launch support.
 CVE-2022-4055
+
+# CVE-2026-23949: jaraco.context — base image pip build tool, not used at runtime
+# jaraco.context is a transitive dep of pip's build backend in python:3.11-slim.
+# Our app uses uv (not pip) at build time. This tool is never invoked at runtime.
+CVE-2026-23949
+
+# CVE-2026-24049: wheel — base image pip build tool, not used at runtime
+# wheel is installed in the base Python image for bootstrapping pip.
+# Our Dockerfile now uses uv for all package installation, bypassing wheel entirely.
+# wheel is never invoked at runtime in the production container.
+CVE-2026-24049

@@ -25,22 +25,22 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     xdg-utils \
     && rm -rf /var/lib/apt/lists/*
 
+# Install uv (fast Python package manager — avoids pip/wheel entirely)
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
+
 WORKDIR /app
 
 # Create non-root user and data directory before installing anything
 RUN useradd -m -u 1000 appuser && mkdir -p /data/sites && chown appuser /data/sites
 
-# Copy project files
-COPY pyproject.toml ./
-
-# Copy application source (needed for pip install -e or direct install)
+# Copy lockfile and project files (uv uses the frozen lockfile for reproducible builds)
+COPY pyproject.toml uv.lock ./
 COPY sastaspace/ ./sastaspace/
 
-# Upgrade pip build tools to versions without known CVEs (wheel CVE-2026-24049, jaraco.context CVE-2026-23949)
-RUN pip install --no-cache-dir --upgrade "wheel>=0.46.2" "jaraco.context>=6.1.0"
-
-# Install Python deps as root (system-wide, readable by all users)
-RUN pip install --no-cache-dir .
+# Install Python deps using uv with frozen lockfile — installs to system Python,
+# no pip/wheel/jaraco.context involved in the install process
+ENV UV_SYSTEM_PYTHON=1
+RUN uv sync --frozen --no-dev --no-editable
 
 # Switch to non-root user for Playwright install so browsers land in ~/.cache
 USER appuser
