@@ -28,6 +28,11 @@ ENV NODE_ENV=production
 ENV HOSTNAME=0.0.0.0
 ENV PORT=3000
 
+# Upgrade Alpine packages and npm to patch CVEs:
+# - zlib CVE-2026-22184 (fixed in 1.3.2-r0)
+# - glob/minimatch/tar CVEs in npm's bundled tools (fixed in npm@latest)
+RUN apk upgrade --no-cache && npm install -g npm@latest
+
 # Copy standalone output (owned by root during build)
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
