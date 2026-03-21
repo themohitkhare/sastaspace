@@ -237,7 +237,8 @@ async def redesign_handler(
     settings = Settings()
     job_start = _time.monotonic()
 
-    logger.info("JOB START | job=%s url=%s tier=%s pipeline=%s", job_id, url, tier, settings.use_agno_pipeline)
+    pipeline = "agno" if settings.use_agno_pipeline else "legacy"
+    logger.info("JOB START | job=%s url=%s tier=%s pipeline=%s", job_id, url, tier, pipeline)
 
     # Step 1: Crawling
     logger.info("JOB STEP 1/3: Crawling | job=%s url=%s", job_id, url)
@@ -255,7 +256,13 @@ async def redesign_handler(
     crawl_duration = _time.monotonic() - crawl_start
 
     if crawl_result.error:
-        logger.warning("JOB CRAWL FAILED | job=%s url=%s error=%s duration=%.1fs", job_id, url, crawl_result.error, crawl_duration)
+        logger.warning(
+            "JOB CRAWL FAILED | job=%s url=%s error=%s duration=%.1fs",
+            job_id,
+            url,
+            crawl_result.error,
+            crawl_duration,
+        )
         await update_job(
             job_id,
             status=JobStatus.FAILED.value,
@@ -279,7 +286,7 @@ async def redesign_handler(
     )
 
     # Step 2: Redesigning
-    logger.info("JOB STEP 2/3: Redesigning | job=%s pipeline=%s", job_id, "agno" if settings.use_agno_pipeline else "legacy")
+    logger.info("JOB STEP 2/3: Redesigning | job=%s pipeline=%s", job_id, pipeline)
     await update_job(
         job_id,
         status=JobStatus.REDESIGNING.value,
@@ -323,7 +330,9 @@ async def redesign_handler(
     redesign_duration = _time.monotonic() - redesign_start
     logger.info(
         "JOB REDESIGN OK | job=%s html_size=%d duration=%.1fs",
-        job_id, len(html), redesign_duration,
+        job_id,
+        len(html),
+        redesign_duration,
     )
 
     # Step 3: Deploying
@@ -345,7 +354,12 @@ async def redesign_handler(
     total_duration = _time.monotonic() - job_start
     logger.info(
         "JOB DONE | job=%s subdomain=%s html_size=%d crawl=%.1fs redesign=%.1fs total=%.1fs",
-        job_id, result.subdomain, len(html), crawl_duration, redesign_duration, total_duration,
+        job_id,
+        result.subdomain,
+        len(html),
+        crawl_duration,
+        redesign_duration,
+        total_duration,
     )
 
     # Register in DB
