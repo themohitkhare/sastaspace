@@ -4,6 +4,8 @@ import { AnimatePresence, motion } from "motion/react";
 import { AlertCircle, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { StepIndicator } from "@/components/progress/step-indicator";
+import { ActivityFeed } from "@/components/progress/activity-feed";
+import { DiscoveryGrid } from "@/components/progress/discovery-grid";
 import type { RedesignState } from "@/hooks/use-redesign";
 
 const STEP_LABELS: Record<string, (domain: string) => string> = {
@@ -83,6 +85,14 @@ export function ProgressView({ state, onRetry, onReset }: ProgressViewProps) {
             {statusLabel}
           </motion.p>
         </AnimatePresence>
+        {/* Time expectation — shown immediately, reframes wait as quality signal */}
+        <p className="text-xs text-muted-foreground text-center">
+          AI redesigns typically take 2–3 minutes. Real work happening here.
+        </p>
+
+        {/* Discovery grid — appears after crawl completes */}
+        {!isConnecting && <DiscoveryGrid items={state.discoveryItems} />}
+
         <div className="flex flex-col gap-4">
           {steps.map((step) => (
             <StepIndicator
@@ -93,6 +103,9 @@ export function ProgressView({ state, onRetry, onReset }: ProgressViewProps) {
             />
           ))}
         </div>
+
+        {/* Live agent activity feed */}
+        {!isConnecting && <ActivityFeed activities={state.activities} />}
       </div>
     </div>
   );
