@@ -42,10 +42,10 @@
 
 ### Frontend — Result Page
 
-- [ ] **RESULT-01**: Redesigned HTML displayed in sandboxed iframe (`sandbox="allow-scripts"` only — no `allow-same-origin`)
-- [ ] **RESULT-02**: "View original site" link opens in new tab
-- [ ] **RESULT-03**: Result page is shareable (URL contains subdomain slug)
-- [ ] **RESULT-04**: Page title updates to "Your redesign is ready — SastaSpace"
+- [x] **RESULT-01**: Redesigned HTML displayed in sandboxed iframe (`sandbox="allow-scripts"` only — no `allow-same-origin`)
+- [x] **RESULT-02**: "View original site" link opens in new tab
+- [x] **RESULT-03**: Result page is shareable (URL contains subdomain slug)
+- [x] **RESULT-04**: Page title updates to "Your redesign is ready — SastaSpace"
 
 ### Frontend — Contact Form
 
