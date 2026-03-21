@@ -38,7 +38,7 @@ from sastaspace.database import (
     update_job,
 )
 from sastaspace.deployer import deploy
-from sastaspace.jobs import JobService, redesign_handler
+from sastaspace.jobs import JobService
 from sastaspace.redesigner import redesign
 
 # Module-level job service reference — updated during lifespan, patchable in tests
@@ -95,9 +95,7 @@ def make_app(sites_dir: Path) -> FastAPI:
                 await _svc.connect()
                 svc = _svc
                 logger.info("Redis job service connected at %s", settings.redis_url)
-
-                # Start background worker
-                asyncio.create_task(_run_worker())
+                # Job processing is handled by the dedicated worker pod — not here
             except Exception:
                 logger.warning(
                     "Redis unavailable at %s — falling back to inline processing",
@@ -157,14 +155,6 @@ def make_app(sites_dir: Path) -> FastAPI:
     def _sse_event(data_str: str, event: str) -> bytes:
         """Format a single SSE event as bytes."""
         return format_sse_event(data_str=data_str, event=event)
-
-    async def _run_worker():
-        """Background worker that processes jobs from Redis Stream."""
-        if svc:
-            await svc.process_messages(
-                consumer_name=f"worker-{os.getpid()}",
-                handler=redesign_handler,
-            )
 
     # ---- SSE stream (inline fallback when Redis is unavailable) ----
 

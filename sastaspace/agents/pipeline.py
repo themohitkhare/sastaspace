@@ -51,6 +51,8 @@ from sastaspace.redesigner import RedesignError, _clean_html, _validate_html
 
 logger = logging.getLogger(__name__)
 
+_RETRY_DELAYS = (5, 15, 30)  # seconds before each retry on empty response (rate limited)
+
 ProgressCallback = Callable[[str, dict], None] | None
 
 AGENT_MESSAGES: dict[str, dict] = {
@@ -130,9 +132,25 @@ def _run_agent(
     )
 
     try:
-        agent = Agent(model=model, instructions=system_prompt)
-        response = agent.run(user_prompt)
-        content = response.content or ""
+        content = ""
+        for attempt, delay in enumerate([0, *_RETRY_DELAYS]):
+            if delay:
+                logger.warning(
+                    "AGENT RETRY | agent=%s attempt=%d waiting=%ds (empty response — rate limit?)",
+                    name,
+                    attempt,
+                    delay,
+                )
+                time.sleep(delay)
+            agent = Agent(model=model, instructions=system_prompt)
+            response = agent.run(user_prompt)
+            content = response.content or ""
+            if content:
+                break
+        if not content:
+            raise RedesignError(
+                f"{name} returned empty response after {len(_RETRY_DELAYS) + 1} attempts — rate limit?"
+            )  # noqa: E501
 
         # Extract token metrics
         if response.metrics:
