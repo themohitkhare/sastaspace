@@ -25,11 +25,11 @@
 
 ### Frontend — Landing Page
 
-- [ ] **LAND-01**: Hero section with large headline, subheadline, and URL input form
-- [ ] **LAND-02**: URL input validates format before submission
-- [ ] **LAND-03**: "How it works" section (3 steps: Enter URL → AI Redesigns → See Result)
-- [ ] **LAND-04**: Professional, high-design visual — the page itself looks like a $5,000 website
-- [ ] **LAND-05**: Fully mobile responsive
+- [x] **LAND-01**: Hero section with large headline, subheadline, and URL input form
+- [x] **LAND-02**: URL input validates format before submission
+- [x] **LAND-03**: "How it works" section (3 steps: Enter URL → AI Redesigns → See Result)
+- [x] **LAND-04**: Professional, high-design visual — the page itself looks like a $5,000 website
+- [x] **LAND-05**: Fully mobile responsive
 
 ### Frontend — Progress Experience
 
