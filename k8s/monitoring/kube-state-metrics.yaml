@@ -12,7 +12,6 @@ rules:
 - apiGroups: [""]
   resources:
   - configmaps
-  - secrets
   - nodes
   - pods
   - services
@@ -89,9 +88,15 @@ spec:
         prometheus.io/port: "8080"
     spec:
       serviceAccountName: kube-state-metrics
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65534
       containers:
       - name: kube-state-metrics
         image: registry.k8s.io/kube-state-metrics/kube-state-metrics:v2.14.0
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
         ports:
         - containerPort: 8080
           name: http-metrics

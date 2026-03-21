@@ -16,5 +16,8 @@ COPY tsconfig.json ./
 # Override baseURL to point to frontend service inside Docker network
 ENV BASE_URL=http://frontend:3000
 
+# playwright image ships with pwuser (uid 1000) — run as it
+USER pwuser
+
 # Run tests — override baseURL via env
 CMD ["npx", "playwright", "test", "--reporter=list"]
