@@ -1,10 +1,11 @@
 ---
 phase: 3
 slug: core-ui-landing-progress-result
-status: draft
+status: approved
 shadcn_initialized: true
 preset: base-nova (neutral, oklch)
 created: 2026-03-21
+reviewed_at: 2026-03-21
 ---
 
 # Phase 3 — UI Design Contract
