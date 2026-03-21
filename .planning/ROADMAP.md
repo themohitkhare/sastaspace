@@ -89,10 +89,11 @@ Wave 1 (parallel): 5, 6, 7 → Wave 2: 8
 
 ### Phase 9: Premium UI Redesign
 
-**Goal:** [To be planned]
-**Requirements**: TBD
+**Goal:** Complete visual overhaul — replace generic AI-template aesthetic with premium editorial design using Instrument Serif + Space Grotesk typography, warm gold/amber palette, asymmetric layouts, and purposeful animation
+**Requirements**: Ad-hoc (no formal requirement IDs)
 **Depends on:** Phase 8
-**Plans:** 0 plans
+**Plans:** 2 plans
 
 Plans:
-- [ ] TBD (run /gsd:plan-phase 9 to break down)
+- [ ] 09-01-PLAN.md — Design system: fonts (Instrument Serif + Space Grotesk), warm color palette, FlickeringGrid background
+- [ ] 09-02-PLAN.md — Component redesign: asymmetric hero, editorial how-it-works, polished result/progress views
