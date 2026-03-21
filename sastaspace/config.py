@@ -24,13 +24,13 @@ class Settings(BaseSettings):
         return v
 
     server_port: int = 8080
-    claude_model: str = "claude-sonnet-4-5-20250929"
+    claude_model: str = "claude-sonnet-4-6-20250514"
 
     # Agno pipeline
     use_agno_pipeline: bool = True
     crawl_analyst_model: str = "claude-haiku-4-5-20251001"
-    design_strategist_model: str = "claude-sonnet-4-5-20250929"
-    html_generator_model: str = "claude-sonnet-4-5-20250929"
+    design_strategist_model: str = "claude-sonnet-4-6-20250514"
+    html_generator_model: str = "claude-sonnet-4-6-20250514"
     quality_reviewer_model: str = "claude-haiku-4-5-20251001"
 
     cors_origins: str | list[str] = ["http://localhost:3000"]
