@@ -35,7 +35,7 @@ data:
         disableDeletion: false
         editable: true
         options:
-          path: /var/lib/grafana/dashboards
+          path: /etc/grafana/dashboards
           foldersFromFilesStructure: false
 ---
 apiVersion: v1
@@ -95,7 +95,7 @@ spec:
         - name: dashboard-providers
           mountPath: /etc/grafana/provisioning/dashboards
         - name: dashboards
-          mountPath: /var/lib/grafana/dashboards
+          mountPath: /etc/grafana/dashboards
         - name: data
           mountPath: /var/lib/grafana
         resources:
