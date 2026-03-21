@@ -11,6 +11,16 @@ export async function generateMetadata({
   return {
     title: "Your redesign is ready -- SastaSpace",
     description: `${domain} has been redesigned by AI`,
+    openGraph: {
+      title: `${domain} redesigned by AI -- SastaSpace`,
+      description: `See how AI redesigned ${domain}. Get your free website redesign at SastaSpace.`,
+      images: ["/og-image.png"],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: `${domain} redesigned by AI -- SastaSpace`,
+      description: `See how AI redesigned ${domain}. Get your free website redesign at SastaSpace.`,
+    },
   };
 }
 
