@@ -67,9 +67,14 @@ spec:
       labels:
         app: loki
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
       containers:
       - name: loki
         image: grafana/loki:3.5.0
+        securityContext:
+          allowPrivilegeEscalation: false
         args:
           - "-config.file=/etc/loki/loki.yaml"
         ports:

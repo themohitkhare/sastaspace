@@ -13,9 +13,14 @@ spec:
       labels:
         app: mongodb
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 999
       containers:
       - name: mongodb
         image: mongo:7
+        securityContext:
+          allowPrivilegeEscalation: false
         ports:
         - containerPort: 27017
         volumeMounts:

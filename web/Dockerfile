@@ -24,10 +24,14 @@ ENV NODE_ENV=production
 ENV HOSTNAME=0.0.0.0
 ENV PORT=3000
 
-# Copy standalone output
+# Copy standalone output (owned by root during build)
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/public ./public
+
+# node:22-alpine ships with a 'node' user (uid 1000) — run as it
+RUN chown -R node:node /app
+USER node
 
 EXPOSE 3000
 

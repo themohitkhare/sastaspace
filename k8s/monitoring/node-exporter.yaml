@@ -1,3 +1,6 @@
+# trivy:ignore:KSV-0014
+# trivy:ignore:KSV-0118
+# node-exporter requires hostNetwork, hostPID, and host path mounts to collect system metrics
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:

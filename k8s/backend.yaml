@@ -13,9 +13,14 @@ spec:
       labels:
         app: backend
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
       containers:
       - name: backend
         image: localhost:32000/sastaspace-backend:latest
+        securityContext:
+          allowPrivilegeEscalation: false
         ports:
         - containerPort: 8080
         envFrom:

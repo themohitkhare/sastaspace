@@ -60,6 +60,9 @@ data:
           - source_labels: [__meta_kubernetes_pod_label_app]
             target_label: app
 ---
+# trivy:ignore:KSV-0014
+# trivy:ignore:KSV-0118
+# promtail requires access to /var/log/pods on the host to collect container logs
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:

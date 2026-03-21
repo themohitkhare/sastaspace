@@ -27,16 +27,23 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 WORKDIR /app
 
+# Create non-root user and data directory before installing anything
+RUN useradd -m -u 1000 appuser && mkdir -p /data/sites && chown appuser /data/sites
+
 # Copy project files
 COPY pyproject.toml ./
 
 # Copy application source (needed for pip install -e or direct install)
 COPY sastaspace/ ./sastaspace/
 
-# Install Python deps via pip (simpler than uv in Docker)
+# Install Python deps as root (system-wide, readable by all users)
 RUN pip install --no-cache-dir .
 
-# Install Playwright + Chromium browser
+# Switch to non-root user for Playwright install so browsers land in ~/.cache
+USER appuser
+ENV HOME=/home/appuser
+
+# Install Playwright + Chromium browser (installs to /home/appuser/.cache)
 RUN playwright install chromium
 
 # Persistent sites volume mount point

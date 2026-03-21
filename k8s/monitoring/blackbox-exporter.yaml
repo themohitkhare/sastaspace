@@ -33,9 +33,14 @@ spec:
       labels:
         app: blackbox-exporter
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65534
       containers:
       - name: blackbox-exporter
         image: prom/blackbox-exporter:v0.26.0
+        securityContext:
+          allowPrivilegeEscalation: false
         args:
           - "--config.file=/etc/blackbox/blackbox.yml"
         ports:
