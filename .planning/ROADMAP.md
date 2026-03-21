@@ -31,7 +31,9 @@
   2. A user can submit a URL through the frontend container and receive a redesign served by the backend container (full flow works across containers)
   3. Restarting containers preserves previously generated redesigns (volume persistence)
   4. Environment configuration lives in a single `.env` file — no secrets hardcoded in Dockerfiles or compose
-**Plans**: TBD
+**Plans**: 1 plan
+Plans:
+- [ ] 05-01-PLAN.md — Dockerfiles, docker-compose.yml, networking, volumes, health checks, .env config
 
 ### Phase 6: SEO + Feature Flags
 **Goal**: The site is discoverable by search engines and shareable on social media, with Turnstile controllable via environment variable
@@ -80,7 +82,7 @@ Wave 1 (parallel): 5, 6, 7 → Wave 2: 8
 | 2. Next.js Scaffold + Wiring | v1.0 | 2/2 | Complete | 2026-03-21 |
 | 3. Core UI — Landing + Progress + Result | v1.0 | 3/3 | Complete | 2026-03-21 |
 | 4. Contact Form + Polish | v1.0 | 2/2 | Complete | 2026-03-21 |
-| 5. Docker Infrastructure | v2.0 | 0/? | Not started | - |
+| 5. Docker Infrastructure | v2.0 | 1/1 | Planned | - |
 | 6. SEO + Feature Flags | v2.0 | 1/1 | Planned | - |
 | 7. Design Assets | v2.0 | 1/1 | Planned | - |
 | 8. E2E Test Suite | v2.0 | 0/? | Not started | - |
