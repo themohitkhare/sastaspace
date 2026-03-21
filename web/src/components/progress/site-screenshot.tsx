@@ -9,6 +9,7 @@ interface SiteScreenshotProps {
 }
 
 export function SiteScreenshot({ screenshotBase64, domain }: SiteScreenshotProps) {
+  if (!screenshotBase64) return null
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0.97 }}
