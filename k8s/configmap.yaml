@@ -9,3 +9,4 @@ data:
   REDIS_URL: "redis://redis:6379"
   MONGODB_URL: "mongodb://mongodb:27017"
   MONGODB_DB: "sastaspace"
+  OLLAMA_URL: "http://192.168.0.38:11434/v1"
