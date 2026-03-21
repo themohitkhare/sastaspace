@@ -44,3 +44,11 @@ loki/data/
 
 # Docker
 *.log
+
+# Build artifacts
+.coverage
+.pytest_cache/
+.ruff_cache/
+
+# Kubernetes (out of scope)
+k8s/
