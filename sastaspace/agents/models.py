@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 # --- Crawl Analyst output ---
 
@@ -82,6 +82,24 @@ class DesignBrief(BaseModel):
     conversion_strategy: str = ""  # how to optimize for the site's goal
     responsive_approach: str = ""
     animations: list[str] = Field(default_factory=list)
+
+    @field_validator("animations", mode="before")
+    @classmethod
+    def coerce_animations(cls, v: object) -> list[str]:
+        """Accept list[str] or list[dict] — Claude sometimes returns dicts."""
+        if not isinstance(v, list):
+            return []
+        result = []
+        for item in v:
+            if isinstance(item, str):
+                result.append(item)
+            elif isinstance(item, dict):
+                # e.g. {"element": "Hero", "animation": "fade-in", "duration": "15s"}
+                parts = [str(val) for val in item.values() if val]
+                result.append(": ".join(parts))
+            else:
+                result.append(str(item))
+        return result
 
 
 # --- Copywriter output ---
