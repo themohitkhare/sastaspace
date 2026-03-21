@@ -155,3 +155,62 @@ async def test_redesign_handler_passes_progress_callback(job_service, tmp_path):
     assert "progress_callback" in call_kwargs.kwargs or (
         len(call_kwargs.args) >= 4 and callable(call_kwargs.args[3])
     )
+
+
+async def test_redesign_handler_emits_discovery(job_service, tmp_path):
+    """redesign_handler emits discovery event with real crawl data."""
+    from unittest.mock import AsyncMock, patch
+
+    from sastaspace.crawler import CrawlResult
+    from sastaspace.database import create_job
+    from sastaspace.deployer import DeployResult
+
+    job_id = "discovery-test-1"
+    await create_job(job_id=job_id, url="https://example.com", client_ip="1.1.1.1")
+
+    crawl_result = CrawlResult(
+        url="https://example.com",
+        title="Acme Corp",
+        meta_description="We build things",
+        favicon_url="",
+        html_source="<html></html>",
+        screenshot_base64="",
+        headings=[],
+        navigation_links=[],
+        text_content="",
+        images=[],
+        colors=["#ff0000", "#0000ff"],
+        fonts=["Inter"],
+        sections=["hero", "footer"],
+        error="",
+    )
+    deploy_result = DeployResult(
+        subdomain="example-com",
+        index_path=tmp_path / "example-com" / "index.html",
+        sites_dir=tmp_path,
+    )
+    mock_html = "<!DOCTYPE html><html><body>Done</body></html>"
+    discovery_events = []
+
+    original_publish = job_service.publish_status
+
+    async def capture(jid, event, data):
+        if event == "discovery":
+            discovery_events.append(data)
+        return await original_publish(jid, event, data)
+
+    job_service.publish_status = capture
+
+    with (
+        patch("sastaspace.crawler.crawl", new_callable=AsyncMock, return_value=crawl_result),
+        patch("sastaspace.redesigner.agno_redesign", return_value=mock_html),
+        patch("sastaspace.deployer.deploy", return_value=deploy_result),
+    ):
+        from sastaspace.jobs import redesign_handler
+
+        await redesign_handler(job_id, "https://example.com", "standard", job_service)
+
+    assert len(discovery_events) == 1
+    labels = [i["label"] for i in discovery_events[0]["items"]]
+    assert "Title" in labels
+    assert "Colors" in labels

@@ -285,6 +285,25 @@ async def redesign_handler(
         crawl_duration,
     )
 
+    # Emit discovered site facts for the UI discovery grid
+    _discovery_items = []
+    if crawl_result.title:
+        _discovery_items.append({"label": "Title", "value": crawl_result.title})
+    if crawl_result.colors:
+        _discovery_items.append(
+            {"label": "Colors", "value": f"{len(crawl_result.colors)} detected"}
+        )
+    if crawl_result.sections:
+        _discovery_items.append(
+            {"label": "Sections", "value": f"{len(crawl_result.sections)} content sections"}
+        )
+    if crawl_result.fonts:
+        _discovery_items.append({"label": "Fonts", "value": crawl_result.fonts[0]})
+    if _discovery_items:
+        await job_service.publish_status(
+            job_id, "discovery", {"job_id": job_id, "items": _discovery_items}
+        )
+
     # Step 2: Redesigning
     logger.info("JOB STEP 2/3: Redesigning | job=%s pipeline=%s", job_id, pipeline)
     await update_job(
