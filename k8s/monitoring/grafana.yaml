@@ -82,11 +82,15 @@ spec:
               key: admin-password
         - name: GF_USERS_ALLOW_SIGN_UP
           value: "false"
+        - name: GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH
+          value: "/var/lib/grafana/dashboards/sastaspace-—-infrastructure-overview.json"
         volumeMounts:
         - name: datasources
           mountPath: /etc/grafana/provisioning/datasources
         - name: dashboard-providers
           mountPath: /etc/grafana/provisioning/dashboards
+        - name: dashboards
+          mountPath: /var/lib/grafana/dashboards
         - name: data
           mountPath: /var/lib/grafana
         resources:
@@ -109,6 +113,9 @@ spec:
       - name: dashboard-providers
         configMap:
           name: grafana-dashboard-providers
+      - name: dashboards
+        configMap:
+          name: grafana-dashboards
       - name: data
         persistentVolumeClaim:
           claimName: grafana-pvc
