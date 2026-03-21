@@ -19,11 +19,14 @@ Users see a stunning AI redesign of their own website and immediately want to hi
 - ✓ Deployer manages subdomain registry and writes HTML to `sites/` directory — existing
 - ✓ No Anthropic API key required — uses Claude Code subscription via local gateway — existing
 
+### Validated
+
+- ✓ Public landing page with URL input — hero section, Spotlight animation, URL validation — Validated in Phase 3: Core UI
+- ✓ Real-time progress feedback — SSE client (fetch + ReadableStream), per-step animated indicators, AppFlow state machine — Validated in Phase 3: Core UI
+- ✓ Redesign result page — sandboxed iframe teaser, shareable `/[subdomain]/` dynamic route — Validated in Phase 3: Core UI
+
 ### Active
 
-- [ ] Public landing page with URL input — user enters a domain and submits
-- [ ] Real-time progress feedback — user sees what's happening during the 30-60s redesign
-- [ ] Redesign result page — full redesign shown in an iframe/preview with link to original
 - [ ] Contact form CTA — "Like what you see? Let's build the real thing" → name, email, message
 - [ ] API endpoint — FastAPI route that accepts a URL and streams/returns redesign status + result
 - [ ] Beautiful, professional design — the site itself must look like a $5,000 website (it's a portfolio)
@@ -57,8 +60,10 @@ Users see a stunning AI redesign of their own website and immediately want to hi
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| Next.js for frontend | SSR for SEO, React ecosystem, strong design capabilities | — Pending |
-| Full redesign view (not side-by-side) | Cleaner, more impactful first impression | — Pending |
+| Next.js for frontend | SSR for SEO, React ecosystem, strong design capabilities | ✓ Phase 2 |
+| Full redesign view (not side-by-side) | Cleaner, more impactful first impression | ✓ Phase 3 — blurred iframe teaser on result page |
+| SSE via fetch + ReadableStream (not EventSource) | POST-based SSE required for auth-ready future; EventSource is GET-only | ✓ Phase 3 |
+| No time estimate on progress view | Avoids false expectations; decided in design contract D-07 | ✓ Phase 3 |
 | Contact form (not booking link) | Allows async lead capture without requiring calendar integration | — Pending |
 | Local hosting via Cloudflare tunnel | User already has this setup, avoids hosting costs | — Pending |
 | Keep backend as FastAPI (extend, don't replace) | Existing CLI already uses FastAPI preview server | — Pending |
@@ -81,4 +86,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-03-21 after initialization*
+*Last updated: 2026-03-21 after Phase 3: Core UI (Landing + Progress + Result) complete*
