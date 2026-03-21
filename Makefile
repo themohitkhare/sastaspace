@@ -8,7 +8,8 @@ RSYNC_EXCLUDE := --exclude='.git' --exclude='node_modules' --exclude='__pycache_
                  --exclude='test-results' --exclude='*.egg-info'
 
 .PHONY: ci install lint test dev dev-api dev-web \
-        deploy deploy-build deploy-logs deploy-status deploy-down k8s-apply
+        deploy deploy-build deploy-logs deploy-status deploy-down k8s-apply \
+        deploy-monitoring monitoring-status monitoring-logs
 
 install:
 	uv sync
@@ -62,3 +63,20 @@ deploy-status:
 
 deploy-down:
 	@$(SSH) "sudo microk8s kubectl delete namespace sastaspace --ignore-not-found"
+
+# ── Monitoring (Grafana + Prometheus + Loki) ──────────────────────────────────
+
+deploy-monitoring:
+	@echo "→ Prerequisite: grafana-admin secret must exist in monitoring namespace"
+	@echo "  (see docs/DEPLOYMENT.md for first-time setup)"
+	@echo "→ Syncing code to $(REMOTE_USER)@$(REMOTE_HOST):$(REMOTE_DIR)..."
+	@rsync -az --delete $(RSYNC_EXCLUDE) . $(REMOTE_USER)@$(REMOTE_HOST):$(REMOTE_DIR)
+	@echo "→ Applying monitoring manifests..."
+	@$(SSH) "sudo microk8s kubectl apply -f $(REMOTE_DIR)/k8s/monitoring/"
+	@echo "✓ Monitoring deployed. Dashboard: https://monitor.sastaspace.com"
+
+monitoring-status:
+	@$(SSH) "sudo microk8s kubectl get pods,svc,ingress -n monitoring"
+
+monitoring-logs:
+	@$(SSH) "sudo microk8s kubectl logs -f -n monitoring -l 'app in (grafana,prometheus,loki)' --max-log-requests=6"
