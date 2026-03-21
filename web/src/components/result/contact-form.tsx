@@ -92,7 +92,7 @@ export function ContactForm({ subdomain }: ContactFormProps) {
             <h2 className="text-2xl font-semibold text-foreground text-center mb-8">
               Like what you see? Let&apos;s build the real thing.
             </h2>
-            <form onSubmit={handleSubmit} className="w-full max-w-xl space-y-4">
+            <form onSubmit={handleSubmit} noValidate className="w-full max-w-xl space-y-4">
               {/* Name field */}
               <div>
                 <Label htmlFor="contact-name" className="mb-2">

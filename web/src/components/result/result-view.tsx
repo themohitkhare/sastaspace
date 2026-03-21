@@ -31,14 +31,14 @@ export function ResultView({ subdomain, isShareable }: ResultViewProps) {
 
         <div className="relative w-full aspect-[4/3] sm:aspect-video rounded-xl overflow-hidden border border-border">
           <iframe
-            src={`/${subdomain}/`}
+            src={`${process.env.NEXT_PUBLIC_BACKEND_URL ?? ""}/${subdomain}/`}
             sandbox="allow-scripts"
             className="w-full h-full"
             title="Your redesigned site preview"
           />
           <div className="absolute inset-0 backdrop-blur-md bg-background/30 flex flex-col items-center justify-center gap-4">
             <a
-              href={`/${subdomain}/`}
+              href={`${process.env.NEXT_PUBLIC_BACKEND_URL ?? ""}/${subdomain}/`}
               className="inline-flex items-center justify-center rounded-lg bg-primary text-primary-foreground text-sm font-medium h-11 px-6 transition-all hover:bg-primary/80 active:translate-y-px"
             >
               Take me to the future

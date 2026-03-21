@@ -71,7 +71,7 @@ export function UrlInputForm({ onSubmit }: UrlInputFormProps) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="w-full max-w-xl">
+    <form onSubmit={handleSubmit} noValidate className="w-full max-w-xl">
       <div className="flex flex-col sm:flex-row gap-2 sm:gap-0 w-full">
         <div className="relative flex-1">
           <Label htmlFor="url-input" className="sr-only">
