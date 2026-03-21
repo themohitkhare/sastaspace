@@ -42,7 +42,9 @@
   2. Sharing a result page URL (e.g., /example-com/) shows a dynamic preview with the subdomain name
   3. robots.txt and sitemap.xml are accessible at their standard paths
   4. Setting `NEXT_PUBLIC_ENABLE_TURNSTILE=false` hides the Turnstile widget and the contact form submits successfully without a token
-**Plans**: TBD
+**Plans**: 1 plan
+Plans:
+- [ ] 06-01-PLAN.md — SEO metadata, robots/sitemap, and Turnstile feature flag
 
 ### Phase 7: Design Assets
 **Goal**: The site has professional branding with custom favicon and social sharing images
@@ -77,6 +79,6 @@ Wave 1 (parallel): 5, 6, 7 → Wave 2: 8
 | 3. Core UI — Landing + Progress + Result | v1.0 | 3/3 | Complete | 2026-03-21 |
 | 4. Contact Form + Polish | v1.0 | 2/2 | Complete | 2026-03-21 |
 | 5. Docker Infrastructure | v2.0 | 0/? | Not started | - |
-| 6. SEO + Feature Flags | v2.0 | 0/? | Not started | - |
+| 6. SEO + Feature Flags | v2.0 | 1/1 | Planned | - |
 | 7. Design Assets | v2.0 | 0/? | Not started | - |
 | 8. E2E Test Suite | v2.0 | 0/? | Not started | - |
