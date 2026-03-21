@@ -148,9 +148,8 @@ def _run_agent(
             if content:
                 break
         if not content:
-            raise RedesignError(
-                f"{name} returned empty response after {len(_RETRY_DELAYS) + 1} attempts — rate limit?"
-            )  # noqa: E501
+            n = len(_RETRY_DELAYS) + 1
+            raise RedesignError(f"{name} empty after {n} attempts — rate limit?")
 
         # Extract token metrics
         if response.metrics:
