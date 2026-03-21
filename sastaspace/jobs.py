@@ -228,13 +228,19 @@ async def redesign_handler(
     The actual redesign pipeline handler run by workers.
     Crawl → Redesign → Deploy, publishing status updates along the way.
     """
+    import time as _time
+
     from sastaspace.config import Settings
     from sastaspace.crawler import crawl
     from sastaspace.deployer import deploy
 
     settings = Settings()
+    job_start = _time.monotonic()
+
+    logger.info("JOB START | job=%s url=%s tier=%s pipeline=%s", job_id, url, tier, settings.use_agno_pipeline)
 
     # Step 1: Crawling
+    logger.info("JOB STEP 1/3: Crawling | job=%s url=%s", job_id, url)
     await update_job(
         job_id, status=JobStatus.CRAWLING.value, progress=10, message="Crawling your site..."
     )
@@ -244,8 +250,12 @@ async def redesign_handler(
         {"job_id": job_id, "message": "Crawling your site...", "progress": 10},
     )
 
+    crawl_start = _time.monotonic()
     crawl_result = await crawl(url)
+    crawl_duration = _time.monotonic() - crawl_start
+
     if crawl_result.error:
+        logger.warning("JOB CRAWL FAILED | job=%s url=%s error=%s duration=%.1fs", job_id, url, crawl_result.error, crawl_duration)
         await update_job(
             job_id,
             status=JobStatus.FAILED.value,
@@ -259,7 +269,17 @@ async def redesign_handler(
         )
         return
 
+    logger.info(
+        "JOB CRAWL OK | job=%s title=%s sections=%d colors=%d duration=%.1fs",
+        job_id,
+        crawl_result.title[:50] if crawl_result.title else "N/A",
+        len(crawl_result.sections) if hasattr(crawl_result, "sections") else 0,
+        len(crawl_result.colors),
+        crawl_duration,
+    )
+
     # Step 2: Redesigning
+    logger.info("JOB STEP 2/3: Redesigning | job=%s pipeline=%s", job_id, "agno" if settings.use_agno_pipeline else "legacy")
     await update_job(
         job_id,
         status=JobStatus.REDESIGNING.value,
@@ -271,6 +291,8 @@ async def redesign_handler(
         "redesigning",
         {"job_id": job_id, "message": "AI is redesigning your site...", "progress": 40},
     )
+
+    redesign_start = _time.monotonic()
 
     # Choose redesign function based on tier / pipeline setting
     if settings.use_agno_pipeline:
@@ -298,10 +320,14 @@ async def redesign_handler(
             api_key=settings.claude_code_api_key,
         )
 
-    # AI-generated HTML is trusted output — do not sanitize with nh3 as it
-    # strips <script> tags and event handlers that are part of the design.
+    redesign_duration = _time.monotonic() - redesign_start
+    logger.info(
+        "JOB REDESIGN OK | job=%s html_size=%d duration=%.1fs",
+        job_id, len(html), redesign_duration,
+    )
 
     # Step 3: Deploying
+    logger.info("JOB STEP 3/3: Deploying | job=%s", job_id)
     await update_job(
         job_id,
         status=JobStatus.DEPLOYING.value,
@@ -315,6 +341,12 @@ async def redesign_handler(
     )
 
     result = await asyncio.to_thread(deploy, url, html, settings.sites_dir)
+
+    total_duration = _time.monotonic() - job_start
+    logger.info(
+        "JOB DONE | job=%s subdomain=%s html_size=%d crawl=%.1fs redesign=%.1fs total=%.1fs",
+        job_id, result.subdomain, len(html), crawl_duration, redesign_duration, total_duration,
+    )
 
     # Register in DB
     await register_site(
