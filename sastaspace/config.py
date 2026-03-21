@@ -26,12 +26,24 @@ class Settings(BaseSettings):
     server_port: int = 8080
     claude_model: str = "claude-sonnet-4-6-20250514"
 
-    # Agno pipeline
+    # Agno pipeline (premium tier — Claude)
     use_agno_pipeline: bool = True
     crawl_analyst_model: str = "claude-haiku-4-5-20251001"
     design_strategist_model: str = "claude-sonnet-4-6-20250514"
     html_generator_model: str = "claude-sonnet-4-6-20250514"
     quality_reviewer_model: str = "claude-haiku-4-5-20251001"
+
+    # Ollama (free tier)
+    ollama_url: str = "http://localhost:11434/v1"
+    ollama_api_key: str = "ollama"
+
+    # Free tier model assignments (Ollama)
+    free_crawl_analyst_model: str = "glm4:latest"
+    free_design_strategist_model: str = "glm4:latest"
+    free_copywriter_model: str = "glm4:latest"
+    free_component_selector_model: str = "glm4:latest"
+    free_html_generator_model: str = "glm4:latest"
+    free_quality_reviewer_model: str = "glm4:latest"
 
     cors_origins: str | list[str] = ["http://localhost:3000"]
     rate_limit_max: int = 3
