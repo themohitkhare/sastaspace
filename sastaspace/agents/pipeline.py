@@ -54,13 +54,22 @@ MAX_QUALITY_RETRIES = 2
 
 
 def _extract_json(text: str) -> dict:
-    """Extract a JSON object from agent response text, handling markdown fences."""
+    """Extract a JSON object from agent response text.
+
+    Handles markdown fences, preamble text, and trailing text after the JSON.
+    """
     text = text.strip()
     # Strip markdown code fences if present
     text = re.sub(r"^```(?:json)?\s*\n?", "", text, flags=re.IGNORECASE)
     text = re.sub(r"\n?```\s*$", "", text, flags=re.IGNORECASE)
     text = text.strip()
-    return json.loads(text)
+    # Find the first { to skip any preamble text the model may have added
+    start = text.find("{")
+    if start == -1:
+        raise json.JSONDecodeError("No JSON object found", text, 0)
+    # raw_decode parses the first valid JSON value and ignores any trailing text
+    obj, _ = json.JSONDecoder().raw_decode(text, start)
+    return obj
 
 
 def _create_model(model_id: str, settings: Settings) -> OpenAILike:
