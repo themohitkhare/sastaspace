@@ -21,6 +21,7 @@ class Settings(BaseSettings):
         if env_val:
             return Path(env_val)
         return v
+
     server_port: int = 8080
     claude_model: str = "claude-sonnet-4-5-20250929"
 

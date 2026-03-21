@@ -2,6 +2,7 @@
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
+from bs4 import BeautifulSoup
 
 from sastaspace.crawler import (
     CrawlResult,
@@ -12,8 +13,6 @@ from sastaspace.crawler import (
     _extract_text,
     crawl,
 )
-
-from bs4 import BeautifulSoup
 
 
 def make_mock_page(
@@ -248,7 +247,9 @@ def test_to_prompt_context_with_sections():
 
 def test_extract_text():
     """Line 83: _extract_text function."""
-    html = "<html><body><script>var x=1;</script><p>Hello world</p><style>.x{}</style></body></html>"
+    html = (
+        "<html><body><script>var x=1;</script><p>Hello world</p><style>.x{}</style></body></html>"
+    )
     result = _extract_text(html)
     assert "Hello world" in result
     assert "var x" not in result
@@ -285,7 +286,10 @@ def test_extract_images():
 
 def test_extract_sections():
     """Lines 126-129: _extract_sections function."""
-    html = '<html><body><section class="hero"><h2>Welcome</h2><p>Content here.</p></section></body></html>'
+    html = (
+        '<html><body><section class="hero">'
+        "<h2>Welcome</h2><p>Content here.</p></section></body></html>"
+    )
     soup = BeautifulSoup(html, "html.parser")
     sections = _extract_sections(soup)
     assert len(sections) == 1
@@ -334,10 +338,10 @@ def test_ensure_chromium_handles_exception():
 async def test_crawl_extracts_meta_and_favicon():
     """Lines 176, 181: meta_description and favicon extraction."""
     html_with_meta = (
-        '<html><head>'
+        "<html><head>"
         '<meta name="description" content="A great site">'
         '<link rel="icon" href="/favicon.ico">'
-        '</head><body><h1>Test</h1></body></html>'
+        "</head><body><h1>Test</h1></body></html>"
     )
     mock_page = make_mock_page(html=html_with_meta)
     mock_page.evaluate = AsyncMock(return_value=["rgb(0,0,0)"])

@@ -543,7 +543,10 @@ def test_get_client_ip_unknown_no_client(tmp_sites, mock_crawl_result, mock_depl
         client = TestClient(app)
 
         # Patch Request.client to return None to hit the "unknown" branch
-        with patch("starlette.requests.Request.client", new_callable=lambda: property(lambda self: None)):
+        with patch(
+            "starlette.requests.Request.client",
+            new_callable=lambda: property(lambda self: None),
+        ):
             resp = client.post("/redesign", json={"url": "https://example.com"})
             # Should succeed since "unknown" is not localhost, rate limiting applies
             # but first request should be under the limit
