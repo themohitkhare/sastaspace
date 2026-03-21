@@ -320,6 +320,7 @@ def test_concurrency_cap(tmp_sites, mock_crawl_result, mock_deploy_result):
     with (
         patch("sastaspace.server.crawl", side_effect=slow_crawl),
         patch("sastaspace.server.redesign", return_value=mock_html),
+        patch("sastaspace.redesigner.agno_redesign", return_value=mock_html),
         patch(
             "sastaspace.server.deploy",
             return_value=mock_deploy_result,
@@ -358,6 +359,7 @@ def test_rate_limit(tmp_sites, mock_crawl_result, mock_deploy_result):
             return_value=mock_crawl_result,
         ),
         patch("sastaspace.server.redesign", return_value=mock_html),
+        patch("sastaspace.redesigner.agno_redesign", return_value=mock_html),
         patch(
             "sastaspace.server.deploy",
             return_value=mock_deploy_result,
@@ -400,6 +402,7 @@ def test_rate_limit_localhost_exempt(tmp_sites, mock_crawl_result, mock_deploy_r
             return_value=mock_crawl_result,
         ),
         patch("sastaspace.server.redesign", return_value=mock_html),
+        patch("sastaspace.redesigner.agno_redesign", return_value=mock_html),
         patch(
             "sastaspace.server.deploy",
             return_value=mock_deploy_result,
@@ -486,6 +489,7 @@ def test_get_client_ip_cf_connecting_ip(tmp_sites, mock_crawl_result, mock_deplo
     with (
         patch("sastaspace.server.crawl", new_callable=AsyncMock, return_value=mock_crawl_result),
         patch("sastaspace.server.redesign", return_value=mock_html),
+        patch("sastaspace.redesigner.agno_redesign", return_value=mock_html),
         patch("sastaspace.server.deploy", return_value=mock_deploy_result),
     ):
         from sastaspace.server import make_app
@@ -507,6 +511,7 @@ def test_get_client_ip_unknown_no_client(tmp_sites, mock_crawl_result, mock_depl
     with (
         patch("sastaspace.server.crawl", new_callable=AsyncMock, return_value=mock_crawl_result),
         patch("sastaspace.server.redesign", return_value=mock_html),
+        patch("sastaspace.redesigner.agno_redesign", return_value=mock_html),
         patch("sastaspace.server.deploy", return_value=mock_deploy_result),
     ):
         from sastaspace.server import make_app

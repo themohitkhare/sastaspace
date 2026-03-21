@@ -154,10 +154,13 @@ def _run_copywriter(
     model = _create_model(settings.design_strategist_model, settings)
 
     # Format content sections for the copywriter
-    sections_text = "\n".join(
-        f"### {s.heading or s.content_type}\n{s.content_summary}"
-        for s in site_analysis.content_sections
-    ) or "No sections extracted"
+    sections_text = (
+        "\n".join(
+            f"### {s.heading or s.content_type}\n{s.content_summary}"
+            for s in site_analysis.content_sections
+        )
+        or "No sections extracted"
+    )
 
     user_prompt = COPYWRITER_USER_TEMPLATE.format(
         brand_name=site_analysis.brand.name or "Unknown",
@@ -333,17 +336,17 @@ def _run_html_generator(
     copy_context = ""
     if copywriter_output and copywriter_output.headline:
         copy_sections = "\n".join(
-            f"- {s.section_type}: \"{s.new_heading}\" — {s.new_body[:200]}"
+            f'- {s.section_type}: "{s.new_heading}" — {s.new_body[:200]}'
             for s in copywriter_output.sections
         )
         copy_context = (
             f"\n\n## Optimized Copy (USE THIS TEXT instead of generic placeholders)\n"
-            f"Headline: \"{copywriter_output.headline}\"\n"
-            f"Subheadline: \"{copywriter_output.subheadline}\"\n"
-            f"Primary CTA: \"{copywriter_output.cta_primary.text}\"\n"
-            f"Secondary CTA: \"{copywriter_output.cta_secondary.text}\"\n"
+            f'Headline: "{copywriter_output.headline}"\n'
+            f'Subheadline: "{copywriter_output.subheadline}"\n'
+            f'Primary CTA: "{copywriter_output.cta_primary.text}"\n'
+            f'Secondary CTA: "{copywriter_output.cta_secondary.text}"\n'
             f"Sections:\n{copy_sections}\n"
-            f"Meta title: \"{copywriter_output.meta_title}\"\n"
+            f'Meta title: "{copywriter_output.meta_title}"\n'
         )
 
     user_prompt = (
@@ -483,8 +486,12 @@ def run_redesign_pipeline(crawl_result: CrawlResult, settings: Settings) -> str:
                 MAX_QUALITY_RETRIES + 1,
             )
             html = _run_html_generator(
-                design_brief, crawl_result, settings, quality_feedback,
-                component_selection, copywriter_output,
+                design_brief,
+                crawl_result,
+                settings,
+                quality_feedback,
+                component_selection,
+                copywriter_output,
             )
 
             logger.info("Pipeline step 4/4: QualityReviewer (attempt %d)", attempt)

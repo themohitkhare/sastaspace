@@ -40,6 +40,12 @@ spec:
           value: "https://sastaspace.com"
         - name: SASTASPACE_SITES_DIR
           value: "/data/sites"
+        - name: REDIS_URL
+          value: "redis://redis:6379"
+        - name: MONGODB_URL
+          value: "mongodb://mongodb:27017"
+        - name: MONGODB_DB
+          value: "sastaspace"
         volumeMounts:
         - name: sites-data
           mountPath: /data/sites
