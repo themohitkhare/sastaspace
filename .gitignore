@@ -3,6 +3,7 @@
 
 # Environment
 .env
+web/.env.local
 
 # Generated sites
 sites/
@@ -15,30 +16,31 @@ __pycache__/
 dist/
 .coverage
 .pytest_cache/
+htmlcov/
 
 # Node.js / Next.js
 web/node_modules/
 web/.next/
-web/.next/dev/
 
 # claude-code-api — clone from https://github.com/codingworkflow/claude-code-api
-# User clones the repo; uses its own docker/Dockerfile
 claude-code-api/
-
-# Coverage reports
-coverage/
-htmlcov/
 
 # Test artifacts
 test-results/
 web/test-results/
+
+# Screenshots (from browser monitoring — not source assets)
 *.png
+*.jpg
+*.jpeg
 
 # Playwright MCP logs
 .playwright-mcp/
 
-# Backend runtime data
+# Runtime data (never commit)
 backend/data/
+grafana/data/
+loki/data/
 
-# Grafana local config
-grafana/
+# Docker
+*.log

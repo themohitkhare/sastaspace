@@ -1,4 +1,0 @@
-[    1057ms] [WARNING] Multiple GoTrueClient instances detected in the same browser context. It is not an error, but this should be avoided as it may produce undefined behavior when used concurrently under the same storage key. @ https://21st.dev/_next/static/chunks/39645-c444f5370daa6b28.js:5
-[    1501ms] [WARNING] [PostHog.js] You have already initialized PostHog! Re-initializing is a no-op @ https://21st.dev/_next/static/chunks/2d2d3c67-4d6f2c780fa8c97c.js:0
-[    2479ms] [WARNING] An iframe which has both allow-scripts and allow-same-origin for its sandbox attribute can escape its sandboxing. @ https://do.featurebase.app/js/sdk.js:234
-[    3336ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ https://pbs.twimg.com/profile_images/1906333072863182848/-A67KlMP_400x400.jpg:0
