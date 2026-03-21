@@ -280,6 +280,7 @@ async def redesign_handler(
             crawl_result,
             api_url=settings.claude_code_api_url,
             model=settings.claude_model,
+            api_key=settings.claude_code_api_key,
         )
     else:
         html = await asyncio.to_thread(
@@ -287,6 +288,7 @@ async def redesign_handler(
             crawl_result,
             api_url=settings.claude_code_api_url,
             model=settings.claude_model,
+            api_key=settings.claude_code_api_key,
         )
 
     # AI-generated HTML is trusted output — do not sanitize with nh3 as it

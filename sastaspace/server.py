@@ -204,6 +204,7 @@ def make_app(sites_dir: Path) -> FastAPI:
                         crawl_result,
                         settings.claude_code_api_url,
                         settings.claude_model,
+                        settings.claude_code_api_key,
                     )
                 else:
                     html = await asyncio.to_thread(
@@ -211,6 +212,7 @@ def make_app(sites_dir: Path) -> FastAPI:
                         crawl_result,
                         settings.claude_code_api_url,
                         settings.claude_model,
+                        settings.claude_code_api_key,
                     )
 
                 # AI-generated HTML is trusted output — do not sanitize with nh3

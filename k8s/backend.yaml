@@ -28,6 +28,8 @@ spec:
         env:
         - name: CLAUDE_CODE_API_URL
           value: "http://192.168.0.38:8000/v1"
+        - name: CLAUDE_CODE_API_KEY
+          value: "47de609925f4b38bca0fc67019685d09f5efb330d61f7e9469040499ed8ee8d2"
         - name: CORS_ORIGINS
           value: "https://sastaspace.com"
         - name: SASTASPACE_SITES_DIR

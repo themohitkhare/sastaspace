@@ -9,6 +9,7 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 
     claude_code_api_url: str = "http://localhost:8000/v1"
+    claude_code_api_key: str = "claude-code"
     sites_dir: Path = Path("./sites")
 
     @field_validator("sites_dir", mode="before")

@@ -79,6 +79,7 @@ def redesign(
     crawl_result: CrawlResult,
     api_url: str = "http://localhost:8000/v1",
     model: str = "claude-sonnet-4-5-20250929",
+    api_key: str = "claude-code",
 ) -> str:
     """
     Use the claude-code-api gateway to redesign a crawled website into a single HTML file.
@@ -89,7 +90,7 @@ def redesign(
     if crawl_result.error:
         raise RedesignError(f"Cannot redesign — crawl failed: {crawl_result.error}")
 
-    client = OpenAI(base_url=api_url, api_key="claude-code")
+    client = OpenAI(base_url=api_url, api_key=api_key)
 
     user_text = USER_PROMPT_TEMPLATE.format(
         crawl_context=crawl_result.to_prompt_context(),
@@ -242,6 +243,7 @@ def redesign_premium(
     crawl_result: CrawlResult,
     api_url: str = "http://localhost:8000/v1",
     model: str = "claude-sonnet-4-5-20250929",
+    api_key: str = "claude-code",
 ) -> str:
     """
     Premium redesign with sales psychology, neuromarketing, and conversion optimization.
@@ -255,7 +257,7 @@ def redesign_premium(
     if crawl_result.error:
         raise RedesignError(f"Cannot redesign — crawl failed: {crawl_result.error}")
 
-    client = OpenAI(base_url=api_url, api_key="claude-code")
+    client = OpenAI(base_url=api_url, api_key=api_key)
 
     user_text = PREMIUM_USER_PROMPT_TEMPLATE.format(
         crawl_context=crawl_result.to_prompt_context(),
