@@ -1,7 +1,9 @@
 import { NextRequest } from "next/server";
 import { Resend } from "resend";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+function getResend() {
+  return new Resend(process.env.RESEND_API_KEY);
+}
 
 function escapeHtml(str: string): string {
   return str
@@ -45,7 +47,7 @@ export async function POST(request: NextRequest) {
 
     // 4. Send email via Resend (per D-15, D-16, D-17)
     const domain = subdomain?.replace(/-/g, ".") || "unknown";
-    const { error } = await resend.emails.send({
+    const { error } = await getResend().emails.send({
       from: `SastaSpace <noreply@sastaspace.com>`,
       to: [process.env.OWNER_EMAIL!],
       replyTo: email,

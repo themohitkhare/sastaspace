@@ -2,6 +2,7 @@
 
 import { motion } from "motion/react";
 import { ExternalLink } from "lucide-react";
+import { ContactForm } from "@/components/result/contact-form";
 
 interface ResultViewProps {
   subdomain: string;
@@ -54,6 +55,12 @@ export function ResultView({ subdomain, isShareable }: ResultViewProps) {
           View original site
           <ExternalLink className="w-3.5 h-3.5" />
         </a>
+
+        {/* Contact form section — per D-01 */}
+        <hr className="border-border w-full max-w-3xl mt-12" />
+        <div className="mt-12 w-full flex flex-col items-center pb-16">
+          <ContactForm subdomain={subdomain} />
+        </div>
       </div>
     </motion.div>
   );
