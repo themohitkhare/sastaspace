@@ -28,15 +28,15 @@ Requirements for production ship. Each maps to roadmap phases.
 
 ### Feature Flags
 
-- [ ] **FLAG-01**: `NEXT_PUBLIC_ENABLE_TURNSTILE` env var controls whether Turnstile widget renders on contact form
-- [ ] **FLAG-02**: When Turnstile is disabled, contact form submits without Turnstile token and API route skips verification
+- [x] **FLAG-01**: `NEXT_PUBLIC_ENABLE_TURNSTILE` env var controls whether Turnstile widget renders on contact form
+- [x] **FLAG-02**: When Turnstile is disabled, contact form submits without Turnstile token and API route skips verification
 
 ### SEO
 
-- [ ] **SEO-01**: Landing page has proper title, description, and OG meta tags for social sharing
-- [ ] **SEO-02**: Result pages at /[subdomain]/ have dynamic OG meta tags with subdomain name
+- [x] **SEO-01**: Landing page has proper title, description, and OG meta tags for social sharing
+- [x] **SEO-02**: Result pages at /[subdomain]/ have dynamic OG meta tags with subdomain name
 - [ ] **SEO-03**: App has a proper favicon and app icons
-- [ ] **SEO-04**: robots.txt and sitemap.xml are generated
+- [x] **SEO-04**: robots.txt and sitemap.xml are generated
 
 ### Design Assets
 
@@ -72,12 +72,12 @@ Requirements for production ship. Each maps to roadmap phases.
 | DOCK-05 | Phase 5 | Pending |
 | DOCK-06 | Phase 5 | Pending |
 | DOCK-07 | Phase 5 | Pending |
-| SEO-01 | Phase 6 | Pending |
-| SEO-02 | Phase 6 | Pending |
+| SEO-01 | Phase 6 | Complete |
+| SEO-02 | Phase 6 | Complete |
 | SEO-03 | Phase 7 | Pending |
-| SEO-04 | Phase 6 | Pending |
-| FLAG-01 | Phase 6 | Pending |
-| FLAG-02 | Phase 6 | Pending |
+| SEO-04 | Phase 6 | Complete |
+| FLAG-01 | Phase 6 | Complete |
+| FLAG-02 | Phase 6 | Complete |
 | ASSET-01 | Phase 7 | Pending |
 | ASSET-02 | Phase 7 | Pending |
 | TEST-01 | Phase 8 | Pending |

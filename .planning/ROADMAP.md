@@ -46,7 +46,7 @@ Plans:
   4. Setting `NEXT_PUBLIC_ENABLE_TURNSTILE=false` hides the Turnstile widget and the contact form submits successfully without a token
 **Plans**: 1 plan
 Plans:
-- [ ] 06-01-PLAN.md — SEO metadata, robots/sitemap, and Turnstile feature flag
+- [x] 06-01-PLAN.md — SEO metadata, robots/sitemap, and Turnstile feature flag
 
 ### Phase 7: Design Assets
 **Goal**: The site has professional branding with custom favicon and social sharing images
