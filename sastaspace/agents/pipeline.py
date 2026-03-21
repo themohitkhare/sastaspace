@@ -474,10 +474,15 @@ def _run_quality_reviewer(
     raw = _run_agent("quality_reviewer", QUALITY_REVIEWER_SYSTEM, user_prompt, model)
     try:
         data = _extract_json(raw)
-        return QualityReport.model_validate(data)
+        result = QualityReport.model_validate(data)
+        issues_summary = ", ".join(f"[{i.severity}]{i.description[:40]}" for i in result.issues[:5])
+        logger.info(
+            "AGENT RESULT | agent=quality_reviewer passed=%s score=%d issues=%d details=%s",
+            result.passed, result.overall_score, len(result.issues), issues_summary[:200] or "none",
+        )
+        return result
     except (json.JSONDecodeError, ValueError) as exc:
         redesign_guardrail_triggers_total.labels(guardrail_name="json_parse", action="fail").inc()
-        # If we can't parse the quality report, assume it passed to avoid blocking
         logger.warning("QualityReviewer returned invalid JSON, assuming pass: %s", exc)
         return QualityReport(passed=True, overall_score=7, strengths=["Could not parse review"])
 
