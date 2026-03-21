@@ -6,15 +6,17 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { validateUrl, extractDomain } from "@/lib/url-utils";
+import type { RedesignTier } from "@/hooks/use-redesign";
 
 interface UrlInputFormProps {
-  onSubmit: (url: string) => void;
+  onSubmit: (url: string, tier: RedesignTier) => void;
 }
 
 export function UrlInputForm({ onSubmit }: UrlInputFormProps) {
   const [input, setInput] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [faviconUrl, setFaviconUrl] = useState<string | null>(null);
+  const [tier, setTier] = useState<RedesignTier>("free");
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const fetchFavicon = useCallback((value: string) => {
@@ -67,11 +69,39 @@ export function UrlInputForm({ onSubmit }: UrlInputFormProps) {
       return;
     }
 
-    onSubmit(result.url);
+    onSubmit(result.url, tier);
   }
 
   return (
     <form onSubmit={handleSubmit} noValidate className="w-full max-w-xl">
+      {/* Tier toggle */}
+      <div className="flex gap-1 mb-3 p-1 rounded-lg bg-muted w-fit">
+        <button
+          type="button"
+          onClick={() => setTier("free")}
+          className={[
+            "px-4 py-1.5 rounded-md text-sm font-medium transition-colors",
+            tier === "free"
+              ? "bg-accent text-accent-foreground shadow-sm"
+              : "text-muted-foreground hover:text-foreground",
+          ].join(" ")}
+        >
+          Free — Open Source AI
+        </button>
+        <button
+          type="button"
+          onClick={() => setTier("premium")}
+          className={[
+            "px-4 py-1.5 rounded-md text-sm font-medium transition-colors",
+            tier === "premium"
+              ? "bg-accent text-accent-foreground shadow-sm"
+              : "text-muted-foreground hover:text-foreground",
+          ].join(" ")}
+        >
+          Premium — Claude Sonnet
+        </button>
+      </div>
+
       <div className="flex flex-col sm:flex-row gap-2 sm:gap-0 w-full">
         <div className="relative flex-1">
           <Label htmlFor="url-input" className="sr-only">

@@ -13,7 +13,7 @@ type StepState = {
 
 export type ActivityItem = { id: string; agent: string; message: string; timestamp: number };
 export type DiscoveryItem = { label: string; value: string };
-export type RedesignTier = "standard" | "premium";
+export type RedesignTier = "free" | "premium";
 
 export type RedesignState =
   | { status: "idle" }
@@ -62,7 +62,7 @@ export function useRedesign() {
   const [state, setState] = useState<RedesignState>({ status: "idle" });
   const abortRef = useRef<AbortController | null>(null);
   const lastUrlRef = useRef<string>("");
-  const lastTierRef = useRef<RedesignTier>("standard");
+  const lastTierRef = useRef<RedesignTier>("free");
 
   const streamJob = useCallback(
     async (jobId: string, url: string, tier: RedesignTier, controller: AbortController) => {
@@ -199,7 +199,7 @@ export function useRedesign() {
   );
 
   const start = useCallback(
-    async (url: string, tier: RedesignTier = "standard") => {
+    async (url: string, tier: RedesignTier = "free") => {
       // Abort any existing connection
       abortRef.current?.abort();
       const controller = new AbortController();
