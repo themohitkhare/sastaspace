@@ -485,7 +485,7 @@ test.describe("SSE progress flow (mocked backend)", () => {
     // Wait for the progress view to render with step indicators
     // The progress view shows step labels like "Analyzing example.com"
     await expect(page.getByText(/Analyzing example\.com/i)).toBeVisible({ timeout: 5000 });
-    await expect(page.getByText(/Redesigning your site with AI/i)).toBeVisible({ timeout: 5000 });
+    await expect(page.getByText(/Redesigning your site with AI/i).first()).toBeVisible({ timeout: 5000 });
     await expect(page.getByText(/Preparing your new example\.com/i)).toBeVisible({ timeout: 5000 });
   });
 
