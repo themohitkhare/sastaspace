@@ -180,7 +180,9 @@ def agno_redesign(
     """
     from sastaspace.agents.pipeline import run_redesign_pipeline
 
-    return run_redesign_pipeline(crawl_result, settings, progress_callback=progress_callback)
+    return run_redesign_pipeline(
+        crawl_result, settings, progress_callback=progress_callback, tier=tier
+    )
 
 
 # ---------------------------------------------------------------------------
