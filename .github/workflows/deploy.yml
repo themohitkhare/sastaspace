@@ -39,7 +39,9 @@ jobs:
           docker push localhost:32000/sastaspace-frontend:${{ github.sha }}
 
       - name: Apply k8s manifests
-        run: sudo microk8s kubectl apply -f k8s/
+        run: |
+          sudo microk8s kubectl apply -f k8s/namespace.yaml
+          sudo microk8s kubectl apply -f k8s/
 
       - name: Rolling restart
         run: |
