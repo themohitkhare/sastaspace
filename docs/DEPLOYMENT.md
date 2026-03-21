@@ -272,6 +272,7 @@ curl -X PUT "https://api.cloudflare.com/client/v4/accounts/$ACCOUNT_ID/cfd_tunne
         {"hostname": "sastaspace.com",     "service": "http://localhost:80"},
         {"hostname": "www.sastaspace.com", "service": "http://localhost:80"},
         {"hostname": "api.sastaspace.com", "service": "http://localhost:80"},
+        {"hostname": "monitor.sastaspace.com", "service": "http://localhost:80"},
         {"service": "http_status:404"}
       ]
     }
@@ -285,6 +286,7 @@ All CNAMEs point to `<TUNNEL_ID>.cfargotunnel.com` (proxied):
 - `www.sastaspace.com`
 - `*.sastaspace.com`
 - `api.sastaspace.com`
+- `monitor.sastaspace.com`
 
 ---
 
@@ -386,6 +388,26 @@ Configure remote target if different from default:
 make deploy REMOTE_HOST=<SERVER_IP> REMOTE_USER=mkhare
 ```
 
+### Monitoring stack
+
+Located in `k8s/monitoring/` directory — deployed separately from the app:
+
+```bash
+make deploy-monitoring    # apply all monitoring manifests
+make monitoring-status    # check pod/svc/ingress status
+make monitoring-logs      # tail monitoring pod logs
+```
+
+First-time setup requires creating the Grafana admin secret:
+
+```bash
+sudo microk8s kubectl create namespace monitoring
+sudo microk8s kubectl create secret generic grafana-admin \
+  --namespace monitoring \
+  --from-literal=admin-password='<your-password>'
+make deploy-monitoring
+```
+
 ---
 
 ## 15. Traffic Architecture
@@ -407,6 +429,9 @@ Browser / API client
         │
         ├─── sastaspace.com / www ──────▶ frontend service :3000
         │                                 (Next.js pod)
+        │
+        ├─── monitor.sastaspace.com ──────▶ grafana service :3001
+        │                                   (Grafana pod, monitoring ns)
         │
         └─── api.sastaspace.com ────────▶ backend service :8080
                                           (FastAPI pod)
