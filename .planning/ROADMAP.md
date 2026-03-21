@@ -54,7 +54,9 @@ Plans:
   1. Browser tab shows a custom SastaSpace favicon (not the default Next.js icon)
   2. App icons render correctly when added to mobile home screen (iOS Safari, Android Chrome)
   3. OG image template exists and renders correctly in social sharing previews
-**Plans**: TBD
+**Plans**: 1 plan
+Plans:
+- [ ] 07-01-PLAN.md — Favicon, app icons, OG image, and manifest via Stitch MCP
 
 ### Phase 8: E2E Test Suite
 **Goal**: Automated Playwright tests verify the full user flow and can run inside Docker
@@ -80,5 +82,5 @@ Wave 1 (parallel): 5, 6, 7 → Wave 2: 8
 | 4. Contact Form + Polish | v1.0 | 2/2 | Complete | 2026-03-21 |
 | 5. Docker Infrastructure | v2.0 | 0/? | Not started | - |
 | 6. SEO + Feature Flags | v2.0 | 1/1 | Planned | - |
-| 7. Design Assets | v2.0 | 0/? | Not started | - |
+| 7. Design Assets | v2.0 | 1/1 | Planned | - |
 | 8. E2E Test Suite | v2.0 | 0/? | Not started | - |
