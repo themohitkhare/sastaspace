@@ -4,6 +4,7 @@
 Sequential pipeline: CrawlAnalyst -> DesignStrategist -> HTMLGenerator -> QualityReviewer
 With retry logic: if QualityReviewer fails, retry HTMLGenerator with feedback (max 2 retries).
 """
+
 from __future__ import annotations
 
 import json
@@ -22,7 +23,6 @@ from sastaspace.agents.metrics import (
     redesign_pipeline_total,
 )
 from sastaspace.agents.models import (
-    AgnoRedesignResult,
     DesignBrief,
     QualityReport,
     SiteAnalysis,
@@ -76,7 +76,7 @@ def _run_agent(
     start = time.monotonic()
     status = "success"
     try:
-        agent = Agent(model=model, system_prompt=system_prompt)
+        agent = Agent(model=model, instructions=system_prompt)
         response = agent.run(user_prompt)
         content = response.content or ""
 
@@ -118,9 +118,7 @@ def _run_crawl_analyst(crawl_result: CrawlResult, settings: Settings) -> SiteAna
         data = _extract_json(raw)
         return SiteAnalysis.model_validate(data)
     except (json.JSONDecodeError, ValueError) as exc:
-        redesign_guardrail_triggers_total.labels(
-            guardrail_name="json_parse", action="fail"
-        ).inc()
+        redesign_guardrail_triggers_total.labels(guardrail_name="json_parse", action="fail").inc()
         raise RedesignError(f"CrawlAnalyst returned invalid JSON: {exc}") from exc
 
 
@@ -139,9 +137,7 @@ def _run_design_strategist(
         data = _extract_json(raw)
         return DesignBrief.model_validate(data)
     except (json.JSONDecodeError, ValueError) as exc:
-        redesign_guardrail_triggers_total.labels(
-            guardrail_name="json_parse", action="fail"
-        ).inc()
+        redesign_guardrail_triggers_total.labels(guardrail_name="json_parse", action="fail").inc()
         raise RedesignError(f"DesignStrategist returned invalid JSON: {exc}") from exc
 
 
@@ -187,8 +183,10 @@ def _run_quality_reviewer(
         design_brief_json=design_brief.model_dump_json(indent=2),
         title=site_analysis.brand.name or "Unknown",
         section_count=len(site_analysis.content_sections),
-        key_content_preview=(site_analysis.key_content[:200] if site_analysis.key_content else "N/A"),
-        html_preview=html[:8000],
+        key_content_preview=(
+            site_analysis.key_content[:200] if site_analysis.key_content else "N/A"
+        ),
+        html_preview=html[:16000],
         html_length=len(html),
         has_doctype="<!doctype html" in html_lower,
         has_closing_html="</html>" in html_lower,
@@ -202,9 +200,7 @@ def _run_quality_reviewer(
         data = _extract_json(raw)
         return QualityReport.model_validate(data)
     except (json.JSONDecodeError, ValueError) as exc:
-        redesign_guardrail_triggers_total.labels(
-            guardrail_name="json_parse", action="fail"
-        ).inc()
+        redesign_guardrail_triggers_total.labels(guardrail_name="json_parse", action="fail").inc()
         # If we can't parse the quality report, assume it passed to avoid blocking
         logger.warning("QualityReviewer returned invalid JSON, assuming pass: %s", exc)
         return QualityReport(passed=True, overall_score=7, strengths=["Could not parse review"])

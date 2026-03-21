@@ -1,5 +1,6 @@
 # sastaspace/agents/metrics.py
 """Prometheus metrics for the Agno multi-agent redesign pipeline."""
+
 from __future__ import annotations
 
 from prometheus_client import Counter, Histogram

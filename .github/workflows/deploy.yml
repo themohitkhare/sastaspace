@@ -42,6 +42,7 @@ jobs:
     name: Security Scan
     runs-on: [self-hosted, linux, amd64]
     timeout-minutes: 15
+    needs: [test]
 
     steps:
       - name: Checkout

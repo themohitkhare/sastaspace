@@ -130,7 +130,7 @@ def redesign(
 # ---------------------------------------------------------------------------
 
 
-def agno_redesign(crawl_result: CrawlResult, settings) -> str:
+def agno_redesign(crawl_result: CrawlResult, settings, tier: str = "standard") -> str:
     """Redesign using Agno multi-agent pipeline.
 
     Uses a sequential pipeline of specialized agents:

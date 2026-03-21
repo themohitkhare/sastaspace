@@ -1,5 +1,6 @@
 # sastaspace/agents/prompts.py
 """System and user prompt templates for each agent in the redesign pipeline."""
+
 from __future__ import annotations
 
 # ---------------------------------------------------------------------------
@@ -189,7 +190,9 @@ The JSON must match this schema:
 {
   "passed": true/false,
   "overall_score": 1-10,
-  "issues": [{"severity": "critical|warning|info", "category": "", "description": "", "suggestion": ""}],
+  "issues": [
+    {"severity": "critical|warning|info", "category": "", "description": "", "suggestion": ""}
+  ],
   "feedback_for_regeneration": "",
   "strengths": []
 }"""

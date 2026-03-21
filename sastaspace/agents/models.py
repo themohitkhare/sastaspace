@@ -1,9 +1,9 @@
 # sastaspace/agents/models.py
 """Pydantic models for the Agno multi-agent redesign pipeline."""
+
 from __future__ import annotations
 
 from pydantic import BaseModel, Field
-
 
 # --- Crawl Analyst output ---
 
