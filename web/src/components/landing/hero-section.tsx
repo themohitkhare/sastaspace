@@ -2,7 +2,7 @@
 
 import React from "react";
 import { motion } from "motion/react";
-import { Spotlight } from "@/components/backgrounds/spotlight";
+import { FlickeringGrid } from "@/components/backgrounds/flickering-grid";
 import { UrlInputForm } from "@/components/landing/url-input-form";
 
 interface HeroSectionProps {
@@ -11,24 +11,37 @@ interface HeroSectionProps {
 
 export function HeroSection({ onSubmit }: HeroSectionProps) {
   return (
-    <div className="relative min-h-screen flex flex-col items-center justify-center overflow-hidden bg-background">
-      <Spotlight />
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.2, ease: "easeOut" }}
-        className="relative z-10 flex flex-col items-center text-center px-4 pt-16 pb-12"
-      >
-        <div className="max-w-2xl flex flex-col items-center">
-          <h1 className="text-[28px] sm:text-[40px] font-semibold leading-[1.1] text-foreground mb-4">
-            See your website reimagined
-          </h1>
-          <p className="text-base text-muted-foreground mb-8 max-w-lg">
+    <div className="relative min-h-screen flex flex-col justify-center overflow-hidden bg-background">
+      <FlickeringGrid className="absolute inset-0 z-0" />
+      <div className="relative z-10 w-full max-w-6xl mx-auto px-6 sm:px-8 lg:px-12 py-24">
+        <div className="max-w-2xl">
+          <motion.h1
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 0.1, ease: "easeOut" }}
+            className="font-heading text-[clamp(2.5rem,6vw,4.5rem)] leading-[1.08] text-foreground"
+          >
+            See your website{" "}
+            <br className="hidden sm:block" />
+            <span className="text-accent">reimagined</span>
+          </motion.h1>
+          <motion.p
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 0.2, ease: "easeOut" }}
+            className="text-lg sm:text-xl text-muted-foreground font-sans mt-6 mb-10 max-w-lg"
+          >
             Enter your URL and watch AI redesign your site in under a minute.
-          </p>
-          <UrlInputForm onSubmit={onSubmit} />
+          </motion.p>
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 0.3, ease: "easeOut" }}
+          >
+            <UrlInputForm onSubmit={onSubmit} />
+          </motion.div>
         </div>
-      </motion.div>
+      </div>
     </div>
   );
 }

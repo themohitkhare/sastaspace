@@ -95,14 +95,14 @@ export function UrlInputForm({ onSubmit }: UrlInputFormProps) {
             placeholder="yourwebsite.com"
             value={input}
             onChange={handleInputChange}
-            className="h-12 ps-12 rounded-lg sm:rounded-r-none"
+            className="h-12 ps-12 rounded-lg sm:rounded-r-none text-base font-sans"
             aria-invalid={!!error}
           />
         </div>
         <Button
           type="submit"
           size="lg"
-          className="h-11 min-h-11 rounded-lg sm:rounded-l-none px-6"
+          className="h-12 min-h-12 rounded-lg sm:rounded-l-none px-8 bg-accent text-accent-foreground hover:bg-accent/90 font-medium"
         >
           Redesign My Site
         </Button>
