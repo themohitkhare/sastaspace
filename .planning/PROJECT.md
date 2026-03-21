@@ -2,7 +2,7 @@
 
 ## What This Is
 
-SastaSpace is a lead generation tool and AI-powered website redesigner. Anyone can enter their domain URL and receive a free, Claude AI-generated redesign of their website — then hire the owner as a consultant to build the real thing. The backend CLI pipeline (crawl → AI redesign → preview) is already built; the next milestone is a beautiful public-facing web frontend.
+SastaSpace is a lead generation tool and AI-powered website redesigner. Anyone can enter their domain URL and receive a free, Claude AI-generated redesign of their website — then hire the owner as a consultant to build the real thing. The full-stack application (FastAPI backend + Next.js frontend) is built and functional in development. Next step is production readiness via containerization and E2E testing.
 
 ## Core Value
 
@@ -31,12 +31,22 @@ Users see a stunning AI redesign of their own website and immediately want to hi
 - ✓ Mobile responsive — 375px viewport, no overflow, 44px touch targets — Validated in Phase 4: Contact Form + Polish
 - ✓ Beautiful, professional design — shadcn v4, Spotlight animation, smooth SSE progress — Validated in Phases 3–4
 
+### Active
+
+- [ ] Docker Compose orchestration — single `docker compose up` runs backend, frontend, and claude-code-api
+- [ ] E2E Playwright test suite — full user flow from landing → progress → result → contact form
+- [ ] Feature flags — Turnstile behind `NEXT_PUBLIC_ENABLE_TURNSTILE` flag
+- [ ] SEO & OG meta tags — social sharing previews, sitemap, structured data
+- [ ] Production environment config — .env management, health checks, graceful shutdown
+- [ ] Design assets — favicon, OG images, app icons via Stitch MCP
+
 ### Out of Scope
 
 - User authentication / accounts — it's free and open, no login needed
 - Billing / payments — lead gen model, not SaaS subscription
 - Multiple redesign history per user — single-use flow, no persistence needed per visitor
-- Backend hosting migration — runs on local machine via Cloudflare Zero Trust tunnel, not cloud
+- Cloud hosting migration — Docker runs locally, exposed via Cloudflare tunnel, not cloud-hosted
+- Kubernetes / container orchestration — Docker Compose is sufficient for single-machine deployment
 
 ## Context
 
@@ -85,4 +95,17 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-03-21 after Phase 4: Contact Form + Polish complete — v1.0 milestone all phases done*
+## Current Milestone: v2.0 Production Ship
+
+**Goal:** Make SastaSpace production-ready with Docker containerization, E2E tests, and polish.
+
+**Target features:**
+- Docker Compose with backend + frontend + claude-code-api gateway
+- Playwright E2E test suite covering full user flow
+- Feature flags for Turnstile (production vs dev)
+- SEO/OG meta tags for social sharing
+- Design assets (favicon, OG images) via Stitch MCP
+- Production environment configuration
+
+---
+*Last updated: 2026-03-21 after v1.0 milestone archived — starting v2.0 Production Ship*
