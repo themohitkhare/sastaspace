@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Production Ship
 status: unknown
-stopped_at: Completed 09-01-PLAN.md
-last_updated: "2026-03-21T12:22:33.900Z"
+stopped_at: Completed 09-02-PLAN.md
+last_updated: "2026-03-21T12:27:31.649Z"
 progress:
   total_phases: 5
-  completed_phases: 4
+  completed_phases: 5
   total_plans: 6
-  completed_plans: 5
+  completed_plans: 6
 ---
 
 # SastaSpace — Project State
@@ -45,6 +45,7 @@ Plan: 2 of 2
 | Phase 05 P01 | 3min | 2 tasks | 9 files |
 | Phase 08 P01 | 3min | 2 tasks | 5 files |
 | Phase 09 P01 | 3min | 3 tasks | 3 files |
+| Phase 09 P02 | 3min | 5 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -64,6 +65,9 @@ Recent decisions affecting current work:
 - [Phase 08]: Playwright route interception for SSE mocking; Docker test profile with mcr.microsoft.com/playwright image
 - [Phase 09]: Instrument Serif (weight 400, normal+italic) for headlines, Space Grotesk (variable) for body text
 - [Phase 09]: Gold accent oklch(0.72 0.12 75) with warm hue angles 50-80 throughout palette
+- [Phase 09]: Hero uses left-aligned asymmetric layout with FlickeringGrid background
+- [Phase 09]: How-it-works uses vertical editorial layout with large faded gold numbers, not three-column grid
+- [Phase 09]: All CTA buttons use bg-accent (gold) consistently across all pages
 
 ### Pending Todos
 
@@ -75,8 +79,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-21T12:22:33.899Z
-Stopped at: Completed 09-01-PLAN.md
+Last session: 2026-03-21T12:27:31.648Z
+Stopped at: Completed 09-02-PLAN.md
 Resume file: None
 
 ## Parallelization Note

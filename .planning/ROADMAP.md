@@ -96,4 +96,4 @@ Wave 1 (parallel): 5, 6, 7 → Wave 2: 8
 
 Plans:
 - [x] 09-01-PLAN.md — Design system: fonts (Instrument Serif + Space Grotesk), warm color palette, FlickeringGrid background
-- [ ] 09-02-PLAN.md — Component redesign: asymmetric hero, editorial how-it-works, polished result/progress views
+- [x] 09-02-PLAN.md — Component redesign: asymmetric hero, editorial how-it-works, polished result/progress views
