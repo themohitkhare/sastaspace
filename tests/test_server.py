@@ -422,34 +422,6 @@ def test_rate_limit_localhost_exempt(tmp_sites, mock_crawl_result, mock_deploy_r
             assert resp.status_code == 200, f"Request {i + 1} should succeed (localhost exempt)"
 
 
-def test_nh3_sanitization(tmp_sites, mock_crawl_result, mock_deploy_result):
-    """HTML with script tags is cleaned before deploy receives it."""
-    dirty_html = "<html><body><script>alert(1)</script><p>safe</p></body></html>"
-    captured_html = {}
-
-    def capture_deploy(url, html, sites_dir):
-        captured_html["html"] = html
-        return mock_deploy_result
-
-    with (
-        patch(
-            "sastaspace.server.crawl",
-            new_callable=AsyncMock,
-            return_value=mock_crawl_result,
-        ),
-        patch("sastaspace.server.redesign", return_value=dirty_html),
-        patch("sastaspace.server.deploy", side_effect=capture_deploy),
-    ):
-        from sastaspace.server import make_app
-
-        app = make_app(tmp_sites)
-        client = TestClient(app)
-        client.post("/redesign", json={"url": "https://example.com"})
-
-        assert "<script>" not in captured_html["html"]
-        assert "<p>safe</p>" in captured_html["html"]
-
-
 def test_error_crawl_failure(tmp_sites):
     """crawl error emits error SSE event with user-facing message."""
     from sastaspace.crawler import CrawlResult

@@ -70,7 +70,7 @@ export function useRedesign() {
     });
 
     try {
-      for await (const event of streamRedesign(url, undefined, controller.signal, tier)) {
+      for await (const event of streamRedesign(url, process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:8080", controller.signal, tier)) {
         if (controller.signal.aborted) return;
 
         const stepNames = STEPS.map((s) => s.name);

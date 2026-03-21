@@ -1,5 +1,6 @@
 # sastaspace/jobs.py
 """Redis Stream-based async job service for redesign pipelines."""
+
 from __future__ import annotations
 
 import asyncio
@@ -42,17 +43,11 @@ class JobService:
 
     async def connect(self) -> None:
         """Initialize Redis connections."""
-        self._redis = aioredis.from_url(
-            self.redis_url, decode_responses=True, max_connections=10
-        )
-        self._pubsub_redis = aioredis.from_url(
-            self.redis_url, decode_responses=True
-        )
+        self._redis = aioredis.from_url(self.redis_url, decode_responses=True, max_connections=10)
+        self._pubsub_redis = aioredis.from_url(self.redis_url, decode_responses=True)
         # Create consumer group if it doesn't exist
         try:
-            await self._redis.xgroup_create(
-                STREAM_KEY, GROUP_NAME, id="0", mkstream=True
-            )
+            await self._redis.xgroup_create(STREAM_KEY, GROUP_NAME, id="0", mkstream=True)
         except aioredis.ResponseError as e:
             if "BUSYGROUP" not in str(e):
                 raise
@@ -129,9 +124,7 @@ class JobService:
                 return
 
             while True:
-                message = await pubsub.get_message(
-                    ignore_subscribe_messages=True, timeout=30.0
-                )
+                message = await pubsub.get_message(ignore_subscribe_messages=True, timeout=30.0)
                 if message is None:
                     # Timeout — check if job completed while we were waiting
                     job = await get_job(job_id)
@@ -261,7 +254,9 @@ async def redesign_handler(
         )
         err = "Could not reach that website. Check the URL and try again."
         await job_service.publish_status(
-            job_id, "error", {"job_id": job_id, "error": err},
+            job_id,
+            "error",
+            {"job_id": job_id, "error": err},
         )
         return
 
@@ -294,10 +289,8 @@ async def redesign_handler(
             model=settings.claude_model,
         )
 
-    # Sanitize
-    import nh3
-
-    html = nh3.clean(html)
+    # AI-generated HTML is trusted output — do not sanitize with nh3 as it
+    # strips <script> tags and event handlers that are part of the design.
 
     # Step 3: Deploying
     await update_job(

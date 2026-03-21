@@ -1,5 +1,6 @@
 # tests/test_jobs.py
 """Tests for the Redis Stream job service."""
+
 import json
 from unittest.mock import AsyncMock, patch
 
@@ -45,9 +46,7 @@ def job_service(mock_redis):
 
 async def test_enqueue_creates_job(job_service, mock_redis):
     """enqueue() creates a DB record and pushes to Redis Stream."""
-    job_id = await job_service.enqueue(
-        url="https://example.com", client_ip="1.2.3.4"
-    )
+    job_id = await job_service.enqueue(url="https://example.com", client_ip="1.2.3.4")
 
     assert isinstance(job_id, str)
     assert len(job_id) == 36  # UUID format

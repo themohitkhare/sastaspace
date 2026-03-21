@@ -1,5 +1,6 @@
 # tests/test_redesigner_premium.py
 """Tests for the premium (psychology-based) redesigner."""
+
 import base64
 from unittest.mock import MagicMock, patch
 

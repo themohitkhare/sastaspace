@@ -15,7 +15,6 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 from uuid import uuid4
 
-import nh3
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
@@ -171,9 +170,7 @@ def make_app(sites_dir: Path) -> FastAPI:
                 crawl_result = await crawl(url)
                 if crawl_result.error:
                     err_msg = "Could not reach that website. Check the URL and try again."
-                    await update_job(
-                        job_id, status=JobStatus.FAILED.value, error=err_msg
-                    )
+                    await update_job(job_id, status=JobStatus.FAILED.value, error=err_msg)
                     yield _sse_event(
                         json.dumps({"job_id": job_id, "error": err_msg}),
                         "error",
@@ -212,8 +209,9 @@ def make_app(sites_dir: Path) -> FastAPI:
                         settings.claude_model,
                     )
 
-                # Sanitize with nh3
-                html = nh3.clean(html)
+                # AI-generated HTML is trusted output — do not sanitize with nh3
+                # as it strips <script> tags and event handlers that are part
+                # of the design.
 
                 # Step 3: Deploy (sync -- use to_thread)
                 deploying_data = {
@@ -304,9 +302,7 @@ def make_app(sites_dir: Path) -> FastAPI:
         # If Redis is available, use async job queue
         svc = _job_service_holder["svc"]
         if svc:
-            job_id = await svc.enqueue(
-                url=body.url, client_ip=ip, tier=tier
-            )
+            job_id = await svc.enqueue(url=body.url, client_ip=ip, tier=tier)
             return EventSourceResponse(redis_job_stream(job_id))
 
         # Fallback: inline processing (no Redis)

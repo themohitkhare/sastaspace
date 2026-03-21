@@ -1,5 +1,6 @@
 # sastaspace/database.py
 """SQLite database for persistent job tracking and site metadata."""
+
 from __future__ import annotations
 
 from datetime import UTC, datetime
@@ -92,9 +93,7 @@ async def init_db() -> None:
         cursor = await db.execute("SELECT COUNT(*) FROM schema_version")
         row = await cursor.fetchone()
         if row[0] == 0:
-            await db.execute(
-                "INSERT INTO schema_version (version) VALUES (?)", (_SCHEMA_VERSION,)
-            )
+            await db.execute("INSERT INTO schema_version (version) VALUES (?)", (_SCHEMA_VERSION,))
         await db.commit()
     finally:
         await db.close()
@@ -244,9 +243,7 @@ async def list_sites(limit: int = 100) -> list[dict]:
     """List all deployed sites."""
     db = await get_db()
     try:
-        cursor = await db.execute(
-            "SELECT * FROM sites ORDER BY created_at DESC LIMIT ?", (limit,)
-        )
+        cursor = await db.execute("SELECT * FROM sites ORDER BY created_at DESC LIMIT ?", (limit,))
         rows = await cursor.fetchall()
         return [dict(r) for r in rows]
     finally:
