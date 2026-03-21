@@ -141,6 +141,7 @@ async def test_redesign_handler_success(job_service, tmp_path):
     with (
         patch("sastaspace.crawler.crawl", new_callable=AsyncMock, return_value=crawl_result),
         patch("sastaspace.redesigner.redesign", return_value=mock_html),
+        patch("sastaspace.redesigner.agno_redesign", return_value=mock_html),
         patch("sastaspace.deployer.deploy", return_value=deploy_result),
     ):
         await redesign_handler(job_id, "https://example.com", "standard", job_service)
@@ -180,11 +181,11 @@ async def test_redesign_handler_premium_tier(job_service, tmp_path):
 
     with (
         patch("sastaspace.crawler.crawl", new_callable=AsyncMock, return_value=crawl_result),
-        patch("sastaspace.redesigner.redesign_premium", return_value=mock_html) as mock_premium,
-        patch("sastaspace.redesigner.redesign") as mock_standard,
+        patch("sastaspace.redesigner.agno_redesign", return_value=mock_html) as mock_agno,
+        patch("sastaspace.redesigner.redesign_premium", return_value=mock_html),
+        patch("sastaspace.redesigner.redesign"),
         patch("sastaspace.deployer.deploy", return_value=deploy_result),
     ):
         await redesign_handler(job_id, "https://example.com", "premium", job_service)
 
-    mock_premium.assert_called_once()
-    mock_standard.assert_not_called()
+    mock_agno.assert_called_once()
