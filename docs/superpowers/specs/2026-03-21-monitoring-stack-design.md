@@ -58,7 +58,7 @@ Grafana (:3001) ← built-in login
 - Mounts `/proc` and `/sys` as read-only from host (needed for real host metrics, not container metrics)
 - Exposes host-level metrics: CPU, memory, disk, network
 - Service on port 9100
-- Prometheus auto-scrapes via service discovery
+- Prometheus auto-scrapes via kubernetes endpoints service discovery
 
 ### Blackbox Exporter
 
@@ -95,11 +95,11 @@ Grafana (:3001) ← built-in login
 - ConfigMap for provisioned datasources:
   - Prometheus (metrics) — pre-configured, no manual setup
   - Loki (logs) — pre-configured, no manual setup
-- ConfigMap for provisioned dashboards:
-  - Node Exporter Full (host metrics)
-  - Kubernetes Pods (pod CPU/memory/restarts)
-  - Blackbox Exporter (uptime, response times, SSL expiry)
-  - Loki Log Explorer (search/filter logs)
+- Dashboards imported from grafana.com after first login (persisted to PVC):
+  - Node Exporter Full — ID `1860` (host metrics)
+  - Kubernetes Pods — ID `15760` (pod CPU/memory/restarts)
+  - Blackbox Exporter — ID `7587` (uptime, response times, SSL expiry)
+  - Loki — use Grafana's built-in Explore view
 - Service on port 3001
 
 ### Ingress
@@ -118,7 +118,7 @@ k8s/monitoring/
 ├── blackbox-exporter.yaml  # Deployment + ConfigMap + Service
 ├── loki.yaml               # Deployment + PVC + ConfigMap + Service
 ├── promtail.yaml           # DaemonSet + ConfigMap + RBAC
-├── grafana.yaml            # Deployment + PVC + ConfigMaps + Secret + Service
+├── grafana.yaml            # Deployment + PVC + ConfigMaps + Service (Secret created out-of-band)
 └── ingress.yaml            # monitor.sastaspace.com → grafana:3001
 ```
 

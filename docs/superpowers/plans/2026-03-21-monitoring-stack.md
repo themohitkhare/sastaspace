@@ -114,13 +114,10 @@ data:
           - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
             action: keep
             regex: "true"
-          - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_port]
+          - source_labels: [__meta_kubernetes_pod_ip, __meta_kubernetes_pod_annotation_prometheus_io_port]
             action: replace
-            target_label: __address__
-            regex: (.+)
-            replacement: ${1}
-            source_labels: [__meta_kubernetes_pod_ip, __meta_kubernetes_pod_annotation_prometheus_io_port]
             separator: ":"
+            target_label: __address__
           - source_labels: [__meta_kubernetes_namespace]
             target_label: namespace
           - source_labels: [__meta_kubernetes_pod_name]
@@ -128,9 +125,32 @@ data:
           - source_labels: [__meta_kubernetes_pod_label_app]
             target_label: app
 
+      - job_name: kubernetes-services
+        kubernetes_sd_configs:
+          - role: service
+        relabel_configs:
+          - source_labels: [__meta_kubernetes_service_annotation_prometheus_io_scrape]
+            action: keep
+            regex: "true"
+          - source_labels: [__meta_kubernetes_service_annotation_prometheus_io_port]
+            action: replace
+            target_label: __address__
+            regex: (.+)
+            replacement: ${1}
+            source_labels: [__address__, __meta_kubernetes_service_annotation_prometheus_io_port]
+            separator: ":"
+          - source_labels: [__meta_kubernetes_namespace]
+            target_label: namespace
+          - source_labels: [__meta_kubernetes_service_name]
+            target_label: service
+
       - job_name: node-exporter
-        static_configs:
-          - targets: ["node-exporter.monitoring.svc:9100"]
+        kubernetes_sd_configs:
+          - role: endpoints
+        relabel_configs:
+          - source_labels: [__meta_kubernetes_service_name]
+            action: keep
+            regex: node-exporter
 
       - job_name: blackbox-http
         metrics_path: /probe
@@ -650,9 +670,6 @@ spec:
         - name: pods-logs
           mountPath: /var/log/pods
           readOnly: true
-        - name: containers-logs
-          mountPath: /var/lib/docker/containers
-          readOnly: true
         resources:
           requests:
             memory: "128Mi"
@@ -664,12 +681,10 @@ spec:
       - name: config
         configMap:
           name: promtail-config
+      # /var/log/pods is sufficient for CRI-compatible runtimes (microk8s uses containerd)
       - name: pods-logs
         hostPath:
           path: /var/log/pods
-      - name: containers-logs
-        hostPath:
-          path: /var/lib/docker/containers
 ```
 
 - [ ] **Step 2: Commit**
@@ -826,6 +841,16 @@ git add k8s/monitoring/grafana.yaml
 git commit -m "feat(monitoring): add Grafana with provisioned datasources"
 ```
 
+**Note on dashboards:** Datasources are auto-provisioned so they work immediately. For dashboards, import them from grafana.com after first login — this is simpler and more maintainable than embedding large JSON blobs in ConfigMaps:
+
+1. Login to Grafana → Dashboards → Import
+2. **Node Exporter Full**: ID `1860` (host CPU/memory/disk/network)
+3. **Blackbox Exporter**: ID `7587` (uptime, response times, SSL expiry)
+4. **Kubernetes Pods**: ID `15760` (pod CPU/memory/restarts)
+5. **Loki Logs**: Use Grafana's built-in Explore view (no import needed)
+
+These are saved to Grafana's PVC and persist across restarts.
+
 ---
 
 ### Task 7: Monitoring Ingress
@@ -935,6 +960,8 @@ Append after the `deploy-down` target:
 # ── Monitoring (Grafana + Prometheus + Loki) ──────────────────────────────────
 
 deploy-monitoring:
+	@echo "→ Prerequisite: grafana-admin secret must exist in monitoring namespace"
+	@echo "  (see docs/DEPLOYMENT.md for first-time setup)"
 	@echo "→ Syncing code to $(REMOTE_USER)@$(REMOTE_HOST):$(REMOTE_DIR)..."
 	@rsync -az --delete $(RSYNC_EXCLUDE) . $(REMOTE_USER)@$(REMOTE_HOST):$(REMOTE_DIR)
 	@echo "→ Applying monitoring manifests..."
