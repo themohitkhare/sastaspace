@@ -71,11 +71,6 @@ deploy-monitoring:
 	@echo "  (see docs/DEPLOYMENT.md for first-time setup)"
 	@echo "→ Syncing code to $(REMOTE_USER)@$(REMOTE_HOST):$(REMOTE_DIR)..."
 	@rsync -az --delete $(RSYNC_EXCLUDE) . $(REMOTE_USER)@$(REMOTE_HOST):$(REMOTE_DIR)
-	@echo "→ Creating dashboards ConfigMap from JSON files..."
-	@$(SSH) "sudo microk8s kubectl create configmap grafana-dashboards \
-	  --namespace monitoring \
-	  --from-file=/home/$(REMOTE_USER)/sastaspace/k8s/monitoring/dashboards/ \
-	  --dry-run=client -o yaml | sudo microk8s kubectl apply -f -"
 	@echo "→ Applying monitoring manifests..."
 	@$(SSH) "sudo microk8s kubectl apply -f $(REMOTE_DIR)/k8s/monitoring/namespace.yaml"
 	@$(SSH) "sudo microk8s kubectl apply -f $(REMOTE_DIR)/k8s/monitoring/"
