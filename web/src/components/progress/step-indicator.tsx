@@ -21,7 +21,7 @@ export function StepIndicator({ label, value, status }: StepIndicatorProps) {
       </span>
       <Progress value={value} className="flex-1 h-1.5" />
       {status === "done" && (
-        <Check className="w-4 h-4 text-primary shrink-0" />
+        <Check className="w-4 h-4 text-accent shrink-0" />
       )}
     </div>
   );

@@ -35,7 +35,7 @@ export function ProgressView({ state, onRetry, onReset }: ProgressViewProps) {
           className="flex flex-col items-center gap-4 text-center"
         >
           <AlertCircle className="w-12 h-12 text-destructive" />
-          <h2 className="text-2xl font-semibold text-foreground">
+          <h2 className="font-heading text-[clamp(1.5rem,3vw,2rem)] text-foreground">
             Something went wrong
           </h2>
           <p className="text-base text-muted-foreground max-w-sm">
@@ -43,7 +43,7 @@ export function ProgressView({ state, onRetry, onReset }: ProgressViewProps) {
               ? "You've reached the limit. Please try again in an hour."
               : state.message}
           </p>
-          <Button size="lg" onClick={onRetry}>
+          <Button size="lg" onClick={onRetry} className="bg-accent text-accent-foreground hover:bg-accent/90">
             <RotateCcw className="w-4 h-4 mr-2" />
             Try again
           </Button>
@@ -78,7 +78,7 @@ export function ProgressView({ state, onRetry, onReset }: ProgressViewProps) {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
-            className="text-base text-foreground text-center"
+            className="font-heading text-lg font-medium text-foreground text-center"
           >
             {statusLabel}
           </motion.p>
