@@ -231,7 +231,6 @@ async def redesign_handler(
     from sastaspace.config import Settings
     from sastaspace.crawler import crawl
     from sastaspace.deployer import deploy
-    from sastaspace.redesigner import redesign, redesign_premium
 
     settings = Settings()
 
@@ -273,8 +272,14 @@ async def redesign_handler(
         {"job_id": job_id, "message": "AI is redesigning your site...", "progress": 40},
     )
 
-    # Choose redesign function based on tier
-    if tier == "premium":
+    # Choose redesign function based on tier / pipeline setting
+    if settings.use_agno_pipeline:
+        from sastaspace.redesigner import agno_redesign
+
+        html = await asyncio.to_thread(agno_redesign, crawl_result, settings, tier)
+    elif tier == "premium":
+        from sastaspace.redesigner import redesign_premium
+
         html = await asyncio.to_thread(
             redesign_premium,
             crawl_result,
@@ -283,6 +288,8 @@ async def redesign_handler(
             api_key=settings.claude_code_api_key,
         )
     else:
+        from sastaspace.redesigner import redesign
+
         html = await asyncio.to_thread(
             redesign,
             crawl_result,
