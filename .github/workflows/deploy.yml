@@ -116,6 +116,7 @@ jobs:
       - name: Build frontend image
         run: |
           docker build \
+            --build-arg NEXT_PUBLIC_BACKEND_URL=https://api.sastaspace.com \
             -t localhost:32000/sastaspace-frontend:latest \
             -t localhost:32000/sastaspace-frontend:${{ github.sha }} \
             -f web/Dockerfile web/
