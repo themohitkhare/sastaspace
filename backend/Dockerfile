@@ -36,6 +36,9 @@ COPY pyproject.toml ./
 # Copy application source (needed for pip install -e or direct install)
 COPY sastaspace/ ./sastaspace/
 
+# Upgrade pip build tools to versions without known CVEs (wheel CVE-2026-24049, jaraco.context CVE-2026-23949)
+RUN pip install --no-cache-dir --upgrade "wheel>=0.46.2" "jaraco.context>=6.1.0"
+
 # Install Python deps as root (system-wide, readable by all users)
 RUN pip install --no-cache-dir .
 

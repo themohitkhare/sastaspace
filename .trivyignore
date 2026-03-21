@@ -35,3 +35,13 @@ KSV-0047
 # is not maintained by this project. Suppressed to avoid blocking CI on
 # third-party code we do not control.
 DS-0002
+
+# CVE-2026-25210: libexpat1 — no fix available in Debian 13
+# Information disclosure in libexpat. No Debian package fix exists yet.
+# Upstream fix must be backported by the Debian security team.
+CVE-2026-25210
+
+# CVE-2022-4055: xdg-utils — fix_deferred in Debian
+# Improper parse of mailto URIs. Debian has deferred this fix.
+# xdg-utils is required by Playwright/Chromium for browser launch support.
+CVE-2022-4055
