@@ -38,6 +38,7 @@ data:
     compactor:
       working_directory: /loki/compactor
       retention_enabled: true
+      delete_request_store: filesystem
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
