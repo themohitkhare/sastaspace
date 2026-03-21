@@ -81,15 +81,40 @@ def _run_agent(
     """Run a single agent and return the response content string."""
     start = time.monotonic()
     status = "success"
+    input_tokens = 0
+    output_tokens = 0
+
+    # Log what we're sending
+    prompt_len = len(user_prompt)
+    system_len = len(system_prompt)
+    logger.info(
+        "AGENT START | agent=%s model=%s system_prompt_len=%d user_prompt_len=%d",
+        name,
+        model.id,
+        system_len,
+        prompt_len,
+    )
+    # Log first 200 chars of user prompt for context (truncated)
+    logger.info(
+        "AGENT INPUT | agent=%s prompt_preview=%.200s",
+        name,
+        user_prompt.replace("\n", " ")[:200],
+    )
+
     try:
         agent = Agent(model=model, instructions=system_prompt)
         response = agent.run(user_prompt)
         content = response.content or ""
 
-        # Record token metrics if available
-        if response.metrics and hasattr(response.metrics, "get"):
-            input_tokens = response.metrics.get("input_tokens", 0)
-            output_tokens = response.metrics.get("output_tokens", 0)
+        # Extract token metrics
+        if response.metrics:
+            if hasattr(response.metrics, "get"):
+                input_tokens = response.metrics.get("input_tokens", 0)
+                output_tokens = response.metrics.get("output_tokens", 0)
+            elif hasattr(response.metrics, "input_tokens"):
+                input_tokens = getattr(response.metrics, "input_tokens", 0) or 0
+                output_tokens = getattr(response.metrics, "output_tokens", 0) or 0
+
             if input_tokens:
                 redesign_agent_tokens_total.labels(agent_name=name, direction="input").inc(
                     input_tokens
@@ -99,14 +124,38 @@ def _run_agent(
                     output_tokens
                 )
 
+        # Log response summary
+        duration = time.monotonic() - start
+        logger.info(
+            "AGENT DONE | agent=%s status=success duration=%.1fs "
+            "tokens_in=%d tokens_out=%d response_len=%d",
+            name,
+            duration,
+            input_tokens,
+            output_tokens,
+            len(content),
+        )
+        # Log first 300 chars of response for debugging
+        logger.info(
+            "AGENT OUTPUT | agent=%s preview=%.300s",
+            name,
+            content.replace("\n", " ")[:300],
+        )
+
         return content
-    except Exception:
+    except Exception as exc:
         status = "error"
+        duration = time.monotonic() - start
+        logger.error(
+            "AGENT FAILED | agent=%s error=%s duration=%.1fs",
+            name,
+            str(exc)[:200],
+            duration,
+        )
         raise
     finally:
         duration = time.monotonic() - start
         redesign_agent_duration_seconds.labels(agent_name=name, status=status).observe(duration)
-        logger.info("Agent %s completed in %.1fs (status=%s)", name, duration, status)
 
 
 def _run_crawl_analyst(crawl_result: CrawlResult, settings: Settings) -> SiteAnalysis:
@@ -122,7 +171,15 @@ def _run_crawl_analyst(crawl_result: CrawlResult, settings: Settings) -> SiteAna
     raw = _run_agent("crawl_analyst", CRAWL_ANALYST_SYSTEM, user_prompt, model)
     try:
         data = _extract_json(raw)
-        return SiteAnalysis.model_validate(data)
+        result = SiteAnalysis.model_validate(data)
+        logger.info(
+            "AGENT RESULT | agent=crawl_analyst brand=%s goal=%s audience=%s sections=%d",
+            result.brand.name,
+            result.primary_goal,
+            result.target_audience[:50],
+            len(result.content_sections),
+        )
+        return result
     except (json.JSONDecodeError, ValueError) as exc:
         redesign_guardrail_triggers_total.labels(guardrail_name="json_parse", action="fail").inc()
         raise RedesignError(f"CrawlAnalyst returned invalid JSON: {exc}") from exc
@@ -141,7 +198,18 @@ def _run_design_strategist(
     raw = _run_agent("design_strategist", DESIGN_STRATEGIST_SYSTEM, user_prompt, model)
     try:
         data = _extract_json(raw)
-        return DesignBrief.model_validate(data)
+        result = DesignBrief.model_validate(data)
+        logger.info(
+            "AGENT RESULT | agent=design_strategist direction=%s colors=%s/%s "
+            "fonts=%s/%s components=%d",
+            result.design_direction[:50],
+            result.colors.primary,
+            result.colors.accent,
+            result.typography.heading_font,
+            result.typography.body_font,
+            len(result.components),
+        )
+        return result
     except (json.JSONDecodeError, ValueError) as exc:
         redesign_guardrail_triggers_total.labels(guardrail_name="json_parse", action="fail").inc()
         raise RedesignError(f"DesignStrategist returned invalid JSON: {exc}") from exc
@@ -363,6 +431,17 @@ def _run_html_generator(
     raw = _run_agent("html_generator", HTML_GENERATOR_SYSTEM, user_prompt, model)
     html = _clean_html(raw)
     _validate_html(html)
+    has_doctype = "<!doctype" in html.lower()
+    has_style = "<style" in html.lower()
+    has_media = "@media" in html.lower()
+    logger.info(
+        "AGENT RESULT | agent=html_generator html_len=%d has_doctype=%s "
+        "has_style=%s has_media_queries=%s",
+        len(html),
+        has_doctype,
+        has_style,
+        has_media,
+    )
     return html
 
 

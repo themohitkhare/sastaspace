@@ -36,6 +36,7 @@ RUN useradd -m -u 1000 appuser && mkdir -p /data/sites && chown appuser /data/si
 # Copy lockfile and project files (uv uses the frozen lockfile for reproducible builds)
 COPY pyproject.toml uv.lock ./
 COPY sastaspace/ ./sastaspace/
+COPY components/ ./components/
 
 # Install Python deps using uv with frozen lockfile into a virtualenv
 RUN uv sync --frozen --no-dev --no-editable
