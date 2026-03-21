@@ -1,0 +1,75 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+  namespace: sastaspace
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      containers:
+      - name: backend
+        image: localhost:32000/sastaspace-backend:latest
+        ports:
+        - containerPort: 8080
+        envFrom:
+        - secretRef:
+            name: sastaspace-env
+            optional: true
+        env:
+        - name: CLAUDE_CODE_API_URL
+          value: "http://claude-code-api:8000/v1"
+        - name: CORS_ORIGINS
+          value: "https://sastaspace.com"
+        - name: SASTASPACE_SITES_DIR
+          value: "/data/sites"
+        volumeMounts:
+        - name: sites-data
+          mountPath: /data/sites
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 8080
+          initialDelaySeconds: 10
+          periodSeconds: 5
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "100m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+      volumes:
+      - name: sites-data
+        persistentVolumeClaim:
+          claimName: sites-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend
+  namespace: sastaspace
+spec:
+  selector:
+    app: backend
+  ports:
+  - port: 8080
+    targetPort: 8080
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: sites-pvc
+  namespace: sastaspace
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi

@@ -1,4 +1,14 @@
-.PHONY: ci install lint test dev dev-api dev-web
+REMOTE_HOST   ?= 192.168.0.38
+REMOTE_USER   ?= mkhare
+REMOTE_DIR    ?= ~/sastaspace
+REGISTRY      := localhost:32000
+SSH           := ssh $(REMOTE_USER)@$(REMOTE_HOST)
+RSYNC_EXCLUDE := --exclude='.git' --exclude='node_modules' --exclude='__pycache__' \
+                 --exclude='.venv' --exclude='*.pyc' --exclude='.next' \
+                 --exclude='test-results' --exclude='*.egg-info'
+
+.PHONY: ci install lint test dev dev-api dev-web \
+        deploy deploy-build deploy-logs deploy-status deploy-down k8s-apply
 
 install:
 	uv sync
@@ -22,3 +32,33 @@ dev-api:
 
 dev-web:
 	cd web && npm run dev
+
+# ── Deployment (microk8s) ─────────────────────────────────────────────────────
+
+deploy:
+	@echo "→ Syncing code to $(REMOTE_USER)@$(REMOTE_HOST):$(REMOTE_DIR)..."
+	@rsync -az --delete $(RSYNC_EXCLUDE) . $(REMOTE_USER)@$(REMOTE_HOST):$(REMOTE_DIR)
+	@echo "→ Building images on remote..."
+	@$(SSH) "cd $(REMOTE_DIR) && \
+	  docker build -t $(REGISTRY)/sastaspace-backend:latest -f backend/Dockerfile . && \
+	  docker build -t $(REGISTRY)/sastaspace-frontend:latest -f web/Dockerfile web/ && \
+	  docker push $(REGISTRY)/sastaspace-backend:latest && \
+	  docker push $(REGISTRY)/sastaspace-frontend:latest"
+	@echo "→ Applying k8s manifests..."
+	@$(MAKE) k8s-apply
+	@echo "→ Rolling restart..."
+	@$(SSH) "sudo microk8s kubectl rollout restart deployment/backend deployment/frontend -n sastaspace"
+	@$(SSH) "sudo microk8s kubectl rollout status deployment/backend deployment/frontend -n sastaspace"
+	@echo "✓ Deployed. Site: https://sastaspace.com"
+
+k8s-apply:
+	@$(SSH) "sudo microk8s kubectl apply -f $(REMOTE_DIR)/k8s/"
+
+deploy-logs:
+	@$(SSH) "sudo microk8s kubectl logs -f -n sastaspace -l 'app in (frontend,backend)' --max-log-requests=4"
+
+deploy-status:
+	@$(SSH) "sudo microk8s kubectl get pods,svc,ingress -n sastaspace"
+
+deploy-down:
+	@$(SSH) "sudo microk8s kubectl delete namespace sastaspace --ignore-not-found"
