@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import logging
 import os
 import socket
 import subprocess
@@ -10,6 +11,7 @@ import sys
 import time
 import time as time_mod
 from collections.abc import AsyncGenerator
+from contextlib import asynccontextmanager
 from pathlib import Path
 from uuid import uuid4
 
@@ -23,12 +25,26 @@ from starlette.responses import Response
 
 from sastaspace.config import Settings
 from sastaspace.crawler import crawl
+from sastaspace.database import (
+    JobStatus,
+    create_job,
+    get_job,
+    init_db,
+    list_jobs,
+    list_sites,
+    set_db_path,
+    update_job,
+)
 from sastaspace.deployer import deploy
+from sastaspace.jobs import JobService, redesign_handler
 from sastaspace.redesigner import redesign
+
+logger = logging.getLogger(__name__)
 
 
 class RedesignRequest(BaseModel):
     url: str
+    tier: str = "standard"  # "standard" or "premium"
 
 
 _SITES_DIR: Path = Path("./sites")
@@ -36,9 +52,48 @@ _SITES_DIR: Path = Path("./sites")
 
 def make_app(sites_dir: Path) -> FastAPI:
     """Create the FastAPI app bound to a specific sites directory."""
-    app = FastAPI(title="SastaSpace Preview Server")
-
     settings = Settings()
+
+    _rate_limit_store: dict[str, list[float]] = {}
+    _redesign_semaphore = asyncio.Semaphore(1)
+
+    # Job service (Redis) — initialized on startup
+    _job_service_holder: dict[str, JobService | None] = {"svc": None}
+
+    @asynccontextmanager
+    async def lifespan(app: FastAPI):
+        # --- Startup ---
+        db_path = settings.db_path
+        set_db_path(db_path)
+        await init_db()
+        logger.info("Database initialized at %s", db_path)
+
+        # Connect Redis job service (if Redis is available)
+        if settings.redis_url:
+            try:
+                svc = JobService(redis_url=settings.redis_url)
+                await svc.connect()
+                _job_service_holder["svc"] = svc
+                logger.info("Redis job service connected at %s", settings.redis_url)
+
+                # Start background worker
+                asyncio.create_task(_run_worker())
+            except Exception:
+                logger.warning(
+                    "Redis unavailable at %s — falling back to inline processing",
+                    settings.redis_url,
+                    exc_info=True,
+                )
+
+        yield
+
+        # --- Shutdown ---
+        svc = _job_service_holder["svc"]
+        if svc:
+            await svc.close()
+
+    app = FastAPI(title="SastaSpace Preview Server", lifespan=lifespan)
+
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.cors_origins,
@@ -46,9 +101,6 @@ def make_app(sites_dir: Path) -> FastAPI:
         allow_methods=["GET", "POST"],
         allow_headers=["Content-Type"],
     )
-
-    _rate_limit_store: dict[str, list[float]] = {}
-    _redesign_semaphore = asyncio.Semaphore(1)
 
     def get_client_ip(request: Request) -> str:
         """Extract client IP, preferring Cloudflare/proxy headers."""
@@ -82,8 +134,27 @@ def make_app(sites_dir: Path) -> FastAPI:
         """Format a single SSE event as bytes."""
         return format_sse_event(data_str=data_str, event=event)
 
-    async def redesign_stream(url: str) -> AsyncGenerator[bytes, None]:
+    async def _run_worker():
+        """Background worker that processes jobs from Redis Stream."""
+        svc = _job_service_holder["svc"]
+        if svc:
+            await svc.process_messages(
+                consumer_name=f"worker-{os.getpid()}",
+                handler=redesign_handler,
+            )
+
+    # ---- SSE stream (inline fallback when Redis is unavailable) ----
+
+    async def redesign_stream(url: str, tier: str = "standard") -> AsyncGenerator[bytes, None]:
         job_id = str(uuid4())
+
+        # Record job in database
+        ip = "inline"
+        try:
+            await create_job(job_id=job_id, url=url, client_ip=ip, tier=tier)
+        except Exception:
+            pass
+
         async with _redesign_semaphore:
             try:
                 # Step 1: Crawl
@@ -93,9 +164,16 @@ def make_app(sites_dir: Path) -> FastAPI:
                     "progress": 10,
                 }
                 yield _sse_event(json.dumps(crawling_data), "crawling")
+
+                await update_job(
+                    job_id, status=JobStatus.CRAWLING.value, progress=10, message="Crawling..."
+                )
                 crawl_result = await crawl(url)
                 if crawl_result.error:
                     err_msg = "Could not reach that website. Check the URL and try again."
+                    await update_job(
+                        job_id, status=JobStatus.FAILED.value, error=err_msg
+                    )
                     yield _sse_event(
                         json.dumps({"job_id": job_id, "error": err_msg}),
                         "error",
@@ -109,12 +187,30 @@ def make_app(sites_dir: Path) -> FastAPI:
                     "progress": 40,
                 }
                 yield _sse_event(json.dumps(redesigning_data), "redesigning")
-                html = await asyncio.to_thread(
-                    redesign,
-                    crawl_result,
-                    settings.claude_code_api_url,
-                    settings.claude_model,
+
+                await update_job(
+                    job_id,
+                    status=JobStatus.REDESIGNING.value,
+                    progress=40,
+                    message="Redesigning...",
                 )
+
+                if tier == "premium":
+                    from sastaspace.redesigner import redesign_premium
+
+                    html = await asyncio.to_thread(
+                        redesign_premium,
+                        crawl_result,
+                        settings.claude_code_api_url,
+                        settings.claude_model,
+                    )
+                else:
+                    html = await asyncio.to_thread(
+                        redesign,
+                        crawl_result,
+                        settings.claude_code_api_url,
+                        settings.claude_model,
+                    )
 
                 # Sanitize with nh3
                 html = nh3.clean(html)
@@ -126,6 +222,13 @@ def make_app(sites_dir: Path) -> FastAPI:
                     "progress": 80,
                 }
                 yield _sse_event(json.dumps(deploying_data), "deploying")
+
+                await update_job(
+                    job_id,
+                    status=JobStatus.DEPLOYING.value,
+                    progress=80,
+                    message="Deploying...",
+                )
                 result = await asyncio.to_thread(deploy, url, html, settings.sites_dir)
 
                 # Step 4: Done
@@ -136,18 +239,49 @@ def make_app(sites_dir: Path) -> FastAPI:
                     "url": f"/{result.subdomain}/",
                     "subdomain": result.subdomain,
                 }
+                await update_job(
+                    job_id,
+                    status=JobStatus.DONE.value,
+                    progress=100,
+                    message="Done!",
+                    subdomain=result.subdomain,
+                    html_path=str(result.index_path),
+                )
                 yield _sse_event(json.dumps(done_data), "done")
             except Exception:
                 err_data = {
                     "job_id": job_id,
                     "error": ("Redesign service unavailable. Please try again later."),
                 }
+                await update_job(
+                    job_id,
+                    status=JobStatus.FAILED.value,
+                    error="Redesign service unavailable",
+                )
                 yield _sse_event(json.dumps(err_data), "error")
                 return
+
+    # ---- SSE stream via Redis Pub/Sub ----
+
+    async def redis_job_stream(job_id: str) -> AsyncGenerator[bytes, None]:
+        """Stream job status updates from Redis Pub/Sub as SSE events."""
+        svc = _job_service_holder["svc"]
+        if not svc:
+            return
+
+        async for update in svc.subscribe_job(job_id):
+            event_name = update.get("event", "message")
+            data = update.get("data", update)
+            yield _sse_event(json.dumps(data), event_name)
+
+    # ---- API Endpoints ----
 
     @app.post("/redesign")
     async def redesign_endpoint(body: RedesignRequest, request: Request):
         ip = get_client_ip(request)
+
+        # Validate tier
+        tier = body.tier if body.tier in ("standard", "premium") else "standard"
 
         # Rate limit check (localhost exempt)
         if not _is_localhost(ip):
@@ -167,6 +301,15 @@ def make_app(sites_dir: Path) -> FastAPI:
         if not _is_localhost(ip):
             record_request(ip)
 
+        # If Redis is available, use async job queue
+        svc = _job_service_holder["svc"]
+        if svc:
+            job_id = await svc.enqueue(
+                url=body.url, client_ip=ip, tier=tier
+            )
+            return EventSourceResponse(redis_job_stream(job_id))
+
+        # Fallback: inline processing (no Redis)
         # Concurrency check
         if _redesign_semaphore.locked():
             return JSONResponse(
@@ -174,7 +317,34 @@ def make_app(sites_dir: Path) -> FastAPI:
                 content={"error": "A redesign is already in progress. Please wait and try again."},
             )
 
-        return EventSourceResponse(redesign_stream(body.url))
+        return EventSourceResponse(redesign_stream(body.url, tier))
+
+    # ---- Job status endpoints ----
+
+    @app.get("/jobs/{job_id}")
+    async def get_job_status(job_id: str):
+        """Get the current status of a redesign job."""
+        job = await get_job(job_id)
+        if job is None:
+            return JSONResponse(status_code=404, content={"error": "Job not found"})
+        return JSONResponse(content=job)
+
+    @app.get("/jobs")
+    async def list_jobs_endpoint(
+        status: str | None = None,
+        limit: int = 50,
+    ):
+        """List recent redesign jobs."""
+        jobs = await list_jobs(limit=min(limit, 100), status=status)
+        return JSONResponse(content={"jobs": jobs, "count": len(jobs)})
+
+    @app.get("/sites")
+    async def list_sites_endpoint(limit: int = 100):
+        """List all deployed redesigned sites."""
+        sites_list = await list_sites(limit=min(limit, 200))
+        return JSONResponse(content={"sites": sites_list, "count": len(sites_list)})
+
+    # ---- Existing routes ----
 
     @app.get("/", response_class=HTMLResponse)
     async def index() -> str:

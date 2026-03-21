@@ -11,11 +11,13 @@ type StepState = {
   status: "pending" | "active" | "done";
 };
 
+export type RedesignTier = "standard" | "premium";
+
 export type RedesignState =
   | { status: "idle" }
   | { status: "connecting" }
-  | { status: "progress"; currentStep: string; domain: string; steps: StepState[] }
-  | { status: "done"; subdomain: string; originalUrl: string; domain: string }
+  | { status: "progress"; currentStep: string; domain: string; steps: StepState[]; tier: RedesignTier }
+  | { status: "done"; subdomain: string; originalUrl: string; domain: string; tier: RedesignTier }
   | { status: "error"; message: string; url: string };
 
 const STEPS = [
@@ -44,13 +46,15 @@ export function useRedesign() {
   const [state, setState] = useState<RedesignState>({ status: "idle" });
   const abortRef = useRef<AbortController | null>(null);
   const lastUrlRef = useRef<string>("");
+  const lastTierRef = useRef<RedesignTier>("standard");
 
-  const start = useCallback(async (url: string) => {
+  const start = useCallback(async (url: string, tier: RedesignTier = "standard") => {
     // Abort any existing connection
     abortRef.current?.abort();
     const controller = new AbortController();
     abortRef.current = controller;
     lastUrlRef.current = url;
+    lastTierRef.current = tier;
 
     const domain = extractDomain(url);
 
@@ -62,10 +66,11 @@ export function useRedesign() {
       currentStep: "crawling",
       domain,
       steps: initialSteps,
+      tier,
     });
 
     try {
-      for await (const event of streamRedesign(url, undefined, controller.signal)) {
+      for await (const event of streamRedesign(url, undefined, controller.signal, tier)) {
         if (controller.signal.aborted) return;
 
         const stepNames = STEPS.map((s) => s.name);
@@ -91,6 +96,7 @@ export function useRedesign() {
             currentStep: event.event,
             domain,
             steps: updatedSteps,
+            tier,
           });
         } else if (event.event === "done") {
           // Set all steps to done
@@ -105,6 +111,7 @@ export function useRedesign() {
             currentStep: "done",
             domain,
             steps: doneSteps,
+            tier,
           });
 
           // Pause 800ms before transitioning to done state
@@ -117,6 +124,7 @@ export function useRedesign() {
             subdomain: event.data.subdomain as string,
             originalUrl: url,
             domain,
+            tier,
           });
         } else if (event.event === "error") {
           setState({
@@ -139,7 +147,7 @@ export function useRedesign() {
 
   const retry = useCallback(() => {
     if (state.status === "error") {
-      start(state.url);
+      start(state.url, lastTierRef.current);
     }
   }, [state, start]);
 
