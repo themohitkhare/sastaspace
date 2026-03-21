@@ -24,6 +24,7 @@ from sastaspace.agents.metrics import (
 )
 from sastaspace.agents.models import (
     ComponentSelection,
+    CopywriterOutput,
     DesignBrief,
     QualityReport,
     SiteAnalysis,
@@ -31,6 +32,8 @@ from sastaspace.agents.models import (
 from sastaspace.agents.prompts import (
     COMPONENT_SELECTOR_SYSTEM,
     COMPONENT_SELECTOR_USER_TEMPLATE,
+    COPYWRITER_SYSTEM,
+    COPYWRITER_USER_TEMPLATE,
     CRAWL_ANALYST_SYSTEM,
     CRAWL_ANALYST_USER_TEMPLATE,
     DESIGN_STRATEGIST_SYSTEM,
@@ -144,21 +147,100 @@ def _run_design_strategist(
         raise RedesignError(f"DesignStrategist returned invalid JSON: {exc}") from exc
 
 
+def _run_copywriter(
+    site_analysis: SiteAnalysis, design_brief: DesignBrief, settings: Settings
+) -> CopywriterOutput:
+    """Run the Copywriter agent to produce conversion-optimized copy."""
+    model = _create_model(settings.design_strategist_model, settings)
+
+    # Format content sections for the copywriter
+    sections_text = "\n".join(
+        f"### {s.heading or s.content_type}\n{s.content_summary}"
+        for s in site_analysis.content_sections
+    ) or "No sections extracted"
+
+    user_prompt = COPYWRITER_USER_TEMPLATE.format(
+        brand_name=site_analysis.brand.name or "Unknown",
+        industry=site_analysis.brand.industry or "Unknown",
+        primary_goal=site_analysis.primary_goal or "conversion",
+        target_audience=site_analysis.target_audience or "general",
+        brand_voice=site_analysis.brand.voice_tone or "professional",
+        content_sections=sections_text,
+        conversion_strategy=design_brief.conversion_strategy,
+        key_ctas=", ".join(design_brief.animations[:3]) if design_brief.animations else "N/A",
+    )
+    raw = _run_agent("copywriter", COPYWRITER_SYSTEM, user_prompt, model)
+    try:
+        data = _extract_json(raw)
+        copy = CopywriterOutput.model_validate(data)
+        logger.info("Copywriter produced headline: %s", copy.headline[:50])
+        return copy
+    except (json.JSONDecodeError, ValueError) as exc:
+        logger.warning("Copywriter returned invalid JSON, continuing without: %s", exc)
+        return CopywriterOutput()
+
+
+def _prefilter_catalog(catalog_json: str, site_analysis: SiteAnalysis) -> str:
+    """Pre-filter the component catalog based on site type to reduce context size."""
+    import json as _json
+
+    try:
+        catalog = _json.loads(catalog_json)
+    except _json.JSONDecodeError:
+        return catalog_json
+
+    # Determine relevant categories based on site analysis
+    goal = (site_analysis.primary_goal or "").lower()
+    industry = (site_analysis.brand.industry or "").lower()
+    section_types = {s.content_type.lower() for s in site_analysis.content_sections}
+
+    # Always include these core categories
+    relevant = {"heroes", "calls-to-action", "footers", "navigation-menus"}
+
+    # Add based on content
+    if any(t in section_types for t in ("testimonials", "reviews")):
+        relevant.add("testimonials")
+        relevant.add("clients")
+    if any(t in section_types for t in ("features", "services")):
+        relevant.add("features")
+        relevant.add("cards")
+    if any(t in section_types for t in ("pricing", "plans")):
+        relevant.add("pricing-sections")
+    if "saas" in goal or "software" in industry or "tech" in industry:
+        relevant.update({"features", "pricing-sections", "clients", "comparisons"})
+    if "ecommerce" in goal or "shop" in industry:
+        relevant.update({"cards", "testimonials"})
+
+    # Always include backgrounds and announcements (small, high impact)
+    relevant.update({"backgrounds", "announcements"})
+
+    filtered = {k: v for k, v in catalog.items() if k in relevant}
+    return _json.dumps(filtered, indent=1)
+
+
 def _run_component_selector(
     site_analysis: SiteAnalysis, design_brief: DesignBrief, settings: Settings
 ) -> ComponentSelection:
     """Run the ComponentSelector agent to pick the best UI components."""
     import os
 
-    model = _create_model(settings.design_strategist_model, settings)  # Use same model as strategist
+    # Use same model as strategist
+    model = _create_model(settings.design_strategist_model, settings)
 
     # Load the marketing component catalog
-    catalog_path = os.path.join(os.path.dirname(__file__), "..", "..", "components", "marketing-catalog.json")
+    catalog_path = os.path.join(
+        os.path.dirname(__file__), "..", "..", "components", "marketing-catalog.json"
+    )
     try:
         with open(catalog_path) as f:
-            catalog = f.read()
+            raw_catalog = f.read()
+        # Pre-filter catalog based on site type to reduce context
+        catalog = _prefilter_catalog(raw_catalog, site_analysis)
+        logger.info("Pre-filtered catalog for component selection")
     except FileNotFoundError:
-        logger.warning("Component catalog not found at %s, skipping component selection", catalog_path)
+        logger.warning(
+            "Component catalog not found at %s, skipping component selection", catalog_path
+        )
         return ComponentSelection(strategy="No catalog available")
 
     user_prompt = COMPONENT_SELECTOR_USER_TEMPLATE.format(
@@ -218,6 +300,7 @@ def _run_html_generator(
     settings: Settings,
     quality_feedback: str = "",
     component_selection: ComponentSelection | None = None,
+    copywriter_output: CopywriterOutput | None = None,
 ) -> str:
     """Run the HTMLGenerator agent to produce HTML."""
     model = _create_model(settings.html_generator_model, settings)
@@ -246,13 +329,34 @@ def _run_html_generator(
                 + "\n\n".join(comp_sources)
             )
 
-    user_prompt = HTML_GENERATOR_USER_TEMPLATE.format(
-        design_brief_json=design_brief.model_dump_json(indent=2),
-        crawl_context=crawl_result.to_prompt_context(),
-        title=crawl_result.title,
-        meta_description=crawl_result.meta_description,
-        quality_feedback=feedback_section,
-    ) + component_context
+    # Add copywriter-optimized copy
+    copy_context = ""
+    if copywriter_output and copywriter_output.headline:
+        copy_sections = "\n".join(
+            f"- {s.section_type}: \"{s.new_heading}\" — {s.new_body[:200]}"
+            for s in copywriter_output.sections
+        )
+        copy_context = (
+            f"\n\n## Optimized Copy (USE THIS TEXT instead of generic placeholders)\n"
+            f"Headline: \"{copywriter_output.headline}\"\n"
+            f"Subheadline: \"{copywriter_output.subheadline}\"\n"
+            f"Primary CTA: \"{copywriter_output.cta_primary.text}\"\n"
+            f"Secondary CTA: \"{copywriter_output.cta_secondary.text}\"\n"
+            f"Sections:\n{copy_sections}\n"
+            f"Meta title: \"{copywriter_output.meta_title}\"\n"
+        )
+
+    user_prompt = (
+        HTML_GENERATOR_USER_TEMPLATE.format(
+            design_brief_json=design_brief.model_dump_json(indent=2),
+            crawl_context=crawl_result.to_prompt_context(),
+            title=crawl_result.title,
+            meta_description=crawl_result.meta_description,
+            quality_feedback=feedback_section,
+        )
+        + copy_context
+        + component_context
+    )
     raw = _run_agent("html_generator", HTML_GENERATOR_SYSTEM, user_prompt, model)
     html = _clean_html(raw)
     _validate_html(html)
@@ -296,9 +400,7 @@ def _run_quality_reviewer(
         return QualityReport(passed=True, overall_score=7, strengths=["Could not parse review"])
 
 
-def _run_normalizer(
-    html: str, design_brief: DesignBrief, settings: Settings
-) -> str:
+def _run_normalizer(html: str, design_brief: DesignBrief, settings: Settings) -> str:
     """Normalize the HTML for cohesive design + apply premium psychology principles.
 
     Combines two concepts:
@@ -361,11 +463,15 @@ def run_redesign_pipeline(crawl_result: CrawlResult, settings: Settings) -> str:
         logger.info("Pipeline step 2/5: DesignStrategist")
         design_brief = _run_design_strategist(site_analysis, crawl_result, settings)
 
-        # Step 3: Component Selector — picks best UI components for this business
-        logger.info("Pipeline step 3/5: ComponentSelector")
+        # Step 3: Copywriter — writes conversion-optimized copy
+        logger.info("Pipeline step 3/7: Copywriter")
+        copywriter_output = _run_copywriter(site_analysis, design_brief, settings)
+
+        # Step 4: Component Selector — picks best UI components for this business
+        logger.info("Pipeline step 4/7: ComponentSelector")
         component_selection = _run_component_selector(site_analysis, design_brief, settings)
 
-        # Step 4 & 5: HTMLGenerator + QualityReviewer with retry loop
+        # Step 5 & 6: HTMLGenerator + QualityReviewer with retry loop
         html = ""
         quality_report = None
         quality_feedback = ""
@@ -377,7 +483,8 @@ def run_redesign_pipeline(crawl_result: CrawlResult, settings: Settings) -> str:
                 MAX_QUALITY_RETRIES + 1,
             )
             html = _run_html_generator(
-                design_brief, crawl_result, settings, quality_feedback, component_selection
+                design_brief, crawl_result, settings, quality_feedback,
+                component_selection, copywriter_output,
             )
 
             logger.info("Pipeline step 4/4: QualityReviewer (attempt %d)", attempt)

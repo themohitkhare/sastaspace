@@ -20,6 +20,7 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
 from fastapi.sse import EventSourceResponse, format_sse_event
+from prometheus_client import Counter, Gauge, make_asgi_app
 from pydantic import BaseModel
 from starlette.responses import Response
 
@@ -41,6 +42,14 @@ from sastaspace.jobs import JobService, redesign_handler
 from sastaspace.redesigner import redesign
 
 logger = logging.getLogger(__name__)
+
+# Business metrics (module-level so they survive app reloads)
+_sites_deployed_gauge = Gauge("sites_deployed_total", "Number of sites currently deployed")
+_redesign_requests_total = Counter(
+    "redesign_requests_total",
+    "Total redesign requests received",
+    ["status"],  # "started" | "rate_limited" | "concurrency_limited"
+)
 
 
 class RedesignRequest(BaseModel):
@@ -71,6 +80,13 @@ def make_app(sites_dir: Path) -> FastAPI:
         except Exception:
             logger.warning("MongoDB unavailable — job persistence disabled", exc_info=True)
 
+        # Seed sites_deployed_total from disk on startup
+        try:
+            count = sum(1 for d in sites_dir.iterdir() if d.is_dir() and not d.name.startswith("_"))
+            _sites_deployed_gauge.set(count)
+        except Exception:
+            pass
+
         # Connect Redis job service (if Redis is available)
         if settings.redis_url:
             try:
@@ -97,6 +113,9 @@ def make_app(sites_dir: Path) -> FastAPI:
         await close_db()
 
     app = FastAPI(title="SastaSpace Preview Server", lifespan=lifespan)
+
+    # Prometheus metrics endpoint (internal — not behind Cloudflare CDN path)
+    app.mount("/metrics", make_asgi_app())
 
     app.add_middleware(
         CORSMiddleware,
@@ -244,6 +263,7 @@ def make_app(sites_dir: Path) -> FastAPI:
                     message="Deploying...",
                 )
                 result = await asyncio.to_thread(deploy, url, html, settings.sites_dir)
+                _sites_deployed_gauge.inc()
 
                 # Step 4: Done
                 done_data = {
@@ -301,6 +321,7 @@ def make_app(sites_dir: Path) -> FastAPI:
         if not _is_localhost(ip):
             limited, retry_after = is_rate_limited(ip)
             if limited:
+                _redesign_requests_total.labels(status="rate_limited").inc()
                 return JSONResponse(
                     status_code=429,
                     content={
@@ -318,17 +339,20 @@ def make_app(sites_dir: Path) -> FastAPI:
         # If Redis is available, use async job queue
         svc = _job_service_holder["svc"]
         if svc:
+            _redesign_requests_total.labels(status="started").inc()
             job_id = await svc.enqueue(url=body.url, client_ip=ip, tier=tier)
             return EventSourceResponse(redis_job_stream(job_id))
 
         # Fallback: inline processing (no Redis)
         # Concurrency check
         if _redesign_semaphore.locked():
+            _redesign_requests_total.labels(status="concurrency_limited").inc()
             return JSONResponse(
                 status_code=429,
                 content={"error": "A redesign is already in progress. Please wait and try again."},
             )
 
+        _redesign_requests_total.labels(status="started").inc()
         return EventSourceResponse(redesign_stream(body.url, tier))
 
     # ---- Job status endpoints ----

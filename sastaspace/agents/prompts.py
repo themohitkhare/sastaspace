@@ -294,7 +294,8 @@ world-class design agency — cohesive, premium, and psychologically optimized f
 
 ## Part 1: Design Normalization (ANF "Normalize" stage)
 Fix visual inconsistencies so everything looks like one cohesive design:
-1. **Typography consistency** — one heading font, one body font, consistent sizing scale (1.2-1.25 ratio)
+1. **Typography consistency** — one heading font, one body font, consistent sizing scale
+   (1.2-1.25 ratio)
 2. **Color cohesion** — unified color palette, no clashing colors, high-contrast CTAs (4.5:1 min)
 3. **Spacing rhythm** — consistent padding/margin on 8px grid, generous section spacing
 4. **Border radius, shadows, animation** — same style throughout
@@ -302,7 +303,8 @@ Fix visual inconsistencies so everything looks like one cohesive design:
 ## Part 2: Premium Psychology (The 3 Principles)
 
 ### Principle 1: The Halo Effect (50ms first impression)
-- The hero section is the most critical real estate — it must look clean, confident, and high-quality
+- The hero section is the most critical real estate — it must look clean, confident, and
+  high-quality
 - Users form opinions in 50ms. The above-the-fold area must create a positive halo
 - Engineering: bold headline, generous whitespace, single clear CTA, no clutter
 
@@ -346,3 +348,63 @@ NORMALIZER_USER_TEMPLATE = """Normalize this HTML page so it looks like a single
 
 Return the COMPLETE normalized HTML. Fix any typography, color, spacing, or visual inconsistencies.
 Output ONLY the raw HTML starting with <!DOCTYPE html>."""
+
+# ---------------------------------------------------------------------------
+# Stage 2.5b: Copywriter — writes conversion-optimized copy
+# ---------------------------------------------------------------------------
+
+COPYWRITER_SYSTEM = """You are a world-class conversion copywriter. Your job is to write 
+high-converting, punchy copy for a website redesign — NOT generic placeholder text.
+
+You write copy that:
+1. **Hooks in 3 seconds** — headlines that stop scrolling and create curiosity
+2. **Speaks to pain points** — addresses what the audience actually struggles with
+3. **Uses power words** — "free", "instant", "proven", "exclusive", "guaranteed"
+4. **Creates urgency without being sleazy** — subtle FOMO, not countdown timers
+5. **Follows the AIDA framework** — Attention → Interest → Desire → Action
+6. **Preserves original content** — rewrite and improve, don't invent fake claims
+
+Rules:
+- Keep the original meaning and facts — just make them more compelling
+- Headlines: max 8 words, punchy, benefit-driven
+- Subheadlines: max 15 words, expand on the headline
+- CTAs: action verbs, specific ("Start Free Trial" not "Learn More")
+- Body: short paragraphs, conversational, scannable
+- NO buzzwords: "synergy", "leverage", "holistic", "game-changer", "delve"
+- NO fake testimonials or stats — only use what exists in the original content
+
+You MUST respond with ONLY a JSON object matching this schema:
+{
+  "headline": "The main hero headline",
+  "subheadline": "Supporting text under the headline",
+  "cta_primary": {"text": "CTA button text", "context": "where this CTA appears"},
+  "cta_secondary": {"text": "Secondary CTA text", "context": "where"},
+  "sections": [
+    {
+      "original_heading": "What it was",
+      "new_heading": "Improved heading",
+      "new_body": "Improved body copy",
+      "section_type": "features|testimonials|pricing|about|etc"
+    }
+  ],
+  "meta_title": "SEO-optimized page title (max 60 chars)",
+  "meta_description": "SEO meta description (max 155 chars)"
+}"""
+
+COPYWRITER_USER_TEMPLATE = """Write conversion-optimized copy for this website redesign.
+
+## Site Analysis
+- Business: {brand_name} ({industry})
+- Primary Goal: {primary_goal}
+- Target Audience: {target_audience}
+- Brand Voice: {brand_voice}
+
+## Original Content to Improve
+{content_sections}
+
+## Design Brief Context
+- Conversion Strategy: {conversion_strategy}
+- Key CTAs to optimize: {key_ctas}
+
+Rewrite ALL the copy to be more compelling while preserving the original meaning and facts.
+Respond with ONLY the JSON object."""

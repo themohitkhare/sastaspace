@@ -272,7 +272,7 @@ def test_sse_done_event_payload(redesign_client):
 
 
 def test_to_thread_wrapping(tmp_sites, mock_crawl_result, mock_deploy_result):
-    """redesign() and deploy() are called; crawl() is awaited directly."""
+    """agno_redesign() and deploy() are called; crawl() is awaited directly."""
     mock_html = "<html><body><p>OK</p></body></html>"
     with (
         patch(
@@ -281,7 +281,7 @@ def test_to_thread_wrapping(tmp_sites, mock_crawl_result, mock_deploy_result):
             return_value=mock_crawl_result,
         ) as m_crawl,
         patch(
-            "sastaspace.server.redesign",
+            "sastaspace.redesigner.agno_redesign",
             return_value=mock_html,
         ) as m_redesign,
         patch(
@@ -461,7 +461,7 @@ def test_error_redesign_failure(tmp_sites, mock_crawl_result):
             return_value=mock_crawl_result,
         ),
         patch(
-            "sastaspace.server.redesign",
+            "sastaspace.redesigner.agno_redesign",
             side_effect=Exception("API down"),
         ),
     ):

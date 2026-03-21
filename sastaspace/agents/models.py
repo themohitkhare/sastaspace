@@ -84,6 +84,37 @@ class DesignBrief(BaseModel):
     animations: list[str] = Field(default_factory=list)
 
 
+# --- Copywriter output ---
+
+
+class CopywriterCTA(BaseModel):
+    """A call-to-action written by the copywriter."""
+
+    text: str = ""
+    context: str = ""  # where this CTA appears on the page
+
+
+class CopywriterSection(BaseModel):
+    """A rewritten content section."""
+
+    original_heading: str = ""
+    new_heading: str = ""
+    new_body: str = ""
+    section_type: str = ""  # features, testimonials, pricing, about, etc.
+
+
+class CopywriterOutput(BaseModel):
+    """Conversion-optimized copy — output of the Copywriter agent."""
+
+    headline: str = ""
+    subheadline: str = ""
+    cta_primary: CopywriterCTA = Field(default_factory=CopywriterCTA)
+    cta_secondary: CopywriterCTA = Field(default_factory=CopywriterCTA)
+    sections: list[CopywriterSection] = Field(default_factory=list)
+    meta_title: str = ""
+    meta_description: str = ""
+
+
 # --- Component Selector output ---
 
 
@@ -102,7 +133,8 @@ class ComponentSelection(BaseModel):
 
     selected: list[SelectedComponent] = Field(default_factory=list)
     strategy: str = ""  # overall component selection strategy
-    rejected_alternatives: list[str] = Field(default_factory=list)  # what was considered but not chosen
+    # what was considered but not chosen
+    rejected_alternatives: list[str] = Field(default_factory=list)
 
 
 # --- Quality Reviewer output ---
