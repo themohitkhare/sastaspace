@@ -103,17 +103,17 @@ export function useRedesign() {
               return step;
             });
 
-            setState({
+            setState((prev) => ({
               status: "progress",
               currentStep: event.event,
               domain,
               steps: updatedSteps,
               tier,
               jobId,
-              activities: [],
-              discoveryItems: [],
-              screenshot: undefined,
-            });
+              activities: prev.status === "progress" ? prev.activities : [],
+              discoveryItems: prev.status === "progress" ? prev.discoveryItems : [],
+              screenshot: prev.status === "progress" ? prev.screenshot : undefined,
+            }));
           } else if (event.event === "done") {
             // Set all steps to done
             const doneSteps = makeInitialSteps(domain).map((step) => ({
@@ -122,17 +122,17 @@ export function useRedesign() {
               status: "done" as const,
             }));
 
-            setState({
+            setState((prev) => ({
               status: "progress",
               currentStep: "done",
               domain,
               steps: doneSteps,
               tier,
               jobId,
-              activities: [],
-              discoveryItems: [],
-              screenshot: undefined,
-            });
+              activities: prev.status === "progress" ? prev.activities : [],
+              discoveryItems: prev.status === "progress" ? prev.discoveryItems : [],
+              screenshot: prev.status === "progress" ? prev.screenshot : undefined,
+            }));
 
             // Pause 800ms before transitioning to done state
             await new Promise((r) => setTimeout(r, 800));
@@ -151,6 +151,37 @@ export function useRedesign() {
               status: "error",
               message: event.data.error as string,
               url,
+            });
+          } else if (event.event === "agent_activity") {
+            const activity: ActivityItem = {
+              id: `${Date.now()}-${Math.random()}`,
+              agent: (event.data.agent as string) ?? "",
+              message: (event.data.message as string) ?? "",
+              timestamp: Date.now(),
+            };
+            setState((prev) => {
+              if (prev.status !== "progress") return prev;
+              const updates: Partial<typeof prev> = {
+                activities: [...prev.activities.slice(-9), activity],
+              };
+              if (event.data.step_progress) {
+                updates.steps = prev.steps.map((s) =>
+                  s.name === "redesigning"
+                    ? { ...s, value: event.data.step_progress as number }
+                    : s
+                );
+              }
+              return { ...prev, ...updates };
+            });
+          } else if (event.event === "discovery") {
+            setState((prev) => {
+              if (prev.status !== "progress") return prev;
+              return { ...prev, discoveryItems: event.data.items as DiscoveryItem[] };
+            });
+          } else if (event.event === "screenshot") {
+            setState((prev) => {
+              if (prev.status !== "progress") return prev;
+              return { ...prev, screenshot: event.data.screenshot_base64 as string };
             });
           }
         }
