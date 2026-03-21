@@ -11,6 +11,7 @@ import json
 import logging
 import re
 import time
+from collections.abc import Callable
 
 from agno.agent import Agent
 from agno.models.openai import OpenAILike
@@ -49,6 +50,24 @@ from sastaspace.crawler import CrawlResult
 from sastaspace.redesigner import RedesignError, _clean_html, _validate_html
 
 logger = logging.getLogger(__name__)
+
+ProgressCallback = Callable[[str, dict], None] | None
+
+AGENT_MESSAGES: dict[str, dict] = {
+    "crawl_analyst": {
+        "message": "Analyzing your site's content and structure",
+        "step_progress": 42,
+    },
+    "design_strategist": {"message": "Crafting your new design direction", "step_progress": 50},
+    "copywriter": {"message": "Rewriting your copy for conversion", "step_progress": 57},
+    "component_selector": {
+        "message": "Selecting UI components for your industry",
+        "step_progress": 63,
+    },
+    "html_generator": {"message": "Building your new page", "step_progress": 68},
+    "quality_reviewer": {"message": "Reviewing design quality", "step_progress": 74},
+    "normalizer": {"message": "Finalizing your redesign", "step_progress": 78},
+}
 
 MAX_QUALITY_RETRIES = 2
 
@@ -529,7 +548,11 @@ def _run_normalizer(html: str, design_brief: DesignBrief, settings: Settings) ->
         return html
 
 
-def run_redesign_pipeline(crawl_result: CrawlResult, settings: Settings) -> str:
+def run_redesign_pipeline(
+    crawl_result: CrawlResult,
+    settings: Settings,
+    progress_callback: ProgressCallback = None,
+) -> str:
     """
     Execute the full Agno multi-agent redesign pipeline.
 
@@ -546,6 +569,23 @@ def run_redesign_pipeline(crawl_result: CrawlResult, settings: Settings) -> str:
     Raises:
         RedesignError: If the pipeline fails.
     """
+
+    def _emit(agent_name: str) -> None:
+        if progress_callback is None:
+            return
+        meta = AGENT_MESSAGES.get(agent_name, {"message": agent_name, "step_progress": 50})
+        try:
+            progress_callback(
+                "agent_activity",
+                {
+                    "agent": agent_name,
+                    "message": meta["message"],
+                    "step_progress": meta["step_progress"],
+                },
+            )
+        except Exception:
+            pass  # never let UI callback crash the pipeline
+
     if crawl_result.error:
         raise RedesignError(f"Cannot redesign — crawl failed: {crawl_result.error}")
 
@@ -556,18 +596,22 @@ def run_redesign_pipeline(crawl_result: CrawlResult, settings: Settings) -> str:
     try:
         # Step 1: Crawl Analyst
         logger.info("Pipeline step 1/4: CrawlAnalyst")
+        _emit("crawl_analyst")
         site_analysis = _run_crawl_analyst(crawl_result, settings)
 
         # Step 2: Design Strategist
         logger.info("Pipeline step 2/5: DesignStrategist")
+        _emit("design_strategist")
         design_brief = _run_design_strategist(site_analysis, crawl_result, settings)
 
         # Step 3: Copywriter — writes conversion-optimized copy
         logger.info("Pipeline step 3/7: Copywriter")
+        _emit("copywriter")
         copywriter_output = _run_copywriter(site_analysis, design_brief, settings)
 
         # Step 4: Component Selector — picks best UI components for this business
         logger.info("Pipeline step 4/7: ComponentSelector")
+        _emit("component_selector")
         component_selection = _run_component_selector(site_analysis, design_brief, settings)
 
         # Step 5 & 6: HTMLGenerator + QualityReviewer with retry loop
@@ -581,6 +625,7 @@ def run_redesign_pipeline(crawl_result: CrawlResult, settings: Settings) -> str:
                 attempt,
                 MAX_QUALITY_RETRIES + 1,
             )
+            _emit("html_generator")
             html = _run_html_generator(
                 design_brief,
                 crawl_result,
@@ -591,6 +636,7 @@ def run_redesign_pipeline(crawl_result: CrawlResult, settings: Settings) -> str:
             )
 
             logger.info("Pipeline step 4/4: QualityReviewer (attempt %d)", attempt)
+            _emit("quality_reviewer")
             quality_report = _run_quality_reviewer(html, design_brief, site_analysis, settings)
 
             if quality_report.passed:
@@ -626,6 +672,7 @@ def run_redesign_pipeline(crawl_result: CrawlResult, settings: Settings) -> str:
 
         # Step 6: Normalizer — ensure cohesive design
         logger.info("Pipeline step 6/6: Normalizer")
+        _emit("normalizer")
         html = _run_normalizer(html, design_brief, settings)
 
         return html
