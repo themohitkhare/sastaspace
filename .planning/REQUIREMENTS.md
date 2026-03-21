@@ -49,12 +49,12 @@
 
 ### Frontend — Contact Form
 
-- [ ] **CONTACT-01**: Contact form appears on result page with headline "Like what you see? Let's build the real thing."
-- [ ] **CONTACT-02**: 3 fields only: Name, Email, Message
-- [ ] **CONTACT-03**: Cloudflare Turnstile widget + honeypot field for spam protection
-- [ ] **CONTACT-04**: Form submission sends email via Resend to owner's inbox
-- [ ] **CONTACT-05**: Success state confirms submission without leaving the result page
-- [ ] **CONTACT-06**: No phone number field
+- [x] **CONTACT-01**: Contact form appears on result page with headline "Like what you see? Let's build the real thing."
+- [x] **CONTACT-02**: 3 fields only: Name, Email, Message
+- [x] **CONTACT-03**: Cloudflare Turnstile widget + honeypot field for spam protection
+- [x] **CONTACT-04**: Form submission sends email via Resend to owner's inbox
+- [x] **CONTACT-05**: Success state confirms submission without leaving the result page
+- [x] **CONTACT-06**: No phone number field
 
 ## v2 Requirements
 

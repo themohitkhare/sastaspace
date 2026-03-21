@@ -78,7 +78,7 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 04-01-PLAN.md — Contact form API route (Resend + Turnstile + honeypot), ContactForm component, ResultView integration
+- [x] 04-01-PLAN.md — Contact form API route (Resend + Turnstile + honeypot), ContactForm component, ResultView integration
 - [ ] 04-02-PLAN.md — Mobile polish pass at 375px + human verification of contact form flow
 
 ## Progress
