@@ -53,7 +53,7 @@ jobs:
 
       - name: Python dependency audit (pip-audit)
         run: |
-          uv export --no-dev --no-editable --format requirements-txt > /tmp/requirements-audit.txt
+          uv export --no-dev --no-editable --no-emit-project --format requirements-txt > /tmp/requirements-audit.txt
           uv tool run pip-audit --requirement /tmp/requirements-audit.txt --vulnerability-service osv
 
       - name: npm audit (high+ only)
