@@ -15,7 +15,7 @@
 - Wave 1 (parallel): Phases 5, 6, 7 — no dependencies between them
 - Wave 2 (sequential): Phase 8 — depends on all Wave 1 phases
 
-- [ ] **Phase 5: Docker Infrastructure** - Containerize backend, frontend, and claude-code-api with Compose orchestration
+- [x] **Phase 5: Docker Infrastructure** - Containerize backend, frontend, and claude-code-api with Compose orchestration
 - [ ] **Phase 6: SEO + Feature Flags** - Meta tags, sitemap, social previews, and Turnstile feature flag
 - [ ] **Phase 7: Design Assets** - Favicon, OG images, and app icons via Stitch MCP
 - [ ] **Phase 8: E2E Test Suite** - Playwright tests covering full user flow, runnable in Docker
@@ -82,7 +82,7 @@ Wave 1 (parallel): 5, 6, 7 → Wave 2: 8
 | 2. Next.js Scaffold + Wiring | v1.0 | 2/2 | Complete | 2026-03-21 |
 | 3. Core UI — Landing + Progress + Result | v1.0 | 3/3 | Complete | 2026-03-21 |
 | 4. Contact Form + Polish | v1.0 | 2/2 | Complete | 2026-03-21 |
-| 5. Docker Infrastructure | v2.0 | 1/1 | Planned | - |
+| 5. Docker Infrastructure | v2.0 | 1/1 | Complete   | 2026-03-21 |
 | 6. SEO + Feature Flags | v2.0 | 1/1 | Planned | - |
 | 7. Design Assets | v2.0 | 1/1 | Planned | - |
 | 8. E2E Test Suite | v2.0 | 0/? | Not started | - |
