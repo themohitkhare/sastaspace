@@ -313,7 +313,7 @@ def make_app(sites_dir: Path) -> FastAPI:
     @app.post("/redesign")
     async def redesign_endpoint(body: RedesignRequest, request: Request):
         from sastaspace.database import find_site_by_url_hash
-        from sastaspace.urls import is_valid_url, normalize_url, url_hash
+        from sastaspace.urls import is_valid_url, url_hash
 
         ip = get_client_ip(request)
 
