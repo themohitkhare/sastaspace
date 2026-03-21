@@ -59,12 +59,12 @@ Plans:
   3. After submitting a valid URL, the page transitions to a progress view showing named steps (crawling, redesigning, deploying) with an animated progress bar and time estimate
   4. When the redesign completes, the user sees their redesigned site rendered in a sandboxed iframe with a link to the original site
   5. The result page URL is shareable -- visiting it directly loads the redesign without re-running the process
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
-- [ ] 03-01: TBD
-- [ ] 03-02: TBD
-- [ ] 03-03: TBD
+- [ ] 03-01-PLAN.md — Foundation components (shadcn input/label, spotlight, progress, url-utils) + landing page with hero and how-it-works
+- [ ] 03-02-PLAN.md — SSE client, useRedesign hook, progress view with per-step indicators, app-flow state machine
+- [ ] 03-03-PLAN.md — Result page with blurred iframe teaser, CTA button, shareable dynamic route at /[subdomain]/
 
 ### Phase 4: Contact Form + Polish
 **Goal**: Visitors who see their redesign can immediately express interest in hiring, and the entire experience feels premium on all devices
@@ -89,6 +89,6 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Secure API Foundation | 2/2 | Complete | - |
-| 2. Next.js Scaffold + Wiring | 0/2 | Planning complete | - |
-| 3. Core UI -- Landing + Progress + Result | 0/0 | Not started | - |
+| 2. Next.js Scaffold + Wiring | 2/2 | Complete | - |
+| 3. Core UI -- Landing + Progress + Result | 0/3 | Planning complete | - |
 | 4. Contact Form + Polish | 0/0 | Not started | - |
