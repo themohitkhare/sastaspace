@@ -288,7 +288,7 @@ def make_app(sites_dir: Path) -> FastAPI:
         uhash = url_hash(body.url)
         try:
             existing = await find_site_by_url_hash(uhash)
-            if existing and existing.get("subdomain"):
+            if existing and existing.get("subdomain") and existing.get("job_id"):
                 logger.info(
                     "DEDUP HIT | url=%s hash=%s subdomain=%s",
                     body.url,
@@ -296,18 +296,9 @@ def make_app(sites_dir: Path) -> FastAPI:
                     existing["subdomain"],
                 )
 
-                # Return existing redesign immediately as SSE done event
-                async def cached_stream():
-                    done_data = {
-                        "job_id": "cached",
-                        "message": "Done!",
-                        "progress": 100,
-                        "url": f"/{existing['subdomain']}/",
-                        "subdomain": existing["subdomain"],
-                    }
-                    yield format_sse_event(data_str=json.dumps(done_data), event="done")
-
-                return EventSourceResponse(cached_stream())
+                # Return the existing job_id so the client streams from /jobs/{id}/stream
+                # That endpoint immediately emits the terminal done event for completed jobs.
+                return {"job_id": existing["job_id"]}
         except Exception:
             pass  # DB unavailable — proceed with redesign
 
