@@ -2,10 +2,16 @@
 from __future__ import annotations
 
 import re
+from collections.abc import Callable
+from typing import TYPE_CHECKING
 
 from openai import OpenAI
 
 from sastaspace.crawler import CrawlResult
+
+if TYPE_CHECKING:
+    # ProgressCallback matches the type alias in sastaspace.agents.pipeline
+    ProgressCallback = Callable[[str, dict], None] | None
 
 SYSTEM_PROMPT = """You are SastaSpace AI — the world's best website redesigner.
 
@@ -130,7 +136,12 @@ def redesign(
 # ---------------------------------------------------------------------------
 
 
-def agno_redesign(crawl_result: CrawlResult, settings, tier: str = "standard") -> str:
+def agno_redesign(
+    crawl_result: CrawlResult,
+    settings,
+    tier: str = "standard",
+    progress_callback: Callable[[str, dict], None] | None = None,
+) -> str:
     """Redesign using Agno multi-agent pipeline.
 
     Uses a sequential pipeline of specialized agents:
@@ -139,6 +150,8 @@ def agno_redesign(crawl_result: CrawlResult, settings, tier: str = "standard") -
     Args:
         crawl_result: The crawled website data.
         settings: Application settings (sastaspace.config.Settings).
+        tier: Redesign tier (standard or premium).
+        progress_callback: Optional callable(event, data) fired before each agent stage.
 
     Returns:
         The final redesigned HTML string.
@@ -148,7 +161,7 @@ def agno_redesign(crawl_result: CrawlResult, settings, tier: str = "standard") -
     """
     from sastaspace.agents.pipeline import run_redesign_pipeline
 
-    return run_redesign_pipeline(crawl_result, settings)
+    return run_redesign_pipeline(crawl_result, settings, progress_callback=progress_callback)
 
 
 # ---------------------------------------------------------------------------

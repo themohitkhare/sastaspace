@@ -1,10 +1,30 @@
 # tests/test_pipeline_callback.py
 """Tests for pipeline progress callback."""
 
-from unittest.mock import MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
 
 from sastaspace.agents.pipeline import AGENT_MESSAGES, run_redesign_pipeline
 from sastaspace.crawler import CrawlResult
+
+
+@pytest.fixture
+def job_service():
+    """Create a JobService with mocked Redis for callback tests."""
+    from sastaspace.jobs import JobService
+
+    service = JobService(redis_url="redis://localhost:6379")
+    redis = AsyncMock()
+    redis.xgroup_create = AsyncMock()
+    redis.xadd = AsyncMock()
+    redis.xreadgroup = AsyncMock(return_value=[])
+    redis.xack = AsyncMock()
+    redis.publish = AsyncMock()
+    redis.aclose = AsyncMock()
+    service._redis = redis
+    service._pubsub_redis = redis
+    return service
 
 
 def _crawl():
@@ -85,3 +105,53 @@ def test_progress_callback_none_is_safe():
 
         result = run_redesign_pipeline(_crawl(), Settings(), progress_callback=None)
     assert result == mock_html
+
+
+async def test_redesign_handler_passes_progress_callback(job_service, tmp_path):
+    """redesign_handler passes a progress_callback to agno_redesign."""
+    from sastaspace.crawler import CrawlResult
+    from sastaspace.database import create_job
+    from sastaspace.deployer import DeployResult
+
+    job_id = "callback-wiring-test"
+    await create_job(job_id=job_id, url="https://example.com", client_ip="1.1.1.1")
+
+    crawl_result = CrawlResult(
+        url="https://example.com",
+        title="Example",
+        meta_description="",
+        favicon_url="",
+        html_source="<html></html>",
+        screenshot_base64="",
+        headings=[],
+        navigation_links=[],
+        text_content="Hello",
+        images=[],
+        colors=[],
+        fonts=[],
+        sections=[],
+        error="",
+    )
+    deploy_result = DeployResult(
+        subdomain="example-com",
+        index_path=tmp_path / "example-com" / "index.html",
+        sites_dir=tmp_path,
+    )
+    mock_html = "<!DOCTYPE html><html><body>Done</body></html>"
+
+    with (
+        patch("sastaspace.crawler.crawl", new_callable=AsyncMock, return_value=crawl_result),
+        patch("sastaspace.redesigner.agno_redesign", return_value=mock_html) as mock_agno,
+        patch("sastaspace.deployer.deploy", return_value=deploy_result),
+        patch("sastaspace.config.Settings.use_agno_pipeline", new=True, create=True),
+    ):
+        from sastaspace.jobs import redesign_handler
+
+        await redesign_handler(job_id, "https://example.com", "standard", job_service)
+
+    # agno_redesign should have been called with a progress_callback keyword arg
+    call_kwargs = mock_agno.call_args
+    assert call_kwargs is not None
+    assert "progress_callback" in call_kwargs.kwargs or (
+        len(call_kwargs.args) >= 4 and callable(call_kwargs.args[3])
+    )

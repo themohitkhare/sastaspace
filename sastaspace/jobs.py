@@ -301,11 +301,31 @@ async def redesign_handler(
 
     redesign_start = _time.monotonic()
 
+    # Capture the running loop before entering the thread
+    loop = asyncio.get_running_loop()
+
+    def _on_agent_progress(event: str, data: dict) -> None:
+        """Called synchronously from the pipeline thread — schedule publish on the event loop."""
+        data["job_id"] = job_id
+        try:
+            asyncio.run_coroutine_threadsafe(
+                job_service.publish_status(job_id, event, data),
+                loop,
+            )
+        except Exception:
+            pass  # never crash the pipeline thread over a UI event
+
     # Choose redesign function based on tier / pipeline setting
     if settings.use_agno_pipeline:
         from sastaspace.redesigner import agno_redesign
 
-        html = await asyncio.to_thread(agno_redesign, crawl_result, settings, tier)
+        html = await asyncio.to_thread(
+            agno_redesign,
+            crawl_result,
+            settings,
+            tier,
+            _on_agent_progress,
+        )
     elif tier == "premium":
         from sastaspace.redesigner import redesign_premium
 
