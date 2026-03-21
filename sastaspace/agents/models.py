@@ -5,6 +5,13 @@ from __future__ import annotations
 
 from pydantic import BaseModel, Field, field_validator
 
+
+def _coerce_int(v: object) -> object:
+    """Round floats to int — open-source models often return 4.5 instead of 4."""
+    if isinstance(v, float):
+        return round(v)
+    return v
+
 # --- Crawl Analyst output ---
 
 
@@ -24,6 +31,11 @@ class ContentSection(BaseModel):
     content_summary: str = ""
     content_type: str = ""  # e.g. "hero", "features", "testimonials", "pricing", "footer"
     importance: int = Field(default=5, ge=1, le=10)
+
+    @field_validator("importance", mode="before")
+    @classmethod
+    def coerce_importance(cls, v: object) -> object:
+        return _coerce_int(v)
 
 
 class SiteAnalysis(BaseModel):
@@ -172,6 +184,11 @@ class QualityReport(BaseModel):
 
     passed: bool = False
     overall_score: int = Field(default=5, ge=1, le=10)
+
+    @field_validator("overall_score", mode="before")
+    @classmethod
+    def coerce_overall_score(cls, v: object) -> object:
+        return _coerce_int(v)
     issues: list[QualityIssue] = Field(default_factory=list)
     feedback_for_regeneration: str = ""  # specific instructions if passed=False
     strengths: list[str] = Field(default_factory=list)
