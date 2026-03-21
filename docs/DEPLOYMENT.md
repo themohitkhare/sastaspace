@@ -15,6 +15,28 @@
 
 ---
 
+## Secrets
+
+All secrets are stored in the **macOS Keychain** on the dev machine under account `sastaspace`.
+Never stored in git, `.env` files, or on the server.
+
+| Secret | Keychain service name | Usage |
+|--------|----------------------|-------|
+| Cloudflare API token | `cloudflare-api-token` | DNS records, tunnel management |
+| claude-code-api key | `claude-code-api-key` | Backend → claude-code-api auth |
+
+Retrieve in scripts:
+```bash
+security find-generic-password -a sastaspace -s <service-name> -w
+```
+
+Add a new secret:
+```bash
+security add-generic-password -a sastaspace -s <service-name> -w "<value>" -U
+```
+
+---
+
 ## 1. SSH Setup
 
 After OS reinstall the host key changes. Clear the old one:
@@ -253,7 +275,8 @@ sudo systemctl status cloudflared
 Get the tunnel token from the Cloudflare dashboard or re-create via API:
 
 ```bash
-CF_TOKEN="<your-api-token>"
+# Retrieve from macOS Keychain (stored under account: sastaspace)
+CF_TOKEN=$(security find-generic-password -a sastaspace -s cloudflare-api-token -w)
 ACCOUNT_ID="<CF_ACCOUNT_ID>"
 
 # Create tunnel
