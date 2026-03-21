@@ -1,15 +1,12 @@
 # tests/test_models.py
 """Tests for Pydantic model coercions — catches OSS model type quirks."""
 
-import pytest
-
 from sastaspace.agents.models import (
     ContentSection,
     DesignBrief,
     QualityReport,
     SiteAnalysis,
 )
-
 
 # --- ContentSection.importance coercion ---
 
