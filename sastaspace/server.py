@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import asyncio
+import html
 import json
 import logging
 import os
@@ -362,11 +363,12 @@ def make_app(sites_dir: Path) -> FastAPI:
         for entry in sorted(registry, key=lambda e: e.get("timestamp", ""), reverse=True):
             sub = entry["subdomain"]
             orig = entry.get("original_url", "")
+            orig_escaped = html.escape(orig, quote=True)
             ts = entry.get("timestamp", "")[:19].replace("T", " ")
             rows += (
                 f"<tr>"
                 f"<td><a href='/{sub}/'>{sub}</a></td>"
-                f"<td><a href='{orig}' target='_blank'>{orig}</a></td>"
+                f"<td><a href='{orig_escaped}' target='_blank'>{orig_escaped}</a></td>"
                 f"<td>{ts}</td>"
                 f"</tr>"
             )
@@ -418,11 +420,14 @@ def make_app(sites_dir: Path) -> FastAPI:
 
     @app.get("/{subdomain}/{path:path}")
     async def serve_site_asset(subdomain: str, path: str) -> Response:
-        asset_path = sites_dir / subdomain / path
+        resolved_root = sites_dir.resolve()
+        asset_path = (sites_dir / subdomain / path).resolve()
+        if not asset_path.is_relative_to(resolved_root):
+            return HTMLResponse("<h1>404</h1>", status_code=404)
         if asset_path.exists() and asset_path.is_file():
             return FileResponse(str(asset_path))
-        index_path = sites_dir / subdomain / "index.html"
-        if index_path.exists():
+        index_path = (sites_dir / subdomain / "index.html").resolve()
+        if index_path.is_relative_to(resolved_root) and index_path.exists():
             return FileResponse(str(index_path), media_type="text/html")
         return HTMLResponse("<h1>404</h1>", status_code=404)
 
