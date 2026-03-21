@@ -83,7 +83,7 @@ spec:
         - name: GF_USERS_ALLOW_SIGN_UP
           value: "false"
         - name: GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH
-          value: "/var/lib/grafana/dashboards/sastaspace-—-infrastructure-overview.json"
+          value: "/var/lib/grafana/dashboards/sastaspace-infrastructure-overview.json"
         volumeMounts:
         - name: datasources
           mountPath: /etc/grafana/provisioning/datasources
