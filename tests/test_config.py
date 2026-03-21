@@ -5,7 +5,7 @@ from sastaspace.config import Settings
 def test_settings_defaults():
     s = Settings()
     assert s.server_port == 8080
-    assert s.claude_model == "claude-sonnet-4-5-20250929"
+    assert s.claude_model == "claude-sonnet-4-6-20250514"
     assert s.sites_dir.name == "sites"
     assert s.claude_code_api_url == "http://localhost:8000/v1"
 
