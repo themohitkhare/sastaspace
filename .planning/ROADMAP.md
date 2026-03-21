@@ -75,11 +75,11 @@ Plans:
   2. Submitting the contact form sends an email to the owner's inbox via Resend and shows an inline success confirmation
   3. The contact form rejects spam submissions (Cloudflare Turnstile verification fails for bots, honeypot field catches simple scrapers)
   4. All pages (landing, progress, result) render correctly and look professional on mobile devices (375px width and up)
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 04-01: TBD
-- [ ] 04-02: TBD
+- [ ] 04-01-PLAN.md — Contact form API route (Resend + Turnstile + honeypot), ContactForm component, ResultView integration
+- [ ] 04-02-PLAN.md — Mobile polish pass at 375px + human verification of contact form flow
 
 ## Progress
 
@@ -90,5 +90,5 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4
 |-------|----------------|--------|-----------|
 | 1. Secure API Foundation | 2/2 | Complete | - |
 | 2. Next.js Scaffold + Wiring | 2/2 | Complete | - |
-| 3. Core UI -- Landing + Progress + Result | 0/3 | Planning complete | - |
-| 4. Contact Form + Polish | 0/0 | Not started | - |
+| 3. Core UI -- Landing + Progress + Result | 3/3 | Complete | - |
+| 4. Contact Form + Polish | 0/2 | Planning complete | - |
