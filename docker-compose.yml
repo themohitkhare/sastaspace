@@ -1,4 +1,19 @@
 services:
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - sastaspace
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+
   backend:
     build:
       context: .
@@ -12,12 +27,18 @@ services:
       - CLAUDE_CODE_API_URL=http://host.docker.internal:8000/v1
       - CORS_ORIGINS=http://localhost:3000
       - SASTASPACE_SITES_DIR=/data/sites
+      - REDIS_URL=redis://redis:6379
+      - DB_PATH=/data/sastaspace.db
     extra_hosts:
       - "host.docker.internal:host-gateway"
     volumes:
       - sites_data:/data/sites
+      - db_data:/data
     networks:
       - sastaspace
+    depends_on:
+      redis:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/"]
       interval: 10s
@@ -70,3 +91,5 @@ networks:
 
 volumes:
   sites_data:
+  redis_data:
+  db_data:

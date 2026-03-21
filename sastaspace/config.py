@@ -29,6 +29,12 @@ class Settings(BaseSettings):
     rate_limit_max: int = 3
     rate_limit_window_seconds: int = 3600
 
+    # Database
+    db_path: Path = Path("./data/sastaspace.db")
+
+    # Redis
+    redis_url: str = "redis://localhost:6379"
+
     @field_validator("cors_origins", mode="before")
     @classmethod
     def parse_cors_origins(cls, v):

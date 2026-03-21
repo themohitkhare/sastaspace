@@ -6,12 +6,13 @@ export type SSEEvent = {
 export async function* streamRedesign(
   url: string,
   apiBase: string = "http://localhost:8080",
-  signal?: AbortSignal
+  signal?: AbortSignal,
+  tier: "standard" | "premium" = "standard"
 ): AsyncGenerator<SSEEvent> {
   const response = await fetch(`${apiBase}/redesign`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ url }),
+    body: JSON.stringify({ url, tier }),
     signal,
   });
 
