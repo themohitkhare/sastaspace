@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { StepIndicator } from "@/components/progress/step-indicator";
 import { ActivityFeed } from "@/components/progress/activity-feed";
 import { DiscoveryGrid } from "@/components/progress/discovery-grid";
+import { SiteScreenshot } from "@/components/progress/site-screenshot";
 import type { RedesignState } from "@/hooks/use-redesign";
 
 const STEP_LABELS: Record<string, (domain: string) => string> = {
@@ -89,6 +90,11 @@ export function ProgressView({ state, onRetry, onReset }: ProgressViewProps) {
         <p className="text-xs text-muted-foreground text-center">
           AI redesigns typically take 2–3 minutes. Real work happening here.
         </p>
+
+        {/* Current site screenshot — shown when screenshot is available */}
+        {!isConnecting && state.screenshot && (
+          <SiteScreenshot screenshotBase64={state.screenshot} domain={state.domain} />
+        )}
 
         {/* Discovery grid — appears after crawl completes */}
         {!isConnecting && <DiscoveryGrid items={state.discoveryItems} />}
