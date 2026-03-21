@@ -25,12 +25,11 @@ Users see a stunning AI redesign of their own website and immediately want to hi
 - ✓ Real-time progress feedback — SSE client (fetch + ReadableStream), per-step animated indicators, AppFlow state machine — Validated in Phase 3: Core UI
 - ✓ Redesign result page — sandboxed iframe teaser, shareable `/[subdomain]/` dynamic route — Validated in Phase 3: Core UI
 
-### Active
+### Validated
 
-- [ ] Contact form CTA — "Like what you see? Let's build the real thing" → name, email, message
-- [ ] API endpoint — FastAPI route that accepts a URL and streams/returns redesign status + result
-- [ ] Beautiful, professional design — the site itself must look like a $5,000 website (it's a portfolio)
-- [ ] Mobile responsive
+- ✓ Contact form CTA — Name, Email, Message fields with AnimatePresence success swap — Validated in Phase 4: Contact Form + Polish
+- ✓ Mobile responsive — 375px viewport, no overflow, 44px touch targets — Validated in Phase 4: Contact Form + Polish
+- ✓ Beautiful, professional design — shadcn v4, Spotlight animation, smooth SSE progress — Validated in Phases 3–4
 
 ### Out of Scope
 
@@ -64,7 +63,7 @@ Users see a stunning AI redesign of their own website and immediately want to hi
 | Full redesign view (not side-by-side) | Cleaner, more impactful first impression | ✓ Phase 3 — blurred iframe teaser on result page |
 | SSE via fetch + ReadableStream (not EventSource) | POST-based SSE required for auth-ready future; EventSource is GET-only | ✓ Phase 3 |
 | No time estimate on progress view | Avoids false expectations; decided in design contract D-07 | ✓ Phase 3 |
-| Contact form (not booking link) | Allows async lead capture without requiring calendar integration | — Pending |
+| Contact form (not booking link) | Allows async lead capture without requiring calendar integration | ✓ Phase 4 — Resend email delivery, honeypot + Turnstile spam protection |
 | Local hosting via Cloudflare tunnel | User already has this setup, avoids hosting costs | — Pending |
 | Keep backend as FastAPI (extend, don't replace) | Existing CLI already uses FastAPI preview server | — Pending |
 
@@ -86,4 +85,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-03-21 after Phase 3: Core UI (Landing + Progress + Result) complete*
+*Last updated: 2026-03-21 after Phase 4: Contact Form + Polish complete — v1.0 milestone all phases done*
