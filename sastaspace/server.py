@@ -26,12 +26,13 @@ from sastaspace.config import Settings
 from sastaspace.crawler import crawl
 from sastaspace.database import (
     JobStatus,
+    close_db,
     create_job,
     get_job,
     init_db,
     list_jobs,
     list_sites,
-    set_db_path,
+    set_mongo_url,
     update_job,
 )
 from sastaspace.deployer import deploy
@@ -62,10 +63,12 @@ def make_app(sites_dir: Path) -> FastAPI:
     @asynccontextmanager
     async def lifespan(app: FastAPI):
         # --- Startup ---
-        db_path = settings.db_path
-        set_db_path(db_path)
-        await init_db()
-        logger.info("Database initialized at %s", db_path)
+        set_mongo_url(settings.mongodb_url, settings.mongodb_db)
+        try:
+            await init_db()
+            logger.info("MongoDB connected at %s / %s", settings.mongodb_url, settings.mongodb_db)
+        except Exception:
+            logger.warning("MongoDB unavailable — job persistence disabled", exc_info=True)
 
         # Connect Redis job service (if Redis is available)
         if settings.redis_url:
@@ -90,6 +93,7 @@ def make_app(sites_dir: Path) -> FastAPI:
         svc = _job_service_holder["svc"]
         if svc:
             await svc.close()
+        await close_db()
 
     app = FastAPI(title="SastaSpace Preview Server", lifespan=lifespan)
 

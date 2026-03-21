@@ -1,5 +1,4 @@
 # tests/test_database.py
-import pytest
 
 from sastaspace.database import (
     JobStatus,
@@ -10,20 +9,8 @@ from sastaspace.database import (
     list_jobs,
     list_sites,
     register_site,
-    set_db_path,
     update_job,
 )
-
-
-@pytest.fixture(autouse=True)
-async def setup_db(tmp_path):
-    """Initialize a fresh in-memory-like DB for each test."""
-    db_path = tmp_path / "test.db"
-    set_db_path(db_path)
-    await init_db()
-    yield
-    # Reset to avoid leaking between tests
-    set_db_path(db_path)
 
 
 async def test_create_and_get_job():
@@ -122,9 +109,7 @@ async def test_create_job_with_tier():
     assert fetched["tier"] == "premium"
 
 
-async def test_init_db_idempotent(tmp_path):
+async def test_init_db_idempotent():
     """Calling init_db multiple times doesn't error."""
-    db_path = tmp_path / "idempotent.db"
-    set_db_path(db_path)
     await init_db()
     await init_db()  # Should not raise

@@ -29,8 +29,9 @@ class Settings(BaseSettings):
     rate_limit_max: int = 3
     rate_limit_window_seconds: int = 3600
 
-    # Database
-    db_path: Path = Path("./data/sastaspace.db")
+    # MongoDB
+    mongodb_url: str = "mongodb://localhost:27017"
+    mongodb_db: str = "sastaspace"
 
     # Redis
     redis_url: str = "redis://localhost:6379"

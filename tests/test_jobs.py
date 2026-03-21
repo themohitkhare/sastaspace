@@ -6,20 +6,13 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from sastaspace.database import JobStatus, init_db, set_db_path
+from sastaspace.database import JobStatus
 from sastaspace.jobs import (
     STATUS_CHANNEL,
     STREAM_KEY,
     JobService,
     redesign_handler,
 )
-
-
-@pytest.fixture(autouse=True)
-async def setup_db(tmp_path):
-    db_path = tmp_path / "test.db"
-    set_db_path(db_path)
-    await init_db()
 
 
 @pytest.fixture

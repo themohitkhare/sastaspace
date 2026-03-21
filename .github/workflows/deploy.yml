@@ -1,15 +1,39 @@
-name: Deploy to Production
+name: CI / Deploy
 
 on:
   push:
     branches: [main]
+  pull_request:
+    branches: [main]
   workflow_dispatch:
 
 jobs:
+  test:
+    name: Test
+    runs-on: [self-hosted, linux, amd64]
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Python deps
+        run: uv sync
+
+      - name: Lint
+        run: |
+          uv run ruff check sastaspace/ tests/
+          uv run ruff format --check sastaspace/ tests/
+
+      - name: Run tests (parallel)
+        run: uv run pytest tests/ -n auto -q --tb=short
+
   deploy:
     name: Build & Deploy
     runs-on: [self-hosted, linux, amd64]
     timeout-minutes: 30
+    needs: test
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
 
     steps:
       - name: Checkout

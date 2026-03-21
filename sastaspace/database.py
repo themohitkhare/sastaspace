@@ -1,16 +1,17 @@
 # sastaspace/database.py
-"""SQLite database for persistent job tracking and site metadata."""
+"""MongoDB database for persistent job tracking and site metadata."""
 
 from __future__ import annotations
 
 from datetime import UTC, datetime
 from enum import StrEnum
-from pathlib import Path
 
-import aiosqlite
+from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
 
-_DB_PATH: Path | None = None
-_SCHEMA_VERSION = 1
+_client: AsyncIOMotorClient | None = None
+_db: AsyncIOMotorDatabase | None = None
+_MONGO_URL = "mongodb://localhost:27017"
+_DB_NAME = "sastaspace"
 
 
 class JobStatus(StrEnum):
@@ -22,81 +23,40 @@ class JobStatus(StrEnum):
     FAILED = "failed"
 
 
-SCHEMA_SQL = """\
-CREATE TABLE IF NOT EXISTS jobs (
-    id TEXT PRIMARY KEY,
-    url TEXT NOT NULL,
-    status TEXT NOT NULL DEFAULT 'queued',
-    subdomain TEXT,
-    original_url TEXT,
-    client_ip TEXT,
-    tier TEXT NOT NULL DEFAULT 'standard',
-    progress INTEGER NOT NULL DEFAULT 0,
-    message TEXT DEFAULT '',
-    error TEXT,
-    html_path TEXT,
-    created_at TEXT NOT NULL,
-    updated_at TEXT NOT NULL,
-    completed_at TEXT
-);
-
-CREATE INDEX IF NOT EXISTS idx_jobs_status ON jobs(status);
-CREATE INDEX IF NOT EXISTS idx_jobs_created_at ON jobs(created_at);
-CREATE INDEX IF NOT EXISTS idx_jobs_client_ip ON jobs(client_ip);
-
-CREATE TABLE IF NOT EXISTS sites (
-    subdomain TEXT PRIMARY KEY,
-    original_url TEXT NOT NULL,
-    job_id TEXT REFERENCES jobs(id),
-    tier TEXT NOT NULL DEFAULT 'standard',
-    created_at TEXT NOT NULL,
-    html_path TEXT NOT NULL
-);
-
-CREATE INDEX IF NOT EXISTS idx_sites_created_at ON sites(created_at);
-
-CREATE TABLE IF NOT EXISTS schema_version (
-    version INTEGER NOT NULL
-);
-"""
+def set_mongo_url(url: str, db_name: str = "sastaspace") -> None:
+    """Set MongoDB connection URL. Call before any DB operations."""
+    global _MONGO_URL, _DB_NAME
+    _MONGO_URL = url
+    _DB_NAME = db_name
 
 
-def set_db_path(path: Path) -> None:
-    """Set the database file path. Call before any DB operations."""
-    global _DB_PATH
-    _DB_PATH = path
-
-
-def _get_db_path() -> Path:
-    if _DB_PATH is None:
-        return Path("./data/sastaspace.db")
-    return _DB_PATH
-
-
-async def get_db() -> aiosqlite.Connection:
-    """Get an async SQLite connection."""
-    db_path = _get_db_path()
-    db_path.parent.mkdir(parents=True, exist_ok=True)
-    db = await aiosqlite.connect(str(db_path))
-    db.row_factory = aiosqlite.Row
-    await db.execute("PRAGMA journal_mode=WAL")
-    await db.execute("PRAGMA foreign_keys=ON")
-    return db
+def _get_db() -> AsyncIOMotorDatabase:
+    global _client, _db
+    if _db is None:
+        _client = AsyncIOMotorClient(_MONGO_URL)
+        _db = _client[_DB_NAME]
+    return _db
 
 
 async def init_db() -> None:
-    """Initialize the database schema."""
-    db = await get_db()
-    try:
-        await db.executescript(SCHEMA_SQL)
-        # Check/set schema version
-        cursor = await db.execute("SELECT COUNT(*) FROM schema_version")
-        row = await cursor.fetchone()
-        if row[0] == 0:
-            await db.execute("INSERT INTO schema_version (version) VALUES (?)", (_SCHEMA_VERSION,))
-        await db.commit()
-    finally:
-        await db.close()
+    """Ensure indexes exist."""
+    db = _get_db()
+    jobs = db["jobs"]
+    await jobs.create_index("status")
+    await jobs.create_index("created_at")
+    await jobs.create_index("client_ip")
+    sites = db["sites"]
+    await sites.create_index("subdomain", unique=True)
+    await sites.create_index("created_at")
+
+
+async def close_db() -> None:
+    """Close the MongoDB client."""
+    global _client, _db
+    if _client is not None:
+        _client.close()
+        _client = None
+        _db = None
 
 
 async def create_job(
@@ -107,28 +67,25 @@ async def create_job(
 ) -> dict:
     """Insert a new job record. Returns the job dict."""
     now = datetime.now(UTC).isoformat()
-    db = await get_db()
-    try:
-        await db.execute(
-            """INSERT INTO jobs
-               (id, url, status, client_ip, tier, progress, message, created_at, updated_at)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-            (job_id, url, JobStatus.QUEUED.value, client_ip, tier, 0, "Queued", now, now),
-        )
-        await db.commit()
-        return {
-            "id": job_id,
-            "url": url,
-            "status": JobStatus.QUEUED.value,
-            "client_ip": client_ip,
-            "tier": tier,
-            "progress": 0,
-            "message": "Queued",
-            "created_at": now,
-            "updated_at": now,
-        }
-    finally:
-        await db.close()
+    doc = {
+        "_id": job_id,
+        "id": job_id,
+        "url": url,
+        "status": JobStatus.QUEUED.value,
+        "client_ip": client_ip,
+        "tier": tier,
+        "progress": 0,
+        "message": "Queued",
+        "subdomain": None,
+        "original_url": None,
+        "error": None,
+        "html_path": None,
+        "created_at": now,
+        "updated_at": now,
+        "completed_at": None,
+    }
+    await _get_db()["jobs"].insert_one(doc)
+    return {k: v for k, v in doc.items() if k != "_id"}
 
 
 async def update_job(
@@ -143,55 +100,33 @@ async def update_job(
 ) -> None:
     """Update fields on a job record."""
     now = datetime.now(UTC).isoformat()
-    fields = ["updated_at = ?"]
-    values: list = [now]
+    updates: dict = {"updated_at": now}
 
     if status is not None:
-        fields.append("status = ?")
-        values.append(status)
+        updates["status"] = status
     if progress is not None:
-        fields.append("progress = ?")
-        values.append(progress)
+        updates["progress"] = progress
     if message is not None:
-        fields.append("message = ?")
-        values.append(message)
+        updates["message"] = message
     if error is not None:
-        fields.append("error = ?")
-        values.append(error)
+        updates["error"] = error
     if subdomain is not None:
-        fields.append("subdomain = ?")
-        values.append(subdomain)
+        updates["subdomain"] = subdomain
     if html_path is not None:
-        fields.append("html_path = ?")
-        values.append(html_path)
+        updates["html_path"] = html_path
     if status in (JobStatus.DONE.value, JobStatus.FAILED.value):
-        fields.append("completed_at = ?")
-        values.append(now)
+        updates["completed_at"] = now
 
-    values.append(job_id)
-
-    db = await get_db()
-    try:
-        await db.execute(
-            f"UPDATE jobs SET {', '.join(fields)} WHERE id = ?",
-            values,
-        )
-        await db.commit()
-    finally:
-        await db.close()
+    await _get_db()["jobs"].update_one({"_id": job_id}, {"$set": updates})
 
 
 async def get_job(job_id: str) -> dict | None:
     """Fetch a single job by ID."""
-    db = await get_db()
-    try:
-        cursor = await db.execute("SELECT * FROM jobs WHERE id = ?", (job_id,))
-        row = await cursor.fetchone()
-        if row is None:
-            return None
-        return dict(row)
-    finally:
-        await db.close()
+    doc = await _get_db()["jobs"].find_one({"_id": job_id})
+    if doc is None:
+        return None
+    doc.pop("_id", None)
+    return doc
 
 
 async def list_jobs(
@@ -199,22 +134,12 @@ async def list_jobs(
     status: str | None = None,
 ) -> list[dict]:
     """List recent jobs, optionally filtered by status."""
-    db = await get_db()
-    try:
-        if status:
-            cursor = await db.execute(
-                "SELECT * FROM jobs WHERE status = ? ORDER BY created_at DESC LIMIT ?",
-                (status, limit),
-            )
-        else:
-            cursor = await db.execute(
-                "SELECT * FROM jobs ORDER BY created_at DESC LIMIT ?",
-                (limit,),
-            )
-        rows = await cursor.fetchall()
-        return [dict(r) for r in rows]
-    finally:
-        await db.close()
+    query = {"status": status} if status else {}
+    cursor = _get_db()["jobs"].find(query).sort("created_at", -1).limit(limit)
+    docs = await cursor.to_list(length=limit)
+    for d in docs:
+        d.pop("_id", None)
+    return docs
 
 
 async def register_site(
@@ -224,43 +149,38 @@ async def register_site(
     html_path: str,
     tier: str = "standard",
 ) -> None:
-    """Register a deployed site in the sites table."""
+    """Register a deployed site (upsert by subdomain)."""
     now = datetime.now(UTC).isoformat()
-    db = await get_db()
-    try:
-        await db.execute(
-            """INSERT OR REPLACE INTO sites
-               (subdomain, original_url, job_id, tier, created_at, html_path)
-               VALUES (?, ?, ?, ?, ?, ?)""",
-            (subdomain, original_url, job_id, tier, now, html_path),
-        )
-        await db.commit()
-    finally:
-        await db.close()
+    await _get_db()["sites"].update_one(
+        {"subdomain": subdomain},
+        {
+            "$set": {
+                "subdomain": subdomain,
+                "original_url": original_url,
+                "job_id": job_id,
+                "tier": tier,
+                "html_path": html_path,
+                "updated_at": now,
+            },
+            "$setOnInsert": {"created_at": now},
+        },
+        upsert=True,
+    )
 
 
 async def list_sites(limit: int = 100) -> list[dict]:
     """List all deployed sites."""
-    db = await get_db()
-    try:
-        cursor = await db.execute("SELECT * FROM sites ORDER BY created_at DESC LIMIT ?", (limit,))
-        rows = await cursor.fetchall()
-        return [dict(r) for r in rows]
-    finally:
-        await db.close()
+    cursor = _get_db()["sites"].find({}).sort("created_at", -1).limit(limit)
+    docs = await cursor.to_list(length=limit)
+    for d in docs:
+        d.pop("_id", None)
+    return docs
 
 
 async def count_recent_jobs(client_ip: str, window_seconds: int) -> int:
     """Count jobs created by an IP within the last N seconds."""
     cutoff = datetime.now(UTC).timestamp() - window_seconds
     cutoff_iso = datetime.fromtimestamp(cutoff, tz=UTC).isoformat()
-    db = await get_db()
-    try:
-        cursor = await db.execute(
-            "SELECT COUNT(*) FROM jobs WHERE client_ip = ? AND created_at > ?",
-            (client_ip, cutoff_iso),
-        )
-        row = await cursor.fetchone()
-        return row[0]
-    finally:
-        await db.close()
+    return await _get_db()["jobs"].count_documents(
+        {"client_ip": client_ip, "created_at": {"$gt": cutoff_iso}}
+    )

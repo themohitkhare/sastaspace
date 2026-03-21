@@ -2,9 +2,28 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 from fastapi.testclient import TestClient
+from mongomock_motor import AsyncMongoMockClient
 
+import sastaspace.database as db_module
 from sastaspace.crawler import CrawlResult
 from sastaspace.deployer import DeployResult
+
+
+@pytest.fixture(autouse=True)
+def mock_db(monkeypatch):
+    """Wire a fresh in-memory MongoDB mock for every test.
+
+    Runs synchronously so it works for both sync TestClient tests and
+    async pytest-asyncio tests. mongomock_motor is sync-under-async and
+    works across any event loop.
+    """
+    client = AsyncMongoMockClient()
+    mock_database = client["sastaspace_test"]
+    monkeypatch.setattr(db_module, "_client", client)
+    monkeypatch.setattr(db_module, "_db", mock_database)
+    yield
+    monkeypatch.setattr(db_module, "_client", None)
+    monkeypatch.setattr(db_module, "_db", None)
 
 
 @pytest.fixture

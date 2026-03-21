@@ -31,13 +31,11 @@ spec:
           value: "/data/sites"
         - name: REDIS_URL
           value: "redis://redis:6379"
-        - name: DB_PATH
-          value: "/data/db/sastaspace.db"
+        - name: MONGODB_URL
+          value: "mongodb://mongodb:27017"
         volumeMounts:
         - name: sites-data
           mountPath: /data/sites
-        - name: db-data
-          mountPath: /data/db
         readinessProbe:
           httpGet:
             path: /
@@ -55,9 +53,6 @@ spec:
       - name: sites-data
         persistentVolumeClaim:
           claimName: sites-pvc
-      - name: db-data
-        persistentVolumeClaim:
-          claimName: db-pvc
 ---
 apiVersion: v1
 kind: Service
@@ -82,15 +77,3 @@ spec:
   resources:
     requests:
       storage: 10Gi
----
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: db-pvc
-  namespace: sastaspace
-spec:
-  accessModes:
-  - ReadWriteOnce
-  resources:
-    requests:
-      storage: 1Gi
