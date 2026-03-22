@@ -4,6 +4,7 @@ from __future__ import annotations
 import json
 import os
 import re
+import shutil
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
@@ -63,7 +64,13 @@ def save_registry(sites_dir: Path, registry: list[dict]) -> None:
     os.replace(tmp_path, sites_dir / "_registry.json")
 
 
-def deploy(url: str, html: str, sites_dir: Path, subdomain: str | None = None) -> DeployResult:
+def deploy(
+    url: str,
+    html: str,
+    sites_dir: Path,
+    subdomain: str | None = None,
+    assets: list | None = None,
+) -> DeployResult:
     """
     Write redesigned HTML to sites/{subdomain}/ and update registry.
 
@@ -80,12 +87,21 @@ def deploy(url: str, html: str, sites_dir: Path, subdomain: str | None = None) -
     index_path = site_dir / "index.html"
     index_path.write_text(html, encoding="utf-8")
 
+    if assets:
+        for asset in assets:
+            dest = site_dir / asset.local_path
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            shutil.move(str(asset.tmp_path), str(dest))
+
     metadata = {
         "subdomain": final_subdomain,
         "original_url": url,
         "timestamp": datetime.now(UTC).isoformat(),
         "status": "deployed",
     }
+    if assets:
+        metadata["assets_count"] = len(assets)
+        metadata["total_assets_size"] = sum(a.size_bytes for a in assets)
     (site_dir / "metadata.json").write_text(json.dumps(metadata, indent=2))
 
     registry = load_registry(sites_dir)
