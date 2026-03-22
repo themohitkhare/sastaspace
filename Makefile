@@ -9,7 +9,8 @@ RSYNC_EXCLUDE := --exclude='.git' --exclude='node_modules' --exclude='__pycache_
 
 .PHONY: ci install lint k8s-lint test dupes semgrep dev dev-api dev-web \
         deploy deploy-build deploy-logs deploy-status deploy-down k8s-apply \
-        deploy-monitoring monitoring-status monitoring-logs
+        deploy-monitoring monitoring-status monitoring-logs \
+        deploy-twenty twenty-status twenty-logs twenty-setup
 
 install:
 	uv sync
@@ -90,3 +91,25 @@ monitoring-status:
 
 monitoring-logs:
 	@$(SSH) "sudo microk8s kubectl logs -f -n monitoring -l 'app in (grafana,prometheus,loki)' --max-log-requests=6"
+
+# ── Twenty CRM ────────────────────────────────────────────────────────────────
+
+deploy-twenty: ## Deploy Twenty CRM to k8s
+	@echo "→ Syncing code to $(REMOTE_USER)@$(REMOTE_HOST):$(REMOTE_DIR)..."
+	@rsync -az --delete $(RSYNC_EXCLUDE) . $(REMOTE_USER)@$(REMOTE_HOST):$(REMOTE_DIR)
+	@echo "→ Applying Twenty CRM manifests..."
+	@$(SSH) "sudo microk8s kubectl apply -f $(REMOTE_DIR)/k8s/twenty/namespace.yaml"
+	@$(SSH) "sudo microk8s kubectl apply -f $(REMOTE_DIR)/k8s/twenty/"
+	@echo "✓ Twenty CRM deployed. Access: https://crm.sastaspace.com"
+
+twenty-status: ## Show Twenty pod/svc/ingress status
+	@$(SSH) "sudo microk8s kubectl get pods,svc,ingress -n twenty"
+
+twenty-logs: ## Tail Twenty server + worker logs
+	@$(SSH) "sudo microk8s kubectl logs -n twenty -l app=twenty-server --tail=50 -f"
+
+twenty-setup: ## First-time Twenty setup instructions
+	@echo "1. Edit k8s/twenty/secrets.yaml with real values"
+	@echo "2. Run: make deploy-twenty"
+	@echo "3. Wait for pods: make twenty-status"
+	@echo "4. Access: https://crm.sastaspace.com"
