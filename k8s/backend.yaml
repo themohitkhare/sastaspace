@@ -33,6 +33,8 @@ spec:
         - secretRef:
             name: sastaspace-env
             optional: true
+        - secretRef:
+            name: sastaspace-db-auth
         env:
         - name: MODE
           value: "server"

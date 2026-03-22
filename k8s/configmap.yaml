@@ -6,8 +6,7 @@ metadata:
 data:
   CLAUDE_CODE_API_URL: "http://192.168.0.38:8000/v1"
   SASTASPACE_SITES_DIR: "/data/sites"
-  REDIS_URL: "redis://redis:6379"
-  MONGODB_URL: "mongodb://mongodb:27017"
+  # REDIS_URL and MONGODB_URL moved to sastaspace-db-auth secret (contain credentials)
   MONGODB_DB: "sastaspace"
   OLLAMA_URL: "http://192.168.0.38:11434/v1"
   BROWSERLESS_URL: "ws://browserless:3000"

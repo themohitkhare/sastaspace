@@ -1,0 +1,126 @@
+# k8s/network-policies.yaml
+#
+# Pod-to-pod isolation for sastaspace namespace.
+# Default deny all ingress, then allow only required paths.
+#
+---
+# Default: deny all ingress to all pods
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-ingress
+  namespace: sastaspace
+spec:
+  podSelector: {}
+  policyTypes:
+  - Ingress
+---
+# Backend: allow ingress from nginx ingress controller
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-backend-ingress
+  namespace: sastaspace
+spec:
+  podSelector:
+    matchLabels:
+      app: backend
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: ingress
+    ports:
+    - port: 8080
+  # Allow Prometheus scrape from monitoring namespace
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: monitoring
+    ports:
+    - port: 8080
+---
+# Frontend: allow ingress from nginx ingress controller
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-frontend-ingress
+  namespace: sastaspace
+spec:
+  podSelector:
+    matchLabels:
+      app: frontend
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: ingress
+    ports:
+    - port: 3000
+---
+# Redis: allow from backend + worker only
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-redis-internal
+  namespace: sastaspace
+spec:
+  podSelector:
+    matchLabels:
+      app: redis
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          app: backend
+    - podSelector:
+        matchLabels:
+          app: worker
+    ports:
+    - port: 6379
+  # Allow redis-exporter from monitoring namespace
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: monitoring
+    ports:
+    - port: 6379
+---
+# MongoDB: allow from backend + worker only
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-mongodb-internal
+  namespace: sastaspace
+spec:
+  podSelector:
+    matchLabels:
+      app: mongodb
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          app: backend
+    - podSelector:
+        matchLabels:
+          app: worker
+    ports:
+    - port: 27017
+---
+# Browserless: allow from worker only
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-browserless-internal
+  namespace: sastaspace
+spec:
+  podSelector:
+    matchLabels:
+      app: browserless
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          app: worker
+    ports:
+    - port: 3000

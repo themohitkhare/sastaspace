@@ -32,6 +32,8 @@ spec:
         - secretRef:
             name: sastaspace-env
             optional: true
+        - secretRef:
+            name: sastaspace-db-auth
         volumeMounts:
         - name: sites-data
           mountPath: /data/sites

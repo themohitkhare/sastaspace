@@ -14,9 +14,14 @@ spec:
       labels:
         app: twenty-server
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
       containers:
       - name: server
         image: twentycrm/twenty:latest
+        securityContext:
+          allowPrivilegeEscalation: false
         ports:
         - containerPort: 3000
         envFrom:

@@ -3,12 +3,13 @@ services:
     image: redis:7-alpine
     ports:
       - "6379:6379"
+    command: ["redis-server", "--appendonly", "yes", "--requirepass", "${REDIS_PASSWORD:-devpassword}"]
     volumes:
       - redis_data:/data
     networks:
       - sastaspace
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-devpassword}", "ping"]
       interval: 5s
       timeout: 3s
       retries: 5
@@ -18,12 +19,15 @@ services:
     image: mongo:7
     ports:
       - "27017:27017"
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=${MONGO_USER:-sastaspace}
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_PASSWORD:-devpassword}
     volumes:
       - mongo_data:/data/db
     networks:
       - sastaspace
     healthcheck:
-      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      test: ["CMD", "mongosh", "-u", "${MONGO_USER:-sastaspace}", "-p", "${MONGO_PASSWORD:-devpassword}", "--authenticationDatabase", "admin", "--eval", "db.adminCommand('ping')"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -62,8 +66,8 @@ services:
       - CLAUDE_CODE_API_URL=http://host.docker.internal:8000/v1
       - CORS_ORIGINS=http://localhost:3000
       - SASTASPACE_SITES_DIR=/data/sites
-      - REDIS_URL=redis://redis:6379
-      - MONGODB_URL=mongodb://mongodb:27017
+      - REDIS_URL=redis://:${REDIS_PASSWORD:-devpassword}@redis:6379
+      - MONGODB_URL=mongodb://${MONGO_USER:-sastaspace}:${MONGO_PASSWORD:-devpassword}@mongodb:27017/sastaspace?authSource=admin
       - MONGODB_DB=sastaspace
       - BROWSERLESS_URL=ws://browserless:3000
       - TWENTY_URL=""

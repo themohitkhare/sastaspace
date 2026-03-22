@@ -14,16 +14,28 @@ spec:
       labels:
         app: twenty-postgres
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 999
+        fsGroup: 999
       containers:
       - name: postgres
         image: postgres:16
+        securityContext:
+          allowPrivilegeEscalation: false
         ports:
         - containerPort: 5432
         env:
         - name: POSTGRES_USER
-          value: "twenty"
+          valueFrom:
+            secretKeyRef:
+              name: twenty-db
+              key: POSTGRES_USER
         - name: POSTGRES_PASSWORD
-          value: "twenty"
+          valueFrom:
+            secretKeyRef:
+              name: twenty-db
+              key: POSTGRES_PASSWORD
         - name: POSTGRES_DB
           value: "twenty"
         volumeMounts:

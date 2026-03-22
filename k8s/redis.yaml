@@ -25,7 +25,13 @@ spec:
           allowPrivilegeEscalation: false
         ports:
         - containerPort: 6379
-        args: ["--appendonly", "yes"]
+        args: ["--appendonly", "yes", "--requirepass", "$(REDIS_PASSWORD)"]
+        env:
+        - name: REDIS_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: redis-auth
+              key: REDIS_PASSWORD
         volumeMounts:
         - name: redis-data
           mountPath: /data

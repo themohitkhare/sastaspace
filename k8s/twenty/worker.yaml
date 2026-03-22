@@ -14,9 +14,14 @@ spec:
       labels:
         app: twenty-worker
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
       containers:
       - name: worker
         image: twentycrm/twenty:latest
+        securityContext:
+          allowPrivilegeEscalation: false
         command: ["yarn", "worker:prod"]
         envFrom:
         - secretRef:
