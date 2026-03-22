@@ -35,9 +35,20 @@ BATCH_SIZE = 1
 
 # CrawlResult fields to persist in checkpoint (all dataclass fields except methods)
 _CRAWL_FIELDS = [
-    "url", "title", "meta_description", "favicon_url", "html_source",
-    "screenshot_base64", "headings", "navigation_links", "text_content",
-    "images", "colors", "fonts", "sections", "error",
+    "url",
+    "title",
+    "meta_description",
+    "favicon_url",
+    "html_source",
+    "screenshot_base64",
+    "headings",
+    "navigation_links",
+    "text_content",
+    "images",
+    "colors",
+    "fonts",
+    "sections",
+    "error",
 ]
 
 
@@ -350,7 +361,11 @@ async def redesign_handler(
     has_checkpoint = checkpoint is not None
     logger.info(
         "JOB START | job=%s url=%s tier=%s pipeline=%s checkpoint=%s",
-        job_id, url, tier, pipeline, has_checkpoint,
+        job_id,
+        url,
+        tier,
+        pipeline,
+        has_checkpoint,
     )
 
     # Determine what to skip from checkpoint
@@ -498,9 +513,7 @@ async def redesign_handler(
             "pipeline_data": checkpoint_data,
         }
         try:
-            asyncio.run_coroutine_threadsafe(
-                update_job(job_id, checkpoint=full_checkpoint), loop
-            )
+            asyncio.run_coroutine_threadsafe(update_job(job_id, checkpoint=full_checkpoint), loop)
         except Exception:
             pass  # never crash the pipeline thread over a checkpoint save
 
