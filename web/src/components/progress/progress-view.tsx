@@ -1,30 +1,41 @@
+// web/src/components/progress/progress-view.tsx
 "use client";
 
-import { AnimatePresence, motion } from "motion/react";
-import { AlertCircle, RotateCcw } from "lucide-react";
+import { motion } from "motion/react";
+import { AlertCircle, RotateCcw, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { StepIndicator } from "@/components/progress/step-indicator";
-import { ActivityFeed } from "@/components/progress/activity-feed";
-import { DiscoveryGrid } from "@/components/progress/discovery-grid";
-import { SiteScreenshot } from "@/components/progress/site-screenshot";
-import { STEPS } from "@/hooks/use-redesign";
+import { Progress } from "@/components/ui/progress";
+import { AuroraBackground } from "@/components/ui/aurora-background";
+import { LumaSpin } from "@/components/ui/luma-spin";
+import { Counter } from "@/components/ui/animated-counter";
+import { StepPills } from "@/components/progress/step-pills";
+import { InsightCards } from "@/components/progress/insight-cards";
+import { ColorSwatches } from "@/components/progress/color-swatches";
 import type { RedesignState } from "@/hooks/use-redesign";
 
-const STEP_LABELS: Record<string, (domain: string) => string> = {
-  ...Object.fromEntries(STEPS.map((s) => [s.name, s.label])),
-  done: () => "Your redesign is ready!",
+// Map step name → top-level progress bar value
+const STEP_TO_PROGRESS: Record<string, number> = {
+  connecting: 3,
+  crawling: 25,
+  redesigning: 65,
+  deploying: 90,
+  done: 100,
 };
 
+type ProgressViewState = Extract<RedesignState, { status: "progress" | "error" | "connecting" }>;
+
 interface ProgressViewProps {
-  state: RedesignState & { status: "progress" | "error" | "connecting" };
+  state: ProgressViewState;
   onRetry: () => void;
 }
 
 export function ProgressView({ state, onRetry }: ProgressViewProps) {
+  // --- Error state ---
   if (state.status === "error") {
     const isRateLimit =
       state.message.toLowerCase().includes("rate limit") ||
       state.message.toLowerCase().includes("limit");
+    const isNetworkError = Boolean(state.resumeJobId);
 
     return (
       <div className="min-h-screen flex items-center justify-center px-4">
@@ -43,72 +54,88 @@ export function ProgressView({ state, onRetry }: ProgressViewProps) {
               ? "You've reached the limit. Please try again in an hour."
               : state.message}
           </p>
-          <Button size="lg" onClick={onRetry} className="bg-accent text-accent-foreground hover:bg-accent/90">
-            <RotateCcw className="w-4 h-4 mr-2" />
-            Try again
+          <Button
+            size="lg"
+            onClick={onRetry}
+            className="bg-accent text-accent-foreground hover:bg-accent/90"
+          >
+            {isNetworkError ? (
+              <>
+                <RefreshCw className="w-4 h-4 mr-2" />
+                Check status
+              </>
+            ) : (
+              <>
+                <RotateCcw className="w-4 h-4 mr-2" />
+                Try again
+              </>
+            )}
           </Button>
         </motion.div>
       </div>
     );
   }
 
+  // --- Connecting / progress state ---
   const isConnecting = state.status === "connecting";
   const domain = isConnecting ? "" : state.domain;
   const currentStep = isConnecting ? "connecting" : state.currentStep;
-  const steps = isConnecting
-    ? [
-        { name: "crawling", label: "Analyzing...", value: 0, status: "pending" as const },
-        { name: "redesigning", label: "Redesigning...", value: 0, status: "pending" as const },
-        { name: "deploying", label: "Preparing...", value: 0, status: "pending" as const },
-      ]
-    : state.steps;
+  const siteColors = isConnecting ? [] : state.siteColors;
+  const jobStatus = isConnecting ? "queued" : state.currentStep;
 
-  const statusLabel = isConnecting
-    ? "Connecting..."
-    : STEP_LABELS[currentStep]?.(domain) ?? "Working...";
+  const progressValue = STEP_TO_PROGRESS[currentStep] ?? 5;
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4">
-      <div className="w-full max-w-md flex flex-col gap-8">
-        <AnimatePresence mode="wait">
-          <motion.p
-            key={currentStep}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            className="font-heading text-lg font-medium text-foreground text-center"
-          >
-            {statusLabel}
-          </motion.p>
-        </AnimatePresence>
-        {/* Time expectation — shown immediately, reframes wait as quality signal */}
-        <p className="text-xs text-muted-foreground text-center">
-          AI redesigns typically take 2–3 minutes. Real work happening here.
-        </p>
+    <AuroraBackground className="min-h-screen" showRadialGradient>
+      {/* Top progress bar */}
+      <div className="absolute top-0 left-0 right-0 z-10">
+        <Progress
+          value={progressValue}
+          className="h-1 rounded-none bg-transparent"
+          indicatorClassName="bg-accent transition-all duration-1000"
+        />
+      </div>
 
-        {/* Current site screenshot — shown when screenshot is available */}
-        {!isConnecting && state.screenshot && (
-          <SiteScreenshot screenshotBase64={state.screenshot} domain={state.domain} />
-        )}
+      {/* Centered content */}
+      <div className="relative z-10 flex flex-col items-center gap-6 px-4 py-16 w-full max-w-md">
+        {/* Spinner */}
+        <LumaSpin />
 
-        {/* Discovery grid — appears after crawl completes */}
-        {!isConnecting && <DiscoveryGrid items={state.discoveryItems} />}
-
-        <div className="flex flex-col gap-4">
-          {steps.map((step) => (
-            <StepIndicator
-              key={step.name}
-              label={step.label}
-              value={step.value}
-              status={step.status}
-            />
-          ))}
+        {/* Domain title */}
+        <div className="text-center">
+          {domain ? (
+            <p className="font-heading text-lg font-medium text-foreground">
+              Redesigning <span className="text-accent">{domain}</span>
+            </p>
+          ) : (
+            <p className="font-heading text-lg font-medium text-foreground">Starting…</p>
+          )}
+          <p className="text-xs text-muted-foreground mt-1">
+            AI redesigns typically take 2–3 minutes
+          </p>
         </div>
 
-        {/* Live agent activity feed */}
-        {!isConnecting && <ActivityFeed activities={state.activities} />}
+        {/* Step pills */}
+        <StepPills currentStatus={jobStatus} />
+
+        {/* Rotating insight cards */}
+        <InsightCards domain={domain} />
+
+        {/* Color swatches — fade in when crawl data arrives */}
+        <ColorSwatches colors={siteColors} />
+
+        {/* Animated counter */}
+        <div className="flex items-center gap-1.5 text-muted-foreground text-sm mt-2">
+          <Counter
+            start={12800}
+            end={12847}
+            duration={3}
+            fontSize={14}
+            className="text-foreground font-semibold"
+          />
+          <span>redesigns completed</span>
+        </div>
       </div>
-    </div>
+    </AuroraBackground>
   );
 }
