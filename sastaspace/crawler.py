@@ -599,7 +599,7 @@ async def enhanced_crawl(url: str, settings):
                     asset_urls.append({"url": urljoin(url, src), "source_page": url})
             # From internal page images
             for ipage in internal_pages:
-                if not ipage.error:
+                if hasattr(ipage, "error") and not ipage.error and hasattr(ipage, "images"):
                     for img in ipage.images:
                         src = img.get("src", "")
                         if src:
@@ -622,9 +622,14 @@ async def enhanced_crawl(url: str, settings):
                 assets = AssetManifest(assets=[], total_size_bytes=0)
 
             # 7. Build business profile via LLM (sync call via to_thread)
-            homepage_text = homepage.text_content
+            homepage_text = homepage.text_content if hasattr(homepage, "text_content") else ""
             internal_texts = [
-                p.text_content for p in internal_pages if not p.error and p.text_content
+                p.text_content
+                for p in internal_pages
+                if hasattr(p, "text_content")
+                and hasattr(p, "error")
+                and not p.error
+                and p.text_content
             ]
             business_profile = await asyncio.to_thread(
                 build_business_profile,
