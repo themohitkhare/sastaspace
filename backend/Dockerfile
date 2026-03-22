@@ -3,6 +3,7 @@ FROM python:3.11-slim
 # System deps for Playwright/Chromium + curl for healthcheck
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
+    libmagic1 \
     libglib2.0-0 \
     libnss3 \
     libnspr4 \
