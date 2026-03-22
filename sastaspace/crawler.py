@@ -624,19 +624,10 @@ async def enhanced_crawl(url: str, settings):
                 assets = AssetManifest(assets=[], total_size_bytes=0)
 
             # 7. Build business profile via LLM (sync call via to_thread)
-            homepage_text = homepage.text_content if hasattr(homepage, "text_content") else ""
-            internal_texts = [
-                p.text_content
-                for p in internal_pages
-                if hasattr(p, "text_content")
-                and hasattr(p, "error")
-                and not p.error
-                and p.text_content
-            ]
             business_profile = await asyncio.to_thread(
                 build_business_profile,
-                homepage_text,
-                internal_texts,
+                homepage,
+                internal_pages,
                 settings.claude_code_api_url,
                 settings.claude_model,
                 settings.claude_code_api_key,
