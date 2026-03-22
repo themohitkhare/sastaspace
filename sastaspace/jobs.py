@@ -585,7 +585,8 @@ async def redesign_handler(
     )
 
     # Guard: refuse to deploy empty or invalid HTML
-    from sastaspace.redesigner import RedesignError, _validate_html
+    from sastaspace.html_utils import RedesignError
+    from sastaspace.html_utils import validate_html as _validate_html
 
     try:
         _validate_html(html)

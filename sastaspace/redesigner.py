@@ -1,13 +1,15 @@
 # sastaspace/redesigner.py
 from __future__ import annotations
 
-import re
 from collections.abc import Callable
 from typing import TYPE_CHECKING
 
 from openai import OpenAI
 
 from sastaspace.crawler import CrawlResult
+from sastaspace.html_utils import RedesignError  # noqa: F401
+from sastaspace.html_utils import clean_html as _clean_html  # noqa: F401
+from sastaspace.html_utils import validate_html as _validate_html  # noqa: F401
 
 if TYPE_CHECKING:
     # ProgressCallback matches the type alias in sastaspace.agents.pipeline
@@ -55,30 +57,6 @@ Instructions:
 2. Create a complete modern redesign as a SINGLE HTML file
 3. Keep all original content but reorganize it beautifully
 4. Output ONLY the HTML code — no explanations, just raw HTML starting with <!DOCTYPE html>"""
-
-
-class RedesignError(Exception):
-    """Raised when Claude returns invalid or unexpected output."""
-
-
-def _clean_html(raw: str) -> str:
-    """Strip markdown code fences and leading/trailing whitespace."""
-    raw = raw.strip()
-    raw = re.sub(r"^```(?:html)?\s*\n?", "", raw, flags=re.IGNORECASE)
-    raw = re.sub(r"\n?```\s*$", "", raw, flags=re.IGNORECASE)
-    return raw.strip()
-
-
-def _validate_html(html: str) -> None:
-    """Raise RedesignError if the HTML looks truncated or malformed."""
-    if not html:
-        raise RedesignError("Claude returned an empty response")
-    if "<!doctype html" not in html.lower():
-        raise RedesignError(
-            "Response missing <!DOCTYPE html> declaration — output may not be valid HTML"
-        )
-    if "</html>" not in html.lower():
-        raise RedesignError("Response missing closing </html> tag — output appears to be truncated")
 
 
 def _redesign_with_prompts(

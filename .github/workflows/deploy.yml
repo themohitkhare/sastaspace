@@ -36,7 +36,7 @@ jobs:
           uv run ruff format --check sastaspace/ tests/
 
       - name: Python code health (pycodegate)
-        run: uvx pycodegate . --min-score 50 --fail-on error
+        run: uvx pycodegate . --min-score 60
 
       - name: React code health (react-doctor)
         working-directory: web

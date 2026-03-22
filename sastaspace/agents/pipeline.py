@@ -125,7 +125,7 @@ def _run_agent(
     model: OpenAILike,
 ) -> str:
     """Run a single agent and return the response content string."""
-    from sastaspace.redesigner import RedesignError
+    from sastaspace.html_utils import RedesignError
 
     start = time.monotonic()
     status = "success"
@@ -229,7 +229,7 @@ def _run_crawl_analyst(
     crawl_result: CrawlResult, settings: Settings, tier: str = "premium"
 ) -> SiteAnalysis:
     """Run the CrawlAnalyst agent to produce a SiteAnalysis."""
-    from sastaspace.redesigner import RedesignError
+    from sastaspace.html_utils import RedesignError
 
     use_ollama = tier == "free"
     model_id = settings.free_crawl_analyst_model if use_ollama else settings.crawl_analyst_model
@@ -269,7 +269,7 @@ def _run_design_strategist(
     tier: str = "premium",
 ) -> DesignBrief:
     """Run the DesignStrategist agent to produce a DesignBrief."""
-    from sastaspace.redesigner import RedesignError
+    from sastaspace.html_utils import RedesignError
 
     use_ollama = tier == "free"
     model_id = (
@@ -485,7 +485,8 @@ def _run_html_generator(
     tier: str = "premium",
 ) -> str:
     """Run the HTMLGenerator agent to produce HTML."""
-    from sastaspace.redesigner import _clean_html, _validate_html
+    from sastaspace.html_utils import clean_html as _clean_html
+    from sastaspace.html_utils import validate_html as _validate_html
 
     use_ollama = tier == "free"
     model_id = settings.free_html_generator_model if use_ollama else settings.html_generator_model
@@ -626,7 +627,7 @@ def _run_normalizer(
     2. Premium Psychology — engineer the halo effect, reduce cognitive load, add micro-interactions
     """
     from sastaspace.agents.prompts import NORMALIZER_SYSTEM, NORMALIZER_USER_TEMPLATE
-    from sastaspace.redesigner import RedesignError, _clean_html, _validate_html
+    from sastaspace.html_utils import RedesignError, _clean_html, _validate_html
 
     use_ollama = tier == "free"
     model_id = settings.free_html_generator_model if use_ollama else settings.html_generator_model
@@ -715,7 +716,7 @@ def run_redesign_pipeline(
     Raises:
         RedesignError: If the pipeline fails.
     """
-    from sastaspace.redesigner import RedesignError
+    from sastaspace.html_utils import RedesignError
 
     def _emit(agent_name: str) -> None:
         if progress_callback is None:
