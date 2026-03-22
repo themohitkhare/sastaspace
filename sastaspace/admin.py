@@ -19,18 +19,17 @@ def verify_webhook_signature(
     body: bytes, signature: str, timestamp: str, secret: str, max_age_seconds: int = 300
 ) -> bool:
     """Verify Twenty webhook HMAC SHA256 signature with replay protection."""
-    # Check timestamp age
+    # Check timestamp age (Twenty sends milliseconds, convert to seconds)
     try:
-        ts = int(timestamp)
-        if abs(time.time() - ts) > max_age_seconds:
+        ts_ms = int(timestamp)
+        if abs(time.time() - ts_ms / 1000) > max_age_seconds:
             return False
     except (ValueError, TypeError):
         return False
 
-    # Verify HMAC
-    expected = hmac.new(
-        secret.encode(), timestamp.encode() + b"." + body, hashlib.sha256
-    ).hexdigest()
+    # Twenty signs: HMAC-SHA256(secret, "timestamp:body")
+    string_to_sign = f"{timestamp}:{body.decode()}"
+    expected = hmac.new(secret.encode(), string_to_sign.encode(), hashlib.sha256).hexdigest()
     return hmac.compare_digest(expected, signature)
 
 

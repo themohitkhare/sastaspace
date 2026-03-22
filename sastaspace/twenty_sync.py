@@ -128,10 +128,33 @@ class TwentyClient:
             return None
 
     async def create_note(self, person_id: str, body: str) -> dict | None:
-        """Create a Note linked to a person."""
+        """Create a Note and attempt to link it to a person."""
         try:
-            data = await self._request("POST", "/notes", json={"body": body, "personId": person_id})
-            return data.get("data", {}).get("createNote")
+            note_data = await self._request(
+                "POST",
+                "/notes",
+                json={
+                    "title": "Contact form message",
+                    "bodyV2": {"markdown": body},
+                },
+            )
+            note = note_data.get("data", {}).get("createNote")
+            if not note:
+                return None
+            # Try to link note to person (best-effort)
+            try:
+                await self._request(
+                    "POST",
+                    "/noteTargets",
+                    json={
+                        "noteId": note["id"],
+                        "targetObjectNameSingular": "person",
+                        "targetObjectRecordId": person_id,
+                    },
+                )
+            except Exception as e:
+                logger.warning("Twenty noteTarget link failed (note still created): %s", e)
+            return note
         except Exception as e:
             logger.warning("Twenty create_note failed: %s", e)
             return None

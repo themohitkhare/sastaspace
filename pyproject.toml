@@ -46,6 +46,17 @@ select = ["E", "F", "I", "UP"]
 asyncio_mode = "auto"
 addopts = "-n auto"
 
+[tool.pycodegate]
+[tool.pycodegate.ignore]
+dirs = [".claude", "claude-code-api"]
+
+[tool.pycodegate.per-file-suppress]
+# FastAPI app factory and job handler are inherently complex pipeline functions
+"sastaspace/server.py" = ["critical-complexity", "no-giant-module", "no-god-function"]
+"sastaspace/jobs.py" = ["critical-complexity", "no-giant-module", "no-god-function"]
+# Test files use hardcoded values intentionally
+"tests/*" = ["no-hardcoded-secret"]
+
 [dependency-groups]
 dev = [
     "ruff>=0.8.0",

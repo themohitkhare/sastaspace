@@ -540,7 +540,7 @@ def make_app(sites_dir: Path) -> FastAPI:
             )
             return Response(status_code=200, content="reprocessing")
 
-        return Response(status_code=400, content="Unknown action")
+        return Response(status_code=200, content="ignored")
 
     # ---- Admin endpoints ----
 

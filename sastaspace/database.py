@@ -216,7 +216,13 @@ async def find_failed_job_checkpoint(url: str) -> dict | None:
         sort=[("created_at", -1)],
     )
     if doc and doc.get("checkpoint"):
-        return doc["checkpoint"]
+        cp = doc["checkpoint"]
+        # Validate checkpoint has useful data (not just empty/corrupt pipeline state)
+        pipeline_data = cp.get("pipeline_data", {})
+        data = pipeline_data.get("data", {}) if isinstance(pipeline_data, dict) else {}
+        # Only reuse if at least the crawl analyst step completed
+        if data.get("site_analysis") or cp.get("crawl_result"):
+            return cp
     return None
 
 

@@ -35,6 +35,13 @@ jobs:
           uv run ruff check sastaspace/ tests/
           uv run ruff format --check sastaspace/ tests/
 
+      - name: Python code health (pycodegate)
+        run: uvx pycodegate . --min-score 50 --fail-on error
+
+      - name: React code health (react-doctor)
+        working-directory: web
+        run: npx -y react-doctor@latest . --score
+
       - name: Duplicate code detection (jscpd)
         run: |
           npx jscpd sastaspace/ web/src/ --min-lines 10 --min-tokens 50 \

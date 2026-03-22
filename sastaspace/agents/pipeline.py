@@ -47,7 +47,6 @@ from sastaspace.agents.prompts import (
 )
 from sastaspace.config import Settings
 from sastaspace.crawler import CrawlResult
-from sastaspace.redesigner import RedesignError, _clean_html, _validate_html
 
 logger = logging.getLogger(__name__)
 
@@ -126,6 +125,8 @@ def _run_agent(
     model: OpenAILike,
 ) -> str:
     """Run a single agent and return the response content string."""
+    from sastaspace.redesigner import RedesignError
+
     start = time.monotonic()
     status = "success"
     input_tokens = 0
@@ -228,6 +229,8 @@ def _run_crawl_analyst(
     crawl_result: CrawlResult, settings: Settings, tier: str = "premium"
 ) -> SiteAnalysis:
     """Run the CrawlAnalyst agent to produce a SiteAnalysis."""
+    from sastaspace.redesigner import RedesignError
+
     use_ollama = tier == "free"
     model_id = settings.free_crawl_analyst_model if use_ollama else settings.crawl_analyst_model
     model = _create_model(model_id, settings, use_ollama=use_ollama)
@@ -266,6 +269,8 @@ def _run_design_strategist(
     tier: str = "premium",
 ) -> DesignBrief:
     """Run the DesignStrategist agent to produce a DesignBrief."""
+    from sastaspace.redesigner import RedesignError
+
     use_ollama = tier == "free"
     model_id = (
         settings.free_design_strategist_model if use_ollama else settings.design_strategist_model
@@ -480,6 +485,8 @@ def _run_html_generator(
     tier: str = "premium",
 ) -> str:
     """Run the HTMLGenerator agent to produce HTML."""
+    from sastaspace.redesigner import _clean_html, _validate_html
+
     use_ollama = tier == "free"
     model_id = settings.free_html_generator_model if use_ollama else settings.html_generator_model
     model = _create_model(model_id, settings, use_ollama=use_ollama)
@@ -619,6 +626,7 @@ def _run_normalizer(
     2. Premium Psychology — engineer the halo effect, reduce cognitive load, add micro-interactions
     """
     from sastaspace.agents.prompts import NORMALIZER_SYSTEM, NORMALIZER_USER_TEMPLATE
+    from sastaspace.redesigner import RedesignError, _clean_html, _validate_html
 
     use_ollama = tier == "free"
     model_id = settings.free_html_generator_model if use_ollama else settings.html_generator_model
@@ -707,6 +715,7 @@ def run_redesign_pipeline(
     Raises:
         RedesignError: If the pipeline fails.
     """
+    from sastaspace.redesigner import RedesignError
 
     def _emit(agent_name: str) -> None:
         if progress_callback is None:

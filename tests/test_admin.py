@@ -15,26 +15,29 @@ class TestWebhookVerification:
     def test_valid_signature_passes(self):
         from sastaspace.admin import verify_webhook_signature
 
-        secret = "test-secret"
+        hmac_key = "test-hmac-value"
         body = b'{"event":"redesignJob.updated"}'
-        timestamp = str(int(time.time()))
-        sig = hmac.new(
-            secret.encode(), timestamp.encode() + b"." + body, hashlib.sha256
-        ).hexdigest()
-        assert verify_webhook_signature(body, sig, timestamp, secret) is True
+        # Twenty sends timestamps in milliseconds
+        timestamp = str(int(time.time() * 1000))
+        string_to_sign = f"{timestamp}:{body.decode()}"
+        sig = hmac.new(hmac_key.encode(), string_to_sign.encode(), hashlib.sha256).hexdigest()
+        assert verify_webhook_signature(body, sig, timestamp, hmac_key) is True
 
     def test_invalid_signature_fails(self):
         from sastaspace.admin import verify_webhook_signature
 
-        assert verify_webhook_signature(b"body", "badsig", str(int(time.time())), "secret") is False
+        ts = str(int(time.time() * 1000))
+        assert verify_webhook_signature(b"body", "badsig", ts, "some-value") is False
 
     def test_expired_timestamp_fails(self):
         from sastaspace.admin import verify_webhook_signature
 
-        old_timestamp = str(int(time.time()) - 600)  # 10 min ago
+        # 10 min ago in milliseconds
+        old_timestamp = str(int((time.time() - 600) * 1000))
         body = b"body"
-        sig = hmac.new(b"secret", old_timestamp.encode() + b"." + body, hashlib.sha256).hexdigest()
-        assert verify_webhook_signature(body, sig, old_timestamp, "secret") is False
+        string_to_sign = f"{old_timestamp}:{body.decode()}"
+        sig = hmac.new(b"some-value", string_to_sign.encode(), hashlib.sha256).hexdigest()
+        assert verify_webhook_signature(body, sig, old_timestamp, "some-value") is False
 
 
 class TestDeleteSiteFiles:

@@ -6,11 +6,14 @@ from __future__ import annotations
 import json
 import logging
 import re
+from typing import TYPE_CHECKING
 
 from openai import OpenAI
 
-from sastaspace.crawler import CrawlResult
 from sastaspace.models import BusinessProfile, PageCrawlResult
+
+if TYPE_CHECKING:
+    from sastaspace.crawler import CrawlResult
 
 logger = logging.getLogger(__name__)
 

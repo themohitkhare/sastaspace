@@ -199,20 +199,20 @@ async def _download_one(
                     seen_filenames[slug] = 1
 
                 file_path = tmp_dir / slug
-                total_bytes = 0
+                data = bytearray()
 
-                with open(file_path, "wb") as f:
-                    while True:
-                        chunk = await resp.content.read(8192)
-                        if not chunk:
-                            break
-                        total_bytes += len(chunk)
-                        if total_bytes > MAX_FILE_BYTES:
-                            logger.info("File %s exceeds 5MB limit, skipping", url)
-                            f.close()
-                            file_path.unlink(missing_ok=True)
-                            return None
-                        f.write(chunk)
+                while True:
+                    chunk = await resp.content.read(8192)
+                    if not chunk:
+                        break
+                    data += chunk
+                    if len(data) > MAX_FILE_BYTES:
+                        logger.info("File %s exceeds 5MB limit, skipping", url)
+                        return None
+
+                total_bytes = len(data)
+                if total_bytes > 0:
+                    await asyncio.to_thread(file_path.write_bytes, bytes(data))
 
                 if total_bytes == 0:
                     file_path.unlink(missing_ok=True)

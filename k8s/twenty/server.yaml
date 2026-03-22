@@ -30,6 +30,8 @@ spec:
         env:
         - name: SERVER_URL
           value: "https://crm.sastaspace.com"
+        - name: FRONTEND_URL
+          value: "https://crm.sastaspace.com"
         - name: STORAGE_TYPE
           value: "local"
         - name: STORAGE_LOCAL_PATH

@@ -584,6 +584,25 @@ async def redesign_handler(
         redesign_duration,
     )
 
+    # Guard: refuse to deploy empty or invalid HTML
+    from sastaspace.redesigner import RedesignError, _validate_html
+
+    try:
+        _validate_html(html)
+    except RedesignError as e:
+        logger.error("JOB DEPLOY BLOCKED | job=%s reason=%s html_size=%d", job_id, e, len(html))
+        await update_job(
+            job_id,
+            status=JobStatus.FAILED.value,
+            error="Redesign produced invalid HTML. Please try again.",
+        )
+        await job_service.publish_status(
+            job_id,
+            "error",
+            {"job_id": job_id, "error": "Redesign produced invalid HTML. Please try again."},
+        )
+        return
+
     # Step 3: Deploying
     logger.info("JOB STEP 3/3: Deploying | job=%s", job_id)
     await update_job(
