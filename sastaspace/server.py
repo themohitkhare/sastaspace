@@ -403,6 +403,49 @@ def make_app(sites_dir: Path) -> FastAPI:
         sites_list = await list_sites(limit=min(limit, 200))
         return JSONResponse(content={"sites": sites_list, "count": len(sites_list)})
 
+    # ---- Twenty CRM sync ----
+
+    @app.post("/twenty/person")
+    async def create_twenty_person(request: Request):
+        from sastaspace.twenty_sync import get_twenty_client
+
+        twenty = get_twenty_client(settings.twenty_url, settings.twenty_api_key)
+        try:
+            body = await request.json()
+            name = body.get("name", "").strip()
+            email = body.get("email", "").strip()
+            message = body.get("message", "")
+            domain = body.get("domain")  # subdomain or null
+
+            if not email:
+                return Response(status_code=400, content="Email required")
+
+            parts = name.split(None, 1)
+            first_name = parts[0] if parts else ""
+            last_name = parts[1] if len(parts) > 1 else ""
+
+            company_id = None
+            if domain:
+                company = await twenty.find_company_by_domain(domain)
+                if not company:
+                    company = await twenty.upsert_company(domain, name=domain)
+                if company:
+                    company_id = company.get("id")
+
+            person = await twenty.create_person(
+                email=email,
+                company_id=company_id,
+                first_name=first_name,
+                last_name=last_name,
+            )
+            if person and message:
+                await twenty.create_note(person["id"], message)
+
+            return {"ok": True}
+        except Exception as e:
+            logger.warning("Twenty person creation failed: %s", e)
+            return {"ok": True}  # Don't reveal failures
+
     # ---- Existing routes ----
 
     @app.get("/", response_class=HTMLResponse)
