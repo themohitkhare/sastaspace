@@ -178,7 +178,7 @@ async def test_redesign_handler_passes_progress_callback(job_service, tmp_path):
     ):
         from sastaspace.jobs import redesign_handler
 
-        await redesign_handler(job_id, "https://example.com", "standard", job_service)
+        await redesign_handler(job_id, "https://example.com", "free", job_service)
 
     # run_redesign should have been called
     mock_run.assert_called_once()
@@ -242,7 +242,7 @@ async def test_redesign_handler_emits_discovery(job_service, tmp_path):
     ):
         from sastaspace.jobs import redesign_handler
 
-        await redesign_handler(job_id, "https://example.com", "standard", job_service)
+        await redesign_handler(job_id, "https://example.com", "free", job_service)
 
     assert len(discovery_events) == 1
     labels = [i["label"] for i in discovery_events[0]["items"]]
@@ -308,7 +308,7 @@ async def test_redesign_handler_emits_screenshot(job_service, tmp_path):
     ):
         from sastaspace.jobs import redesign_handler
 
-        await redesign_handler(job_id, "https://example.com", "standard", job_service)
+        await redesign_handler(job_id, "https://example.com", "free", job_service)
 
     assert len(screenshot_events) == 1
     assert screenshot_events[0]["screenshot_base64"] == "iVBORw0KGgo="
@@ -372,6 +372,6 @@ async def test_redesign_handler_skips_large_screenshot(job_service, tmp_path):
     ):
         from sastaspace.jobs import redesign_handler
 
-        await redesign_handler(job_id, "https://example.com", "standard", job_service)
+        await redesign_handler(job_id, "https://example.com", "free", job_service)
 
     assert len(screenshot_events) == 0  # skipped — too large

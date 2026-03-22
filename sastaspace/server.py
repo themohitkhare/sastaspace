@@ -56,7 +56,7 @@ _redesign_requests_total = Counter(
 
 class RedesignRequest(BaseModel):
     url: str
-    tier: str = "free"  # "free", "standard", or "premium"
+    tier: str = "free"  # "free" or "premium"
 
 
 _SITES_DIR: Path = Path("./sites")
@@ -155,7 +155,7 @@ def make_app(sites_dir: Path) -> FastAPI:
 
     # ---- SSE stream (inline fallback when Redis is unavailable) ----
 
-    async def redesign_stream(url: str, tier: str = "standard") -> AsyncGenerator[bytes, None]:
+    async def redesign_stream(url: str, tier: str = "free") -> AsyncGenerator[bytes, None]:
         job_id = str(uuid4())
 
         # Record job in database
@@ -305,7 +305,7 @@ def make_app(sites_dir: Path) -> FastAPI:
             pass  # DB unavailable — proceed with redesign
 
         # Validate tier
-        tier = body.tier if body.tier in ("free", "standard", "premium") else "free"
+        tier = body.tier if body.tier in ("free", "premium") else "free"
 
         # Rate limit check (localhost exempt)
         if not _is_localhost(ip):

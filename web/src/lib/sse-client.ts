@@ -17,7 +17,7 @@ export type JobStatus = {
 /** Submit a redesign request. Returns job_id or throws. */
 export async function submitRedesign(
   url: string,
-  tier: "free" | "standard" | "premium" = "free",
+  tier: "free" | "premium" = "free",
   signal?: AbortSignal
 ): Promise<string> {
   const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:8080"

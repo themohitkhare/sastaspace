@@ -124,7 +124,7 @@ async def test_redesign_handler_crawl_failure(job_service):
         new_callable=AsyncMock,
         return_value=enhanced_mock,
     ):
-        await redesign_handler(job_id, "https://bad.com", "standard", job_service)
+        await redesign_handler(job_id, "https://bad.com", "free", job_service)
 
     job = await get_job(job_id)
     assert job["status"] == JobStatus.FAILED.value
@@ -180,7 +180,7 @@ async def test_redesign_handler_success(job_service, tmp_path):
         patch("sastaspace.redesigner.run_redesign", return_value=mock_html),
         patch("sastaspace.deployer.deploy", return_value=deploy_result),
     ):
-        await redesign_handler(job_id, "https://example.com", "standard", job_service)
+        await redesign_handler(job_id, "https://example.com", "free", job_service)
 
     job = await get_job(job_id)
     assert job["status"] == JobStatus.DONE.value

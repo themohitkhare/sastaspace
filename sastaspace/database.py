@@ -67,7 +67,7 @@ async def create_job(
     job_id: str,
     url: str,
     client_ip: str,
-    tier: str = "standard",
+    tier: str = "free",
 ) -> dict:
     """Insert a new job record. Returns the job dict."""
     now = datetime.now(UTC).isoformat()
@@ -175,7 +175,7 @@ async def register_site(
     original_url: str,
     job_id: str,
     html_path: str,
-    tier: str = "standard",
+    tier: str = "free",
     url_hash: str = "",
 ) -> None:
     """Register a deployed site (upsert by subdomain)."""

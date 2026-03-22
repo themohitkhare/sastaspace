@@ -87,7 +87,7 @@ export function UrlInputForm({ onSubmit }: UrlInputFormProps) {
               : "text-muted-foreground hover:text-foreground",
           ].join(" ")}
         >
-          Free — Open Source AI
+          Express
         </button>
         <button
           type="button"
@@ -99,7 +99,7 @@ export function UrlInputForm({ onSubmit }: UrlInputFormProps) {
               : "text-muted-foreground hover:text-foreground",
           ].join(" ")}
         >
-          Premium — Claude Sonnet
+          Studio
         </button>
       </div>
 

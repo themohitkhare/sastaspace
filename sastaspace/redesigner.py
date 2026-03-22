@@ -165,7 +165,7 @@ def redesign(
 def agno_redesign(
     crawl_result: CrawlResult,
     settings,
-    tier: str = "standard",
+    tier: str = "free",
     progress_callback: Callable[[str, dict], None] | None = None,
     checkpoint: dict | None = None,
     checkpoint_callback: Callable[[str, dict], None] | None = None,
@@ -359,7 +359,7 @@ ENHANCED_SYSTEM_ADDENDUM = (
 def run_redesign(
     crawl_result: CrawlResult,
     settings,
-    tier: str = "standard",
+    tier: str = "free",
     progress_callback: Callable[[str, dict], None] | None = None,
     checkpoint: dict | None = None,
     checkpoint_callback: Callable[[str, dict], None] | None = None,

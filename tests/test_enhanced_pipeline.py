@@ -177,7 +177,7 @@ def test_run_redesign_with_enhanced_context():
     with patch("sastaspace.redesigner._redesign_with_prompts", return_value=SAMPLE_REDESIGNED_HTML):
         from sastaspace.redesigner import run_redesign
 
-        result = run_redesign(homepage, settings, tier="standard", enhanced=enhanced)
+        result = run_redesign(homepage, settings, tier="free", enhanced=enhanced)
 
     assert "<!DOCTYPE html>" in result
 

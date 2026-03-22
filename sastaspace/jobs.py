@@ -98,7 +98,7 @@ class JobService:
         self,
         url: str,
         client_ip: str,
-        tier: str = "standard",
+        tier: str = "free",
     ) -> str:
         """Add a redesign job to the Redis Stream. Returns job_id."""
         job_id = str(uuid4())
@@ -209,7 +209,7 @@ class JobService:
                 for msg_id, fields in entries:
                     job_id = fields["job_id"]
                     url = fields["url"]
-                    tier = fields.get("tier", "standard")
+                    tier = fields.get("tier", "free")
 
                     # Check if job already completed (avoid double-processing)
                     job = await get_job(job_id)
@@ -293,7 +293,7 @@ class JobService:
                     for msg_id, fields in entries:
                         job_id = fields["job_id"]
                         url = fields["url"]
-                        tier = fields.get("tier", "standard")
+                        tier = fields.get("tier", "free")
 
                         logger.info("Processing job %s: %s", job_id, url)
 
