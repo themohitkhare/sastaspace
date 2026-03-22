@@ -6,6 +6,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
+from sastaspace.asset_downloader import AssetManifest
 from sastaspace.crawler import (
     CrawlResult,
     _crawl_internal_page,
@@ -16,7 +17,7 @@ from sastaspace.crawler import (
     crawl,
     enhanced_crawl,
 )
-from sastaspace.models import EnhancedCrawlResult, PageCrawlResult
+from sastaspace.models import BusinessProfile, EnhancedCrawlResult, PageCrawlResult
 
 # --- Helper ---
 
@@ -641,3 +642,56 @@ class TestEnhancedCrawl:
 
         assert isinstance(result, EnhancedCrawlResult)
         assert "Browser crashed" in result.homepage.error
+
+    @pytest.mark.asyncio
+    async def test_asset_download_skips_clamav(self):
+        """enhanced_crawl must pass skip_clamav=True to download_and_validate_assets."""
+        settings = MagicMock()
+        settings.claude_code_api_url = "http://localhost:8000/v1"
+        settings.claude_model = "test-model"
+        settings.claude_code_api_key = "test-key"
+        settings.browserless_url = None
+
+        homepage = CrawlResult(
+            url="https://example.com",
+            title="Test",
+            meta_description="",
+            favicon_url="",
+            html_source="<html><body><img src='/logo.png'></body></html>",
+            screenshot_base64="",
+            error="",
+            images=[{"src": "/logo.png"}],
+        )
+
+        with (
+            patch("sastaspace.crawler.async_playwright") as mock_pw,
+            patch("sastaspace.crawler._crawl_page", return_value=homepage),
+            patch("sastaspace.crawler._extract_all_internal_links", return_value=[]),
+            patch("sastaspace.crawler._filter_noise_links", return_value=[]),
+            patch("sastaspace.crawler._llm_select_pages", return_value=[]),
+            patch(
+                "sastaspace.asset_downloader.download_and_validate_assets",
+                new_callable=AsyncMock,
+            ) as mock_download,
+            patch("sastaspace.business_profiler.build_business_profile") as mock_profile,
+        ):
+            mock_download.return_value = AssetManifest(assets=[], total_size_bytes=0)
+            mock_profile.return_value = BusinessProfile(business_name="Test")
+
+            mock_browser = AsyncMock()
+            mock_context = AsyncMock()
+            mock_pw.return_value.__aenter__ = AsyncMock(return_value=mock_pw.return_value)
+            mock_pw.return_value.__aexit__ = AsyncMock(return_value=False)
+            mock_pw.return_value.chromium.launch = AsyncMock(return_value=mock_browser)
+            mock_browser.new_context = AsyncMock(return_value=mock_context)
+            mock_context.new_page = AsyncMock(return_value=AsyncMock())
+            mock_browser.close = AsyncMock()
+
+            await enhanced_crawl("https://example.com", settings)
+
+        # Verify skip_clamav=True was passed
+        mock_download.assert_called_once()
+        call_kwargs = mock_download.call_args
+        assert call_kwargs.kwargs.get("skip_clamav") is True or (
+            len(call_kwargs.args) >= 3 and call_kwargs.args[2] is True
+        ), "download_and_validate_assets must be called with skip_clamav=True"
