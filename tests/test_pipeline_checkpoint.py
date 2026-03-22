@@ -16,8 +16,6 @@ from sastaspace.agents.models import (
     SiteAnalysis,
 )
 from sastaspace.agents.pipeline import PIPELINE_STEPS, run_redesign_pipeline
-from sastaspace.redesigner import RedesignError
-
 
 # ---------------------------------------------------------------------------
 # Fixtures
@@ -110,7 +108,9 @@ def test_checkpoint_skips_completed_steps(
     )
 
     result = run_redesign_pipeline(
-        fake_crawl, fake_settings, checkpoint=checkpoint,
+        fake_crawl,
+        fake_settings,
+        checkpoint=checkpoint,
     )
 
     assert result == _HTML
@@ -194,7 +194,9 @@ def test_checkpoint_at_html_generator_skips_first_four(
     )
 
     result = run_redesign_pipeline(
-        fake_crawl, fake_settings, checkpoint=checkpoint,
+        fake_crawl,
+        fake_settings,
+        checkpoint=checkpoint,
     )
 
     assert result == _HTML
