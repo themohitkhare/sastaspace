@@ -33,12 +33,25 @@ class TwentyClient:
             return resp.json()
 
     async def find_company_by_domain(self, domain: str) -> dict | None:
-        """Find a company by custom domain field."""
+        """Find a company by domainName.primaryLinkUrl."""
         try:
+            # Twenty REST filter syntax: field[op]:value
+            # For composite fields: domainName.primaryLinkUrl[eq]:value
+            url_variants = [f"https://{domain}", f"http://{domain}", domain]
+            for variant in url_variants:
+                data = await self._request(
+                    "GET",
+                    "/companies",
+                    params={"filter": f"domainName.primaryLinkUrl[eq]:{variant}"},
+                )
+                companies = data.get("data", {}).get("companies", [])
+                if companies:
+                    return companies[0]
+            # Also try name-based search as fallback
             data = await self._request(
                 "GET",
                 "/companies",
-                params={"filter": f'{{"domain":{{"eq":"{domain}"}}}}'},
+                params={"filter": f"name[like]:%{domain}%"},
             )
             companies = data.get("data", {}).get("companies", [])
             return companies[0] if companies else None
@@ -54,7 +67,9 @@ class TwentyClient:
                 data = await self._request("PATCH", f"/companies/{existing['id']}", json=fields)
                 return data.get("data", {}).get("updateCompany", existing)
             else:
-                fields["domain"] = domain
+                fields["domainName"] = {"primaryLinkUrl": f"https://{domain}"}
+                if "name" not in fields:
+                    fields["name"] = domain
                 data = await self._request("POST", "/companies", json=fields)
                 return data.get("data", {}).get("createCompany")
         except Exception as e:
@@ -86,7 +101,7 @@ class TwentyClient:
             data = await self._request(
                 "GET",
                 "/redesignJobs",
-                params={"filter": f'{{"jobId":{{"eq":"{job_id}"}}}}'},
+                params={"filter": f"jobId[eq]:{job_id}"},
             )
             jobs = data.get("data", {}).get("redesignJobs", [])
             return jobs[0] if jobs else None
@@ -99,7 +114,11 @@ class TwentyClient:
     ) -> dict | None:
         """Create a Person record, optionally linked to a company."""
         try:
-            body = {"email": email, "firstName": first_name, "lastName": last_name, **fields}
+            body = {
+                "name": {"firstName": first_name, "lastName": last_name},
+                "emails": {"primaryEmail": email},
+                **fields,
+            }
             if company_id:
                 body["companyId"] = company_id
             data = await self._request("POST", "/people", json=body)
