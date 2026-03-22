@@ -46,6 +46,9 @@
   --radius-2xl: calc(var(--radius) * 1.8);
   --radius-3xl: calc(var(--radius) * 2.2);
   --radius-4xl: calc(var(--radius) * 2.6);
+  --animate-aurora: aurora 60s linear infinite;
+  --animate-luma: luma-anim 2.5s infinite;
+  --animate-luma-delay: luma-anim 2.5s infinite -1.25s;
 }
 
 :root {
@@ -127,4 +130,27 @@
   html {
     @apply font-sans;
   }
+}
+
+/* Aurora background animation */
+@keyframes aurora {
+  from {
+    background-position: 50% 50%, 50% 50%;
+  }
+  to {
+    background-position: 350% 50%, 350% 50%;
+  }
+}
+
+/* Luma orbital spinner animation */
+@keyframes luma-anim {
+  0%    { inset: 0 35px 35px 0; }
+  12.5% { inset: 0 35px 0 0; }
+  25%   { inset: 35px 35px 0 0; }
+  37.5% { inset: 35px 0 0 0; }
+  50%   { inset: 35px 0 0 35px; }
+  62.5% { inset: 0 0 0 35px; }
+  75%   { inset: 0 0 35px 35px; }
+  87.5% { inset: 0 0 35px 0; }
+  100%  { inset: 0 35px 35px 0; }
 }
