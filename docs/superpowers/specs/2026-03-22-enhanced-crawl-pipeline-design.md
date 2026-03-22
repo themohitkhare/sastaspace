@@ -89,7 +89,9 @@ class DownloadedAsset:
     local_path: str         # relative: "assets/logo.png"
     content_type: str       # "image/png", "image/svg+xml", etc.
     size_bytes: int
+    file_hash: str          # SHA-256 for content deduplication
     source_page: str        # which page it came from
+    tmp_path: Path          # validated file in temp directory, moved by deployer
 ```
 
 ### AssetManifest
@@ -102,8 +104,14 @@ class AssetManifest:
     assets: list[DownloadedAsset]
     total_size_bytes: int
 
-    def to_prompt_context(self) -> str:
-        """Renders as markdown table for LLM consumption."""
+    def to_prompt_context(self, max_assets: int = 15) -> str:
+        """Renders as markdown table for LLM consumption.
+
+        Truncates to max_assets to avoid context window bloat.
+        Priority order: logo/favicon first, then by file size descending
+        (larger images = hero banners, product shots — most useful for layout).
+        Small icon SVGs are omitted if over the limit.
+        """
 ```
 
 ### BusinessProfile
@@ -152,13 +160,18 @@ class EnhancedCrawlResult:
 - `<link rel="apple-touch-icon">`
 - Inline `<svg>` elements (saved directly)
 - Background images from inline `style` attributes (`background-image: url(...)`)
+- **Note on external CSS:** Parsing external `.css` files for `background-image` URLs is out of scope (adds latency and complexity). Rely on OG image (`<meta property="og:image">`) as fallback for hero banners that are loaded via external stylesheets.
 
 **Download logic:**
 - Resolve relative URLs against page base URL
-- Deduplicate across all pages (same image on homepage and services = 1 download)
+- **Two-phase deduplication:**
+  1. URL dedup first: normalize URLs (strip cache-busting params like `?v=123`, `?t=...`), deduplicate across all pages
+  2. Content dedup after download: SHA-256 hash of file bytes. If hash matches an already-downloaded asset, discard the duplicate and map both original URLs to the single local file. Handles CDN domain variations and CMS cache-busting.
+- Stream downloads directly to `tmp/{job_id}/assets/{filename}` on disk (not in memory)
 - Concurrent downloads via `asyncio.gather` with semaphore (max 5 parallel)
 - Timeout per download: 10s
 - Skip external CDN stock photos (unsplash, pexels, shutterstock — not their assets)
+- Skip `data:` URIs (already inline), `blob:` URLs (not downloadable)
 
 **Filename strategy:**
 - Slugify original filename: `Hero Banner (1).PNG` → `hero-banner-1.png`
@@ -190,9 +203,9 @@ download_bytes
 
 **Extraction prompt asks for:** business_name, industry, services, target_audience, tone, differentiators, social_proof, pricing_model, cta_primary, brand_personality.
 
-**Failure handling:** If the LLM call fails or returns unparseable JSON, return a minimal BusinessProfile with `business_name` from page title and all other fields as `"unknown"`. Pipeline continues with degraded context (still better than today's zero context).
+**Structured output enforcement:** Use the OpenAI client's native structured outputs / tool calling with a Pydantic model matching `BusinessProfile`. This guarantees schema adherence and eliminates regex fallbacks entirely. For providers that don't support structured outputs, fall back to JSON mode with schema in the prompt.
 
-**JSON parsing:** Try `json.loads()` first, fall back to regex extraction of JSON block from markdown-fenced response.
+**Failure handling:** If the LLM call fails or returns unparseable JSON, return a minimal BusinessProfile with `business_name` from page title and all other fields as `"unknown"`. Pipeline continues with degraded context (still better than today's zero context).
 
 ## Multi-Page Crawler Enhancement
 
@@ -419,10 +432,20 @@ async def enhanced_crawl(url: str, settings: Settings) -> EnhancedCrawlResult:
         links = _extract_all_internal_links(homepage.html_source, url)
         selected = await _llm_select_pages(links, settings)
 
-        # 3. Crawl internal pages (parallel via new tabs)
+        # 3. Crawl internal pages (parallel via new tabs, with per-page timeout)
+        # Each page wrapped in asyncio.wait_for to prevent a single rogue tab
+        # from freezing the entire gather (e.g., anti-bot captcha, heavy JS)
+        async def _safe_crawl(link: str) -> PageCrawlResult:
+            try:
+                page = await ctx.new_page()
+                return await asyncio.wait_for(
+                    _crawl_internal_page(page, link), timeout=30.0
+                )
+            except (asyncio.TimeoutError, Exception) as e:
+                return PageCrawlResult(url=link, error=str(e), ...)
+
         internal_pages = await asyncio.gather(*[
-            _crawl_internal_page(await ctx.new_page(), link)
-            for link in selected
+            _safe_crawl(link) for link in selected
         ])
 
         # 4. Download + validate assets from all pages
@@ -559,24 +582,31 @@ def deploy(
 
 When `assets` is provided:
 1. Create `site_dir / "assets"` directory
-2. Each `DownloadedAsset` carries `file_bytes: bytes` (held in memory from download/validation step)
-3. Write each asset to `site_dir / asset.local_path`
+2. Each `DownloadedAsset` carries a `tmp_path: Path` pointing to a validated file in the temp directory
+3. `shutil.move()` each asset from `tmp_path` to `site_dir / asset.local_path` (fast, same-filesystem rename)
 4. Update `metadata.json` to include `assets_count` and `total_assets_size`
+5. Clean up the temp directory
 
 The `_registry.json` flat file continues to exist alongside MongoDB — it's used by the CLI `list` command and the server's admin dashboard (`GET /`). No changes needed to registry format.
 
 ### Asset Storage Flow
 
-Assets are downloaded to memory (bytes), validated in memory, and only written to disk by the deployer:
+Assets are streamed to a temporary directory on disk, validated against file paths, then moved to the final location by the deployer. This avoids holding up to 150MB of image bytes in RAM per job.
 
 ```
-Download → bytes in memory
-  → validate in memory (magic bytes, Pillow, defusedxml, YARA, ClamAV)
-  → store validated bytes on DownloadedAsset.file_bytes
-  → deployer writes to sites/{subdomain}/assets/{filename}
+Download → stream to tmp/{job_id}/assets/{filename}
+  → validate against file path:
+    → python-magic: read magic bytes from file
+    → Pillow .verify(): open file and verify
+    → defusedxml: parse SVG from file
+    → yara-python: scan file path
+    → ClamAV: scan via shared emptyDir volume (no TCP streaming needed)
+  → if validation fails: delete tmp file, exclude from manifest
+  → deployer: shutil.move() from tmp/ to sites/{subdomain}/assets/
+  → clean up tmp/{job_id}/
 ```
 
-No temp directory needed. Assets never touch disk until they pass all validation.
+**ClamAV optimization:** In k8s, use an `emptyDir` volume shared between the backend/worker pod and a ClamAV sidecar. The worker writes assets to the shared volume, ClamAV scans via local file path (`SCAN` command instead of `INSTREAM`). No TCP streaming of large files — just a path reference. In local dev, fall back to TCP `INSTREAM` or skip ClamAV entirely.
 
 ### `DownloadedAsset` Updated
 
@@ -587,8 +617,9 @@ class DownloadedAsset:
     local_path: str         # relative: "assets/logo.png"
     content_type: str       # "image/png", "image/svg+xml", etc.
     size_bytes: int
+    file_hash: str          # SHA-256 hash for content deduplication
     source_page: str        # which page it came from
-    file_bytes: bytes       # validated file content, written by deployer
+    tmp_path: Path          # validated file in temp directory, moved by deployer
 ```
 
 ## Edge Cases
@@ -608,11 +639,11 @@ Cap link extraction at 50 internal links before sending to the LLM for selection
 ### Bot Protection on Internal Pages
 If an internal page returns a non-200 status or the page content is shorter than 500 characters (likely a challenge page), skip it silently. Log a warning.
 
-### Data URIs and Blob URLs
-Skip `data:` URIs (already inline, no need to download). Skip `blob:` URLs (not downloadable). Skip URLs with query strings longer than 256 characters (likely CDN transforms — download without query params as fallback).
-
 ### Duplicate Content Across Pages
 Before sending to the business profiler LLM, deduplicate text by paragraph. If a paragraph appears on 2+ pages (header/footer boilerplate), include it only once and mark it as "site-wide" content.
+
+### CMS Cache-Busting URLs
+URLs like `logo.png?v=123` and `logo.png?v=456` or different CDN subdomains for the same file are handled by content-hash deduplication (SHA-256 after download). Both URLs map to the single local file in the asset manifest.
 
 ### Existing Deployed Sites (Migration)
 Old sites in `sites/{subdomain}/` without an `assets/` directory continue to work. The `/{subdomain}/{path}` route returns 404 for missing files, which is the correct behavior. No migration needed.
@@ -647,14 +678,16 @@ Old sites in `sites/{subdomain}/` without an `assets/` directory continue to wor
 
 ## Infrastructure: ClamAV
 
-ClamAV runs as a separate deployment (not sidecar) in the `sastaspace` k8s namespace.
+ClamAV runs as a **sidecar container** in the backend/worker pod, sharing an `emptyDir` volume for zero-network-overhead file scanning.
 
 - **Image:** `clamav/clamav:latest`
 - **Resource requests:** 512Mi RAM, 100m CPU / **Limits:** 4Gi RAM, 500m CPU
-- **Service:** `clamav:3310` (TCP, ClusterIP, internal only)
+- **Shared volume:** `emptyDir` mounted at `/tmp/scan` in both the worker container and ClamAV sidecar. Worker writes assets to this volume, ClamAV scans via local `SCAN` command (no TCP streaming of file bytes).
+- **Communication:** `clamd` listens on `localhost:3310` (same pod, loopback — no k8s Service needed)
 - **Freshclam:** Built into the image, auto-updates virus signatures
-- **k8s manifest:** `k8s/clamav.yaml` (new file)
-- **Fallback:** If ClamAV service is unreachable, skip the ClamAV scan step and log a warning. All other validation layers still run.
+- **k8s manifest:** Added as sidecar in `k8s/backend.yaml` (or `k8s/worker.yaml`)
+- **Fallback:** If ClamAV sidecar is not ready or `clamd` is unreachable, skip the ClamAV scan step and log a warning. All other validation layers still run.
+- **Local dev:** ClamAV optional. If not running, validation chain proceeds without it (layers 1-4 still provide strong protection).
 
 ### YARA Rules
 
