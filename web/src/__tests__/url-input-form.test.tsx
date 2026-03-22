@@ -47,7 +47,7 @@ describe('UrlInputForm', () => {
     })
     fireEvent.click(screen.getByRole('button', { name: /redesign my site/i }))
 
-    expect(onSubmit).toHaveBeenCalledWith('https://example.com/')
+    expect(onSubmit).toHaveBeenCalledWith('https://example.com/', 'free')
   })
 
   it('clears error when user types after validation failure', () => {

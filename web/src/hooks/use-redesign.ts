@@ -55,7 +55,7 @@ const STATUS_TO_STEP: Record<string, { stepName: string; progressValue: number }
   deploying: { stepName: "deploying", progressValue: 90 },
 };
 
-const STEP_NAMES = STEPS.map((s) => s.name);
+const STEP_NAMES: string[] = STEPS.map((s) => s.name);
 
 const GENERIC_ERROR_MESSAGE =
   "We couldn't redesign that site right now. This can happen with very large or complex websites.";
