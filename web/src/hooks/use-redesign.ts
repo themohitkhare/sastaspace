@@ -34,7 +34,13 @@ export type RedesignState =
 export const STEPS = [
   { name: "crawling", label: (d: string) => `Analyzing ${d}` },
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  { name: "redesigning", label: (_d: string) => "Redesigning your site with AI" },
+  { name: "discovering", label: (_: string) => "Discovering internal pages" },
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  { name: "downloading", label: (_: string) => "Downloading site assets" },
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  { name: "analyzing", label: (_: string) => "Understanding the business" },
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  { name: "redesigning", label: (_: string) => "Redesigning your site with AI" },
   { name: "deploying", label: (d: string) => `Preparing your new ${d}` },
 ] as const;
 
@@ -50,7 +56,10 @@ function makeInitialSteps(domain: string): StepState[] {
 // Map job status → (step name, progress %)
 const STATUS_TO_STEP: Record<string, { stepName: string; progressValue: number }> = {
   queued: { stepName: "crawling", progressValue: 5 },
-  crawling: { stepName: "crawling", progressValue: 25 },
+  crawling: { stepName: "crawling", progressValue: 15 },
+  discovering: { stepName: "discovering", progressValue: 25 },
+  downloading: { stepName: "downloading", progressValue: 35 },
+  analyzing: { stepName: "analyzing", progressValue: 45 },
   redesigning: { stepName: "redesigning", progressValue: 65 },
   deploying: { stepName: "deploying", progressValue: 90 },
 };

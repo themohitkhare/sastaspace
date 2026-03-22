@@ -7,7 +7,7 @@ export type SSEEvent = {
 
 export type JobStatus = {
   id: string
-  status: "queued" | "crawling" | "redesigning" | "deploying" | "done" | "failed"
+  status: "queued" | "crawling" | "discovering" | "downloading" | "analyzing" | "redesigning" | "deploying" | "done" | "failed"
   progress: number
   message: string
   subdomain?: string
@@ -15,6 +15,8 @@ export type JobStatus = {
   site_colors?: string[]
   site_title?: string
   created_at?: string
+  pages_crawled?: number
+  assets_count?: number
 }
 
 /** Submit a redesign request. Returns job_id or throws. */
