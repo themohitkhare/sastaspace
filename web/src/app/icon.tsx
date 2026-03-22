@@ -16,7 +16,7 @@ export default function Icon() {
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          background: "linear-gradient(135deg, #7c3aed 0%, #4f46e5 50%, #3730a3 100%)",
+          background: "#1a1714",
           borderRadius: "6px",
         }}
       >
@@ -26,10 +26,10 @@ export default function Icon() {
           viewBox="0 0 100 100"
           xmlns="http://www.w3.org/2000/svg"
         >
-          {/* Bold filled S — two offset semicircles forming a geometric S shape */}
+          {/* S stroke in warm amber to match accent color oklch(0.72 0.12 75) */}
           <path
             d="M68 28C68 14 56 6 44 6C32 6 22 14 22 26C22 38 32 42 44 46C56 50 68 54 68 66C68 78 56 86 44 86C32 86 22 78 22 64"
-            stroke="rgba(255,255,255,0.95)"
+            stroke="#c8993a"
             strokeWidth="16"
             strokeLinecap="round"
             fill="none"
