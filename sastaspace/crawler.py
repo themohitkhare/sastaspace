@@ -614,7 +614,9 @@ async def enhanced_crawl(url: str, settings):
             asset_url_strings = [a["url"] for a in asset_urls]
             tmp_dir = Path(tempfile.mkdtemp(prefix="sastaspace-assets-"))
             try:
-                assets = await download_and_validate_assets(asset_url_strings, tmp_dir)
+                assets = await download_and_validate_assets(
+                    asset_url_strings, tmp_dir, skip_clamav=True
+                )
             except Exception:
                 logger.warning("Asset download failed, continuing without assets", exc_info=True)
                 from sastaspace.asset_downloader import AssetManifest
