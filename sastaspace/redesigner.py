@@ -13,6 +13,8 @@ if TYPE_CHECKING:
     # ProgressCallback matches the type alias in sastaspace.agents.pipeline
     ProgressCallback = Callable[[str, dict], None] | None
 
+    from sastaspace.models import EnhancedCrawlResult
+
 SYSTEM_PROMPT = """You are SastaSpace AI — the world's best website redesigner.
 
 Design Principles:
@@ -346,8 +348,41 @@ def run_redesign(
     progress_callback: Callable[[str, dict], None] | None = None,
     checkpoint: dict | None = None,
     checkpoint_callback: Callable[[str, dict], None] | None = None,
+    enhanced: EnhancedCrawlResult | None = None,
 ) -> str:
-    """Dispatch to the appropriate redesign function based on settings and tier."""
+    """Dispatch to the appropriate redesign function based on settings and tier.
+
+    When `enhanced` is provided, the prompt context is built from
+    enhanced.to_prompt_context() instead of crawl_result.to_prompt_context().
+    The crawl_result still provides the screenshot for the API call.
+    """
+    # If enhanced context is provided and not using agno, inject enhanced context
+    if enhanced is not None and not settings.use_agno_pipeline:
+        # Build a modified crawl_result whose to_prompt_context returns enhanced context
+        from dataclasses import replace
+
+        enriched = replace(crawl_result, text_content=enhanced.to_prompt_context())
+        if tier == "premium":
+            return _redesign_with_prompts(
+                enriched,
+                PREMIUM_SYSTEM_PROMPT,
+                PREMIUM_USER_PROMPT_TEMPLATE,
+                20000,
+                settings.claude_code_api_url,
+                settings.claude_model,
+                settings.claude_code_api_key,
+            )
+        else:
+            return _redesign_with_prompts(
+                enriched,
+                SYSTEM_PROMPT,
+                USER_PROMPT_TEMPLATE,
+                16000,
+                settings.claude_code_api_url,
+                settings.claude_model,
+                settings.claude_code_api_key,
+            )
+
     if settings.use_agno_pipeline:
         return agno_redesign(
             crawl_result, settings, tier, progress_callback, checkpoint, checkpoint_callback

@@ -4,6 +4,7 @@ from __future__ import annotations
 import json
 import os
 import re
+import shutil
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
@@ -63,9 +64,18 @@ def save_registry(sites_dir: Path, registry: list[dict]) -> None:
     os.replace(tmp_path, sites_dir / "_registry.json")
 
 
-def deploy(url: str, html: str, sites_dir: Path, subdomain: str | None = None) -> DeployResult:
+def deploy(
+    url: str,
+    html: str,
+    sites_dir: Path,
+    subdomain: str | None = None,
+    assets: list | None = None,
+) -> DeployResult:
     """
     Write redesigned HTML to sites/{subdomain}/ and update registry.
+
+    When assets is provided, creates an assets/ subdirectory and moves
+    validated files from their tmp_path to the final location.
 
     Returns DeployResult with final subdomain and path.
     """
@@ -86,6 +96,21 @@ def deploy(url: str, html: str, sites_dir: Path, subdomain: str | None = None) -
         "timestamp": datetime.now(UTC).isoformat(),
         "status": "deployed",
     }
+
+    # Deploy assets if provided
+    if assets:
+        assets_dir = site_dir / "assets"
+        assets_dir.mkdir(exist_ok=True)
+        total_assets_size = 0
+        for asset in assets:
+            dest = site_dir / asset.local_path
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            if asset.tmp_path and asset.tmp_path.exists():
+                shutil.move(str(asset.tmp_path), str(dest))
+            total_assets_size += asset.size_bytes
+        metadata["assets_count"] = len(assets)
+        metadata["total_assets_size"] = total_assets_size
+
     (site_dir / "metadata.json").write_text(json.dumps(metadata, indent=2))
 
     registry = load_registry(sites_dir)

@@ -18,6 +18,7 @@ dependencies = [
     "agno>=2.5.10",
     "prometheus-client>=0.24.1",
     "tldextract>=5.3.1",
+    "aiohttp>=3.9.0",
 ]
 
 [project.scripts]
