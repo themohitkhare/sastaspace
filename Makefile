@@ -7,7 +7,7 @@ RSYNC_EXCLUDE := --exclude='.git' --exclude='node_modules' --exclude='__pycache_
                  --exclude='.venv' --exclude='*.pyc' --exclude='.next' \
                  --exclude='test-results' --exclude='*.egg-info'
 
-.PHONY: ci install lint k8s-lint test dev dev-api dev-web \
+.PHONY: ci install lint k8s-lint test dupes semgrep dev dev-api dev-web \
         deploy deploy-build deploy-logs deploy-status deploy-down k8s-apply \
         deploy-monitoring monitoring-status monitoring-logs
 
@@ -24,6 +24,12 @@ k8s-lint:  ## Validate k8s manifests with kubeconform
 
 test:
 	uv run pytest tests/ -v
+
+dupes:  ## Check for duplicate code
+	jscpd sastaspace/ web/src/ --min-lines 10 --min-tokens 50 --reporters consoleFull --threshold 5
+
+semgrep:  ## Static analysis with semgrep
+	semgrep scan --config auto --severity ERROR --exclude='node_modules' --exclude='.next' sastaspace/ web/src/
 
 ci: lint test
 

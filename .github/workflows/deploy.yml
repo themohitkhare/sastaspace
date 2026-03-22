@@ -35,6 +35,28 @@ jobs:
           uv run ruff check sastaspace/ tests/
           uv run ruff format --check sastaspace/ tests/
 
+      - name: Duplicate code detection (jscpd)
+        run: |
+          if ! command -v jscpd &>/dev/null; then
+            npm install -g jscpd
+          fi
+          jscpd sastaspace/ web/src/ --min-lines 10 --min-tokens 50 \
+            --reporters consoleFull \
+            --ignore "**/__pycache__/**,**/node_modules/**,**/.next/**" \
+            --threshold 5 \
+            --blame
+
+      - name: Static analysis (semgrep)
+        run: |
+          if ! command -v semgrep &>/dev/null; then
+            pip install semgrep
+          fi
+          semgrep scan --config auto --error \
+            --exclude='node_modules' --exclude='.next' --exclude='__pycache__' \
+            --exclude='*.test.*' --exclude='*.spec.*' \
+            --severity ERROR \
+            sastaspace/ web/src/
+
       - name: Run tests (parallel)
         run: uv run pytest tests/ -n auto -q --tb=short
 
