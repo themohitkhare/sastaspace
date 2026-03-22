@@ -54,6 +54,17 @@ logger = logging.getLogger(__name__)
 _RETRY_DELAYS = (5, 15, 30)  # seconds before each retry on empty response (rate limited)
 
 ProgressCallback = Callable[[str, dict], None] | None
+CheckpointCallback = Callable[[str, dict], None] | None
+
+PIPELINE_STEPS = [
+    "crawl_analyst",
+    "design_strategist",
+    "copywriter",
+    "component_selector",
+    "html_generator",
+    "quality_reviewer",
+    "normalizer",
+]
 
 AGENT_MESSAGES: dict[str, dict] = {
     "crawl_analyst": {
@@ -626,11 +637,49 @@ def _run_normalizer(
         return html
 
 
+def _restore_from_checkpoint(checkpoint: dict) -> tuple[int, dict]:
+    """Determine resume index and restore intermediate data from checkpoint.
+
+    Returns:
+        (resume_from_index, restored_data) where resume_from_index is the index
+        in PIPELINE_STEPS to start executing from (the step *after* completed_step).
+        restored_data holds deserialized Pydantic model outputs keyed by data name.
+    """
+    completed = checkpoint.get("completed_step", "")
+    data = checkpoint.get("data", {})
+
+    if completed not in PIPELINE_STEPS:
+        return 0, {}
+
+    resume_idx = PIPELINE_STEPS.index(completed) + 1
+    restored: dict = {}
+
+    # Deserialize any saved intermediate results
+    if "site_analysis" in data:
+        restored["site_analysis"] = SiteAnalysis.model_validate_json(data["site_analysis"])
+    if "design_brief" in data:
+        restored["design_brief"] = DesignBrief.model_validate_json(data["design_brief"])
+    if "copywriter_output" in data:
+        restored["copywriter_output"] = CopywriterOutput.model_validate_json(
+            data["copywriter_output"]
+        )
+    if "component_selection" in data:
+        restored["component_selection"] = ComponentSelection.model_validate_json(
+            data["component_selection"]
+        )
+    if "html" in data:
+        restored["html"] = data["html"]
+
+    return resume_idx, restored
+
+
 def run_redesign_pipeline(
     crawl_result: CrawlResult,
     settings: Settings,
     progress_callback: ProgressCallback = None,
     tier: str = "premium",
+    checkpoint: dict | None = None,
+    checkpoint_callback: CheckpointCallback = None,
 ) -> str:
     """
     Execute the full Agno multi-agent redesign pipeline.
@@ -643,6 +692,8 @@ def run_redesign_pipeline(
         settings: Application settings with model config.
         progress_callback: Optional callable(event, data) fired before each agent stage.
         tier: Redesign tier — "free" (Ollama) or "premium" (Claude).
+        checkpoint: Optional checkpoint dict to resume from. Contains completed_step and data.
+        checkpoint_callback: Optional callable(step_name, checkpoint_data) fired after each step.
 
     Returns:
         The final redesigned HTML string.
@@ -667,32 +718,82 @@ def run_redesign_pipeline(
         except Exception:
             pass  # never let UI callback crash the pipeline
 
+    def _checkpoint(step_name: str, accumulated: dict) -> None:
+        """Fire checkpoint callback with accumulated data."""
+        if checkpoint_callback is None:
+            return
+        try:
+            checkpoint_callback(step_name, {"completed_step": step_name, "data": accumulated})
+        except Exception:
+            pass  # never crash the pipeline over a checkpoint save
+
     if crawl_result.error:
         raise RedesignError(f"Cannot redesign — crawl failed: {crawl_result.error}")
+
+    # Determine resume point from checkpoint
+    resume_idx = 0
+    restored: dict = {}
+    if checkpoint:
+        resume_idx, restored = _restore_from_checkpoint(checkpoint)
+        if resume_idx > 0:
+            logger.info(
+                "Resuming pipeline from step %d/%d (%s)",
+                resume_idx + 1,
+                len(PIPELINE_STEPS),
+                PIPELINE_STEPS[resume_idx] if resume_idx < len(PIPELINE_STEPS) else "done",
+            )
+
+    def _should_run(step_name: str) -> bool:
+        return PIPELINE_STEPS.index(step_name) >= resume_idx
 
     pipeline_start = time.monotonic()
     status = "success"
 
+    # Accumulated checkpoint data (JSON strings for Pydantic models, raw for HTML)
+    cp_data: dict = {}
+
     try:
         # Step 1: Crawl Analyst
-        logger.info("Pipeline step 1/7: CrawlAnalyst (tier=%s)", tier)
-        _emit("crawl_analyst")
-        site_analysis = _run_crawl_analyst(crawl_result, settings, tier)
+        if _should_run("crawl_analyst"):
+            logger.info("Pipeline step 1/7: CrawlAnalyst (tier=%s)", tier)
+            _emit("crawl_analyst")
+            site_analysis = _run_crawl_analyst(crawl_result, settings, tier)
+            cp_data["site_analysis"] = site_analysis.model_dump_json()
+            _checkpoint("crawl_analyst", cp_data)
+        else:
+            site_analysis = restored.get("site_analysis", SiteAnalysis())
 
         # Step 2: Design Strategist
-        logger.info("Pipeline step 2/7: DesignStrategist (tier=%s)", tier)
-        _emit("design_strategist")
-        design_brief = _run_design_strategist(site_analysis, crawl_result, settings, tier)
+        if _should_run("design_strategist"):
+            logger.info("Pipeline step 2/7: DesignStrategist (tier=%s)", tier)
+            _emit("design_strategist")
+            design_brief = _run_design_strategist(site_analysis, crawl_result, settings, tier)
+            cp_data["design_brief"] = design_brief.model_dump_json()
+            _checkpoint("design_strategist", cp_data)
+        else:
+            design_brief = restored.get("design_brief", DesignBrief())
 
         # Step 3: Copywriter — writes conversion-optimized copy
-        logger.info("Pipeline step 3/7: Copywriter (tier=%s)", tier)
-        _emit("copywriter")
-        copywriter_output = _run_copywriter(site_analysis, design_brief, settings, tier)
+        if _should_run("copywriter"):
+            logger.info("Pipeline step 3/7: Copywriter (tier=%s)", tier)
+            _emit("copywriter")
+            copywriter_output = _run_copywriter(site_analysis, design_brief, settings, tier)
+            cp_data["copywriter_output"] = copywriter_output.model_dump_json()
+            _checkpoint("copywriter", cp_data)
+        else:
+            copywriter_output = restored.get("copywriter_output", CopywriterOutput())
 
         # Step 4: Component Selector — picks best UI components for this business
-        logger.info("Pipeline step 4/7: ComponentSelector (tier=%s)", tier)
-        _emit("component_selector")
-        component_selection = _run_component_selector(site_analysis, design_brief, settings, tier)
+        if _should_run("component_selector"):
+            logger.info("Pipeline step 4/7: ComponentSelector (tier=%s)", tier)
+            _emit("component_selector")
+            component_selection = _run_component_selector(
+                site_analysis, design_brief, settings, tier
+            )
+            cp_data["component_selection"] = component_selection.model_dump_json()
+            _checkpoint("component_selector", cp_data)
+        else:
+            component_selection = restored.get("component_selection", ComponentSelection())
 
         # Step 5 & 6: HTMLGenerator + QualityReviewer with retry loop
         html = ""
@@ -700,29 +801,34 @@ def run_redesign_pipeline(
         quality_feedback = ""
 
         for attempt in range(1, MAX_QUALITY_RETRIES + 2):  # max retries + 1 initial
-            logger.info(
-                "Pipeline step 5/7: HTMLGenerator (attempt %d/%d)",
-                attempt,
-                MAX_QUALITY_RETRIES + 1,
-            )
-            _emit("html_generator")
-            html = _run_html_generator(
-                design_brief,
-                crawl_result,
-                settings,
-                quality_feedback,
-                component_selection,
-                copywriter_output,
-                tier,
-            )
+            if _should_run("html_generator"):
+                logger.info(
+                    "Pipeline step 5/7: HTMLGenerator (attempt %d/%d)",
+                    attempt,
+                    MAX_QUALITY_RETRIES + 1,
+                )
+                _emit("html_generator")
+                html = _run_html_generator(
+                    design_brief,
+                    crawl_result,
+                    settings,
+                    quality_feedback,
+                    component_selection,
+                    copywriter_output,
+                    tier,
+                )
+                cp_data["html"] = html
+                _checkpoint("html_generator", cp_data)
 
-            logger.info("Pipeline step 6/7: QualityReviewer (attempt %d)", attempt)
-            _emit("quality_reviewer")
-            quality_report = _run_quality_reviewer(
-                html, design_brief, site_analysis, settings, tier
-            )
+            if _should_run("quality_reviewer"):
+                logger.info("Pipeline step 6/7: QualityReviewer (attempt %d)", attempt)
+                _emit("quality_reviewer")
+                quality_report = _run_quality_reviewer(
+                    html, design_brief, site_analysis, settings, tier
+                )
+                _checkpoint("quality_reviewer", cp_data)
 
-            if quality_report.passed:
+            if quality_report and quality_report.passed:
                 logger.info(
                     "Quality review passed (score=%d) on attempt %d",
                     quality_report.overall_score,
@@ -730,7 +836,7 @@ def run_redesign_pipeline(
                 )
                 break
 
-            if attempt <= MAX_QUALITY_RETRIES:
+            if quality_report and attempt <= MAX_QUALITY_RETRIES:
                 quality_feedback = quality_report.feedback_for_regeneration
                 issues_text = "; ".join(
                     f"[{i.severity}] {i.description}" for i in quality_report.issues
@@ -743,7 +849,7 @@ def run_redesign_pipeline(
                 redesign_guardrail_triggers_total.labels(
                     guardrail_name="quality_review", action="retry"
                 ).inc()
-            else:
+            elif quality_report:
                 logger.warning(
                     "Quality review failed after %d attempts (score=%d), using last HTML",
                     MAX_QUALITY_RETRIES + 1,
@@ -752,11 +858,15 @@ def run_redesign_pipeline(
                 redesign_guardrail_triggers_total.labels(
                     guardrail_name="quality_review", action="accept_low_quality"
                 ).inc()
+                break
 
         # Step 7: Normalizer — ensure cohesive design
-        logger.info("Pipeline step 7/7: Normalizer (tier=%s)", tier)
-        _emit("normalizer")
-        html = _run_normalizer(html, design_brief, settings, tier)
+        if _should_run("normalizer"):
+            logger.info("Pipeline step 7/7: Normalizer (tier=%s)", tier)
+            _emit("normalizer")
+            html = _run_normalizer(html, design_brief, settings, tier)
+            cp_data["html"] = html
+            _checkpoint("normalizer", cp_data)
 
         return html
 

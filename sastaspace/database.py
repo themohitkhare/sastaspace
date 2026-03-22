@@ -89,6 +89,9 @@ async def create_job(
     return {k: v for k, v in doc.items() if k != "_id"}
 
 
+_SENTINEL = object()
+
+
 async def update_job(
     job_id: str,
     *,
@@ -100,6 +103,7 @@ async def update_job(
     html_path: str | None = None,
     site_colors: list[str] | None = None,
     site_title: str | None = None,
+    checkpoint: dict | None | object = _SENTINEL,
 ) -> None:
     """Update fields on a job record."""
     now = datetime.now(UTC).isoformat()
@@ -121,6 +125,8 @@ async def update_job(
         updates["site_colors"] = site_colors
     if site_title is not None:
         updates["site_title"] = site_title
+    if checkpoint is not _SENTINEL:
+        updates["checkpoint"] = checkpoint
     if status in (JobStatus.DONE.value, JobStatus.FAILED.value):
         updates["completed_at"] = now
 
