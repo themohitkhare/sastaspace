@@ -66,6 +66,10 @@ services:
       - MONGODB_URL=mongodb://mongodb:27017
       - MONGODB_DB=sastaspace
       - BROWSERLESS_URL=ws://browserless:3000
+      - TWENTY_URL=""
+      - TWENTY_API_KEY=""
+      - TWENTY_WEBHOOK_SECRET=""
+      - TWENTY_ADMIN_KEY=""
     extra_hosts:
       - "host.docker.internal:host-gateway"
     volumes:
