@@ -1,0 +1,63 @@
+# k8s/twenty/server.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: twenty-server
+  namespace: twenty
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: twenty-server
+  template:
+    metadata:
+      labels:
+        app: twenty-server
+    spec:
+      containers:
+      - name: server
+        image: twentycrm/twenty:latest
+        ports:
+        - containerPort: 3000
+        envFrom:
+        - secretRef:
+            name: twenty-env
+        env:
+        - name: SERVER_URL
+          value: "https://crm.sastaspace.com"
+        - name: STORAGE_TYPE
+          value: "local"
+        - name: STORAGE_LOCAL_PATH
+          value: "/app/storage"
+        volumeMounts:
+        - name: storage
+          mountPath: /app/storage
+        resources:
+          requests:
+            memory: "1Gi"
+            cpu: "200m"
+          limits:
+            memory: "4Gi"
+            cpu: "1000m"
+        readinessProbe:
+          httpGet:
+            path: /healthz
+            port: 3000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+      volumes:
+      - name: storage
+        emptyDir:
+          sizeLimit: 5Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: twenty-server
+  namespace: twenty
+spec:
+  selector:
+    app: twenty-server
+  ports:
+  - port: 3000
+    targetPort: 3000
