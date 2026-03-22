@@ -41,6 +41,8 @@ spec:
         volumeMounts:
         - name: sites-data
           mountPath: /data/sites
+        - name: scan-tmp
+          mountPath: /tmp/scan
         readinessProbe:
           httpGet:
             path: /
@@ -54,10 +56,32 @@ spec:
           limits:
             memory: "1Gi"
             cpu: "500m"
+      - name: clamav
+        image: clamav/clamav:latest
+        ports:
+        - containerPort: 3310
+        volumeMounts:
+        - name: scan-tmp
+          mountPath: /tmp/scan
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "100m"
+          limits:
+            memory: "4Gi"
+            cpu: "500m"
+        readinessProbe:
+          tcpSocket:
+            port: 3310
+          initialDelaySeconds: 60
+          periodSeconds: 10
       volumes:
       - name: sites-data
         persistentVolumeClaim:
           claimName: sites-pvc
+      - name: scan-tmp
+        emptyDir:
+          sizeLimit: 256Mi
 ---
 apiVersion: v1
 kind: Service
