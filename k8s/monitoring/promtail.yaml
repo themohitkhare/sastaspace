@@ -51,9 +51,11 @@ data:
               __path__: /var/log/pods/*/*/*.log
         pipeline_stages:
           - cri: {}
-          # Extract namespace, pod, container from path
+          # Extract namespace, pod, container from CRI log path
+          # Path format: /var/log/pods/<namespace>_<pod-name>_<pod-uid>/<container>/N.log
+          # Pod names may contain hyphens; UID is always 36 chars with dashes
           - regex:
-              expression: "/var/log/pods/(?P<namespace>[^_]+)_(?P<pod>[^_]+)_[^/]+/(?P<container>[^/]+)/.*\\.log"
+              expression: "/var/log/pods/(?P<namespace>[^_]+)_(?P<pod>.+)_[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/(?P<container>[^/]+)/.*\\.log"
           - labels:
               namespace:
               pod:

@@ -1,0 +1,70 @@
+# NVIDIA DCGM Exporter — GPU metrics for Prometheus
+# Requires: NVIDIA GPU Operator or nvidia-container-toolkit on the host
+# Exposes: GPU utilization, memory, temperature, power, ECC errors, etc.
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: dcgm-exporter
+  namespace: monitoring
+  labels:
+    app: dcgm-exporter
+spec:
+  selector:
+    matchLabels:
+      app: dcgm-exporter
+  template:
+    metadata:
+      labels:
+        app: dcgm-exporter
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9400"
+        prometheus.io/path: "/metrics"
+    spec:
+      # DCGM needs access to NVIDIA devices on the host
+      containers:
+      - name: dcgm-exporter
+        image: nvcr.io/nvidia/k8s/dcgm-exporter:3.3.9-3.6.1-ubuntu22.04
+        ports:
+        - name: metrics
+          containerPort: 9400
+        env:
+        - name: DCGM_EXPORTER_KUBERNETES
+          value: "true"
+        - name: DCGM_EXPORTER_LISTEN
+          value: ":9400"
+        securityContext:
+          runAsNonRoot: false
+          runAsUser: 0
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "50m"
+          limits:
+            memory: "256Mi"
+            cpu: "200m"
+        volumeMounts:
+        - name: device-plugins
+          mountPath: /var/lib/kubelet/device-plugins
+      volumes:
+      - name: device-plugins
+        hostPath:
+          path: /var/lib/kubelet/device-plugins
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: dcgm-exporter
+  namespace: monitoring
+  labels:
+    app: dcgm-exporter
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "9400"
+spec:
+  selector:
+    app: dcgm-exporter
+  ports:
+  - name: metrics
+    port: 9400
+    targetPort: 9400
