@@ -297,8 +297,22 @@ class JobService:
 
                         logger.info("Processing job %s: %s", job_id, url)
 
+                        # Check for checkpoint from a previous failed job for the same URL
+                        prev_checkpoint = None
                         try:
-                            await handler(job_id, url, tier, self)
+                            from sastaspace.database import find_failed_job_checkpoint
+
+                            prev_checkpoint = await find_failed_job_checkpoint(url)
+                            if prev_checkpoint:
+                                logger.info(
+                                    "RESUME | job=%s reusing checkpoint from previous failed job",
+                                    job_id,
+                                )
+                        except Exception:
+                            pass  # DB unavailable — proceed without checkpoint
+
+                        try:
+                            await handler(job_id, url, tier, self, checkpoint=prev_checkpoint)
                             # Acknowledge message on success
                             await self.redis.xack(STREAM_KEY, GROUP_NAME, msg_id)
                         except Exception:

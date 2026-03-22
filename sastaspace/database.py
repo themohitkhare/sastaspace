@@ -205,6 +205,21 @@ async def find_site_by_url_hash(url_hash: str) -> dict | None:
     return doc
 
 
+async def find_failed_job_checkpoint(url: str) -> dict | None:
+    """Find the most recent failed job for a URL that has a checkpoint.
+
+    Used to resume from the last successful pipeline step instead of
+    restarting from scratch.
+    """
+    doc = await _get_db()["jobs"].find_one(
+        {"url": url, "status": "failed", "checkpoint": {"$ne": None}},
+        sort=[("created_at", -1)],
+    )
+    if doc and doc.get("checkpoint"):
+        return doc["checkpoint"]
+    return None
+
+
 async def list_sites(limit: int = 100) -> list[dict]:
     """List all deployed sites."""
     cursor = _get_db()["sites"].find({}).sort("created_at", -1).limit(limit)
