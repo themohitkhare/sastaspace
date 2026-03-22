@@ -45,7 +45,7 @@ jobs:
 
       - name: Static analysis (semgrep)
         run: |
-          pipx run semgrep scan --config auto --error \
+          uv tool run semgrep scan --config auto --error \
             --exclude='node_modules' --exclude='.next' --exclude='__pycache__' \
             --exclude='*.test.*' --exclude='*.spec.*' \
             --severity ERROR \
