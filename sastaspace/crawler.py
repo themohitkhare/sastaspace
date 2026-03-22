@@ -144,10 +144,13 @@ class CrawlResult:
 
 
 @contextlib.asynccontextmanager
-async def _browser_context():
-    """Launch a Playwright Chromium browser with standard viewport. Closes on exit."""
+async def _browser_context(browserless_url: str | None = None):
+    """Connect to remote Browserless via CDP. Falls back to local launch for dev."""
     async with async_playwright() as pw:
-        browser = await pw.chromium.launch(headless=True)
+        if browserless_url:
+            browser = await pw.chromium.connect_over_cdp(browserless_url)
+        else:
+            browser = await pw.chromium.launch(headless=True)
         try:
             ctx = await browser.new_context(
                 user_agent=_USER_AGENT,
@@ -382,9 +385,10 @@ async def _crawl_page(page, url: str) -> CrawlResult:
     )
 
 
-async def crawl(url: str) -> CrawlResult:
+async def crawl(url: str, browserless_url: str | None = None) -> CrawlResult:
     """Crawl a URL and return a CrawlResult. Sets result.error on failure."""
-    _ensure_chromium()
+    if not browserless_url:
+        _ensure_chromium()
 
     empty = CrawlResult(
         url=url,
@@ -397,7 +401,7 @@ async def crawl(url: str) -> CrawlResult:
     )
 
     try:
-        async with _browser_context() as (_browser, _ctx, page):
+        async with _browser_context(browserless_url=browserless_url) as (_browser, _ctx, page):
             return await _crawl_page(page, url)
 
     except Exception as exc:
@@ -539,10 +543,13 @@ async def enhanced_crawl(url: str, settings):
     from sastaspace.business_profiler import build_business_profile
     from sastaspace.models import EnhancedCrawlResult, PageCrawlResult
 
-    _ensure_chromium()
+    _raw = getattr(settings, "browserless_url", None)
+    browserless_url = _raw if isinstance(_raw, str) else None
+    if not browserless_url:
+        _ensure_chromium()
 
     try:
-        async with _browser_context() as (browser, ctx, page):
+        async with _browser_context(browserless_url=browserless_url) as (browser, ctx, page):
             # 1. Crawl homepage
             homepage = await _crawl_page(page, url)
 

@@ -185,17 +185,23 @@ This is called from the Next.js contact form route AFTER Turnstile verification 
 Add after the existing Resend email call:
 
 ```typescript
-// Sync to Twenty CRM (fire-and-forget, don't block response)
+// Sync to Twenty CRM — strict 2s timeout to avoid socket leaks
 try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 2000);
     await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/twenty/person`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, message, domain: subdomain }),
+        body: JSON.stringify({ name, email, message, domain: subdomain || null }),
+        signal: controller.signal,
     });
+    clearTimeout(timeout);
 } catch {
     // Twenty sync failure doesn't block the contact form
 }
 ```
+
+**Edge case: domain = null.** If submitted from the SastaSpace homepage (not a result page), `subdomain` is null. The `/twenty/person` endpoint creates a standalone Person linked to a generic "SastaSpace Inquiries" bucket Company.
 
 ## Webhooks: Twenty → SastaSpace
 
@@ -240,18 +246,18 @@ async def handle_twenty_webhook(payload: dict):
         await twenty_client.update_redesign_job(data["id"], status="deleted", adminAction="none")
 
     elif action == "reprocess":
-        # IMPORTANT: Read original URL from MongoDB BEFORE deleting site files
-        # 1. Read original URL from MongoDB site/job record
-        # 2. Delete existing site files
-        # 3. Enqueue new job with same URL and tier
-        # 4. Update Twenty: status = "queued", clear adminAction
+        # CRITICAL ORDERING: read URL → enqueue new job → THEN delete old files
+        # 1. Read original URL from MongoDB (before any deletion)
+        # 2. Enqueue new job first (URL preserved even if delete fails)
+        # 3. Delete old site FILES only (not MongoDB record — new job needs it)
+        # 4. Update Twenty
         url = await get_original_url_from_db(data["subdomain"])  # reads from MongoDB
         if not url:
             await twenty_client.update_redesign_job(data["id"], adminAction="none",
                                                      errorMessage="Original URL not found")
             return
-        await delete_site(data["subdomain"])
         job_id = await enqueue_redesign(url, tier=data.get("tier", "free"))
+        await delete_site_files(data["subdomain"])  # files only, not MongoDB record
         await twenty_client.update_redesign_job(data["id"], status="queued", jobId=job_id, adminAction="none")
 ```
 
@@ -299,8 +305,8 @@ Manifests in `k8s/twenty/`:
 ```
 k8s/twenty/
 ├── namespace.yaml
-├── server.yaml         # Twenty server, port 3000, 512Mi-2Gi RAM
-├── worker.yaml         # Twenty worker (yarn worker:prod), 256Mi-1Gi RAM
+├── server.yaml         # Twenty server, port 3000, 1Gi-4Gi RAM
+├── worker.yaml         # Twenty worker (yarn worker:prod), 512Mi-2Gi RAM
 ├── postgres.yaml       # PostgreSQL 16, PVC 10Gi, 256Mi-1Gi RAM
 ├── redis.yaml          # Redis, PVC 1Gi, 128Mi-512Mi RAM
 ├── ingress.yaml        # crm.sastaspace.com → twenty-server:3000
@@ -319,8 +325,8 @@ env:
   - STORAGE_TYPE: "local"
   - STORAGE_LOCAL_PATH: "/app/storage"
 resources:
-  requests: { memory: "512Mi", cpu: "100m" }
-  limits: { memory: "2Gi", cpu: "1000m" }
+  requests: { memory: "1Gi", cpu: "200m" }
+  limits: { memory: "4Gi", cpu: "1000m" }
 ```
 
 ### Ingress
@@ -452,20 +458,24 @@ Checked via `Authorization: Bearer {twenty_admin_key}` header. Using a separate 
 
 ## Webhook Idempotency
 
-All webhook action handlers are idempotent:
+All webhook action handlers are idempotent, with Redis-backed dedup to prevent replay:
+
+**Redis dedup layer:**
+- Hash the webhook payload → use as Redis key with 10-minute TTL
+- If key exists on incoming webhook → return 200 OK, drop the request
+- Prevents `reprocess` replay attacks that could trap a site in constant reprocessing
+
+**Per-action idempotency:**
 - **Delete** on an already-deleted site → 200 no-op
 - **Reprocess** on a site being processed → 409 Conflict (job already queued)
 - **Unknown action** → 400, no side effects
-- Duplicate webhook delivery (same event ID) → detect via MongoDB and skip
 
-## `totalRedesigns` Increment
+## `totalRedesigns` Count
 
-Twenty's REST API does not support atomic increments. To avoid race conditions:
-1. Read current `totalRedesigns` value from Twenty
-2. Increment client-side
-3. Write back
-
-For the rare case of two simultaneous completions for the same domain, the reconciliation sync (`/admin/sync`) corrects the count by querying MongoDB for the true job count per domain.
+Twenty lacks atomic increment operations, so `totalRedesigns` is **not updated in real-time push sync** (avoids TOCTOU race conditions). Instead:
+- Twenty's UI natively shows count of linked `RedesignJob` records (relationship count)
+- The nightly `/admin/sync` reconciliation updates `totalRedesigns` on each Company from MongoDB true job count
+- This is a cached aggregate for sorting/filtering only — RedesignJob records are the source of truth
 
 ## Resource Considerations
 
