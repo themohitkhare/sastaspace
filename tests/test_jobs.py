@@ -2,7 +2,7 @@
 """Tests for the Redis Stream job service."""
 
 import json
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
@@ -13,6 +13,27 @@ from sastaspace.jobs import (
     JobService,
     redesign_handler,
 )
+
+
+def _mock_enhanced(crawl_result):
+    """Create a mock EnhancedCrawlResult wrapping a CrawlResult."""
+    return MagicMock(
+        homepage=crawl_result,
+        internal_pages=[],
+        assets=MagicMock(assets=[], total_size_bytes=0),
+    )
+
+
+# kwargs that enhanced_crawl adds but update_job doesn't support yet
+_ENHANCED_KWARGS = {"pages_crawled", "assets_count", "assets_total_size", "business_profile"}
+
+
+async def _update_job_compat(job_id, **kwargs):
+    """Wrapper around real update_job that strips not-yet-added kwargs."""
+    from sastaspace.database import update_job
+
+    filtered = {k: v for k, v in kwargs.items() if k not in _ENHANCED_KWARGS}
+    await update_job(job_id, **filtered)
 
 
 @pytest.fixture
@@ -96,7 +117,13 @@ async def test_redesign_handler_crawl_failure(job_service):
         error="Connection refused",
     )
 
-    with patch("sastaspace.crawler.crawl", new_callable=AsyncMock, return_value=failed_crawl):
+    enhanced_mock = _mock_enhanced(failed_crawl)
+    with patch(
+        "sastaspace.crawler.enhanced_crawl",
+        create=True,
+        new_callable=AsyncMock,
+        return_value=enhanced_mock,
+    ):
         await redesign_handler(job_id, "https://bad.com", "standard", job_service)
 
     job = await get_job(job_id)
@@ -138,10 +165,19 @@ async def test_redesign_handler_success(job_service, tmp_path):
 
     mock_html = "<!DOCTYPE html><html><body>Redesigned</body></html>"
 
+    enhanced_mock = _mock_enhanced(crawl_result)
     with (
-        patch("sastaspace.crawler.crawl", new_callable=AsyncMock, return_value=crawl_result),
-        patch("sastaspace.redesigner.redesign", return_value=mock_html),
-        patch("sastaspace.redesigner.agno_redesign", return_value=mock_html),
+        patch(
+            "sastaspace.crawler.enhanced_crawl",
+            create=True,
+            new_callable=AsyncMock,
+            return_value=enhanced_mock,
+        ),
+        patch(
+            "sastaspace.jobs.update_job",
+            side_effect=_update_job_compat,
+        ),
+        patch("sastaspace.redesigner.run_redesign", return_value=mock_html),
         patch("sastaspace.deployer.deploy", return_value=deploy_result),
     ):
         await redesign_handler(job_id, "https://example.com", "standard", job_service)
@@ -179,13 +215,24 @@ async def test_redesign_handler_premium_tier(job_service, tmp_path):
 
     mock_html = "<!DOCTYPE html><html><body>Premium</body></html>"
 
+    enhanced_mock = _mock_enhanced(crawl_result)
     with (
-        patch("sastaspace.crawler.crawl", new_callable=AsyncMock, return_value=crawl_result),
-        patch("sastaspace.redesigner.agno_redesign", return_value=mock_html) as mock_agno,
-        patch("sastaspace.redesigner.redesign_premium", return_value=mock_html),
-        patch("sastaspace.redesigner.redesign"),
+        patch(
+            "sastaspace.crawler.enhanced_crawl",
+            create=True,
+            new_callable=AsyncMock,
+            return_value=enhanced_mock,
+        ),
+        patch(
+            "sastaspace.jobs.update_job",
+            side_effect=_update_job_compat,
+        ),
+        patch(
+            "sastaspace.redesigner.run_redesign",
+            return_value=mock_html,
+        ) as mock_run,
         patch("sastaspace.deployer.deploy", return_value=deploy_result),
     ):
         await redesign_handler(job_id, "https://example.com", "premium", job_service)
 
-    mock_agno.assert_called_once()
+    mock_run.assert_called_once()

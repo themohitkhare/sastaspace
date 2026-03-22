@@ -43,6 +43,16 @@ def _make_crawl_result(**overrides) -> CrawlResult:
     return CrawlResult(**defaults)
 
 
+def _make_enhanced_result(crawl_result: CrawlResult) -> MagicMock:
+    """Create a mock EnhancedCrawlResult wrapping a CrawlResult."""
+    enhanced = MagicMock()
+    enhanced.homepage = crawl_result
+    enhanced.internal_pages = []
+    enhanced.assets = MagicMock(assets=[], total_size_bytes=0)
+    enhanced.business_profile = None
+    return enhanced
+
+
 def _make_deploy_result() -> DeployResult:
     return DeployResult(
         subdomain="example-com",
@@ -106,11 +116,17 @@ class TestRedesignHandlerHappyPath:
     @pytest.mark.asyncio
     async def test_emits_correct_status_progression(self, job_service):
         cr = _make_crawl_result()
+        er = _make_enhanced_result(cr)
         dr = _make_deploy_result()
 
         with (
             patch("sastaspace.config.Settings", return_value=_settings_mock()),
-            patch("sastaspace.crawler.crawl", new_callable=AsyncMock, return_value=cr),
+            patch(
+                "sastaspace.crawler.enhanced_crawl",
+                create=True,
+                new_callable=AsyncMock,
+                return_value=er,
+            ),
             patch("sastaspace.jobs.update_job", new_callable=AsyncMock) as mock_update,
             patch("sastaspace.redesigner.run_redesign", return_value="<html></html>") as _mock_rr,
             patch("sastaspace.deployer.deploy", return_value=dr),
@@ -133,11 +149,17 @@ class TestRedesignHandlerHappyPath:
     @pytest.mark.asyncio
     async def test_checkpoint_cleared_on_done(self, job_service):
         cr = _make_crawl_result()
+        er = _make_enhanced_result(cr)
         dr = _make_deploy_result()
 
         with (
             patch("sastaspace.config.Settings", return_value=_settings_mock()),
-            patch("sastaspace.crawler.crawl", new_callable=AsyncMock, return_value=cr),
+            patch(
+                "sastaspace.crawler.enhanced_crawl",
+                create=True,
+                new_callable=AsyncMock,
+                return_value=er,
+            ),
             patch("sastaspace.jobs.update_job", new_callable=AsyncMock) as mock_update,
             patch("sastaspace.redesigner.run_redesign", return_value="<html></html>"),
             patch("sastaspace.deployer.deploy", return_value=dr),
@@ -153,11 +175,17 @@ class TestRedesignHandlerHappyPath:
     @pytest.mark.asyncio
     async def test_publish_done_event(self, job_service):
         cr = _make_crawl_result()
+        er = _make_enhanced_result(cr)
         dr = _make_deploy_result()
 
         with (
             patch("sastaspace.config.Settings", return_value=_settings_mock()),
-            patch("sastaspace.crawler.crawl", new_callable=AsyncMock, return_value=cr),
+            patch(
+                "sastaspace.crawler.enhanced_crawl",
+                create=True,
+                new_callable=AsyncMock,
+                return_value=er,
+            ),
             patch("sastaspace.jobs.update_job", new_callable=AsyncMock),
             patch("sastaspace.redesigner.run_redesign", return_value="<html></html>"),
             patch("sastaspace.deployer.deploy", return_value=dr),
@@ -195,7 +223,7 @@ class TestRedesignHandlerCheckpoint:
 
         with (
             patch("sastaspace.config.Settings", return_value=_settings_mock()),
-            patch("sastaspace.crawler.crawl", mock_crawl),
+            patch("sastaspace.crawler.enhanced_crawl", mock_crawl, create=True),
             patch("sastaspace.jobs.update_job", new_callable=AsyncMock),
             patch("sastaspace.redesigner.run_redesign", return_value="<html></html>"),
             patch("sastaspace.deployer.deploy", return_value=dr),
@@ -206,7 +234,7 @@ class TestRedesignHandlerCheckpoint:
                 "job-cp", "https://example.com", "premium", job_service, checkpoint=checkpoint
             )
 
-        # crawl() should NOT have been called
+        # enhanced_crawl() should NOT have been called
         mock_crawl.assert_not_called()
 
     @pytest.mark.asyncio
@@ -225,7 +253,7 @@ class TestRedesignHandlerCheckpoint:
 
         with (
             patch("sastaspace.config.Settings", return_value=_settings_mock()),
-            patch("sastaspace.crawler.crawl", mock_crawl),
+            patch("sastaspace.crawler.enhanced_crawl", mock_crawl, create=True),
             patch("sastaspace.jobs.update_job", new_callable=AsyncMock),
             patch("sastaspace.redesigner.run_redesign", return_value="<html></html>"),
             patch("sastaspace.deployer.deploy", return_value=dr),
@@ -250,10 +278,16 @@ class TestRedesignHandlerCrawlFailure:
     @pytest.mark.asyncio
     async def test_failed_crawl_sets_error_status(self, job_service):
         bad_cr = _make_crawl_result(error="Connection timeout")
+        bad_er = _make_enhanced_result(bad_cr)
 
         with (
             patch("sastaspace.config.Settings", return_value=_settings_mock()),
-            patch("sastaspace.crawler.crawl", new_callable=AsyncMock, return_value=bad_cr),
+            patch(
+                "sastaspace.crawler.enhanced_crawl",
+                create=True,
+                new_callable=AsyncMock,
+                return_value=bad_er,
+            ),
             patch("sastaspace.jobs.update_job", new_callable=AsyncMock) as mock_update,
         ):
             await redesign_handler("job-fail", "https://bad.example.com", "free", job_service)
@@ -275,11 +309,17 @@ class TestRedesignHandlerCrawlFailure:
     @pytest.mark.asyncio
     async def test_failed_crawl_does_not_deploy(self, job_service):
         bad_cr = _make_crawl_result(error="DNS resolution failed")
+        bad_er = _make_enhanced_result(bad_cr)
         mock_deploy = MagicMock()
 
         with (
             patch("sastaspace.config.Settings", return_value=_settings_mock()),
-            patch("sastaspace.crawler.crawl", new_callable=AsyncMock, return_value=bad_cr),
+            patch(
+                "sastaspace.crawler.enhanced_crawl",
+                create=True,
+                new_callable=AsyncMock,
+                return_value=bad_er,
+            ),
             patch("sastaspace.jobs.update_job", new_callable=AsyncMock),
             patch("sastaspace.deployer.deploy", mock_deploy),
         ):
