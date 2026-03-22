@@ -173,6 +173,12 @@ jobs:
           # Monitoring namespace + manifests
           sudo microk8s kubectl apply -f k8s/monitoring/namespace.yaml
           sudo microk8s kubectl apply -f k8s/monitoring/
+          # Twenty CRM namespace + manifests (skipped if secrets not yet created)
+          if sudo microk8s kubectl get secret twenty-env -n twenty &>/dev/null; then
+            sudo microk8s kubectl apply -f k8s/twenty/
+          else
+            echo "Skipping Twenty CRM — secrets not yet created. Run: make twenty-setup"
+          fi
 
       - name: Rolling restart (all deployments)
         run: |
@@ -186,6 +192,10 @@ jobs:
           sudo microk8s kubectl rollout restart deployment/prometheus deployment/grafana -n monitoring 2>/dev/null || true
           # Restart promtail daemonset to pick up config changes
           sudo microk8s kubectl rollout restart daemonset/promtail -n monitoring 2>/dev/null || true
+          # Restart Twenty CRM if deployed
+          if sudo microk8s kubectl get deployments -n twenty -o name 2>/dev/null | grep -q .; then
+            sudo microk8s kubectl rollout restart $(sudo microk8s kubectl get deployments -n twenty -o name) -n twenty 2>/dev/null || true
+          fi
 
       - name: Wait for rollout
         run: |
