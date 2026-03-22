@@ -295,6 +295,7 @@ curl -X PUT "https://api.cloudflare.com/client/v4/accounts/$ACCOUNT_ID/cfd_tunne
         {"hostname": "sastaspace.com",     "service": "http://localhost:80"},
         {"hostname": "www.sastaspace.com", "service": "http://localhost:80"},
         {"hostname": "api.sastaspace.com", "service": "http://localhost:80"},
+        {"hostname": "crm.sastaspace.com", "service": "http://localhost:80"},
         {"hostname": "monitor.sastaspace.com", "service": "http://localhost:80"},
         {"service": "http_status:404"}
       ]
@@ -309,6 +310,7 @@ All CNAMEs point to `b3d36ee8-8bd2-4289-83a0-bf2ab53aa3b8.cfargotunnel.com` (pro
 - `www.sastaspace.com`
 - `*.sastaspace.com`
 - `api.sastaspace.com`
+- `crm.sastaspace.com`
 - `monitor.sastaspace.com`
 
 ---
@@ -372,18 +374,45 @@ sudo ufw status verbose
 
 ## 14. Application Deployment (microk8s)
 
-### k8s manifests
+### Pod architecture
 
-Located in `k8s/` directory:
+The application runs as **5 pods** in the `sastaspace` namespace:
+
+| Pod | Image | Role |
+|-----|-------|------|
+| `backend` | `sastaspace-backend` | FastAPI API server (port 8080). Handles HTTP requests, SSE streams, static site serving. Uses `MODE=server` entrypoint. |
+| `worker` | `sastaspace-backend` (same image) | Async job consumer. Reads from Redis Stream, runs crawl→redesign→deploy pipeline. Uses `MODE=worker` entrypoint. Strategy: `Recreate` (not rolling). |
+| `browserless` | `ghcr.io/browserless/chromium` | Headless Chromium service for web crawling via CDP WebSocket (port 3000). Chromium was removed from the backend image to reduce size. |
+| `mongodb` | `mongo:7` | Job persistence, site registry, dedup index. PVC: 5Gi. |
+| `redis` | `redis:7-alpine` | Job queue (Redis Streams), pub/sub for SSE status updates, webhook dedup. PVC: 2Gi, appendonly. |
+
+The backend and worker share the same Docker image (`backend/Dockerfile`). The `entrypoint.sh` script checks `$MODE` to decide whether to run `uvicorn` (server) or `python -m sastaspace.worker` (worker).
+
+### Backend Dockerfile
+
+`python:3.11-slim` — lightweight image, no Chromium. System deps: `curl` (healthcheck), `libmagic1` (asset validation). Runs as `appuser` (UID 1000, non-root).
+
+### k8s manifests
 
 ```
 k8s/
 ├── namespace.yaml           # sastaspace namespace
+├── configmap.yaml           # shared env vars (non-secret)
 ├── backend.yaml             # FastAPI deployment + service + sites PVC (10Gi)
+├── worker.yaml              # async job worker deployment
+├── browserless.yaml         # headless Chromium service
 ├── frontend.yaml            # Next.js deployment + service
 ├── mongodb.yaml             # MongoDB deployment + service + PVC (5Gi)
 ├── redis.yaml               # Redis deployment + service + PVC (2Gi, appendonly)
-├── ingress.yaml             # nginx ingress rules (sastaspace.com, api.*, www.*)
+├── ingress.yaml             # nginx ingress (sastaspace.com, api.*, www.*)
+├── twenty/
+│   ├── namespace.yaml       # twenty namespace
+│   ├── secrets.yaml         # Twenty env secrets (template — fill before first deploy)
+│   ├── server.yaml          # Twenty CRM server + service
+│   ├── worker.yaml          # Twenty CRM worker
+│   ├── postgres.yaml        # PostgreSQL for Twenty
+│   ├── redis.yaml           # Redis for Twenty
+│   └── ingress.yaml         # nginx ingress for crm.sastaspace.com
 └── monitoring/
     ├── namespace.yaml       # monitoring namespace
     ├── grafana.yaml         # Grafana deployment + service
@@ -393,8 +422,39 @@ k8s/
     ├── node-exporter.yaml   # node-exporter DaemonSet (host metrics)
     ├── kube-state-metrics.yaml  # kube-state-metrics deployment
     ├── blackbox-exporter.yaml   # blackbox-exporter deployment
+    ├── redis-exporter.yaml  # Redis metrics exporter
+    ├── dcgm-exporter.yaml   # GPU metrics exporter
+    ├── dashboards/          # Grafana dashboard JSON files
+    │   ├── gpu-monitoring.json
+    │   ├── pod-logs.json
+    │   └── sastaspace-business.json
     └── ingress.yaml         # nginx ingress for monitor.sastaspace.com → Grafana
 ```
+
+### ConfigMap (`k8s/configmap.yaml`)
+
+Non-secret environment variables shared by backend and worker pods:
+
+| Key | Value | Purpose |
+|-----|-------|---------|
+| `CLAUDE_CODE_API_URL` | `http://192.168.0.38:8000/v1` | claude-code-api gateway (host network) |
+| `SASTASPACE_SITES_DIR` | `/data/sites` | PVC mount path for generated HTML |
+| `REDIS_URL` | `redis://redis:6379` | Redis service (k8s DNS) |
+| `MONGODB_URL` | `mongodb://mongodb:27017` | MongoDB service (k8s DNS) |
+| `MONGODB_DB` | `sastaspace` | Database name |
+| `OLLAMA_URL` | `http://192.168.0.38:11434/v1` | Ollama for free-tier redesigns (host network) |
+| `BROWSERLESS_URL` | `ws://browserless:3000` | Browserless CDP WebSocket (k8s DNS) |
+
+Secrets (Twenty API keys, webhook secrets, admin key) are in `sastaspace-env` Secret, injected via `secretRef`.
+
+### Browserless
+
+Dedicated headless Chromium pod using `ghcr.io/browserless/chromium:latest`. The backend image no longer contains Playwright/Chromium — all browser operations go through Browserless via CDP WebSocket.
+
+- Connects from worker/backend via `ws://browserless:3000` (Playwright `connect_over_cdp`)
+- Concurrency: 5 simultaneous sessions, 10 queued, 60s timeout per session
+- Resources: 256Mi–2Gi RAM, 100m–1000m CPU
+- Readiness probe: `GET /json/version` on port 3000
 
 ### Local image registry
 
@@ -402,7 +462,7 @@ Images are built on the remote machine and pushed to the microk8s local registry
 
 ```bash
 docker build -t localhost:32000/sastaspace-backend:latest -f backend/Dockerfile .
-docker build -t localhost:32000/sastaspace-frontend:latest -f web/Dockerfile web/
+docker build -t localhost:32000/sastaspace-frontend:latest --build-arg NEXT_PUBLIC_BACKEND_URL=https://api.sastaspace.com -f web/Dockerfile web/
 docker push localhost:32000/sastaspace-backend:latest
 docker push localhost:32000/sastaspace-frontend:latest
 ```
@@ -410,11 +470,17 @@ docker push localhost:32000/sastaspace-frontend:latest
 ### Deploy via Makefile
 
 ```bash
-make deploy        # rsync + build images + apply manifests + rolling restart
-make deploy-build  # same, forces image rebuild
-make deploy-status # show pod/svc/ingress status
-make deploy-logs   # tail logs from all pods
-make deploy-down   # delete sastaspace namespace
+make deploy            # rsync + build images + apply manifests + rolling restart
+make deploy-status     # show pod/svc/ingress status
+make deploy-logs       # tail logs from backend + frontend pods
+make deploy-down       # delete sastaspace namespace
+make deploy-monitoring # apply monitoring manifests
+make monitoring-status # check monitoring pod/svc/ingress status
+make monitoring-logs   # tail monitoring pod logs
+make deploy-twenty     # deploy Twenty CRM stack
+make twenty-status     # check Twenty pod/svc/ingress status
+make twenty-logs       # tail Twenty server logs
+make twenty-setup      # first-time Twenty setup instructions
 ```
 
 Configure remote target if different from default:
@@ -425,13 +491,14 @@ make deploy REMOTE_HOST=192.168.0.38 REMOTE_USER=mkhare
 
 ### Monitoring stack
 
-Located in `k8s/monitoring/` directory — deployed separately from the app:
+Located in `k8s/monitoring/` directory — deployed separately from the app.
 
-```bash
-make deploy-monitoring    # apply all monitoring manifests
-make monitoring-status    # check pod/svc/ingress status
-make monitoring-logs      # tail monitoring pod logs
-```
+Components: Prometheus (metrics), Loki (logs), Promtail (log shipper), Grafana (dashboards), node-exporter (host metrics), kube-state-metrics, blackbox-exporter, redis-exporter, dcgm-exporter (GPU metrics).
+
+Dashboards are provisioned from `k8s/monitoring/dashboards/`:
+- `gpu-monitoring.json` — GPU utilization and memory
+- `pod-logs.json` — live pod log viewer
+- `sastaspace-business.json` — redesign job metrics, success rates, latency
 
 First-time setup requires creating the Grafana admin secret:
 
@@ -443,6 +510,29 @@ sudo microk8s kubectl create secret generic grafana-admin \
 make deploy-monitoring
 ```
 
+### Twenty CRM stack
+
+Self-hosted Twenty CRM for lead management. Runs in separate `twenty` namespace.
+
+Components: Twenty server + worker, PostgreSQL (PVC), Redis.
+
+First-time setup:
+```bash
+# 1. Edit secrets template with real values
+vi k8s/twenty/secrets.yaml
+# 2. Deploy
+make deploy-twenty
+# 3. Verify
+make twenty-status
+# 4. Access at https://crm.sastaspace.com
+```
+
+The app auto-syncs data to Twenty CRM:
+- Job completion/failure pushes company + redesign job records
+- Contact form submissions create Person records
+- Webhook endpoint (`/webhooks/twenty`) handles admin actions (delete, reprocess)
+- Admin endpoints (`/admin/sync`, `/admin/sites`) for reconciliation
+
 ---
 
 ## 15. CI/CD Pipeline (GitHub Actions)
@@ -453,18 +543,25 @@ The pipeline runs on a **self-hosted runner** on the server itself (192.168.0.38
 
 | Job | Trigger | What it does |
 |-----|---------|-------------|
-| `test` | push/PR to main | lint (ruff), run pytest with uv |
-| `security` | push/PR to main | pip-audit, npm audit, Trivy fs scan |
-| `deploy` | push to main only | build images, Trivy image scan, push to registry, apply k8s manifests, rolling restart |
+| `test` | push/PR to main | lint (ruff), format check, duplicate code detection (jscpd), static analysis (semgrep), pytest (parallel), k8s manifest validation (kubeconform) |
+| `security` | push/PR to main (after test) | pip-audit (OSV), npm audit, Trivy filesystem scan (secrets + misconfigs) |
+| `deploy` | push to main only (after test + security) | build backend + frontend images, Trivy image scan per image, push to registry, apply all k8s manifests (app + monitoring + Twenty if secrets exist), rolling restart all deployments, rollout status wait |
 
-### Workflow: `.github/workflows/deploy.yml`
+### Pipeline flow
 
-- `test` and `security` run in **parallel**
-- `deploy` runs only after **both** pass (`needs: [test, security]`)
-- Deploy builds backend + frontend images, tags with `latest` and `${{ github.sha }}`
-- Images pushed to microk8s local registry (`localhost:32000`)
-- Manifests applied: `kubectl apply -f k8s/namespace.yaml && kubectl apply -f k8s/`
-- Rolling restart with status wait (300s timeout)
+```
+test ──► security ──► deploy
+                       │
+                       ├─ build backend image → Trivy scan → push
+                       ├─ build frontend image → Trivy scan → push
+                       ├─ kubectl apply k8s/ (app)
+                       ├─ kubectl apply k8s/monitoring/ (monitoring)
+                       ├─ kubectl apply k8s/twenty/ (if secrets exist)
+                       ├─ rolling restart all deployments in sastaspace ns
+                       ├─ rolling restart prometheus + grafana + promtail in monitoring ns
+                       ├─ rolling restart Twenty deployments (if present)
+                       └─ rollout status wait (300s timeout per deployment)
+```
 
 ### Security scanning
 
@@ -522,11 +619,27 @@ Browser / API client
         ├─── sastaspace.com / www ──────▶ frontend service :3000
         │                                 (Next.js pod)
         │
-        ├─── monitor.sastaspace.com ──────▶ grafana service :3001
-        │                                   (Grafana pod, monitoring ns)
+        ├─── api.sastaspace.com ────────▶ backend service :8080
+        │                                 (FastAPI pod)
         │
-        └─── api.sastaspace.com ────────▶ backend service :8080
-                                          (FastAPI pod)
+        ├─── crm.sastaspace.com ────────▶ twenty-server service :3000
+        │                                 (Twenty CRM pod, twenty ns)
+        │
+        └─── monitor.sastaspace.com ────▶ grafana service :3001
+                                          (Grafana pod, monitoring ns)
+```
+
+### Internal service communication (k8s DNS)
+
+```
+backend pod ──► redis:6379         (job queue, pub/sub, dedup)
+           ──► mongodb:27017       (job persistence, site registry)
+
+worker pod  ──► redis:6379         (consume jobs from stream)
+            ──► mongodb:27017      (update job status)
+            ──► browserless:3000   (CDP WebSocket for Chromium)
+            ──► 192.168.0.38:8000  (claude-code-api on host, via configmap)
+            ──► 192.168.0.38:11434 (Ollama on host, free tier)
 ```
 
 ### System services (non-k8s)
@@ -541,7 +654,66 @@ systemd services on host:
 
 ---
 
-## 17. Service Health Checks
+## 17. Job Processing Pipeline
+
+The redesign pipeline is an async 3-step process managed by the worker pod via Redis Streams:
+
+```
+POST /redesign (backend)
+  │
+  ▼
+Redis Stream (sastaspace:jobs)
+  │
+  ▼
+Worker pod (consumer group: redesign-workers)
+  │
+  ├─ Step 1: Enhanced Crawl
+  │    ├─ Homepage crawl via Browserless CDP (ws://browserless:3000)
+  │    ├─ Extract + filter internal links (up to 50)
+  │    ├─ LLM selects best 3 internal pages to crawl
+  │    ├─ Parallel crawl of internal pages (30s timeout each)
+  │    ├─ Download + validate assets (magic bytes, Pillow, defusedxml, YARA — no ClamAV)
+  │    └─ LLM builds business profile from crawled text
+  │
+  ├─ Step 2: AI Redesign
+  │    ├─ Premium tier: Agno multi-agent pipeline (analyst → strategist → generator → reviewer)
+  │    └─ Free tier: Ollama single-shot (glm-4.7-flash)
+  │
+  └─ Step 3: Deploy
+       ├─ Write HTML + assets to /data/sites/{subdomain}/
+       ├─ Register in MongoDB (with URL hash for dedup)
+       └─ Sync to Twenty CRM (fire-and-forget)
+```
+
+Status updates are published via Redis Pub/Sub → SSE to the frontend.
+
+Checkpoints are saved to MongoDB after each step so crashed jobs can be recovered on restart (XAUTOCLAIM for messages idle >60s).
+
+---
+
+## 18. docker-compose (local development)
+
+For local development, `docker-compose.yml` provides:
+
+| Service | Image | Ports | Purpose |
+|---------|-------|-------|---------|
+| `redis` | `redis:7-alpine` | 6379 | Job queue |
+| `mongodb` | `mongo:7` | 27017 | Job persistence |
+| `browserless` | `ghcr.io/browserless/chromium` | 3100→3000 | Headless Chromium |
+| `backend` | Built from `backend/Dockerfile` | 8080 | API server (inline mode, no separate worker) |
+| `frontend` | Built from `web/Dockerfile` | 3000 | Next.js app |
+| `tests` | Built from `web/Dockerfile.test` | — | E2E tests (profile: `test`) |
+
+```bash
+docker compose up              # start all services
+docker compose --profile test run tests  # run E2E tests
+```
+
+Backend connects to claude-code-api on host via `host.docker.internal:8000`.
+
+---
+
+## 19. Service Health Checks
 
 ```bash
 # Cloudflare tunnel
@@ -556,6 +728,18 @@ sudo microk8s kubectl get pods -A
 # k8s app pods
 sudo microk8s kubectl get pods,svc,ingress -n sastaspace
 
+# Worker logs (check for job processing)
+sudo microk8s kubectl logs -n sastaspace deployment/worker --tail=50
+
+# Browserless health
+sudo microk8s kubectl logs -n sastaspace deployment/browserless --tail=20
+
+# Twenty CRM
+make twenty-status
+
+# Monitoring
+make monitoring-status
+
 # GPU status
 rocm-smi
 
@@ -565,11 +749,14 @@ sudo docker logs vllm-coder --tail 20
 
 ---
 
-## 18. Useful Commands
+## 20. Useful Commands
 
 ```bash
 # Tail all app logs
 make deploy-logs
+
+# Worker logs specifically
+ssh mkhare@192.168.0.38 "sudo microk8s kubectl logs -n sastaspace deployment/worker --tail=100 -f"
 
 # Interactive k8s UI
 k9s
@@ -580,9 +767,49 @@ btop
 # Restart a service
 sudo systemctl restart claude-code-api
 
+# Restart worker pod (picks up new image on rolling restart)
+sudo microk8s kubectl rollout restart deployment/worker -n sastaspace
+
+# Check Redis job queue
+sudo microk8s kubectl exec -n sastaspace deployment/redis -- redis-cli XLEN sastaspace:jobs
+
+# Check MongoDB job count
+sudo microk8s kubectl exec -n sastaspace deployment/mongodb -- mongosh sastaspace --eval "db.jobs.countDocuments()"
+
 # Check firewall
 sudo ufw status verbose
 
 # Disk usage
 df -h && sudo lvs
+
+# Full CI locally
+make ci
 ```
+
+---
+
+## 21. Troubleshooting
+
+### Crawl jobs failing
+
+1. Check worker logs: `sudo microk8s kubectl logs -n sastaspace deployment/worker --tail=100`
+2. Verify Browserless is healthy: `sudo microk8s kubectl get pods -n sastaspace -l app=browserless`
+3. Verify claude-code-api is running: `curl http://localhost:8000/health` (from server)
+4. Check Redis connectivity: `sudo microk8s kubectl exec -n sastaspace deployment/redis -- redis-cli ping`
+
+### Common errors
+
+| Error | Cause | Fix |
+|-------|-------|-----|
+| `'str' object has no attribute 'text_content'` | Wrong argument types passed to `build_business_profile` | Fixed in commit `a8b726bf` — redeploy |
+| `Redis connection lost, reconnecting` | Redis pod restarting during rolling deploy | Transient — worker auto-reconnects after 2s |
+| `Could not reach that website` | Browserless failed to load the target URL | Check if site is down, or Browserless is OOM |
+| `Bot protection detected` | Target site returned <500 chars of text | Site is blocking automated crawlers |
+| `Timeout after 30s` | Internal page took too long to load | Normal for slow sites — other pages still crawled |
+
+### Worker not processing jobs
+
+1. Check if worker pod is running: `sudo microk8s kubectl get pods -n sastaspace -l app=worker`
+2. Check Redis stream length: `redis-cli XLEN sastaspace:jobs`
+3. Check pending messages: `redis-cli XPENDING sastaspace:jobs redesign-workers`
+4. Worker uses `Recreate` strategy (not `RollingUpdate`) — brief downtime during deploys is expected
