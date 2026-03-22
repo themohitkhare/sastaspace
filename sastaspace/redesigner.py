@@ -160,6 +160,8 @@ def agno_redesign(
     settings,
     tier: str = "standard",
     progress_callback: Callable[[str, dict], None] | None = None,
+    checkpoint: dict | None = None,
+    checkpoint_callback: Callable[[str, dict], None] | None = None,
 ) -> str:
     """Redesign using Agno multi-agent pipeline.
 
@@ -171,6 +173,8 @@ def agno_redesign(
         settings: Application settings (sastaspace.config.Settings).
         tier: Redesign tier (standard or premium).
         progress_callback: Optional callable(event, data) fired before each agent stage.
+        checkpoint: Optional checkpoint dict to resume from.
+        checkpoint_callback: Optional callable(step_name, checkpoint_data) fired after each step.
 
     Returns:
         The final redesigned HTML string.
@@ -181,7 +185,12 @@ def agno_redesign(
     from sastaspace.agents.pipeline import run_redesign_pipeline
 
     return run_redesign_pipeline(
-        crawl_result, settings, progress_callback=progress_callback, tier=tier
+        crawl_result,
+        settings,
+        progress_callback=progress_callback,
+        tier=tier,
+        checkpoint=checkpoint,
+        checkpoint_callback=checkpoint_callback,
     )
 
 
@@ -335,10 +344,14 @@ def run_redesign(
     settings,
     tier: str = "standard",
     progress_callback: Callable[[str, dict], None] | None = None,
+    checkpoint: dict | None = None,
+    checkpoint_callback: Callable[[str, dict], None] | None = None,
 ) -> str:
     """Dispatch to the appropriate redesign function based on settings and tier."""
     if settings.use_agno_pipeline:
-        return agno_redesign(crawl_result, settings, tier, progress_callback)
+        return agno_redesign(
+            crawl_result, settings, tier, progress_callback, checkpoint, checkpoint_callback
+        )
     elif tier == "premium":
         return redesign_premium(
             crawl_result,

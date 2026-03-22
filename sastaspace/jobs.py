@@ -11,6 +11,7 @@ from uuid import uuid4
 
 import redis.asyncio as aioredis
 
+from sastaspace.crawler import CrawlResult
 from sastaspace.database import (
     JobStatus,
     create_job,
@@ -31,6 +32,23 @@ STATUS_CHANNEL = "sastaspace:job-status"
 BLOCK_MS = 5000
 # Max messages to read per batch
 BATCH_SIZE = 1
+
+# CrawlResult fields to persist in checkpoint (all dataclass fields except methods)
+_CRAWL_FIELDS = [
+    "url", "title", "meta_description", "favicon_url", "html_source",
+    "screenshot_base64", "headings", "navigation_links", "text_content",
+    "images", "colors", "fonts", "sections", "error",
+]
+
+
+def _serialize_crawl_result(cr: CrawlResult) -> dict:
+    """Serialize a CrawlResult dataclass into a JSON-safe dict."""
+    return {f: getattr(cr, f) for f in _CRAWL_FIELDS}
+
+
+def _deserialize_crawl_result(data: dict) -> CrawlResult:
+    """Reconstruct a CrawlResult from a serialized dict."""
+    return CrawlResult(**{f: data.get(f, "") for f in _CRAWL_FIELDS})
 
 
 class JobService:
@@ -198,7 +216,8 @@ class JobService:
 
                     logger.warning("Recovery: reprocessing abandoned job %s: %s", job_id, url)
                     try:
-                        await handler(job_id, url, tier, self)
+                        cp = job.get("checkpoint") if job else None
+                        await handler(job_id, url, tier, self, checkpoint=cp)
                         await self.redis.xack(STREAM_KEY, GROUP_NAME, msg_id)
                         recovered += 1
                     except Exception:
@@ -306,10 +325,17 @@ async def redesign_handler(
     url: str,
     tier: str,
     job_service: JobService,
+    checkpoint: dict | None = None,
 ) -> None:
     """
     The actual redesign pipeline handler run by workers.
-    Crawl → Redesign → Deploy, publishing status updates along the way.
+    Crawl -> Redesign -> Deploy, publishing status updates along the way.
+
+    If a checkpoint dict is provided (from a recovered job), the handler will
+    skip already-completed steps:
+    - If crawl was completed, skip crawling and reconstruct CrawlResult from checkpoint.
+    - Pipeline checkpoint data is forwarded to run_redesign_pipeline so agent steps
+      that already finished are also skipped.
     """
     import time as _time
 
@@ -321,52 +347,80 @@ async def redesign_handler(
     job_start = _time.monotonic()
 
     pipeline = "agno" if settings.use_agno_pipeline else "legacy"
-    logger.info("JOB START | job=%s url=%s tier=%s pipeline=%s", job_id, url, tier, pipeline)
+    has_checkpoint = checkpoint is not None
+    logger.info(
+        "JOB START | job=%s url=%s tier=%s pipeline=%s checkpoint=%s",
+        job_id, url, tier, pipeline, has_checkpoint,
+    )
+
+    # Determine what to skip from checkpoint
+    skip_crawl = False
+    pipeline_checkpoint: dict | None = None
+    crawl_data: dict | None = None
+
+    if checkpoint:
+        completed = checkpoint.get("completed_step", "")
+        if completed == "crawl" or checkpoint.get("pipeline_data"):
+            skip_crawl = True
+            crawl_data = checkpoint.get("crawl_result")
+        pipeline_checkpoint = checkpoint.get("pipeline_data") or None
 
     # Step 1: Crawling
-    logger.info("JOB STEP 1/3: Crawling | job=%s url=%s", job_id, url)
-    await update_job(
-        job_id, status=JobStatus.CRAWLING.value, progress=10, message="Crawling your site..."
-    )
-    await job_service.publish_status(
-        job_id,
-        "crawling",
-        {"job_id": job_id, "message": "Crawling your site...", "progress": 10},
-    )
-
-    crawl_start = _time.monotonic()
-    crawl_result = await crawl(url)
-    crawl_duration = _time.monotonic() - crawl_start
-
-    if crawl_result.error:
-        logger.warning(
-            "JOB CRAWL FAILED | job=%s url=%s error=%s duration=%.1fs",
-            job_id,
-            url,
-            crawl_result.error,
-            crawl_duration,
-        )
+    crawl_duration = 0.0
+    if skip_crawl and crawl_data:
+        logger.info("JOB STEP 1/3: Crawling SKIPPED (from checkpoint) | job=%s", job_id)
+        crawl_result = _deserialize_crawl_result(crawl_data)
+    else:
+        logger.info("JOB STEP 1/3: Crawling | job=%s url=%s", job_id, url)
         await update_job(
-            job_id,
-            status=JobStatus.FAILED.value,
-            error="Could not reach that website. Check the URL and try again.",
+            job_id, status=JobStatus.CRAWLING.value, progress=10, message="Crawling your site..."
         )
-        err = "Could not reach that website. Check the URL and try again."
         await job_service.publish_status(
             job_id,
-            "error",
-            {"job_id": job_id, "error": err},
+            "crawling",
+            {"job_id": job_id, "message": "Crawling your site...", "progress": 10},
         )
-        return
 
-    logger.info(
-        "JOB CRAWL OK | job=%s title=%s sections=%d colors=%d duration=%.1fs",
-        job_id,
-        crawl_result.title[:50] if crawl_result.title else "N/A",
-        len(crawl_result.sections) if hasattr(crawl_result, "sections") else 0,
-        len(crawl_result.colors),
-        crawl_duration,
-    )
+        crawl_start = _time.monotonic()
+        crawl_result = await crawl(url)
+        crawl_duration = _time.monotonic() - crawl_start
+
+        if crawl_result.error:
+            logger.warning(
+                "JOB CRAWL FAILED | job=%s url=%s error=%s duration=%.1fs",
+                job_id,
+                url,
+                crawl_result.error,
+                crawl_duration,
+            )
+            await update_job(
+                job_id,
+                status=JobStatus.FAILED.value,
+                error="Could not reach that website. Check the URL and try again.",
+            )
+            err = "Could not reach that website. Check the URL and try again."
+            await job_service.publish_status(
+                job_id,
+                "error",
+                {"job_id": job_id, "error": err},
+            )
+            return
+
+        logger.info(
+            "JOB CRAWL OK | job=%s title=%s sections=%d colors=%d duration=%.1fs",
+            job_id,
+            crawl_result.title[:50] if crawl_result.title else "N/A",
+            len(crawl_result.sections) if hasattr(crawl_result, "sections") else 0,
+            len(crawl_result.colors),
+            crawl_duration,
+        )
+
+        # Save crawl checkpoint to MongoDB
+        crawl_data = _serialize_crawl_result(crawl_result)
+        await update_job(
+            job_id,
+            checkpoint={"completed_step": "crawl", "crawl_result": crawl_data, "pipeline_data": {}},
+        )
 
     # Emit discovered site facts for the UI discovery grid
     _discovery_items = []
@@ -436,6 +490,20 @@ async def redesign_handler(
         except Exception:
             pass  # never crash the pipeline thread over a UI event
 
+    def _on_checkpoint(step_name: str, checkpoint_data: dict) -> None:
+        """Called synchronously from the pipeline thread — persist checkpoint to MongoDB."""
+        full_checkpoint = {
+            "completed_step": step_name,
+            "crawl_result": crawl_data,
+            "pipeline_data": checkpoint_data,
+        }
+        try:
+            asyncio.run_coroutine_threadsafe(
+                update_job(job_id, checkpoint=full_checkpoint), loop
+            )
+        except Exception:
+            pass  # never crash the pipeline thread over a checkpoint save
+
     # Choose redesign function based on tier / pipeline setting
     from sastaspace.redesigner import run_redesign
 
@@ -445,6 +513,8 @@ async def redesign_handler(
         settings,
         tier,
         _on_agent_progress,
+        pipeline_checkpoint,
+        _on_checkpoint,
     )
 
     redesign_duration = _time.monotonic() - redesign_start
@@ -494,7 +564,7 @@ async def redesign_handler(
         url_hash=url_hash(url),
     )
 
-    # Step 4: Done
+    # Clear checkpoint — job is done, no need to keep checkpoint data
     await update_job(
         job_id,
         status=JobStatus.DONE.value,
@@ -502,6 +572,7 @@ async def redesign_handler(
         message="Done!",
         subdomain=result.subdomain,
         html_path=str(result.index_path),
+        checkpoint=None,
     )
     await job_service.publish_status(
         job_id,
