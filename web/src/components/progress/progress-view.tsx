@@ -7,10 +7,10 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { AuroraBackground } from "@/components/ui/aurora-background";
 import { LumaSpin } from "@/components/ui/luma-spin";
-import { Counter } from "@/components/ui/animated-counter";
 import { StepPills } from "@/components/progress/step-pills";
 import { InsightCards } from "@/components/progress/insight-cards";
 import { ColorSwatches } from "@/components/progress/color-swatches";
+import { AutoPong } from "@/components/progress/auto-pong";
 import type { RedesignState } from "@/hooks/use-redesign";
 
 // Map step name → top-level progress bar value
@@ -124,17 +124,8 @@ export function ProgressView({ state, onRetry }: ProgressViewProps) {
         {/* Color swatches — fade in when crawl data arrives */}
         <ColorSwatches colors={siteColors} />
 
-        {/* Animated counter */}
-        <div className="flex items-center gap-1.5 text-muted-foreground text-sm mt-2">
-          <Counter
-            start={12800}
-            end={12847}
-            duration={3}
-            fontSize={14}
-            className="text-foreground font-semibold"
-          />
-          <span>redesigns completed</span>
-        </div>
+        {/* Auto-play Pong while waiting */}
+        <AutoPong className="mt-4" />
       </div>
     </AuroraBackground>
   );
