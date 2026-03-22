@@ -17,7 +17,7 @@
         {
           "aliasColors": {},
           "bars": false,
-          "datasource": "PBFA97CFB590B2093",
+          "datasource": "prometheus",
           "decimals": 2,
           "editable": true,
           "error": false,
@@ -128,7 +128,7 @@
             "rgba(237, 129, 40, 0.89)",
             "rgba(245, 54, 54, 0.9)"
           ],
-          "datasource": "PBFA97CFB590B2093",
+          "datasource": "prometheus",
           "editable": true,
           "error": false,
           "format": "percent",
@@ -208,7 +208,7 @@
             "rgba(237, 129, 40, 0.89)",
             "rgba(245, 54, 54, 0.9)"
           ],
-          "datasource": "PBFA97CFB590B2093",
+          "datasource": "prometheus",
           "decimals": 2,
           "editable": true,
           "error": false,
@@ -288,7 +288,7 @@
             "rgba(237, 129, 40, 0.89)",
             "rgba(245, 54, 54, 0.9)"
           ],
-          "datasource": "PBFA97CFB590B2093",
+          "datasource": "prometheus",
           "decimals": 2,
           "editable": true,
           "error": false,
@@ -370,7 +370,7 @@
             "rgba(237, 129, 40, 0.89)",
             "rgba(245, 54, 54, 0.9)"
           ],
-          "datasource": "PBFA97CFB590B2093",
+          "datasource": "prometheus",
           "decimals": 2,
           "editable": true,
           "error": false,
@@ -450,7 +450,7 @@
             "rgba(237, 129, 40, 0.89)",
             "rgba(245, 54, 54, 0.9)"
           ],
-          "datasource": "PBFA97CFB590B2093",
+          "datasource": "prometheus",
           "decimals": 2,
           "editable": true,
           "error": false,
@@ -530,7 +530,7 @@
             "rgba(237, 129, 40, 0.89)",
             "rgba(245, 54, 54, 0.9)"
           ],
-          "datasource": "PBFA97CFB590B2093",
+          "datasource": "prometheus",
           "decimals": 2,
           "editable": true,
           "error": false,
@@ -610,7 +610,7 @@
             "rgba(237, 129, 40, 0.89)",
             "rgba(245, 54, 54, 0.9)"
           ],
-          "datasource": "PBFA97CFB590B2093",
+          "datasource": "prometheus",
           "decimals": 2,
           "editable": true,
           "error": false,
@@ -690,7 +690,7 @@
             "rgba(237, 129, 40, 0.89)",
             "rgba(245, 54, 54, 0.9)"
           ],
-          "datasource": "PBFA97CFB590B2093",
+          "datasource": "prometheus",
           "decimals": 2,
           "editable": true,
           "error": false,
@@ -770,7 +770,7 @@
             "rgba(237, 129, 40, 0.89)",
             "rgba(245, 54, 54, 0.9)"
           ],
-          "datasource": "PBFA97CFB590B2093",
+          "datasource": "prometheus",
           "decimals": 2,
           "editable": true,
           "error": false,
@@ -853,7 +853,7 @@
         {
           "aliasColors": {},
           "bars": false,
-          "datasource": "PBFA97CFB590B2093",
+          "datasource": "prometheus",
           "decimals": 3,
           "editable": true,
           "error": false,
@@ -948,7 +948,7 @@
         {
           "aliasColors": {},
           "bars": false,
-          "datasource": "PBFA97CFB590B2093",
+          "datasource": "prometheus",
           "decimals": 3,
           "editable": true,
           "error": false,
@@ -1042,7 +1042,7 @@
         {
           "aliasColors": {},
           "bars": false,
-          "datasource": "PBFA97CFB590B2093",
+          "datasource": "prometheus",
           "decimals": 3,
           "editable": true,
           "error": false,
@@ -1158,7 +1158,7 @@
         {
           "aliasColors": {},
           "bars": false,
-          "datasource": "PBFA97CFB590B2093",
+          "datasource": "prometheus",
           "decimals": 3,
           "editable": true,
           "error": false,
@@ -1253,7 +1253,7 @@
         {
           "aliasColors": {},
           "bars": false,
-          "datasource": "PBFA97CFB590B2093",
+          "datasource": "prometheus",
           "decimals": 2,
           "editable": true,
           "error": false,
@@ -1346,7 +1346,7 @@
         {
           "aliasColors": {},
           "bars": false,
-          "datasource": "PBFA97CFB590B2093",
+          "datasource": "prometheus",
           "decimals": 2,
           "editable": true,
           "error": false,
@@ -1439,7 +1439,7 @@
         {
           "aliasColors": {},
           "bars": false,
-          "datasource": "PBFA97CFB590B2093",
+          "datasource": "prometheus",
           "decimals": 2,
           "editable": true,
           "error": false,
@@ -1550,7 +1550,7 @@
         {
           "aliasColors": {},
           "bars": false,
-          "datasource": "PBFA97CFB590B2093",
+          "datasource": "prometheus",
           "decimals": 2,
           "editable": true,
           "error": false,
@@ -1643,7 +1643,7 @@
         {
           "aliasColors": {},
           "bars": false,
-          "datasource": "PBFA97CFB590B2093",
+          "datasource": "prometheus",
           "decimals": 2,
           "editable": true,
           "error": false,
@@ -1745,7 +1745,7 @@
         {
           "aliasColors": {},
           "bars": false,
-          "datasource": "PBFA97CFB590B2093",
+          "datasource": "prometheus",
           "decimals": 2,
           "editable": true,
           "error": false,
@@ -1889,7 +1889,7 @@
         {
           "aliasColors": {},
           "bars": false,
-          "datasource": "PBFA97CFB590B2093",
+          "datasource": "prometheus",
           "decimals": 2,
           "editable": true,
           "error": false,
@@ -1995,7 +1995,7 @@
       {
         "allValue": ".*",
         "current": {},
-        "datasource": "PBFA97CFB590B2093",
+        "datasource": "prometheus",
         "hide": 0,
         "includeAll": true,
         "multi": false,
