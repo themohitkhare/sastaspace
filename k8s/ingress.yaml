@@ -6,11 +6,8 @@ metadata:
   annotations:
     nginx.ingress.kubernetes.io/proxy-body-size: "50m"
     nginx.ingress.kubernetes.io/proxy-read-timeout: "300"
-    # Suppress HTTP/3 Alt-Svc advertisement — cloudflared tunnel doesn't support QUIC
-    nginx.ingress.kubernetes.io/configuration-snippet: |
-      add_header Alt-Svc 'clear' always;
 spec:
-  ingressClassName: nginx
+  ingressClassName: public
   rules:
   - host: sastaspace.com
     http:
