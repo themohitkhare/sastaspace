@@ -26,7 +26,10 @@ class TestJobCompletionFlow:
             empty = {"data": {"companies": []}}
             mock_req.side_effect = [
                 # find_company_by_domain: 3 URL variants + name fallback, all empty
-                empty, empty, empty, empty,
+                empty,
+                empty,
+                empty,
+                empty,
                 # upsert_company: create returns new company
                 {"data": {"createCompany": {"id": "comp-1", "domain": "example.com"}}},
                 # create_redesign_job: returns new job

@@ -23,7 +23,10 @@ class TestUpsertCompany:
             # then upsert_company creates
             empty = {"data": {"companies": []}}
             mock_req.side_effect = [
-                empty, empty, empty, empty,  # 3 URL variants + name fallback
+                empty,
+                empty,
+                empty,
+                empty,  # 3 URL variants + name fallback
                 {"data": {"createCompany": {"id": "c1"}}},  # create
             ]
             result = await client.upsert_company("example.com", name="Example Corp")
