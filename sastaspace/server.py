@@ -513,6 +513,76 @@ def make_app(sites_dir: Path) -> FastAPI:
 
         return Response(status_code=400, content="Unknown action")
 
+    # ---- Admin endpoints ----
+
+    @app.get("/admin/sites")
+    async def admin_list_sites(request: Request):
+        """List all deployed sites for Twenty reconciliation."""
+        auth = request.headers.get("Authorization", "")
+        if not settings.twenty_admin_key or auth != f"Bearer {settings.twenty_admin_key}":
+            return Response(status_code=401)
+        sites = await list_sites(limit=1000)
+        return {"sites": sites}
+
+    @app.get("/admin/sync")
+    async def admin_sync(request: Request):
+        """Reconcile missed push events — sync recent jobs to Twenty."""
+        auth = request.headers.get("Authorization", "")
+        if not settings.twenty_admin_key or auth != f"Bearer {settings.twenty_admin_key}":
+            return Response(status_code=401)
+
+        from sastaspace.twenty_sync import NoopTwentyClient, get_twenty_client
+        from sastaspace.urls import extract_domain
+
+        twenty = get_twenty_client(settings.twenty_url, settings.twenty_api_key)
+        if isinstance(twenty, NoopTwentyClient):
+            return {"synced": 0, "message": "Twenty integration disabled"}
+
+        # Get recent completed/failed jobs from last 24h
+        recent_jobs = await list_jobs(limit=100, status="done")
+        synced = 0
+        already_exists = 0
+        errors = 0
+
+        for job in recent_jobs:
+            job_id = job.get("id", "")
+            try:
+                existing = await twenty.find_redesign_job(job_id)
+                if existing:
+                    already_exists += 1
+                    continue
+                domain = extract_domain(job.get("url", ""))
+                company = await twenty.upsert_company(domain, name=job.get("site_title", domain))
+                if company:
+                    await twenty.create_redesign_job(
+                        company_id=company["id"],
+                        jobId=job_id,
+                        status=job.get("status", "done"),
+                        tier=job.get("tier", "free"),
+                        subdomain=job.get("subdomain", ""),
+                    )
+                    synced += 1
+            except Exception as e:
+                logger.warning("Sync failed for job %s: %s", job_id, e)
+                errors += 1
+
+        # Update totalRedesigns aggregate counts on companies
+        # (avoids TOCTOU race in real-time push — this is the authoritative count)
+        from sastaspace.database import _get_db
+
+        db = _get_db()
+        pipeline = [
+            {"$group": {"_id": "$original_url", "count": {"$sum": 1}}},
+        ]
+        async for doc in db["sites"].aggregate(pipeline):
+            domain = extract_domain(doc["_id"]) if doc["_id"] else None
+            if domain:
+                company = await twenty.find_company_by_domain(domain)
+                if company:
+                    await twenty.upsert_company(domain, totalRedesigns=doc["count"])
+
+        return {"synced": synced, "already_exists": already_exists, "errors": errors}
+
     # ---- Existing routes ----
 
     @app.get("/", response_class=HTMLResponse)
