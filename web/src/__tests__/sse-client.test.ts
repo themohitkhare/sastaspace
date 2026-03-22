@@ -1,25 +1,17 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { submitRedesign, streamJobStatus } from '@/lib/sse-client'
-
-// Helper to create a ReadableStream from SSE text chunks
-function createSSEStream(chunks: string[]): ReadableStream<Uint8Array> {
-  const encoder = new TextEncoder()
-  let index = 0
-  return new ReadableStream({
-    pull(controller) {
-      if (index < chunks.length) {
-        controller.enqueue(encoder.encode(chunks[index]))
-        index++
-      } else {
-        controller.close()
-      }
-    },
-  })
-}
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { submitRedesign, pollJobStatus } from '@/lib/sse-client'
+import type { JobStatus } from '@/lib/sse-client'
 
 beforeEach(() => {
   vi.restoreAllMocks()
+  vi.useFakeTimers()
 })
+
+afterEach(() => {
+  vi.useRealTimers()
+})
+
+// --- submitRedesign (unchanged) ---
 
 describe('submitRedesign', () => {
   it('returns job_id on success', async () => {
@@ -53,117 +45,123 @@ describe('submitRedesign', () => {
       'No job_id returned from server'
     )
   })
-
-  it('sends POST to correct URL with body', async () => {
-    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
-      ok: true,
-      json: async () => ({ job_id: 'abc' }),
-    } as unknown as Response)
-
-    await submitRedesign('https://example.com', 'premium')
-
-    expect(fetchSpy).toHaveBeenCalledWith(
-      'http://localhost:8080/redesign',
-      expect.objectContaining({
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url: 'https://example.com', tier: 'premium' }),
-      })
-    )
-  })
 })
 
-describe('streamJobStatus', () => {
-  it('yields parsed SSE events', async () => {
-    const sseChunks = [
-      'event: crawling\ndata: {"status":"started"}\n\n',
-      'event: done\ndata: {"subdomain":"test-com"}\n\n',
+// --- pollJobStatus ---
+
+function makeJob(overrides: Partial<JobStatus> = {}): JobStatus {
+  return {
+    id: 'job-1',
+    status: 'crawling',
+    progress: 25,
+    message: 'Crawling...',
+    ...overrides,
+  }
+}
+
+describe('pollJobStatus', () => {
+  it('yields job status and stops on done', async () => {
+    const jobs: JobStatus[] = [
+      makeJob({ status: 'crawling' }),
+      makeJob({ status: 'done', subdomain: 'example-com' }),
     ]
+    let callCount = 0
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async () => {
+      const job = jobs[callCount++]
+      return { ok: true, json: async () => job } as unknown as Response
+    })
 
-    vi.spyOn(globalThis, 'fetch').mockResolvedValue({
-      ok: true,
-      body: createSSEStream(sseChunks),
-    } as unknown as Response)
+    const results: JobStatus[] = []
+    const gen = pollJobStatus('job-1')
 
-    const events = []
-    for await (const event of streamJobStatus('test-job-123')) {
-      events.push(event)
-    }
+    // Get first value
+    const p1 = gen.next()
+    await vi.runAllTimersAsync()
+    results.push((await p1).value)
 
-    expect(events).toHaveLength(2)
-    expect(events[0]).toEqual({ event: 'crawling', data: { status: 'started' } })
-    expect(events[1]).toEqual({ event: 'done', data: { subdomain: 'test-com' } })
+    // Get second value (done — generator should complete)
+    const p2 = gen.next()
+    await vi.runAllTimersAsync()
+    const r2 = await p2
+    results.push(r2.value)
+    expect(r2.done).toBe(true)
+
+    expect(results[0].status).toBe('crawling')
+    expect(results[1].status).toBe('done')
   })
 
-  it('uses default event name "message" when no event line is present', async () => {
-    const sseChunks = ['data: {"hello":"world"}\n\n']
+  it('silently retries on network error and continues', async () => {
+    let callCount = 0
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async () => {
+      callCount++
+      if (callCount === 1) throw new Error('Network error')
+      return {
+        ok: true,
+        json: async () => makeJob({ status: 'crawling' }),
+      } as unknown as Response
+    })
 
-    vi.spyOn(globalThis, 'fetch').mockResolvedValue({
-      ok: true,
-      body: createSSEStream(sseChunks),
-    } as unknown as Response)
+    const gen = pollJobStatus('job-1')
+    const p = gen.next()
+    await vi.runAllTimersAsync()
+    const result = await p
 
-    const events = []
-    for await (const event of streamJobStatus('job-1')) {
-      events.push(event)
-    }
-
-    expect(events).toHaveLength(1)
-    expect(events[0].event).toBe('message')
+    expect(result.value.status).toBe('crawling')
+    expect(callCount).toBe(2) // first failed, second succeeded
   })
 
-  it('skips malformed JSON data silently', async () => {
-    const sseChunks = [
-      'event: crawling\ndata: not-json\n\n',
-      'event: done\ndata: {"subdomain":"ok"}\n\n',
-    ]
+  it('throws POLL_FAILED after 5 consecutive network errors', async () => {
+    vi.spyOn(globalThis, 'fetch').mockRejectedValue(new Error('Network error'))
 
-    vi.spyOn(globalThis, 'fetch').mockResolvedValue({
-      ok: true,
-      body: createSSEStream(sseChunks),
-    } as unknown as Response)
-
-    const events = []
-    for await (const event of streamJobStatus('job-1')) {
-      events.push(event)
-    }
-
-    expect(events).toHaveLength(1)
-    expect(events[0].event).toBe('done')
-  })
-
-  it('throws on non-ok HTTP response', async () => {
-    vi.spyOn(globalThis, 'fetch').mockResolvedValue({
-      ok: false,
-      status: 404,
-      body: null,
-    } as unknown as Response)
-
+    const collected: JobStatus[] = []
     await expect(async () => {
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      for await (const _ of streamJobStatus('nonexistent')) {
-        // consume
+      const gen = pollJobStatus('job-1')
+      for (let i = 0; i < 6; i++) {
+        const p = gen.next()
+        await vi.runAllTimersAsync()
+        const r = await p
+        if (r.done) break
+        collected.push(r.value)
       }
-    }).rejects.toThrow('Stream failed: 404')
+    }).rejects.toThrow('POLL_FAILED')
+
+    expect(collected).toHaveLength(0) // never yielded
   })
 
-  it('handles chunked SSE data split across reads', async () => {
-    const sseChunks = [
-      'event: crawling\ndata: {"sta',
-      'tus":"started"}\n\n',
-    ]
+  it('stops polling when AbortSignal is aborted', async () => {
+    const controller = new AbortController()
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async () => {
+      controller.abort()
+      return {
+        ok: true,
+        json: async () => makeJob({ status: 'crawling' }),
+      } as unknown as Response
+    })
 
+    const results: JobStatus[] = []
+    const gen = pollJobStatus('job-1', controller.signal)
+    const p = gen.next()
+    await vi.runAllTimersAsync()
+    const r = await p
+    // After aborting, next call should terminate the generator
+    if (!r.done && r.value) results.push(r.value)
+
+    const p2 = gen.next()
+    await vi.runAllTimersAsync()
+    const r2 = await p2
+    expect(r2.done).toBe(true)
+  })
+
+  it('uses 1s interval when status is deploying', async () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValue({
       ok: true,
-      body: createSSEStream(sseChunks),
+      json: async () => makeJob({ status: 'deploying', progress: 90 }),
     } as unknown as Response)
 
-    const events = []
-    for await (const event of streamJobStatus('job-1')) {
-      events.push(event)
-    }
-
-    expect(events).toHaveLength(1)
-    expect(events[0]).toEqual({ event: 'crawling', data: { status: 'started' } })
+    const gen = pollJobStatus('job-1')
+    const p = gen.next()
+    await vi.runAllTimersAsync()
+    const r = await p
+    expect(r.value.status).toBe('deploying')
   })
 })

@@ -5,7 +5,19 @@ export type SSEEvent = {
   data: Record<string, unknown>
 }
 
-/** Submit a redesign request. Returns job_id (Redis path) or throws. */
+export type JobStatus = {
+  id: string
+  status: "queued" | "crawling" | "redesigning" | "deploying" | "done" | "failed"
+  progress: number
+  message: string
+  subdomain?: string
+  error?: string
+  site_colors?: string[]
+  site_title?: string
+  created_at?: string
+}
+
+/** Submit a redesign request. Returns job_id or throws. */
 export async function submitRedesign(
   url: string,
   tier: "free" | "standard" | "premium" = "free",
@@ -24,39 +36,49 @@ export async function submitRedesign(
   throw new Error("No job_id returned from server")
 }
 
-/** Stream status events for a job. Reconnectable. */
-export async function* streamJobStatus(
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
+/**
+ * Poll GET /jobs/{id} every 3s (1s when deploying).
+ * Silently retries on network errors; throws "POLL_FAILED" after 5 consecutive failures.
+ * Generator stops when status is "done" or "failed".
+ */
+export async function* pollJobStatus(
   jobId: string,
   signal?: AbortSignal
-): AsyncGenerator<SSEEvent> {
+): AsyncGenerator<JobStatus> {
   const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:8080"
-  const resp = await fetch(`${backendUrl}/jobs/${jobId}/stream`, { signal })
-  if (!resp.ok || !resp.body) throw new Error(`Stream failed: ${resp.status}`)
-
-  const reader = resp.body.getReader()
-  const decoder = new TextDecoder()
-  let buffer = ""
-  let currentEvent = "message"
+  let consecutiveFailures = 0
+  let lastStatus: string = "queued"
 
   while (true) {
-    const { done, value } = await reader.read()
-    if (done) break
-    buffer += decoder.decode(value, { stream: true })
-    const lines = buffer.split("\n")
-    buffer = lines.pop() ?? ""
+    if (signal?.aborted) return
 
-    for (const line of lines) {
-      if (line.startsWith("event:")) {
-        currentEvent = line.slice(6).trim()
-      } else if (line.startsWith("data:")) {
-        try {
-          const data = JSON.parse(line.slice(5).trim()) as Record<string, unknown>
-          yield { event: currentEvent, data }
-          currentEvent = "message"
-        } catch {
-          // skip malformed
-        }
+    try {
+      const resp = await fetch(`${backendUrl}/jobs/${jobId}`, { signal })
+      if (signal?.aborted) return
+
+      if (resp.ok) {
+        consecutiveFailures = 0
+        const job = (await resp.json()) as JobStatus
+        lastStatus = job.status
+        if (job.status === "done" || job.status === "failed") return job
+        yield job
+      } else {
+        consecutiveFailures++
       }
+    } catch {
+      if (signal?.aborted) return
+      consecutiveFailures++
     }
+
+    if (consecutiveFailures >= 5) {
+      throw new Error("POLL_FAILED")
+    }
+
+    const intervalMs = lastStatus === "deploying" ? 1000 : 3000
+    await sleep(intervalMs)
   }
 }
