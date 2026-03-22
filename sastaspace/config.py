@@ -59,6 +59,12 @@ class Settings(BaseSettings):
     # Browserless (remote Chromium via CDP)
     browserless_url: str = "ws://localhost:3100"
 
+    # Twenty CRM (empty = integration disabled)
+    twenty_url: str = ""
+    twenty_api_key: str = ""
+    twenty_webhook_secret: str = ""
+    twenty_admin_key: str = ""
+
     @field_validator("cors_origins", mode="before")
     @classmethod
     def parse_cors_origins(cls, v):
