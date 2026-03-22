@@ -417,6 +417,30 @@ async def redesign_handler(
                 "error",
                 {"job_id": job_id, "error": err},
             )
+
+            # Sync failure to Twenty CRM (fire-and-forget)
+            try:
+                from sastaspace.twenty_sync import get_twenty_client
+                from sastaspace.urls import extract_domain
+
+                twenty = get_twenty_client(settings.twenty_url, settings.twenty_api_key)
+                domain = extract_domain(url)
+                company = await twenty.upsert_company(
+                    domain,
+                    name=crawl_result.title or domain,
+                    lastRedesignStatus="failed",
+                )
+                if company:
+                    await twenty.create_redesign_job(
+                        company_id=company["id"],
+                        jobId=job_id,
+                        status="failed",
+                        tier=tier,
+                        errorMessage=str(crawl_result.error)[:500],
+                    )
+            except Exception:
+                pass
+
             return
 
         logger.info(
@@ -581,7 +605,7 @@ async def redesign_handler(
     )
 
     # Register in DB with URL hash for dedup
-    from sastaspace.urls import url_hash
+    from sastaspace.urls import extract_domain, url_hash
 
     await register_site(
         subdomain=result.subdomain,
@@ -591,6 +615,49 @@ async def redesign_handler(
         tier=tier,
         url_hash=url_hash(url),
     )
+
+    # Sync to Twenty CRM (fire-and-forget — failure doesn't affect pipeline)
+    from sastaspace.twenty_sync import get_twenty_client
+
+    twenty = get_twenty_client(settings.twenty_url, settings.twenty_api_key)
+    try:
+        bp = getattr(enhanced_result, "business_profile", None) if enhanced_result else None
+        company_name = (
+            bp.business_name if bp and bp.business_name != "unknown" else crawl_result.title
+        )
+        industry = bp.industry if bp and bp.industry != "unknown" else ""
+        domain = extract_domain(url)
+        company = await twenty.upsert_company(
+            domain,
+            name=company_name,
+            lastRedesignStatus="done",
+            lastRedesignTier=tier,
+            lastRedesignUrl=f"/{result.subdomain}/",
+            industry=industry,
+            lastRedesignedAt=datetime.now(UTC).isoformat(),
+        )
+        if company:
+            await twenty.create_redesign_job(
+                company_id=company["id"],
+                jobId=job_id,
+                status="done",
+                tier=tier,
+                previewUrl=f"/{result.subdomain}/",
+                subdomain=result.subdomain,
+                pagesFound=(
+                    len(enhanced_result.internal_pages)
+                    if enhanced_result and hasattr(enhanced_result, "internal_pages")
+                    else 0
+                ),
+                assetsDownloaded=(
+                    len(enhanced_result.assets.assets)
+                    if enhanced_result and hasattr(enhanced_result, "assets")
+                    else 0
+                ),
+                businessIndustry=industry,
+            )
+    except Exception as e:
+        logger.warning("Twenty sync failed for job %s: %s", job_id, e)
 
     # Clear checkpoint — job is done, no need to keep checkpoint data
     await update_job(
