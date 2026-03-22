@@ -37,10 +37,7 @@ jobs:
 
       - name: Duplicate code detection (jscpd)
         run: |
-          if ! command -v jscpd &>/dev/null; then
-            npm install -g jscpd
-          fi
-          jscpd sastaspace/ web/src/ --min-lines 10 --min-tokens 50 \
+          npx jscpd sastaspace/ web/src/ --min-lines 10 --min-tokens 50 \
             --reporters consoleFull \
             --ignore "**/__pycache__/**,**/node_modules/**,**/.next/**" \
             --threshold 5 \
