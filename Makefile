@@ -7,7 +7,7 @@ RSYNC_EXCLUDE := --exclude='.git' --exclude='node_modules' --exclude='__pycache_
                  --exclude='.venv' --exclude='*.pyc' --exclude='.next' \
                  --exclude='test-results' --exclude='*.egg-info'
 
-.PHONY: ci install lint test dev dev-api dev-web \
+.PHONY: ci install lint k8s-lint test dev dev-api dev-web \
         deploy deploy-build deploy-logs deploy-status deploy-down k8s-apply \
         deploy-monitoring monitoring-status monitoring-logs
 
@@ -18,6 +18,9 @@ install:
 lint:
 	uv run ruff check sastaspace/ tests/
 	uv run ruff format --check sastaspace/ tests/
+
+k8s-lint:  ## Validate k8s manifests with kubeconform
+	kubeconform -summary -strict k8s/*.yaml k8s/monitoring/*.yaml
 
 test:
 	uv run pytest tests/ -v

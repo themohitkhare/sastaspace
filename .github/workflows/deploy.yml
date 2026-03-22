@@ -38,6 +38,14 @@ jobs:
       - name: Run tests (parallel)
         run: uv run pytest tests/ -n auto -q --tb=short
 
+      - name: Validate k8s manifests
+        run: |
+          if ! command -v kubeconform &>/dev/null; then
+            curl -sSL https://github.com/yannh/kubeconform/releases/latest/download/kubeconform-linux-amd64.tar.gz \
+              | sudo tar xz -C /usr/local/bin kubeconform
+          fi
+          kubeconform -summary -strict k8s/*.yaml k8s/monitoring/*.yaml
+
   security:
     name: Security Scan
     runs-on: [self-hosted, linux, amd64]
