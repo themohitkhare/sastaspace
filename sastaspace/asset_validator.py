@@ -7,6 +7,7 @@ from __future__ import annotations
 import hashlib
 import logging
 import re
+import xml.etree.ElementTree as StdET
 from pathlib import Path
 
 import defusedxml.ElementTree as ET
@@ -73,7 +74,7 @@ def validate_mime_type(path: Path) -> str | None:
     """Check file magic bytes and return the MIME type if it is in ALLOWED_MIMES, else None."""
     try:
         mime = magic.from_file(str(path), mime=True)
-    except Exception:
+    except (OSError, magic.MagicException):
         logger.warning("Failed to detect MIME type for %s", path)
         return None
     if not mime or mime not in ALLOWED_MIMES:
@@ -87,7 +88,7 @@ def validate_image_integrity(path: Path) -> bool:
         with Image.open(path) as img:
             img.verify()
         return True
-    except Exception:
+    except (OSError, Image.DecompressionBombError, SyntaxError):
         return False
 
 
@@ -96,8 +97,6 @@ def sanitize_svg(svg_content: str) -> str:
 
     Does NOT pass through nh3.clean() — that strips valid SVG elements.
     """
-    import xml.etree.ElementTree as StdET
-
     # Register common SVG/XLink namespaces so serialization doesn't mangle prefixes
     _SVG_NAMESPACES = {
         "http://www.w3.org/2000/svg": "",
@@ -158,7 +157,7 @@ def scan_yara(path: Path) -> bool:
             logger.warning("YARA matches for %s: %s", path, [m.rule for m in matches])
             return False
         return True
-    except Exception:
+    except (yara.Error, OSError):
         logger.exception("YARA scan failed for %s", path)
         return False
 
@@ -181,7 +180,7 @@ def scan_clamav(path: Path, host: str = "localhost", port: int = 3310, timeout: 
     except ImportError:
         logger.info("pyclamd not installed — skipping ClamAV scan")
         return True
-    except Exception:
+    except (ConnectionError, OSError, TimeoutError):
         logger.info("ClamAV unavailable — skipping scan for %s", path)
         return True
 

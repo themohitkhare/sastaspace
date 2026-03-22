@@ -2,14 +2,25 @@
 from __future__ import annotations
 
 from collections.abc import Callable
+from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 from openai import OpenAI
 
+from sastaspace.agents.pipeline import run_redesign_pipeline
 from sastaspace.crawler import CrawlResult
 from sastaspace.html_utils import RedesignError  # noqa: F401
 from sastaspace.html_utils import clean_html as _clean_html  # noqa: F401
 from sastaspace.html_utils import validate_html as _validate_html  # noqa: F401
+
+
+@dataclass
+class LLMConfig:
+    api_url: str = "http://localhost:8000/v1"
+    model: str = "claude-sonnet-4-5-20250929"
+    api_key: str = "claude-code"
+    max_tokens: int = 16000
+
 
 if TYPE_CHECKING:
     # ProgressCallback matches the type alias in sastaspace.agents.pipeline
@@ -63,10 +74,7 @@ def _redesign_with_prompts(
     crawl_result: CrawlResult,
     system_prompt: str,
     user_template: str,
-    max_tokens: int,
-    api_url: str,
-    model: str,
-    api_key: str,
+    llm: LLMConfig,
     crawl_context: str | None = None,
 ) -> str:
     """Internal: call the claude-code-api gateway with the given prompts.
@@ -81,7 +89,7 @@ def _redesign_with_prompts(
     if crawl_result.error:
         raise RedesignError(f"Cannot redesign — crawl failed: {crawl_result.error}")
 
-    client = OpenAI(base_url=api_url, api_key=api_key)
+    client = OpenAI(base_url=llm.api_url, api_key=llm.api_key)
 
     user_text = user_template.format(
         crawl_context=crawl_context
@@ -104,12 +112,12 @@ def _redesign_with_prompts(
     user_content.append({"type": "text", "text": user_text})
 
     response = client.chat.completions.create(
-        model=model,
+        model=llm.model,
         messages=[
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_content},
         ],
-        max_tokens=max_tokens,
+        max_tokens=llm.max_tokens,
     )
 
     raw = response.choices[0].message.content or ""
@@ -131,7 +139,10 @@ def redesign(
         RedesignError: if crawl_result.error is set or Claude's output is invalid.
     """
     return _redesign_with_prompts(
-        crawl_result, SYSTEM_PROMPT, USER_PROMPT_TEMPLATE, 16000, api_url, model, api_key
+        crawl_result,
+        SYSTEM_PROMPT,
+        USER_PROMPT_TEMPLATE,
+        LLMConfig(api_url=api_url, model=model, api_key=api_key, max_tokens=16000),
     )
 
 
@@ -167,8 +178,6 @@ def agno_redesign(
     Raises:
         RedesignError: if crawl_result.error is set or pipeline fails.
     """
-    from sastaspace.agents.pipeline import run_redesign_pipeline
-
     return run_redesign_pipeline(
         crawl_result,
         settings,
@@ -312,10 +321,7 @@ def redesign_premium(
         crawl_result,
         PREMIUM_SYSTEM_PROMPT,
         PREMIUM_USER_PROMPT_TEMPLATE,
-        20000,
-        api_url,
-        model,
-        api_key,
+        LLMConfig(api_url=api_url, model=model, api_key=api_key, max_tokens=20000),
     )
 
 
@@ -364,27 +370,32 @@ def run_redesign(
         system_prompt = PREMIUM_SYSTEM_PROMPT
         if enhanced is not None:
             system_prompt += ENHANCED_SYSTEM_ADDENDUM
+        llm = LLMConfig(
+            api_url=settings.claude_code_api_url,
+            model=settings.claude_model,
+            api_key=settings.claude_code_api_key,
+            max_tokens=20000,
+        )
         return _redesign_with_prompts(
             crawl_result,
             system_prompt,
             PREMIUM_USER_PROMPT_TEMPLATE,
-            20000,
-            settings.claude_code_api_url,
-            settings.claude_model,
-            settings.claude_code_api_key,
+            llm,
             crawl_context=crawl_context,
         )
     else:
         system_prompt = SYSTEM_PROMPT
         if enhanced is not None:
             system_prompt += ENHANCED_SYSTEM_ADDENDUM
+        llm = LLMConfig(
+            api_url=settings.claude_code_api_url,
+            model=settings.claude_model,
+            api_key=settings.claude_code_api_key,
+        )
         return _redesign_with_prompts(
             crawl_result,
             system_prompt,
             USER_PROMPT_TEMPLATE,
-            16000,
-            settings.claude_code_api_url,
-            settings.claude_model,
-            settings.claude_code_api_key,
+            llm,
             crawl_context=crawl_context,
         )

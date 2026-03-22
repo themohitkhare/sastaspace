@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from unittest.mock import MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
@@ -16,6 +16,7 @@ from sastaspace.agents.models import (
     SiteAnalysis,
 )
 from sastaspace.agents.pipeline import PIPELINE_STEPS, run_redesign_pipeline
+from sastaspace.database import JobUpdate, get_job, update_job
 
 # ---------------------------------------------------------------------------
 # Fixtures
@@ -263,8 +264,6 @@ def test_checkpoint_callback_fires(
 async def test_update_job_checkpoint_persists(tmp_path):
     """update_job with checkpoint dict persists it, get_job returns it."""
     # We test via mocking the MongoDB collection since we don't want a real DB
-    from unittest.mock import AsyncMock
-
     mock_collection = AsyncMock()
     mock_collection.update_one = AsyncMock()
     mock_collection.find_one = AsyncMock(
@@ -278,13 +277,11 @@ async def test_update_job_checkpoint_persists(tmp_path):
     with patch("sastaspace.database._get_db") as mock_db:
         mock_db.return_value.__getitem__ = MagicMock(return_value=mock_collection)
 
-        from sastaspace.database import get_job, update_job
-
         checkpoint_data = {
             "completed_step": "crawl_analyst",
             "data": {"site_analysis": "{}"},
         }
-        await update_job("job-1", checkpoint=checkpoint_data)
+        await update_job("job-1", updates=JobUpdate(checkpoint=checkpoint_data))
 
         # Verify update_one was called with $set containing checkpoint
         call_args = mock_collection.update_one.call_args

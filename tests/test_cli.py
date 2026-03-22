@@ -6,6 +6,8 @@ import pytest
 from click.testing import CliRunner
 
 from sastaspace.cli import main
+from sastaspace.crawler import CrawlResult
+from sastaspace.redesigner import RedesignError
 
 SAMPLE_HTML = "<!DOCTYPE html><html><body><h1>Hi</h1></body></html>"
 
@@ -23,8 +25,6 @@ def sites_dir(tmp_path):
 
 
 def make_mock_crawl_result(url="https://acme.com"):
-    from sastaspace.crawler import CrawlResult
-
     return CrawlResult(
         url=url,
         title="Acme",
@@ -149,8 +149,6 @@ def test_redesign_full_pipeline(runner, sites_dir, monkeypatch):
 def test_redesign_shows_error_on_crawl_failure(runner, sites_dir, monkeypatch):
     monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant-test")
 
-    from sastaspace.crawler import CrawlResult
-
     failed_result = CrawlResult(
         url="https://bad.com",
         title="",
@@ -183,7 +181,7 @@ def test_redesign_crawl_exception(runner, sites_dir, monkeypatch):
     """Lines 52-55: Exception handler when crawl raises."""
     monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant-test")
 
-    mock_crawl = AsyncMock(side_effect=Exception("DNS resolution failed"))
+    mock_crawl = AsyncMock(side_effect=OSError("DNS resolution failed"))
 
     with patch("sastaspace.cli.crawl", mock_crawl):
         result = runner.invoke(
@@ -197,8 +195,6 @@ def test_redesign_crawl_exception(runner, sites_dir, monkeypatch):
 
 def test_redesign_redesign_error(runner, sites_dir, monkeypatch):
     """Lines 73-76: RedesignError handler during redesign."""
-    from sastaspace.redesigner import RedesignError
-
     monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant-test")
 
     mock_crawl = AsyncMock(return_value=make_mock_crawl_result())
@@ -224,7 +220,7 @@ def test_redesign_generic_exception(runner, sites_dir, monkeypatch):
 
     with (
         patch("sastaspace.cli.crawl", mock_crawl),
-        patch("sastaspace.cli.redesign", side_effect=Exception("API key invalid")),
+        patch("sastaspace.cli.redesign", side_effect=ConnectionError("API key invalid")),
     ):
         result = runner.invoke(
             main,

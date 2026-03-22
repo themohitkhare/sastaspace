@@ -1,9 +1,15 @@
 # tests/test_server.py
+import asyncio
 import json
+import threading
 from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
 
 from fastapi.testclient import TestClient
+
+from sastaspace.config import Settings
+from sastaspace.crawler import CrawlResult
+from sastaspace.server import _is_port_listening, ensure_running, make_app
 
 SAMPLE_HTML = "<!DOCTYPE html><html><body><h1>Acme</h1></body></html>"
 
@@ -30,8 +36,6 @@ def make_test_sites(tmp_path: Path) -> Path:
 
 
 def make_test_client(sites_dir: Path):
-    from sastaspace.server import make_app
-
     app = make_app(sites_dir)
     return TestClient(app)
 
@@ -40,7 +44,7 @@ def test_root_returns_html_listing(tmp_path):
     sites = make_test_sites(tmp_path)
     client = make_test_client(sites)
 
-    resp = client.get("/")
+    resp = client.get("/", timeout=10)
     assert resp.status_code == 200
     assert "acme-com" in resp.text
     assert "text/html" in resp.headers["content-type"]
@@ -50,7 +54,8 @@ def test_root_shows_link_to_site(tmp_path):
     sites = make_test_sites(tmp_path)
     client = make_test_client(sites)
 
-    resp = client.get("/")
+    resp = client.get("/", timeout=10)
+    assert resp.status_code == 200
     assert "https://acme.com" in resp.text or "acme-com" in resp.text
 
 
@@ -58,7 +63,7 @@ def test_site_route_serves_index_html(tmp_path):
     sites = make_test_sites(tmp_path)
     client = make_test_client(sites)
 
-    resp = client.get("/acme-com/")
+    resp = client.get("/acme-com/", timeout=10)
     assert resp.status_code == 200
     assert "<h1>Acme</h1>" in resp.text
 
@@ -67,7 +72,7 @@ def test_site_route_without_trailing_slash(tmp_path):
     sites = make_test_sites(tmp_path)
     client = make_test_client(sites)
 
-    resp = client.get("/acme-com/", follow_redirects=True)
+    resp = client.get("/acme-com/", follow_redirects=True, timeout=10)
     assert resp.status_code == 200
 
 
@@ -75,7 +80,7 @@ def test_unknown_site_returns_404(tmp_path):
     sites = make_test_sites(tmp_path)
     client = make_test_client(sites)
 
-    resp = client.get("/nonexistent/")
+    resp = client.get("/nonexistent/", timeout=10)
     assert resp.status_code == 404
 
 
@@ -84,7 +89,7 @@ def test_root_with_empty_registry(tmp_path):
     sites.mkdir()
     client = make_test_client(sites)
 
-    resp = client.get("/")
+    resp = client.get("/", timeout=10)
     assert resp.status_code == 200
     assert "No sites" in resp.text
 
@@ -98,8 +103,6 @@ def test_ensure_running_returns_port_when_already_listening(tmp_path):
     (sites / ".server_port").write_text("8080")
 
     with patch("sastaspace.server._is_port_listening", return_value=True):
-        from sastaspace.server import ensure_running
-
         port = ensure_running(sites, preferred_port=8080)
 
     assert port == 8080
@@ -123,8 +126,6 @@ def test_ensure_running_spawns_subprocess_when_not_listening(tmp_path):
         patch("sastaspace.server.time.sleep"),
         patch("sastaspace.server.time.time", side_effect=[0.0, 0.5, 1.0, 10.0]),
     ):
-        from sastaspace.server import ensure_running
-
         port = ensure_running(sites, preferred_port=8080)
 
     assert mock_popen_cls.called
@@ -147,8 +148,6 @@ def test_ensure_running_tries_next_port_when_in_use(tmp_path):
         patch("sastaspace.server.time.sleep"),
         patch("sastaspace.server.time.time", side_effect=[0.0, 0.1, 10.0]),
     ):
-        from sastaspace.server import ensure_running
-
         port = ensure_running(sites, preferred_port=8080)
 
     assert port == 8081
@@ -159,16 +158,12 @@ def test_ensure_running_tries_next_port_when_in_use(tmp_path):
 
 def test_config_cors_origins_default():
     """Settings() has cors_origins == ["http://localhost:3000"]."""
-    from sastaspace.config import Settings
-
     s = Settings()
     assert s.cors_origins == ["http://localhost:3000"]
 
 
 def test_config_rate_limit_defaults():
     """Settings() has rate_limit_max == 3, rate_limit_window_seconds == 3600."""
-    from sastaspace.config import Settings
-
     s = Settings()
     assert s.rate_limit_max == 3
     assert s.rate_limit_window_seconds == 3600
@@ -177,8 +172,6 @@ def test_config_rate_limit_defaults():
 def test_config_cors_origins_from_env(monkeypatch):
     """CORS_ORIGINS="http://a.com,http://b.com" parses to list of 2."""
     monkeypatch.setenv("CORS_ORIGINS", "http://a.com,http://b.com")
-    from sastaspace.config import Settings
-
     s = Settings()
     assert s.cors_origins == ["http://a.com", "http://b.com"]
 
@@ -194,7 +187,9 @@ def test_cors_allows_configured_origin(test_client):
             "Origin": "http://localhost:3000",
             "Access-Control-Request-Method": "POST",
         },
+        timeout=10,
     )
+    assert resp.status_code == 200
     assert resp.headers.get("access-control-allow-origin") == "http://localhost:3000"
 
 
@@ -206,6 +201,7 @@ def test_cors_blocks_unknown_origin(test_client):
             "Origin": "http://evil.com",
             "Access-Control-Request-Method": "POST",
         },
+        timeout=10,
     )
     assert resp.headers.get("access-control-allow-origin") != "http://evil.com"
 
@@ -236,14 +232,15 @@ def parse_sse_events(text: str) -> list[dict]:
 
 def test_redesign_sse_stream(redesign_client):
     """POST /redesign with valid URL returns 200 with text/event-stream."""
-    resp = redesign_client.post("/redesign", json={"url": "https://example.com"})
+    resp = redesign_client.post("/redesign", json={"url": "https://example.com"}, timeout=10)
     assert resp.status_code == 200
     assert "text/event-stream" in resp.headers["content-type"]
 
 
 def test_sse_event_names(redesign_client):
     """SSE stream contains events crawling, redesigning, deploying, done in order."""
-    resp = redesign_client.post("/redesign", json={"url": "https://example.com"})
+    resp = redesign_client.post("/redesign", json={"url": "https://example.com"}, timeout=10)
+    assert resp.status_code == 200
     events = parse_sse_events(resp.text)
     event_names = [e["event"] for e in events if "event" in e]
     assert "crawling" in event_names
@@ -260,7 +257,8 @@ def test_sse_event_names(redesign_client):
 
 def test_sse_done_event_payload(redesign_client):
     """done event data has job_id, message, progress=100, url, subdomain."""
-    resp = redesign_client.post("/redesign", json={"url": "https://example.com"})
+    resp = redesign_client.post("/redesign", json={"url": "https://example.com"}, timeout=10)
+    assert resp.status_code == 200
     events = parse_sse_events(resp.text)
     done_events = [e for e in events if e.get("event") == "done"]
     assert len(done_events) == 1
@@ -289,11 +287,10 @@ def test_to_thread_wrapping(tmp_sites, mock_crawl_result, mock_deploy_result):
             return_value=mock_deploy_result,
         ) as m_deploy,
     ):
-        from sastaspace.server import make_app
-
         app = make_app(tmp_sites)
         client = TestClient(app)
-        client.post("/redesign", json={"url": "https://example.com"})
+        resp = client.post("/redesign", json={"url": "https://example.com"}, timeout=10)
+        assert resp.status_code == 200
 
         m_crawl.assert_called_once_with("https://example.com")
         m_redesign.assert_called_once()
@@ -302,9 +299,6 @@ def test_to_thread_wrapping(tmp_sites, mock_crawl_result, mock_deploy_result):
 
 def test_concurrency_cap(tmp_sites, mock_crawl_result, mock_deploy_result):
     """Second request while first is running returns 429."""
-    import asyncio
-    import threading
-
     block = threading.Event()
     proceed = threading.Event()
 
@@ -325,22 +319,22 @@ def test_concurrency_cap(tmp_sites, mock_crawl_result, mock_deploy_result):
             return_value=mock_deploy_result,
         ),
     ):
-        from sastaspace.server import make_app
-
         app = make_app(tmp_sites)
         client = TestClient(app)
 
         results: dict = {}
 
         def first_request():
-            results["first"] = client.post("/redesign", json={"url": "https://example.com"})
+            results["first"] = client.post(
+                "/redesign", json={"url": "https://example.com"}, timeout=10
+            )
 
         t = threading.Thread(target=first_request)
         t.start()
         proceed.wait(timeout=5)
 
         # Second request should get 429
-        resp = client.post("/redesign", json={"url": "https://example.com"})
+        resp = client.post("/redesign", json={"url": "https://example.com"}, timeout=10)
         assert resp.status_code == 429
         assert "already in progress" in resp.json()["error"]
 
@@ -363,8 +357,6 @@ def test_rate_limit(tmp_sites, mock_crawl_result, mock_deploy_result):
             return_value=mock_deploy_result,
         ),
     ):
-        from sastaspace.server import make_app
-
         app = make_app(tmp_sites)
         client = TestClient(app)
         headers = {"X-Forwarded-For": "1.2.3.4"}
@@ -375,6 +367,7 @@ def test_rate_limit(tmp_sites, mock_crawl_result, mock_deploy_result):
                 "/redesign",
                 json={"url": "https://example.com"},
                 headers=headers,
+                timeout=10,
             )
             assert resp.status_code == 200, f"Request {i + 1} should succeed"
 
@@ -383,6 +376,7 @@ def test_rate_limit(tmp_sites, mock_crawl_result, mock_deploy_result):
             "/redesign",
             json={"url": "https://example.com"},
             headers=headers,
+            timeout=10,
         )
         assert resp.status_code == 429
         data = resp.json()
@@ -405,8 +399,6 @@ def test_rate_limit_localhost_exempt(tmp_sites, mock_crawl_result, mock_deploy_r
             return_value=mock_deploy_result,
         ),
     ):
-        from sastaspace.server import make_app
-
         app = make_app(tmp_sites)
         client = TestClient(app)
         # TestClient reports host as "testclient", so use header
@@ -418,14 +410,13 @@ def test_rate_limit_localhost_exempt(tmp_sites, mock_crawl_result, mock_deploy_r
                 "/redesign",
                 json={"url": "https://example.com"},
                 headers=headers,
+                timeout=10,
             )
             assert resp.status_code == 200, f"Request {i + 1} should succeed (localhost exempt)"
 
 
 def test_error_crawl_failure(tmp_sites):
     """crawl error emits error SSE event with user-facing message."""
-    from sastaspace.crawler import CrawlResult
-
     failed_crawl = CrawlResult(
         url="https://example.com",
         title="",
@@ -440,11 +431,10 @@ def test_error_crawl_failure(tmp_sites):
         new_callable=AsyncMock,
         return_value=failed_crawl,
     ):
-        from sastaspace.server import make_app
-
         app = make_app(tmp_sites)
         client = TestClient(app)
-        resp = client.post("/redesign", json={"url": "https://example.com"})
+        resp = client.post("/redesign", json={"url": "https://example.com"}, timeout=10)
+        assert resp.status_code == 200
 
         events = parse_sse_events(resp.text)
         error_events = [e for e in events if e.get("event") == "error"]
@@ -465,11 +455,10 @@ def test_error_redesign_failure(tmp_sites, mock_crawl_result):
             side_effect=Exception("API down"),
         ),
     ):
-        from sastaspace.server import make_app
-
         app = make_app(tmp_sites)
         client = TestClient(app)
-        resp = client.post("/redesign", json={"url": "https://example.com"})
+        resp = client.post("/redesign", json={"url": "https://example.com"}, timeout=10)
+        assert resp.status_code == 200
 
         events = parse_sse_events(resp.text)
         error_events = [e for e in events if e.get("event") == "error"]
@@ -488,8 +477,6 @@ def test_get_client_ip_cf_connecting_ip(tmp_sites, mock_crawl_result, mock_deplo
         patch("sastaspace.redesigner.agno_redesign", return_value=mock_html),
         patch("sastaspace.server.deploy", return_value=mock_deploy_result),
     ):
-        from sastaspace.server import make_app
-
         app = make_app(tmp_sites)
         client = TestClient(app)
         # cf-connecting-ip should be used; since it's a non-localhost IP, rate limiting applies
@@ -497,6 +484,7 @@ def test_get_client_ip_cf_connecting_ip(tmp_sites, mock_crawl_result, mock_deplo
             "/redesign",
             json={"url": "https://example.com"},
             headers={"cf-connecting-ip": "5.6.7.8"},
+            timeout=10,
         )
         assert resp.status_code == 200
 
@@ -509,8 +497,6 @@ def test_get_client_ip_unknown_no_client(tmp_sites, mock_crawl_result, mock_depl
         patch("sastaspace.redesigner.agno_redesign", return_value=mock_html),
         patch("sastaspace.server.deploy", return_value=mock_deploy_result),
     ):
-        from sastaspace.server import make_app
-
         app = make_app(tmp_sites)
         client = TestClient(app)
 
@@ -519,9 +505,7 @@ def test_get_client_ip_unknown_no_client(tmp_sites, mock_crawl_result, mock_depl
             "starlette.requests.Request.client",
             new_callable=lambda: property(lambda self: None),
         ):
-            resp = client.post("/redesign", json={"url": "https://example.com"})
-            # Should succeed since "unknown" is not localhost, rate limiting applies
-            # but first request should be under the limit
+            resp = client.post("/redesign", json={"url": "https://example.com"}, timeout=10)
             assert resp.status_code == 200
 
 
@@ -534,7 +518,7 @@ def test_index_with_corrupt_registry(tmp_path):
     sites.mkdir()
     (sites / "_registry.json").write_text("not json {{{")
     client = make_test_client(sites)
-    resp = client.get("/")
+    resp = client.get("/", timeout=10)
     assert resp.status_code == 200
     assert "No sites" in resp.text
 
@@ -547,7 +531,7 @@ def test_serve_site_asset_existing_file(tmp_path):
     sites = make_test_sites(tmp_path)
     (sites / "acme-com" / "style.css").write_text("body { color: red; }")
     client = make_test_client(sites)
-    resp = client.get("/acme-com/style.css")
+    resp = client.get("/acme-com/style.css", timeout=10)
     assert resp.status_code == 200
     assert "color: red" in resp.text
 
@@ -556,7 +540,7 @@ def test_serve_site_asset_fallback_index(tmp_path):
     """Lines 253-254: serve_site_asset falls back to index.html for unknown paths."""
     sites = make_test_sites(tmp_path)
     client = make_test_client(sites)
-    resp = client.get("/acme-com/some/nested/path")
+    resp = client.get("/acme-com/some/nested/path", timeout=10)
     assert resp.status_code == 200
     assert "<h1>Acme</h1>" in resp.text
 
@@ -568,7 +552,7 @@ def test_serve_site_asset_404(tmp_path):
     (sites / "ghost").mkdir()
     # No index.html in ghost/
     client = make_test_client(sites)
-    resp = client.get("/ghost/some-file.js")
+    resp = client.get("/ghost/some-file.js", timeout=10)
     assert resp.status_code == 404
 
 
@@ -577,8 +561,6 @@ def test_serve_site_asset_404(tmp_path):
 
 def test_is_port_listening_false():
     """Lines 261-263: _is_port_listening returns False for unused port."""
-    from sastaspace.server import _is_port_listening
-
     # Use a very unlikely port
     assert _is_port_listening(19999) is False
 
@@ -604,8 +586,6 @@ def test_ensure_running_port_file_value_error(tmp_path):
         patch("sastaspace.server.time.sleep"),
         patch("sastaspace.server.time.time", side_effect=[0.0, 0.5, 1.0, 10.0]),
     ):
-        from sastaspace.server import ensure_running
-
         port = ensure_running(sites, preferred_port=8080)
 
     assert isinstance(port, int)
@@ -639,8 +619,6 @@ def test_ensure_running_port_file_os_error(tmp_path):
         patch("sastaspace.server.time.sleep"),
         patch("sastaspace.server.time.time", side_effect=[0.0, 0.5, 1.0, 10.0]),
     ):
-        from sastaspace.server import ensure_running
-
         port = ensure_running(sites, preferred_port=8080)
 
     assert isinstance(port, int)

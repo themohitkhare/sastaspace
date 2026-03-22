@@ -1,5 +1,7 @@
 # tests/test_deployer.py
 import json
+from dataclasses import dataclass
+from pathlib import Path
 
 from sastaspace.deployer import (
     deploy,
@@ -130,9 +132,6 @@ def test_load_registry_handles_os_error(tmp_path):
 
 
 def test_deploy_with_assets(tmp_path):
-    from dataclasses import dataclass
-    from pathlib import Path
-
     @dataclass
     class DownloadedAsset:
         original_url: str
@@ -170,10 +169,6 @@ def test_deploy_with_assets(tmp_path):
 
 
 def test_deploy_with_assets_updates_metadata(tmp_path):
-    import json
-    from dataclasses import dataclass
-    from pathlib import Path
-
     @dataclass
     class DownloadedAsset:
         original_url: str

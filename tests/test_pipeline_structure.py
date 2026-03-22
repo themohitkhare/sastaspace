@@ -7,6 +7,7 @@ from unittest.mock import patch
 import pytest
 
 from sastaspace.agents.models import (
+    BrandProfile,
     ComponentSelection,
     ContentSection,
     CopywriterOutput,
@@ -189,8 +190,6 @@ class TestPrefilterCatalog:
             content_sections=[],
         )
         defaults.update(kw)
-        from sastaspace.agents.models import BrandProfile
-
         return SiteAnalysis(
             brand=BrandProfile(industry=kw.get("industry", "")),
             primary_goal=defaults["primary_goal"],

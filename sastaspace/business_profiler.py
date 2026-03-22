@@ -8,7 +8,7 @@ import logging
 import re
 from typing import TYPE_CHECKING
 
-from openai import OpenAI
+from openai import OpenAI, OpenAIError
 
 from sastaspace.models import BusinessProfile, PageCrawlResult
 
@@ -72,6 +72,49 @@ def _call_llm(prompt: str, api_url: str, model: str, api_key: str) -> str:
     return resp.choices[0].message.content or ""
 
 
+def _build_profile_prompt(
+    homepage: CrawlResult,
+    internal_pages: list[PageCrawlResult],
+    deduped_text: str,
+) -> str:
+    """Build the LLM prompt from crawled page data."""
+    parts = [
+        f"## Homepage: {homepage.title}",
+        f"Meta: {homepage.meta_description}",
+        f"Headings: {', '.join(homepage.headings[:10])}",
+        deduped_text[:8000],
+    ]
+    for p in internal_pages:
+        if p.error:
+            continue
+        parts.append(f"\n## {p.page_type.title()}: {p.title}")
+        parts.append(f"Headings: {', '.join(p.headings[:10])}")
+        if p.testimonials:
+            parts.append(f"Testimonials: {' | '.join(p.testimonials[:5])}")
+    return "\n".join(parts)
+
+
+def _parse_profile_response(raw: str, fallback_title: str) -> BusinessProfile:
+    """Parse LLM JSON response into a BusinessProfile."""
+    if "```" in raw:
+        match = re.search(r"```(?:json)?\s*(\{.*?\})\s*```", raw, re.DOTALL)
+        if match:
+            raw = match.group(1)
+    data = json.loads(raw)
+    return BusinessProfile(
+        business_name=data.get("business_name", fallback_title),
+        industry=data.get("industry", "unknown"),
+        services=data.get("services", []),
+        target_audience=data.get("target_audience", "unknown"),
+        tone=data.get("tone", "unknown"),
+        differentiators=data.get("differentiators", []),
+        social_proof=data.get("social_proof", []),
+        pricing_model=data.get("pricing_model", "none-found"),
+        cta_primary=data.get("cta_primary", "unknown"),
+        brand_personality=data.get("brand_personality", "unknown"),
+    )
+
+
 def build_business_profile(
     homepage: CrawlResult,
     internal_pages: list[PageCrawlResult],
@@ -84,43 +127,12 @@ def build_business_profile(
     for p in internal_pages:
         if not p.error:
             texts.append(p.text_content)
-    deduped = _deduplicate_text(texts)
 
-    prompt_parts = [
-        f"## Homepage: {homepage.title}",
-        f"Meta: {homepage.meta_description}",
-        f"Headings: {', '.join(homepage.headings[:10])}",
-        deduped[:8000],
-    ]
-    for p in internal_pages:
-        if p.error:
-            continue
-        prompt_parts.append(f"\n## {p.page_type.title()}: {p.title}")
-        prompt_parts.append(f"Headings: {', '.join(p.headings[:10])}")
-        if p.testimonials:
-            prompt_parts.append(f"Testimonials: {' | '.join(p.testimonials[:5])}")
-    user_prompt = "\n".join(prompt_parts)
+    prompt = _build_profile_prompt(homepage, internal_pages, _deduplicate_text(texts))
 
     try:
-        raw = _call_llm(user_prompt, api_url, model, api_key)
-        # Try to extract JSON from possible markdown fencing
-        if "```" in raw:
-            match = re.search(r"```(?:json)?\s*(\{.*?\})\s*```", raw, re.DOTALL)
-            if match:
-                raw = match.group(1)
-        data = json.loads(raw)
-        return BusinessProfile(
-            business_name=data.get("business_name", homepage.title),
-            industry=data.get("industry", "unknown"),
-            services=data.get("services", []),
-            target_audience=data.get("target_audience", "unknown"),
-            tone=data.get("tone", "unknown"),
-            differentiators=data.get("differentiators", []),
-            social_proof=data.get("social_proof", []),
-            pricing_model=data.get("pricing_model", "none-found"),
-            cta_primary=data.get("cta_primary", "unknown"),
-            brand_personality=data.get("brand_personality", "unknown"),
-        )
-    except Exception as e:
+        raw = _call_llm(prompt, api_url, model, api_key)
+        return _parse_profile_response(raw, homepage.title)
+    except (OpenAIError, json.JSONDecodeError, ValueError, KeyError) as e:
         logger.warning("Business profiling failed, using minimal profile: %s", e)
         return BusinessProfile.minimal(homepage.title)

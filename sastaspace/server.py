@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import asyncio
+import hashlib
 import html
 import json
 import logging
@@ -23,12 +24,20 @@ from prometheus_client import Counter, Gauge, make_asgi_app
 from pydantic import BaseModel
 from starlette.responses import Response
 
+from sastaspace.admin import (
+    delete_site_db_record,
+    delete_site_files,
+    get_original_url_from_db,
+    verify_webhook_signature,
+)
 from sastaspace.config import Settings
 from sastaspace.crawler import crawl
 from sastaspace.database import (
     JobStatus,
+    _get_db,
     close_db,
     create_job,
+    find_site_by_url_hash,
     get_job,
     init_db,
     list_jobs,
@@ -39,6 +48,8 @@ from sastaspace.database import (
 from sastaspace.deployer import deploy
 from sastaspace.jobs import JobService
 from sastaspace.redesigner import run_redesign
+from sastaspace.twenty_sync import NoopTwentyClient, get_twenty_client
+from sastaspace.urls import extract_domain, is_valid_url, url_hash
 
 # Module-level job service reference — updated during lifespan, patchable in tests
 svc: JobService | None = None
@@ -85,7 +96,7 @@ def make_app(sites_dir: Path) -> FastAPI:
                     "MongoDB connected at %s / %s", settings.mongodb_url, settings.mongodb_db
                 )
                 break
-            except Exception:
+            except (ConnectionError, OSError, TimeoutError):
                 if attempt == max_retries:
                     logger.error(
                         "MongoDB unavailable after %d attempts — refusing to start", max_retries
@@ -103,7 +114,7 @@ def make_app(sites_dir: Path) -> FastAPI:
         try:
             count = sum(1 for d in sites_dir.iterdir() if d.is_dir() and not d.name.startswith("_"))
             _sites_deployed_gauge.set(count)
-        except Exception:
+        except OSError:
             pass
 
         # Connect Redis (required — without it, jobs go inline and crawling fails)
@@ -115,7 +126,7 @@ def make_app(sites_dir: Path) -> FastAPI:
                     svc = _svc
                     logger.info("Redis job service connected at %s", settings.redis_url)
                     break
-                except Exception:
+                except (ConnectionError, OSError, TimeoutError):
                     if attempt == max_retries:
                         logger.error(
                             "Redis unavailable after %d attempts — refusing to start", max_retries
@@ -189,7 +200,7 @@ def make_app(sites_dir: Path) -> FastAPI:
         ip = "inline"
         try:
             await create_job(job_id=job_id, url=url, client_ip=ip, tier=tier)
-        except Exception:
+        except (ConnectionError, OSError):
             pass
 
         async with _redesign_semaphore:
@@ -270,7 +281,7 @@ def make_app(sites_dir: Path) -> FastAPI:
                     html_path=str(result.index_path),
                 )
                 yield format_sse_event(data_str=json.dumps(done_data), event="done")
-            except Exception:
+            except Exception:  # noqa: pycodegate[no-broad-exception] — SSE stream error handler
                 err_data = {
                     "job_id": job_id,
                     "error": ("Redesign service unavailable. Please try again later."),
@@ -297,11 +308,10 @@ def make_app(sites_dir: Path) -> FastAPI:
 
     # ---- API Endpoints ----
 
-    @app.post("/redesign")
-    async def redesign_endpoint(body: RedesignRequest, request: Request):
-        from sastaspace.database import find_site_by_url_hash
-        from sastaspace.urls import is_valid_url, url_hash
-
+    @app.post("/redesign", response_model=None)
+    async def redesign_endpoint(
+        body: RedesignRequest, request: Request
+    ) -> JSONResponse | EventSourceResponse:
         ip = get_client_ip(request)
 
         # Validate and normalize URL
@@ -327,8 +337,8 @@ def make_app(sites_dir: Path) -> FastAPI:
 
                 # Return the existing job_id so the client streams from /jobs/{id}/stream
                 # That endpoint immediately emits the terminal done event for completed jobs.
-                return {"job_id": existing["job_id"]}
-        except Exception:
+                return JSONResponse(content={"job_id": existing["job_id"]})
+        except (ConnectionError, OSError):
             pass  # DB unavailable — proceed with redesign
 
         # Validate tier
@@ -357,7 +367,7 @@ def make_app(sites_dir: Path) -> FastAPI:
         if svc is not None:
             _redesign_requests_total.labels(status="started").inc()
             job_id = await svc.enqueue(url=body.url, client_ip=ip, tier=tier)
-            return {"job_id": job_id}
+            return JSONResponse(content={"job_id": job_id})
 
         # Fallback: inline processing (no Redis)
         # Concurrency check
@@ -373,8 +383,8 @@ def make_app(sites_dir: Path) -> FastAPI:
 
     # ---- Job status endpoints ----
 
-    @app.get("/jobs/{job_id}/stream")
-    async def job_stream_endpoint(job_id: str):
+    @app.get("/jobs/{job_id}/stream", response_model=None)
+    async def job_stream_endpoint(job_id: str) -> EventSourceResponse:
         """SSE stream for a specific job. Reconnectable."""
         job = await get_job(job_id)
         if job is None:
@@ -409,35 +419,33 @@ def make_app(sites_dir: Path) -> FastAPI:
 
         return EventSourceResponse(redis_job_stream(job_id))
 
-    @app.get("/jobs/{job_id}")
-    async def get_job_status(job_id: str):
+    @app.get("/jobs/{job_id}", response_model=None)
+    async def get_job_status(job_id: str) -> JSONResponse:
         """Get the current status of a redesign job."""
         job = await get_job(job_id)
         if job is None:
             return JSONResponse(status_code=404, content={"error": "Job not found"})
         return JSONResponse(content=job)
 
-    @app.get("/jobs")
+    @app.get("/jobs", response_model=None)
     async def list_jobs_endpoint(
         status: str | None = None,
         limit: int = 50,
-    ):
+    ) -> JSONResponse:
         """List recent redesign jobs."""
         jobs = await list_jobs(limit=min(limit, 100), status=status)
         return JSONResponse(content={"jobs": jobs, "count": len(jobs)})
 
-    @app.get("/sites")
-    async def list_sites_endpoint(limit: int = 100):
+    @app.get("/sites", response_model=None)
+    async def list_sites_endpoint(limit: int = 100) -> JSONResponse:
         """List all deployed redesigned sites."""
         sites_list = await list_sites(limit=min(limit, 200))
         return JSONResponse(content={"sites": sites_list, "count": len(sites_list)})
 
     # ---- Twenty CRM sync ----
 
-    @app.post("/twenty/person")
-    async def create_twenty_person(request: Request):
-        from sastaspace.twenty_sync import get_twenty_client
-
+    @app.post("/twenty/person", response_model=None)
+    async def create_twenty_person(request: Request) -> JSONResponse:
         twenty = get_twenty_client(settings.twenty_url, settings.twenty_api_key)
         try:
             body = await request.json()
@@ -447,7 +455,7 @@ def make_app(sites_dir: Path) -> FastAPI:
             domain = body.get("domain")  # subdomain or null
 
             if not email:
-                return Response(status_code=400, content="Email required")
+                return JSONResponse(status_code=400, content={"error": "Email required"})
 
             parts = name.split(None, 1)
             first_name = parts[0] if parts else ""
@@ -470,26 +478,16 @@ def make_app(sites_dir: Path) -> FastAPI:
             if person and message:
                 await twenty.create_note(person["id"], message)
 
-            return {"ok": True}
-        except Exception as e:
+            return JSONResponse(content={"ok": True})
+        except (ValueError, KeyError, TypeError, OSError) as e:
             logger.warning("Twenty person creation failed: %s", e)
-            return {"ok": True}  # Don't reveal failures
+            return JSONResponse(content={"ok": True})  # Don't reveal failures
 
     # ---- Webhook routes ----
 
-    @app.post("/webhooks/twenty")
-    async def twenty_webhook(request: Request):
+    @app.post("/webhooks/twenty", response_model=None)
+    async def twenty_webhook(request: Request) -> Response:
         """Handle admin actions from Twenty CRM via webhooks."""
-        import hashlib
-
-        from sastaspace.admin import (
-            delete_site_db_record,
-            delete_site_files,
-            get_original_url_from_db,
-            verify_webhook_signature,
-        )
-        from sastaspace.twenty_sync import get_twenty_client
-
         if not settings.twenty_webhook_secret:
             return Response(status_code=404)
 
@@ -544,28 +542,25 @@ def make_app(sites_dir: Path) -> FastAPI:
 
     # ---- Admin endpoints ----
 
-    @app.get("/admin/sites")
-    async def admin_list_sites(request: Request):
+    @app.get("/admin/sites", response_model=None)
+    async def admin_list_sites(request: Request) -> JSONResponse | Response:
         """List all deployed sites for Twenty reconciliation."""
         auth = request.headers.get("Authorization", "")
         if not settings.twenty_admin_key or auth != f"Bearer {settings.twenty_admin_key}":
             return Response(status_code=401)
         sites = await list_sites(limit=1000)
-        return {"sites": sites}
+        return JSONResponse(content={"sites": sites})
 
-    @app.get("/admin/sync")
-    async def admin_sync(request: Request):
+    @app.get("/admin/sync", response_model=None)
+    async def admin_sync(request: Request) -> JSONResponse | Response:
         """Reconcile missed push events — sync recent jobs to Twenty."""
         auth = request.headers.get("Authorization", "")
         if not settings.twenty_admin_key or auth != f"Bearer {settings.twenty_admin_key}":
             return Response(status_code=401)
 
-        from sastaspace.twenty_sync import NoopTwentyClient, get_twenty_client
-        from sastaspace.urls import extract_domain
-
         twenty = get_twenty_client(settings.twenty_url, settings.twenty_api_key)
         if isinstance(twenty, NoopTwentyClient):
-            return {"synced": 0, "message": "Twenty integration disabled"}
+            return JSONResponse(content={"synced": 0, "message": "Twenty integration disabled"})
 
         # Get recent completed/failed jobs from last 24h
         recent_jobs = await list_jobs(limit=100, status="done")
@@ -591,14 +586,12 @@ def make_app(sites_dir: Path) -> FastAPI:
                         subdomain=job.get("subdomain", ""),
                     )
                     synced += 1
-            except Exception as e:
+            except (ValueError, KeyError, TypeError, OSError) as e:
                 logger.warning("Sync failed for job %s: %s", job_id, e)
                 errors += 1
 
         # Update totalRedesigns aggregate counts on companies
         # (avoids TOCTOU race in real-time push — this is the authoritative count)
-        from sastaspace.database import _get_db
-
         db = _get_db()
         pipeline = [
             {"$group": {"_id": "$original_url", "count": {"$sum": 1}}},
@@ -610,7 +603,9 @@ def make_app(sites_dir: Path) -> FastAPI:
                 if company:
                     await twenty.upsert_company(domain, totalRedesigns=doc["count"])
 
-        return {"synced": synced, "already_exists": already_exists, "errors": errors}
+        return JSONResponse(
+            content={"synced": synced, "already_exists": already_exists, "errors": errors}
+        )
 
     # ---- Existing routes ----
 
@@ -624,19 +619,20 @@ def make_app(sites_dir: Path) -> FastAPI:
             except (json.JSONDecodeError, OSError):
                 registry = []
 
-        rows = ""
+        row_parts: list[str] = []
         for entry in sorted(registry, key=lambda e: e.get("timestamp", ""), reverse=True):
             sub = entry["subdomain"]
             orig = entry.get("original_url", "")
             orig_escaped = html.escape(orig, quote=True)
             ts = entry.get("timestamp", "")[:19].replace("T", " ")
-            rows += (
+            row_parts.append(
                 f"<tr>"
                 f"<td><a href='/{sub}/'>{sub}</a></td>"
                 f"<td><a href='{orig_escaped}' target='_blank'>{orig_escaped}</a></td>"
                 f"<td>{ts}</td>"
                 f"</tr>"
             )
+        rows = "".join(row_parts)
 
         if not rows:
             body = (
@@ -673,7 +669,7 @@ def make_app(sites_dir: Path) -> FastAPI:
 </body>
 </html>"""
 
-    @app.get("/{subdomain}/")
+    @app.get("/{subdomain}/", response_class=HTMLResponse)
     async def serve_site(subdomain: str) -> Response:
         resolved_root = sites_dir.resolve()
         index_path = (sites_dir / subdomain / "index.html").resolve()
@@ -686,7 +682,7 @@ def make_app(sites_dir: Path) -> FastAPI:
             )
         return FileResponse(str(index_path), media_type="text/html")
 
-    @app.get("/{subdomain}/{path:path}")
+    @app.get("/{subdomain}/{path:path}", response_class=HTMLResponse)
     async def serve_site_asset(subdomain: str, path: str) -> Response:
         resolved_root = sites_dir.resolve()
         asset_path = (sites_dir / subdomain / path).resolve()

@@ -8,6 +8,13 @@ import tempfile
 import zlib
 from pathlib import Path
 
+from sastaspace.asset_validator import (
+    sanitize_svg,
+    validate_asset,
+    validate_image_integrity,
+    validate_mime_type,
+)
+
 # ---------------------------------------------------------------------------
 # Helpers to create minimal valid PNG files
 # ---------------------------------------------------------------------------
@@ -50,7 +57,6 @@ def _write_tmp(data: bytes, suffix: str = ".png") -> Path:
 
 class TestValidateMimeType:
     def test_valid_png_magic_bytes(self):
-        from sastaspace.asset_validator import validate_mime_type
 
         path = _write_tmp(_make_png_bytes(), suffix=".png")
         try:
@@ -61,7 +67,6 @@ class TestValidateMimeType:
             path.unlink(missing_ok=True)
 
     def test_reject_text_file(self):
-        from sastaspace.asset_validator import validate_mime_type
 
         path = _write_tmp(b"Hello, I am plain text", suffix=".png")
         try:
@@ -72,7 +77,6 @@ class TestValidateMimeType:
             path.unlink(missing_ok=True)
 
     def test_reject_empty_file(self):
-        from sastaspace.asset_validator import validate_mime_type
 
         path = _write_tmp(b"", suffix=".png")
         try:
@@ -89,7 +93,6 @@ class TestValidateMimeType:
 
 class TestValidateImageIntegrity:
     def test_valid_png_via_pillow(self):
-        from sastaspace.asset_validator import validate_image_integrity
 
         path = _write_tmp(_make_png_bytes(), suffix=".png")
         try:
@@ -98,7 +101,6 @@ class TestValidateImageIntegrity:
             path.unlink(missing_ok=True)
 
     def test_corrupt_image(self):
-        from sastaspace.asset_validator import validate_image_integrity
 
         # PNG signature followed by garbage
         path = _write_tmp(b"\x89PNG\r\n\x1a\n" + b"\x00" * 50, suffix=".png")
@@ -115,7 +117,6 @@ class TestValidateImageIntegrity:
 
 class TestSanitizeSvg:
     def test_strips_script_tag(self):
-        from sastaspace.asset_validator import sanitize_svg
 
         svg = '<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script><rect/></svg>'
         result = sanitize_svg(svg)
@@ -123,7 +124,6 @@ class TestSanitizeSvg:
         assert "<rect" in result.lower()
 
     def test_strips_event_handlers(self):
-        from sastaspace.asset_validator import sanitize_svg
 
         svg = '<svg xmlns="http://www.w3.org/2000/svg"><rect onclick="alert(1)" width="10"/></svg>'
         result = sanitize_svg(svg)
@@ -131,7 +131,6 @@ class TestSanitizeSvg:
         assert "<rect" in result.lower()
 
     def test_strips_foreign_object(self):
-        from sastaspace.asset_validator import sanitize_svg
 
         svg = (
             '<svg xmlns="http://www.w3.org/2000/svg">'
@@ -151,7 +150,6 @@ class TestSanitizeSvg:
 
 class TestValidateAsset:
     def test_full_chain_valid_png(self):
-        from sastaspace.asset_validator import validate_asset
 
         path = _write_tmp(_make_png_bytes(), suffix=".png")
         try:
@@ -160,7 +158,6 @@ class TestValidateAsset:
             path.unlink(missing_ok=True)
 
     def test_oversized_file_rejected(self):
-        from sastaspace.asset_validator import validate_asset
 
         path = _write_tmp(_make_png_bytes(), suffix=".png")
         try:
@@ -170,7 +167,6 @@ class TestValidateAsset:
             path.unlink(missing_ok=True)
 
     def test_text_file_rejected_by_mime(self):
-        from sastaspace.asset_validator import validate_asset
 
         path = _write_tmp(b"not an image at all", suffix=".png")
         try:

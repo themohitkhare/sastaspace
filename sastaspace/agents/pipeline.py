@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 import re
 import time
 from collections.abc import Callable
@@ -42,11 +43,16 @@ from sastaspace.agents.prompts import (
     HTML_GENERATOR_SYSTEM,
     HTML_GENERATOR_USER_TEMPLATE,
     HTML_GENERATOR_USER_TEMPLATE_WITH_FEEDBACK,
+    NORMALIZER_SYSTEM,
+    NORMALIZER_USER_TEMPLATE,
     QUALITY_REVIEWER_SYSTEM,
     QUALITY_REVIEWER_USER_TEMPLATE,
 )
 from sastaspace.config import Settings
 from sastaspace.crawler import CrawlResult
+from sastaspace.html_utils import RedesignError
+from sastaspace.html_utils import clean_html as _clean_html
+from sastaspace.html_utils import validate_html as _validate_html
 
 logger = logging.getLogger(__name__)
 
@@ -125,8 +131,6 @@ def _run_agent(
     model: OpenAILike,
 ) -> str:
     """Run a single agent and return the response content string."""
-    from sastaspace.html_utils import RedesignError
-
     start = time.monotonic()
     status = "success"
     input_tokens = 0
@@ -210,7 +214,7 @@ def _run_agent(
         )
 
         return content
-    except Exception as exc:
+    except Exception as exc:  # noqa: pycodegate[no-broad-exception] — re-raises after logging
         status = "error"
         duration = time.monotonic() - start
         logger.error(
@@ -229,8 +233,6 @@ def _run_crawl_analyst(
     crawl_result: CrawlResult, settings: Settings, tier: str = "premium"
 ) -> SiteAnalysis:
     """Run the CrawlAnalyst agent to produce a SiteAnalysis."""
-    from sastaspace.html_utils import RedesignError
-
     use_ollama = tier == "free"
     model_id = settings.free_crawl_analyst_model if use_ollama else settings.crawl_analyst_model
     model = _create_model(model_id, settings, use_ollama=use_ollama)
@@ -269,8 +271,6 @@ def _run_design_strategist(
     tier: str = "premium",
 ) -> DesignBrief:
     """Run the DesignStrategist agent to produce a DesignBrief."""
-    from sastaspace.html_utils import RedesignError
-
     use_ollama = tier == "free"
     model_id = (
         settings.free_design_strategist_model if use_ollama else settings.design_strategist_model
@@ -352,11 +352,9 @@ def _run_copywriter(
 
 def _prefilter_catalog(catalog_json: str, site_analysis: SiteAnalysis) -> str:
     """Pre-filter the component catalog based on site type to reduce context size."""
-    import json as _json
-
     try:
-        catalog = _json.loads(catalog_json)
-    except _json.JSONDecodeError:
+        catalog = json.loads(catalog_json)
+    except json.JSONDecodeError:
         return catalog_json
 
     # Determine relevant categories based on site analysis
@@ -385,7 +383,7 @@ def _prefilter_catalog(catalog_json: str, site_analysis: SiteAnalysis) -> str:
     relevant.update({"backgrounds", "announcements"})
 
     filtered = {k: v for k, v in catalog.items() if k in relevant}
-    return _json.dumps(filtered, indent=1)
+    return json.dumps(filtered, indent=1)
 
 
 def _run_component_selector(
@@ -395,8 +393,6 @@ def _run_component_selector(
     tier: str = "premium",
 ) -> ComponentSelection:
     """Run the ComponentSelector agent to pick the best UI components."""
-    import os
-
     use_ollama = tier == "free"
     model_id = (
         settings.free_component_selector_model if use_ollama else settings.design_strategist_model
@@ -458,8 +454,6 @@ def _run_component_selector(
 
 def _load_component_source(file_path: str) -> str:
     """Load the source code from a component JSON file."""
-    import os
-
     full_path = os.path.join(os.path.dirname(__file__), "..", "..", "components", file_path)
     try:
         with open(full_path) as f:
@@ -485,9 +479,6 @@ def _run_html_generator(
     tier: str = "premium",
 ) -> str:
     """Run the HTMLGenerator agent to produce HTML."""
-    from sastaspace.html_utils import clean_html as _clean_html
-    from sastaspace.html_utils import validate_html as _validate_html
-
     use_ollama = tier == "free"
     model_id = settings.free_html_generator_model if use_ollama else settings.html_generator_model
     model = _create_model(model_id, settings, use_ollama=use_ollama)
@@ -626,11 +617,6 @@ def _run_normalizer(
     1. ANF "Normalize" — unify typography, colors, spacing from assembled components
     2. Premium Psychology — engineer the halo effect, reduce cognitive load, add micro-interactions
     """
-    from sastaspace.agents.prompts import NORMALIZER_SYSTEM, NORMALIZER_USER_TEMPLATE
-    from sastaspace.html_utils import RedesignError
-    from sastaspace.html_utils import clean_html as _clean_html
-    from sastaspace.html_utils import validate_html as _validate_html
-
     use_ollama = tier == "free"
     model_id = settings.free_html_generator_model if use_ollama else settings.html_generator_model
     model = _create_model(model_id, settings, use_ollama=use_ollama)
@@ -718,7 +704,6 @@ def run_redesign_pipeline(
     Raises:
         RedesignError: If the pipeline fails.
     """
-    from sastaspace.html_utils import RedesignError
 
     def _emit(agent_name: str) -> None:
         if progress_callback is None:
@@ -733,7 +718,7 @@ def run_redesign_pipeline(
                     "step_progress": meta["step_progress"],
                 },
             )
-        except Exception:
+        except Exception:  # noqa: pycodegate[no-broad-exception]
             pass  # never let UI callback crash the pipeline
 
     def _checkpoint(step_name: str, accumulated: dict) -> None:
@@ -742,7 +727,7 @@ def run_redesign_pipeline(
             return
         try:
             checkpoint_callback(step_name, {"completed_step": step_name, "data": accumulated})
-        except Exception:
+        except Exception:  # noqa: pycodegate[no-broad-exception]
             pass  # never crash the pipeline over a checkpoint save
 
     if crawl_result.error:
@@ -891,7 +876,7 @@ def run_redesign_pipeline(
     except RedesignError:
         status = "failure"
         raise
-    except Exception as exc:
+    except Exception as exc:  # noqa: pycodegate[no-broad-exception] — top-level pipeline handler
         status = "failure"
         raise RedesignError(f"Agno pipeline failed: {exc}") from exc
     finally:

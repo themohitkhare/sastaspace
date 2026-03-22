@@ -15,12 +15,15 @@ from pathlib import Path
 from urllib.parse import urljoin, urlparse, urlunparse
 
 from bs4 import BeautifulSoup
-from openai import OpenAI
+from openai import OpenAI, OpenAIError
+from playwright.async_api import Error as PlaywrightError
 from playwright.async_api import async_playwright
 
-logger = logging.getLogger(__name__)
+from sastaspace.asset_downloader import AssetManifest, download_and_validate_assets
+from sastaspace.business_profiler import build_business_profile
+from sastaspace.models import EnhancedCrawlResult, PageCrawlResult
 
-# Lazy imports inside enhanced_crawl() to avoid circular import with business_profiler
+logger = logging.getLogger(__name__)
 
 _USER_AGENT = (
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
@@ -91,7 +94,7 @@ def _ensure_chromium() -> None:
                 [sys.executable, "-m", "playwright", "install", "chromium"],
                 check=True,
             )
-    except Exception:
+    except (OSError, subprocess.SubprocessError):
         pass
 
 
@@ -364,7 +367,7 @@ async def _crawl_page(page, url: str) -> CrawlResult:
         """)
             or []
         )
-    except Exception:
+    except (PlaywrightError, ValueError, TypeError):
         colors, fonts = [], []
 
     return CrawlResult(
@@ -404,7 +407,7 @@ async def crawl(url: str, browserless_url: str | None = None) -> CrawlResult:
         async with _browser_context(browserless_url=browserless_url) as (_browser, _ctx, page):
             return await _crawl_page(page, url)
 
-    except Exception as exc:
+    except (PlaywrightError, OSError, TimeoutError) as exc:
         empty.error = str(exc)
         return empty
 
@@ -414,8 +417,6 @@ async def crawl(url: str, browserless_url: str | None = None) -> CrawlResult:
 
 async def _crawl_internal_page(page, url: str):
     """Lightweight crawl for an internal page. No screenshot."""
-    from sastaspace.models import PageCrawlResult
-
     try:
         await page.goto(url, wait_until="networkidle", timeout=30000)
 
@@ -474,7 +475,7 @@ async def _crawl_internal_page(page, url: str):
             testimonials=testimonials,
         )
 
-    except Exception as exc:
+    except (PlaywrightError, OSError, TimeoutError) as exc:
         return PageCrawlResult(url=url, error=str(exc))
 
 
@@ -530,7 +531,8 @@ def _llm_select_pages(links: list[dict], api_url: str, model: str, api_key: str)
 
         return urls[:3]
 
-    except Exception:
+    except (OpenAIError, json.JSONDecodeError, ValueError, KeyError) as exc:
+        logger.debug("LLM page selection failed, using first 3: %s", exc)
         return urls[:3]
 
 
@@ -539,10 +541,6 @@ def _llm_select_pages(links: list[dict], api_url: str, model: str, api_key: str)
 
 async def enhanced_crawl(url: str, settings):
     """Crawl homepage + up to 3 internal pages, download assets, build business profile."""
-    from sastaspace.asset_downloader import download_and_validate_assets
-    from sastaspace.business_profiler import build_business_profile
-    from sastaspace.models import EnhancedCrawlResult, PageCrawlResult
-
     _raw = getattr(settings, "browserless_url", None)
     browserless_url = _raw if isinstance(_raw, str) else None
     if not browserless_url:
@@ -583,7 +581,7 @@ async def enhanced_crawl(url: str, settings):
                         await internal_page.close()
                 except TimeoutError:
                     return PageCrawlResult(url=link_url, error="Timeout after 30s")
-                except Exception as e:
+                except (PlaywrightError, OSError) as e:
                     return PageCrawlResult(url=link_url, error=str(e))
 
             internal_pages = list(
@@ -617,10 +615,8 @@ async def enhanced_crawl(url: str, settings):
                 assets = await download_and_validate_assets(
                     asset_url_strings, tmp_dir, skip_clamav=True
                 )
-            except Exception:
-                logger.warning("Asset download failed, continuing without assets", exc_info=True)
-                from sastaspace.asset_downloader import AssetManifest
-
+            except (TimeoutError, OSError, ConnectionError) as exc:
+                logger.warning("Asset download failed, continuing without assets: %s", exc)
                 assets = AssetManifest(assets=[], total_size_bytes=0)
 
             # 7. Build business profile via LLM (sync call via to_thread)
@@ -640,7 +636,7 @@ async def enhanced_crawl(url: str, settings):
                 business_profile=business_profile,
             )
 
-    except Exception as exc:
+    except (PlaywrightError, OSError, TimeoutError, OpenAIError) as exc:
         # Return a minimal result with homepage error
         empty_homepage = CrawlResult(
             url=url,

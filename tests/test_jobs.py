@@ -6,7 +6,9 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from sastaspace.database import JobStatus
+from sastaspace.crawler import CrawlResult
+from sastaspace.database import JobStatus, create_job, get_job, update_job
+from sastaspace.deployer import DeployResult
 from sastaspace.jobs import (
     STATUS_CHANNEL,
     STREAM_KEY,
@@ -30,8 +32,6 @@ _ENHANCED_KWARGS = {"pages_crawled", "assets_count", "assets_total_size", "busin
 
 async def _update_job_compat(job_id, **kwargs):
     """Wrapper around real update_job that strips not-yet-added kwargs."""
-    from sastaspace.database import update_job
-
     filtered = {k: v for k, v in kwargs.items() if k not in _ENHANCED_KWARGS}
     await update_job(job_id, **filtered)
 
@@ -74,8 +74,6 @@ async def test_enqueue_creates_job(job_service, mock_redis):
 
 async def test_enqueue_with_premium_tier(job_service, mock_redis):
     """enqueue() stores the tier correctly."""
-    from sastaspace.database import get_job
-
     job_id = await job_service.enqueue(
         url="https://example.com", client_ip="1.2.3.4", tier="premium"
     )
@@ -101,9 +99,6 @@ async def test_publish_status(job_service, mock_redis):
 
 async def test_redesign_handler_crawl_failure(job_service):
     """redesign_handler handles crawl failure gracefully."""
-    from sastaspace.crawler import CrawlResult
-    from sastaspace.database import create_job, get_job
-
     job_id = "handler-test-1"
     await create_job(job_id=job_id, url="https://bad.com", client_ip="1.1.1.1")
 
@@ -119,7 +114,7 @@ async def test_redesign_handler_crawl_failure(job_service):
 
     enhanced_mock = _mock_enhanced(failed_crawl)
     with patch(
-        "sastaspace.crawler.enhanced_crawl",
+        "sastaspace.jobs.enhanced_crawl",
         create=True,
         new_callable=AsyncMock,
         return_value=enhanced_mock,
@@ -133,10 +128,6 @@ async def test_redesign_handler_crawl_failure(job_service):
 
 async def test_redesign_handler_success(job_service, tmp_path):
     """redesign_handler completes full pipeline."""
-    from sastaspace.crawler import CrawlResult
-    from sastaspace.database import create_job, get_job
-    from sastaspace.deployer import DeployResult
-
     job_id = "handler-test-2"
     await create_job(job_id=job_id, url="https://example.com", client_ip="1.1.1.1")
 
@@ -168,7 +159,7 @@ async def test_redesign_handler_success(job_service, tmp_path):
     enhanced_mock = _mock_enhanced(crawl_result)
     with (
         patch(
-            "sastaspace.crawler.enhanced_crawl",
+            "sastaspace.jobs.enhanced_crawl",
             create=True,
             new_callable=AsyncMock,
             return_value=enhanced_mock,
@@ -177,8 +168,8 @@ async def test_redesign_handler_success(job_service, tmp_path):
             "sastaspace.jobs.update_job",
             side_effect=_update_job_compat,
         ),
-        patch("sastaspace.redesigner.run_redesign", return_value=mock_html),
-        patch("sastaspace.deployer.deploy", return_value=deploy_result),
+        patch("sastaspace.jobs.run_redesign", return_value=mock_html),
+        patch("sastaspace.jobs.deploy", return_value=deploy_result),
     ):
         await redesign_handler(job_id, "https://example.com", "free", job_service)
 
@@ -190,10 +181,6 @@ async def test_redesign_handler_success(job_service, tmp_path):
 
 async def test_redesign_handler_premium_tier(job_service, tmp_path):
     """redesign_handler uses redesign_premium for premium tier."""
-    from sastaspace.crawler import CrawlResult
-    from sastaspace.database import create_job
-    from sastaspace.deployer import DeployResult
-
     job_id = "handler-test-3"
     await create_job(job_id=job_id, url="https://example.com", client_ip="1.1.1.1", tier="premium")
 
@@ -218,7 +205,7 @@ async def test_redesign_handler_premium_tier(job_service, tmp_path):
     enhanced_mock = _mock_enhanced(crawl_result)
     with (
         patch(
-            "sastaspace.crawler.enhanced_crawl",
+            "sastaspace.jobs.enhanced_crawl",
             create=True,
             new_callable=AsyncMock,
             return_value=enhanced_mock,
@@ -228,10 +215,10 @@ async def test_redesign_handler_premium_tier(job_service, tmp_path):
             side_effect=_update_job_compat,
         ),
         patch(
-            "sastaspace.redesigner.run_redesign",
+            "sastaspace.jobs.run_redesign",
             return_value=mock_html,
         ) as mock_run,
-        patch("sastaspace.deployer.deploy", return_value=deploy_result),
+        patch("sastaspace.jobs.deploy", return_value=deploy_result),
     ):
         await redesign_handler(job_id, "https://example.com", "premium", job_service)
 

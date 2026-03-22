@@ -6,14 +6,16 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from sastaspace.agents.pipeline import AGENT_MESSAGES, run_redesign_pipeline
+from sastaspace.config import Settings
 from sastaspace.crawler import CrawlResult
+from sastaspace.database import create_job, update_job
+from sastaspace.deployer import DeployResult
+from sastaspace.jobs import JobService, redesign_handler
 
 
 @pytest.fixture
 def job_service():
     """Create a JobService with mocked Redis for callback tests."""
-    from sastaspace.jobs import JobService
-
     service = JobService(redis_url="redis://localhost:6379")
     redis = AsyncMock()
     redis.xgroup_create = AsyncMock()
@@ -63,8 +65,6 @@ def test_progress_callback_called_for_each_agent():
         ),
         patch("sastaspace.agents.pipeline._run_normalizer", return_value=mock_html),
     ):
-        from sastaspace.config import Settings
-
         result = run_redesign_pipeline(_crawl(), Settings(), progress_callback=callback)
 
     assert isinstance(result, str)
@@ -101,8 +101,6 @@ def test_progress_callback_none_is_safe():
         ),
         patch("sastaspace.agents.pipeline._run_normalizer", return_value=mock_html),
     ):
-        from sastaspace.config import Settings
-
         result = run_redesign_pipeline(_crawl(), Settings(), progress_callback=None)
     assert result == mock_html
 
@@ -122,18 +120,12 @@ _ENHANCED_KWARGS = {"pages_crawled", "assets_count", "assets_total_size", "busin
 
 async def _update_job_compat(job_id, **kwargs):
     """Wrapper around real update_job that strips not-yet-added kwargs."""
-    from sastaspace.database import update_job
-
     filtered = {k: v for k, v in kwargs.items() if k not in _ENHANCED_KWARGS}
     await update_job(job_id, **filtered)
 
 
 async def test_redesign_handler_passes_progress_callback(job_service, tmp_path):
     """redesign_handler passes a progress_callback to agno_redesign."""
-    from sastaspace.crawler import CrawlResult
-    from sastaspace.database import create_job
-    from sastaspace.deployer import DeployResult
-
     job_id = "callback-wiring-test"
     await create_job(job_id=job_id, url="https://example.com", client_ip="1.1.1.1")
 
@@ -163,21 +155,19 @@ async def test_redesign_handler_passes_progress_callback(job_service, tmp_path):
 
     with (
         patch(
-            "sastaspace.crawler.enhanced_crawl",
+            "sastaspace.jobs.enhanced_crawl",
             create=True,
             new_callable=AsyncMock,
             return_value=enhanced_mock,
         ),
         patch("sastaspace.jobs.update_job", side_effect=_update_job_compat),
         patch(
-            "sastaspace.redesigner.run_redesign",
+            "sastaspace.jobs.run_redesign",
             return_value=mock_html,
         ) as mock_run,
-        patch("sastaspace.deployer.deploy", return_value=deploy_result),
-        patch("sastaspace.config.Settings.use_agno_pipeline", new=True, create=True),
+        patch("sastaspace.jobs.deploy", return_value=deploy_result),
+        patch("sastaspace.jobs.Settings.use_agno_pipeline", new=True, create=True),
     ):
-        from sastaspace.jobs import redesign_handler
-
         await redesign_handler(job_id, "https://example.com", "free", job_service)
 
     # run_redesign should have been called
@@ -186,12 +176,6 @@ async def test_redesign_handler_passes_progress_callback(job_service, tmp_path):
 
 async def test_redesign_handler_emits_discovery(job_service, tmp_path):
     """redesign_handler emits discovery event with real crawl data."""
-    from unittest.mock import AsyncMock, patch
-
-    from sastaspace.crawler import CrawlResult
-    from sastaspace.database import create_job
-    from sastaspace.deployer import DeployResult
-
     job_id = "discovery-test-1"
     await create_job(job_id=job_id, url="https://example.com", client_ip="1.1.1.1")
 
@@ -231,17 +215,15 @@ async def test_redesign_handler_emits_discovery(job_service, tmp_path):
     enhanced_mock = _mock_enhanced(crawl_result)
     with (
         patch(
-            "sastaspace.crawler.enhanced_crawl",
+            "sastaspace.jobs.enhanced_crawl",
             create=True,
             new_callable=AsyncMock,
             return_value=enhanced_mock,
         ),
         patch("sastaspace.jobs.update_job", side_effect=_update_job_compat),
-        patch("sastaspace.redesigner.run_redesign", return_value=mock_html),
-        patch("sastaspace.deployer.deploy", return_value=deploy_result),
+        patch("sastaspace.jobs.run_redesign", return_value=mock_html),
+        patch("sastaspace.jobs.deploy", return_value=deploy_result),
     ):
-        from sastaspace.jobs import redesign_handler
-
         await redesign_handler(job_id, "https://example.com", "free", job_service)
 
     assert len(discovery_events) == 1
@@ -252,12 +234,6 @@ async def test_redesign_handler_emits_discovery(job_service, tmp_path):
 
 async def test_redesign_handler_emits_screenshot(job_service, tmp_path):
     """Emits screenshot event when screenshot is present and not too large."""
-    from unittest.mock import AsyncMock, patch
-
-    from sastaspace.crawler import CrawlResult
-    from sastaspace.database import create_job
-    from sastaspace.deployer import DeployResult
-
     job_id = "screenshot-test-1"
     await create_job(job_id=job_id, url="https://example.com", client_ip="1.1.1.1")
 
@@ -297,17 +273,15 @@ async def test_redesign_handler_emits_screenshot(job_service, tmp_path):
     enhanced_mock = _mock_enhanced(crawl_result)
     with (
         patch(
-            "sastaspace.crawler.enhanced_crawl",
+            "sastaspace.jobs.enhanced_crawl",
             create=True,
             new_callable=AsyncMock,
             return_value=enhanced_mock,
         ),
         patch("sastaspace.jobs.update_job", side_effect=_update_job_compat),
-        patch("sastaspace.redesigner.run_redesign", return_value=mock_html),
-        patch("sastaspace.deployer.deploy", return_value=deploy_result),
+        patch("sastaspace.jobs.run_redesign", return_value=mock_html),
+        patch("sastaspace.jobs.deploy", return_value=deploy_result),
     ):
-        from sastaspace.jobs import redesign_handler
-
         await redesign_handler(job_id, "https://example.com", "free", job_service)
 
     assert len(screenshot_events) == 1
@@ -316,12 +290,6 @@ async def test_redesign_handler_emits_screenshot(job_service, tmp_path):
 
 async def test_redesign_handler_skips_large_screenshot(job_service, tmp_path):
     """Does not emit screenshot if base64 exceeds 500KB."""
-    from unittest.mock import AsyncMock, patch
-
-    from sastaspace.crawler import CrawlResult
-    from sastaspace.database import create_job
-    from sastaspace.deployer import DeployResult
-
     job_id = "screenshot-test-2"
     await create_job(job_id=job_id, url="https://example.com", client_ip="1.1.1.1")
 
@@ -361,17 +329,15 @@ async def test_redesign_handler_skips_large_screenshot(job_service, tmp_path):
     enhanced_mock = _mock_enhanced(crawl_result)
     with (
         patch(
-            "sastaspace.crawler.enhanced_crawl",
+            "sastaspace.jobs.enhanced_crawl",
             create=True,
             new_callable=AsyncMock,
             return_value=enhanced_mock,
         ),
         patch("sastaspace.jobs.update_job", side_effect=_update_job_compat),
-        patch("sastaspace.redesigner.run_redesign", return_value=mock_html),
-        patch("sastaspace.deployer.deploy", return_value=deploy_result),
+        patch("sastaspace.jobs.run_redesign", return_value=mock_html),
+        patch("sastaspace.jobs.deploy", return_value=deploy_result),
     ):
-        from sastaspace.jobs import redesign_handler
-
         await redesign_handler(job_id, "https://example.com", "free", job_service)
 
     assert len(screenshot_events) == 0  # skipped — too large

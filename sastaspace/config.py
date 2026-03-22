@@ -1,4 +1,5 @@
 # sastaspace/config.py
+import os
 from pathlib import Path
 
 from pydantic import field_validator
@@ -15,8 +16,6 @@ class Settings(BaseSettings):
     @field_validator("sites_dir", mode="before")
     @classmethod
     def resolve_sites_dir(cls, v):
-        import os
-
         # SASTASPACE_SITES_DIR takes precedence (used by Docker/server.py)
         env_val = os.environ.get("SASTASPACE_SITES_DIR")
         if env_val:

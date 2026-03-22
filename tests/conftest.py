@@ -7,6 +7,7 @@ from mongomock_motor import AsyncMongoMockClient
 import sastaspace.database as db_module
 from sastaspace.crawler import CrawlResult
 from sastaspace.deployer import DeployResult
+from sastaspace.server import make_app
 
 
 @pytest.fixture(autouse=True)
@@ -68,8 +69,6 @@ def mock_deploy_result(tmp_sites):
 @pytest.fixture
 def test_client(tmp_sites):
     """TestClient with a fresh app bound to tmp_sites."""
-    from sastaspace.server import make_app
-
     app = make_app(tmp_sites)
     return TestClient(app)
 
@@ -94,8 +93,6 @@ def redesign_client(tmp_sites, mock_crawl_result, mock_deploy_result):
             return_value=mock_deploy_result,
         ) as m_deploy,
     ):
-        from sastaspace.server import make_app
-
         app = make_app(tmp_sites)
         client = TestClient(app)
         client._mock_crawl = m_crawl

@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import asyncio
+import os
 import shutil
 import subprocess
 import sys
@@ -14,6 +15,7 @@ from rich.panel import Panel
 from rich.progress import Progress, SpinnerColumn, TextColumn
 from rich.table import Table
 
+from sastaspace.config import Settings
 from sastaspace.crawler import crawl
 from sastaspace.deployer import deploy, load_registry, save_registry
 from sastaspace.redesigner import RedesignError, redesign
@@ -29,6 +31,50 @@ def main() -> None:
     """SastaSpace — AI Website Redesigner"""
 
 
+def _crawl_site(url: str, progress: Progress, task) -> object:
+    """Run the crawler and return result, handling errors with Rich panels."""
+    try:
+        crawl_result = asyncio.run(crawl(url))
+    except (OSError, ConnectionError, TimeoutError) as e:
+        progress.stop()
+        console.print(Panel(f"[red]Crawl failed:[/red] {e}", title="Error"))
+        raise SystemExit(1)
+
+    if crawl_result.error:
+        progress.stop()
+        console.print(
+            Panel(
+                f"[red]Could not crawl {url}[/red]\n\n{crawl_result.error}\n\n"
+                "Is the site accessible?",
+                title="Crawl Error",
+            )
+        )
+        raise SystemExit(1)
+
+    progress.update(task, description=f"Crawled [bold]{crawl_result.title or url}[/bold] ✓")
+    return crawl_result
+
+
+def _redesign_site(crawl_result, cfg, progress: Progress, task) -> str:
+    """Run the redesigner and return HTML, handling errors with Rich panels."""
+    progress.update(task, description="Redesigning with Claude AI (this takes ~30s)...")
+    try:
+        return redesign(crawl_result, api_url=cfg.claude_code_api_url, model=cfg.claude_model)
+    except RedesignError as e:
+        progress.stop()
+        console.print(Panel(f"[red]Redesign failed:[/red] {e}", title="Error"))
+        raise SystemExit(1)
+    except (ConnectionError, TimeoutError, OSError) as e:
+        progress.stop()
+        console.print(
+            Panel(
+                f"[red]Claude API error:[/red] {e}\n\nCheck your ANTHROPIC_API_KEY in .env",
+                title="API Error",
+            )
+        )
+        raise SystemExit(1)
+
+
 @main.command("redesign")
 @click.argument("url")
 @click.option("-s", "--subdomain", default=None, help="Custom subdomain slug")
@@ -37,7 +83,6 @@ def main() -> None:
 def redesign_cmd(url: str, subdomain: str | None, no_open: bool, sites_dir: str | None) -> None:
     """Crawl, redesign, and deploy a website. Opens a local preview."""
     sites = Path(sites_dir) if sites_dir else DEFAULT_SITES_DIR
-
     cfg = _load_config()
 
     with Progress(
@@ -46,44 +91,9 @@ def redesign_cmd(url: str, subdomain: str | None, no_open: bool, sites_dir: str 
         console=console,
     ) as progress:
         task = progress.add_task("Crawling website...", total=None)
+        crawl_result = _crawl_site(url, progress, task)
 
-        try:
-            crawl_result = asyncio.run(crawl(url))
-        except Exception as e:
-            progress.stop()
-            console.print(Panel(f"[red]Crawl failed:[/red] {e}", title="Error"))
-            raise SystemExit(1)
-
-        if crawl_result.error:
-            progress.stop()
-            console.print(
-                Panel(
-                    f"[red]Could not crawl {url}[/red]\n\n{crawl_result.error}\n\n"
-                    "Is the site accessible?",
-                    title="Crawl Error",
-                )
-            )
-            raise SystemExit(1)
-
-        progress.update(task, description=f"Crawled [bold]{crawl_result.title or url}[/bold] ✓")
-
-        progress.update(task, description="Redesigning with Claude AI (this takes ~30s)...")
-        try:
-            html = redesign(crawl_result, api_url=cfg.claude_code_api_url, model=cfg.claude_model)
-        except RedesignError as e:
-            progress.stop()
-            console.print(Panel(f"[red]Redesign failed:[/red] {e}", title="Error"))
-            raise SystemExit(1)
-        except Exception as e:
-            progress.stop()
-            console.print(
-                Panel(
-                    f"[red]Claude API error:[/red] {e}\n\nCheck your ANTHROPIC_API_KEY in .env",
-                    title="API Error",
-                )
-            )
-            raise SystemExit(1)
-
+        html = _redesign_site(crawl_result, cfg, progress, task)
         progress.update(task, description="Redesign complete ✓")
 
         progress.update(task, description="Deploying to local preview...")
@@ -181,8 +191,6 @@ def serve_cmd(sites_dir: str | None) -> None:
     sites.mkdir(parents=True, exist_ok=True)
     cfg = _load_config()
 
-    import os
-
     env = {**os.environ, "SASTASPACE_SITES_DIR": str(sites.resolve())}
 
     console.print(f"Starting preview server at [bold]http://localhost:{cfg.server_port}[/bold]")
@@ -205,6 +213,4 @@ def serve_cmd(sites_dir: str | None) -> None:
 
 
 def _load_config():
-    from sastaspace.config import Settings
-
     return Settings()

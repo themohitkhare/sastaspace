@@ -162,6 +162,32 @@ def is_stock_photo(url: str) -> bool:
 # ---------------------------------------------------------------------------
 
 
+def _resolve_unique_filename(slug: str, seen_filenames: dict[str, int]) -> str:
+    """Resolve filename collisions by appending a counter suffix."""
+    if slug in seen_filenames:
+        seen_filenames[slug] += 1
+        stem_dot = slug.rfind(".")
+        if stem_dot > 0:
+            return f"{slug[:stem_dot]}-{seen_filenames[slug]}{slug[stem_dot:]}"
+        return f"{slug}-{seen_filenames[slug]}"
+    seen_filenames[slug] = 1
+    return slug
+
+
+async def _stream_response(resp: aiohttp.ClientResponse, url: str) -> bytes | None:
+    """Stream response body with size limit enforcement."""
+    data = bytearray()
+    while True:
+        chunk = await resp.content.read(8192)
+        if not chunk:
+            break
+        data += chunk
+        if len(data) > MAX_FILE_BYTES:
+            logger.info("File %s exceeds 5MB limit, skipping", url)
+            return None
+    return bytes(data) if data else None
+
+
 async def _download_one(
     session: aiohttp.ClientSession,
     url: str,
@@ -181,49 +207,23 @@ async def _download_one(
                     return None
 
                 content_type = resp.headers.get("Content-Type", "").split(";")[0].strip()
-
-                # Derive filename from URL path
                 url_path = urlparse(url).path
                 raw_name = Path(url_path).name or "asset"
-                slug = slugify_filename(raw_name)
+                slug = _resolve_unique_filename(slugify_filename(raw_name), seen_filenames)
 
-                # Handle filename collisions
-                if slug in seen_filenames:
-                    seen_filenames[slug] += 1
-                    stem_dot = slug.rfind(".")
-                    if stem_dot > 0:
-                        slug = f"{slug[:stem_dot]}-{seen_filenames[slug]}{slug[stem_dot:]}"
-                    else:
-                        slug = f"{slug}-{seen_filenames[slug]}"
-                else:
-                    seen_filenames[slug] = 1
+                data = await _stream_response(resp, url)
+                if data is None:
+                    return None
 
                 file_path = tmp_dir / slug
-                data = bytearray()
-
-                while True:
-                    chunk = await resp.content.read(8192)
-                    if not chunk:
-                        break
-                    data += chunk
-                    if len(data) > MAX_FILE_BYTES:
-                        logger.info("File %s exceeds 5MB limit, skipping", url)
-                        return None
-
-                total_bytes = len(data)
-                if total_bytes > 0:
-                    await asyncio.to_thread(file_path.write_bytes, bytes(data))
-
-                if total_bytes == 0:
-                    file_path.unlink(missing_ok=True)
-                    return None
+                await asyncio.to_thread(file_path.write_bytes, data)
 
                 return DownloadedAsset(
                     original_url=url,
                     local_path=f"assets/{slug}",
                     content_type=content_type,
-                    size_bytes=total_bytes,
-                    file_hash="",  # filled after download
+                    size_bytes=len(data),
+                    file_hash="",
                     source_page="",
                     tmp_path=file_path,
                 )
@@ -231,7 +231,7 @@ async def _download_one(
         except TimeoutError:
             logger.info("Timeout downloading %s", url)
             return None
-        except Exception:
+        except (aiohttp.ClientError, OSError):
             logger.info("Failed to download %s", url, exc_info=True)
             return None
 
@@ -282,7 +282,15 @@ async def download_and_validate_assets(
         ]
         results = await asyncio.gather(*tasks, return_exceptions=True)
 
-    # Process results: validate and deduplicate by content hash
+    return _validate_and_deduplicate(results, skip_clamav, max_site_bytes)
+
+
+def _validate_and_deduplicate(
+    results: list[DownloadedAsset | BaseException | None],
+    skip_clamav: bool,
+    max_site_bytes: int,
+) -> AssetManifest:
+    """Validate downloaded assets, deduplicate by content hash, and enforce size budget."""
     content_hashes: dict[str, DownloadedAsset] = {}
     validated_assets: list[DownloadedAsset] = []
     total_size = 0
@@ -297,21 +305,17 @@ async def download_and_validate_assets(
         if not tmp_path.exists():
             continue
 
-        # Compute content hash for dedup
         h = file_hash(tmp_path)
         asset.file_hash = h
 
         if h in content_hashes:
-            # Duplicate content — discard this copy
             tmp_path.unlink(missing_ok=True)
             continue
 
-        # Check site-wide size budget
         if total_size + asset.size_bytes > max_site_bytes:
             tmp_path.unlink(missing_ok=True)
             continue
 
-        # Validate asset
         if not validate_asset(tmp_path, skip_clamav=skip_clamav):
             tmp_path.unlink(missing_ok=True)
             continue

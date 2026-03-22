@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from enum import StrEnum
 
@@ -95,57 +96,74 @@ async def create_job(
 _SENTINEL = object()
 
 
+@dataclass
+class JobUpdate:
+    status: str | None = None
+    progress: int | None = None
+    message: str | None = None
+    error: str | None = None
+    subdomain: str | None = None
+    html_path: str | None = None
+    site_colors: list[str] | None = None
+    site_title: str | None = None
+    checkpoint: dict | None | object = field(default_factory=lambda: _SENTINEL)
+    pages_crawled: int | None = None
+    assets_count: int | None = None
+    assets_total_size: int | None = None
+    business_profile: dict | None = None
+
+
+def _job_update_to_dict(updates: JobUpdate) -> dict:
+    """Convert a JobUpdate dataclass to a MongoDB $set dict, skipping unset fields."""
+    result: dict = {}
+    simple_fields = [
+        "status",
+        "progress",
+        "message",
+        "error",
+        "subdomain",
+        "html_path",
+        "site_colors",
+        "site_title",
+        "pages_crawled",
+        "assets_count",
+        "assets_total_size",
+        "business_profile",
+    ]
+    for f in simple_fields:
+        val = getattr(updates, f)
+        if val is not None:
+            result[f] = val
+    if updates.checkpoint is not _SENTINEL:
+        result["checkpoint"] = updates.checkpoint
+    return result
+
+
 async def update_job(
     job_id: str,
     *,
-    status: str | None = None,
-    progress: int | None = None,
-    message: str | None = None,
-    error: str | None = None,
-    subdomain: str | None = None,
-    html_path: str | None = None,
-    site_colors: list[str] | None = None,
-    site_title: str | None = None,
-    checkpoint: dict | None | object = _SENTINEL,
-    pages_crawled: int | None = None,
-    assets_count: int | None = None,
-    assets_total_size: int | None = None,
-    business_profile: dict | None = None,
+    updates: JobUpdate | None = None,
+    **kwargs: str | int | None,
 ) -> None:
-    """Update fields on a job record."""
+    """Update fields on a job record.
+
+    For simple updates, pass keyword arguments directly.
+    For updates with many fields, pass a JobUpdate instance.
+    """
     now = datetime.now(UTC).isoformat()
-    updates: dict = {"updated_at": now}
+    mongo_updates: dict = {"updated_at": now}
 
-    if status is not None:
-        updates["status"] = status
-    if progress is not None:
-        updates["progress"] = progress
-    if message is not None:
-        updates["message"] = message
-    if error is not None:
-        updates["error"] = error
-    if subdomain is not None:
-        updates["subdomain"] = subdomain
-    if html_path is not None:
-        updates["html_path"] = html_path
-    if site_colors is not None:
-        updates["site_colors"] = site_colors
-    if site_title is not None:
-        updates["site_title"] = site_title
-    if checkpoint is not _SENTINEL:
-        updates["checkpoint"] = checkpoint
-    if pages_crawled is not None:
-        updates["pages_crawled"] = pages_crawled
-    if assets_count is not None:
-        updates["assets_count"] = assets_count
-    if assets_total_size is not None:
-        updates["assets_total_size"] = assets_total_size
-    if business_profile is not None:
-        updates["business_profile"] = business_profile
-    if status in (JobStatus.DONE.value, JobStatus.FAILED.value):
-        updates["completed_at"] = now
+    if updates is not None:
+        mongo_updates.update(_job_update_to_dict(updates))
+    for key, val in kwargs.items():
+        if val is not None:
+            mongo_updates[key] = val
 
-    await _get_db()["jobs"].update_one({"_id": job_id}, {"$set": updates})
+    resolved_status = mongo_updates.get("status")
+    if resolved_status in (JobStatus.DONE.value, JobStatus.FAILED.value):
+        mongo_updates["completed_at"] = now
+
+    await _get_db()["jobs"].update_one({"_id": job_id}, {"$set": mongo_updates})
 
 
 async def get_job(job_id: str) -> dict | None:

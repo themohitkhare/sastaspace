@@ -7,7 +7,7 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from sastaspace.twenty_sync import TwentyClient
+from sastaspace.twenty_sync import NoopTwentyClient, TwentyClient, get_twenty_client
 
 
 @pytest.fixture
@@ -84,23 +84,17 @@ class TestCreatePerson:
 class TestFeatureFlag:
     @pytest.mark.asyncio
     async def test_noop_client_does_nothing(self):
-        from sastaspace.twenty_sync import NoopTwentyClient
-
         client = NoopTwentyClient()
         result = await client.upsert_company("example.com", name="Test")
         assert result is None
 
     @pytest.mark.asyncio
     async def test_get_client_returns_noop_when_disabled(self):
-        from sastaspace.twenty_sync import NoopTwentyClient, get_twenty_client
-
         client = get_twenty_client(twenty_url="", twenty_api_key="")
         assert isinstance(client, NoopTwentyClient)
 
     @pytest.mark.asyncio
     async def test_get_client_returns_real_when_configured(self):
-        from sastaspace.twenty_sync import get_twenty_client
-
         client = get_twenty_client(twenty_url="http://twenty:3000/rest", twenty_api_key="key")
         assert isinstance(client, TwentyClient)
 

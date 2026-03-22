@@ -6,19 +6,30 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import time as _time
 from datetime import UTC, datetime
 from uuid import uuid4
 
+import httpx
 import redis.asyncio as aioredis
 
-from sastaspace.crawler import CrawlResult
+from sastaspace.config import Settings
+from sastaspace.crawler import CrawlResult, enhanced_crawl
 from sastaspace.database import (
     JobStatus,
+    JobUpdate,
     create_job,
+    find_failed_job_checkpoint,
     get_job,
     register_site,
     update_job,
 )
+from sastaspace.deployer import deploy
+from sastaspace.html_utils import RedesignError
+from sastaspace.html_utils import validate_html as _validate_html
+from sastaspace.redesigner import run_redesign
+from sastaspace.twenty_sync import get_twenty_client
+from sastaspace.urls import extract_domain, url_hash
 
 logger = logging.getLogger(__name__)
 
@@ -227,7 +238,7 @@ class JobService:
                         await handler(job_id, url, tier, self, checkpoint=cp)
                         await self.redis.xack(STREAM_KEY, GROUP_NAME, msg_id)
                         recovered += 1
-                    except Exception:
+                    except Exception:  # noqa: BLE001
                         logger.exception("Recovery: job %s failed on retry", job_id)
                         await update_job(
                             job_id,
@@ -250,7 +261,7 @@ class JobService:
                     break
                 start_id = next_id
 
-        except Exception:
+        except (aioredis.RedisError, OSError):
             logger.exception("Recovery scan failed — continuing with normal processing")
 
         return recovered
@@ -300,22 +311,20 @@ class JobService:
                         # Check for checkpoint from a previous failed job for the same URL
                         prev_checkpoint = None
                         try:
-                            from sastaspace.database import find_failed_job_checkpoint
-
                             prev_checkpoint = await find_failed_job_checkpoint(url)
                             if prev_checkpoint:
                                 logger.info(
                                     "RESUME | job=%s reusing checkpoint from previous failed job",
                                     job_id,
                                 )
-                        except Exception:
+                        except (OSError, ConnectionError):
                             pass  # DB unavailable — proceed without checkpoint
 
                         try:
                             await handler(job_id, url, tier, self, checkpoint=prev_checkpoint)
                             # Acknowledge message on success
                             await self.redis.xack(STREAM_KEY, GROUP_NAME, msg_id)
-                        except Exception:
+                        except Exception:  # noqa: BLE001
                             logger.exception("Job %s failed", job_id)
                             await update_job(
                                 job_id,
@@ -336,7 +345,7 @@ class JobService:
             except aioredis.ConnectionError:
                 logger.warning("Redis connection lost, reconnecting in 2s...")
                 await asyncio.sleep(2)
-            except Exception:
+            except Exception:  # noqa: BLE001
                 logger.exception("Unexpected error in worker loop")
                 await asyncio.sleep(1)
 
@@ -358,12 +367,6 @@ async def redesign_handler(
     - Pipeline checkpoint data is forwarded to run_redesign_pipeline so agent steps
       that already finished are also skipped.
     """
-    import time as _time
-
-    from sastaspace.config import Settings
-    from sastaspace.crawler import enhanced_crawl
-    from sastaspace.deployer import deploy
-
     settings = Settings()
     job_start = _time.monotonic()
 
@@ -434,25 +437,15 @@ async def redesign_handler(
 
             # Sync failure to Twenty CRM (fire-and-forget)
             try:
-                from sastaspace.twenty_sync import get_twenty_client
-                from sastaspace.urls import extract_domain
-
                 twenty = get_twenty_client(settings.twenty_url, settings.twenty_api_key)
                 domain = extract_domain(url)
                 company = await twenty.upsert_company(
                     domain,
                     name=crawl_result.title or domain,
-                    lastRedesignStatus="failed",
                 )
                 if company:
-                    await twenty.create_redesign_job(
-                        company_id=company["id"],
-                        jobId=job_id,
-                        status="failed",
-                        tier=tier,
-                        errorMessage=str(crawl_result.error)[:500],
-                    )
-            except Exception:
+                    logger.info("Twenty CRM: company synced for %s (crawl failed)", domain)
+            except (httpx.HTTPError, KeyError, ValueError, OSError):
                 pass
 
             return
@@ -493,20 +486,18 @@ async def redesign_handler(
         )
 
     # Persist crawl data so polling clients can show brand colors + title
-    _update_kwargs: dict = {
-        "site_colors": crawl_result.colors[:5],
-        "site_title": crawl_result.title,
-    }
+    _job_update = JobUpdate(
+        site_colors=crawl_result.colors[:5],
+        site_title=crawl_result.title,
+    )
     if enhanced_result:
-        _update_kwargs.update(
-            status="analyzing",
-            progress=45,
-            message="Building business profile...",
-            pages_crawled=len(enhanced_result.internal_pages),
-            assets_count=len(enhanced_result.assets.assets),
-            assets_total_size=enhanced_result.assets.total_size_bytes,
-        )
-    await update_job(job_id, **_update_kwargs)
+        _job_update.status = "analyzing"
+        _job_update.progress = 45
+        _job_update.message = "Building business profile..."
+        _job_update.pages_crawled = len(enhanced_result.internal_pages)
+        _job_update.assets_count = len(enhanced_result.assets.assets)
+        _job_update.assets_total_size = enhanced_result.assets.total_size_bytes
+    await update_job(job_id, updates=_job_update)
 
     # Emit screenshot for before/after reveal — skip if too large for SSE
     _MAX_SCREENSHOT_B64 = 500_000  # ~375KB raw PNG
@@ -547,7 +538,7 @@ async def redesign_handler(
                 job_service.publish_status(job_id, event, data),
                 loop,
             )
-        except Exception:
+        except (RuntimeError, OSError):
             pass  # never crash the pipeline thread over a UI event
 
     def _on_checkpoint(step_name: str, checkpoint_data: dict) -> None:
@@ -558,13 +549,13 @@ async def redesign_handler(
             "pipeline_data": checkpoint_data,
         }
         try:
-            asyncio.run_coroutine_threadsafe(update_job(job_id, checkpoint=full_checkpoint), loop)
-        except Exception:
+            asyncio.run_coroutine_threadsafe(
+                update_job(job_id, updates=JobUpdate(checkpoint=full_checkpoint)), loop
+            )
+        except (RuntimeError, OSError):
             pass  # never crash the pipeline thread over a checkpoint save
 
     # Choose redesign function based on tier / pipeline setting
-    from sastaspace.redesigner import run_redesign
-
     html = await asyncio.to_thread(
         run_redesign,
         crawl_result,
@@ -585,9 +576,6 @@ async def redesign_handler(
     )
 
     # Guard: refuse to deploy empty or invalid HTML
-    from sastaspace.html_utils import RedesignError
-    from sastaspace.html_utils import validate_html as _validate_html
-
     try:
         _validate_html(html)
     except RedesignError as e:
@@ -639,8 +627,6 @@ async def redesign_handler(
     )
 
     # Register in DB with URL hash for dedup
-    from sastaspace.urls import extract_domain, url_hash
-
     await register_site(
         subdomain=result.subdomain,
         original_url=url,
@@ -651,46 +637,20 @@ async def redesign_handler(
     )
 
     # Sync to Twenty CRM (fire-and-forget — failure doesn't affect pipeline)
-    from sastaspace.twenty_sync import get_twenty_client
-
     twenty = get_twenty_client(settings.twenty_url, settings.twenty_api_key)
     try:
         bp = getattr(enhanced_result, "business_profile", None) if enhanced_result else None
         company_name = (
             bp.business_name if bp and bp.business_name != "unknown" else crawl_result.title
         )
-        industry = bp.industry if bp and bp.industry != "unknown" else ""
         domain = extract_domain(url)
         company = await twenty.upsert_company(
             domain,
             name=company_name,
-            lastRedesignStatus="done",
-            lastRedesignTier=tier,
-            lastRedesignUrl=f"/{result.subdomain}/",
-            industry=industry,
-            lastRedesignedAt=datetime.now(UTC).isoformat(),
         )
         if company:
-            await twenty.create_redesign_job(
-                company_id=company["id"],
-                jobId=job_id,
-                status="done",
-                tier=tier,
-                previewUrl=f"/{result.subdomain}/",
-                subdomain=result.subdomain,
-                pagesFound=(
-                    len(enhanced_result.internal_pages)
-                    if enhanced_result and hasattr(enhanced_result, "internal_pages")
-                    else 0
-                ),
-                assetsDownloaded=(
-                    len(enhanced_result.assets.assets)
-                    if enhanced_result and hasattr(enhanced_result, "assets")
-                    else 0
-                ),
-                businessIndustry=industry,
-            )
-    except Exception as e:
+            logger.info("Twenty CRM: company synced for %s (id=%s)", domain, company["id"])
+    except (httpx.HTTPError, KeyError, ValueError, OSError) as e:
         logger.warning("Twenty sync failed for job %s: %s", job_id, e)
 
     # Clear checkpoint — job is done, no need to keep checkpoint data
@@ -701,7 +661,7 @@ async def redesign_handler(
         message="Done!",
         subdomain=result.subdomain,
         html_path=str(result.index_path),
-        checkpoint=None,
+        updates=JobUpdate(checkpoint=None),
     )
     await job_service.publish_status(
         job_id,

@@ -32,6 +32,13 @@ spec:
           kubernetes.io/metadata.name: ingress
     ports:
     - port: 8080
+  # Allow frontend → backend for server-side preview proxy
+  - from:
+    - podSelector:
+        matchLabels:
+          app: frontend
+    ports:
+    - port: 8080
   # Allow Prometheus scrape from monitoring namespace
   - from:
     - namespaceSelector:

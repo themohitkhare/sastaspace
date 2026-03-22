@@ -14,28 +14,15 @@ from sastaspace.jobs import JobService, redesign_handler
 logger = logging.getLogger("sastaspace.worker")
 
 
-async def main():
-    settings = Settings()
-    max_retries = 5
-    retry_delay = 2
-
-    logger.info(
-        "Worker initializing | pid=%d redis=%s mongodb=%s/%s agno=%s",
-        os.getpid(),
-        settings.redis_url,
-        settings.mongodb_url,
-        settings.mongodb_db,
-        settings.use_agno_pipeline,
-    )
-
-    # Connect MongoDB (required — crash if unavailable)
+async def _connect_mongodb(settings: Settings, max_retries: int, retry_delay: int) -> None:
+    """Connect to MongoDB with retries."""
     set_mongo_url(settings.mongodb_url, settings.mongodb_db)
     for attempt in range(1, max_retries + 1):
         try:
             await init_db()
             logger.info("MongoDB connected")
-            break
-        except Exception:
+            return
+        except (ConnectionError, OSError, TimeoutError):
             if attempt == max_retries:
                 logger.error(
                     "MongoDB unavailable after %d attempts — refusing to start", max_retries
@@ -49,14 +36,16 @@ async def main():
             )
             await asyncio.sleep(retry_delay)
 
-    # Connect Redis (required — crash if unavailable)
+
+async def _connect_redis(settings: Settings, max_retries: int, retry_delay: int) -> JobService:
+    """Connect to Redis with retries and return the JobService."""
     for attempt in range(1, max_retries + 1):
         try:
             svc = JobService(redis_url=settings.redis_url)
             await svc.connect()
             logger.info("Redis connected, starting job consumer loop...")
-            break
-        except Exception:
+            return svc
+        except (ConnectionError, OSError, TimeoutError):
             if attempt == max_retries:
                 logger.error("Redis unavailable after %d attempts — refusing to start", max_retries)
                 raise
@@ -64,6 +53,22 @@ async def main():
                 "Redis attempt %d/%d failed, retrying in %ds...", attempt, max_retries, retry_delay
             )
             await asyncio.sleep(retry_delay)
+    raise RuntimeError("Unreachable")
+
+
+async def main():
+    settings = Settings()
+    logger.info(
+        "Worker initializing | pid=%d redis=%s mongodb=%s/%s agno=%s",
+        os.getpid(),
+        settings.redis_url,
+        settings.mongodb_url,
+        settings.mongodb_db,
+        settings.use_agno_pipeline,
+    )
+
+    await _connect_mongodb(settings, max_retries=5, retry_delay=2)
+    svc = await _connect_redis(settings, max_retries=5, retry_delay=2)
 
     try:
         await svc.process_messages(
@@ -72,7 +77,7 @@ async def main():
         )
     except KeyboardInterrupt:
         logger.info("Worker shutting down (KeyboardInterrupt)")
-    except Exception:
+    except Exception:  # noqa: pycodegate[no-broad-exception] — top-level worker crash handler
         logger.exception("Worker crashed")
         raise
     finally:

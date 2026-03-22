@@ -5,6 +5,8 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
+from sastaspace.database import JobUpdate, update_job
+
 
 @pytest.mark.asyncio
 async def test_update_job_accepts_site_colors_and_title():
@@ -14,13 +16,13 @@ async def test_update_job_accepts_site_colors_and_title():
         mock_db.return_value.__getitem__ = lambda self, key: mock_collection
         mock_collection.update_one = AsyncMock()
 
-        from sastaspace.database import update_job
-
         # Should not raise
         await update_job(
             "job-123",
-            site_colors=["#ff0000", "#00ff00"],
-            site_title="Test Site",
+            updates=JobUpdate(
+                site_colors=["#ff0000", "#00ff00"],
+                site_title="Test Site",
+            ),
         )
 
         # update_one was called with the new fields
@@ -37,8 +39,6 @@ async def test_update_job_site_fields_optional():
         mock_collection = AsyncMock()
         mock_db.return_value.__getitem__ = lambda self, key: mock_collection
         mock_collection.update_one = AsyncMock()
-
-        from sastaspace.database import update_job
 
         await update_job("job-123", status="crawling")
 

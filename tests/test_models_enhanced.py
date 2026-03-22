@@ -1,6 +1,8 @@
 # tests/test_models_enhanced.py
 """Tests for enhanced crawl pipeline data models."""
 
+from dataclasses import dataclass
+
 from sastaspace.models import (
     AssetManifest,
     BusinessProfile,
@@ -172,8 +174,6 @@ def test_business_profile_minimal_to_prompt_context():
 
 
 def _make_fake_homepage():
-    from dataclasses import dataclass
-
     @dataclass
     class FakeHomepage:
         def to_prompt_context(self) -> str:

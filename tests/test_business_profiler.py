@@ -85,7 +85,7 @@ class TestBuildBusinessProfile:
 
     @patch("sastaspace.business_profiler._call_llm")
     def test_fallback_on_llm_failure(self, mock_llm):
-        mock_llm.side_effect = Exception("API down")
+        mock_llm.side_effect = ValueError("API down")
         homepage = _make_homepage()
         result = build_business_profile(homepage, [], api_url="http://x", model="m", api_key="k")
         assert result.business_name == "Acme Corp"

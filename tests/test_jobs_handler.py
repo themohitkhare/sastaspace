@@ -120,21 +120,21 @@ class TestRedesignHandlerHappyPath:
         dr = _make_deploy_result()
 
         with (
-            patch("sastaspace.config.Settings", return_value=_settings_mock()),
+            patch("sastaspace.jobs.Settings", return_value=_settings_mock()),
             patch(
-                "sastaspace.crawler.enhanced_crawl",
+                "sastaspace.jobs.enhanced_crawl",
                 create=True,
                 new_callable=AsyncMock,
                 return_value=er,
             ),
             patch("sastaspace.jobs.update_job", new_callable=AsyncMock) as mock_update,
             patch(
-                "sastaspace.redesigner.run_redesign",
+                "sastaspace.jobs.run_redesign",
                 return_value="<!DOCTYPE html><html><head></head><body>test</body></html>",
             ) as _mock_rr,
-            patch("sastaspace.deployer.deploy", return_value=dr),
+            patch("sastaspace.jobs.deploy", return_value=dr),
             patch("sastaspace.jobs.register_site", new_callable=AsyncMock),
-            patch("sastaspace.urls.url_hash", return_value="fakehash"),
+            patch("sastaspace.jobs.url_hash", return_value="fakehash"),
         ):
             await redesign_handler("job-1", "https://example.com", "premium", job_service)
 
@@ -156,21 +156,21 @@ class TestRedesignHandlerHappyPath:
         dr = _make_deploy_result()
 
         with (
-            patch("sastaspace.config.Settings", return_value=_settings_mock()),
+            patch("sastaspace.jobs.Settings", return_value=_settings_mock()),
             patch(
-                "sastaspace.crawler.enhanced_crawl",
+                "sastaspace.jobs.enhanced_crawl",
                 create=True,
                 new_callable=AsyncMock,
                 return_value=er,
             ),
             patch("sastaspace.jobs.update_job", new_callable=AsyncMock) as mock_update,
             patch(
-                "sastaspace.redesigner.run_redesign",
+                "sastaspace.jobs.run_redesign",
                 return_value="<!DOCTYPE html><html><head></head><body>test</body></html>",
             ),
-            patch("sastaspace.deployer.deploy", return_value=dr),
+            patch("sastaspace.jobs.deploy", return_value=dr),
             patch("sastaspace.jobs.register_site", new_callable=AsyncMock),
-            patch("sastaspace.urls.url_hash", return_value="fakehash"),
+            patch("sastaspace.jobs.url_hash", return_value="fakehash"),
         ):
             await redesign_handler("job-1", "https://example.com", "premium", job_service)
 
@@ -185,21 +185,21 @@ class TestRedesignHandlerHappyPath:
         dr = _make_deploy_result()
 
         with (
-            patch("sastaspace.config.Settings", return_value=_settings_mock()),
+            patch("sastaspace.jobs.Settings", return_value=_settings_mock()),
             patch(
-                "sastaspace.crawler.enhanced_crawl",
+                "sastaspace.jobs.enhanced_crawl",
                 create=True,
                 new_callable=AsyncMock,
                 return_value=er,
             ),
             patch("sastaspace.jobs.update_job", new_callable=AsyncMock),
             patch(
-                "sastaspace.redesigner.run_redesign",
+                "sastaspace.jobs.run_redesign",
                 return_value="<!DOCTYPE html><html><head></head><body>test</body></html>",
             ),
-            patch("sastaspace.deployer.deploy", return_value=dr),
+            patch("sastaspace.jobs.deploy", return_value=dr),
             patch("sastaspace.jobs.register_site", new_callable=AsyncMock),
-            patch("sastaspace.urls.url_hash", return_value="fakehash"),
+            patch("sastaspace.jobs.url_hash", return_value="fakehash"),
         ):
             await redesign_handler("job-1", "https://example.com", "premium", job_service)
 
@@ -231,16 +231,16 @@ class TestRedesignHandlerCheckpoint:
         dr = _make_deploy_result()
 
         with (
-            patch("sastaspace.config.Settings", return_value=_settings_mock()),
-            patch("sastaspace.crawler.enhanced_crawl", mock_crawl, create=True),
+            patch("sastaspace.jobs.Settings", return_value=_settings_mock()),
+            patch("sastaspace.jobs.enhanced_crawl", mock_crawl, create=True),
             patch("sastaspace.jobs.update_job", new_callable=AsyncMock),
             patch(
-                "sastaspace.redesigner.run_redesign",
+                "sastaspace.jobs.run_redesign",
                 return_value="<!DOCTYPE html><html><head></head><body>test</body></html>",
             ),
-            patch("sastaspace.deployer.deploy", return_value=dr),
+            patch("sastaspace.jobs.deploy", return_value=dr),
             patch("sastaspace.jobs.register_site", new_callable=AsyncMock),
-            patch("sastaspace.urls.url_hash", return_value="fakehash"),
+            patch("sastaspace.jobs.url_hash", return_value="fakehash"),
         ):
             await redesign_handler(
                 "job-cp", "https://example.com", "premium", job_service, checkpoint=checkpoint
@@ -264,16 +264,16 @@ class TestRedesignHandlerCheckpoint:
         dr = _make_deploy_result()
 
         with (
-            patch("sastaspace.config.Settings", return_value=_settings_mock()),
-            patch("sastaspace.crawler.enhanced_crawl", mock_crawl, create=True),
+            patch("sastaspace.jobs.Settings", return_value=_settings_mock()),
+            patch("sastaspace.jobs.enhanced_crawl", mock_crawl, create=True),
             patch("sastaspace.jobs.update_job", new_callable=AsyncMock),
             patch(
-                "sastaspace.redesigner.run_redesign",
+                "sastaspace.jobs.run_redesign",
                 return_value="<!DOCTYPE html><html><head></head><body>test</body></html>",
             ),
-            patch("sastaspace.deployer.deploy", return_value=dr),
+            patch("sastaspace.jobs.deploy", return_value=dr),
             patch("sastaspace.jobs.register_site", new_callable=AsyncMock),
-            patch("sastaspace.urls.url_hash", return_value="fakehash"),
+            patch("sastaspace.jobs.url_hash", return_value="fakehash"),
         ):
             await redesign_handler(
                 "job-cp2", "https://example.com", "premium", job_service, checkpoint=checkpoint
@@ -296,9 +296,9 @@ class TestRedesignHandlerCrawlFailure:
         bad_er = _make_enhanced_result(bad_cr)
 
         with (
-            patch("sastaspace.config.Settings", return_value=_settings_mock()),
+            patch("sastaspace.jobs.Settings", return_value=_settings_mock()),
             patch(
-                "sastaspace.crawler.enhanced_crawl",
+                "sastaspace.jobs.enhanced_crawl",
                 create=True,
                 new_callable=AsyncMock,
                 return_value=bad_er,
@@ -328,15 +328,15 @@ class TestRedesignHandlerCrawlFailure:
         mock_deploy = MagicMock()
 
         with (
-            patch("sastaspace.config.Settings", return_value=_settings_mock()),
+            patch("sastaspace.jobs.Settings", return_value=_settings_mock()),
             patch(
-                "sastaspace.crawler.enhanced_crawl",
+                "sastaspace.jobs.enhanced_crawl",
                 create=True,
                 new_callable=AsyncMock,
                 return_value=bad_er,
             ),
             patch("sastaspace.jobs.update_job", new_callable=AsyncMock),
-            patch("sastaspace.deployer.deploy", mock_deploy),
+            patch("sastaspace.jobs.deploy", mock_deploy),
         ):
             await redesign_handler("job-fail2", "https://bad.example.com", "free", job_service)
 

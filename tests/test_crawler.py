@@ -136,7 +136,7 @@ async def test_crawl_handles_timeout_error():
         mock_pw.return_value.__aenter__ = AsyncMock(return_value=mock_pw.return_value)
         mock_pw.return_value.__aexit__ = AsyncMock(return_value=False)
         mock_pw.return_value.chromium.launch = AsyncMock(
-            side_effect=Exception("Timeout connecting to browser")
+            side_effect=OSError("Timeout connecting to browser")
         )
 
         result = await crawl("https://acme.com")
@@ -327,7 +327,7 @@ def test_ensure_chromium_skips_install_when_ok():
 
 def test_ensure_chromium_handles_exception():
     """Lines 28-29: _ensure_chromium swallows exceptions."""
-    with patch("sastaspace.crawler.subprocess.run", side_effect=Exception("oops")):
+    with patch("sastaspace.crawler.subprocess.run", side_effect=OSError("oops")):
         _ensure_chromium()  # Should not raise
 
 
@@ -375,7 +375,7 @@ async def test_crawl_handles_evaluate_exception():
 
     async def evaluate_side_effect(js):
         call_count["n"] += 1
-        raise Exception("evaluate failed")
+        raise ValueError("evaluate failed")
 
     mock_page.evaluate = evaluate_side_effect
 

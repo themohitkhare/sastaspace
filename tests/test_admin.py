@@ -10,11 +10,11 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
+from sastaspace.admin import delete_site_files, get_original_url_from_db, verify_webhook_signature
+
 
 class TestWebhookVerification:
     def test_valid_signature_passes(self):
-        from sastaspace.admin import verify_webhook_signature
-
         hmac_key = "test-hmac-value"
         body = b'{"event":"redesignJob.updated"}'
         # Twenty sends timestamps in milliseconds
@@ -24,14 +24,10 @@ class TestWebhookVerification:
         assert verify_webhook_signature(body, sig, timestamp, hmac_key) is True
 
     def test_invalid_signature_fails(self):
-        from sastaspace.admin import verify_webhook_signature
-
         ts = str(int(time.time() * 1000))
         assert verify_webhook_signature(b"body", "badsig", ts, "some-value") is False
 
     def test_expired_timestamp_fails(self):
-        from sastaspace.admin import verify_webhook_signature
-
         # 10 min ago in milliseconds
         old_timestamp = str(int((time.time() - 600) * 1000))
         body = b"body"
@@ -43,8 +39,6 @@ class TestWebhookVerification:
 class TestDeleteSiteFiles:
     @pytest.mark.asyncio
     async def test_deletes_site_directory(self, tmp_path):
-        from sastaspace.admin import delete_site_files
-
         site_dir = tmp_path / "sites" / "test-site"
         site_dir.mkdir(parents=True)
         (site_dir / "index.html").write_text("<html></html>")
@@ -58,8 +52,6 @@ class TestDeleteSiteFiles:
 
     @pytest.mark.asyncio
     async def test_noop_on_missing_site(self, tmp_path):
-        from sastaspace.admin import delete_site_files
-
         # Should not raise
         await delete_site_files("nonexistent", sites_dir=tmp_path / "sites")
 
@@ -67,8 +59,6 @@ class TestDeleteSiteFiles:
 class TestGetOriginalUrl:
     @pytest.mark.asyncio
     async def test_returns_url_from_db(self):
-        from sastaspace.admin import get_original_url_from_db
-
         with patch("sastaspace.admin.find_site_by_subdomain", new_callable=AsyncMock) as mock:
             mock.return_value = {"original_url": "https://example.com"}
             url = await get_original_url_from_db("example-com")
@@ -76,8 +66,6 @@ class TestGetOriginalUrl:
 
     @pytest.mark.asyncio
     async def test_returns_none_when_not_found(self):
-        from sastaspace.admin import get_original_url_from_db
-
         with patch("sastaspace.admin.find_site_by_subdomain", new_callable=AsyncMock) as mock:
             mock.return_value = None
             url = await get_original_url_from_db("nonexistent")

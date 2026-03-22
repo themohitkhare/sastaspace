@@ -342,7 +342,7 @@ class TestCrawlInternalPage:
     @pytest.mark.asyncio
     async def test_handles_exception(self):
         page = AsyncMock()
-        page.goto = AsyncMock(side_effect=Exception("Connection refused"))
+        page.goto = AsyncMock(side_effect=OSError("Connection refused"))
         page.url = "https://example.com/broken"
         result = await _crawl_internal_page(page, "https://example.com/broken")
         assert "Connection refused" in result.error
@@ -417,7 +417,7 @@ class TestLlmSelectPages:
     def test_fallback_on_llm_error(self, mock_openai_cls):
         mock_client = MagicMock()
         mock_openai_cls.return_value = mock_client
-        mock_client.chat.completions.create.side_effect = Exception("API error")
+        mock_client.chat.completions.create.side_effect = ValueError("API error")
 
         links = [
             {"url": "https://example.com/about", "text": "About"},
@@ -507,13 +507,11 @@ class TestEnhancedCrawl:
             patch("sastaspace.crawler.async_playwright") as mock_pw,
             patch("sastaspace.crawler._llm_select_pages", return_value=[]),
             patch(
-                "sastaspace.asset_downloader.download_and_validate_assets",
+                "sastaspace.crawler.download_and_validate_assets",
                 new_callable=AsyncMock,
             ) as mock_download,
-            patch("sastaspace.business_profiler.build_business_profile") as mock_profile,
+            patch("sastaspace.crawler.build_business_profile") as mock_profile,
         ):
-            from sastaspace.models import AssetManifest, BusinessProfile
-
             mock_download.return_value = AssetManifest()
             mock_profile.return_value = BusinessProfile(business_name="Example Corp")
 
@@ -544,7 +542,7 @@ class TestEnhancedCrawl:
             mock_browser = AsyncMock()
             mock_context = AsyncMock()
             mock_page = AsyncMock()
-            mock_page.goto = AsyncMock(side_effect=Exception("Timeout"))
+            mock_page.goto = AsyncMock(side_effect=OSError("Timeout"))
             mock_pw.return_value.__aenter__ = AsyncMock(return_value=mock_pw.return_value)
             mock_pw.return_value.__aexit__ = AsyncMock(return_value=False)
             mock_pw.return_value.chromium.launch = AsyncMock(return_value=mock_browser)
@@ -600,13 +598,11 @@ class TestEnhancedCrawl:
                 return_value=["https://example.com/about"],
             ),
             patch(
-                "sastaspace.asset_downloader.download_and_validate_assets",
+                "sastaspace.crawler.download_and_validate_assets",
                 new_callable=AsyncMock,
             ) as mock_download,
-            patch("sastaspace.business_profiler.build_business_profile") as mock_profile,
+            patch("sastaspace.crawler.build_business_profile") as mock_profile,
         ):
-            from sastaspace.models import AssetManifest, BusinessProfile
-
             mock_download.return_value = AssetManifest()
             mock_profile.return_value = BusinessProfile(business_name="Test")
 
@@ -634,9 +630,7 @@ class TestEnhancedCrawl:
         with patch("sastaspace.crawler.async_playwright") as mock_pw:
             mock_pw.return_value.__aenter__ = AsyncMock(return_value=mock_pw.return_value)
             mock_pw.return_value.__aexit__ = AsyncMock(return_value=False)
-            mock_pw.return_value.chromium.launch = AsyncMock(
-                side_effect=Exception("Browser crashed")
-            )
+            mock_pw.return_value.chromium.launch = AsyncMock(side_effect=OSError("Browser crashed"))
 
             result = await enhanced_crawl("https://example.com", settings)
 
@@ -670,10 +664,10 @@ class TestEnhancedCrawl:
             patch("sastaspace.crawler._filter_noise_links", return_value=[]),
             patch("sastaspace.crawler._llm_select_pages", return_value=[]),
             patch(
-                "sastaspace.asset_downloader.download_and_validate_assets",
+                "sastaspace.crawler.download_and_validate_assets",
                 new_callable=AsyncMock,
             ) as mock_download,
-            patch("sastaspace.business_profiler.build_business_profile") as mock_profile,
+            patch("sastaspace.crawler.build_business_profile") as mock_profile,
         ):
             mock_download.return_value = AssetManifest(assets=[], total_size_bytes=0)
             mock_profile.return_value = BusinessProfile(business_name="Test")

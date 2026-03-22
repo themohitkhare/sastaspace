@@ -36,7 +36,7 @@ def normalize_url(raw: str) -> str:
 
     try:
         parsed = urlparse(raw)
-    except Exception:
+    except (ValueError, TypeError):
         return raw
 
     # Normalize hostname
@@ -104,7 +104,7 @@ def is_valid_url(raw: str) -> tuple[bool, str]:
 
     try:
         parsed = urlparse(url)
-    except Exception:
+    except (ValueError, TypeError):
         return False, "Please enter a valid website address"
 
     hostname = (parsed.hostname or "").lower()
