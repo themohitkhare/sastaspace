@@ -1,10 +1,5 @@
 // web/src/lib/sse-client.ts
 
-export type SSEEvent = {
-  event: string
-  data: Record<string, unknown>
-}
-
 export type JobStatus = {
   id: string
   status: "queued" | "crawling" | "discovering" | "downloading" | "analyzing" | "redesigning" | "deploying" | "done" | "failed"

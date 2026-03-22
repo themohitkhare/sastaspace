@@ -31,7 +31,7 @@ export type RedesignState =
   | { status: "done"; subdomain: string; originalUrl: string; domain: string; tier: RedesignTier }
   | { status: "error"; message: string; url: string; resumeJobId?: string };
 
-export const STEPS = [
+const STEPS = [
   { name: "crawling", label: (d: string) => `Analyzing ${d}` },
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   { name: "discovering", label: (_: string) => "Discovering internal pages" },

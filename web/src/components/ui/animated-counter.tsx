@@ -2,7 +2,7 @@
 
 import * as React from "react"
 
-import { MotionValue, motion, useSpring, useTransform } from "motion/react";
+import { MotionValue, m, useSpring, useTransform } from "motion/react";
 import { useEffect, useState } from "react";
 import { twMerge } from "tailwind-merge";
 import clsx from "clsx";
@@ -11,6 +11,7 @@ const cn = (...args: any[]) => {
   return twMerge(clsx(args));
 };
 
+const DIGITS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9] as const;
 const fontSize = 40;
 const padding = 10;
 const height = fontSize + padding;
@@ -35,7 +36,8 @@ export const Counter = ({
   fontSize = 30,
   ...rest
 }: CounterProps) => {
-  const [value, setValue] = useState(start);
+  // Initial value derived from prop — counter only increments from here, never re-syncs
+  const [value, setValue] = useState(() => start);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -76,8 +78,8 @@ function Digit({ place, value }: { place: number; value: number }) {
 
   return (
     <div style={{ height }} className="relative w-[1ch] tabular-nums">
-      {[...Array(10)].map((_, i) => (
-        <Number key={i} mv={animatedValue} number={i} />
+      {DIGITS.map((digit) => (
+        <Number key={digit} mv={animatedValue} number={digit} />
       ))}
     </div>
   );
@@ -98,11 +100,11 @@ function Number({ mv, number }: { mv: MotionValue; number: number }) {
   });
 
   return (
-    <motion.span
+    <m.span
       style={{ y }}
       className="absolute inset-0 flex items-center justify-center"
     >
       {number}
-    </motion.span>
+    </m.span>
   );
 }

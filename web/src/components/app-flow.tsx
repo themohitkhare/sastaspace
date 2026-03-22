@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { AnimatePresence, motion } from "motion/react";
+import { AnimatePresence, m } from "motion/react";
 import { HeroSection } from "@/components/landing/hero-section";
 import { HowItWorks } from "@/components/landing/how-it-works";
 import { ProgressView } from "@/components/progress/progress-view";
@@ -15,14 +15,14 @@ export function AppFlow() {
   // Navigate to result page when done
   useEffect(() => {
     if (state.status === "done") {
-      router.push(`/${state.subdomain}`);
+      router.replace(`/${state.subdomain}`);
     }
   }, [state, router]);
 
   return (
     <AnimatePresence mode="wait">
       {state.status === "idle" && (
-        <motion.div
+        <m.div
           key="landing"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -33,13 +33,13 @@ export function AppFlow() {
           <section className="py-12 px-4">
             <HowItWorks />
           </section>
-        </motion.div>
+        </m.div>
       )}
 
       {(state.status === "connecting" ||
         state.status === "progress" ||
         state.status === "error") && (
-        <motion.div
+        <m.div
           key="progress"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -50,7 +50,7 @@ export function AppFlow() {
             state={state}
             onRetry={retry}
           />
-        </motion.div>
+        </m.div>
       )}
     </AnimatePresence>
   );

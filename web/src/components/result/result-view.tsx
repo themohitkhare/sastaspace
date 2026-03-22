@@ -1,6 +1,6 @@
 "use client";
 
-import { motion } from "motion/react";
+import { m } from "motion/react";
 import { ExternalLink } from "lucide-react";
 import { ContactForm } from "@/components/result/contact-form";
 
@@ -15,7 +15,7 @@ export function ResultView({ subdomain }: ResultViewProps) {
   const previewUrl = `/${subdomain}/preview`;
 
   return (
-    <motion.div
+    <m.div
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
       transition={{ duration: 0.4, ease: "easeOut" }}
@@ -61,6 +61,6 @@ export function ResultView({ subdomain }: ResultViewProps) {
           <ContactForm subdomain={subdomain} />
         </div>
       </div>
-    </motion.div>
+    </m.div>
   );
 }

@@ -1,7 +1,7 @@
 // web/src/components/progress/progress-view.tsx
 "use client";
 
-import { motion } from "motion/react";
+import { m } from "motion/react";
 import { AlertCircle, RotateCcw, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -39,7 +39,7 @@ export function ProgressView({ state, onRetry }: ProgressViewProps) {
 
     return (
       <div className="min-h-screen flex items-center justify-center px-4">
-        <motion.div
+        <m.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.3 }}
@@ -71,7 +71,7 @@ export function ProgressView({ state, onRetry }: ProgressViewProps) {
               </>
             )}
           </Button>
-        </motion.div>
+        </m.div>
       </div>
     );
   }

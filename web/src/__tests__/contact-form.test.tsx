@@ -3,14 +3,17 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { ContactForm } from '@/components/result/contact-form'
 
 // Mock motion/react to avoid animation complexity in tests
-vi.mock('motion/react', () => ({
-  AnimatePresence: ({ children }: { children: React.ReactNode }) => <>{children}</>,
-  motion: {
-    div: ({ children, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
-      <div {...props}>{children}</div>
-    ),
-  },
-}))
+vi.mock('motion/react', () => {
+  const divProxy = ({ children, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
+    <div {...props}>{children}</div>
+  )
+  return {
+    AnimatePresence: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+    LazyMotion: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+    motion: { div: divProxy },
+    m: { div: divProxy },
+  }
+})
 
 // Mock lucide-react
 vi.mock('lucide-react', () => ({

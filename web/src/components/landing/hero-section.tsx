@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { motion } from "motion/react";
+import { m } from "motion/react";
 import { FlickeringGrid } from "@/components/backgrounds/flickering-grid";
 import { UrlInputForm } from "@/components/landing/url-input-form";
 import type { RedesignTier } from "@/hooks/use-redesign";
@@ -16,7 +16,7 @@ export function HeroSection({ onSubmit }: HeroSectionProps) {
       <FlickeringGrid className="absolute inset-0 z-0" />
       <div className="relative z-10 w-full max-w-6xl mx-auto px-6 sm:px-8 lg:px-12 py-24">
         <div className="max-w-2xl">
-          <motion.h1
+          <m.h1
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, delay: 0.1, ease: "easeOut" }}
@@ -25,22 +25,22 @@ export function HeroSection({ onSubmit }: HeroSectionProps) {
             See your website{" "}
             <br className="hidden sm:block" />
             <span className="text-accent">reimagined</span>
-          </motion.h1>
-          <motion.p
+          </m.h1>
+          <m.p
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, delay: 0.2, ease: "easeOut" }}
             className="text-lg sm:text-xl text-muted-foreground font-sans mt-6 mb-10 max-w-lg"
           >
             Enter your URL and watch AI redesign your site in under a minute.
-          </motion.p>
-          <motion.div
+          </m.p>
+          <m.div
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, delay: 0.3, ease: "easeOut" }}
           >
             <UrlInputForm onSubmit={onSubmit} />
-          </motion.div>
+          </m.div>
         </div>
       </div>
     </div>

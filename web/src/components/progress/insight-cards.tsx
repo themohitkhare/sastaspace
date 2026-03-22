@@ -2,7 +2,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { AnimatePresence, motion } from "motion/react";
+import { AnimatePresence, m } from "motion/react";
 
 const TRACK_1 = [
   "Visiting {domain}…",
@@ -53,7 +53,7 @@ export function InsightCards({ domain }: InsightCardsProps) {
   return (
     <div className="w-full max-w-sm rounded-xl border border-border/40 bg-background/30 backdrop-blur-sm px-5 py-4 min-h-[64px] flex items-center justify-center">
       <AnimatePresence mode="wait">
-        <motion.p
+        <m.p
           key={`${messageIndex}-${elapsedMs < TRACK_SWITCH_MS ? 0 : 1}`}
           initial={{ opacity: 0, y: 4 }}
           animate={{ opacity: 1, y: 0 }}
@@ -62,7 +62,7 @@ export function InsightCards({ domain }: InsightCardsProps) {
           className="text-sm text-center text-foreground/80"
         >
           {message}
-        </motion.p>
+        </m.p>
       </AnimatePresence>
     </div>
   );

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Instrument_Serif, Space_Grotesk } from "next/font/google";
+import { MotionProvider } from "@/components/providers/motion-provider";
 import "./globals.css";
 
 const instrumentSerif = Instrument_Serif({
@@ -49,7 +50,7 @@ export default function RootLayout({
       <body
         className={`${instrumentSerif.variable} ${spaceGrotesk.variable} font-sans antialiased`}
       >
-        {children}
+        <MotionProvider>{children}</MotionProvider>
       </body>
     </html>
   );

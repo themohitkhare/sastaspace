@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useCallback, useEffect } from "react";
+import NextImage from "next/image";
 import { Globe } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -109,11 +110,14 @@ export function UrlInputForm({ onSubmit }: UrlInputFormProps) {
           </Label>
           <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground z-10">
             {faviconUrl ? (
-              <img
+              <NextImage
                 src={faviconUrl}
                 alt=""
+                width={20}
+                height={20}
                 className="w-5 h-5 rounded-sm"
                 onError={() => setFaviconUrl(null)}
+                unoptimized
               />
             ) : (
               <Globe className="w-5 h-5" />

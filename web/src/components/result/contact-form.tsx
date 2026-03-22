@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useRef } from "react";
-import { AnimatePresence, motion } from "motion/react";
+import { useReducer, useRef } from "react";
+import { AnimatePresence, m } from "motion/react";
 import { Loader2 } from "lucide-react";
 import { Turnstile, type TurnstileInstance } from "@marsidev/react-turnstile";
 import { Input } from "@/components/ui/input";
@@ -14,26 +14,69 @@ interface ContactFormProps {
 
 type FormStatus = "idle" | "submitting" | "success" | "error";
 
+interface FormState {
+  status: FormStatus;
+  name: string;
+  email: string;
+  message: string;
+  honeypot: string;
+  errors: Record<string, string>;
+  serverError: string | null;
+  turnstileToken: string | null;
+}
+
+type FormAction =
+  | { type: "SET_FIELD"; field: "name" | "email" | "message" | "honeypot"; value: string }
+  | { type: "SET_ERRORS"; errors: Record<string, string> }
+  | { type: "SUBMIT" }
+  | { type: "SUCCESS" }
+  | { type: "FAILURE"; error: string }
+  | { type: "SET_TURNSTILE"; token: string | null };
+
+const initialState: FormState = {
+  status: "idle",
+  name: "",
+  email: "",
+  message: "",
+  honeypot: "",
+  errors: {},
+  serverError: null,
+  turnstileToken: null,
+};
+
+function formReducer(state: FormState, action: FormAction): FormState {
+  switch (action.type) {
+    case "SET_FIELD": {
+      const errors = { ...state.errors };
+      delete errors[action.field];
+      return { ...state, [action.field]: action.value, errors };
+    }
+    case "SET_ERRORS":
+      return { ...state, errors: action.errors };
+    case "SUBMIT":
+      return { ...state, status: "submitting", serverError: null };
+    case "SUCCESS":
+      return { ...state, status: "success" };
+    case "FAILURE":
+      return { ...state, status: "error", serverError: action.error };
+    case "SET_TURNSTILE":
+      return { ...state, turnstileToken: action.token };
+  }
+}
+
 export function ContactForm({ subdomain }: ContactFormProps) {
   const turnstileEnabled =
     process.env.NEXT_PUBLIC_ENABLE_TURNSTILE !== "false";
-  const [status, setStatus] = useState<FormStatus>("idle");
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [message, setMessage] = useState("");
-  const [honeypot, setHoneypot] = useState("");
-  const [errors, setErrors] = useState<Record<string, string>>({});
-  const [serverError, setServerError] = useState<string | null>(null);
-  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  const [state, dispatch] = useReducer(formReducer, initialState);
   const turnstileRef = useRef<TurnstileInstance>(null);
 
   function validate(): Record<string, string> {
     const newErrors: Record<string, string> = {};
-    if (!name.trim()) newErrors.name = "Please enter your name";
-    if (!email.trim() || !/.+@.+\..+/.test(email)) {
+    if (!state.name.trim()) newErrors.name = "Please enter your name";
+    if (!state.email.trim() || !/.+@.+\..+/.test(state.email)) {
       newErrors.email = "Please enter a valid email address";
     }
-    if (!message.trim()) newErrors.message = "Please enter a message";
+    if (!state.message.trim()) newErrors.message = "Please enter a message";
     return newErrors;
   }
 
@@ -42,23 +85,22 @@ export function ContactForm({ subdomain }: ContactFormProps) {
 
     const validationErrors = validate();
     if (Object.keys(validationErrors).length > 0) {
-      setErrors(validationErrors);
+      dispatch({ type: "SET_ERRORS", errors: validationErrors });
       return;
     }
 
-    setStatus("submitting");
-    setServerError(null);
+    dispatch({ type: "SUBMIT" });
 
     try {
       const res = await fetch("/api/contact", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          name: name.trim(),
-          email: email.trim(),
-          message: message.trim(),
-          website: honeypot,
-          turnstileToken,
+          name: state.name.trim(),
+          email: state.email.trim(),
+          message: state.message.trim(),
+          website: state.honeypot,
+          turnstileToken: state.turnstileToken,
           subdomain,
         }),
       });
@@ -66,14 +108,12 @@ export function ContactForm({ subdomain }: ContactFormProps) {
       const data = await res.json();
 
       if (data.ok) {
-        setStatus("success");
+        dispatch({ type: "SUCCESS" });
       } else {
-        setServerError(data.error || "Something went wrong. Please try again.");
-        setStatus("error");
+        dispatch({ type: "FAILURE", error: data.error || "Something went wrong. Please try again." });
       }
     } catch {
-      setServerError("Something went wrong. Please try again.");
-      setStatus("error");
+      dispatch({ type: "FAILURE", error: "Something went wrong. Please try again." });
     } finally {
       turnstileRef.current?.reset();
     }
@@ -82,8 +122,8 @@ export function ContactForm({ subdomain }: ContactFormProps) {
   return (
     <div className="w-full flex flex-col items-center">
       <AnimatePresence mode="wait">
-        {status !== "success" ? (
-          <motion.div
+        {state.status !== "success" ? (
+          <m.div
             key="form"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -103,19 +143,12 @@ export function ContactForm({ subdomain }: ContactFormProps) {
                   id="contact-name"
                   type="text"
                   placeholder="Your name"
-                  value={name}
-                  onChange={(e) => {
-                    setName(e.target.value);
-                    setErrors((prev) => {
-                      const n = { ...prev };
-                      delete n.name;
-                      return n;
-                    });
-                  }}
-                  disabled={status === "submitting"}
+                  value={state.name}
+                  onChange={(e) => dispatch({ type: "SET_FIELD", field: "name", value: e.target.value })}
+                  disabled={state.status === "submitting"}
                 />
-                {errors.name && (
-                  <p className="text-sm text-destructive mt-2">{errors.name}</p>
+                {state.errors.name && (
+                  <p className="text-sm text-destructive mt-2">{state.errors.name}</p>
                 )}
               </div>
 
@@ -127,20 +160,13 @@ export function ContactForm({ subdomain }: ContactFormProps) {
                   id="contact-email"
                   type="email"
                   placeholder="you@example.com"
-                  value={email}
-                  onChange={(e) => {
-                    setEmail(e.target.value);
-                    setErrors((prev) => {
-                      const n = { ...prev };
-                      delete n.email;
-                      return n;
-                    });
-                  }}
-                  disabled={status === "submitting"}
+                  value={state.email}
+                  onChange={(e) => dispatch({ type: "SET_FIELD", field: "email", value: e.target.value })}
+                  disabled={state.status === "submitting"}
                 />
-                {errors.email && (
+                {state.errors.email && (
                   <p className="text-sm text-destructive mt-2">
-                    {errors.email}
+                    {state.errors.email}
                   </p>
                 )}
               </div>
@@ -154,21 +180,14 @@ export function ContactForm({ subdomain }: ContactFormProps) {
                   id="contact-message"
                   rows={4}
                   placeholder="Tell me about your project..."
-                  value={message}
-                  onChange={(e) => {
-                    setMessage(e.target.value);
-                    setErrors((prev) => {
-                      const n = { ...prev };
-                      delete n.message;
-                      return n;
-                    });
-                  }}
-                  disabled={status === "submitting"}
+                  value={state.message}
+                  onChange={(e) => dispatch({ type: "SET_FIELD", field: "message", value: e.target.value })}
+                  disabled={state.status === "submitting"}
                   className="flex w-full rounded-lg border border-input bg-transparent px-2.5 py-2 text-base md:text-sm text-foreground placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 outline-none resize-none disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50"
                 />
-                {errors.message && (
+                {state.errors.message && (
                   <p className="text-sm text-destructive mt-2">
-                    {errors.message}
+                    {state.errors.message}
                   </p>
                 )}
               </div>
@@ -181,8 +200,8 @@ export function ContactForm({ subdomain }: ContactFormProps) {
                 autoComplete="off"
                 aria-hidden="true"
                 className="absolute opacity-0 pointer-events-none h-0 w-0 overflow-hidden"
-                value={honeypot}
-                onChange={(e) => setHoneypot(e.target.value)}
+                value={state.honeypot}
+                onChange={(e) => dispatch({ type: "SET_FIELD", field: "honeypot", value: e.target.value })}
               />
 
               {/* Invisible Turnstile — per D-09, D-11; conditional per FLAG-01 */}
@@ -190,9 +209,9 @@ export function ContactForm({ subdomain }: ContactFormProps) {
                 <Turnstile
                   ref={turnstileRef}
                   siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY!}
-                  onSuccess={setTurnstileToken}
+                  onSuccess={(token) => dispatch({ type: "SET_TURNSTILE", token })}
                   onExpire={() => {
-                    setTurnstileToken(null);
+                    dispatch({ type: "SET_TURNSTILE", token: null });
                     turnstileRef.current?.reset();
                   }}
                   options={{ size: "invisible" }}
@@ -200,17 +219,17 @@ export function ContactForm({ subdomain }: ContactFormProps) {
               )}
 
               {/* Server error display */}
-              {serverError && (
-                <p className="text-sm text-destructive mt-2">{serverError}</p>
+              {state.serverError && (
+                <p className="text-sm text-destructive mt-2">{state.serverError}</p>
               )}
 
               {/* Submit button — per D-05 */}
               <Button
                 type="submit"
                 className="w-full h-11 mt-6 bg-accent text-accent-foreground hover:bg-accent/90"
-                disabled={status === "submitting"}
+                disabled={state.status === "submitting"}
               >
-                {status === "submitting" ? (
+                {state.status === "submitting" ? (
                   <>
                     <Loader2 className="size-4 animate-spin" />
                     Sending...
@@ -220,9 +239,9 @@ export function ContactForm({ subdomain }: ContactFormProps) {
                 )}
               </Button>
             </form>
-          </motion.div>
+          </m.div>
         ) : (
-          <motion.div
+          <m.div
             key="thanks"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -235,7 +254,7 @@ export function ContactForm({ subdomain }: ContactFormProps) {
             <p className="text-base text-muted-foreground mt-2">
               I typically reply within 24 hours.
             </p>
-          </motion.div>
+          </m.div>
         )}
       </AnimatePresence>
     </div>
