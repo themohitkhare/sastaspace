@@ -124,3 +124,93 @@ def test_load_registry_handles_os_error(tmp_path):
     registry_path.mkdir()  # directory instead of file -> OSError on read_text()
     registry = load_registry(tmp_path)
     assert registry == []
+
+
+# --- deploy() with assets tests ---
+
+
+def test_deploy_with_assets(tmp_path):
+    from dataclasses import dataclass
+    from pathlib import Path
+
+    @dataclass
+    class DownloadedAsset:
+        original_url: str
+        local_path: str
+        content_type: str
+        size_bytes: int
+        file_hash: str
+        source_page: str
+        tmp_path: Path
+
+    # Create tmp asset files
+    tmp_asset_dir = tmp_path / "tmp_assets"
+    tmp_asset_dir.mkdir()
+    logo = tmp_asset_dir / "logo.png"
+    logo.write_bytes(b"fake png content")
+
+    assets = [
+        DownloadedAsset(
+            original_url="https://example.com/logo.png",
+            local_path="assets/logo.png",
+            content_type="image/png",
+            size_bytes=16,
+            file_hash="abc",
+            source_page="https://example.com",
+            tmp_path=logo,
+        )
+    ]
+    sites_dir = tmp_path / "sites"
+    result = deploy("https://example.com", "<html></html>", sites_dir, assets=assets)
+    asset_path = sites_dir / result.subdomain / "assets" / "logo.png"
+    assert asset_path.exists()
+    assert asset_path.read_bytes() == b"fake png content"
+    # Original tmp file should be moved (not copied)
+    assert not logo.exists()
+
+
+def test_deploy_with_assets_updates_metadata(tmp_path):
+    import json
+    from dataclasses import dataclass
+    from pathlib import Path
+
+    @dataclass
+    class DownloadedAsset:
+        original_url: str
+        local_path: str
+        content_type: str
+        size_bytes: int
+        file_hash: str
+        source_page: str
+        tmp_path: Path
+
+    tmp_asset_dir = tmp_path / "tmp_assets"
+    tmp_asset_dir.mkdir()
+    logo = tmp_asset_dir / "logo.png"
+    logo.write_bytes(b"fake png content")
+
+    assets = [
+        DownloadedAsset(
+            original_url="https://example.com/logo.png",
+            local_path="assets/logo.png",
+            content_type="image/png",
+            size_bytes=16,
+            file_hash="abc",
+            source_page="https://example.com",
+            tmp_path=logo,
+        )
+    ]
+    sites_dir = tmp_path / "sites"
+    result = deploy("https://example.com", "<html></html>", sites_dir, assets=assets)
+    meta_path = sites_dir / result.subdomain / "metadata.json"
+    meta = json.loads(meta_path.read_text())
+    assert meta["assets_count"] == 1
+    assert meta["total_assets_size"] == 16
+
+
+def test_deploy_without_assets_unchanged(tmp_path):
+    """Ensure deploy() still works without assets parameter."""
+    result = deploy(url="https://acme.com", html=SAMPLE_HTML, sites_dir=tmp_path)
+    index = tmp_path / result.subdomain / "index.html"
+    assert index.exists()
+    assert index.read_text() == SAMPLE_HTML
