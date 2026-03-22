@@ -161,8 +161,8 @@ spec:
           mountPath: /dev/kfd
         - name: dev-dri
           mountPath: /dev/dri
-        - name: sys-class-drm
-          mountPath: /sys/class/drm
+        - name: sys
+          mountPath: /sys
           readOnly: true
       volumes:
       - name: script
@@ -174,9 +174,9 @@ spec:
       - name: dev-dri
         hostPath:
           path: /dev/dri
-      - name: sys-class-drm
+      - name: sys
         hostPath:
-          path: /sys/class/drm
+          path: /sys
 ---
 apiVersion: v1
 kind: Service
