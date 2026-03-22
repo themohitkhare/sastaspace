@@ -127,6 +127,20 @@ class JobService:
         if self._pubsub_redis:
             await self._pubsub_redis.publish(f"{STATUS_CHANNEL}:{job_id}", payload)
 
+    @staticmethod
+    def _job_status_event(job_id: str, job: dict) -> dict:
+        """Build an SSE status event dict from a completed/failed job record."""
+        return {
+            "event": job["status"],
+            "data": {
+                "job_id": job_id,
+                "message": job.get("message", ""),
+                "progress": job.get("progress", 0),
+                "subdomain": job.get("subdomain"),
+                "error": job.get("error"),
+            },
+        }
+
     async def subscribe_job(self, job_id: str):
         """Subscribe to status updates for a specific job. Returns an async generator."""
         if self._pubsub_redis is None:
@@ -140,16 +154,7 @@ class JobService:
             # First, check if job is already completed
             job = await get_job(job_id)
             if job and job["status"] in (JobStatus.DONE.value, JobStatus.FAILED.value):
-                yield {
-                    "event": job["status"],
-                    "data": {
-                        "job_id": job_id,
-                        "message": job.get("message", ""),
-                        "progress": job.get("progress", 0),
-                        "subdomain": job.get("subdomain"),
-                        "error": job.get("error"),
-                    },
-                }
+                yield self._job_status_event(job_id, job)
                 return
 
             while True:
@@ -161,16 +166,7 @@ class JobService:
                         JobStatus.DONE.value,
                         JobStatus.FAILED.value,
                     ):
-                        yield {
-                            "event": job["status"],
-                            "data": {
-                                "job_id": job_id,
-                                "message": job.get("message", ""),
-                                "progress": job.get("progress", 0),
-                                "subdomain": job.get("subdomain"),
-                                "error": job.get("error"),
-                            },
-                        }
+                        yield self._job_status_event(job_id, job)
                         return
                     continue
 

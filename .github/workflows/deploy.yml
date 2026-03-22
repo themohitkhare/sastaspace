@@ -45,10 +45,7 @@ jobs:
 
       - name: Static analysis (semgrep)
         run: |
-          if ! command -v semgrep &>/dev/null; then
-            pip install semgrep
-          fi
-          semgrep scan --config auto --error \
+          pipx run semgrep scan --config auto --error \
             --exclude='node_modules' --exclude='.next' --exclude='__pycache__' \
             --exclude='*.test.*' --exclude='*.spec.*' \
             --severity ERROR \

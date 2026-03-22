@@ -28,6 +28,17 @@ beforeEach(() => {
   vi.stubEnv('NEXT_PUBLIC_ENABLE_TURNSTILE', 'false')
 })
 
+/** Fill in contact form fields and click submit. */
+function fillAndSubmit(
+  fields: { name?: string; email?: string; message?: string } = {}
+) {
+  const { name = 'John', email = 'john@example.com', message = 'Hello' } = fields
+  if (name) fireEvent.change(screen.getByLabelText('Name'), { target: { value: name } })
+  if (email) fireEvent.change(screen.getByLabelText('Email'), { target: { value: email } })
+  if (message) fireEvent.change(screen.getByLabelText('Message'), { target: { value: message } })
+  fireEvent.click(screen.getByRole('button', { name: /send message/i }))
+}
+
 describe('ContactForm', () => {
   it('renders the form fields', () => {
     render(<ContactForm subdomain="example-com" />)
@@ -51,10 +62,7 @@ describe('ContactForm', () => {
   it('shows email validation error for invalid email', () => {
     render(<ContactForm subdomain="example-com" />)
 
-    fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'John' } })
-    fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'not-an-email' } })
-    fireEvent.change(screen.getByLabelText('Message'), { target: { value: 'Hello' } })
-    fireEvent.click(screen.getByRole('button', { name: /send message/i }))
+    fillAndSubmit({ email: 'not-an-email' })
 
     expect(screen.getByText('Please enter a valid email address')).toBeInTheDocument()
     expect(screen.queryByText('Please enter your name')).not.toBeInTheDocument()
@@ -67,10 +75,7 @@ describe('ContactForm', () => {
 
     render(<ContactForm subdomain="example-com" />)
 
-    fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'John' } })
-    fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'john@example.com' } })
-    fireEvent.change(screen.getByLabelText('Message'), { target: { value: 'Hello there' } })
-    fireEvent.click(screen.getByRole('button', { name: /send message/i }))
+    fillAndSubmit({ message: 'Hello there' })
 
     await waitFor(() => {
       expect(screen.getByText(/thanks/i)).toBeInTheDocument()
@@ -84,10 +89,7 @@ describe('ContactForm', () => {
 
     render(<ContactForm subdomain="example-com" />)
 
-    fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'John' } })
-    fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'john@example.com' } })
-    fireEvent.change(screen.getByLabelText('Message'), { target: { value: 'Hello' } })
-    fireEvent.click(screen.getByRole('button', { name: /send message/i }))
+    fillAndSubmit()
 
     await waitFor(() => {
       expect(screen.getByText('Failed to send message')).toBeInTheDocument()
@@ -99,10 +101,7 @@ describe('ContactForm', () => {
 
     render(<ContactForm subdomain="example-com" />)
 
-    fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'John' } })
-    fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'john@example.com' } })
-    fireEvent.change(screen.getByLabelText('Message'), { target: { value: 'Hello' } })
-    fireEvent.click(screen.getByRole('button', { name: /send message/i }))
+    fillAndSubmit()
 
     await waitFor(() => {
       expect(screen.getByText('Something went wrong. Please try again.')).toBeInTheDocument()
@@ -116,10 +115,7 @@ describe('ContactForm', () => {
 
     render(<ContactForm subdomain="my-site-com" />)
 
-    fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'Jane' } })
-    fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'jane@test.com' } })
-    fireEvent.change(screen.getByLabelText('Message'), { target: { value: 'Hi' } })
-    fireEvent.click(screen.getByRole('button', { name: /send message/i }))
+    fillAndSubmit({ name: 'Jane', email: 'jane@test.com', message: 'Hi' })
 
     await waitFor(() => {
       expect(fetchSpy).toHaveBeenCalledWith('/api/contact', {
