@@ -627,7 +627,9 @@ def _run_normalizer(
     2. Premium Psychology — engineer the halo effect, reduce cognitive load, add micro-interactions
     """
     from sastaspace.agents.prompts import NORMALIZER_SYSTEM, NORMALIZER_USER_TEMPLATE
-    from sastaspace.html_utils import RedesignError, _clean_html, _validate_html
+    from sastaspace.html_utils import RedesignError
+    from sastaspace.html_utils import clean_html as _clean_html
+    from sastaspace.html_utils import validate_html as _validate_html
 
     use_ollama = tier == "free"
     model_id = settings.free_html_generator_model if use_ollama else settings.html_generator_model
