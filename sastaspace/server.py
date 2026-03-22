@@ -72,13 +72,32 @@ def make_app(sites_dir: Path) -> FastAPI:
     @asynccontextmanager
     async def lifespan(app: FastAPI):
         global svc
-        # --- Startup ---
+        # --- Startup (crash if dependencies unavailable after retries) ---
+        max_retries = 5
+        retry_delay = 2
+
+        # Connect MongoDB (required)
         set_mongo_url(settings.mongodb_url, settings.mongodb_db)
-        try:
-            await init_db()
-            logger.info("MongoDB connected at %s / %s", settings.mongodb_url, settings.mongodb_db)
-        except Exception:
-            logger.warning("MongoDB unavailable — job persistence disabled", exc_info=True)
+        for attempt in range(1, max_retries + 1):
+            try:
+                await init_db()
+                logger.info(
+                    "MongoDB connected at %s / %s", settings.mongodb_url, settings.mongodb_db
+                )
+                break
+            except Exception:
+                if attempt == max_retries:
+                    logger.error(
+                        "MongoDB unavailable after %d attempts — refusing to start", max_retries
+                    )
+                    raise
+                logger.warning(
+                    "MongoDB attempt %d/%d failed, retrying in %ds...",
+                    attempt,
+                    max_retries,
+                    retry_delay,
+                )
+                await asyncio.sleep(retry_delay)
 
         # Seed sites_deployed_total from disk on startup
         try:
@@ -87,20 +106,28 @@ def make_app(sites_dir: Path) -> FastAPI:
         except Exception:
             pass
 
-        # Connect Redis job service (if Redis is available)
+        # Connect Redis (required — without it, jobs go inline and crawling fails)
         if settings.redis_url:
-            try:
-                _svc = JobService(redis_url=settings.redis_url)
-                await _svc.connect()
-                svc = _svc
-                logger.info("Redis job service connected at %s", settings.redis_url)
-                # Job processing is handled by the dedicated worker pod — not here
-            except Exception:
-                logger.warning(
-                    "Redis unavailable at %s — falling back to inline processing",
-                    settings.redis_url,
-                    exc_info=True,
-                )
+            for attempt in range(1, max_retries + 1):
+                try:
+                    _svc = JobService(redis_url=settings.redis_url)
+                    await _svc.connect()
+                    svc = _svc
+                    logger.info("Redis job service connected at %s", settings.redis_url)
+                    break
+                except Exception:
+                    if attempt == max_retries:
+                        logger.error(
+                            "Redis unavailable after %d attempts — refusing to start", max_retries
+                        )
+                        raise
+                    logger.warning(
+                        "Redis attempt %d/%d failed, retrying in %ds...",
+                        attempt,
+                        max_retries,
+                        retry_delay,
+                    )
+                    await asyncio.sleep(retry_delay)
 
         yield
 

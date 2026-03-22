@@ -16,6 +16,8 @@ logger = logging.getLogger("sastaspace.worker")
 
 async def main():
     settings = Settings()
+    max_retries = 5
+    retry_delay = 2
 
     logger.info(
         "Worker initializing | pid=%d redis=%s mongodb=%s/%s agno=%s",
@@ -26,18 +28,42 @@ async def main():
         settings.use_agno_pipeline,
     )
 
-    # Connect MongoDB
+    # Connect MongoDB (required — crash if unavailable)
     set_mongo_url(settings.mongodb_url, settings.mongodb_db)
-    try:
-        await init_db()
-        logger.info("MongoDB connected")
-    except Exception:
-        logger.warning("MongoDB unavailable — job persistence disabled", exc_info=True)
+    for attempt in range(1, max_retries + 1):
+        try:
+            await init_db()
+            logger.info("MongoDB connected")
+            break
+        except Exception:
+            if attempt == max_retries:
+                logger.error(
+                    "MongoDB unavailable after %d attempts — refusing to start", max_retries
+                )
+                raise
+            logger.warning(
+                "MongoDB attempt %d/%d failed, retrying in %ds...",
+                attempt,
+                max_retries,
+                retry_delay,
+            )
+            await asyncio.sleep(retry_delay)
 
-    # Connect Redis
-    svc = JobService(redis_url=settings.redis_url)
-    await svc.connect()
-    logger.info("Redis connected, starting job consumer loop...")
+    # Connect Redis (required — crash if unavailable)
+    for attempt in range(1, max_retries + 1):
+        try:
+            svc = JobService(redis_url=settings.redis_url)
+            await svc.connect()
+            logger.info("Redis connected, starting job consumer loop...")
+            break
+        except Exception:
+            if attempt == max_retries:
+                logger.error("Redis unavailable after %d attempts — refusing to start", max_retries)
+                raise
+            logger.warning(
+                "Redis attempt %d/%d failed, retrying in %ds...", attempt, max_retries, retry_delay
+            )
+            await asyncio.sleep(retry_delay)
 
     try:
         await svc.process_messages(
