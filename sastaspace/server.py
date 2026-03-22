@@ -112,7 +112,9 @@ def make_app(sites_dir: Path) -> FastAPI:
 
     app = FastAPI(title="SastaSpace Preview Server", lifespan=lifespan)
 
-    # Prometheus metrics endpoint (internal — not behind Cloudflare CDN path)
+    # Prometheus metrics — mounted as ASGI sub-app, access restricted via ingress
+    # annotation (server-snippet) and k8s NetworkPolicy. In-cluster Prometheus
+    # scrapes the pod IP directly, bypassing ingress.
     app.mount("/metrics", make_asgi_app())
 
     app.add_middleware(
@@ -646,10 +648,13 @@ def make_app(sites_dir: Path) -> FastAPI:
 
     @app.get("/{subdomain}/")
     async def serve_site(subdomain: str) -> Response:
-        index_path = sites_dir / subdomain / "index.html"
+        resolved_root = sites_dir.resolve()
+        index_path = (sites_dir / subdomain / "index.html").resolve()
+        if not index_path.is_relative_to(resolved_root):
+            return HTMLResponse("<h1>404</h1>", status_code=404)
         if not index_path.exists():
             return HTMLResponse(
-                f"<h1>404</h1><p>No redesign found for <code>{subdomain}</code></p>",
+                f"<h1>404</h1><p>No redesign found for <code>{html.escape(subdomain)}</code></p>",
                 status_code=404,
             )
         return FileResponse(str(index_path), media_type="text/html")

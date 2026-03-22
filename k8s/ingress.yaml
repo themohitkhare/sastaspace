@@ -6,6 +6,11 @@ metadata:
   annotations:
     nginx.ingress.kubernetes.io/proxy-body-size: "50m"
     nginx.ingress.kubernetes.io/proxy-read-timeout: "300"
+    # Block internal endpoints from public access — Prometheus scrapes pod IP directly
+    nginx.ingress.kubernetes.io/server-snippet: |
+      location /metrics {
+        return 404;
+      }
 spec:
   ingressClassName: public
   rules:

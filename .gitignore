@@ -1,9 +1,15 @@
 # Claude Code internals
 .claude/
 
-# Environment
+# Environment & secrets
 .env
+.env.*
 web/.env.local
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
 
 # Generated sites
 sites/
