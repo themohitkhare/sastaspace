@@ -165,28 +165,43 @@ jobs:
           docker push localhost:32000/sastaspace-frontend:latest
           docker push localhost:32000/sastaspace-frontend:${{ github.sha }}
 
-      - name: Apply k8s manifests
+      - name: Apply k8s manifests (app + monitoring)
         run: |
+          # App namespace first, then all app manifests
           sudo microk8s kubectl apply -f k8s/namespace.yaml
           sudo microk8s kubectl apply -f k8s/
+          # Monitoring namespace + manifests
+          sudo microk8s kubectl apply -f k8s/monitoring/namespace.yaml
+          sudo microk8s kubectl apply -f k8s/monitoring/
 
-      - name: Rolling restart
+      - name: Rolling restart (all deployments)
         run: |
-          sudo microk8s kubectl rollout restart \
-            deployment/backend deployment/frontend deployment/worker \
-            -n sastaspace
+          # Restart all deployments in sastaspace namespace
+          DEPLOYMENTS=$(sudo microk8s kubectl get deployments -n sastaspace -o name 2>/dev/null)
+          if [ -n "$DEPLOYMENTS" ]; then
+            echo "Restarting: $DEPLOYMENTS"
+            sudo microk8s kubectl rollout restart $DEPLOYMENTS -n sastaspace
+          fi
+          # Restart monitoring deployments that use configmaps (prometheus, grafana, loki)
+          sudo microk8s kubectl rollout restart deployment/prometheus deployment/grafana -n monitoring 2>/dev/null || true
+          # Restart promtail daemonset to pick up config changes
+          sudo microk8s kubectl rollout restart daemonset/promtail -n monitoring 2>/dev/null || true
 
       - name: Wait for rollout
         run: |
-          sudo microk8s kubectl rollout status deployment/backend -n sastaspace --timeout=300s
-          sudo microk8s kubectl rollout status deployment/frontend -n sastaspace --timeout=300s
-          sudo microk8s kubectl rollout status deployment/worker -n sastaspace --timeout=300s
+          # Wait for all deployments in sastaspace namespace
+          for DEPLOY in $(sudo microk8s kubectl get deployments -n sastaspace -o name 2>/dev/null); do
+            echo "Waiting for $DEPLOY..."
+            sudo microk8s kubectl rollout status "$DEPLOY" -n sastaspace --timeout=300s
+          done
 
       - name: Verify deployment
         run: |
-          echo "=== Pods ==="
+          echo "=== sastaspace pods ==="
           sudo microk8s kubectl get pods -n sastaspace
-          echo "=== Services ==="
+          echo "=== sastaspace services ==="
           sudo microk8s kubectl get svc -n sastaspace
-          echo "=== Ingress ==="
+          echo "=== sastaspace ingress ==="
           sudo microk8s kubectl get ingress -n sastaspace
+          echo "=== monitoring pods ==="
+          sudo microk8s kubectl get pods -n monitoring
