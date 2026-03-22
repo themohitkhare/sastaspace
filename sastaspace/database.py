@@ -98,6 +98,8 @@ async def update_job(
     error: str | None = None,
     subdomain: str | None = None,
     html_path: str | None = None,
+    site_colors: list[str] | None = None,
+    site_title: str | None = None,
 ) -> None:
     """Update fields on a job record."""
     now = datetime.now(UTC).isoformat()
@@ -115,6 +117,10 @@ async def update_job(
         updates["subdomain"] = subdomain
     if html_path is not None:
         updates["html_path"] = html_path
+    if site_colors is not None:
+        updates["site_colors"] = site_colors
+    if site_title is not None:
+        updates["site_title"] = site_title
     if status in (JobStatus.DONE.value, JobStatus.FAILED.value):
         updates["completed_at"] = now
 

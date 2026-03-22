@@ -304,6 +304,13 @@ async def redesign_handler(
             job_id, "discovery", {"job_id": job_id, "items": _discovery_items}
         )
 
+    # Persist crawl data so polling clients can show brand colors + title
+    await update_job(
+        job_id,
+        site_colors=crawl_result.colors[:5],
+        site_title=crawl_result.title,
+    )
+
     # Emit screenshot for before/after reveal — skip if too large for SSE
     _MAX_SCREENSHOT_B64 = 500_000  # ~375KB raw PNG
     if (
