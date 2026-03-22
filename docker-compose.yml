@@ -30,6 +30,25 @@ services:
       start_period: 10s
     restart: unless-stopped
 
+  browserless:
+    image: ghcr.io/browserless/chromium:latest
+    ports:
+      - "3100:3000"
+    environment:
+      - TIMEOUT=60000
+      - CONCURRENT=5
+      - QUEUED=10
+      - HEALTH=true
+    networks:
+      - sastaspace
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:3000/json/version"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
+
   backend:
     build:
       context: .
@@ -46,6 +65,7 @@ services:
       - REDIS_URL=redis://redis:6379
       - MONGODB_URL=mongodb://mongodb:27017
       - MONGODB_DB=sastaspace
+      - BROWSERLESS_URL=ws://browserless:3000
     extra_hosts:
       - "host.docker.internal:host-gateway"
     volumes:
@@ -56,6 +76,8 @@ services:
       redis:
         condition: service_healthy
       mongodb:
+        condition: service_healthy
+      browserless:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/"]

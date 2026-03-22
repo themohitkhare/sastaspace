@@ -56,6 +56,9 @@ class Settings(BaseSettings):
     # Redis
     redis_url: str = "redis://localhost:6379"
 
+    # Browserless (remote Chromium via CDP)
+    browserless_url: str = "ws://localhost:3100"
+
     @field_validator("cors_origins", mode="before")
     @classmethod
     def parse_cors_origins(cls, v):
