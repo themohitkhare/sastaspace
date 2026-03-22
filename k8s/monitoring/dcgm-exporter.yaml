@@ -1,69 +1,182 @@
-# NVIDIA DCGM Exporter — GPU metrics for Prometheus
-# Requires: NVIDIA GPU Operator or nvidia-container-toolkit on the host
-# Exposes: GPU utilization, memory, temperature, power, ECC errors, etc.
+# AMD GPU Metrics Exporter — ROCm SMI metrics for Prometheus
+# Requires: ROCm installed on host, /dev/kfd and /dev/dri accessible
+# Exposes: GPU utilization, memory, temperature, power, clock speeds
+#
+# Uses a lightweight Python script that calls rocm-smi and exposes metrics
+# in Prometheus format. Runs as a DaemonSet on GPU nodes.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: amd-gpu-exporter-script
+  namespace: monitoring
+data:
+  exporter.py: |
+    #!/usr/bin/env python3
+    """Minimal Prometheus exporter for AMD GPUs via rocm-smi."""
+    import http.server
+    import subprocess
+    import json
+    import re
+    import time
+
+    PORT = 9400
+
+    def get_gpu_metrics():
+        """Parse rocm-smi JSON output into Prometheus metrics."""
+        lines = []
+        try:
+            result = subprocess.run(
+                ["rocm-smi", "--showuse", "--showmemuse", "--showtemp",
+                 "--showpower", "--showclocks", "--json"],
+                capture_output=True, text=True, timeout=10,
+            )
+            data = json.loads(result.stdout)
+        except Exception as e:
+            lines.append(f"# rocm_smi_error {{error=\"{e}\"}}")
+            return "\n".join(lines)
+
+        for card_key, card in data.items():
+            if not card_key.startswith("card"):
+                continue
+            gpu_id = re.sub(r"[^0-9]", "", card_key)
+
+            # GPU Utilization %
+            gpu_use = card.get("GPU use (%)", card.get("GPU Use (%)", ""))
+            if gpu_use != "":
+                val = str(gpu_use).replace("%", "").strip()
+                lines.append(f'amd_gpu_utilization_percent{{gpu="{gpu_id}"}} {val}')
+
+            # VRAM Used (MB) and Total (MB)
+            vram_used = card.get("VRAM Total Used Memory (B)", "")
+            vram_total = card.get("VRAM Total Memory (B)", "")
+            if vram_used:
+                lines.append(f'amd_gpu_vram_used_bytes{{gpu="{gpu_id}"}} {vram_used}')
+            if vram_total:
+                lines.append(f'amd_gpu_vram_total_bytes{{gpu="{gpu_id}"}} {vram_total}')
+
+            # Temperature (edge)
+            temp = card.get("Temperature (Sensor edge) (C)",
+                           card.get("Temperature (Sensor junction) (C)", ""))
+            if temp != "":
+                val = str(temp).replace("C", "").strip()
+                lines.append(f'amd_gpu_temperature_celsius{{gpu="{gpu_id}"}} {val}')
+
+            # Power draw
+            power = card.get("Current Socket Graphics Package Power (W)",
+                           card.get("Average Graphics Package Power (W)", ""))
+            if power != "":
+                val = str(power).replace("W", "").strip()
+                lines.append(f'amd_gpu_power_watts{{gpu="{gpu_id}"}} {val}')
+
+            # SCLK (shader clock)
+            sclk = card.get("sclk clock speed:", card.get("sclk Clock Speed:", ""))
+            if sclk:
+                val = str(sclk).replace("Mhz", "").replace("MHz", "").strip()
+                lines.append(f'amd_gpu_sclk_mhz{{gpu="{gpu_id}"}} {val}')
+
+            # MCLK (memory clock)
+            mclk = card.get("mclk clock speed:", card.get("mclk Clock Speed:", ""))
+            if mclk:
+                val = str(mclk).replace("Mhz", "").replace("MHz", "").strip()
+                lines.append(f'amd_gpu_mclk_mhz{{gpu="{gpu_id}"}} {val}')
+
+        return "\n".join(lines)
+
+    class MetricsHandler(http.server.BaseHTTPRequestHandler):
+        def do_GET(self):
+            if self.path == "/metrics":
+                metrics = get_gpu_metrics()
+                self.send_response(200)
+                self.send_header("Content-Type", "text/plain; charset=utf-8")
+                self.end_headers()
+                self.wfile.write(metrics.encode())
+            elif self.path == "/health":
+                self.send_response(200)
+                self.end_headers()
+                self.wfile.write(b"ok")
+            else:
+                self.send_response(404)
+                self.end_headers()
+
+        def log_message(self, format, *args):
+            pass  # suppress request logs
+
+    if __name__ == "__main__":
+        server = http.server.HTTPServer(("", PORT), MetricsHandler)
+        print(f"AMD GPU exporter listening on :{PORT}")
+        server.serve_forever()
+---
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
-  name: dcgm-exporter
+  name: amd-gpu-exporter
   namespace: monitoring
   labels:
-    app: dcgm-exporter
+    app: amd-gpu-exporter
 spec:
   selector:
     matchLabels:
-      app: dcgm-exporter
+      app: amd-gpu-exporter
   template:
     metadata:
       labels:
-        app: dcgm-exporter
+        app: amd-gpu-exporter
       annotations:
         prometheus.io/scrape: "true"
         prometheus.io/port: "9400"
         prometheus.io/path: "/metrics"
     spec:
-      # DCGM needs access to NVIDIA devices on the host
+      # Needs access to /dev/kfd and /dev/dri for rocm-smi
+      hostPID: false
       containers:
-      - name: dcgm-exporter
-        image: nvcr.io/nvidia/k8s/dcgm-exporter:3.3.9-3.6.1-ubuntu22.04
+      - name: exporter
+        image: rocm/dev-ubuntu-24.04:6.3.3-complete
+        command: ["python3", "/opt/exporter.py"]
         ports:
         - name: metrics
           containerPort: 9400
-        env:
-        - name: DCGM_EXPORTER_KUBERNETES
-          value: "true"
-        - name: DCGM_EXPORTER_LISTEN
-          value: ":9400"
         securityContext:
           runAsNonRoot: false
           runAsUser: 0
         resources:
           requests:
-            memory: "128Mi"
-            cpu: "50m"
+            memory: "64Mi"
+            cpu: "25m"
           limits:
-            memory: "256Mi"
-            cpu: "200m"
+            memory: "128Mi"
+            cpu: "100m"
         volumeMounts:
-        - name: device-plugins
-          mountPath: /var/lib/kubelet/device-plugins
+        - name: script
+          mountPath: /opt/exporter.py
+          subPath: exporter.py
+        - name: dev-kfd
+          mountPath: /dev/kfd
+        - name: dev-dri
+          mountPath: /dev/dri
       volumes:
-      - name: device-plugins
+      - name: script
+        configMap:
+          name: amd-gpu-exporter-script
+      - name: dev-kfd
         hostPath:
-          path: /var/lib/kubelet/device-plugins
+          path: /dev/kfd
+      - name: dev-dri
+        hostPath:
+          path: /dev/dri
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: dcgm-exporter
+  name: amd-gpu-exporter
   namespace: monitoring
   labels:
-    app: dcgm-exporter
+    app: amd-gpu-exporter
   annotations:
     prometheus.io/scrape: "true"
     prometheus.io/port: "9400"
 spec:
   selector:
-    app: dcgm-exporter
+    app: amd-gpu-exporter
   ports:
   - name: metrics
     port: 9400

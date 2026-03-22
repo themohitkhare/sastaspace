@@ -13,7 +13,7 @@
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
-          "expr": "DCGM_FI_DEV_GPU_UTIL{gpu=~\"$gpu\"}",
+          "expr": "amd_gpu_utilization_percent{gpu=~\"$gpu\"}",
           "legendFormat": "GPU {{gpu}}",
           "refId": "A"
         }
@@ -34,13 +34,13 @@
       }
     },
     {
-      "title": "GPU Memory Used",
+      "title": "VRAM Used %",
       "type": "gauge",
       "gridPos": { "h": 6, "w": 6, "x": 6, "y": 0 },
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
-          "expr": "DCGM_FI_DEV_FB_USED{gpu=~\"$gpu\"} / (DCGM_FI_DEV_FB_USED{gpu=~\"$gpu\"} + DCGM_FI_DEV_FB_FREE{gpu=~\"$gpu\"}) * 100",
+          "expr": "amd_gpu_vram_used_bytes{gpu=~\"$gpu\"} / amd_gpu_vram_total_bytes{gpu=~\"$gpu\"} * 100",
           "legendFormat": "GPU {{gpu}}",
           "refId": "A"
         }
@@ -67,7 +67,7 @@
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
-          "expr": "DCGM_FI_DEV_GPU_TEMP{gpu=~\"$gpu\"}",
+          "expr": "amd_gpu_temperature_celsius{gpu=~\"$gpu\"}",
           "legendFormat": "GPU {{gpu}}",
           "refId": "A"
         }
@@ -75,13 +75,13 @@
       "fieldConfig": {
         "defaults": {
           "min": 0,
-          "max": 100,
+          "max": 110,
           "unit": "celsius",
           "thresholds": {
             "steps": [
               { "color": "green", "value": null },
               { "color": "yellow", "value": 70 },
-              { "color": "red", "value": 85 }
+              { "color": "red", "value": 90 }
             ]
           }
         }
@@ -94,7 +94,7 @@
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
-          "expr": "DCGM_FI_DEV_POWER_USAGE{gpu=~\"$gpu\"}",
+          "expr": "amd_gpu_power_watts{gpu=~\"$gpu\"}",
           "legendFormat": "GPU {{gpu}}",
           "refId": "A"
         }
@@ -107,7 +107,7 @@
             "steps": [
               { "color": "green", "value": null },
               { "color": "yellow", "value": 200 },
-              { "color": "red", "value": 300 }
+              { "color": "red", "value": 330 }
             ]
           }
         }
@@ -120,8 +120,8 @@
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
-          "expr": "DCGM_FI_DEV_GPU_UTIL{gpu=~\"$gpu\"}",
-          "legendFormat": "GPU {{gpu}} Utilization",
+          "expr": "amd_gpu_utilization_percent{gpu=~\"$gpu\"}",
+          "legendFormat": "GPU {{gpu}}",
           "refId": "A"
         }
       ],
@@ -135,19 +135,19 @@
       }
     },
     {
-      "title": "GPU Memory Over Time (MiB)",
+      "title": "VRAM Usage Over Time",
       "type": "timeseries",
       "gridPos": { "h": 8, "w": 12, "x": 12, "y": 6 },
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
-          "expr": "DCGM_FI_DEV_FB_USED{gpu=~\"$gpu\"}",
-          "legendFormat": "GPU {{gpu}} Used",
+          "expr": "amd_gpu_vram_used_bytes{gpu=~\"$gpu\"} / 1048576",
+          "legendFormat": "GPU {{gpu}} Used (MiB)",
           "refId": "A"
         },
         {
-          "expr": "DCGM_FI_DEV_FB_USED{gpu=~\"$gpu\"} + DCGM_FI_DEV_FB_FREE{gpu=~\"$gpu\"}",
-          "legendFormat": "GPU {{gpu}} Total",
+          "expr": "amd_gpu_vram_total_bytes{gpu=~\"$gpu\"} / 1048576",
+          "legendFormat": "GPU {{gpu}} Total (MiB)",
           "refId": "B"
         }
       ],
@@ -166,8 +166,8 @@
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
-          "expr": "DCGM_FI_DEV_GPU_TEMP{gpu=~\"$gpu\"}",
-          "legendFormat": "GPU {{gpu}} Temp",
+          "expr": "amd_gpu_temperature_celsius{gpu=~\"$gpu\"}",
+          "legendFormat": "GPU {{gpu}}",
           "refId": "A"
         }
       ],
@@ -182,7 +182,7 @@
           "thresholds": {
             "steps": [
               { "color": "green", "value": null },
-              { "color": "red", "value": 85 }
+              { "color": "red", "value": 90 }
             ]
           }
         }
@@ -195,8 +195,8 @@
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
-          "expr": "DCGM_FI_DEV_POWER_USAGE{gpu=~\"$gpu\"}",
-          "legendFormat": "GPU {{gpu}} Power",
+          "expr": "amd_gpu_power_watts{gpu=~\"$gpu\"}",
+          "legendFormat": "GPU {{gpu}}",
           "refId": "A"
         }
       ],
@@ -209,14 +209,14 @@
       }
     },
     {
-      "title": "SM Clock Speed",
+      "title": "Shader Clock (SCLK)",
       "type": "timeseries",
       "gridPos": { "h": 8, "w": 12, "x": 0, "y": 22 },
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
-          "expr": "DCGM_FI_DEV_SM_CLOCK{gpu=~\"$gpu\"}",
-          "legendFormat": "GPU {{gpu}} SM Clock",
+          "expr": "amd_gpu_sclk_mhz{gpu=~\"$gpu\"}",
+          "legendFormat": "GPU {{gpu}} SCLK",
           "refId": "A"
         }
       ],
@@ -229,40 +229,35 @@
       }
     },
     {
-      "title": "PCIe Throughput",
+      "title": "Memory Clock (MCLK)",
       "type": "timeseries",
       "gridPos": { "h": 8, "w": 12, "x": 12, "y": 22 },
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
-          "expr": "DCGM_FI_DEV_PCIE_TX_THROUGHPUT{gpu=~\"$gpu\"}",
-          "legendFormat": "GPU {{gpu}} TX",
-          "refId": "A"
-        },
-        {
-          "expr": "DCGM_FI_DEV_PCIE_RX_THROUGHPUT{gpu=~\"$gpu\"}",
-          "legendFormat": "GPU {{gpu}} RX",
+          "expr": "amd_gpu_mclk_mhz{gpu=~\"$gpu\"}",
+          "legendFormat": "GPU {{gpu}} MCLK",
           "refId": "B"
         }
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "KBs",
+          "unit": "clockmhz",
           "min": 0,
-          "custom": { "fillOpacity": 15 }
+          "custom": { "fillOpacity": 10 }
         }
       }
     }
   ],
   "schemaVersion": 39,
-  "tags": ["gpu", "nvidia", "dcgm"],
+  "tags": ["gpu", "amd", "rocm"],
   "templating": {
     "list": [
       {
         "name": "gpu",
         "type": "query",
         "datasource": { "type": "prometheus", "uid": "prometheus" },
-        "query": "label_values(DCGM_FI_DEV_GPU_UTIL, gpu)",
+        "query": "label_values(amd_gpu_utilization_percent, gpu)",
         "includeAll": true,
         "multi": true,
         "refresh": 2,
@@ -273,7 +268,7 @@
   "time": { "from": "now-1h", "to": "now" },
   "timepicker": {},
   "timezone": "browser",
-  "title": "GPU Monitoring (NVIDIA DCGM)",
-  "uid": "gpu-nvidia-dcgm",
+  "title": "GPU Monitoring (AMD ROCm)",
+  "uid": "gpu-amd-rocm",
   "version": 1
 }
