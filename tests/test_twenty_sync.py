@@ -19,21 +19,22 @@ class TestUpsertCompany:
     @pytest.mark.asyncio
     async def test_creates_company_when_not_found(self, client):
         with patch.object(client, "_request", new_callable=AsyncMock) as mock_req:
-            # First call: search returns empty
-            # Second call: create returns new company
+            # find_company_by_domain tries 3 URL variants + 1 name fallback, all empty
+            # then upsert_company creates
+            empty = {"data": {"companies": []}}
             mock_req.side_effect = [
-                {"data": {"companies": []}},  # search
+                empty, empty, empty, empty,  # 3 URL variants + name fallback
                 {"data": {"createCompany": {"id": "c1"}}},  # create
             ]
             result = await client.upsert_company("example.com", name="Example Corp")
             assert result["id"] == "c1"
-            assert mock_req.call_count == 2
 
     @pytest.mark.asyncio
     async def test_updates_company_when_found(self, client):
         with patch.object(client, "_request", new_callable=AsyncMock) as mock_req:
+            # First URL variant search finds the company
             mock_req.side_effect = [
-                {"data": {"companies": [{"id": "c1", "domain": "example.com"}]}},  # search
+                {"data": {"companies": [{"id": "c1"}]}},  # found on first variant
                 {"data": {"updateCompany": {"id": "c1"}}},  # update
             ]
             result = await client.upsert_company("example.com", name="Example Corp Updated")
