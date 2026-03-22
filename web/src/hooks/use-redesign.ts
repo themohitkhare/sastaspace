@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useCallback, useEffect } from "react";
-import { submitRedesign, streamJobStatus } from "@/lib/sse-client";
+import { submitRedesign, pollJobStatus } from "@/lib/sse-client";
 import { extractDomain } from "@/lib/url-utils";
 
 type StepState = {
@@ -11,8 +11,6 @@ type StepState = {
   status: "pending" | "active" | "done";
 };
 
-export type ActivityItem = { id: string; agent: string; message: string; timestamp: number };
-export type DiscoveryItem = { label: string; value: string };
 export type RedesignTier = "free" | "premium";
 
 export type RedesignState =
@@ -25,12 +23,13 @@ export type RedesignState =
       steps: StepState[];
       tier: RedesignTier;
       jobId: string;
-      activities: ActivityItem[];
-      discoveryItems: DiscoveryItem[];
-      screenshot?: string;
+      siteColors: string[];
+      siteTitle: string;
+      retryCount: number;
+      jobCreatedAt: string;
     }
   | { status: "done"; subdomain: string; originalUrl: string; domain: string; tier: RedesignTier }
-  | { status: "error"; message: string; url: string };
+  | { status: "error"; message: string; url: string; resumeJobId?: string };
 
 export const STEPS = [
   { name: "crawling", label: (d: string) => `Analyzing ${d}` },
@@ -48,15 +47,20 @@ function makeInitialSteps(domain: string): StepState[] {
   }));
 }
 
-const STEP_INTERMEDIATE_VALUES: Record<string, number> = {
-  crawling: 70,
-  redesigning: 50,
-  deploying: 60,
+// Map job status → (step name, progress %)
+const STATUS_TO_STEP: Record<string, { stepName: string; progressValue: number }> = {
+  queued: { stepName: "crawling", progressValue: 5 },
+  crawling: { stepName: "crawling", progressValue: 25 },
+  redesigning: { stepName: "redesigning", progressValue: 65 },
+  deploying: { stepName: "deploying", progressValue: 90 },
 };
 
 const STEP_NAMES = STEPS.map((s) => s.name);
 
-const GENERIC_ERROR_MESSAGE = "We couldn't redesign that site right now. This can happen with very large or complex websites.";
+const GENERIC_ERROR_MESSAGE =
+  "We couldn't redesign that site right now. This can happen with very large or complex websites.";
+
+const JOB_TIMEOUT_MS = 15 * 60 * 1000; // 15 minutes
 
 export function useRedesign() {
   const [state, setState] = useState<RedesignState>({ status: "idle" });
@@ -64,134 +68,106 @@ export function useRedesign() {
   const lastUrlRef = useRef<string>("");
   const lastTierRef = useRef<RedesignTier>("free");
 
-  const streamJob = useCallback(
+  const pollJob = useCallback(
     async (jobId: string, url: string, tier: RedesignTier, controller: AbortController) => {
       const domain = extractDomain(url);
-      const initialSteps = makeInitialSteps(domain);
 
       setState({
         status: "progress",
         currentStep: "crawling",
         domain,
-        steps: initialSteps,
+        steps: makeInitialSteps(domain),
         tier,
         jobId,
-        activities: [],
-        discoveryItems: [],
-        screenshot: undefined,
+        siteColors: [],
+        siteTitle: "",
+        retryCount: 0,
+        jobCreatedAt: "",
       });
 
       try {
-        for await (const event of streamJobStatus(jobId, controller.signal)) {
+        for await (const job of pollJobStatus(jobId, controller.signal)) {
           if (controller.signal.aborted) return;
 
-          if (
-            event.event === "crawling" ||
-            event.event === "redesigning" ||
-            event.event === "deploying"
-          ) {
-            const eventIndex = STEP_NAMES.indexOf(event.event);
-            const updatedSteps = makeInitialSteps(domain).map((step, i) => {
-              if (i < eventIndex) {
-                return { ...step, value: 100, status: "done" as const };
-              }
-              if (i === eventIndex) {
-                return {
-                  ...step,
-                  value: STEP_INTERMEDIATE_VALUES[event.event] ?? 50,
-                  status: "active" as const,
-                };
-              }
-              return step;
-            });
+          // Guard: job too old
+          if (job.created_at) {
+            const ageMs = Date.now() - new Date(job.created_at).getTime();
+            if (ageMs > JOB_TIMEOUT_MS) {
+              setState({
+                status: "error",
+                message:
+                  "This is taking longer than expected. Please check back in a few minutes.",
+                url,
+              });
+              return;
+            }
+          }
 
-            setState((prev) => ({
-              status: "progress",
-              currentStep: event.event,
-              domain,
-              steps: updatedSteps,
-              tier,
-              jobId,
-              activities: prev.status === "progress" ? prev.activities : [],
-              discoveryItems: prev.status === "progress" ? prev.discoveryItems : [],
-              screenshot: prev.status === "progress" ? prev.screenshot : undefined,
-            }));
-          } else if (event.event === "done") {
+          if (job.status === "failed") {
+            setState({
+              status: "error",
+              message: job.error || GENERIC_ERROR_MESSAGE,
+              url,
+            });
+            return;
+          }
+
+          if (job.status === "done") {
+            // Flash all steps to 100% for 800ms before transitioning
             const doneSteps = makeInitialSteps(domain).map((step) => ({
               ...step,
               value: 100,
               status: "done" as const,
             }));
-
-            setState((prev) => ({
-              status: "progress",
-              currentStep: "done",
-              domain,
-              steps: doneSteps,
-              tier,
-              jobId,
-              activities: prev.status === "progress" ? prev.activities : [],
-              discoveryItems: prev.status === "progress" ? prev.discoveryItems : [],
-              screenshot: prev.status === "progress" ? prev.screenshot : undefined,
-            }));
-
-            // Pause 800ms before transitioning to done state
+            setState((prev) =>
+              prev.status === "progress" ? { ...prev, currentStep: "done", steps: doneSteps } : prev
+            );
             await new Promise((r) => setTimeout(r, 800));
-
             if (controller.signal.aborted) return;
-
             setState({
               status: "done",
-              subdomain: event.data.subdomain as string,
+              subdomain: job.subdomain!,
               originalUrl: url,
               domain,
               tier,
             });
-          } else if (event.event === "error") {
-            setState({
-              status: "error",
-              message: event.data.error as string,
-              url,
-            });
-          } else if (event.event === "agent_activity") {
-            const activity: ActivityItem = {
-              id: `${Date.now()}-${Math.random()}`,
-              agent: (event.data.agent as string) ?? "",
-              message: (event.data.message as string) ?? "",
-              timestamp: Date.now(),
-            };
-            setState((prev) => {
-              if (prev.status !== "progress") return prev;
-              const updates: Partial<typeof prev> = {
-                activities: [...prev.activities.slice(-9), activity],
-              };
-              if (event.data.step_progress) {
-                updates.steps = prev.steps.map((s) =>
-                  s.name === "redesigning"
-                    ? { ...s, value: event.data.step_progress as number }
-                    : s
-                );
-              }
-              return { ...prev, ...updates };
-            });
-          } else if (event.event === "discovery") {
-            setState((prev) => {
-              if (prev.status !== "progress") return prev;
-              return { ...prev, discoveryItems: event.data.items as DiscoveryItem[] };
-            });
-          } else if (event.event === "screenshot") {
-            setState((prev) => {
-              if (prev.status !== "progress") return prev;
-              return { ...prev, screenshot: event.data.screenshot_base64 as string };
-            });
+            return;
           }
+
+          // In-progress update
+          const { stepName, progressValue } =
+            STATUS_TO_STEP[job.status] ?? STATUS_TO_STEP.queued;
+          const stepIndex = STEP_NAMES.indexOf(stepName);
+          const updatedSteps = makeInitialSteps(domain).map((step, i) => {
+            if (i < stepIndex) return { ...step, value: 100, status: "done" as const };
+            if (i === stepIndex)
+              return { ...step, value: progressValue, status: "active" as const };
+            return step;
+          });
+
+          setState({
+            status: "progress",
+            currentStep: stepName,
+            domain,
+            steps: updatedSteps,
+            tier,
+            jobId,
+            siteColors: job.site_colors ?? [],
+            siteTitle: job.site_title ?? "",
+            retryCount: 0,
+            jobCreatedAt: job.created_at ?? "",
+          });
         }
-      } catch {
+      } catch (e) {
         if (controller.signal.aborted) return;
+        const isPollFailed = e instanceof Error && e.message === "POLL_FAILED";
         setState({
           status: "error",
-          message: GENERIC_ERROR_MESSAGE,
+          message: isPollFailed
+            ? "Having trouble connecting. Your redesign may still be in progress — check back in a few minutes."
+            : GENERIC_ERROR_MESSAGE,
           url,
+          resumeJobId: isPollFailed ? jobId : undefined,
         });
       }
     },
@@ -200,7 +176,6 @@ export function useRedesign() {
 
   const start = useCallback(
     async (url: string, tier: RedesignTier = "free") => {
-      // Abort any existing connection
       abortRef.current?.abort();
       const controller = new AbortController();
       abortRef.current = controller;
@@ -213,39 +188,45 @@ export function useRedesign() {
         const jobId = await submitRedesign(url, tier, controller.signal);
         if (controller.signal.aborted) return;
 
-        // Push job_id to URL for reconnection support
+        // Persist job ID + original URL for page-refresh reconnection
         if (typeof window !== "undefined") {
           const params = new URLSearchParams(window.location.search);
           params.set("job", jobId);
-          const newUrl = `${window.location.pathname}?${params.toString()}`;
-          window.history.replaceState(null, "", newUrl);
+          params.set("url", url);
+          window.history.replaceState(
+            null,
+            "",
+            `${window.location.pathname}?${params.toString()}`
+          );
         }
 
-        await streamJob(jobId, url, tier, controller);
+        await pollJob(jobId, url, tier, controller);
       } catch {
         if (controller.signal.aborted) return;
-        setState({
-          status: "error",
-          message: GENERIC_ERROR_MESSAGE,
-          url,
-        });
+        setState({ status: "error", message: GENERIC_ERROR_MESSAGE, url });
       }
     },
-    [streamJob]
+    [pollJob]
   );
 
   const retry = useCallback(() => {
-    if (state.status === "error") {
+    if (state.status !== "error") return;
+    if (state.resumeJobId) {
+      // Network failure: resume polling the existing job
+      const controller = new AbortController();
+      abortRef.current = controller;
+      pollJob(state.resumeJobId, state.url, lastTierRef.current, controller);
+    } else {
       start(state.url, lastTierRef.current);
     }
-  }, [state, start]);
+  }, [state, start, pollJob]);
 
   const reset = useCallback(() => {
     abortRef.current?.abort();
     setState({ status: "idle" });
   }, []);
 
-  // On mount: reconnect if ?job= param is present in URL
+  // On mount: if ?job= present in URL, resume polling without re-submitting
   useEffect(() => {
     if (typeof window === "undefined") return;
     const params = new URLSearchParams(window.location.search);
@@ -254,9 +235,9 @@ export function useRedesign() {
 
     const controller = new AbortController();
     abortRef.current = controller;
-    // We don't have the original URL, use empty string as placeholder
-    const url = lastUrlRef.current || "";
-    streamJob(jobId, url, lastTierRef.current, controller);
+    const url = params.get("url") || lastUrlRef.current || "";
+    if (url) lastUrlRef.current = url;
+    pollJob(jobId, url, lastTierRef.current, controller);
 
     return () => {
       controller.abort();
