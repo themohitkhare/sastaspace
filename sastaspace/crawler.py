@@ -5,15 +5,20 @@ import asyncio
 import base64
 import contextlib
 import json
+import logging
 import re
 import subprocess
 import sys
+import tempfile
 from dataclasses import dataclass, field
+from pathlib import Path
 from urllib.parse import urljoin, urlparse, urlunparse
 
 from bs4 import BeautifulSoup
 from openai import OpenAI
 from playwright.async_api import async_playwright
+
+logger = logging.getLogger(__name__)
 
 # Lazy imports inside enhanced_crawl() to avoid circular import with business_profiler
 
@@ -599,7 +604,15 @@ async def enhanced_crawl(url: str, settings):
                             )
 
             # 6. Download and validate assets
-            assets = await download_and_validate_assets(asset_urls, base_url=url)
+            asset_url_strings = [a["url"] for a in asset_urls]
+            tmp_dir = Path(tempfile.mkdtemp(prefix="sastaspace-assets-"))
+            try:
+                assets = await download_and_validate_assets(asset_url_strings, tmp_dir)
+            except Exception:
+                logger.warning("Asset download failed, continuing without assets", exc_info=True)
+                from sastaspace.asset_downloader import AssetManifest
+
+                assets = AssetManifest(assets=[], total_size_bytes=0)
 
             # 7. Build business profile via LLM (sync call via to_thread)
             homepage_text = homepage.text_content
