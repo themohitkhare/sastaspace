@@ -11,82 +11,73 @@ class PageCrawlResult:
     """Lightweight crawl result for internal (non-homepage) pages."""
 
     url: str
-    title: str
+    page_type: str = "other"
+    title: str = ""
     headings: list[str] = field(default_factory=list)
     text_content: str = ""
-    navigation_links: list[dict] = field(default_factory=list)
+    images: list[dict] = field(default_factory=list)
+    testimonials: list[str] = field(default_factory=list)
     error: str = ""
-
-    def to_prompt_context(self) -> str:
-        lines = [
-            f"## Page Title\n{self.title}",
-            f"## URL\n{self.url}",
-        ]
-        if self.headings:
-            lines.append("## Headings\n" + "\n".join(f"- {h}" for h in self.headings))
-        if self.navigation_links:
-            nav = "\n".join(f"- {n['text']} → {n['href']}" for n in self.navigation_links)
-            lines.append(f"## Navigation\n{nav}")
-        if self.text_content:
-            lines.append(f"## Main Text Content\n{self.text_content[:4999]}")
-        return "\n\n".join(lines)
 
 
 @dataclass
 class DownloadedAsset:
-    """A single downloaded asset (image, font, CSS, etc.)."""
+    """A validated, locally-stored asset."""
 
     original_url: str
-    local_path: str
-    asset_type: str
+    local_path: str  # relative: "assets/logo.png"
+    content_type: str  # "image/png", "image/svg+xml", etc.
     size_bytes: int
-    is_logo: bool = False
-    is_favicon: bool = False
+    file_hash: str = ""  # SHA-256 for content deduplication
+    source_page: str = ""  # which page it came from
+    tmp_path: object = None  # Path — validated file in temp directory, moved by deployer
 
 
 @dataclass
 class AssetManifest:
-    """Collection of all downloaded assets for a site."""
+    """Mapping of original URLs to local paths for the redesign LLM."""
 
     assets: list[DownloadedAsset] = field(default_factory=list)
+    total_size_bytes: int = 0
 
     def to_prompt_context(self, max_assets: int = 15) -> str:
         if not self.assets:
-            return "## Downloaded Assets\nNo downloadable assets found."
-
-        # Prioritize: logos first, favicons second, then by size descending
-        def sort_key(a: DownloadedAsset) -> tuple[int, int]:
-            priority = 0 if a.is_logo else (1 if a.is_favicon else 2)
-            return (priority, -a.size_bytes)
-
-        sorted_assets = sorted(self.assets, key=sort_key)
-        selected = sorted_assets[:max_assets]
-
-        lines = ["## Downloaded Assets"]
+            return ""
+        prioritized = sorted(
+            self.assets,
+            key=lambda a: (
+                0 if "logo" in a.local_path.lower() or "favicon" in a.local_path.lower() else 1,
+                -a.size_bytes,
+            ),
+        )
+        selected = prioritized[:max_assets]
+        lines = [
+            "## Available Assets",
+            "Use these local paths in your HTML. Do NOT use placeholder images.",
+            "",
+            "| Local Path | Type | Size |",
+            "|---|---|---|",
+        ]
         for a in selected:
-            tags = []
-            if a.is_logo:
-                tags.append("LOGO")
-            if a.is_favicon:
-                tags.append("FAVICON")
-            tag_str = f" [{', '.join(tags)}]" if tags else ""
-            lines.append(f"- {a.original_url} ({a.asset_type}, {a.size_bytes} bytes){tag_str}")
+            size_kb = a.size_bytes // 1024
+            lines.append(f"| {a.local_path} | {a.content_type} | {size_kb}KB |")
         return "\n".join(lines)
 
 
 @dataclass
 class BusinessProfile:
-    """Extracted or inferred business information."""
+    """Structured business intelligence extracted by LLM."""
 
     business_name: str
     industry: str = "unknown"
-    description: str = "unknown"
+    services: list[str] = field(default_factory=list)
     target_audience: str = "unknown"
-    brand_voice: str = "unknown"
-    primary_colors: list[str] = field(default_factory=list)
-    contact_email: str = "unknown"
-    phone: str = "unknown"
-    address: str = "unknown"
+    tone: str = "unknown"
+    differentiators: list[str] = field(default_factory=list)
+    social_proof: list[str] = field(default_factory=list)
+    pricing_model: str = "none-found"
+    cta_primary: str = "unknown"
+    brand_personality: str = "unknown"
 
     @classmethod
     def minimal(cls, business_name: str) -> BusinessProfile:
@@ -96,17 +87,17 @@ class BusinessProfile:
     def to_prompt_context(self) -> str:
         lines = [
             "## Business Profile",
-            f"- **Name:** {self.business_name}",
-            f"- **Industry:** {self.industry}",
-            f"- **Description:** {self.description}",
-            f"- **Target Audience:** {self.target_audience}",
-            f"- **Brand Voice:** {self.brand_voice}",
-            f"- **Contact Email:** {self.contact_email}",
-            f"- **Phone:** {self.phone}",
-            f"- **Address:** {self.address}",
+            f"- **Business:** {self.business_name} — {self.industry}",
         ]
-        if self.primary_colors:
-            lines.append(f"- **Primary Colors:** {', '.join(self.primary_colors)}")
+        if self.services:
+            lines.append(f"- **Services:** {', '.join(self.services)}")
+        lines.append(f"- **Audience:** {self.target_audience}")
+        lines.append(f"- **Tone:** {self.tone} — {self.brand_personality}")
+        if self.differentiators:
+            lines.append(f"- **Key differentiators:** {', '.join(self.differentiators)}")
+        if self.social_proof:
+            lines.append(f"- **Social proof:** {'; '.join(self.social_proof)}")
+        lines.append(f"- **Primary CTA:** {self.cta_primary}")
         return "\n".join(lines)
 
 
@@ -116,26 +107,36 @@ class EnhancedCrawlResult:
 
     homepage: object  # CrawlResult — typed as object to avoid circular import
     internal_pages: list[PageCrawlResult] = field(default_factory=list)
-    asset_manifest: AssetManifest = field(default_factory=AssetManifest)
+    assets: AssetManifest = field(default_factory=AssetManifest)
     business_profile: BusinessProfile = field(default_factory=lambda: BusinessProfile.minimal(""))
 
     def to_prompt_context(self) -> str:
-        sections = []
-
-        # Business profile
-        sections.append(self.business_profile.to_prompt_context())
-
-        # Asset manifest
-        sections.append(self.asset_manifest.to_prompt_context())
-
-        # Homepage crawl context
+        parts = []
+        parts.append(self.business_profile.to_prompt_context())
+        parts.append("")
+        asset_ctx = self.assets.to_prompt_context()
+        if asset_ctx:
+            parts.append(asset_ctx)
+        else:
+            parts.append(
+                "No downloadable assets found. Use CSS gradients, solid colors, "
+                "and geometric shapes for visual interest. Do not reference external image URLs."
+            )
+        parts.append("")
+        parts.append("## Original Website Data")
         if hasattr(self.homepage, "to_prompt_context"):
-            sections.append("# Homepage\n" + self.homepage.to_prompt_context())
-
-        # Internal pages
+            parts.append(self.homepage.to_prompt_context())
         if self.internal_pages:
-            sections.append("# Internal Pages")
-            for page in self.internal_pages:
-                sections.append(page.to_prompt_context())
-
-        return "\n\n".join(sections)
+            parts.append("")
+            parts.append("## Internal Pages")
+            for p in self.internal_pages:
+                if p.error:
+                    continue
+                parts.append(f"\n### {p.page_type.title()}: {p.title}")
+                if p.headings:
+                    parts.append("Headings: " + ", ".join(p.headings[:10]))
+                if p.text_content:
+                    parts.append(p.text_content[:2000])
+                if p.testimonials:
+                    parts.append("Testimonials: " + " | ".join(p.testimonials[:5]))
+        return "\n".join(parts)
