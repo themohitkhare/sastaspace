@@ -56,6 +56,12 @@ class Settings(BaseSettings):
     # Redis
     redis_url: str = "redis://localhost:6379"
 
+    # Twenty CRM (empty = integration disabled)
+    twenty_url: str = ""
+    twenty_api_key: str = ""
+    twenty_webhook_secret: str = ""
+    twenty_admin_key: str = ""
+
     # Browserless (remote Chromium via CDP)
     browserless_url: str = "ws://localhost:3100"
 

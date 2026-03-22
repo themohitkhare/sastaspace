@@ -446,6 +446,73 @@ def make_app(sites_dir: Path) -> FastAPI:
             logger.warning("Twenty person creation failed: %s", e)
             return {"ok": True}  # Don't reveal failures
 
+    # ---- Webhook routes ----
+
+    @app.post("/webhooks/twenty")
+    async def twenty_webhook(request: Request):
+        """Handle admin actions from Twenty CRM via webhooks."""
+        import hashlib
+
+        from sastaspace.admin import (
+            delete_site_db_record,
+            delete_site_files,
+            get_original_url_from_db,
+            verify_webhook_signature,
+        )
+        from sastaspace.twenty_sync import get_twenty_client
+
+        if not settings.twenty_webhook_secret:
+            return Response(status_code=404)
+
+        body = await request.body()
+        signature = request.headers.get("X-Twenty-Webhook-Signature", "")
+        timestamp = request.headers.get("X-Twenty-Webhook-Timestamp", "")
+
+        if not verify_webhook_signature(body, signature, timestamp, settings.twenty_webhook_secret):
+            return Response(status_code=401)
+
+        # Redis dedup — skip duplicate webhooks
+        # SET NX returns True if key was newly created (first time), None if it already existed
+        payload_hash = hashlib.sha256(body).hexdigest()
+        if svc and svc._redis:
+            is_new = await svc._redis.set(f"webhook:twenty:{payload_hash}", "1", nx=True, ex=600)
+            if not is_new:  # None = key already existed = duplicate webhook
+                return Response(status_code=200, content="duplicate")
+
+        payload = json.loads(body)
+        data = payload.get("data", {})
+        action = data.get("adminAction")
+        subdomain = data.get("subdomain", "")
+        record_id = data.get("id", "")
+
+        twenty = get_twenty_client(settings.twenty_url, settings.twenty_api_key)
+
+        if action == "delete":
+            await delete_site_files(subdomain, settings.sites_dir)
+            await delete_site_db_record(subdomain)
+            await twenty.update_redesign_job(record_id, status="deleted", adminAction="none")
+            return Response(status_code=200, content="deleted")
+
+        elif action == "reprocess":
+            url = await get_original_url_from_db(subdomain)
+            if not url:
+                await twenty.update_redesign_job(
+                    record_id, adminAction="none", errorMessage="Original URL not found"
+                )
+                return Response(status_code=404, content="URL not found")
+            # Enqueue new job BEFORE deleting files
+            if svc:
+                new_job_id = await svc.enqueue(url, "admin", tier=data.get("tier", "free"))
+            else:
+                return Response(status_code=503, content="Job service unavailable")
+            await delete_site_files(subdomain, settings.sites_dir)
+            await twenty.update_redesign_job(
+                record_id, status="queued", jobId=new_job_id, adminAction="none"
+            )
+            return Response(status_code=200, content="reprocessing")
+
+        return Response(status_code=400, content="Unknown action")
+
     # ---- Existing routes ----
 
     @app.get("/", response_class=HTMLResponse)
