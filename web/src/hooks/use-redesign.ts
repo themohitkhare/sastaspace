@@ -89,20 +89,6 @@ export function useRedesign() {
         for await (const job of pollJobStatus(jobId, controller.signal)) {
           if (controller.signal.aborted) return;
 
-          // Guard: job too old
-          if (job.created_at) {
-            const ageMs = Date.now() - new Date(job.created_at).getTime();
-            if (ageMs > JOB_TIMEOUT_MS) {
-              setState({
-                status: "error",
-                message:
-                  "This is taking longer than expected. Please check back in a few minutes.",
-                url,
-              });
-              return;
-            }
-          }
-
           if (job.status === "failed") {
             setState({
               status: "error",
@@ -132,6 +118,20 @@ export function useRedesign() {
               tier,
             });
             return;
+          }
+
+          // Guard: job too old (only for in-progress jobs, not done/failed)
+          if (job.created_at) {
+            const ageMs = Date.now() - new Date(job.created_at).getTime();
+            if (ageMs > JOB_TIMEOUT_MS) {
+              setState({
+                status: "error",
+                message:
+                  "This is taking longer than expected. Please check back in a few minutes.",
+                url,
+              });
+              return;
+            }
           }
 
           // In-progress update
