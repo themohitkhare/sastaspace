@@ -79,12 +79,18 @@ describe('pollJobStatus', () => {
     await vi.runAllTimersAsync()
     results.push((await p1).value)
 
-    // Get second value (done — generator should complete)
+    // Get second value (done status is yielded)
     const p2 = gen.next()
     await vi.runAllTimersAsync()
     const r2 = await p2
+    expect(r2.done).toBe(false)
     results.push(r2.value)
-    expect(r2.done).toBe(true)
+
+    // Generator should now be done
+    const p3 = gen.next()
+    await vi.runAllTimersAsync()
+    const r3 = await p3
+    expect(r3.done).toBe(true)
 
     expect(results[0].status).toBe('crawling')
     expect(results[1].status).toBe('done')
@@ -113,19 +119,14 @@ describe('pollJobStatus', () => {
   it('throws POLL_FAILED after 5 consecutive network errors', async () => {
     vi.spyOn(globalThis, 'fetch').mockRejectedValue(new Error('Network error'))
 
-    const collected: JobStatus[] = []
-    await expect(async () => {
-      const gen = pollJobStatus('job-1')
-      for (let i = 0; i < 6; i++) {
-        const p = gen.next()
-        await vi.runAllTimersAsync()
-        const r = await p
-        if (r.done) break
-        collected.push(r.value)
-      }
-    }).rejects.toThrow('POLL_FAILED')
-
-    expect(collected).toHaveLength(0) // never yielded
+    const gen = pollJobStatus('job-1')
+    const p = gen.next()
+    // Attach .catch immediately to prevent unhandled rejection warning
+    const caught = p.catch((e: Error) => e)
+    await vi.runAllTimersAsync()
+    const error = await caught
+    expect(error).toBeInstanceOf(Error)
+    expect((error as Error).message).toBe('POLL_FAILED')
   })
 
   it('stops polling when AbortSignal is aborted', async () => {

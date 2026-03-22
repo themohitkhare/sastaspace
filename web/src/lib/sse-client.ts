@@ -64,8 +64,8 @@ export async function* pollJobStatus(
         consecutiveFailures = 0
         const job = (await resp.json()) as JobStatus
         lastStatus = job.status
-        if (job.status === "done" || job.status === "failed") return job
         yield job
+        if (job.status === "done" || job.status === "failed") return
       } else {
         consecutiveFailures++
       }
