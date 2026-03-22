@@ -46,13 +46,17 @@ data:
                 val = str(gpu_use).replace("%", "").strip()
                 lines.append(f'amd_gpu_utilization_percent{{gpu="{gpu_id}"}} {val}')
 
-            # VRAM Used (MB) and Total (MB)
-            vram_used = card.get("VRAM Total Used Memory (B)", "")
-            vram_total = card.get("VRAM Total Memory (B)", "")
-            if vram_used:
-                lines.append(f'amd_gpu_vram_used_bytes{{gpu="{gpu_id}"}} {vram_used}')
-            if vram_total:
-                lines.append(f'amd_gpu_vram_total_bytes{{gpu="{gpu_id}"}} {vram_total}')
+            # VRAM usage (%) — rocm-smi reports as "GPU Memory Allocated (VRAM%)"
+            vram_pct = card.get("GPU Memory Allocated (VRAM%)", "")
+            if vram_pct != "":
+                val = str(vram_pct).replace("%", "").strip()
+                lines.append(f'amd_gpu_vram_percent{{gpu="{gpu_id}"}} {val}')
+
+            # Memory read/write activity
+            mem_rw = card.get("GPU Memory Read/Write Activity (%)", "")
+            if mem_rw != "" and mem_rw != "N/A":
+                val = str(mem_rw).replace("%", "").strip()
+                lines.append(f'amd_gpu_mem_activity_percent{{gpu="{gpu_id}"}} {val}')
 
             # Temperature (edge)
             temp = card.get("Temperature (Sensor edge) (C)",
@@ -68,17 +72,19 @@ data:
                 val = str(power).replace("W", "").strip()
                 lines.append(f'amd_gpu_power_watts{{gpu="{gpu_id}"}} {val}')
 
-            # SCLK (shader clock)
+            # SCLK (shader clock) — value comes as "(3030Mhz)"
             sclk = card.get("sclk clock speed:", card.get("sclk Clock Speed:", ""))
             if sclk:
-                val = str(sclk).replace("Mhz", "").replace("MHz", "").strip()
-                lines.append(f'amd_gpu_sclk_mhz{{gpu="{gpu_id}"}} {val}')
+                val = re.sub(r"[^0-9.]", "", str(sclk))
+                if val:
+                    lines.append(f'amd_gpu_sclk_mhz{{gpu="{gpu_id}"}} {val}')
 
-            # MCLK (memory clock)
+            # MCLK (memory clock) — value comes as "(1249Mhz)"
             mclk = card.get("mclk clock speed:", card.get("mclk Clock Speed:", ""))
             if mclk:
-                val = str(mclk).replace("Mhz", "").replace("MHz", "").strip()
-                lines.append(f'amd_gpu_mclk_mhz{{gpu="{gpu_id}"}} {val}')
+                val = re.sub(r"[^0-9.]", "", str(mclk))
+                if val:
+                    lines.append(f'amd_gpu_mclk_mhz{{gpu="{gpu_id}"}} {val}')
 
         return "\n".join(lines)
 
@@ -126,7 +132,9 @@ spec:
         prometheus.io/port: "9400"
         prometheus.io/path: "/metrics"
     spec:
-      # Needs access to /dev/kfd and /dev/dri for rocm-smi
+      # Needs access to /dev/kfd (video group=44) and /dev/dri/renderD128 (render group=993)
+      securityContext:
+        supplementalGroups: [44, 993]
       hostPID: false
       containers:
       - name: exporter

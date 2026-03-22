@@ -40,7 +40,7 @@
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
-          "expr": "amd_gpu_vram_used_bytes{gpu=~\"$gpu\"} / amd_gpu_vram_total_bytes{gpu=~\"$gpu\"} * 100",
+          "expr": "amd_gpu_vram_percent{gpu=~\"$gpu\"}",
           "legendFormat": "GPU {{gpu}}",
           "refId": "A"
         }
@@ -135,25 +135,25 @@
       }
     },
     {
-      "title": "VRAM Usage Over Time",
+      "title": "VRAM & Memory Activity Over Time",
       "type": "timeseries",
       "gridPos": { "h": 8, "w": 12, "x": 12, "y": 6 },
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
-          "expr": "amd_gpu_vram_used_bytes{gpu=~\"$gpu\"} / 1048576",
-          "legendFormat": "GPU {{gpu}} Used (MiB)",
+          "expr": "amd_gpu_vram_percent{gpu=~\"$gpu\"}",
+          "legendFormat": "GPU {{gpu}} VRAM %",
           "refId": "A"
         },
         {
-          "expr": "amd_gpu_vram_total_bytes{gpu=~\"$gpu\"} / 1048576",
-          "legendFormat": "GPU {{gpu}} Total (MiB)",
+          "expr": "amd_gpu_mem_activity_percent{gpu=~\"$gpu\"}",
+          "legendFormat": "GPU {{gpu}} Mem Activity %",
           "refId": "B"
         }
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "decmbytes",
+          "unit": "percent",
           "min": 0,
           "custom": { "fillOpacity": 10 }
         }
