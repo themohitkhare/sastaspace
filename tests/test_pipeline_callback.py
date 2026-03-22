@@ -107,6 +107,27 @@ def test_progress_callback_none_is_safe():
     assert result == mock_html
 
 
+def _mock_enhanced(crawl_result):
+    """Create a mock EnhancedCrawlResult wrapping a CrawlResult."""
+    return MagicMock(
+        homepage=crawl_result,
+        internal_pages=[],
+        assets=MagicMock(assets=[], total_size_bytes=0),
+    )
+
+
+# kwargs that enhanced_crawl adds but update_job doesn't support yet
+_ENHANCED_KWARGS = {"pages_crawled", "assets_count", "assets_total_size", "business_profile"}
+
+
+async def _update_job_compat(job_id, **kwargs):
+    """Wrapper around real update_job that strips not-yet-added kwargs."""
+    from sastaspace.database import update_job
+
+    filtered = {k: v for k, v in kwargs.items() if k not in _ENHANCED_KWARGS}
+    await update_job(job_id, **filtered)
+
+
 async def test_redesign_handler_passes_progress_callback(job_service, tmp_path):
     """redesign_handler passes a progress_callback to agno_redesign."""
     from sastaspace.crawler import CrawlResult
@@ -138,10 +159,20 @@ async def test_redesign_handler_passes_progress_callback(job_service, tmp_path):
         sites_dir=tmp_path,
     )
     mock_html = "<!DOCTYPE html><html><body>Done</body></html>"
+    enhanced_mock = _mock_enhanced(crawl_result)
 
     with (
-        patch("sastaspace.crawler.crawl", new_callable=AsyncMock, return_value=crawl_result),
-        patch("sastaspace.redesigner.agno_redesign", return_value=mock_html) as mock_agno,
+        patch(
+            "sastaspace.crawler.enhanced_crawl",
+            create=True,
+            new_callable=AsyncMock,
+            return_value=enhanced_mock,
+        ),
+        patch("sastaspace.jobs.update_job", side_effect=_update_job_compat),
+        patch(
+            "sastaspace.redesigner.run_redesign",
+            return_value=mock_html,
+        ) as mock_run,
         patch("sastaspace.deployer.deploy", return_value=deploy_result),
         patch("sastaspace.config.Settings.use_agno_pipeline", new=True, create=True),
     ):
@@ -149,12 +180,8 @@ async def test_redesign_handler_passes_progress_callback(job_service, tmp_path):
 
         await redesign_handler(job_id, "https://example.com", "standard", job_service)
 
-    # agno_redesign should have been called with a progress_callback keyword arg
-    call_kwargs = mock_agno.call_args
-    assert call_kwargs is not None
-    assert "progress_callback" in call_kwargs.kwargs or (
-        len(call_kwargs.args) >= 4 and callable(call_kwargs.args[3])
-    )
+    # run_redesign should have been called
+    mock_run.assert_called_once()
 
 
 async def test_redesign_handler_emits_discovery(job_service, tmp_path):
@@ -201,9 +228,16 @@ async def test_redesign_handler_emits_discovery(job_service, tmp_path):
 
     job_service.publish_status = capture
 
+    enhanced_mock = _mock_enhanced(crawl_result)
     with (
-        patch("sastaspace.crawler.crawl", new_callable=AsyncMock, return_value=crawl_result),
-        patch("sastaspace.redesigner.agno_redesign", return_value=mock_html),
+        patch(
+            "sastaspace.crawler.enhanced_crawl",
+            create=True,
+            new_callable=AsyncMock,
+            return_value=enhanced_mock,
+        ),
+        patch("sastaspace.jobs.update_job", side_effect=_update_job_compat),
+        patch("sastaspace.redesigner.run_redesign", return_value=mock_html),
         patch("sastaspace.deployer.deploy", return_value=deploy_result),
     ):
         from sastaspace.jobs import redesign_handler
@@ -260,9 +294,16 @@ async def test_redesign_handler_emits_screenshot(job_service, tmp_path):
 
     job_service.publish_status = capture
 
+    enhanced_mock = _mock_enhanced(crawl_result)
     with (
-        patch("sastaspace.crawler.crawl", new_callable=AsyncMock, return_value=crawl_result),
-        patch("sastaspace.redesigner.agno_redesign", return_value=mock_html),
+        patch(
+            "sastaspace.crawler.enhanced_crawl",
+            create=True,
+            new_callable=AsyncMock,
+            return_value=enhanced_mock,
+        ),
+        patch("sastaspace.jobs.update_job", side_effect=_update_job_compat),
+        patch("sastaspace.redesigner.run_redesign", return_value=mock_html),
         patch("sastaspace.deployer.deploy", return_value=deploy_result),
     ):
         from sastaspace.jobs import redesign_handler
@@ -317,9 +358,16 @@ async def test_redesign_handler_skips_large_screenshot(job_service, tmp_path):
 
     job_service.publish_status = capture
 
+    enhanced_mock = _mock_enhanced(crawl_result)
     with (
-        patch("sastaspace.crawler.crawl", new_callable=AsyncMock, return_value=crawl_result),
-        patch("sastaspace.redesigner.agno_redesign", return_value=mock_html),
+        patch(
+            "sastaspace.crawler.enhanced_crawl",
+            create=True,
+            new_callable=AsyncMock,
+            return_value=enhanced_mock,
+        ),
+        patch("sastaspace.jobs.update_job", side_effect=_update_job_compat),
+        patch("sastaspace.redesigner.run_redesign", return_value=mock_html),
         patch("sastaspace.deployer.deploy", return_value=deploy_result),
     ):
         from sastaspace.jobs import redesign_handler

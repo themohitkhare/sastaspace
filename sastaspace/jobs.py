@@ -351,7 +351,7 @@ async def redesign_handler(
     import time as _time
 
     from sastaspace.config import Settings
-    from sastaspace.crawler import crawl
+    from sastaspace.crawler import enhanced_crawl
     from sastaspace.deployer import deploy
 
     settings = Settings()
@@ -382,6 +382,7 @@ async def redesign_handler(
 
     # Step 1: Crawling
     crawl_duration = 0.0
+    enhanced_result = None
     if skip_crawl and crawl_data:
         logger.info("JOB STEP 1/3: Crawling SKIPPED (from checkpoint) | job=%s", job_id)
         crawl_result = _deserialize_crawl_result(crawl_data)
@@ -397,7 +398,8 @@ async def redesign_handler(
         )
 
         crawl_start = _time.monotonic()
-        crawl_result = await crawl(url)
+        enhanced_result = await enhanced_crawl(url, settings)
+        crawl_result = enhanced_result.homepage
         crawl_duration = _time.monotonic() - crawl_start
 
         if crawl_result.error:
@@ -457,11 +459,20 @@ async def redesign_handler(
         )
 
     # Persist crawl data so polling clients can show brand colors + title
-    await update_job(
-        job_id,
-        site_colors=crawl_result.colors[:5],
-        site_title=crawl_result.title,
-    )
+    _update_kwargs: dict = {
+        "site_colors": crawl_result.colors[:5],
+        "site_title": crawl_result.title,
+    }
+    if enhanced_result:
+        _update_kwargs.update(
+            status="analyzing",
+            progress=45,
+            message="Building business profile...",
+            pages_crawled=len(enhanced_result.internal_pages),
+            assets_count=len(enhanced_result.assets.assets),
+            assets_total_size=enhanced_result.assets.total_size_bytes,
+        )
+    await update_job(job_id, **_update_kwargs)
 
     # Emit screenshot for before/after reveal — skip if too large for SSE
     _MAX_SCREENSHOT_B64 = 500_000  # ~375KB raw PNG
@@ -528,6 +539,7 @@ async def redesign_handler(
         _on_agent_progress,
         pipeline_checkpoint,
         _on_checkpoint,
+        enhanced=enhanced_result,
     )
 
     redesign_duration = _time.monotonic() - redesign_start
@@ -552,7 +564,14 @@ async def redesign_handler(
         {"job_id": job_id, "message": "Deploying your redesign...", "progress": 80},
     )
 
-    result = await asyncio.to_thread(deploy, url, html, settings.sites_dir)
+    _assets = enhanced_result.assets.assets if enhanced_result else []
+    result = await asyncio.to_thread(
+        deploy,
+        url,
+        html,
+        settings.sites_dir,
+        assets=_assets,
+    )
 
     total_duration = _time.monotonic() - job_start
     logger.info(
