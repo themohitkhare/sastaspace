@@ -154,6 +154,81 @@ class JobService:
             await pubsub.unsubscribe(channel)
             await pubsub.aclose()
 
+    async def _recover_pending(
+        self,
+        consumer_name: str,
+        handler,
+    ) -> int:
+        """
+        Claim and reprocess messages abandoned by dead workers.
+
+        Uses XAUTOCLAIM to steal messages idle for >60s from any consumer,
+        then reprocesses them. Returns count of recovered messages.
+        """
+        min_idle_ms = 60_000  # 60 seconds — if a message is idle this long, the worker is dead
+        recovered = 0
+
+        try:
+            # XAUTOCLAIM: claim idle messages from any consumer in the group
+            # Returns (next_start_id, claimed_entries, deleted_ids)
+            start_id = "0-0"
+            while True:
+                result = await self.redis.xautoclaim(
+                    STREAM_KEY, GROUP_NAME, consumer_name, min_idle_ms, start_id, count=10
+                )
+                next_id, entries, _deleted = result
+
+                if not entries:
+                    break
+
+                for msg_id, fields in entries:
+                    job_id = fields["job_id"]
+                    url = fields["url"]
+                    tier = fields.get("tier", "standard")
+
+                    # Check if job already completed (avoid double-processing)
+                    job = await get_job(job_id)
+                    if job and job.get("status") in (
+                        JobStatus.DONE.value,
+                        JobStatus.FAILED.value,
+                    ):
+                        logger.info("Recovery: job %s already %s, acking", job_id, job["status"])
+                        await self.redis.xack(STREAM_KEY, GROUP_NAME, msg_id)
+                        continue
+
+                    logger.warning("Recovery: reprocessing abandoned job %s: %s", job_id, url)
+                    try:
+                        await handler(job_id, url, tier, self)
+                        await self.redis.xack(STREAM_KEY, GROUP_NAME, msg_id)
+                        recovered += 1
+                    except Exception:
+                        logger.exception("Recovery: job %s failed on retry", job_id)
+                        await update_job(
+                            job_id,
+                            status=JobStatus.FAILED.value,
+                            error="Redesign failed after recovery. Please try again.",
+                            progress=0,
+                        )
+                        await self.publish_status(
+                            job_id,
+                            "error",
+                            {
+                                "job_id": job_id,
+                                "error": "Redesign failed after recovery. Please try again.",
+                            },
+                        )
+                        await self.redis.xack(STREAM_KEY, GROUP_NAME, msg_id)
+
+                # If next_id is "0-0", we've processed all pending entries
+                if next_id == b"0-0" or next_id == "0-0":
+                    break
+                start_id = next_id
+
+        except Exception:
+            logger.exception("Recovery scan failed — continuing with normal processing")
+
+        return recovered
+
     async def process_messages(
         self,
         consumer_name: str,
@@ -162,10 +237,18 @@ class JobService:
         """
         Worker loop: read from the Redis Stream consumer group and process jobs.
 
+        On startup, recovers any abandoned jobs from dead workers (pending entries
+        idle >60s). Then reads new messages in a loop.
+
         `handler` is an async callable(job_id, url, tier, job_service) -> None
         that does the actual crawl → redesign → deploy work.
         """
         logger.info("Worker %s starting on stream %s", consumer_name, STREAM_KEY)
+
+        # Recover abandoned jobs from dead workers before reading new ones
+        recovered = await self._recover_pending(consumer_name, handler)
+        if recovered:
+            logger.info("Recovery: reprocessed %d abandoned job(s)", recovered)
 
         while True:
             try:
