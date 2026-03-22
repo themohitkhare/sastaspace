@@ -1,183 +1,32 @@
-# AMD GPU Metrics Exporter — ROCm SMI metrics for Prometheus
-# Requires: ROCm installed on host, /dev/kfd and /dev/dri accessible
-# Exposes: GPU utilization, memory, temperature, power, clock speeds
+# AMD GPU Metrics — host-side exporter + k8s Endpoints
 #
-# Uses a lightweight Python script that calls rocm-smi and exposes metrics
-# in Prometheus format. Runs as a DaemonSet on GPU nodes.
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: amd-gpu-exporter-script
-  namespace: monitoring
-data:
-  exporter.py: |
-    #!/usr/bin/env python3
-    """Minimal Prometheus exporter for AMD GPUs via rocm-smi."""
-    import http.server
-    import subprocess
-    import json
-    import re
-    import time
-
-    PORT = 9400
-
-    def get_gpu_metrics():
-        """Parse rocm-smi JSON output into Prometheus metrics."""
-        lines = []
-        try:
-            result = subprocess.run(
-                ["rocm-smi", "--showuse", "--showmemuse", "--showtemp",
-                 "--showpower", "--showclocks", "--json"],
-                capture_output=True, text=True, timeout=10,
-            )
-            data = json.loads(result.stdout)
-        except Exception as e:
-            lines.append(f"# rocm_smi_error {{error=\"{e}\"}}")
-            return "\n".join(lines)
-
-        for card_key, card in data.items():
-            if not card_key.startswith("card"):
-                continue
-            gpu_id = re.sub(r"[^0-9]", "", card_key)
-
-            # GPU Utilization %
-            gpu_use = card.get("GPU use (%)", card.get("GPU Use (%)", ""))
-            if gpu_use != "":
-                val = str(gpu_use).replace("%", "").strip()
-                lines.append(f'amd_gpu_utilization_percent{{gpu="{gpu_id}"}} {val}')
-
-            # VRAM usage (%) — rocm-smi reports as "GPU Memory Allocated (VRAM%)"
-            vram_pct = card.get("GPU Memory Allocated (VRAM%)", "")
-            if vram_pct != "":
-                val = str(vram_pct).replace("%", "").strip()
-                lines.append(f'amd_gpu_vram_percent{{gpu="{gpu_id}"}} {val}')
-
-            # Memory read/write activity
-            mem_rw = card.get("GPU Memory Read/Write Activity (%)", "")
-            if mem_rw != "" and mem_rw != "N/A":
-                val = str(mem_rw).replace("%", "").strip()
-                lines.append(f'amd_gpu_mem_activity_percent{{gpu="{gpu_id}"}} {val}')
-
-            # Temperature (edge)
-            temp = card.get("Temperature (Sensor edge) (C)",
-                           card.get("Temperature (Sensor junction) (C)", ""))
-            if temp != "":
-                val = str(temp).replace("C", "").strip()
-                lines.append(f'amd_gpu_temperature_celsius{{gpu="{gpu_id}"}} {val}')
-
-            # Power draw
-            power = card.get("Current Socket Graphics Package Power (W)",
-                           card.get("Average Graphics Package Power (W)", ""))
-            if power != "":
-                val = str(power).replace("W", "").strip()
-                lines.append(f'amd_gpu_power_watts{{gpu="{gpu_id}"}} {val}')
-
-            # SCLK (shader clock) — value comes as "(3030Mhz)"
-            sclk = card.get("sclk clock speed:", card.get("sclk Clock Speed:", ""))
-            if sclk:
-                val = re.sub(r"[^0-9.]", "", str(sclk))
-                if val:
-                    lines.append(f'amd_gpu_sclk_mhz{{gpu="{gpu_id}"}} {val}')
-
-            # MCLK (memory clock) — value comes as "(1249Mhz)"
-            mclk = card.get("mclk clock speed:", card.get("mclk Clock Speed:", ""))
-            if mclk:
-                val = re.sub(r"[^0-9.]", "", str(mclk))
-                if val:
-                    lines.append(f'amd_gpu_mclk_mhz{{gpu="{gpu_id}"}} {val}')
-
-        return "\n".join(lines)
-
-    class MetricsHandler(http.server.BaseHTTPRequestHandler):
-        def do_GET(self):
-            if self.path == "/metrics":
-                metrics = get_gpu_metrics()
-                self.send_response(200)
-                self.send_header("Content-Type", "text/plain; charset=utf-8")
-                self.end_headers()
-                self.wfile.write(metrics.encode())
-            elif self.path == "/health":
-                self.send_response(200)
-                self.end_headers()
-                self.wfile.write(b"ok")
-            else:
-                self.send_response(404)
-                self.end_headers()
-
-        def log_message(self, format, *args):
-            pass  # suppress request logs
-
-    if __name__ == "__main__":
-        server = http.server.HTTPServer(("", PORT), MetricsHandler)
-        print(f"AMD GPU exporter listening on :{PORT}")
-        server.serve_forever()
+# rocm-smi requires direct access to GPU sysfs which is impractical in containers.
+# Instead, the exporter runs as a systemd service on the host, and k8s
+# discovers it via a headless Service + manual Endpoints.
+#
+# Setup: install the exporter on the host first (see setup instructions below)
+# Then apply this manifest to make Prometheus discover it.
+#
+# Host setup:
+#   sudo tee /opt/amd-gpu-exporter.py << 'SCRIPT' && sudo chmod +x /opt/amd-gpu-exporter.py
+#   ... (script below)
+#   SCRIPT
+#   sudo tee /etc/systemd/system/amd-gpu-exporter.service << 'EOF'
+#   [Unit]
+#   Description=AMD GPU Prometheus Exporter (rocm-smi)
+#   After=network.target
+#   [Service]
+#   Type=simple
+#   ExecStart=/usr/bin/python3 /opt/amd-gpu-exporter.py
+#   Restart=always
+#   RestartSec=5
+#   [Install]
+#   WantedBy=multi-user.target
+#   EOF
+#   sudo systemctl daemon-reload && sudo systemctl enable --now amd-gpu-exporter
+#
 ---
-apiVersion: apps/v1
-kind: DaemonSet
-metadata:
-  name: amd-gpu-exporter
-  namespace: monitoring
-  labels:
-    app: amd-gpu-exporter
-spec:
-  selector:
-    matchLabels:
-      app: amd-gpu-exporter
-  template:
-    metadata:
-      labels:
-        app: amd-gpu-exporter
-      annotations:
-        prometheus.io/scrape: "true"
-        prometheus.io/port: "9400"
-        prometheus.io/path: "/metrics"
-    spec:
-      # Needs access to /dev/kfd (video group=44) and /dev/dri/renderD128 (render group=993)
-      securityContext:
-        supplementalGroups: [44, 993]
-      hostPID: false
-      containers:
-      - name: exporter
-        image: rocm/dev-ubuntu-24.04:6.3.3-complete
-        command: ["python3", "/opt/exporter.py"]
-        ports:
-        - name: metrics
-          containerPort: 9400
-        securityContext:
-          runAsNonRoot: false
-          runAsUser: 0
-        resources:
-          requests:
-            memory: "64Mi"
-            cpu: "25m"
-          limits:
-            memory: "128Mi"
-            cpu: "100m"
-        volumeMounts:
-        - name: script
-          mountPath: /opt/exporter.py
-          subPath: exporter.py
-        - name: dev-kfd
-          mountPath: /dev/kfd
-        - name: dev-dri
-          mountPath: /dev/dri
-        - name: sys
-          mountPath: /sys
-          readOnly: true
-      volumes:
-      - name: script
-        configMap:
-          name: amd-gpu-exporter-script
-      - name: dev-kfd
-        hostPath:
-          path: /dev/kfd
-      - name: dev-dri
-        hostPath:
-          path: /dev/dri
-      - name: sys
-        hostPath:
-          path: /sys
----
+# Headless Service pointing to host IP where the exporter runs
 apiVersion: v1
 kind: Service
 metadata:
@@ -189,9 +38,21 @@ metadata:
     prometheus.io/scrape: "true"
     prometheus.io/port: "9400"
 spec:
-  selector:
-    app: amd-gpu-exporter
+  clusterIP: None
   ports:
   - name: metrics
     port: 9400
     targetPort: 9400
+---
+# Manual Endpoints pointing to the host machine
+apiVersion: v1
+kind: Endpoints
+metadata:
+  name: amd-gpu-exporter
+  namespace: monitoring
+subsets:
+- addresses:
+  - ip: 192.168.0.38
+  ports:
+  - name: metrics
+    port: 9400
