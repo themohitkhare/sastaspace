@@ -179,11 +179,13 @@ You check for:
 8. CTA visibility — are calls-to-action prominent?
 
 Scoring:
-- 8-10: Pass — high quality, ship it
-- 5-7: Marginal — has issues but could ship with fixes
-- 1-4: Fail — needs regeneration
+- 8-10: Excellent — high quality, ship it
+- 6-7: Good — minor issues, acceptable for shipping
+- 4-5: Marginal — has real issues that hurt usability
+- 1-3: Fail — needs regeneration
 
-Set "passed" to true only if overall_score >= 7.
+Set "passed" to true if overall_score >= 6. Only fail for genuine issues
+visible in the preview — not theoretical concerns about unseen content.
 
 You MUST respond with ONLY a valid JSON object (no markdown, no explanation, no code fences).
 The JSON must match this schema:
@@ -208,10 +210,10 @@ Title: {title}
 Sections: {section_count} content sections identified
 Key Content: {key_content_preview}
 
-## Generated HTML (first 8000 chars):
+## Generated HTML (preview — {html_preview_len} of {html_length} total chars):
 {html_preview}
 
-## Generated HTML Stats:
+## Generated HTML Stats (verified from FULL output, not just preview):
 - Total length: {html_length} characters
 - Has <!DOCTYPE html>: {has_doctype}
 - Has </html>: {has_closing_html}
@@ -219,6 +221,10 @@ Key Content: {key_content_preview}
 - Has @import (Google Fonts): {has_google_fonts}
 - Has media queries: {has_media_queries}
 - Has CSS custom properties: {has_custom_properties}
+
+IMPORTANT: You are reviewing a PREVIEW. Do NOT flag truncation, missing sections
+beyond the preview, or content that might exist in the remaining HTML. The stats
+above are computed from the FULL HTML. Only review what you can actually see.
 
 Respond with ONLY the JSON object — no markdown fences, no explanation."""
 

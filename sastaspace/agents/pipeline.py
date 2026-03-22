@@ -153,7 +153,7 @@ def _run_agent(
         for attempt, delay in enumerate([0, *_RETRY_DELAYS]):
             if delay:
                 logger.warning(
-                    "AGENT RETRY | agent=%s attempt=%d waiting=%ds (empty response — rate limit?)",
+                    "AGENT RETRY | agent=%s attempt=%d waiting=%ds",
                     name,
                     attempt,
                     delay,
@@ -162,11 +162,15 @@ def _run_agent(
             agent = Agent(model=model, instructions=system_prompt, tools=[])
             response = agent.run(user_prompt)
             content = response.content or ""
-            if content:
+            # Treat rate limit error text as empty (trigger retry)
+            if content and "rate limit" not in content.lower():
                 break
+            if content:
+                logger.warning("AGENT RATE LIMITED | agent=%s content=%.100s", name, content)
+                content = ""
         if not content:
             n = len(_RETRY_DELAYS) + 1
-            raise RedesignError(f"{name} empty after {n} attempts — rate limit?")
+            raise RedesignError(f"{name} failed after {n} attempts — rate limited")
 
         # Extract token metrics
         if response.metrics:
@@ -564,6 +568,7 @@ def _run_quality_reviewer(
     model = _create_model(model_id, settings, use_ollama=use_ollama)
     html_lower = html.lower()
 
+    html_preview = html[:24000]
     user_prompt = QUALITY_REVIEWER_USER_TEMPLATE.format(
         design_brief_json=design_brief.model_dump_json(indent=2),
         title=site_analysis.brand.name or "Unknown",
@@ -571,7 +576,8 @@ def _run_quality_reviewer(
         key_content_preview=(
             site_analysis.key_content[:200] if site_analysis.key_content else "N/A"
         ),
-        html_preview=html[:16000],
+        html_preview=html_preview,
+        html_preview_len=len(html_preview),
         html_length=len(html),
         has_doctype="<!doctype html" in html_lower,
         has_closing_html="</html>" in html_lower,
