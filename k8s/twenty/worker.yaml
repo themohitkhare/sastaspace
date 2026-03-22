@@ -1,0 +1,30 @@
+# k8s/twenty/worker.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: twenty-worker
+  namespace: twenty
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: twenty-worker
+  template:
+    metadata:
+      labels:
+        app: twenty-worker
+    spec:
+      containers:
+      - name: worker
+        image: twentycrm/twenty:latest
+        command: ["yarn", "worker:prod"]
+        envFrom:
+        - secretRef:
+            name: twenty-env
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "100m"
+          limits:
+            memory: "2Gi"
+            cpu: "500m"
