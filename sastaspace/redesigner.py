@@ -89,8 +89,13 @@ def _redesign_with_prompts(
     api_url: str,
     model: str,
     api_key: str,
+    crawl_context: str | None = None,
 ) -> str:
     """Internal: call the claude-code-api gateway with the given prompts.
+
+    Args:
+        crawl_context: Pre-built prompt context string. When provided, used instead of
+            crawl_result.to_prompt_context(). Allows enhanced crawl data to feed through.
 
     Raises:
         RedesignError: if crawl_result.error is set or Claude's output is invalid.
@@ -101,7 +106,9 @@ def _redesign_with_prompts(
     client = OpenAI(base_url=api_url, api_key=api_key)
 
     user_text = user_template.format(
-        crawl_context=crawl_result.to_prompt_context(),
+        crawl_context=crawl_context
+        if crawl_context is not None
+        else crawl_result.to_prompt_context(),
         title=crawl_result.title,
         meta_description=crawl_result.meta_description,
         colors=", ".join(crawl_result.colors[:10]) or "not detected",
@@ -339,6 +346,16 @@ def redesign_premium(
 # ---------------------------------------------------------------------------
 
 
+ENHANCED_SYSTEM_ADDENDUM = (
+    "\n\nAdditional context — you have access to the business's actual assets:\n"
+    "- You have access to the business's actual images. Use them. "
+    "Never use placeholder URLs or stock photo services.\n"
+    "- The business profile tells you who they are. "
+    "Tailor the copy, layout, and emphasis to their industry and audience.\n"
+    "- Use the primary CTA prominently — it's what the business wants visitors to do."
+)
+
+
 def run_redesign(
     crawl_result: CrawlResult,
     settings,
@@ -346,23 +363,50 @@ def run_redesign(
     progress_callback: Callable[[str, dict], None] | None = None,
     checkpoint: dict | None = None,
     checkpoint_callback: Callable[[str, dict], None] | None = None,
+    enhanced=None,  # EnhancedCrawlResult | None
 ) -> str:
-    """Dispatch to the appropriate redesign function based on settings and tier."""
+    """Dispatch to the appropriate redesign function based on settings and tier.
+
+    Args:
+        enhanced: Optional EnhancedCrawlResult from the enhanced crawl pipeline.
+            When provided, its richer prompt context (business profile, asset manifest,
+            multi-page data) is used instead of crawl_result.to_prompt_context().
+    """
+    # Build prompt context — use enhanced if available, otherwise basic
+    if enhanced is not None:
+        crawl_context = enhanced.to_prompt_context()
+    else:
+        crawl_context = None  # let _redesign_with_prompts use crawl_result default
+
     if settings.use_agno_pipeline:
         return agno_redesign(
             crawl_result, settings, tier, progress_callback, checkpoint, checkpoint_callback
         )
     elif tier == "premium":
-        return redesign_premium(
+        system_prompt = PREMIUM_SYSTEM_PROMPT
+        if enhanced is not None:
+            system_prompt += ENHANCED_SYSTEM_ADDENDUM
+        return _redesign_with_prompts(
             crawl_result,
+            system_prompt,
+            PREMIUM_USER_PROMPT_TEMPLATE,
+            20000,
             settings.claude_code_api_url,
             settings.claude_model,
             settings.claude_code_api_key,
+            crawl_context=crawl_context,
         )
     else:
-        return redesign(
+        system_prompt = SYSTEM_PROMPT
+        if enhanced is not None:
+            system_prompt += ENHANCED_SYSTEM_ADDENDUM
+        return _redesign_with_prompts(
             crawl_result,
+            system_prompt,
+            USER_PROMPT_TEMPLATE,
+            16000,
             settings.claude_code_api_url,
             settings.claude_model,
             settings.claude_code_api_key,
+            crawl_context=crawl_context,
         )
