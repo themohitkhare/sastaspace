@@ -56,29 +56,10 @@ spec:
           limits:
             memory: "1Gi"
             cpu: "500m"
-      - name: clamav
-        image: clamav/clamav:latest
-        ports:
-        - containerPort: 3310
-        volumeMounts:
-        - name: scan-tmp
-          mountPath: /tmp/scan
-        - name: clamav-run
-          mountPath: /run/clamav
-        - name: clamav-db
-          mountPath: /var/lib/clamav
-        resources:
-          requests:
-            memory: "512Mi"
-            cpu: "100m"
-          limits:
-            memory: "4Gi"
-            cpu: "500m"
-        readinessProbe:
-          tcpSocket:
-            port: 3310
-          initialDelaySeconds: 60
-          periodSeconds: 10
+      # ClamAV sidecar disabled — official image requires root/chown which
+      # violates the pod's runAsNonRoot policy. The asset validation pipeline
+      # still has 4 layers (magic bytes, Pillow, defusedxml, YARA).
+      # TODO: Re-enable with a non-root ClamAV image build.
       volumes:
       - name: sites-data
         persistentVolumeClaim:
@@ -86,12 +67,6 @@ spec:
       - name: scan-tmp
         emptyDir:
           sizeLimit: 256Mi
-      - name: clamav-run
-        emptyDir:
-          sizeLimit: 10Mi
-      - name: clamav-db
-        emptyDir:
-          sizeLimit: 1Gi
 ---
 apiVersion: v1
 kind: Service

@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import asyncio
 import base64
+import contextlib
 import json
 import re
 import subprocess
@@ -135,6 +136,22 @@ class CrawlResult:
                     f"## Section: {s.get('heading', 'unnamed')}\n{s.get('content', '')[:500]}"
                 )
         return "\n\n".join(lines)
+
+
+@contextlib.asynccontextmanager
+async def _browser_context():
+    """Launch a Playwright Chromium browser with standard viewport. Closes on exit."""
+    async with async_playwright() as pw:
+        browser = await pw.chromium.launch(headless=True)
+        try:
+            ctx = await browser.new_context(
+                user_agent=_USER_AGENT,
+                viewport={"width": 1280, "height": 800},
+            )
+            page = await ctx.new_page()
+            yield browser, ctx, page
+        finally:
+            await browser.close()
 
 
 def _extract_text(html: str) -> str:
@@ -375,17 +392,8 @@ async def crawl(url: str) -> CrawlResult:
     )
 
     try:
-        async with async_playwright() as pw:
-            browser = await pw.chromium.launch(headless=True)
-            try:
-                ctx = await browser.new_context(
-                    user_agent=_USER_AGENT,
-                    viewport={"width": 1280, "height": 800},
-                )
-                page = await ctx.new_page()
-                return await _crawl_page(page, url)
-            finally:
-                await browser.close()
+        async with _browser_context() as (_browser, _ctx, page):
+            return await _crawl_page(page, url)
 
     except Exception as exc:
         empty.error = str(exc)
@@ -431,16 +439,7 @@ async def _crawl_internal_page(page, url: str):
                 break
 
         # Extract images (first 10)
-        images = []
-        for img in soup.find_all("img", src=True)[:10]:
-            images.append(
-                {
-                    "src": img["src"],
-                    "alt": img.get("alt", ""),
-                    "width": img.get("width", ""),
-                    "height": img.get("height", ""),
-                }
-            )
+        images = _extract_images(soup)
 
         # Extract testimonials
         testimonials = []
@@ -538,101 +537,90 @@ async def enhanced_crawl(url: str, settings):
     _ensure_chromium()
 
     try:
-        async with async_playwright() as pw:
-            browser = await pw.chromium.launch(headless=True)
-            try:
-                ctx = await browser.new_context(
-                    user_agent=_USER_AGENT,
-                    viewport={"width": 1280, "height": 800},
-                )
-                page = await ctx.new_page()
+        async with _browser_context() as (browser, ctx, page):
+            # 1. Crawl homepage
+            homepage = await _crawl_page(page, url)
 
-                # 1. Crawl homepage
-                homepage = await _crawl_page(page, url)
+            # If homepage failed, return early
+            if homepage.error:
+                return EnhancedCrawlResult(homepage=homepage)
 
-                # If homepage failed, return early
-                if homepage.error:
-                    return EnhancedCrawlResult(homepage=homepage)
+            # 2. Extract + filter links
+            all_links = _extract_all_internal_links(homepage.html_source, url)
+            filtered_links = _filter_noise_links(all_links, url)
 
-                # 2. Extract + filter links
-                all_links = _extract_all_internal_links(homepage.html_source, url)
-                filtered_links = _filter_noise_links(all_links, url)
+            # 3. LLM picks best pages (sync call via to_thread)
+            selected_urls = await asyncio.to_thread(
+                _llm_select_pages,
+                filtered_links,
+                settings.claude_code_api_url,
+                settings.claude_model,
+                settings.claude_code_api_key,
+            )
 
-                # 3. LLM picks best pages (sync call via to_thread)
-                selected_urls = await asyncio.to_thread(
-                    _llm_select_pages,
-                    filtered_links,
-                    settings.claude_code_api_url,
-                    settings.claude_model,
-                    settings.claude_code_api_key,
-                )
-
-                # 4. Crawl internal pages in parallel with per-page timeout
-                async def _safe_crawl_internal(link_url: str) -> PageCrawlResult:
+            # 4. Crawl internal pages in parallel with per-page timeout
+            async def _safe_crawl_internal(link_url: str) -> PageCrawlResult:
+                try:
+                    internal_page = await ctx.new_page()
                     try:
-                        internal_page = await ctx.new_page()
-                        try:
-                            return await asyncio.wait_for(
-                                _crawl_internal_page(internal_page, link_url),
-                                timeout=30.0,
+                        return await asyncio.wait_for(
+                            _crawl_internal_page(internal_page, link_url),
+                            timeout=30.0,
+                        )
+                    finally:
+                        await internal_page.close()
+                except TimeoutError:
+                    return PageCrawlResult(url=link_url, error="Timeout after 30s")
+                except Exception as e:
+                    return PageCrawlResult(url=link_url, error=str(e))
+
+            internal_pages = list(
+                await asyncio.gather(*[_safe_crawl_internal(u) for u in selected_urls])
+            )
+
+            # 5. Collect asset URLs from homepage + internal pages
+            asset_urls = []
+            # From homepage images
+            for img in homepage.images:
+                src = img.get("src", "")
+                if src:
+                    asset_urls.append({"url": urljoin(url, src), "source_page": url})
+            # From internal page images
+            for ipage in internal_pages:
+                if not ipage.error:
+                    for img in ipage.images:
+                        src = img.get("src", "")
+                        if src:
+                            asset_urls.append(
+                                {
+                                    "url": urljoin(ipage.url, src),
+                                    "source_page": ipage.url,
+                                }
                             )
-                        finally:
-                            await internal_page.close()
-                    except TimeoutError:
-                        return PageCrawlResult(url=link_url, error="Timeout after 30s")
-                    except Exception as e:
-                        return PageCrawlResult(url=link_url, error=str(e))
 
-                internal_pages = list(
-                    await asyncio.gather(*[_safe_crawl_internal(u) for u in selected_urls])
-                )
+            # 6. Download and validate assets
+            assets = await download_and_validate_assets(asset_urls, base_url=url)
 
-                # 5. Collect asset URLs from homepage + internal pages
-                asset_urls = []
-                # From homepage images
-                for img in homepage.images:
-                    src = img.get("src", "")
-                    if src:
-                        asset_urls.append({"url": urljoin(url, src), "source_page": url})
-                # From internal page images
-                for ipage in internal_pages:
-                    if not ipage.error:
-                        for img in ipage.images:
-                            src = img.get("src", "")
-                            if src:
-                                asset_urls.append(
-                                    {
-                                        "url": urljoin(ipage.url, src),
-                                        "source_page": ipage.url,
-                                    }
-                                )
+            # 7. Build business profile via LLM (sync call via to_thread)
+            homepage_text = homepage.text_content
+            internal_texts = [
+                p.text_content for p in internal_pages if not p.error and p.text_content
+            ]
+            business_profile = await asyncio.to_thread(
+                build_business_profile,
+                homepage_text,
+                internal_texts,
+                settings.claude_code_api_url,
+                settings.claude_model,
+                settings.claude_code_api_key,
+            )
 
-                # 6. Download and validate assets
-                assets = await download_and_validate_assets(asset_urls, base_url=url)
-
-                # 7. Build business profile via LLM (sync call via to_thread)
-                homepage_text = homepage.text_content
-                internal_texts = [
-                    p.text_content for p in internal_pages if not p.error and p.text_content
-                ]
-                business_profile = await asyncio.to_thread(
-                    build_business_profile,
-                    homepage_text,
-                    internal_texts,
-                    settings.claude_code_api_url,
-                    settings.claude_model,
-                    settings.claude_code_api_key,
-                )
-
-                return EnhancedCrawlResult(
-                    homepage=homepage,
-                    internal_pages=internal_pages,
-                    assets=assets,
-                    business_profile=business_profile,
-                )
-
-            finally:
-                await browser.close()
+            return EnhancedCrawlResult(
+                homepage=homepage,
+                internal_pages=internal_pages,
+                assets=assets,
+                business_profile=business_profile,
+            )
 
     except Exception as exc:
         # Return a minimal result with homepage error
