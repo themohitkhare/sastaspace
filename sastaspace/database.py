@@ -17,6 +17,9 @@ _DB_NAME = "sastaspace"
 class JobStatus(StrEnum):
     QUEUED = "queued"
     CRAWLING = "crawling"
+    DISCOVERING = "discovering"
+    DOWNLOADING = "downloading"
+    ANALYZING = "analyzing"
     REDESIGNING = "redesigning"
     DEPLOYING = "deploying"
     DONE = "done"
@@ -104,6 +107,10 @@ async def update_job(
     site_colors: list[str] | None = None,
     site_title: str | None = None,
     checkpoint: dict | None | object = _SENTINEL,
+    pages_crawled: int | None = None,
+    assets_count: int | None = None,
+    assets_total_size: int | None = None,
+    business_profile: dict | None = None,
 ) -> None:
     """Update fields on a job record."""
     now = datetime.now(UTC).isoformat()
@@ -127,6 +134,14 @@ async def update_job(
         updates["site_title"] = site_title
     if checkpoint is not _SENTINEL:
         updates["checkpoint"] = checkpoint
+    if pages_crawled is not None:
+        updates["pages_crawled"] = pages_crawled
+    if assets_count is not None:
+        updates["assets_count"] = assets_count
+    if assets_total_size is not None:
+        updates["assets_total_size"] = assets_total_size
+    if business_profile is not None:
+        updates["business_profile"] = business_profile
     if status in (JobStatus.DONE.value, JobStatus.FAILED.value):
         updates["completed_at"] = now
 
