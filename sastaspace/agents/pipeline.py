@@ -44,6 +44,7 @@ from sastaspace.crawler import CrawlResult
 from sastaspace.html_utils import RedesignError, RedesignResult
 from sastaspace.html_utils import clean_html as _clean_html
 from sastaspace.html_utils import validate_html as _validate_html
+from sastaspace.plan_cache import cache_plan, get_cached_plan, merge_cached_plan
 from sastaspace.react_builder import BuildError, build_react_page, parse_composer_output
 
 logger = logging.getLogger(__name__)
@@ -241,6 +242,18 @@ def _run_agent(
         redesign_agent_duration_seconds.labels(agent_name=name, status=status).observe(duration)
 
 
+def _resolve_step_provider(step: str, settings: Settings, global_provider: str) -> str:
+    """Resolve the model provider for a pipeline step.
+
+    Checks for a per-step override in settings (e.g. planner_model_provider),
+    falling back to the global model_provider passed to the pipeline.
+    """
+    override = getattr(settings, f"{step}_model_provider", "")
+    provider = override if override else global_provider
+    logger.info("PERF | step=%s model_provider=%s", step, provider)
+    return provider
+
+
 def _run_planner(
     crawl_result: CrawlResult,
     settings: Settings,
@@ -249,6 +262,7 @@ def _run_planner(
     user_prompt: str = "",
 ) -> RedesignPlan:
     """Run the Planner -- analyze, design, and write copy in one shot."""
+    model_provider = _resolve_step_provider("planner", settings, model_provider)
     # Ollama only for free tier when no explicit provider (claude/gemini)
     use_ollama = tier == "free" and model_provider not in ("claude", "gemini")
     model_id = settings.free_crawl_analyst_model if use_ollama else settings.crawl_analyst_model
@@ -297,6 +311,7 @@ def _run_builder(
     model_provider: str = "claude",
 ) -> str:
     """Run the Builder -- generate HTML from the plan in one shot."""
+    model_provider = _resolve_step_provider("builder", settings, model_provider)
     use_ollama = tier == "free" and model_provider not in ("claude", "gemini")
     model_id = settings.free_html_generator_model if use_ollama else settings.html_generator_model
     model = _create_model(model_id, settings, use_ollama=use_ollama, model_provider=model_provider)
@@ -329,6 +344,7 @@ def _run_composer(
     model_provider: str = "claude",
 ) -> dict[str, str]:
     """Run the Composer — compose React components into a page."""
+    model_provider = _resolve_step_provider("composer", settings, model_provider)
     use_ollama = tier == "free" and model_provider not in ("claude", "gemini")
     model_id = settings.free_html_generator_model if use_ollama else settings.html_generator_model
     model = _create_model(model_id, settings, use_ollama=use_ollama, model_provider=model_provider)
@@ -431,6 +447,110 @@ def _restore_from_checkpoint(checkpoint: dict, steps: list[str]) -> tuple[int, d
         restored["html"] = data["html"]
 
     return resume_idx, restored
+
+
+# --- Plan cache helpers ---
+
+
+_SITE_TYPE_KEYWORDS: dict[str, list[str]] = {
+    "restaurant": ["menu", "reservation", "dining", "food", "cuisine", "chef"],
+    "portfolio": ["portfolio", "projects", "work", "gallery", "showcase", "designer"],
+    "saas": ["pricing", "features", "signup", "sign up", "free trial", "demo", "platform"],
+    "ecommerce": ["shop", "cart", "buy", "product", "store", "checkout", "price"],
+    "agency": ["agency", "services", "clients", "case studies", "hire us", "our work"],
+    "blog": ["blog", "article", "post", "author", "read more", "published"],
+}
+
+_SITE_TYPE_ARCHETYPES: dict[str, str] = {
+    "restaurant": "split-hero",
+    "portfolio": "editorial",
+    "saas": "bento",
+    "ecommerce": "asymmetric",
+    "agency": "editorial",
+    "blog": "editorial",
+}
+
+
+def _guess_site_type(crawl_result: CrawlResult) -> str:
+    """Heuristic site_type detection from crawl data for cache lookup."""
+    text = (
+        f"{crawl_result.title} {crawl_result.meta_description} "
+        f"{' '.join(crawl_result.headings[:20])} {crawl_result.text_content[:2000]}"
+    ).lower()
+    scores: dict[str, int] = {}
+    for stype, keywords in _SITE_TYPE_KEYWORDS.items():
+        scores[stype] = sum(1 for kw in keywords if kw in text)
+    best = max(scores, key=scores.get)  # type: ignore[arg-type]
+    if scores[best] >= 2:
+        return best
+    return ""
+
+
+def _try_plan_cache(crawl_result: CrawlResult) -> dict | None:
+    """Attempt to find a cached plan skeleton for the crawl result.
+
+    Uses heuristic site_type detection + default archetype mapping.
+    Returns the cached skeleton dict, or None on miss.
+    """
+    site_type = _guess_site_type(crawl_result)
+    if not site_type:
+        return None
+    archetype = _SITE_TYPE_ARCHETYPES.get(site_type, "")
+    if not archetype:
+        return None
+    return get_cached_plan(site_type, archetype)
+
+
+def _content_from_crawl(crawl_result: CrawlResult) -> dict:
+    """Build plan content fields from crawl data.
+
+    These fields represent the site-specific content that must NEVER be cached.
+    They are derived from the live crawl to populate the plan on a cache hit.
+    """
+    # Build a content_map from headings and text
+    content_map: dict[str, str] = {}
+    for section in crawl_result.sections:
+        heading = section.get("heading", "")
+        text = section.get("text", "")
+        if heading:
+            content_map[heading] = text[:500] if text else ""
+
+    # Build content_sections from crawl sections
+    content_sections = []
+    for section in crawl_result.sections:
+        content_sections.append(
+            {
+                "heading": section.get("heading", ""),
+                "content_summary": (section.get("text", "") or "")[:300],
+                "content_type": section.get("type", ""),
+                "importance": 5,
+                "exact_text": (section.get("text", "") or "")[:500],
+            }
+        )
+
+    return {
+        "brand": {
+            "name": crawl_result.title or "",
+            "tagline": crawl_result.meta_description or "",
+            "voice_tone": "",
+            "industry": "",
+            "personality": "",
+        },
+        "primary_goal": "",
+        "target_audience": "",
+        "visual_identity": "",
+        "content_sections": content_sections,
+        "content_absent": [],
+        "key_content": crawl_result.text_content[:2000] if crawl_result.text_content else "",
+        "headline": crawl_result.title or "",
+        "subheadline": crawl_result.meta_description or "",
+        "cta_primary": {"text": "", "context": ""},
+        "cta_secondary": {"text": "", "context": ""},
+        "content_map": content_map,
+        "content_warnings": [],
+        "meta_title": crawl_result.title or "",
+        "meta_description": crawl_result.meta_description or "",
+    }
 
 
 def run_redesign_pipeline(
@@ -536,7 +656,34 @@ def run_redesign_pipeline(
                 pipeline_label,
             )
             _emit("planner")
-            plan = _run_planner(crawl_result, settings, tier, model_provider, user_prompt)
+
+            # Check plan cache — skip the LLM call if we have a cached skeleton
+            # and the user hasn't provided custom instructions (which need a fresh plan)
+            cached_skeleton = None
+            if settings.enable_plan_cache and not user_prompt:
+                cached_skeleton = _try_plan_cache(crawl_result)
+
+            if cached_skeleton is not None:
+                # Cache HIT — build plan from cached skeleton + live crawl content
+                live_content = _content_from_crawl(crawl_result)
+                merged = merge_cached_plan(cached_skeleton, live_content)
+                plan = RedesignPlan.model_validate(merged)
+                logger.info(
+                    "PLANNER RESULT (cached) | brand=%s layout=%s",
+                    plan.brand.name,
+                    plan.layout_archetype,
+                )
+            else:
+                # Cache MISS — run Planner LLM normally
+                plan = _run_planner(crawl_result, settings, tier, model_provider, user_prompt)
+
+                # Cache the structural skeleton for future reuse
+                if settings.enable_plan_cache and plan.site_type and plan.layout_archetype:
+                    try:
+                        cache_plan(plan.site_type, plan.layout_archetype, plan.model_dump())
+                    except Exception:  # noqa: BLE001 — caching is best-effort
+                        logger.debug("Plan cache store failed (non-fatal)")
+
             cp_data["plan"] = plan.model_dump_json()
             _checkpoint("planner", cp_data)
         else:

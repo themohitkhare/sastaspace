@@ -32,6 +32,12 @@ class Settings(BaseSettings):
     html_generator_model: str = "claude-sonnet-4-6-20250514"
     quality_reviewer_model: str = "claude-sonnet-4-6-20250514"
 
+    # Per-step model routing (override the global model_provider per step)
+    # Empty string = use the global model_provider passed to the pipeline
+    planner_model_provider: str = ""  # e.g. "gemini" for fast/cheap JSON planning
+    builder_model_provider: str = ""  # e.g. "claude" for highest quality HTML
+    composer_model_provider: str = ""  # e.g. "claude" for highest quality React composition
+
     # Gemini (alternative provider)
     gemini_api_url: str = "https://generativelanguage.googleapis.com/v1beta/openai/"
     gemini_api_key: str = ""  # Set via GEMINI_API_KEY env var
@@ -72,11 +78,17 @@ class Settings(BaseSettings):
     # Badge injection on generated sites
     include_badge: bool = True
 
+    # Post-generation HTML validation (accessibility + responsiveness via Playwright/axe-core)
+    enable_post_gen_validation: bool = True
+
     # Asset download concurrency (number of parallel downloads)
     asset_download_concurrency: int = 10
 
     # Browserless (remote Chromium via CDP)
     browserless_url: str = "ws://localhost:3100"
+
+    # Plan cache (skip Planner for common site_type + archetype combos)
+    enable_plan_cache: bool = True
 
     # Component-based React pipeline
     use_component_pipeline: bool = True

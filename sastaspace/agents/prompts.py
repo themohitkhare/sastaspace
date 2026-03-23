@@ -67,6 +67,27 @@ You must produce ALL of the following in one response:
 - fadeInUp as the only animation
 - Generic 135deg gradients
 
+## BANNED COLORS:
+- Do NOT use blue (#3B82F6, #6366F1) or indigo as primary — AI default tell
+- Do NOT use purple gradients (already banned above)
+- INSTEAD: derive the primary color from the site's existing brand colors
+- If the site has no clear brand color, use: warm amber, deep teal, rich forest green, or terracotta
+- Generate OKLCH palette: primary, primary-foreground, secondary, muted, accent, destructive
+
+## Typography Selection (MANDATORY)
+Select a font pairing based on site_type. Load via Google Fonts @import url(...).
+
+FONT PAIRINGS (choose ONE pair):
+- SaaS/Tech: "Inter" (body) + "Instrument Serif" (headings)
+- Agency/Creative: "DM Sans" (body) + "DM Serif Display" (headings)
+- Professional/Corporate: "Plus Jakarta Sans" (body) + "Source Serif 4" (headings)
+- Modern/Minimal: "Geist Sans" (body) + "Space Grotesk" (headings, monospace accents)
+- Elegant/Luxury: "Cormorant Garamond" (headings) + "Lato" (body)
+
+NEVER use: Arial, Helvetica, Times New Roman, or system fonts as the primary choice.
+Line height: 1.5-1.7 for body, 1.1-1.2 for headings.
+Add text-wrap: balance on headings.
+
 You MUST respond with ONLY a valid JSON object matching this EXACT schema:
 {
   "brand": {
@@ -149,13 +170,84 @@ comes from timing, spacing, and subtle visual depth — not chaos.
 
 ## Technical Requirements
 - Single complete HTML file with all CSS in a <style> tag
-- Google Fonts via @import (EXACT fonts from the plan — do NOT substitute)
+- Google Fonts via <link> tag (EXACT fonts from the plan — do NOT substitute)
 - CSS Grid + Flexbox for layout
 - Semantic HTML5 (header, nav, main, section, footer)
 - CSS custom properties using the EXACT design tokens from the plan
 - Keep original image URLs from the source site
 - Include a "Redesigned by SastaSpace.com" badge in footer
 - Minimal inline JS for scroll reveals and mobile menu only
+
+## CSS Design System (MANDATORY)
+Every generated page MUST include these CSS custom properties in a <style> block:
+
+:root {
+  /* Spacing (8px grid) */
+  --space-1: 0.25rem; --space-2: 0.5rem; --space-3: 0.75rem;
+  --space-4: 1rem; --space-6: 1.5rem; --space-8: 2rem;
+  --space-12: 3rem; --space-16: 4rem; --space-24: 6rem;
+  --space-32: 8rem;
+
+  /* Typography (fluid clamp scale) */
+  --text-xs: clamp(0.75rem, 0.7rem + 0.25vw, 0.875rem);
+  --text-sm: clamp(0.875rem, 0.8rem + 0.375vw, 1rem);
+  --text-base: clamp(1rem, 0.9rem + 0.5vw, 1.125rem);
+  --text-lg: clamp(1.125rem, 1rem + 0.625vw, 1.25rem);
+  --text-xl: clamp(1.25rem, 1rem + 1.25vw, 1.5rem);
+  --text-2xl: clamp(1.5rem, 1rem + 2.5vw, 2rem);
+  --text-3xl: clamp(1.875rem, 1rem + 4.375vw, 3rem);
+  --text-4xl: clamp(2.25rem, 1rem + 6.25vw, 4rem);
+  --text-5xl: clamp(3rem, 1.5rem + 7.5vw, 5rem);
+
+  /* Border radius */
+  --radius-sm: 0.375rem; --radius-md: 0.5rem;
+  --radius-lg: 0.75rem; --radius-xl: 1rem;
+  --radius-2xl: 1.5rem; --radius-full: 9999px;
+
+  /* Shadows (multi-layer) */
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.07), 0 2px 4px -2px rgb(0 0 0 / 0.07);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.08), 0 4px 6px -4px rgb(0 0 0 / 0.08);
+  --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+}
+
+Use OKLCH color space for all colors. Generate the palette based on the brand's existing colors.
+Use var(--space-*) for ALL spacing. Never use arbitrary pixel values.
+Use var(--text-*) for ALL font sizes. Never hardcode px font sizes.
+Use var(--radius-*) for ALL border radii. Never hardcode border-radius values.
+Use var(--shadow-*) for ALL shadows as a baseline, then layer brand-color glows on top.
+
+## Typography (MANDATORY)
+Select a font pairing based on site_type. Load via Google Fonts <link> tag.
+
+FONT PAIRINGS (choose ONE pair):
+- SaaS/Tech: "Inter" (body) + "Instrument Serif" (headings)
+- Agency/Creative: "DM Sans" (body) + "DM Serif Display" (headings)
+- Professional/Corporate: "Plus Jakarta Sans" (body) + "Source Serif 4" (headings)
+- Modern/Minimal: "Geist Sans" (body) + "Space Grotesk" (headings, monospace accents)
+- Elegant/Luxury: "Cormorant Garamond" (headings) + "Lato" (body)
+
+NEVER use: Arial, Helvetica, Times New Roman, or system fonts as the primary choice.
+Line height: 1.5-1.7 for body, 1.1-1.2 for headings.
+Add text-wrap: balance on headings.
+
+## BANNED COLORS
+- Do NOT use blue (#3B82F6, #6366F1) or indigo as primary — AI default tell
+- Do NOT use purple gradients (already banned)
+- INSTEAD: derive the primary color from the site's existing brand colors
+- If the site has no clear brand color, use: warm amber, deep teal, rich forest green, or terracotta
+- Generate OKLCH palette: primary, primary-foreground, secondary, muted, accent, destructive
+
+## Images
+When the original site has images, preserve them with their original URLs.
+When placeholder images are needed, use Unsplash Source URLs:
+- https://images.unsplash.com/photo-{relevant-id}?w=800&auto=format&q=80
+
+For hero backgrounds, use full-width images with overlay:
+background: linear-gradient(to bottom,
+  oklch(20% 0.02 250 / 0.7), oklch(20% 0.02 250 / 0.9)), url('...');
+
+NEVER use placeholder.com, via.placeholder.com, or gray boxes.
 
 ## CONTENT BINDING — MANDATORY
 You may ONLY use text from the content_map in the plan.
@@ -217,9 +309,41 @@ You may ONLY use text from the content_map in the plan.
   clear high-contrast CTA.
 - DO NOT use Inter, Raleway, Poppins, or Montserrat fonts.
 - DO NOT use purple/indigo gradients anywhere.
+- DO NOT use blue (#3B82F6, #6366F1) or indigo as primary — AI default tell.
 - DO NOT use identical translateY(-2px) hover on all elements.
 - DO NOT use border-radius: 12px uniformly on everything.
 - DO NOT use backdrop-filter: blur() on the header.
+- DO NOT use Arial, Helvetica, Times New Roman, or system fonts.
+- DO NOT use placeholder.com, via.placeholder.com, or gray boxes for images.
+- DO NOT hardcode px values for spacing — use var(--space-*).
+- DO NOT hardcode px values for font sizes — use var(--text-*).
+
+## Micro-Interactions (MANDATORY)
+Every generated page MUST include:
+
+1. Button hover: translateY(-1px) + box-shadow: var(--shadow-md), transition 150ms
+2. Card hover: transform: translateY(-4px); box-shadow: var(--shadow-lg);
+3. Link underline: animated gradient underline on hover
+4. Section reveal: fade-in + translateY(20px) on scroll via IntersectionObserver
+5. Hero entrance: staggered fade-in for heading, subheading, CTA (200ms delay each)
+6. Number counters: animate stats on scroll into view
+7. Smooth scroll: html { scroll-behavior: smooth; }
+
+Include this IntersectionObserver snippet in a <script> tag:
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      e.target.classList.add('visible');
+      observer.unobserve(e.target);
+    }
+  });
+}, { threshold: 0.1 });
+document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+And the corresponding CSS:
+.reveal { opacity: 0; transform: translateY(20px);
+  transition: opacity 0.6s ease, transform 0.6s ease; }
+.reveal.visible { opacity: 1; transform: translateY(0); }
 
 ## SELF-CHECK (before outputting)
 - Does every piece of text come from content_map? Remove if not.
@@ -228,6 +352,14 @@ You may ONLY use text from the content_map in the plan.
 - Are reveals staggered with animation-delay? Fix if not.
 - Is there a noise/grain texture overlay? Add if missing.
 - Is there at least one floating/continuous micro-animation? Add.
+- Are ALL spacing values using var(--space-*)? Fix if not.
+- Are ALL font sizes using var(--text-*)? Fix if not.
+- Are ALL border radii using var(--radius-*)? Fix if not.
+- Is the primary color NOT blue/indigo? Fix if it is.
+- Are Google Fonts loaded via <link> tag? Fix if not.
+- Are micro-interactions (button hover, card hover, scroll reveal) present? Add if missing.
+- Is the IntersectionObserver script included? Add if missing.
+- Are placeholder images using Unsplash URLs (not placeholder.com)? Fix if not.
 
 Output ONLY the complete HTML starting with <!DOCTYPE html>."""
 

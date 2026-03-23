@@ -659,6 +659,36 @@ async def redesign_handler(
     if settings.include_badge:
         html = inject_badge(html)
 
+    # Post-generation validation (non-blocking — fire-and-forget)
+    if settings.enable_post_gen_validation:
+        try:
+            from sastaspace.html_validator import validate_accessibility
+
+            async def _run_a11y_validation(html_content: str, jid: str) -> None:
+                try:
+                    result = await validate_accessibility(html_content)
+                    if result.get("critical_count", 0) > 0:
+                        logger.warning(
+                            "A11Y SUMMARY | job=%s critical=%d total=%d passes=%d",
+                            jid,
+                            result["critical_count"],
+                            result["total_violations"],
+                            result["pass_count"],
+                        )
+                    else:
+                        logger.info(
+                            "A11Y SUMMARY | job=%s critical=0 total=%d passes=%d",
+                            jid,
+                            result.get("total_violations", 0),
+                            result.get("pass_count", 0),
+                        )
+                except Exception:  # noqa: BLE001
+                    logger.debug("A11Y validation task failed for job=%s", jid, exc_info=True)
+
+            asyncio.create_task(_run_a11y_validation(html, job_id))
+        except Exception:  # noqa: BLE001
+            logger.debug("Could not start A11Y validation for job=%s", job_id, exc_info=True)
+
     # Step 3: Deploying
     logger.info("JOB STEP 3/3: Deploying | job=%s", job_id)
     await update_job(

@@ -48,6 +48,9 @@ web/test-results/
 # Playwright MCP logs
 .playwright-mcp/
 
+# Plan cache (generated at runtime)
+plan_cache/
+
 # Runtime data (never commit)
 backend/data/
 grafana/data/
