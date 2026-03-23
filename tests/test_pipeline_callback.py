@@ -54,19 +54,13 @@ def test_progress_callback_called_for_each_agent():
     mock_html = "<!DOCTYPE html><html><body>Test</body></html>"
 
     with (
-        patch("sastaspace.agents.pipeline._run_crawl_analyst", return_value=MagicMock()),
-        patch("sastaspace.agents.pipeline._run_design_strategist", return_value=MagicMock()),
-        patch("sastaspace.agents.pipeline._run_copywriter", return_value=MagicMock()),
-        patch("sastaspace.agents.pipeline._run_html_generator", return_value=mock_html),
-        patch(
-            "sastaspace.agents.pipeline._run_quality_reviewer",
-            return_value=MagicMock(passed=True, overall_score=8, issues=[]),
-        ),
+        patch("sastaspace.agents.pipeline._run_planner", return_value=MagicMock()),
+        patch("sastaspace.agents.pipeline._run_builder", return_value=mock_html),
     ):
         result = run_redesign_pipeline(_crawl(), Settings(), progress_callback=callback)
 
     assert isinstance(result, str)
-    assert callback.call_count == 5
+    assert callback.call_count == 2
     event, data = callback.call_args_list[0][0]
     assert event == "agent_activity"
     assert "agent" in data and "message" in data and "step_progress" in data
@@ -74,11 +68,8 @@ def test_progress_callback_called_for_each_agent():
 
 def test_agent_messages_covers_all_agents():
     expected = {
-        "crawl_analyst",
-        "design_strategist",
-        "copywriter",
-        "html_generator",
-        "quality_reviewer",
+        "planner",
+        "builder",
     }
     assert set(AGENT_MESSAGES.keys()) == expected
 
@@ -86,14 +77,8 @@ def test_agent_messages_covers_all_agents():
 def test_progress_callback_none_is_safe():
     mock_html = "<!DOCTYPE html><html><body>Test</body></html>"
     with (
-        patch("sastaspace.agents.pipeline._run_crawl_analyst", return_value=MagicMock()),
-        patch("sastaspace.agents.pipeline._run_design_strategist", return_value=MagicMock()),
-        patch("sastaspace.agents.pipeline._run_copywriter", return_value=MagicMock()),
-        patch("sastaspace.agents.pipeline._run_html_generator", return_value=mock_html),
-        patch(
-            "sastaspace.agents.pipeline._run_quality_reviewer",
-            return_value=MagicMock(passed=True, overall_score=8, issues=[]),
-        ),
+        patch("sastaspace.agents.pipeline._run_planner", return_value=MagicMock()),
+        patch("sastaspace.agents.pipeline._run_builder", return_value=mock_html),
     ):
         result = run_redesign_pipeline(_crawl(), Settings(), progress_callback=None)
     assert result == mock_html

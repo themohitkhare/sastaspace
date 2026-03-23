@@ -298,3 +298,61 @@ class QualityReport(_NullSafeModel):
     issues: list[QualityIssue] = Field(default_factory=list)
     feedback_for_regeneration: str = ""  # specific instructions if passed=False
     strengths: list[str] = Field(default_factory=list)
+
+
+# --- Combined Planner output (2-step pipeline) ---
+
+
+class RedesignPlan(_NullSafeModel):
+    """Complete redesign plan — output of the Planner agent (2-step pipeline).
+
+    Combines site analysis, design brief, and copywriting into a single model.
+    """
+
+    # Brand & Content Analysis
+    brand: BrandProfile = Field(default_factory=BrandProfile)
+    primary_goal: str = ""
+    target_audience: str = ""
+    visual_identity: str = ""
+    content_sections: list[ContentSection] = Field(default_factory=list)
+    content_absent: list[str] = Field(default_factory=list)
+    key_content: str = ""
+
+    # Design Brief
+    layout_archetype: str = ""  # bento, editorial, split-hero, etc.
+    design_direction: str = ""
+    colors: ColorPalette = Field(default_factory=ColorPalette)
+    typography: TypographyPlan = Field(default_factory=TypographyPlan)
+    design_tokens: DesignTokens = Field(default_factory=DesignTokens)
+    components: list[Component] = Field(default_factory=list)
+    conversion_strategy: str = ""
+    responsive_approach: str = ""
+    animations: list[str] = Field(default_factory=list)
+    anti_patterns: list[str] = Field(default_factory=list)
+
+    @field_validator("animations", mode="before")
+    @classmethod
+    def coerce_animations(cls, v: object) -> list[str]:
+        """Accept list[str] or list[dict] — LLMs sometimes return dicts."""
+        if not isinstance(v, list):
+            return []
+        result = []
+        for item in v:
+            if isinstance(item, str):
+                result.append(item)
+            elif isinstance(item, dict):
+                parts = [str(val) for val in item.values() if val]
+                result.append(": ".join(parts))
+            else:
+                result.append(str(item))
+        return result
+
+    # Copy (strict content binding)
+    headline: str = ""
+    subheadline: str = ""
+    cta_primary: CopywriterCTA = Field(default_factory=CopywriterCTA)
+    cta_secondary: CopywriterCTA = Field(default_factory=CopywriterCTA)
+    content_map: dict[str, str] = Field(default_factory=dict)
+    content_warnings: list[str] = Field(default_factory=list)
+    meta_title: str = ""
+    meta_description: str = ""

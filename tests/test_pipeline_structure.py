@@ -1,5 +1,5 @@
 # tests/test_pipeline_structure.py
-"""Structural / routing tests for sastaspace/agents/pipeline.py — NO LLM calls."""
+"""Structural / routing tests for sastaspace/agents/pipeline.py -- NO LLM calls."""
 
 import json
 from unittest.mock import patch
@@ -7,16 +7,14 @@ from unittest.mock import patch
 import pytest
 
 from sastaspace.agents.models import (
-    CopywriterOutput,
-    DesignBrief,
-    SiteAnalysis,
+    RedesignPlan,
 )
 from sastaspace.agents.pipeline import (
     PIPELINE_STEPS,
     _create_model,
     _extract_json,
     _restore_from_checkpoint,
-    _run_crawl_analyst,
+    _run_planner,
 )
 from sastaspace.config import Settings
 from sastaspace.crawler import CrawlResult
@@ -106,12 +104,12 @@ class TestCreateModel:
 
 
 # ---------------------------------------------------------------------------
-# Model routing by tier — _run_crawl_analyst
+# Model routing by tier -- _run_planner
 # ---------------------------------------------------------------------------
 
 
 class TestModelRoutingByTier:
-    """_run_crawl_analyst picks free vs premium model based on tier arg."""
+    """_run_planner picks free vs premium model based on tier arg."""
 
     def _crawl_result(self) -> CrawlResult:
         return CrawlResult(
@@ -135,9 +133,9 @@ class TestModelRoutingByTier:
 
     @patch("sastaspace.agents.pipeline._run_agent")
     def test_premium_tier_uses_premium_model(self, mock_agent):
-        mock_agent.return_value = json.dumps(SiteAnalysis().model_dump())
+        mock_agent.return_value = json.dumps(RedesignPlan().model_dump())
         s = self._settings()
-        _run_crawl_analyst(self._crawl_result(), s, tier="premium")
+        _run_planner(self._crawl_result(), s, tier="premium")
 
         # The model passed to _run_agent should have the claude model id
         call_model = mock_agent.call_args.args[3]  # 4th positional arg is model
@@ -145,9 +143,9 @@ class TestModelRoutingByTier:
 
     @patch("sastaspace.agents.pipeline._run_agent")
     def test_free_tier_uses_free_model(self, mock_agent):
-        mock_agent.return_value = json.dumps(SiteAnalysis().model_dump())
+        mock_agent.return_value = json.dumps(RedesignPlan().model_dump())
         s = self._settings()
-        _run_crawl_analyst(self._crawl_result(), s, tier="free")
+        _run_planner(self._crawl_result(), s, tier="free")
 
         call_model = mock_agent.call_args.args[3]
         assert call_model.id == "glm-4.7-flash:latest"
@@ -163,18 +161,15 @@ class TestPipelineSteps:
 
     def test_expected_steps(self):
         assert PIPELINE_STEPS == [
-            "crawl_analyst",
-            "design_strategist",
-            "copywriter",
-            "html_generator",
-            "quality_reviewer",
+            "planner",
+            "builder",
         ]
 
     def test_no_duplicates(self):
         assert len(PIPELINE_STEPS) == len(set(PIPELINE_STEPS))
 
     def test_step_count(self):
-        assert len(PIPELINE_STEPS) == 5
+        assert len(PIPELINE_STEPS) == 2
 
 
 # ---------------------------------------------------------------------------
@@ -195,67 +190,38 @@ class TestRestoreFromCheckpoint:
         assert idx == 0
         assert data == {}
 
-    def test_crawl_analyst_completed_resumes_at_index_1(self):
-        sa = SiteAnalysis(primary_goal="lead gen", target_audience="developers")
+    def test_planner_completed_resumes_at_index_1(self):
+        plan = RedesignPlan(primary_goal="lead gen", target_audience="developers")
         checkpoint = {
-            "completed_step": "crawl_analyst",
-            "data": {"site_analysis": sa.model_dump_json()},
+            "completed_step": "planner",
+            "data": {"plan": plan.model_dump_json()},
         }
         idx, restored = _restore_from_checkpoint(checkpoint)
-        assert idx == 1  # resume at design_strategist
-        assert "site_analysis" in restored
-        assert restored["site_analysis"].primary_goal == "lead gen"
+        assert idx == 1  # resume at builder
+        assert "plan" in restored
+        assert restored["plan"].primary_goal == "lead gen"
 
-    def test_design_strategist_completed_resumes_at_index_2(self):
-        sa = SiteAnalysis()
-        db = DesignBrief(design_direction="modern minimal")
+    def test_builder_completed_preserves_html(self):
         checkpoint = {
-            "completed_step": "design_strategist",
-            "data": {
-                "site_analysis": sa.model_dump_json(),
-                "design_brief": db.model_dump_json(),
-            },
-        }
-        idx, restored = _restore_from_checkpoint(checkpoint)
-        assert idx == 2  # resume at copywriter
-        assert restored["design_brief"].design_direction == "modern minimal"
-
-    def test_html_generator_completed_preserves_html(self):
-        checkpoint = {
-            "completed_step": "html_generator",
+            "completed_step": "builder",
             "data": {"html": "<html><body>Test</body></html>"},
         }
         idx, restored = _restore_from_checkpoint(checkpoint)
-        assert idx == PIPELINE_STEPS.index("html_generator") + 1
+        assert idx == PIPELINE_STEPS.index("builder") + 1
         assert restored["html"] == "<html><body>Test</body></html>"
 
-    def test_copywriter_output_restored(self):
-        co = CopywriterOutput(headline="Amazing Headline", subheadline="Sub")
-        checkpoint = {
-            "completed_step": "copywriter",
-            "data": {"copywriter_output": co.model_dump_json()},
-        }
-        idx, restored = _restore_from_checkpoint(checkpoint)
-        assert idx == PIPELINE_STEPS.index("copywriter") + 1
-        assert restored["copywriter_output"].headline == "Amazing Headline"
-
-    def test_all_models_restored_from_full_checkpoint(self):
+    def test_full_checkpoint_restores_all(self):
         """A checkpoint with all data keys restores all models."""
-        sa = SiteAnalysis(primary_goal="ecommerce")
-        db = DesignBrief(design_direction="bold")
-        co = CopywriterOutput(headline="Buy Now")
+        plan = RedesignPlan(primary_goal="ecommerce", design_direction="bold")
         checkpoint = {
-            "completed_step": "quality_reviewer",
+            "completed_step": "builder",
             "data": {
-                "site_analysis": sa.model_dump_json(),
-                "design_brief": db.model_dump_json(),
-                "copywriter_output": co.model_dump_json(),
+                "plan": plan.model_dump_json(),
                 "html": "<html></html>",
             },
         }
         idx, restored = _restore_from_checkpoint(checkpoint)
-        assert idx == PIPELINE_STEPS.index("quality_reviewer") + 1
-        assert restored["site_analysis"].primary_goal == "ecommerce"
-        assert restored["design_brief"].design_direction == "bold"
-        assert restored["copywriter_output"].headline == "Buy Now"
+        assert idx == PIPELINE_STEPS.index("builder") + 1
+        assert restored["plan"].primary_goal == "ecommerce"
+        assert restored["plan"].design_direction == "bold"
         assert restored["html"] == "<html></html>"

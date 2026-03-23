@@ -1,5 +1,5 @@
 # tests/test_pipeline_checkpoint.py
-"""Tests for pipeline checkpointing — resume from last completed step."""
+"""Tests for pipeline checkpointing -- resume from last completed step."""
 
 from __future__ import annotations
 
@@ -9,10 +9,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from sastaspace.agents.models import (
-    CopywriterOutput,
-    DesignBrief,
-    QualityReport,
-    SiteAnalysis,
+    RedesignPlan,
 )
 from sastaspace.agents.pipeline import PIPELINE_STEPS, run_redesign_pipeline
 from sastaspace.database import JobUpdate, get_job, update_job
@@ -67,38 +64,28 @@ def _make_checkpoint(completed_step: str, data: dict | None = None) -> dict:
 
 
 # Shared mock return values
-_SITE_ANALYSIS = SiteAnalysis(primary_goal="lead gen", target_audience="devs")
-_DESIGN_BRIEF = DesignBrief(design_direction="modern minimal")
-_COPYWRITER = CopywriterOutput(headline="Hello World")
+_PLAN = RedesignPlan(primary_goal="lead gen", target_audience="devs", design_direction="modern")
 _HTML = "<!DOCTYPE html><html><body>hi</body></html>"
-_QUALITY = QualityReport(passed=True, overall_score=9, uniqueness_score=7, brand_adherence_score=8)
 
 
 # ---------------------------------------------------------------------------
-# Test 1: checkpoint at design_strategist skips first two steps
+# Test 1: checkpoint at planner skips planner, runs builder
 # ---------------------------------------------------------------------------
 
 
-@patch("sastaspace.agents.pipeline._run_quality_reviewer", return_value=_QUALITY)
-@patch("sastaspace.agents.pipeline._run_html_generator", return_value=_HTML)
-@patch("sastaspace.agents.pipeline._run_copywriter", return_value=_COPYWRITER)
-@patch("sastaspace.agents.pipeline._run_design_strategist", return_value=_DESIGN_BRIEF)
-@patch("sastaspace.agents.pipeline._run_crawl_analyst", return_value=_SITE_ANALYSIS)
+@patch("sastaspace.agents.pipeline._run_builder", return_value=_HTML)
+@patch("sastaspace.agents.pipeline._run_planner", return_value=_PLAN)
 def test_checkpoint_skips_completed_steps(
-    mock_analyst,
-    mock_strategist,
-    mock_copywriter,
-    mock_html,
-    mock_quality,
+    mock_planner,
+    mock_builder,
     fake_crawl,
     fake_settings,
 ):
-    """With checkpoint at design_strategist, skip analyst + strategist, run the rest."""
+    """With checkpoint at planner, skip planner, run builder."""
     checkpoint = _make_checkpoint(
-        "design_strategist",
+        "planner",
         {
-            "site_analysis": _SITE_ANALYSIS.model_dump_json(),
-            "design_brief": _DESIGN_BRIEF.model_dump_json(),
+            "plan": _PLAN.model_dump_json(),
         },
     )
 
@@ -109,11 +96,8 @@ def test_checkpoint_skips_completed_steps(
     )
 
     assert result == _HTML
-    mock_analyst.assert_not_called()
-    mock_strategist.assert_not_called()
-    mock_copywriter.assert_called_once()
-    assert mock_html.call_count >= 1
-    assert mock_quality.call_count >= 1
+    mock_planner.assert_not_called()
+    mock_builder.assert_called_once()
 
 
 # ---------------------------------------------------------------------------
@@ -121,17 +105,11 @@ def test_checkpoint_skips_completed_steps(
 # ---------------------------------------------------------------------------
 
 
-@patch("sastaspace.agents.pipeline._run_quality_reviewer", return_value=_QUALITY)
-@patch("sastaspace.agents.pipeline._run_html_generator", return_value=_HTML)
-@patch("sastaspace.agents.pipeline._run_copywriter", return_value=_COPYWRITER)
-@patch("sastaspace.agents.pipeline._run_design_strategist", return_value=_DESIGN_BRIEF)
-@patch("sastaspace.agents.pipeline._run_crawl_analyst", return_value=_SITE_ANALYSIS)
+@patch("sastaspace.agents.pipeline._run_builder", return_value=_HTML)
+@patch("sastaspace.agents.pipeline._run_planner", return_value=_PLAN)
 def test_no_checkpoint_runs_all_steps(
-    mock_analyst,
-    mock_strategist,
-    mock_copywriter,
-    mock_html,
-    mock_quality,
+    mock_planner,
+    mock_builder,
     fake_crawl,
     fake_settings,
 ):
@@ -139,72 +117,20 @@ def test_no_checkpoint_runs_all_steps(
     result = run_redesign_pipeline(fake_crawl, fake_settings)
 
     assert result == _HTML
-    mock_analyst.assert_called_once()
-    mock_strategist.assert_called_once()
-    mock_copywriter.assert_called_once()
-    assert mock_html.call_count >= 1
-    assert mock_quality.call_count >= 1
+    mock_planner.assert_called_once()
+    mock_builder.assert_called_once()
 
 
 # ---------------------------------------------------------------------------
-# Test 3: checkpoint at copywriter skips steps 1-3
+# Test 3: checkpoint_callback is called after each step
 # ---------------------------------------------------------------------------
 
 
-@patch("sastaspace.agents.pipeline._run_quality_reviewer", return_value=_QUALITY)
-@patch("sastaspace.agents.pipeline._run_html_generator", return_value=_HTML)
-@patch("sastaspace.agents.pipeline._run_copywriter", return_value=_COPYWRITER)
-@patch("sastaspace.agents.pipeline._run_design_strategist", return_value=_DESIGN_BRIEF)
-@patch("sastaspace.agents.pipeline._run_crawl_analyst", return_value=_SITE_ANALYSIS)
-def test_checkpoint_at_html_generator_skips_first_four(
-    mock_analyst,
-    mock_strategist,
-    mock_copywriter,
-    mock_html,
-    mock_quality,
-    fake_crawl,
-    fake_settings,
-):
-    """Checkpoint at copywriter means steps 1-3 done, skip to html_generator."""
-    checkpoint = _make_checkpoint(
-        "copywriter",
-        {
-            "site_analysis": _SITE_ANALYSIS.model_dump_json(),
-            "design_brief": _DESIGN_BRIEF.model_dump_json(),
-            "copywriter_output": _COPYWRITER.model_dump_json(),
-        },
-    )
-
-    result = run_redesign_pipeline(
-        fake_crawl,
-        fake_settings,
-        checkpoint=checkpoint,
-    )
-
-    assert result == _HTML
-    mock_analyst.assert_not_called()
-    mock_strategist.assert_not_called()
-    mock_copywriter.assert_not_called()
-    assert mock_html.call_count >= 1
-    assert mock_quality.call_count >= 1
-
-
-# ---------------------------------------------------------------------------
-# Test 4: checkpoint_callback is called after each step
-# ---------------------------------------------------------------------------
-
-
-@patch("sastaspace.agents.pipeline._run_quality_reviewer", return_value=_QUALITY)
-@patch("sastaspace.agents.pipeline._run_html_generator", return_value=_HTML)
-@patch("sastaspace.agents.pipeline._run_copywriter", return_value=_COPYWRITER)
-@patch("sastaspace.agents.pipeline._run_design_strategist", return_value=_DESIGN_BRIEF)
-@patch("sastaspace.agents.pipeline._run_crawl_analyst", return_value=_SITE_ANALYSIS)
+@patch("sastaspace.agents.pipeline._run_builder", return_value=_HTML)
+@patch("sastaspace.agents.pipeline._run_planner", return_value=_PLAN)
 def test_checkpoint_callback_fires(
-    mock_analyst,
-    mock_strategist,
-    mock_copywriter,
-    mock_html,
-    mock_quality,
+    mock_planner,
+    mock_builder,
     fake_crawl,
     fake_settings,
 ):
@@ -213,16 +139,16 @@ def test_checkpoint_callback_fires(
 
     run_redesign_pipeline(fake_crawl, fake_settings, checkpoint_callback=cb)
 
-    # Should be called once per pipeline step (5 total)
+    # Should be called once per pipeline step (2 total)
     assert cb.call_count == len(PIPELINE_STEPS)
 
-    # First call should be for crawl_analyst
+    # First call should be for planner
     first_call_step = cb.call_args_list[0][0][0]
-    assert first_call_step == "crawl_analyst"
+    assert first_call_step == "planner"
 
-    # Last call should be for quality_reviewer
+    # Last call should be for builder
     last_call_step = cb.call_args_list[-1][0][0]
-    assert last_call_step == "quality_reviewer"
+    assert last_call_step == "builder"
 
     # Each call's data dict should have completed_step matching the step name
     for call in cb.call_args_list:
@@ -231,7 +157,7 @@ def test_checkpoint_callback_fires(
 
 
 # ---------------------------------------------------------------------------
-# Test 5: update_job with checkpoint persists and get_job returns it
+# Test 4: update_job with checkpoint persists and get_job returns it
 # ---------------------------------------------------------------------------
 
 
@@ -245,7 +171,7 @@ async def test_update_job_checkpoint_persists(tmp_path):
         return_value={
             "_id": "job-1",
             "status": "redesigning",
-            "checkpoint": {"completed_step": "crawl_analyst", "data": {"site_analysis": "{}"}},
+            "checkpoint": {"completed_step": "planner", "data": {"plan": "{}"}},
         }
     )
 
@@ -253,8 +179,8 @@ async def test_update_job_checkpoint_persists(tmp_path):
         mock_db.return_value.__getitem__ = MagicMock(return_value=mock_collection)
 
         checkpoint_data = {
-            "completed_step": "crawl_analyst",
-            "data": {"site_analysis": "{}"},
+            "completed_step": "planner",
+            "data": {"plan": "{}"},
         }
         await update_job("job-1", updates=JobUpdate(checkpoint=checkpoint_data))
 
@@ -262,10 +188,10 @@ async def test_update_job_checkpoint_persists(tmp_path):
         call_args = mock_collection.update_one.call_args
         set_dict = call_args[0][1]["$set"]
         assert "checkpoint" in set_dict
-        assert set_dict["checkpoint"]["completed_step"] == "crawl_analyst"
+        assert set_dict["checkpoint"]["completed_step"] == "planner"
 
         # Verify get_job returns checkpoint
         job = await get_job("job-1")
         assert job is not None
         assert "checkpoint" in job
-        assert job["checkpoint"]["completed_step"] == "crawl_analyst"
+        assert job["checkpoint"]["completed_step"] == "planner"
