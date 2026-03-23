@@ -20,7 +20,8 @@ export function UrlInputForm({ onSubmit, isConnecting }: UrlInputFormProps) {
   const [error, setError] = useState<string | null>(null);
   const [faviconUrl, setFaviconUrl] = useState<string | null>(null);
   const [tier, setTier] = useState<RedesignTier>("free");
-  const [modelProvider, setModelProvider] = useState<ModelProvider>("claude");
+  // Model selection handled by per-step routing on the backend
+  const modelProvider: ModelProvider = "claude";
   const [prompt, setPrompt] = useState("");
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -134,39 +135,6 @@ export function UrlInputForm({ onSubmit, isConnecting }: UrlInputFormProps) {
           {tier === "free" ? "Fast & free (~2 min)" : "Premium quality (~5 min)"}
         </span>
 
-        <div role="radiogroup" aria-label="AI model" className="flex items-center gap-1 p-1 rounded-lg bg-muted w-fit">
-          <span className="px-2 text-xs font-medium text-muted-foreground" aria-hidden="true">AI Model</span>
-          <button
-            type="button"
-            role="radio"
-            aria-checked={modelProvider === "claude"}
-            aria-label="Claude AI model"
-            onClick={() => setModelProvider("claude")}
-            className={[
-              "px-4 py-2.5 rounded-md text-sm font-medium transition-colors",
-              modelProvider === "claude"
-                ? "bg-accent text-accent-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground",
-            ].join(" ")}
-          >
-            Claude
-          </button>
-          <button
-            type="button"
-            role="radio"
-            aria-checked={modelProvider === "gemini"}
-            aria-label="Gemini AI model"
-            onClick={() => setModelProvider("gemini")}
-            className={[
-              "px-4 py-2.5 rounded-md text-sm font-medium transition-colors",
-              modelProvider === "gemini"
-                ? "bg-accent text-accent-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground",
-            ].join(" ")}
-          >
-            Gemini
-          </button>
-        </div>
       </div>
 
       <div className="flex flex-col sm:flex-row gap-2 sm:gap-0 w-full">
