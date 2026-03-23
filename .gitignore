@@ -1,5 +1,9 @@
 # Claude Code internals
 .claude/
+.claude-flow/
+
+# Ruflo swarm state
+.swarm/
 
 # Environment & secrets
 .env
