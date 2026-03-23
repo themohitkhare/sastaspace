@@ -4,13 +4,13 @@
 
 | Key | Value |
 |-----|-------|
-| IP | `192.168.0.38` |
+| IP | DHCP-assigned (currently `192.168.0.37`) |
 | OS | Ubuntu 24.04 LTS |
 | CPU | AMD Ryzen 9 7900X |
 | GPU | AMD RX 7900 XTX (gfx1100, 20GB VRAM) |
 | User | `mkhare` |
 | Hostname | taxila |
-| SSH | `ssh mkhare@192.168.0.38` (key-based) |
+| SSH | `ssh mkhare@taxila` or `ssh mkhare@<current-ip>` (key-based) |
 
 ## Secrets
 
@@ -43,12 +43,12 @@ Backend + worker share same image (`backend/Dockerfile`). `entrypoint.sh` switch
 ## ConfigMap (`k8s/configmap.yaml`)
 
 ```yaml
-CLAUDE_CODE_API_URL: "http://192.168.0.38:8000/v1"  # host systemd service
+CLAUDE_CODE_API_URL: "http://host.k8s.internal:8000/v1"  # via microk8s host-access addon
 SASTASPACE_SITES_DIR: "/data/sites"
 REDIS_URL: "redis://redis:6379"
 MONGODB_URL: "mongodb://mongodb:27017"
 MONGODB_DB: "sastaspace"
-OLLAMA_URL: "http://192.168.0.38:11434/v1"          # host, free tier
+OLLAMA_URL: "http://host.k8s.internal:11434/v1"          # via microk8s host-access addon
 BROWSERLESS_URL: "ws://browserless:3000"
 ```
 
@@ -79,8 +79,8 @@ k8s/
 worker ──► browserless:3000   (CDP WebSocket — Chromium crawling)
        ──► redis:6379         (consume jobs, publish status)
        ──► mongodb:27017      (job state, checkpoints)
-       ──► 192.168.0.38:8000  (claude-code-api, host network)
-       ──► 192.168.0.38:11434 (Ollama, host network, free tier)
+       ──► host.k8s.internal:8000  (claude-code-api, via microk8s host-access)
+       ──► host.k8s.internal:11434 (Ollama, via microk8s host-access)
 
 backend ──► redis:6379        (enqueue jobs, pub/sub for SSE)
         ──► mongodb:27017     (job lookup, site registry, dedup)
@@ -135,14 +135,14 @@ claude-code-api setup:
 git clone https://github.com/codingworkflow/claude-code-api ~/claude-code-api
 cd ~/claude-code-api && python3 -m venv .venv && .venv/bin/pip install -e .
 # systemd: User=mkhare, Restart=always, RestartSec=5, Environment=HOME=/home/mkhare
-# ExecStart: ~/claude-code-api/.venv/bin/uvicorn claude_code_api.main:app --host 127.0.0.1 --port 8000
+# ExecStart: ~/claude-code-api/.venv/bin/uvicorn claude_code_api.main:app --host 10.0.1.1 --port 8000
 ```
 
 ---
 
 ## CI/CD (`.github/workflows/deploy.yml`)
 
-Self-hosted runner on `192.168.0.38`.
+Self-hosted runner on `taxila` (DHCP, see server table for current IP).
 
 ```
 test → security → deploy (main branch only)
@@ -193,7 +193,7 @@ make twenty-logs        # tail Twenty server logs
 make twenty-setup       # first-time instructions
 ```
 
-Custom remote: `make deploy REMOTE_HOST=192.168.0.38 REMOTE_USER=mkhare`
+Custom remote: `make deploy REMOTE_HOST=taxila REMOTE_USER=mkhare`
 
 Image build (manual):
 ```bash
@@ -234,7 +234,7 @@ make twenty-status            # verify pods
 
 ```bash
 sudo systemctl status cloudflared
-curl http://localhost:8000/health                                              # claude-code-api
+curl http://10.0.1.1:8000/health                                               # claude-code-api (bound to host-access bridge IP)
 sudo microk8s kubectl get pods -A                                              # all namespaces
 sudo microk8s kubectl get pods,svc,ingress -n sastaspace
 sudo microk8s kubectl logs -n sastaspace deployment/worker --tail=50           # worker
@@ -250,7 +250,7 @@ sudo docker logs vllm-coder --tail 20                                          #
 
 ```bash
 make deploy-logs                                                               # tail app logs
-ssh mkhare@192.168.0.38 "sudo microk8s kubectl logs -n sastaspace deploy/worker --tail=100 -f"
+ssh mkhare@taxila "sudo microk8s kubectl logs -n sastaspace deploy/worker --tail=100 -f"
 k9s                                                                            # interactive k8s UI
 btop                                                                           # GPU + system monitor
 sudo systemctl restart claude-code-api
@@ -287,8 +287,8 @@ kubectl rollout restart deployment/worker -n sastaspace  # restart
 
 ### 1. SSH
 ```bash
-ssh-keygen -R 192.168.0.38 && ssh mkhare@192.168.0.38   # accept new key
-ssh-copy-id mkhare@192.168.0.38                           # passwordless
+ssh-keygen -R taxila && ssh mkhare@taxila   # accept new key (use hostname or current IP)
+ssh-copy-id mkhare@taxila                    # passwordless
 ```
 
 ### 2. Shell
@@ -348,7 +348,7 @@ sudo docker run -d --name vllm-coder --device=/dev/kfd --device=/dev/dri \
 ### 9. microk8s
 ```bash
 sudo usermod -a -G microk8s mkhare && sudo chown -R mkhare ~/.kube && newgrp microk8s
-sudo microk8s enable ingress hostpath-storage cert-manager registry
+sudo microk8s enable ingress hostpath-storage cert-manager registry host-access
 ```
 
 ### 10. k9s

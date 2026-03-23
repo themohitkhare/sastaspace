@@ -1,4 +1,4 @@
-REMOTE_HOST   ?= 192.168.0.38
+REMOTE_HOST   ?= taxila
 REMOTE_USER   ?= mkhare
 REMOTE_DIR    ?= ~/sastaspace
 REGISTRY      := localhost:32000
