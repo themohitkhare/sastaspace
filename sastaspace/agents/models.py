@@ -33,8 +33,18 @@ class _NullSafeModel(BaseModel):
         if not isinstance(data, dict):
             return data
         for field_name, field_info in cls.model_fields.items():
-            if field_name in data and data[field_name] is None:
+            if field_name not in data:
+                continue
+            val = data[field_name]
+            # Coerce None → default for simple fields
+            if val is None:
                 data[field_name] = field_info.default if field_info.default is not None else ""
+            # Coerce None values inside dict[str, str] fields
+            elif isinstance(val, dict):
+                data[field_name] = {k: (v if v is not None else "") for k, v in val.items()}
+            # Coerce None items inside list[str] fields
+            elif isinstance(val, list):
+                data[field_name] = [(item if item is not None else "") for item in val]
         return data
 
 
