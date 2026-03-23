@@ -76,7 +76,7 @@ jobs:
     name: Security Scan
     runs-on: [self-hosted, linux, amd64]
     timeout-minutes: 15
-    needs: [test]
+    # Runs in parallel with test — no dependency between them
 
     steps:
       - name: Checkout
