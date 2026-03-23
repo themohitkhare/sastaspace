@@ -20,6 +20,39 @@ def _coerce_str(v: object) -> object:
     return v
 
 
+def _is_str_dict_field(field_info) -> bool:
+    """Check if a Pydantic field is annotated as dict[str, str]."""
+    ann = str(field_info.annotation or "")
+    return "dict[str, str]" in ann or "Dict[str, str]" in ann
+
+
+def _is_str_list_field(field_info) -> bool:
+    """Check if a Pydantic field is annotated as list[str]."""
+    ann = str(field_info.annotation or "")
+    return "list[str]" in ann or "List[str]" in ann
+
+
+def _flatten_to_str(v: object) -> str:
+    """Flatten non-string values to string. LLMs return dicts/lists where str is expected."""
+    if v is None:
+        return ""
+    if isinstance(v, str):
+        return v
+    if isinstance(v, list):
+        # e.g. [{"text": "Product", "url": "/product"}, ...] → "Product, ..."
+        parts = []
+        for item in v:
+            if isinstance(item, dict):
+                parts.append(item.get("text", item.get("name", str(item))))
+            else:
+                parts.append(str(item))
+        return ", ".join(parts)
+    if isinstance(v, dict):
+        # e.g. {"Product": [...], "Company": [...]} → "Product, Company"
+        return ", ".join(str(k) for k in v.keys())
+    return str(v)
+
+
 class _NullSafeModel(BaseModel):
     """Base model that coerces null values to defaults for all str fields.
 
@@ -39,11 +72,14 @@ class _NullSafeModel(BaseModel):
             # Coerce None → default for simple fields
             if val is None:
                 data[field_name] = field_info.default if field_info.default is not None else ""
-            # Coerce None values inside dict[str, str] fields
-            elif isinstance(val, dict):
-                data[field_name] = {k: (v if v is not None else "") for k, v in val.items()}
-            # Coerce None items inside list[str] fields
-            elif isinstance(val, list):
+            # Coerce values inside dict[str, str] fields (e.g. content_map)
+            elif isinstance(val, dict) and _is_str_dict_field(field_info):
+                data[field_name] = {
+                    k: (_flatten_to_str(v) if not isinstance(v, str) else v) for k, v in val.items()
+                }
+            # Coerce None items inside list[str] fields (e.g. content_warnings)
+            # Only coerce None→"", leave dicts for field_validators (e.g. animations)
+            elif isinstance(val, list) and _is_str_list_field(field_info):
                 data[field_name] = [(item if item is not None else "") for item in val]
         return data
 
