@@ -77,10 +77,16 @@ class _NullSafeModel(BaseModel):
                 data[field_name] = {
                     k: (_flatten_to_str(v) if not isinstance(v, str) else v) for k, v in val.items()
                 }
-            # Coerce None items inside list[str] fields (e.g. content_warnings)
-            # Only coerce None→"", leave dicts for field_validators (e.g. animations)
+            # Coerce non-string items inside list[str] fields
+            # Skip fields that have custom field_validators (check via class validators)
             elif isinstance(val, list) and _is_str_list_field(field_info):
-                data[field_name] = [(item if item is not None else "") for item in val]
+                has_custom_validator = any(
+                    field_name in str(v) for v in cls.__pydantic_decorators__.field_validators
+                )
+                if not has_custom_validator:
+                    data[field_name] = [
+                        _flatten_to_str(item) if not isinstance(item, str) else item for item in val
+                    ]
         return data
 
 
