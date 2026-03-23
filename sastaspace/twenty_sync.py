@@ -7,6 +7,18 @@ import logging
 
 import httpx
 
+from sastaspace.twenty_models import (
+    CompanyCreateRequest,
+    CompanyUpdateRequest,
+    NoteCreateRequest,
+    NoteTargetCreateRequest,
+    PersonCreateRequest,
+    TwentyDomainName,
+    TwentyEmails,
+    TwentyNoteBody,
+    TwentyPersonName,
+)
+
 logger = logging.getLogger(__name__)
 
 
@@ -35,8 +47,6 @@ class TwentyClient:
     async def find_company_by_domain(self, domain: str) -> dict | None:
         """Find a company by domainName.primaryLinkUrl."""
         try:
-            # Twenty REST filter syntax: field[op]:value
-            # For composite fields: domainName.primaryLinkUrl[eq]:value
             url_variants = [f"https://{domain}", f"http://{domain}", domain]
             for variant in url_variants:
                 data = await self._request(
@@ -59,69 +69,42 @@ class TwentyClient:
             logger.warning("Twenty find_company failed: %s", e)
             return None
 
-    async def upsert_company(self, domain: str, **fields) -> dict | None:
+    async def upsert_company(self, domain: str, name: str | None = None) -> dict | None:
         """Find company by domain, update if exists, create if not."""
         try:
             existing = await self.find_company_by_domain(domain)
             if existing:
-                data = await self._request("PATCH", f"/companies/{existing['id']}", json=fields)
-                return data.get("data", {}).get("updateCompany", existing)
+                if name:
+                    body = CompanyUpdateRequest(name=name)
+                    data = await self._request(
+                        "PATCH",
+                        f"/companies/{existing['id']}",
+                        json=body.model_dump(exclude_none=True),
+                    )
+                    return data.get("data", {}).get("updateCompany", existing)
+                return existing
             else:
-                fields["domainName"] = {"primaryLinkUrl": f"https://{domain}"}
-                if "name" not in fields:
-                    fields["name"] = domain
-                data = await self._request("POST", "/companies", json=fields)
+                body = CompanyCreateRequest(
+                    name=name or domain,
+                    domainName=TwentyDomainName(primaryLinkUrl=f"https://{domain}"),
+                )
+                data = await self._request("POST", "/companies", json=body.model_dump())
                 return data.get("data", {}).get("createCompany")
         except Exception as e:
             logger.warning("Twenty upsert_company failed for %s: %s", domain, e)
             return None
 
-    async def create_redesign_job(self, company_id: str, **fields) -> dict | None:
-        """Create a RedesignJob record linked to a company."""
-        try:
-            fields["companyId"] = company_id
-            data = await self._request("POST", "/redesignJobs", json=fields)
-            return data.get("data", {}).get("createRedesignJob")
-        except Exception as e:
-            logger.warning("Twenty create_redesign_job failed: %s", e)
-            return None
-
-    async def update_redesign_job(self, record_id: str, **fields) -> dict | None:
-        """Update fields on an existing RedesignJob."""
-        try:
-            data = await self._request("PATCH", f"/redesignJobs/{record_id}", json=fields)
-            return data.get("data", {}).get("updateRedesignJob")
-        except Exception as e:
-            logger.warning("Twenty update_redesign_job failed: %s", e)
-            return None
-
-    async def find_redesign_job(self, job_id: str) -> dict | None:
-        """Find a RedesignJob by SastaSpace job ID."""
-        try:
-            data = await self._request(
-                "GET",
-                "/redesignJobs",
-                params={"filter": f"jobId[eq]:{job_id}"},
-            )
-            jobs = data.get("data", {}).get("redesignJobs", [])
-            return jobs[0] if jobs else None
-        except Exception as e:
-            logger.warning("Twenty find_redesign_job failed: %s", e)
-            return None
-
     async def create_person(
-        self, email: str, company_id: str | None, first_name: str, last_name: str, **fields
+        self, email: str, company_id: str | None, first_name: str, last_name: str
     ) -> dict | None:
         """Create a Person record, optionally linked to a company."""
         try:
-            body = {
-                "name": {"firstName": first_name, "lastName": last_name},
-                "emails": {"primaryEmail": email},
-                **fields,
-            }
-            if company_id:
-                body["companyId"] = company_id
-            data = await self._request("POST", "/people", json=body)
+            body = PersonCreateRequest(
+                name=TwentyPersonName(firstName=first_name, lastName=last_name),
+                emails=TwentyEmails(primaryEmail=email),
+                companyId=company_id,
+            )
+            data = await self._request("POST", "/people", json=body.model_dump(exclude_none=True))
             return data.get("data", {}).get("createPerson")
         except Exception as e:
             logger.warning("Twenty create_person failed: %s", e)
@@ -130,28 +113,22 @@ class TwentyClient:
     async def create_note(self, person_id: str, body: str) -> dict | None:
         """Create a Note and attempt to link it to a person."""
         try:
-            note_data = await self._request(
-                "POST",
-                "/notes",
-                json={
-                    "title": "Contact form message",
-                    "bodyV2": {"markdown": body},
-                },
+            note_body = NoteCreateRequest(
+                title="Contact form message",
+                bodyV2=TwentyNoteBody(markdown=body),
             )
+            note_data = await self._request("POST", "/notes", json=note_body.model_dump())
             note = note_data.get("data", {}).get("createNote")
             if not note:
                 return None
             # Try to link note to person (best-effort)
             try:
-                await self._request(
-                    "POST",
-                    "/noteTargets",
-                    json={
-                        "noteId": note["id"],
-                        "targetObjectNameSingular": "person",
-                        "targetObjectRecordId": person_id,
-                    },
+                link = NoteTargetCreateRequest(
+                    noteId=note["id"],
+                    targetObjectNameSingular="person",
+                    targetObjectRecordId=person_id,
                 )
+                await self._request("POST", "/noteTargets", json=link.model_dump())
             except Exception as e:
                 logger.warning("Twenty noteTarget link failed (note still created): %s", e)
             return note
@@ -164,15 +141,6 @@ class NoopTwentyClient:
     """No-op client used when Twenty integration is disabled."""
 
     async def upsert_company(self, *a, **kw):
-        return None
-
-    async def create_redesign_job(self, *a, **kw):
-        return None
-
-    async def update_redesign_job(self, *a, **kw):
-        return None
-
-    async def find_redesign_job(self, *a, **kw):
         return None
 
     async def find_company_by_domain(self, *a, **kw):

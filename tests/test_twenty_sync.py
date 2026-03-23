@@ -44,17 +44,6 @@ class TestUpsertCompany:
             assert result["id"] == "c1"
 
 
-class TestCreateRedesignJob:
-    @pytest.mark.asyncio
-    async def test_creates_job_record(self, client):
-        with patch.object(client, "_request", new_callable=AsyncMock) as mock_req:
-            mock_req.return_value = {"data": {"createRedesignJob": {"id": "rj1"}}}
-            result = await client.create_redesign_job(
-                company_id="c1", job_id="j1", status="done", tier="free"
-            )
-            assert result["id"] == "rj1"
-
-
 class TestCreatePerson:
     @pytest.mark.asyncio
     async def test_creates_person_linked_to_company(self, client):

@@ -110,12 +110,19 @@ class JobService:
         url: str,
         client_ip: str,
         tier: str = "free",
+        model_provider: str = "claude",
     ) -> str:
         """Add a redesign job to the Redis Stream. Returns job_id."""
         job_id = str(uuid4())
 
         # Persist in SQLite
-        await create_job(job_id=job_id, url=url, client_ip=client_ip, tier=tier)
+        await create_job(
+            job_id=job_id,
+            url=url,
+            client_ip=client_ip,
+            tier=tier,
+            model_provider=model_provider,
+        )
 
         # Push to Redis Stream
         await self.redis.xadd(
@@ -124,12 +131,19 @@ class JobService:
                 "job_id": job_id,
                 "url": url,
                 "tier": tier,
+                "model_provider": model_provider,
                 "client_ip": client_ip,
                 "created_at": datetime.now(UTC).isoformat(),
             },
         )
 
-        logger.info("Enqueued job %s for %s (tier=%s)", job_id, url, tier)
+        logger.info(
+            "Enqueued job %s for %s (tier=%s, model_provider=%s)",
+            job_id,
+            url,
+            tier,
+            model_provider,
+        )
         return job_id
 
     async def publish_status(self, job_id: str, event: str, data: dict) -> None:
@@ -221,6 +235,7 @@ class JobService:
                     job_id = fields["job_id"]
                     url = fields["url"]
                     tier = fields.get("tier", "free")
+                    model_provider = fields.get("model_provider", "claude")
 
                     # Check if job already completed (avoid double-processing)
                     job = await get_job(job_id)
@@ -235,7 +250,14 @@ class JobService:
                     logger.warning("Recovery: reprocessing abandoned job %s: %s", job_id, url)
                     try:
                         cp = job.get("checkpoint") if job else None
-                        await handler(job_id, url, tier, self, checkpoint=cp)
+                        await handler(
+                            job_id,
+                            url,
+                            tier,
+                            self,
+                            checkpoint=cp,
+                            model_provider=model_provider,
+                        )
                         await self.redis.xack(STREAM_KEY, GROUP_NAME, msg_id)
                         recovered += 1
                     except Exception:  # noqa: BLE001
@@ -305,6 +327,7 @@ class JobService:
                         job_id = fields["job_id"]
                         url = fields["url"]
                         tier = fields.get("tier", "free")
+                        model_provider = fields.get("model_provider", "claude")
 
                         logger.info("Processing job %s: %s", job_id, url)
 
@@ -321,7 +344,14 @@ class JobService:
                             pass  # DB unavailable — proceed without checkpoint
 
                         try:
-                            await handler(job_id, url, tier, self, checkpoint=prev_checkpoint)
+                            await handler(
+                                job_id,
+                                url,
+                                tier,
+                                self,
+                                checkpoint=prev_checkpoint,
+                                model_provider=model_provider,
+                            )
                             # Acknowledge message on success
                             await self.redis.xack(STREAM_KEY, GROUP_NAME, msg_id)
                         except Exception:  # noqa: BLE001
@@ -356,6 +386,7 @@ async def redesign_handler(
     tier: str,
     job_service: JobService,
     checkpoint: dict | None = None,
+    model_provider: str = "claude",
 ) -> None:
     """
     The actual redesign pipeline handler run by workers.
@@ -373,12 +404,13 @@ async def redesign_handler(
     pipeline = "agno" if settings.use_agno_pipeline else "legacy"
     has_checkpoint = checkpoint is not None
     logger.info(
-        "JOB START | job=%s url=%s tier=%s pipeline=%s checkpoint=%s",
+        "JOB START | job=%s url=%s tier=%s pipeline=%s checkpoint=%s model_provider=%s",
         job_id,
         url,
         tier,
         pipeline,
         has_checkpoint,
+        model_provider,
     )
 
     # Determine what to skip from checkpoint
@@ -565,6 +597,7 @@ async def redesign_handler(
         pipeline_checkpoint,
         _on_checkpoint,
         enhanced=enhanced_result,
+        model_provider=model_provider,
     )
 
     redesign_duration = _time.monotonic() - redesign_start

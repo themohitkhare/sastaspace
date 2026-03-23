@@ -7,10 +7,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { validateUrl, extractDomain } from "@/lib/url-utils";
-import type { RedesignTier } from "@/hooks/use-redesign";
+import type { RedesignTier, ModelProvider } from "@/hooks/use-redesign";
 
 interface UrlInputFormProps {
-  onSubmit: (url: string, tier: RedesignTier) => void;
+  onSubmit: (url: string, tier: RedesignTier, modelProvider: ModelProvider) => void;
 }
 
 export function UrlInputForm({ onSubmit }: UrlInputFormProps) {
@@ -18,6 +18,7 @@ export function UrlInputForm({ onSubmit }: UrlInputFormProps) {
   const [error, setError] = useState<string | null>(null);
   const [faviconUrl, setFaviconUrl] = useState<string | null>(null);
   const [tier, setTier] = useState<RedesignTier>("free");
+  const [modelProvider, setModelProvider] = useState<ModelProvider>("claude");
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const fetchFavicon = useCallback((value: string) => {
@@ -70,37 +71,67 @@ export function UrlInputForm({ onSubmit }: UrlInputFormProps) {
       return;
     }
 
-    onSubmit(result.url, tier);
+    onSubmit(result.url, tier, modelProvider);
   }
 
   return (
     <form onSubmit={handleSubmit} noValidate className="w-full max-w-xl">
-      {/* Tier toggle */}
-      <div className="flex gap-1 mb-3 p-1 rounded-lg bg-muted w-fit">
-        <button
-          type="button"
-          onClick={() => setTier("free")}
-          className={[
-            "px-4 py-1.5 rounded-md text-sm font-medium transition-colors",
-            tier === "free"
-              ? "bg-accent text-accent-foreground shadow-sm"
-              : "text-muted-foreground hover:text-foreground",
-          ].join(" ")}
-        >
-          Express
-        </button>
-        <button
-          type="button"
-          onClick={() => setTier("premium")}
-          className={[
-            "px-4 py-1.5 rounded-md text-sm font-medium transition-colors",
-            tier === "premium"
-              ? "bg-accent text-accent-foreground shadow-sm"
-              : "text-muted-foreground hover:text-foreground",
-          ].join(" ")}
-        >
-          Studio
-        </button>
+      {/* Tier and model toggles */}
+      <div className="flex flex-wrap items-center gap-3 mb-3">
+        <div className="flex gap-1 p-1 rounded-lg bg-muted w-fit">
+          <button
+            type="button"
+            onClick={() => setTier("free")}
+            className={[
+              "px-4 py-1.5 rounded-md text-sm font-medium transition-colors",
+              tier === "free"
+                ? "bg-accent text-accent-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground",
+            ].join(" ")}
+          >
+            Express
+          </button>
+          <button
+            type="button"
+            onClick={() => setTier("premium")}
+            className={[
+              "px-4 py-1.5 rounded-md text-sm font-medium transition-colors",
+              tier === "premium"
+                ? "bg-accent text-accent-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground",
+            ].join(" ")}
+          >
+            Studio
+          </button>
+        </div>
+
+        <div className="flex items-center gap-1 p-1 rounded-lg bg-muted w-fit">
+          <span className="px-2 text-xs font-medium text-muted-foreground">AI Model</span>
+          <button
+            type="button"
+            onClick={() => setModelProvider("claude")}
+            className={[
+              "px-3 py-1.5 rounded-md text-sm font-medium transition-colors",
+              modelProvider === "claude"
+                ? "bg-accent text-accent-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground",
+            ].join(" ")}
+          >
+            Claude
+          </button>
+          <button
+            type="button"
+            onClick={() => setModelProvider("gemini")}
+            className={[
+              "px-3 py-1.5 rounded-md text-sm font-medium transition-colors",
+              modelProvider === "gemini"
+                ? "bg-accent text-accent-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground",
+            ].join(" ")}
+          >
+            Gemini
+          </button>
+        </div>
       </div>
 
       <div className="flex flex-col sm:flex-row gap-2 sm:gap-0 w-full">

@@ -57,18 +57,16 @@ def test_progress_callback_called_for_each_agent():
         patch("sastaspace.agents.pipeline._run_crawl_analyst", return_value=MagicMock()),
         patch("sastaspace.agents.pipeline._run_design_strategist", return_value=MagicMock()),
         patch("sastaspace.agents.pipeline._run_copywriter", return_value=MagicMock()),
-        patch("sastaspace.agents.pipeline._run_component_selector", return_value=MagicMock()),
         patch("sastaspace.agents.pipeline._run_html_generator", return_value=mock_html),
         patch(
             "sastaspace.agents.pipeline._run_quality_reviewer",
             return_value=MagicMock(passed=True, overall_score=8, issues=[]),
         ),
-        patch("sastaspace.agents.pipeline._run_normalizer", return_value=mock_html),
     ):
         result = run_redesign_pipeline(_crawl(), Settings(), progress_callback=callback)
 
     assert isinstance(result, str)
-    assert callback.call_count == 7
+    assert callback.call_count == 5
     event, data = callback.call_args_list[0][0]
     assert event == "agent_activity"
     assert "agent" in data and "message" in data and "step_progress" in data
@@ -79,10 +77,8 @@ def test_agent_messages_covers_all_agents():
         "crawl_analyst",
         "design_strategist",
         "copywriter",
-        "component_selector",
         "html_generator",
         "quality_reviewer",
-        "normalizer",
     }
     assert set(AGENT_MESSAGES.keys()) == expected
 
@@ -93,13 +89,11 @@ def test_progress_callback_none_is_safe():
         patch("sastaspace.agents.pipeline._run_crawl_analyst", return_value=MagicMock()),
         patch("sastaspace.agents.pipeline._run_design_strategist", return_value=MagicMock()),
         patch("sastaspace.agents.pipeline._run_copywriter", return_value=MagicMock()),
-        patch("sastaspace.agents.pipeline._run_component_selector", return_value=MagicMock()),
         patch("sastaspace.agents.pipeline._run_html_generator", return_value=mock_html),
         patch(
             "sastaspace.agents.pipeline._run_quality_reviewer",
             return_value=MagicMock(passed=True, overall_score=8, issues=[]),
         ),
-        patch("sastaspace.agents.pipeline._run_normalizer", return_value=mock_html),
     ):
         result = run_redesign_pipeline(_crawl(), Settings(), progress_callback=None)
     assert result == mock_html

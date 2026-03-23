@@ -12,6 +12,7 @@ type StepState = {
 };
 
 export type RedesignTier = "free" | "premium";
+export type ModelProvider = "claude" | "gemini";
 
 export type RedesignState =
   | { status: "idle" }
@@ -76,6 +77,7 @@ export function useRedesign() {
   const abortRef = useRef<AbortController | null>(null);
   const lastUrlRef = useRef<string>("");
   const lastTierRef = useRef<RedesignTier>("free");
+  const lastModelProviderRef = useRef<ModelProvider>("claude");
 
   const pollJob = useCallback(
     async (jobId: string, url: string, tier: RedesignTier, controller: AbortController) => {
@@ -184,17 +186,18 @@ export function useRedesign() {
   );
 
   const start = useCallback(
-    async (url: string, tier: RedesignTier = "free") => {
+    async (url: string, tier: RedesignTier = "free", modelProvider: ModelProvider = "claude") => {
       abortRef.current?.abort();
       const controller = new AbortController();
       abortRef.current = controller;
       lastUrlRef.current = url;
       lastTierRef.current = tier;
+      lastModelProviderRef.current = modelProvider;
 
       setState({ status: "connecting" });
 
       try {
-        const jobId = await submitRedesign(url, tier, controller.signal);
+        const jobId = await submitRedesign(url, tier, modelProvider, controller.signal);
         if (controller.signal.aborted) return;
 
         // Persist job ID + original URL for page-refresh reconnection
@@ -226,7 +229,7 @@ export function useRedesign() {
       abortRef.current = controller;
       pollJob(state.resumeJobId, state.url, lastTierRef.current, controller);
     } else {
-      start(state.url, lastTierRef.current);
+      start(state.url, lastTierRef.current, lastModelProviderRef.current);
     }
   }, [state, start, pollJob]);
 

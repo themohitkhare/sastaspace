@@ -20,8 +20,8 @@ def client():
 
 class TestJobCompletionFlow:
     @pytest.mark.asyncio
-    async def test_job_completion_creates_company_and_job(self, client):
-        """Simulate full flow: upsert_company (search empty → create) then create_redesign_job."""
+    async def test_job_completion_creates_company(self, client):
+        """Simulate full flow: upsert_company (search empty → create)."""
         with patch.object(client, "_request", new_callable=AsyncMock) as mock_req:
             empty = {"data": {"companies": []}}
             mock_req.side_effect = [
@@ -32,19 +32,11 @@ class TestJobCompletionFlow:
                 empty,
                 # upsert_company: create returns new company
                 {"data": {"createCompany": {"id": "comp-1", "domain": "example.com"}}},
-                # create_redesign_job: returns new job
-                {"data": {"createRedesignJob": {"id": "rj-1", "companyId": "comp-1"}}},
             ]
 
             company = await client.upsert_company("example.com", name="Example Corp")
             assert company is not None
             assert company["id"] == "comp-1"
-
-            job = await client.create_redesign_job(
-                company_id=company["id"], job_id="j-abc", status="done", tier="free"
-            )
-            assert job is not None
-            assert job["id"] == "rj-1"
 
 
 class TestContactFormFlow:
@@ -96,9 +88,6 @@ class TestNoopClientSafety:
         noop = NoopTwentyClient()
 
         assert await noop.upsert_company("example.com", name="Test") is None
-        assert await noop.create_redesign_job("c1", job_id="j1") is None
-        assert await noop.update_redesign_job("rj1", status="done") is None
-        assert await noop.find_redesign_job("j1") is None
         assert await noop.find_company_by_domain("example.com") is None
         assert await noop.create_person("a@b.com", None, "A", "B") is None
         assert await noop.create_note("p1", "hello") is None

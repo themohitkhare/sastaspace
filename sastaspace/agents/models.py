@@ -23,6 +23,7 @@ class BrandProfile(BaseModel):
     tagline: str = ""
     voice_tone: str = ""  # e.g. "professional", "playful", "corporate"
     industry: str = ""
+    personality: str = ""  # deeper brand character for design decisions
 
 
 class ContentSection(BaseModel):
@@ -32,6 +33,7 @@ class ContentSection(BaseModel):
     content_summary: str = ""
     content_type: str = ""  # e.g. "hero", "features", "testimonials", "pricing", "footer"
     importance: int = Field(default=5, ge=1, le=10)
+    exact_text: str = ""  # verbatim text from the page for anti-hallucination binding
 
     @field_validator("importance", mode="before")
     @classmethod
@@ -45,7 +47,9 @@ class SiteAnalysis(BaseModel):
     brand: BrandProfile = Field(default_factory=BrandProfile)
     primary_goal: str = ""  # e.g. "lead generation", "e-commerce", "portfolio"
     target_audience: str = ""
+    visual_identity: str = ""  # descriptive: "minimal dark theme", "bold corporate", etc.
     content_sections: list[ContentSection] = Field(default_factory=list)
+    content_absent: list[str] = Field(default_factory=list)  # what the site does NOT have
     strengths: list[str] = Field(default_factory=list)
     weaknesses: list[str] = Field(default_factory=list)
     key_content: str = ""  # important text that must be preserved
@@ -59,12 +63,26 @@ class SiteAnalysis(BaseModel):
 class ColorPalette(BaseModel):
     """Color palette recommendation for the redesign."""
 
-    primary: str = "#0066cc"
-    secondary: str = "#444444"
-    accent: str = "#ff6600"
-    background: str = "#ffffff"
-    text: str = "#333333"
+    primary: str = ""
+    secondary: str = ""
+    accent: str = ""
+    background: str = ""
+    text: str = ""
     rationale: str = ""
+
+
+class DesignTokens(BaseModel):
+    """Exact design tokens ensuring visual consistency without a normalizer pass."""
+
+    spacing_unit: str = "8px"
+    border_radius_sm: str = "4px"
+    border_radius_md: str = "8px"
+    border_radius_lg: str = "16px"
+    shadow_sm: str = ""
+    shadow_md: str = ""
+    shadow_lg: str = ""
+    transition_speed: str = "200ms"
+    max_content_width: str = "1200px"
 
 
 class TypographyPlan(BaseModel):
@@ -88,13 +106,16 @@ class DesignBrief(BaseModel):
     """Design strategy and plan — output of the DesignStrategist agent."""
 
     design_direction: str = ""  # overall design approach
+    layout_archetype: str = ""  # bento, editorial, split-hero, asymmetric, etc.
     colors: ColorPalette = Field(default_factory=ColorPalette)
     typography: TypographyPlan = Field(default_factory=TypographyPlan)
+    design_tokens: DesignTokens = Field(default_factory=DesignTokens)
     layout_strategy: str = ""  # e.g. "single-page scroll with sticky nav"
     components: list[Component] = Field(default_factory=list)
     conversion_strategy: str = ""  # how to optimize for the site's goal
     responsive_approach: str = ""
     animations: list[str] = Field(default_factory=list)
+    anti_patterns: list[str] = Field(default_factory=list)  # site-specific things to avoid
 
     @field_validator("animations", mode="before")
     @classmethod
@@ -142,6 +163,9 @@ class CopywriterOutput(BaseModel):
     cta_primary: CopywriterCTA = Field(default_factory=CopywriterCTA)
     cta_secondary: CopywriterCTA = Field(default_factory=CopywriterCTA)
     sections: list[CopywriterSection] = Field(default_factory=list)
+    # Strict key→text binding: HTMLGenerator can ONLY use these strings
+    content_map: dict[str, str] = Field(default_factory=dict)
+    content_warnings: list[str] = Field(default_factory=list)
     meta_title: str = ""
     meta_description: str = ""
 
@@ -185,12 +209,15 @@ class QualityReport(BaseModel):
 
     passed: bool = False
     overall_score: int = Field(default=5, ge=1, le=10)
+    uniqueness_score: int = Field(default=5, ge=1, le=10)
+    brand_adherence_score: int = Field(default=5, ge=1, le=10)
 
-    @field_validator("overall_score", mode="before")
+    @field_validator("overall_score", "uniqueness_score", "brand_adherence_score", mode="before")
     @classmethod
-    def coerce_overall_score(cls, v: object) -> object:
+    def coerce_scores(cls, v: object) -> object:
         return _coerce_int(v)
 
+    hallucinated_content: list[str] = Field(default_factory=list)
     issues: list[QualityIssue] = Field(default_factory=list)
     feedback_for_regeneration: str = ""  # specific instructions if passed=False
     strengths: list[str] = Field(default_factory=list)

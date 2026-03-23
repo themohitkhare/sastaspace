@@ -34,7 +34,6 @@ from sastaspace.config import Settings
 from sastaspace.crawler import crawl
 from sastaspace.database import (
     JobStatus,
-    _get_db,
     close_db,
     create_job,
     find_site_by_url_hash,
@@ -68,6 +67,7 @@ _redesign_requests_total = Counter(
 class RedesignRequest(BaseModel):
     url: str
     tier: str = "free"  # "free" or "premium"
+    model_provider: str = "claude"  # "claude" or "gemini"
 
 
 _SITES_DIR: Path = Path("./sites")
@@ -193,13 +193,21 @@ def make_app(sites_dir: Path) -> FastAPI:
 
     # ---- SSE stream (inline fallback when Redis is unavailable) ----
 
-    async def redesign_stream(url: str, tier: str = "free") -> AsyncGenerator[bytes, None]:
+    async def redesign_stream(
+        url: str, tier: str = "free", model_provider: str = "claude"
+    ) -> AsyncGenerator[bytes, None]:
         job_id = str(uuid4())
 
         # Record job in database
         ip = "inline"
         try:
-            await create_job(job_id=job_id, url=url, client_ip=ip, tier=tier)
+            await create_job(
+                job_id=job_id,
+                url=url,
+                client_ip=ip,
+                tier=tier,
+                model_provider=model_provider,
+            )
         except (ConnectionError, OSError):
             pass
 
@@ -241,7 +249,13 @@ def make_app(sites_dir: Path) -> FastAPI:
                     message="Redesigning...",
                 )
 
-                html = await asyncio.to_thread(run_redesign, crawl_result, settings, tier)
+                html = await asyncio.to_thread(
+                    run_redesign,
+                    crawl_result,
+                    settings,
+                    tier,
+                    model_provider=model_provider,
+                )
 
                 # AI-generated HTML is trusted output — do not sanitize with nh3
                 # as it strips <script> tags and event handlers that are part
@@ -343,6 +357,9 @@ def make_app(sites_dir: Path) -> FastAPI:
 
         # Validate tier
         tier = body.tier if body.tier in ("free", "premium") else "free"
+        model_provider = (
+            body.model_provider if body.model_provider in ("claude", "gemini") else "claude"
+        )
 
         # Rate limit check (localhost exempt)
         if not _is_localhost(ip):
@@ -366,7 +383,12 @@ def make_app(sites_dir: Path) -> FastAPI:
         # If Redis is available, use async job queue — return job_id immediately
         if svc is not None:
             _redesign_requests_total.labels(status="started").inc()
-            job_id = await svc.enqueue(url=body.url, client_ip=ip, tier=tier)
+            job_id = await svc.enqueue(
+                url=body.url,
+                client_ip=ip,
+                tier=tier,
+                model_provider=model_provider,
+            )
             return JSONResponse(content={"job_id": job_id})
 
         # Fallback: inline processing (no Redis)
@@ -379,7 +401,7 @@ def make_app(sites_dir: Path) -> FastAPI:
             )
 
         _redesign_requests_total.labels(status="started").inc()
-        return EventSourceResponse(redesign_stream(body.url, tier))
+        return EventSourceResponse(redesign_stream(body.url, tier, model_provider))
 
     # ---- Job status endpoints ----
 
@@ -510,32 +532,21 @@ def make_app(sites_dir: Path) -> FastAPI:
         data = payload.get("data", {})
         action = data.get("adminAction")
         subdomain = data.get("subdomain", "")
-        record_id = data.get("id", "")
-
-        twenty = get_twenty_client(settings.twenty_url, settings.twenty_api_key)
-
         if action == "delete":
             await delete_site_files(subdomain, settings.sites_dir)
             await delete_site_db_record(subdomain)
-            await twenty.update_redesign_job(record_id, status="deleted", adminAction="none")
             return Response(status_code=200, content="deleted")
 
         elif action == "reprocess":
             url = await get_original_url_from_db(subdomain)
             if not url:
-                await twenty.update_redesign_job(
-                    record_id, adminAction="none", errorMessage="Original URL not found"
-                )
                 return Response(status_code=404, content="URL not found")
             # Enqueue new job BEFORE deleting files
             if svc:
-                new_job_id = await svc.enqueue(url, "admin", tier=data.get("tier", "free"))
+                await svc.enqueue(url, "admin", tier=data.get("tier", "free"))
             else:
                 return Response(status_code=503, content="Job service unavailable")
             await delete_site_files(subdomain, settings.sites_dir)
-            await twenty.update_redesign_job(
-                record_id, status="queued", jobId=new_job_id, adminAction="none"
-            )
             return Response(status_code=200, content="reprocessing")
 
         return Response(status_code=200, content="ignored")
@@ -571,37 +582,13 @@ def make_app(sites_dir: Path) -> FastAPI:
         for job in recent_jobs:
             job_id = job.get("id", "")
             try:
-                existing = await twenty.find_redesign_job(job_id)
-                if existing:
-                    already_exists += 1
-                    continue
                 domain = extract_domain(job.get("url", ""))
                 company = await twenty.upsert_company(domain, name=job.get("site_title", domain))
                 if company:
-                    await twenty.create_redesign_job(
-                        company_id=company["id"],
-                        jobId=job_id,
-                        status=job.get("status", "done"),
-                        tier=job.get("tier", "free"),
-                        subdomain=job.get("subdomain", ""),
-                    )
                     synced += 1
             except (ValueError, KeyError, TypeError, OSError) as e:
                 logger.warning("Sync failed for job %s: %s", job_id, e)
                 errors += 1
-
-        # Update totalRedesigns aggregate counts on companies
-        # (avoids TOCTOU race in real-time push — this is the authoritative count)
-        db = _get_db()
-        pipeline = [
-            {"$group": {"_id": "$original_url", "count": {"$sum": 1}}},
-        ]
-        async for doc in db["sites"].aggregate(pipeline):
-            domain = extract_domain(doc["_id"]) if doc["_id"] else None
-            if domain:
-                company = await twenty.find_company_by_domain(domain)
-                if company:
-                    await twenty.upsert_company(domain, totalRedesigns=doc["count"])
 
         return JSONResponse(
             content={"synced": synced, "already_exists": already_exists, "errors": errors}

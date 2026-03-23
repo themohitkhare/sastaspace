@@ -158,6 +158,7 @@ def agno_redesign(
     progress_callback: Callable[[str, dict], None] | None = None,
     checkpoint: dict | None = None,
     checkpoint_callback: Callable[[str, dict], None] | None = None,
+    model_provider: str = "claude",
 ) -> str:
     """Redesign using Agno multi-agent pipeline.
 
@@ -185,6 +186,7 @@ def agno_redesign(
         tier=tier,
         checkpoint=checkpoint,
         checkpoint_callback=checkpoint_callback,
+        model_provider=model_provider,
     )
 
 
@@ -348,6 +350,7 @@ def run_redesign(
     checkpoint: dict | None = None,
     checkpoint_callback: Callable[[str, dict], None] | None = None,
     enhanced=None,  # EnhancedCrawlResult | None
+    model_provider: str = "claude",
 ) -> str:
     """Dispatch to the appropriate redesign function based on settings and tier.
 
@@ -364,7 +367,13 @@ def run_redesign(
 
     if settings.use_agno_pipeline:
         return agno_redesign(
-            crawl_result, settings, tier, progress_callback, checkpoint, checkpoint_callback
+            crawl_result,
+            settings,
+            tier,
+            progress_callback,
+            checkpoint,
+            checkpoint_callback,
+            model_provider=model_provider,
         )
     elif tier == "premium":
         system_prompt = PREMIUM_SYSTEM_PROMPT

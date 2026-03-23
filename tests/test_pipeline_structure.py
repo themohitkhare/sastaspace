@@ -7,9 +7,6 @@ from unittest.mock import patch
 import pytest
 
 from sastaspace.agents.models import (
-    BrandProfile,
-    ComponentSelection,
-    ContentSection,
     CopywriterOutput,
     DesignBrief,
     SiteAnalysis,
@@ -18,7 +15,6 @@ from sastaspace.agents.pipeline import (
     PIPELINE_STEPS,
     _create_model,
     _extract_json,
-    _prefilter_catalog,
     _restore_from_checkpoint,
     _run_crawl_analyst,
 )
@@ -131,7 +127,7 @@ class TestModelRoutingByTier:
 
     def _settings(self) -> Settings:
         return Settings(
-            crawl_analyst_model="claude-haiku-4-5-20251001",
+            crawl_analyst_model="claude-sonnet-4-6-20250514",
             free_crawl_analyst_model="glm-4.7-flash:latest",
             claude_code_api_url="http://claude:8000/v1",
             ollama_url="http://ollama:11434/v1",
@@ -145,7 +141,7 @@ class TestModelRoutingByTier:
 
         # The model passed to _run_agent should have the claude model id
         call_model = mock_agent.call_args.args[3]  # 4th positional arg is model
-        assert call_model.id == "claude-haiku-4-5-20251001"
+        assert call_model.id == "claude-sonnet-4-6-20250514"
 
     @patch("sastaspace.agents.pipeline._run_agent")
     def test_free_tier_uses_free_model(self, mock_agent):
@@ -155,105 +151,6 @@ class TestModelRoutingByTier:
 
         call_model = mock_agent.call_args.args[3]
         assert call_model.id == "glm-4.7-flash:latest"
-
-
-# ---------------------------------------------------------------------------
-# _prefilter_catalog
-# ---------------------------------------------------------------------------
-
-
-class TestPrefilterCatalog:
-    """_prefilter_catalog keeps relevant categories and drops the rest."""
-
-    def _catalog(self) -> str:
-        return json.dumps(
-            {
-                "heroes": [{"name": "hero-1"}],
-                "calls-to-action": [{"name": "cta-1"}],
-                "footers": [{"name": "footer-1"}],
-                "navigation-menus": [{"name": "nav-1"}],
-                "pricing-sections": [{"name": "price-1"}],
-                "cards": [{"name": "card-1"}],
-                "testimonials": [{"name": "testi-1"}],
-                "features": [{"name": "feat-1"}],
-                "backgrounds": [{"name": "bg-1"}],
-                "announcements": [{"name": "ann-1"}],
-                "clients": [{"name": "client-1"}],
-                "comparisons": [{"name": "comp-1"}],
-                "random-other": [{"name": "other-1"}],
-            }
-        )
-
-    def _analysis(self, **kw) -> SiteAnalysis:
-        defaults = dict(
-            primary_goal="",
-            content_sections=[],
-        )
-        defaults.update(kw)
-        return SiteAnalysis(
-            brand=BrandProfile(industry=kw.get("industry", "")),
-            primary_goal=defaults["primary_goal"],
-            content_sections=defaults["content_sections"],
-        )
-
-    def test_core_categories_always_included(self):
-        """heroes, calls-to-action, footers, navigation-menus, backgrounds, announcements."""
-        analysis = self._analysis()
-        result = json.loads(_prefilter_catalog(self._catalog(), analysis))
-        for cat in (
-            "heroes",
-            "calls-to-action",
-            "footers",
-            "navigation-menus",
-            "backgrounds",
-            "announcements",
-        ):
-            assert cat in result, f"Core category '{cat}' should always be included"
-
-    def test_saas_goal_includes_pricing_and_features(self):
-        analysis = self._analysis(primary_goal="SaaS lead generation")
-        result = json.loads(_prefilter_catalog(self._catalog(), analysis))
-        assert "pricing-sections" in result
-        assert "features" in result
-        assert "clients" in result
-        assert "comparisons" in result
-
-    def test_ecommerce_goal_includes_cards_testimonials(self):
-        analysis = self._analysis(primary_goal="ecommerce")
-        result = json.loads(_prefilter_catalog(self._catalog(), analysis))
-        assert "cards" in result
-        assert "testimonials" in result
-
-    def test_testimonials_section_type_includes_testimonials(self):
-        sections = [ContentSection(content_type="testimonials", heading="Reviews")]
-        analysis = self._analysis(content_sections=sections)
-        result = json.loads(_prefilter_catalog(self._catalog(), analysis))
-        assert "testimonials" in result
-        assert "clients" in result
-
-    def test_features_section_type_includes_features(self):
-        sections = [ContentSection(content_type="features", heading="Features")]
-        analysis = self._analysis(content_sections=sections)
-        result = json.loads(_prefilter_catalog(self._catalog(), analysis))
-        assert "features" in result
-        assert "cards" in result
-
-    def test_unrelated_categories_excluded(self):
-        """random-other should be filtered out."""
-        analysis = self._analysis()
-        result = json.loads(_prefilter_catalog(self._catalog(), analysis))
-        assert "random-other" not in result
-
-    def test_invalid_json_catalog_returns_as_is(self):
-        analysis = self._analysis()
-        result = _prefilter_catalog("not valid json", analysis)
-        assert result == "not valid json"
-
-    def test_tech_industry_includes_saas_categories(self):
-        analysis = self._analysis(industry="tech")
-        result = json.loads(_prefilter_catalog(self._catalog(), analysis))
-        assert "pricing-sections" in result
-        assert "features" in result
 
 
 # ---------------------------------------------------------------------------
@@ -269,17 +166,15 @@ class TestPipelineSteps:
             "crawl_analyst",
             "design_strategist",
             "copywriter",
-            "component_selector",
             "html_generator",
             "quality_reviewer",
-            "normalizer",
         ]
 
     def test_no_duplicates(self):
         assert len(PIPELINE_STEPS) == len(set(PIPELINE_STEPS))
 
     def test_step_count(self):
-        assert len(PIPELINE_STEPS) == 7
+        assert len(PIPELINE_STEPS) == 5
 
 
 # ---------------------------------------------------------------------------
@@ -344,29 +239,17 @@ class TestRestoreFromCheckpoint:
         assert idx == PIPELINE_STEPS.index("copywriter") + 1
         assert restored["copywriter_output"].headline == "Amazing Headline"
 
-    def test_component_selection_restored(self):
-        cs = ComponentSelection(strategy="test strategy")
-        checkpoint = {
-            "completed_step": "component_selector",
-            "data": {"component_selection": cs.model_dump_json()},
-        }
-        idx, restored = _restore_from_checkpoint(checkpoint)
-        assert idx == PIPELINE_STEPS.index("component_selector") + 1
-        assert restored["component_selection"].strategy == "test strategy"
-
     def test_all_models_restored_from_full_checkpoint(self):
         """A checkpoint with all data keys restores all models."""
         sa = SiteAnalysis(primary_goal="ecommerce")
         db = DesignBrief(design_direction="bold")
         co = CopywriterOutput(headline="Buy Now")
-        cs = ComponentSelection(strategy="hero + pricing")
         checkpoint = {
             "completed_step": "quality_reviewer",
             "data": {
                 "site_analysis": sa.model_dump_json(),
                 "design_brief": db.model_dump_json(),
                 "copywriter_output": co.model_dump_json(),
-                "component_selection": cs.model_dump_json(),
                 "html": "<html></html>",
             },
         }
@@ -375,5 +258,4 @@ class TestRestoreFromCheckpoint:
         assert restored["site_analysis"].primary_goal == "ecommerce"
         assert restored["design_brief"].design_direction == "bold"
         assert restored["copywriter_output"].headline == "Buy Now"
-        assert restored["component_selection"].strategy == "hero + pricing"
         assert restored["html"] == "<html></html>"

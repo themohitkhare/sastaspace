@@ -4,10 +4,10 @@ import React from "react";
 import { m } from "motion/react";
 import { FlickeringGrid } from "@/components/backgrounds/flickering-grid";
 import { UrlInputForm } from "@/components/landing/url-input-form";
-import type { RedesignTier } from "@/hooks/use-redesign";
+import type { RedesignTier, ModelProvider } from "@/hooks/use-redesign";
 
 interface HeroSectionProps {
-  onSubmit: (url: string, tier: RedesignTier) => void;
+  onSubmit: (url: string, tier: RedesignTier, modelProvider: ModelProvider) => void;
 }
 
 export function HeroSection({ onSubmit }: HeroSectionProps) {

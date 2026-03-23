@@ -27,10 +27,15 @@ class Settings(BaseSettings):
 
     # Agno pipeline (premium tier — Claude)
     use_agno_pipeline: bool = True
-    crawl_analyst_model: str = "claude-haiku-4-5-20251001"
+    crawl_analyst_model: str = "claude-sonnet-4-6-20250514"
     design_strategist_model: str = "claude-sonnet-4-6-20250514"
     html_generator_model: str = "claude-sonnet-4-6-20250514"
-    quality_reviewer_model: str = "claude-haiku-4-5-20251001"
+    quality_reviewer_model: str = "claude-sonnet-4-6-20250514"
+
+    # Gemini (alternative provider)
+    gemini_api_url: str = "https://generativelanguage.googleapis.com/v1beta/openai/"
+    gemini_api_key: str = ""  # Set via GEMINI_API_KEY env var
+    gemini_model: str = "gemini-2.5-flash"
 
     # Ollama (free tier)
     ollama_url: str = "http://localhost:11434/v1"

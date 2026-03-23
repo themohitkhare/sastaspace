@@ -69,6 +69,7 @@ async def create_job(
     url: str,
     client_ip: str,
     tier: str = "free",
+    model_provider: str = "claude",
 ) -> dict:
     """Insert a new job record. Returns the job dict."""
     now = datetime.now(UTC).isoformat()
@@ -79,6 +80,7 @@ async def create_job(
         "status": JobStatus.QUEUED.value,
         "client_ip": client_ip,
         "tier": tier,
+        "model_provider": model_provider,
         "progress": 0,
         "message": "Queued",
         "subdomain": None,
@@ -111,6 +113,7 @@ class JobUpdate:
     assets_count: int | None = None
     assets_total_size: int | None = None
     business_profile: dict | None = None
+    model_provider: str | None = None
 
 
 def _job_update_to_dict(updates: JobUpdate) -> dict:
@@ -129,6 +132,7 @@ def _job_update_to_dict(updates: JobUpdate) -> dict:
         "assets_count",
         "assets_total_size",
         "business_profile",
+        "model_provider",
     ]
     for f in simple_fields:
         val = getattr(updates, f)

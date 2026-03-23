@@ -18,13 +18,14 @@ export type JobStatus = {
 export async function submitRedesign(
   url: string,
   tier: "free" | "premium" = "free",
+  modelProvider: "claude" | "gemini" = "claude",
   signal?: AbortSignal
 ): Promise<string> {
   const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:8080"
   const resp = await fetch(`${backendUrl}/redesign`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ url, tier }),
+    body: JSON.stringify({ url, tier, model_provider: modelProvider }),
     signal,
   })
   if (!resp.ok) throw new Error(`Redesign request failed: ${resp.status}`)

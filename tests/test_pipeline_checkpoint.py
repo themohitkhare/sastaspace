@@ -9,7 +9,6 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from sastaspace.agents.models import (
-    ComponentSelection,
     CopywriterOutput,
     DesignBrief,
     QualityReport,
@@ -71,9 +70,8 @@ def _make_checkpoint(completed_step: str, data: dict | None = None) -> dict:
 _SITE_ANALYSIS = SiteAnalysis(primary_goal="lead gen", target_audience="devs")
 _DESIGN_BRIEF = DesignBrief(design_direction="modern minimal")
 _COPYWRITER = CopywriterOutput(headline="Hello World")
-_COMPONENT_SEL = ComponentSelection(strategy="standard")
 _HTML = "<!DOCTYPE html><html><body>hi</body></html>"
-_QUALITY = QualityReport(passed=True, overall_score=9)
+_QUALITY = QualityReport(passed=True, overall_score=9, uniqueness_score=7, brand_adherence_score=8)
 
 
 # ---------------------------------------------------------------------------
@@ -81,10 +79,8 @@ _QUALITY = QualityReport(passed=True, overall_score=9)
 # ---------------------------------------------------------------------------
 
 
-@patch("sastaspace.agents.pipeline._run_normalizer", return_value=_HTML)
 @patch("sastaspace.agents.pipeline._run_quality_reviewer", return_value=_QUALITY)
 @patch("sastaspace.agents.pipeline._run_html_generator", return_value=_HTML)
-@patch("sastaspace.agents.pipeline._run_component_selector", return_value=_COMPONENT_SEL)
 @patch("sastaspace.agents.pipeline._run_copywriter", return_value=_COPYWRITER)
 @patch("sastaspace.agents.pipeline._run_design_strategist", return_value=_DESIGN_BRIEF)
 @patch("sastaspace.agents.pipeline._run_crawl_analyst", return_value=_SITE_ANALYSIS)
@@ -92,10 +88,8 @@ def test_checkpoint_skips_completed_steps(
     mock_analyst,
     mock_strategist,
     mock_copywriter,
-    mock_component,
     mock_html,
     mock_quality,
-    mock_normalizer,
     fake_crawl,
     fake_settings,
 ):
@@ -118,10 +112,8 @@ def test_checkpoint_skips_completed_steps(
     mock_analyst.assert_not_called()
     mock_strategist.assert_not_called()
     mock_copywriter.assert_called_once()
-    mock_component.assert_called_once()
     assert mock_html.call_count >= 1
     assert mock_quality.call_count >= 1
-    mock_normalizer.assert_called_once()
 
 
 # ---------------------------------------------------------------------------
@@ -129,10 +121,8 @@ def test_checkpoint_skips_completed_steps(
 # ---------------------------------------------------------------------------
 
 
-@patch("sastaspace.agents.pipeline._run_normalizer", return_value=_HTML)
 @patch("sastaspace.agents.pipeline._run_quality_reviewer", return_value=_QUALITY)
 @patch("sastaspace.agents.pipeline._run_html_generator", return_value=_HTML)
-@patch("sastaspace.agents.pipeline._run_component_selector", return_value=_COMPONENT_SEL)
 @patch("sastaspace.agents.pipeline._run_copywriter", return_value=_COPYWRITER)
 @patch("sastaspace.agents.pipeline._run_design_strategist", return_value=_DESIGN_BRIEF)
 @patch("sastaspace.agents.pipeline._run_crawl_analyst", return_value=_SITE_ANALYSIS)
@@ -140,10 +130,8 @@ def test_no_checkpoint_runs_all_steps(
     mock_analyst,
     mock_strategist,
     mock_copywriter,
-    mock_component,
     mock_html,
     mock_quality,
-    mock_normalizer,
     fake_crawl,
     fake_settings,
 ):
@@ -154,21 +142,17 @@ def test_no_checkpoint_runs_all_steps(
     mock_analyst.assert_called_once()
     mock_strategist.assert_called_once()
     mock_copywriter.assert_called_once()
-    mock_component.assert_called_once()
     assert mock_html.call_count >= 1
     assert mock_quality.call_count >= 1
-    mock_normalizer.assert_called_once()
 
 
 # ---------------------------------------------------------------------------
-# Test 3: checkpoint at html_generator skips steps 1-4
+# Test 3: checkpoint at copywriter skips steps 1-3
 # ---------------------------------------------------------------------------
 
 
-@patch("sastaspace.agents.pipeline._run_normalizer", return_value=_HTML)
 @patch("sastaspace.agents.pipeline._run_quality_reviewer", return_value=_QUALITY)
 @patch("sastaspace.agents.pipeline._run_html_generator", return_value=_HTML)
-@patch("sastaspace.agents.pipeline._run_component_selector", return_value=_COMPONENT_SEL)
 @patch("sastaspace.agents.pipeline._run_copywriter", return_value=_COPYWRITER)
 @patch("sastaspace.agents.pipeline._run_design_strategist", return_value=_DESIGN_BRIEF)
 @patch("sastaspace.agents.pipeline._run_crawl_analyst", return_value=_SITE_ANALYSIS)
@@ -176,21 +160,18 @@ def test_checkpoint_at_html_generator_skips_first_four(
     mock_analyst,
     mock_strategist,
     mock_copywriter,
-    mock_component,
     mock_html,
     mock_quality,
-    mock_normalizer,
     fake_crawl,
     fake_settings,
 ):
-    """Checkpoint at component_selector means steps 1-4 done, skip to html_generator."""
+    """Checkpoint at copywriter means steps 1-3 done, skip to html_generator."""
     checkpoint = _make_checkpoint(
-        "component_selector",
+        "copywriter",
         {
             "site_analysis": _SITE_ANALYSIS.model_dump_json(),
             "design_brief": _DESIGN_BRIEF.model_dump_json(),
             "copywriter_output": _COPYWRITER.model_dump_json(),
-            "component_selection": _COMPONENT_SEL.model_dump_json(),
         },
     )
 
@@ -204,10 +185,8 @@ def test_checkpoint_at_html_generator_skips_first_four(
     mock_analyst.assert_not_called()
     mock_strategist.assert_not_called()
     mock_copywriter.assert_not_called()
-    mock_component.assert_not_called()
     assert mock_html.call_count >= 1
     assert mock_quality.call_count >= 1
-    mock_normalizer.assert_called_once()
 
 
 # ---------------------------------------------------------------------------
@@ -215,10 +194,8 @@ def test_checkpoint_at_html_generator_skips_first_four(
 # ---------------------------------------------------------------------------
 
 
-@patch("sastaspace.agents.pipeline._run_normalizer", return_value=_HTML)
 @patch("sastaspace.agents.pipeline._run_quality_reviewer", return_value=_QUALITY)
 @patch("sastaspace.agents.pipeline._run_html_generator", return_value=_HTML)
-@patch("sastaspace.agents.pipeline._run_component_selector", return_value=_COMPONENT_SEL)
 @patch("sastaspace.agents.pipeline._run_copywriter", return_value=_COPYWRITER)
 @patch("sastaspace.agents.pipeline._run_design_strategist", return_value=_DESIGN_BRIEF)
 @patch("sastaspace.agents.pipeline._run_crawl_analyst", return_value=_SITE_ANALYSIS)
@@ -226,10 +203,8 @@ def test_checkpoint_callback_fires(
     mock_analyst,
     mock_strategist,
     mock_copywriter,
-    mock_component,
     mock_html,
     mock_quality,
-    mock_normalizer,
     fake_crawl,
     fake_settings,
 ):
@@ -238,16 +213,16 @@ def test_checkpoint_callback_fires(
 
     run_redesign_pipeline(fake_crawl, fake_settings, checkpoint_callback=cb)
 
-    # Should be called once per pipeline step (7 total)
+    # Should be called once per pipeline step (5 total)
     assert cb.call_count == len(PIPELINE_STEPS)
 
     # First call should be for crawl_analyst
     first_call_step = cb.call_args_list[0][0][0]
     assert first_call_step == "crawl_analyst"
 
-    # Last call should be for normalizer
+    # Last call should be for quality_reviewer
     last_call_step = cb.call_args_list[-1][0][0]
-    assert last_call_step == "normalizer"
+    assert last_call_step == "quality_reviewer"
 
     # Each call's data dict should have completed_step matching the step name
     for call in cb.call_args_list:
