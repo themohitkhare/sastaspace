@@ -35,7 +35,7 @@ class Settings(BaseSettings):
     # Gemini (alternative provider)
     gemini_api_url: str = "https://generativelanguage.googleapis.com/v1beta/openai/"
     gemini_api_key: str = ""  # Set via GEMINI_API_KEY env var
-    gemini_model: str = "gemini-2.5-flash"
+    gemini_model: str = "gemini-2.5-pro"
 
     # Ollama (free tier)
     ollama_url: str = "http://localhost:11434/v1"
