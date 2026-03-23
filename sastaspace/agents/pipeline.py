@@ -8,6 +8,7 @@ Component path: Select components → Compose React page → Vite build.
 
 from __future__ import annotations
 
+import concurrent.futures
 import json
 import logging
 import re
@@ -35,6 +36,10 @@ from sastaspace.agents.prompts import (
     BUILDER_USER_TEMPLATE,
     COMPOSER_SYSTEM,
     COMPOSER_USER_TEMPLATE,
+    PARALLEL_ABOVE_FOLD_SYSTEM,
+    PARALLEL_BELOW_FOLD_SYSTEM,
+    PARALLEL_CONTENT_SYSTEM,
+    PARALLEL_SECTION_USER_TEMPLATE,
     PLANNER_SYSTEM,
     PLANNER_USER_TEMPLATE,
 )
@@ -333,6 +338,195 @@ def _run_builder(
         "@media" in html.lower(),
     )
     return html
+
+
+# ---------------------------------------------------------------------------
+# Parallel builder — split HTML generation into concurrent section calls
+# ---------------------------------------------------------------------------
+
+_ABOVE_FOLD_TYPES = {"hero", "navigation", "nav", "header"}
+_BELOW_FOLD_TYPES = {"footer", "cta", "contact", "call-to-action"}
+
+
+def _classify_sections(
+    plan: RedesignPlan,
+) -> tuple[list[str], list[str], list[str]]:
+    """Split plan content_sections into above-fold, content, and below-fold groups.
+
+    Returns three lists of section heading strings (or "hero"/"cta"/"footer"
+    placeholders when no explicit heading exists).
+    """
+    above: list[str] = []
+    content: list[str] = []
+    below: list[str] = []
+
+    for cs in plan.content_sections:
+        ctype = (cs.content_type or "").lower().strip()
+        heading = cs.heading or ctype or "section"
+        if ctype in _ABOVE_FOLD_TYPES:
+            above.append(heading)
+        elif ctype in _BELOW_FOLD_TYPES:
+            below.append(heading)
+        else:
+            content.append(heading)
+
+    # Ensure each group has at least a placeholder so the LLM knows what to do
+    if not above:
+        above = ["hero + navigation"]
+    if not below:
+        below = ["CTA + footer"]
+    if not content:
+        content = ["main content sections from content_map"]
+
+    return above, content, below
+
+
+def _merge_parallel_html(
+    above_fold: str,
+    content_sections: str,
+    below_fold: str,
+) -> str:
+    """Merge three HTML fragments into a single valid HTML document.
+
+    above_fold: starts with <!DOCTYPE html>...<body>, NO closing tags
+    content_sections: raw <section> elements
+    below_fold: closing sections + </body></html>
+    """
+    above = _clean_html(above_fold)
+    middle = _clean_html(content_sections)
+    below = _clean_html(below_fold)
+
+    # Strip any accidental closing tags from above-fold
+    for tag in ("</body>", "</html>"):
+        idx = above.lower().rfind(tag)
+        if idx != -1:
+            above = above[:idx]
+
+    # Strip any accidental opening document tags from middle
+    for pattern in (r"<!DOCTYPE[^>]*>", r"<html[^>]*>", r"<head[\s\S]*?</head>", r"<body[^>]*>"):
+        middle = re.sub(pattern, "", middle, flags=re.IGNORECASE)
+
+    # Strip accidental document wrapper from below-fold (but keep </body></html>)
+    for pattern in (r"<!DOCTYPE[^>]*>", r"<html[^>]*>", r"<head[\s\S]*?</head>", r"<body[^>]*>"):
+        below = re.sub(pattern, "", below, flags=re.IGNORECASE)
+
+    # Ensure below-fold closes the document
+    lower_below = below.lower()
+    if "</body>" not in lower_below:
+        below += "\n</body>"
+    if "</html>" not in lower_below:
+        below += "\n</html>"
+
+    merged = above + "\n\n" + middle + "\n\n" + below
+    return merged
+
+
+def _run_parallel_builder(
+    plan: RedesignPlan,
+    crawl_result: CrawlResult,
+    settings: Settings,
+    tier: str = "premium",
+    model_provider: str = "claude",
+) -> str:
+    """Run Builder in parallel — 3 concurrent LLM calls for page sections.
+
+    Splits the page into above-fold, content, and below-fold and generates
+    each concurrently. Falls back to single-call _run_builder on any failure.
+    """
+    start = time.monotonic()
+    model_provider = _resolve_step_provider("builder", settings, model_provider)
+    use_ollama = tier == "free" and model_provider not in ("claude", "gemini")
+    model_id = settings.free_html_generator_model if use_ollama else settings.html_generator_model
+
+    above_sections, content_sections_list, below_sections = _classify_sections(plan)
+
+    plan_json = plan.model_dump_json(indent=2)
+    crawl_context = crawl_result.to_prompt_context()
+    title = crawl_result.title
+    meta_desc = crawl_result.meta_description
+
+    section_configs = [
+        (
+            "builder_above_fold",
+            PARALLEL_ABOVE_FOLD_SYSTEM,
+            PARALLEL_SECTION_USER_TEMPLATE.format(
+                section_name="above-fold section (navigation + hero)",
+                plan_json=plan_json,
+                crawl_context=crawl_context,
+                title=title,
+                meta_description=meta_desc,
+                assigned_sections=", ".join(above_sections),
+            ),
+        ),
+        (
+            "builder_content",
+            PARALLEL_CONTENT_SYSTEM,
+            PARALLEL_SECTION_USER_TEMPLATE.format(
+                section_name="content sections (middle of page)",
+                plan_json=plan_json,
+                crawl_context=crawl_context,
+                title=title,
+                meta_description=meta_desc,
+                assigned_sections=", ".join(content_sections_list),
+            ),
+        ),
+        (
+            "builder_below_fold",
+            PARALLEL_BELOW_FOLD_SYSTEM,
+            PARALLEL_SECTION_USER_TEMPLATE.format(
+                section_name="below-fold section (CTA + footer)",
+                plan_json=plan_json,
+                crawl_context=crawl_context,
+                title=title,
+                meta_description=meta_desc,
+                assigned_sections=", ".join(below_sections),
+            ),
+        ),
+    ]
+
+    def _call_section(args: tuple[str, str, str]) -> str:
+        name, system, user = args
+        model = _create_model(
+            model_id, settings, use_ollama=use_ollama, model_provider=model_provider
+        )
+        return _run_agent(name, system, user, model)
+
+    n_sections = len(section_configs)
+
+    try:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=n_sections) as executor:
+            futures = [executor.submit(_call_section, cfg) for cfg in section_configs]
+            results = [f.result() for f in futures]
+
+        above_html, content_html, below_html = results
+        html = _merge_parallel_html(above_html, content_html, below_html)
+        _validate_html(html)
+
+        duration_ms = int((time.monotonic() - start) * 1000)
+        logger.info(
+            "PERF | parallel_builder=true sections=%d duration_ms=%d",
+            n_sections,
+            duration_ms,
+        )
+        logger.info(
+            "PARALLEL BUILDER RESULT | html_len=%d has_doctype=%s has_style=%s has_media=%s",
+            len(html),
+            "<!doctype" in html.lower(),
+            "<style" in html.lower(),
+            "@media" in html.lower(),
+        )
+        return html
+
+    except Exception as exc:  # noqa: BLE001 — fall back to single-call builder
+        duration_ms = int((time.monotonic() - start) * 1000)
+        logger.warning(
+            "PERF | parallel_builder=true sections=%d duration_ms=%d status=fallback error=%s",
+            n_sections,
+            duration_ms,
+            str(exc)[:200],
+        )
+        logger.warning("Parallel builder failed, falling back to single-call builder: %s", exc)
+        return _run_builder(plan, crawl_result, settings, tier, model_provider)
 
 
 def _run_composer(
@@ -736,14 +930,19 @@ def run_redesign_pipeline(
 
             # Step 2: Builder -- generate HTML
             if _should_run("builder"):
+                use_parallel = settings.enable_parallel_builder
                 logger.info(
-                    "Pipeline step 2/%d: Builder (tier=%s, provider=%s)",
+                    "Pipeline step 2/%d: Builder (tier=%s, provider=%s, parallel=%s)",
                     len(steps),
                     tier,
                     model_provider,
+                    use_parallel,
                 )
                 _emit("builder")
-                html = _run_builder(plan, crawl_result, settings, tier, model_provider)
+                if use_parallel:
+                    html = _run_parallel_builder(plan, crawl_result, settings, tier, model_provider)
+                else:
+                    html = _run_builder(plan, crawl_result, settings, tier, model_provider)
                 cp_data["html"] = html
                 _checkpoint("builder", cp_data)
             else:

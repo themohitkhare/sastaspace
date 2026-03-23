@@ -30,16 +30,21 @@ spec:
         envFrom:
         - secretRef:
             name: twenty-env
+        startupProbe:
+          exec:
+            command: ["sh", "-c", "ps aux | grep -q '[y]arn worker:prod'"]
+          failureThreshold: 30
+          periodSeconds: 5
         livenessProbe:
           exec:
             command: ["sh", "-c", "ps aux | grep -q '[y]arn worker:prod'"]
-          initialDelaySeconds: 30
-          periodSeconds: 15
-          failureThreshold: 3
+          initialDelaySeconds: 60
+          periodSeconds: 30
+          failureThreshold: 5
         resources:
           requests:
-            memory: "256Mi"
-            cpu: "100m"
+            memory: "512Mi"
+            cpu: "200m"
           limits:
-            memory: "1Gi"
-            cpu: "500m"
+            memory: "2Gi"
+            cpu: "1000m"

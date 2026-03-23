@@ -172,6 +172,20 @@ SITE_TYPE_KEYWORDS: dict[str, list[str]] = {
 # Tier bonus: gold components get a base score boost over silver and bronze
 _TIER_BONUS = {"gold": 5.0, "silver": 2.0, "bronze": 0.0}
 
+# Section types that benefit from specific Magic UI-style animation patterns.
+# When a section matches, components whose description/title contain the animation
+# keywords receive a scoring boost.
+ANIMATION_AFFINITY: dict[str, list[str]] = {
+    "stats": ["counter", "ticker", "number", "animate", "count"],
+    "metrics": ["counter", "ticker", "number", "animate", "count"],
+    "brands": ["marquee", "scroll", "infinite", "logo", "carousel"],
+    "partners": ["marquee", "scroll", "infinite", "logo", "carousel"],
+    "logos": ["marquee", "scroll", "infinite", "logo", "carousel"],
+    "clients": ["marquee", "scroll", "infinite", "logo", "carousel"],
+    "hero": ["gradient", "blur", "fade", "shimmer", "animated"],
+    "pricing": ["animated-border", "border", "glow", "highlight"],
+}
+
 
 # ---------------------------------------------------------------------------
 # Scoring
@@ -190,6 +204,7 @@ def _score_component(
     plan: dict,
     category: str,
     tier_name: str = "gold",
+    section_type: str = "",
 ) -> float:
     """Score a component candidate against the plan. Higher = better match."""
     score = 0.0
@@ -209,6 +224,22 @@ def _score_component(
     site_type = plan.get("site_type", "other")
     if site_type and site_type in SITE_TYPE_KEYWORDS:
         score += _keyword_match_score(desc, SITE_TYPE_KEYWORDS[site_type]) * 12
+
+    # Animation affinity — boost components that match Magic UI animation patterns
+    # for their section type (e.g., counter animations for stats sections)
+    if section_type and section_type in ANIMATION_AFFINITY:
+        anim_score = _keyword_match_score(desc, ANIMATION_AFFINITY[section_type])
+        score += anim_score * 8
+
+    # Also check if the plan's animations list mentions patterns relevant to this component
+    plan_animations = plan.get("animations", [])
+    if plan_animations:
+        anim_text = " ".join(str(a).lower() for a in plan_animations)
+        if section_type in ANIMATION_AFFINITY:
+            for kw in ANIMATION_AFFINITY[section_type]:
+                if kw in anim_text and kw in desc:
+                    score += 3.0
+                    break
 
     # Popularity as tiebreaker (normalize to 0-5 range)
     # Downloads are typically 100-10000
@@ -401,6 +432,7 @@ def _pick_best_for_category(
     plan: dict,
     components_dir: Path,
     max_candidates: int = 3,
+    section_type: str = "",
 ) -> SelectedComponent | None:
     """Pick the best component for a given category.
 
@@ -417,7 +449,9 @@ def _pick_best_for_category(
         if not candidates:
             continue
 
-        scored = [(_score_component(m, plan, category, tier_name), m) for m in candidates]
+        scored = [
+            (_score_component(m, plan, category, tier_name, section_type), m) for m in candidates
+        ]
         scored.sort(key=lambda x: x[0], reverse=True)
 
         for score, comp_meta in scored[:max_candidates]:
@@ -460,7 +494,9 @@ def _select_for_sections(
             continue
         seen_categories.add(cache_key)
 
-        component = _pick_best_for_category(category, category_group, plan, components_dir)
+        component = _pick_best_for_category(
+            category, category_group, plan, components_dir, section_type=section_type
+        )
         if component:
             selected.append(component)
             all_deps.update(component.dependencies)

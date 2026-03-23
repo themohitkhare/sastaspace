@@ -21,6 +21,14 @@ from sastaspace.twenty_models import (
 
 logger = logging.getLogger(__name__)
 
+# Default timeout for all Twenty API calls (connect, read, write, pool)
+_DEFAULT_TIMEOUT = httpx.Timeout(30.0, connect=10.0)
+
+# Number of retries on transient errors (timeouts, 502/503/504)
+_MAX_RETRIES = 1
+
+_RETRYABLE_STATUS_CODES = {502, 503, 504}
+
 
 class TwentyClient:
     """Async client for Twenty CRM REST API."""
@@ -32,17 +40,97 @@ class TwentyClient:
     async def _request(
         self, method: str, path: str, json: dict | None = None, params: dict | None = None
     ) -> dict:
-        """Make an authenticated request to Twenty API."""
-        async with httpx.AsyncClient(timeout=10.0) as client:
-            resp = await client.request(
-                method,
-                f"{self.base_url}{path}",
-                json=json,
-                params=params,
-                headers={"Authorization": f"Bearer {self.api_key}"},
+        """Make an authenticated request to Twenty API with retry on transient errors."""
+        url = f"{self.base_url}{path}"
+        last_exc: Exception | None = None
+
+        for attempt in range(_MAX_RETRIES + 1):
+            try:
+                async with httpx.AsyncClient(timeout=_DEFAULT_TIMEOUT) as client:
+                    resp = await client.request(
+                        method,
+                        url,
+                        json=json,
+                        params=params,
+                        headers={"Authorization": f"Bearer {self.api_key}"},
+                    )
+                    if resp.status_code in _RETRYABLE_STATUS_CODES and attempt < _MAX_RETRIES:
+                        logger.warning(
+                            "Twenty API %s %s returned %s (attempt %d/%d), retrying",
+                            method,
+                            path,
+                            resp.status_code,
+                            attempt + 1,
+                            _MAX_RETRIES + 1,
+                        )
+                        continue
+                    if resp.status_code >= 400:
+                        logger.error(
+                            "Twenty API error: %s %s → %s body=%s",
+                            method,
+                            path,
+                            resp.status_code,
+                            resp.text[:500],
+                        )
+                    resp.raise_for_status()
+                    return resp.json()
+            except httpx.TimeoutException as e:
+                last_exc = e
+                if attempt < _MAX_RETRIES:
+                    logger.warning(
+                        "Twenty API timeout: %s %s (attempt %d/%d), retrying",
+                        method,
+                        path,
+                        attempt + 1,
+                        _MAX_RETRIES + 1,
+                    )
+                    continue
+                logger.error(
+                    "Twenty API timeout after %d attempts: %s %s",
+                    attempt + 1,
+                    method,
+                    path,
+                )
+                raise
+            except httpx.HTTPStatusError:
+                # Already logged above before raise_for_status
+                raise
+            except httpx.HTTPError as e:
+                last_exc = e
+                logger.error(
+                    "Twenty API HTTP error: %s %s → %s: %s",
+                    method,
+                    path,
+                    type(e).__name__,
+                    e,
+                )
+                raise
+
+        # Should not reach here, but satisfy type checker
+        raise last_exc  # type: ignore[misc]
+
+    async def health_check(self) -> bool:
+        """Verify Twenty API is reachable and the API key is valid.
+
+        Returns True if the API responds, False otherwise. Logs the outcome.
+        """
+        try:
+            await self._request("GET", "/companies", params={"limit": "1"})
+            logger.info("Twenty CRM health check passed (%s)", self.base_url)
+            return True
+        except httpx.TimeoutException:
+            logger.error("Twenty CRM health check failed: timeout connecting to %s", self.base_url)
+            return False
+        except httpx.HTTPStatusError as e:
+            logger.error(
+                "Twenty CRM health check failed: %s %s (is API key valid?)",
+                e.response.status_code,
+                e.response.text[:200],
             )
-            resp.raise_for_status()
-            return resp.json()
+            return False
+        except Exception as e:
+            logger.error("Twenty CRM health check failed: %s: %s", type(e).__name__, e)
+            return False
 
     async def find_company_by_domain(self, domain: str) -> dict | None:
         """Find a company by domainName.primaryLinkUrl."""
@@ -66,7 +154,12 @@ class TwentyClient:
             companies = data.get("data", {}).get("companies", [])
             return companies[0] if companies else None
         except Exception as e:
-            logger.warning("Twenty find_company failed: %s", e)
+            logger.warning(
+                "Twenty find_company failed for domain=%s: %s: %s",
+                domain,
+                type(e).__name__,
+                e,
+            )
             return None
 
     async def upsert_company(self, domain: str, name: str | None = None) -> dict | None:
@@ -91,7 +184,12 @@ class TwentyClient:
                 data = await self._request("POST", "/companies", json=body.model_dump())
                 return data.get("data", {}).get("createCompany")
         except Exception as e:
-            logger.warning("Twenty upsert_company failed for %s: %s", domain, e)
+            logger.warning(
+                "Twenty upsert_company failed for domain=%s: %s: %s",
+                domain,
+                type(e).__name__,
+                e,
+            )
             return None
 
     async def create_person(
@@ -107,7 +205,12 @@ class TwentyClient:
             data = await self._request("POST", "/people", json=body.model_dump(exclude_none=True))
             return data.get("data", {}).get("createPerson")
         except Exception as e:
-            logger.warning("Twenty create_person failed: %s", e)
+            logger.warning(
+                "Twenty create_person failed for email=%s: %s: %s",
+                email,
+                type(e).__name__,
+                e,
+            )
             return None
 
     async def create_note(self, person_id: str, body: str) -> dict | None:
@@ -120,6 +223,7 @@ class TwentyClient:
             note_data = await self._request("POST", "/notes", json=note_body.model_dump())
             note = note_data.get("data", {}).get("createNote")
             if not note:
+                logger.warning("Twenty create_note returned empty data for person_id=%s", person_id)
                 return None
             # Try to link note to person (best-effort)
             try:
@@ -130,15 +234,28 @@ class TwentyClient:
                 )
                 await self._request("POST", "/noteTargets", json=link.model_dump())
             except Exception as e:
-                logger.warning("Twenty noteTarget link failed (note still created): %s", e)
+                logger.warning(
+                    "Twenty noteTarget link failed (note %s still created): %s: %s",
+                    note["id"],
+                    type(e).__name__,
+                    e,
+                )
             return note
         except Exception as e:
-            logger.warning("Twenty create_note failed: %s", e)
+            logger.warning(
+                "Twenty create_note failed for person_id=%s: %s: %s",
+                person_id,
+                type(e).__name__,
+                e,
+            )
             return None
 
 
 class NoopTwentyClient:
     """No-op client used when Twenty integration is disabled."""
+
+    async def health_check(self) -> bool:
+        return True
 
     async def upsert_company(self, *a, **kw):
         return None

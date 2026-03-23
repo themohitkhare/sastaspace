@@ -90,6 +90,9 @@ class Settings(BaseSettings):
     # Plan cache (skip Planner for common site_type + archetype combos)
     enable_plan_cache: bool = True
 
+    # Parallel builder (experimental — split HTML generation into concurrent section calls)
+    enable_parallel_builder: bool = False  # ENABLE_PARALLEL_BUILDER=true to opt in
+
     # Component-based React pipeline
     use_component_pipeline: bool = True
     components_dir: Path = Path("./components")
