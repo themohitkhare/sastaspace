@@ -222,7 +222,8 @@ def _run_planner(
     model_provider: str = "claude",
 ) -> RedesignPlan:
     """Run the Planner -- analyze, design, and write copy in one shot."""
-    use_ollama = tier == "free"
+    # Ollama only for free tier when no explicit provider (claude/gemini)
+    use_ollama = tier == "free" and model_provider not in ("claude", "gemini")
     model_id = settings.free_crawl_analyst_model if use_ollama else settings.crawl_analyst_model
     model = _create_model(model_id, settings, use_ollama=use_ollama, model_provider=model_provider)
     user_prompt = PLANNER_USER_TEMPLATE.format(
@@ -261,7 +262,7 @@ def _run_builder(
     model_provider: str = "claude",
 ) -> str:
     """Run the Builder -- generate HTML from the plan in one shot."""
-    use_ollama = tier == "free"
+    use_ollama = tier == "free" and model_provider not in ("claude", "gemini")
     model_id = settings.free_html_generator_model if use_ollama else settings.html_generator_model
     model = _create_model(model_id, settings, use_ollama=use_ollama, model_provider=model_provider)
 

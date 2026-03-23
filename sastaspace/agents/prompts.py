@@ -67,10 +67,60 @@ You must produce ALL of the following in one response:
 - fadeInUp as the only animation
 - Generic 135deg gradients
 
-Respond with ONLY a valid JSON object. No markdown fences, no explanation."""
+You MUST respond with ONLY a valid JSON object matching this EXACT schema:
+{
+  "brand": {
+    "name": "", "tagline": "", "voice_tone": "",
+    "industry": "", "personality": ""
+  },
+  "site_type": "portfolio|blog|ecommerce|saas|agency|restaurant|other",
+  "primary_goal": "",
+  "target_audience": "",
+  "visual_identity": "",
+  "content_sections": [
+    {"heading": "", "content_summary": "", "content_type": "",
+     "importance": 5, "exact_text": ""}
+  ],
+  "content_absent": ["list what the site does NOT have"],
+  "key_content": "",
+  "layout_archetype": "bento|editorial|split-hero|asymmetric|minimal|etc",
+  "design_direction": "",
+  "colors": {
+    "primary": "#hex", "secondary": "#hex", "accent": "#hex",
+    "background": "#hex", "text": "#hex", "rationale": ""
+  },
+  "typography": {
+    "heading_font": "", "body_font": "",
+    "google_fonts_import": "@import url(...)", "rationale": ""
+  },
+  "design_tokens": {
+    "spacing_unit": "", "border_radius_sm": "",
+    "border_radius_md": "", "border_radius_lg": "",
+    "shadow_sm": "", "shadow_md": "", "shadow_lg": "",
+    "transition_speed": "", "max_content_width": ""
+  },
+  "conversion_strategy": "",
+  "responsive_approach": "",
+  "animations": [],
+  "anti_patterns": [],
+  "headline": "",
+  "subheadline": "",
+  "cta_primary": {"text": "", "context": ""},
+  "cta_secondary": {"text": "", "context": ""},
+  "content_map": {
+    "hero_headline": "...", "hero_subheadline": "...",
+    "section_1_heading": "...", "etc": "..."
+  },
+  "content_warnings": [],
+  "meta_title": "",
+  "meta_description": ""
+}
+
+CRITICAL: Use these EXACT field names. Do not nest them differently.
+No markdown fences, no explanation — just the raw JSON object."""
 
 PLANNER_USER_TEMPLATE = """\
-Analyze this website and produce a complete redesign plan (analysis + design brief + copy).
+Analyze this website and produce a complete redesign plan.
 
 ## Crawled Website Data:
 {crawl_context}
@@ -80,8 +130,12 @@ Analyze this website and produce a complete redesign plan (analysis + design bri
 ## Detected Colors: {colors}
 ## Detected Fonts: {fonts}
 
-Produce ONE JSON with all three sections. Content_map keys must map to real content only.
-Respond with ONLY the JSON object."""
+STEP 1: Classify the site type (portfolio, blog, ecommerce, saas, agency, restaurant, etc.)
+STEP 2: Choose the best layout archetype FOR THAT SITE TYPE
+STEP 3: Analyze brand, extract content, build design brief
+STEP 4: Write the content_map with ONLY real text from the site
+
+Respond with ONLY the JSON object using the exact schema from your instructions."""
 
 # ---------------------------------------------------------------------------
 # Step 2: Builder — generate the final HTML in one shot

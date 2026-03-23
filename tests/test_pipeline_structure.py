@@ -143,9 +143,10 @@ class TestModelRoutingByTier:
 
     @patch("sastaspace.agents.pipeline._run_agent")
     def test_free_tier_uses_free_model(self, mock_agent):
+        """Free tier with no explicit provider falls back to ollama."""
         mock_agent.return_value = json.dumps(RedesignPlan().model_dump())
         s = self._settings()
-        _run_planner(self._crawl_result(), s, tier="free")
+        _run_planner(self._crawl_result(), s, tier="free", model_provider="ollama")
 
         call_model = mock_agent.call_args.args[3]
         assert call_model.id == "glm-4.7-flash:latest"

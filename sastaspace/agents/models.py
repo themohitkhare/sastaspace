@@ -311,6 +311,7 @@ class RedesignPlan(_NullSafeModel):
 
     # Brand & Content Analysis
     brand: BrandProfile = Field(default_factory=BrandProfile)
+    site_type: str = ""  # portfolio, blog, ecommerce, saas, agency, restaurant, etc.
     primary_goal: str = ""
     target_audience: str = ""
     visual_identity: str = ""
