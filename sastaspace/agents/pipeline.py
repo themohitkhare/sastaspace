@@ -14,6 +14,7 @@ import time
 from collections.abc import Callable
 
 from agno.agent import Agent
+from agno.models.google import Gemini
 from agno.models.openai import OpenAILike
 
 from sastaspace.agents.metrics import (
@@ -97,9 +98,13 @@ def _extract_json(text: str) -> dict:
 
 
 def _create_model(
-    model_id: str, settings: Settings, *, use_ollama: bool = False, model_provider: str = "claude"
-) -> OpenAILike:
-    """Create an Agno OpenAILike model instance.
+    model_id: str,
+    settings: Settings,
+    *,
+    use_ollama: bool = False,
+    model_provider: str = "claude",
+) -> OpenAILike | Gemini:
+    """Create an Agno model instance.
 
     Args:
         model_id: The model identifier string.
@@ -108,10 +113,9 @@ def _create_model(
         model_provider: "claude" or "gemini" — selects API credentials and endpoint.
     """
     if model_provider == "gemini":
-        return OpenAILike(
+        return Gemini(
             id=settings.gemini_model,
             api_key=settings.gemini_api_key,
-            base_url=settings.gemini_api_url,
         )
     return OpenAILike(
         id=model_id,
