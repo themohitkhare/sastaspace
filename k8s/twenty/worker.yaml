@@ -30,17 +30,10 @@ spec:
         envFrom:
         - secretRef:
             name: twenty-env
-        startupProbe:
-          exec:
-            command: ["sh", "-c", "ps aux | grep -q '[y]arn worker:prod'"]
-          failureThreshold: 30
-          periodSeconds: 5
-        livenessProbe:
-          exec:
-            command: ["sh", "-c", "ps aux | grep -q '[y]arn worker:prod'"]
-          initialDelaySeconds: 60
-          periodSeconds: 30
-          failureThreshold: 5
+        # No liveness/startup probes — Twenty worker is a batch processor
+        # that starts, processes BullMQ cron jobs, then exits. K8s restarts
+        # it automatically via the Deployment's restart policy. CrashLoopBackOff
+        # is expected behavior for this pattern (k8s back-off timer handles spacing).
         resources:
           requests:
             memory: "512Mi"
