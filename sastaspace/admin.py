@@ -57,7 +57,19 @@ async def get_original_url_from_db(subdomain: str) -> str | None:
 
 
 async def delete_site_db_record(subdomain: str) -> None:
-    """Remove site record from MongoDB."""
+    """Remove site + job records from MongoDB. Full end-to-end cleanup."""
     db = _get_db()
-    await db["sites"].delete_one({"subdomain": subdomain})
-    logger.info("Deleted site DB record: %s", subdomain)
+
+    # Delete site record
+    result = await db["sites"].delete_one({"subdomain": subdomain})
+    if result.deleted_count:
+        logger.info("Deleted site DB record: %s", subdomain)
+
+    # Delete all associated job records (by subdomain or by URL pattern)
+    jobs_result = await db["jobs"].delete_many({"subdomain": subdomain})
+    if jobs_result.deleted_count:
+        logger.info(
+            "Deleted %d job records for subdomain: %s",
+            jobs_result.deleted_count,
+            subdomain,
+        )
