@@ -17,6 +17,7 @@ from prometheus_client import Counter, Gauge, Histogram
 from sastaspace.config import Settings
 from sastaspace.crawler import crawl
 from sastaspace.database import JobStatus, create_job, update_job
+from sastaspace.html_utils import inject_badge
 from sastaspace.redesigner import run_redesign
 
 logger = logging.getLogger(__name__)
@@ -200,6 +201,10 @@ async def redesign_stream(
 
             # Sanitize AI-generated HTML
             html_content = _sanitize_html(html_content)
+
+            # Inject SastaSpace badge (marketing watermark)
+            if settings.include_badge:
+                html_content = inject_badge(html_content)
 
             # Step 3: Deploy (sync -- use to_thread)
             deploying_data = {

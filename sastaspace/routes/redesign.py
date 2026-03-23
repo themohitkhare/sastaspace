@@ -12,7 +12,7 @@ from fastapi.sse import EventSourceResponse, format_sse_event
 from pydantic import BaseModel
 
 from sastaspace.config import Settings
-from sastaspace.database import JobStatus, get_job, list_jobs, list_sites
+from sastaspace.database import JobStatus, find_site_by_url_hash, get_job, list_jobs, list_sites
 from sastaspace.urls import is_valid_url, url_hash
 
 from .sse import (
@@ -39,14 +39,11 @@ def create_redesign_router(
     is_localhost_fn,
     is_rate_limited_fn,
     record_request_fn,
-    rate_limit_store: dict,
     semaphore,
     deploy_fn,
     svc_ref: list,
 ) -> APIRouter:
     """Create the redesign router with injected dependencies."""
-    from sastaspace.database import find_site_by_url_hash
-
     r = APIRouter()
 
     @r.post("/redesign", response_model=None)

@@ -17,7 +17,8 @@ const steps = [
   {
     number: "3",
     label: "See the result",
-    description: "Your redesigned site, ready to preview in seconds.",
+    description:
+      "Your redesigned site, ready to preview in seconds. Every redesign includes a 'Redesigned by SastaSpace' badge — free marketing for you too!",
   },
 ];
 

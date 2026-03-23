@@ -22,9 +22,13 @@ export function AppFlow() {
   // Navigate to result page after 1.5s celebration delay
   useEffect(() => {
     if (state.status === "done") {
+      // Clear ?job=&url= query params so back-navigation doesn't re-trigger polling
+      if (typeof window !== "undefined" && window.location.search) {
+        window.history.replaceState(null, "", window.location.pathname);
+      }
       const tierParam = state.tier === "free" ? "?tier=express" : "";
       redirectTimerRef.current = setTimeout(() => {
-        router.replace(`/${state.subdomain}${tierParam}`);
+        router.push(`/${state.subdomain}${tierParam}`);
       }, 1500);
       return () => {
         if (redirectTimerRef.current) clearTimeout(redirectTimerRef.current);

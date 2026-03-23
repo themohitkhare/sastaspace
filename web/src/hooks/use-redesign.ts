@@ -243,6 +243,10 @@ export function useRedesign() {
 
   const reset = useCallback(() => {
     abortRef.current?.abort();
+    // Clear ?job=&url= query params so the landing page starts fresh
+    if (typeof window !== "undefined" && window.location.search) {
+      window.history.replaceState(null, "", window.location.pathname);
+    }
     setState({ status: "idle" });
   }, []);
 

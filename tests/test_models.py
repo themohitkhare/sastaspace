@@ -49,7 +49,7 @@ def test_quality_report_score_int_passthrough():
 
 
 def test_design_brief_animations_list_of_dicts():
-    """Claude/GLM4 may return list[dict] for animations."""
+    """Verify animations coercion handles mixed str/dict items from Claude/GLM4."""
     brief = DesignBrief(
         animations=[
             {"element": "Hero", "animation": "fade-in", "duration": "0.5s"},

@@ -25,7 +25,7 @@ from sastaspace.database import (
     update_job,
 )
 from sastaspace.deployer import deploy
-from sastaspace.html_utils import RedesignError, RedesignResult
+from sastaspace.html_utils import RedesignError, RedesignResult, inject_badge
 from sastaspace.html_utils import validate_html as _validate_html
 from sastaspace.redesigner import run_redesign
 from sastaspace.twenty_sync import get_twenty_client
@@ -633,6 +633,10 @@ async def redesign_handler(
             {"job_id": job_id, "error": "Redesign produced invalid HTML. Please try again."},
         )
         return
+
+    # Inject SastaSpace badge (marketing watermark)
+    if settings.include_badge:
+        html = inject_badge(html)
 
     # Step 3: Deploying
     logger.info("JOB STEP 3/3: Deploying | job=%s", job_id)

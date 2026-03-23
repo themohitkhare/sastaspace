@@ -1,8 +1,9 @@
 "use client";
 
 import { useReducer, useRef } from "react";
+import Link from "next/link";
 import { AnimatePresence, m } from "motion/react";
-import { Loader2, Calendar } from "lucide-react";
+import { Loader2, Calendar, ArrowRight } from "lucide-react";
 import { Turnstile, type TurnstileInstance } from "@marsidev/react-turnstile";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -265,17 +266,26 @@ export function ContactForm({ subdomain }: ContactFormProps) {
             <p className="text-base text-muted-foreground mt-2">
               I typically reply within 24 hours.
             </p>
-            {process.env.NEXT_PUBLIC_CALENDAR_URL && (
-              <a
-                href={process.env.NEXT_PUBLIC_CALENDAR_URL}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center justify-center gap-2 rounded-lg border border-border bg-secondary text-secondary-foreground text-sm font-medium h-11 px-6 mt-6 transition-all hover:bg-secondary/80 active:translate-y-px"
+            <div className="flex flex-col sm:flex-row items-center gap-3 mt-6">
+              {process.env.NEXT_PUBLIC_CALENDAR_URL && (
+                <a
+                  href={process.env.NEXT_PUBLIC_CALENDAR_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center justify-center gap-2 rounded-lg border border-border bg-secondary text-secondary-foreground text-sm font-medium h-11 px-6 transition-all hover:bg-secondary/80 active:translate-y-px"
+                >
+                  <Calendar className="w-4 h-4" />
+                  Book a Consultation
+                </a>
+              )}
+              <Link
+                href="/"
+                className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
               >
-                <Calendar className="w-4 h-4" />
-                Book a Consultation
-              </a>
-            )}
+                Redesign another site
+                <ArrowRight className="w-3.5 h-3.5" />
+              </Link>
+            </div>
           </m.div>
         )}
       </AnimatePresence>

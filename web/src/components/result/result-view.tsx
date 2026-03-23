@@ -2,6 +2,7 @@
 
 import { m } from "motion/react";
 import { ExternalLink } from "lucide-react";
+import { NavHeader } from "@/components/ui/nav-header";
 import { ContactForm } from "@/components/result/contact-form";
 import { BeforeAfterSlider } from "@/components/result/before-after-slider";
 import { ShareButtons } from "@/components/result/share-buttons";
@@ -27,9 +28,10 @@ export function ResultView({ subdomain, tier }: ResultViewProps) {
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
       transition={{ duration: 0.4, ease: "easeOut" }}
-      className="min-h-screen flex flex-col items-center px-4 pt-24"
+      className="min-h-screen flex flex-col items-center px-4"
     >
-      <div className="w-full max-w-4xl flex flex-col items-center">
+      <NavHeader />
+      <div className="w-full max-w-4xl flex flex-col items-center pt-8">
         <h1 className="font-heading text-[clamp(1.75rem,5vw,3rem)] leading-[1.1] text-foreground text-center mb-8">
           {headerText}
         </h1>

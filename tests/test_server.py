@@ -564,7 +564,7 @@ def test_serve_site_asset_404(tmp_path):
 
 
 def test_is_port_listening_false():
-    """Lines 261-263: _is_port_listening returns False for unused port."""
+    """Lines 261-263: _is_port_listening reports unused port as not listening."""
     # Use a very unlikely port
     assert _is_port_listening(19999) is False
 

@@ -69,6 +69,9 @@ class Settings(BaseSettings):
     twenty_webhook_secret: str = ""
     twenty_admin_key: str = ""
 
+    # Badge injection on generated sites
+    include_badge: bool = True
+
     # Asset download concurrency (number of parallel downloads)
     asset_download_concurrency: int = 10
 

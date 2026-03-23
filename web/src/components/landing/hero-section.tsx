@@ -17,7 +17,9 @@ export function HeroSection({ onSubmit, isConnecting }: HeroSectionProps) {
     <div className="relative min-h-screen flex flex-col justify-center overflow-hidden bg-background">
       <FlickeringGrid className="absolute inset-0 z-0" />
       <nav className="absolute top-0 left-0 right-0 z-20 flex items-center justify-between w-full max-w-6xl mx-auto px-6 sm:px-8 lg:px-12 py-6">
-        <span className="font-heading text-xl text-foreground">SastaSpace</span>
+        <Link href="/" className="font-heading text-xl text-foreground hover:text-accent transition-colors">
+          SastaSpace
+        </Link>
         <Link
           href="/pricing"
           className="text-sm text-muted-foreground hover:text-foreground transition-colors"
@@ -36,6 +38,7 @@ export function HeroSection({ onSubmit, isConnecting }: HeroSectionProps) {
             See your website{" "}
             <br className="hidden sm:block" />
             <span className="bg-gradient-to-r from-accent to-accent/70 bg-clip-text text-transparent">reimagined</span>
+            {" "}in 60 seconds
           </m.h1>
           <m.p
             initial={{ opacity: 0, y: 16 }}
@@ -43,7 +46,7 @@ export function HeroSection({ onSubmit, isConnecting }: HeroSectionProps) {
             transition={{ duration: 0.4, delay: 0.2, ease: "easeOut" }}
             className="text-lg sm:text-xl text-muted-foreground font-sans mt-6 mb-10 max-w-lg"
           >
-            Enter your URL and watch AI redesign your site in under a minute.
+            Traditional redesigns cost $5,000+ and take months. SastaSpace does it in 60 seconds for the cost of a coffee.
           </m.p>
           <m.div
             initial={{ opacity: 0, y: 16 }}
@@ -59,6 +62,8 @@ export function HeroSection({ onSubmit, isConnecting }: HeroSectionProps) {
             className="text-sm text-muted-foreground mt-4"
           >
             <span className="font-semibold text-foreground">2,400+</span> websites redesigned
+            <span className="mx-2 text-muted-foreground/40">·</span>
+            Saving businesses <span className="font-semibold text-foreground">$12M+</span> in design costs
           </m.p>
         </div>
       </div>

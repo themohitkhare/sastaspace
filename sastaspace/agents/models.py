@@ -63,6 +63,22 @@ def _coerce_str_list(cls, field_name: str, val: list) -> list:
     return [_flatten_to_str(item) if not isinstance(item, str) else item for item in val]
 
 
+def _coerce_animations_list(v: object) -> list[str]:
+    """Coerce list[str|dict] to list[str] — LLMs sometimes return dicts for animations."""
+    if not isinstance(v, list):
+        return []
+    result = []
+    for item in v:
+        if isinstance(item, str):
+            result.append(item)
+        elif isinstance(item, dict):
+            parts = [str(val) for val in item.values() if val]
+            result.append(": ".join(parts))
+        else:
+            result.append(str(item))
+    return result
+
+
 class _NullSafeModel(BaseModel):
     """Base model that coerces null values to defaults for all str fields.
 
@@ -202,19 +218,7 @@ class DesignBrief(_NullSafeModel):
     @classmethod
     def coerce_animations(cls, v: object) -> list[str]:
         """Accept list[str] or list[dict] — Claude sometimes returns dicts."""
-        if not isinstance(v, list):
-            return []
-        result = []
-        for item in v:
-            if isinstance(item, str):
-                result.append(item)
-            elif isinstance(item, dict):
-                # e.g. {"element": "Hero", "animation": "fade-in", "duration": "15s"}
-                parts = [str(val) for val in item.values() if val]
-                result.append(": ".join(parts))
-            else:
-                result.append(str(item))
-        return result
+        return _coerce_animations_list(v)
 
 
 # --- Copywriter output ---
@@ -339,18 +343,7 @@ class RedesignPlan(_NullSafeModel):
     @classmethod
     def coerce_animations(cls, v: object) -> list[str]:
         """Accept list[str] or list[dict] — LLMs sometimes return dicts."""
-        if not isinstance(v, list):
-            return []
-        result = []
-        for item in v:
-            if isinstance(item, str):
-                result.append(item)
-            elif isinstance(item, dict):
-                parts = [str(val) for val in item.values() if val]
-                result.append(": ".join(parts))
-            else:
-                result.append(str(item))
-        return result
+        return _coerce_animations_list(v)
 
     # Copy (strict content binding)
     headline: str = ""

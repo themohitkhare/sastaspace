@@ -39,9 +39,93 @@ _SITES_DIR: Path = Path("./sites")
 _startup_time: float = 0.0
 
 
+class _SvcProxy(list):
+    """List-like proxy that always returns the current module-level svc."""
+
+    def __getitem__(self, idx):
+        return sys.modules[__name__].svc
+
+
 # ---------------------------------------------------------------------------
 # Lifespan
 # ---------------------------------------------------------------------------
+
+
+async def _connect_with_retry(connect_fn, service_name: str, url: str, max_retries: int = 5):
+    """Attempt an async connection with back-off.
+
+    Returns on success, raises on final failure.
+    """
+    retry_delay = 2
+    for attempt in range(1, max_retries + 1):
+        try:
+            await connect_fn()
+            logger.info("%s connected at %s", service_name, url)
+            return
+        except (ConnectionError, OSError, TimeoutError):
+            if attempt == max_retries:
+                logger.error(
+                    "%s unavailable after %d attempts — refusing to start",
+                    service_name,
+                    max_retries,
+                )
+                raise
+            logger.warning(
+                "%s attempt %d/%d failed, retrying in %ds...",
+                service_name,
+                attempt,
+                max_retries,
+                retry_delay,
+            )
+            await asyncio.sleep(retry_delay)
+
+
+async def _init_mongodb(settings: Settings) -> None:
+    """Connect to MongoDB with retry."""
+    set_mongo_url(settings.mongodb_url, settings.mongodb_db)
+    await _connect_with_retry(init_db, "MongoDB", f"{settings.mongodb_url} / {settings.mongodb_db}")
+
+
+async def _init_redis(settings: Settings) -> JobService | None:
+    """Connect to Redis and return a JobService, or None if no URL configured."""
+    if not settings.redis_url:
+        return None
+    _svc = JobService(redis_url=settings.redis_url)
+    await _connect_with_retry(_svc.connect, "Redis job service", settings.redis_url)
+    return _svc
+
+
+async def _check_claude_api(settings: Settings) -> None:
+    """Non-blocking health probe of the Claude Code API (warn-only)."""
+    claude_health_url = settings.claude_code_api_url.rstrip("/").rsplit("/v1", 1)[0]
+    try:
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            resp = await client.get(f"{claude_health_url}/health", timeout=10)
+            if resp.status_code == 200:
+                logger.info("Claude Code API reachable at %s", claude_health_url)
+            else:
+                logger.warning(
+                    "Claude Code API returned status %d at %s/health",
+                    resp.status_code,
+                    claude_health_url,
+                )
+    except (httpx.ConnectError, httpx.TimeoutException, OSError) as e:
+        logger.warning("Claude Code API unreachable at %s/health: %s", claude_health_url, e)
+
+
+async def _drain_sse_tasks() -> None:
+    """Wait for active SSE connections to finish, cancelling stragglers after 10s."""
+    if not active_sse_tasks:
+        return
+    logger.info("Waiting for %d active SSE connection(s) to drain...", len(active_sse_tasks))
+    _done, pending = await asyncio.wait(active_sse_tasks, timeout=10.0)
+    if pending:
+        logger.warning(
+            "Shutdown: %d SSE connection(s) did not drain in 10s, cancelling",
+            len(pending),
+        )
+        for task in pending:
+            task.cancel()
 
 
 def _create_lifespan(settings: Settings, sites_dir: Path):
@@ -50,31 +134,8 @@ def _create_lifespan(settings: Settings, sites_dir: Path):
     @asynccontextmanager
     async def lifespan(app: FastAPI):
         global svc, _startup_time
-        max_retries = 5
-        retry_delay = 2
 
-        # Connect MongoDB (required)
-        set_mongo_url(settings.mongodb_url, settings.mongodb_db)
-        for attempt in range(1, max_retries + 1):
-            try:
-                await init_db()
-                logger.info(
-                    "MongoDB connected at %s / %s", settings.mongodb_url, settings.mongodb_db
-                )
-                break
-            except (ConnectionError, OSError, TimeoutError):
-                if attempt == max_retries:
-                    logger.error(
-                        "MongoDB unavailable after %d attempts — refusing to start", max_retries
-                    )
-                    raise
-                logger.warning(
-                    "MongoDB attempt %d/%d failed, retrying in %ds...",
-                    attempt,
-                    max_retries,
-                    retry_delay,
-                )
-                await asyncio.sleep(retry_delay)
+        await _init_mongodb(settings)
 
         # Seed sites_deployed_total from disk on startup
         try:
@@ -83,45 +144,8 @@ def _create_lifespan(settings: Settings, sites_dir: Path):
         except OSError:
             pass
 
-        # Connect Redis (required -- without it, jobs go inline and crawling fails)
-        if settings.redis_url:
-            for attempt in range(1, max_retries + 1):
-                try:
-                    _svc = JobService(redis_url=settings.redis_url)
-                    await _svc.connect()
-                    svc = _svc
-                    logger.info("Redis job service connected at %s", settings.redis_url)
-                    break
-                except (ConnectionError, OSError, TimeoutError):
-                    if attempt == max_retries:
-                        logger.error(
-                            "Redis unavailable after %d attempts — refusing to start",
-                            max_retries,
-                        )
-                        raise
-                    logger.warning(
-                        "Redis attempt %d/%d failed, retrying in %ds...",
-                        attempt,
-                        max_retries,
-                        retry_delay,
-                    )
-                    await asyncio.sleep(retry_delay)
-
-        # Startup health checks (non-blocking -- warn only, don't fail startup)
-        claude_health_url = settings.claude_code_api_url.rstrip("/").rsplit("/v1", 1)[0]
-        try:
-            async with httpx.AsyncClient(timeout=5.0) as client:
-                resp = await client.get(f"{claude_health_url}/health", timeout=10)
-                if resp.status_code == 200:
-                    logger.info("Claude Code API reachable at %s", claude_health_url)
-                else:
-                    logger.warning(
-                        "Claude Code API returned status %d at %s/health",
-                        resp.status_code,
-                        claude_health_url,
-                    )
-        except (httpx.ConnectError, httpx.TimeoutException, OSError) as e:
-            logger.warning("Claude Code API unreachable at %s/health: %s", claude_health_url, e)
+        svc = await _init_redis(settings)
+        await _check_claude_api(settings)
 
         _startup_time = time.monotonic()
         logger.info("Server startup complete")
@@ -130,19 +154,7 @@ def _create_lifespan(settings: Settings, sites_dir: Path):
 
         # --- Graceful Shutdown ---
         logger.info("Shutting down gracefully...")
-
-        if active_sse_tasks:
-            logger.info(
-                "Waiting for %d active SSE connection(s) to drain...", len(active_sse_tasks)
-            )
-            done, pending = await asyncio.wait(active_sse_tasks, timeout=10.0)
-            if pending:
-                logger.warning(
-                    "Shutdown: %d SSE connection(s) did not drain in 10s, cancelling",
-                    len(pending),
-                )
-                for task in pending:
-                    task.cancel()
+        await _drain_sse_tasks()
 
         if svc:
             await svc.close()
@@ -246,6 +258,47 @@ def _is_localhost(ip: str) -> bool:
 # ---------------------------------------------------------------------------
 
 
+def _register_routes(
+    app: FastAPI,
+    settings: Settings,
+    sites_dir: Path,
+    is_rate_limited_fn,
+    record_request_fn,
+    semaphore,
+    svc_ref: list,
+) -> None:
+    """Attach all routers to the FastAPI app."""
+    # Health check router
+    configure_health(
+        startup_time_ref=[0.0],
+        active_sse_tasks=active_sse_tasks,
+        svc_ref=svc_ref,
+    )
+    app.include_router(health_router)
+
+    # Redesign + job routes
+    redesign_router = create_redesign_router(
+        settings=settings,
+        sites_dir=sites_dir,
+        get_client_ip=_get_client_ip,
+        is_localhost_fn=_is_localhost,
+        is_rate_limited_fn=is_rate_limited_fn,
+        record_request_fn=record_request_fn,
+        semaphore=semaphore,
+        deploy_fn=deploy,
+        svc_ref=svc_ref,
+    )
+    app.include_router(redesign_router)
+
+    # Admin/webhook routes
+    admin_router = create_admin_router(settings=settings, svc_ref=svc_ref)
+    app.include_router(admin_router)
+
+    # Site-serving routes (must be last -- catch-all path patterns)
+    sites_router = create_sites_router(sites_dir)
+    app.include_router(sites_router)
+
+
 def make_app(sites_dir: Path) -> FastAPI:
     """Create the FastAPI app bound to a specific sites directory."""
     settings = Settings()
@@ -280,55 +333,19 @@ def make_app(sites_dir: Path) -> FastAPI:
 
     # --- Build the app ---
     app = FastAPI(title="SastaSpace Preview Server", lifespan=_create_lifespan(settings, sites_dir))
-
-    # Prometheus metrics
     app.mount("/metrics", make_asgi_app())
-
-    # Middleware
     _setup_middleware(app, settings, _get_client_ip)
 
-    # A mutable proxy so routers can access the live `svc` reference
-    # (updated in lifespan). Reads always reflect the current module-level svc.
-    import sastaspace.server as _self_module
-
-    class _SvcProxy(list):
-        """List-like proxy that always returns the current module-level svc."""
-
-        def __getitem__(self, idx):
-            return _self_module.svc
-
     svc_ref = _SvcProxy([None])
-
-    # Wire health check router
-    configure_health(
-        startup_time_ref=[0.0],
-        active_sse_tasks=active_sse_tasks,
-        svc_ref=svc_ref,
+    _register_routes(
+        app,
+        settings,
+        sites_dir,
+        is_rate_limited,
+        record_request,
+        _redesign_semaphore,
+        svc_ref,
     )
-    app.include_router(health_router)
-
-    # Wire redesign + job routes
-    redesign_router = create_redesign_router(
-        settings=settings,
-        sites_dir=sites_dir,
-        get_client_ip=_get_client_ip,
-        is_localhost_fn=_is_localhost,
-        is_rate_limited_fn=is_rate_limited,
-        record_request_fn=record_request,
-        rate_limit_store=_rate_limit_store,
-        semaphore=_redesign_semaphore,
-        deploy_fn=deploy,
-        svc_ref=svc_ref,
-    )
-    app.include_router(redesign_router)
-
-    # Wire admin/webhook routes
-    admin_router = create_admin_router(settings=settings, svc_ref=svc_ref)
-    app.include_router(admin_router)
-
-    # Wire site-serving routes (must be last -- catch-all path patterns)
-    sites_router = create_sites_router(sites_dir)
-    app.include_router(sites_router)
 
     return app
 

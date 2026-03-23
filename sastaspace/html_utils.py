@@ -32,6 +32,42 @@ def clean_html(raw: str) -> str:
     return raw.strip()
 
 
+SASTASPACE_BADGE = (
+    '<div style="position:fixed;bottom:12px;right:12px;z-index:9999;'
+    'font-family:system-ui,-apple-system,sans-serif;">'
+    '<a href="https://sastaspace.com" target="_blank" rel="noopener" '
+    'style="display:inline-flex;align-items:center;gap:6px;padding:6px 12px;'
+    "background:rgba(0,0,0,0.75);color:#fff;font-size:11px;border-radius:20px;"
+    'text-decoration:none;backdrop-filter:blur(8px);transition:opacity 0.2s;opacity:0.7" '
+    'title="Get your free AI website redesign">'
+    '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" '
+    'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
+    '<path d="M12 2L2 7l10 5 10-5-10-5z"/>'
+    '<path d="M2 17l10 5 10-5"/>'
+    '<path d="M2 12l10 5 10-5"/></svg>'
+    "Redesigned by SastaSpace"
+    "</a></div>"
+)
+
+
+def inject_badge(html: str) -> str:
+    """Insert the SastaSpace badge just before </body> (or </html> as fallback)."""
+    # Try </body> first (case-insensitive)
+    body_match = re.search(r"</body\s*>", html, re.IGNORECASE)
+    if body_match:
+        pos = body_match.start()
+        return html[:pos] + SASTASPACE_BADGE + "\n" + html[pos:]
+
+    # Fallback: before </html>
+    html_match = re.search(r"</html\s*>", html, re.IGNORECASE)
+    if html_match:
+        pos = html_match.start()
+        return html[:pos] + SASTASPACE_BADGE + "\n" + html[pos:]
+
+    # No closing tags found — append at end
+    return html + "\n" + SASTASPACE_BADGE
+
+
 def validate_html(html: str) -> None:
     """Raise RedesignError if the HTML looks truncated or malformed."""
     if not html:
