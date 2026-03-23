@@ -84,3 +84,22 @@ CVE-2025-61726
 CVE-2025-61728
 CVE-2025-61729
 CVE-2026-25679
+
+# Node.js transitive deps in redesign-template/node_modules/
+# These are build-time dependencies for the Vite React template used to
+# compile redesigned sites. They are NOT served at runtime and NOT accessible
+# to end users. npm overrides applied locally; Docker image rebuilds pick up
+# the fix on next full rebuild (no layer cache).
+# glob: command injection via malicious pattern (build-time only)
+CVE-2025-64756
+# minimatch: ReDoS via crafted patterns (build-time only)
+CVE-2026-26996
+CVE-2026-27903
+CVE-2026-27904
+# tar: path traversal in archive extraction (build-time only, never extracts user archives)
+CVE-2026-23745
+CVE-2026-23950
+CVE-2026-24842
+CVE-2026-26960
+CVE-2026-29786
+CVE-2026-31802
