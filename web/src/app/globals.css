@@ -52,6 +52,10 @@
 }
 
 :root {
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.07), 0 2px 4px -2px rgb(0 0 0 / 0.07);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.08), 0 4px 6px -4px rgb(0 0 0 / 0.08);
+  --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
   --background: oklch(0.98 0.005 80);
   --foreground: oklch(0.20 0.01 50);
   --card: oklch(0.97 0.005 80);
@@ -87,6 +91,10 @@
 }
 
 .dark {
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.15);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.2), 0 2px 4px -2px rgb(0 0 0 / 0.15);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.25), 0 4px 6px -4px rgb(0 0 0 / 0.2);
+  --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.3), 0 8px 10px -6px rgb(0 0 0 / 0.25);
   --background: oklch(0.16 0.01 50);
   --foreground: oklch(0.95 0.005 80);
   --card: oklch(0.20 0.01 50);
@@ -153,6 +161,33 @@
   75%   { inset: 0 0 35px 35px; }
   87.5% { inset: 0 0 35px 0; }
   100%  { inset: 0 35px 35px 0; }
+}
+
+/* Confetti celebration animation — Fix 6 */
+@keyframes confetti-burst {
+  0% {
+    transform: translate(0, 0) scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(var(--confetti-x), var(--confetti-y)) scale(0);
+    opacity: 0;
+  }
+}
+
+@keyframes celebration-scale-in {
+  0% {
+    transform: scale(0.5);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 
 /* WCAG 2.3.3 — disable animations for users who prefer reduced motion */

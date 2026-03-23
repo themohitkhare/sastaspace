@@ -1,6 +1,7 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Instrument_Serif, Space_Grotesk } from "next/font/google";
 import { MotionProvider } from "@/components/providers/motion-provider";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 import "./globals.css";
 
 const instrumentSerif = Instrument_Serif({
@@ -16,6 +17,13 @@ const spaceGrotesk = Space_Grotesk({
   variable: "--font-sans",
   display: "swap",
 });
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 5,
+  userScalable: true,
+};
 
 export const metadata: Metadata = {
   metadataBase: new URL(
@@ -46,10 +54,46 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        {/* Prevent flash of wrong theme by applying .dark before first paint */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var t=localStorage.getItem("sastaspace-theme");if(t==="dark"||(t!=="light"&&matchMedia("(prefers-color-scheme:dark)").matches))document.documentElement.classList.add("dark")}catch(e){}})()`,
+          }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "WebApplication",
+              name: "SastaSpace",
+              description: "AI Website Redesigner",
+              applicationCategory: "DesignApplication",
+              operatingSystem: "All",
+              offers: {
+                "@type": "Offer",
+                price: "0",
+                priceCurrency: "USD",
+              },
+              url: "https://sastaspace.com",
+            }),
+          }}
+        />
+      </head>
       <body
         className={`${instrumentSerif.variable} ${spaceGrotesk.variable} font-sans antialiased`}
       >
+        <a
+          href="#main"
+          className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:bg-background focus:px-4 focus:py-2 focus:rounded-md focus:ring-2 focus:ring-ring"
+        >
+          Skip to content
+        </a>
+        <div className="fixed top-4 right-4 z-50">
+          <ThemeToggle />
+        </div>
         <MotionProvider>{children}</MotionProvider>
       </body>
     </html>

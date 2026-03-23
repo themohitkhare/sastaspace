@@ -3,6 +3,7 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { submitRedesign, pollJobStatus } from "@/lib/sse-client";
 import { extractDomain } from "@/lib/url-utils";
+import { trackEvent } from "@/lib/analytics";
 
 type StepState = {
   name: string;
@@ -121,6 +122,7 @@ export function useRedesign() {
             );
             await new Promise((r) => setTimeout(r, 800));
             if (controller.signal.aborted) return;
+            trackEvent("result_viewed", { subdomain: job.subdomain, domain, tier });
             setState({
               status: "done",
               subdomain: job.subdomain!,
@@ -195,6 +197,7 @@ export function useRedesign() {
       lastModelProviderRef.current = modelProvider;
 
       setState({ status: "connecting" });
+      trackEvent("redesign_started", { url, tier, modelProvider });
 
       try {
         const jobId = await submitRedesign(url, tier, modelProvider, controller.signal);

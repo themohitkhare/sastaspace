@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { validateUrl, extractDomain } from "@/lib/url-utils";
+import { trackEvent } from "@/lib/analytics";
 import type { RedesignTier, ModelProvider } from "@/hooks/use-redesign";
 
 interface UrlInputFormProps {
@@ -75,15 +76,18 @@ export function UrlInputForm({ onSubmit }: UrlInputFormProps) {
   }
 
   return (
-    <form onSubmit={handleSubmit} noValidate className="w-full max-w-xl">
+    <form onSubmit={handleSubmit} noValidate className="w-full max-w-xl rounded-2xl bg-background/80 backdrop-blur-sm p-4 border border-border/50" style={{ boxShadow: "var(--shadow-md)" }}>
       {/* Tier and model toggles */}
       <div className="flex flex-wrap items-center gap-3 mb-3">
-        <div className="flex gap-1 p-1 rounded-lg bg-muted w-fit">
+        <div role="radiogroup" aria-label="Redesign tier" className="flex gap-1 p-1 rounded-lg bg-muted w-fit">
           <button
             type="button"
-            onClick={() => setTier("free")}
+            role="radio"
+            aria-checked={tier === "free"}
+            aria-label="Express - fast 2 minute redesign"
+            onClick={() => { setTier("free"); trackEvent("tier_selected", { tier: "free" }); }}
             className={[
-              "px-4 py-1.5 rounded-md text-sm font-medium transition-colors",
+              "px-4 py-2.5 rounded-md text-sm font-medium transition-colors",
               tier === "free"
                 ? "bg-accent text-accent-foreground shadow-sm"
                 : "text-muted-foreground hover:text-foreground",
@@ -93,9 +97,12 @@ export function UrlInputForm({ onSubmit }: UrlInputFormProps) {
           </button>
           <button
             type="button"
-            onClick={() => setTier("premium")}
+            role="radio"
+            aria-checked={tier === "premium"}
+            aria-label="Studio - premium detailed redesign"
+            onClick={() => { setTier("premium"); trackEvent("tier_selected", { tier: "premium" }); }}
             className={[
-              "px-4 py-1.5 rounded-md text-sm font-medium transition-colors",
+              "px-4 py-2.5 rounded-md text-sm font-medium transition-colors",
               tier === "premium"
                 ? "bg-accent text-accent-foreground shadow-sm"
                 : "text-muted-foreground hover:text-foreground",
@@ -104,14 +111,20 @@ export function UrlInputForm({ onSubmit }: UrlInputFormProps) {
             Studio
           </button>
         </div>
+        <span className="text-xs text-muted-foreground">
+          {tier === "free" ? "Fast & free (~2 min)" : "Premium quality (~5 min)"}
+        </span>
 
-        <div className="flex items-center gap-1 p-1 rounded-lg bg-muted w-fit">
-          <span className="px-2 text-xs font-medium text-muted-foreground">AI Model</span>
+        <div role="radiogroup" aria-label="AI model" className="flex items-center gap-1 p-1 rounded-lg bg-muted w-fit">
+          <span className="px-2 text-xs font-medium text-muted-foreground" aria-hidden="true">AI Model</span>
           <button
             type="button"
+            role="radio"
+            aria-checked={modelProvider === "claude"}
+            aria-label="Claude AI model"
             onClick={() => setModelProvider("claude")}
             className={[
-              "px-3 py-1.5 rounded-md text-sm font-medium transition-colors",
+              "px-4 py-2.5 rounded-md text-sm font-medium transition-colors",
               modelProvider === "claude"
                 ? "bg-accent text-accent-foreground shadow-sm"
                 : "text-muted-foreground hover:text-foreground",
@@ -121,9 +134,12 @@ export function UrlInputForm({ onSubmit }: UrlInputFormProps) {
           </button>
           <button
             type="button"
+            role="radio"
+            aria-checked={modelProvider === "gemini"}
+            aria-label="Gemini AI model"
             onClick={() => setModelProvider("gemini")}
             className={[
-              "px-3 py-1.5 rounded-md text-sm font-medium transition-colors",
+              "px-4 py-2.5 rounded-md text-sm font-medium transition-colors",
               modelProvider === "gemini"
                 ? "bg-accent text-accent-foreground shadow-sm"
                 : "text-muted-foreground hover:text-foreground",
@@ -160,8 +176,10 @@ export function UrlInputForm({ onSubmit }: UrlInputFormProps) {
             placeholder="yourwebsite.com"
             value={input}
             onChange={handleInputChange}
+            autoComplete="url"
             className="h-12 ps-12 rounded-lg sm:rounded-r-none text-base font-sans"
             aria-invalid={!!error}
+            aria-describedby={error ? "url-error" : undefined}
           />
         </div>
         <Button
@@ -172,7 +190,7 @@ export function UrlInputForm({ onSubmit }: UrlInputFormProps) {
           Redesign My Site
         </Button>
       </div>
-      {error && <p className="text-sm text-destructive mt-2">{error}</p>}
+      {error && <p id="url-error" className="text-sm text-destructive mt-2" role="alert">{error}</p>}
     </form>
   );
 }

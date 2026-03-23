@@ -9,17 +9,17 @@ export async function generateMetadata({
   const { subdomain } = await params;
   const domain = subdomain.replace(/-/g, ".");
   return {
-    title: "Your redesign is ready -- SastaSpace",
-    description: `${domain} has been redesigned by AI`,
+    title: `${domain} — Redesigned by SastaSpace`,
+    description: `See the AI-powered redesign of ${domain}`,
     openGraph: {
-      title: `${domain} redesigned by AI -- SastaSpace`,
-      description: `See how AI redesigned ${domain}. Get your free website redesign at SastaSpace.`,
-      images: ["/og-image.png"],
+      title: `${domain} — Redesigned by SastaSpace`,
+      description: `See the stunning AI redesign of ${domain}. Get yours free at sastaspace.com`,
+      images: [`/api/og?subdomain=${subdomain}`],
     },
     twitter: {
       card: "summary_large_image",
-      title: `${domain} redesigned by AI -- SastaSpace`,
-      description: `See how AI redesigned ${domain}. Get your free website redesign at SastaSpace.`,
+      title: `${domain} — Redesigned by SastaSpace`,
+      images: [`/api/og?subdomain=${subdomain}`],
     },
   };
 }

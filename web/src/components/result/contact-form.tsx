@@ -2,11 +2,12 @@
 
 import { useReducer, useRef } from "react";
 import { AnimatePresence, m } from "motion/react";
-import { Loader2 } from "lucide-react";
+import { Loader2, Calendar } from "lucide-react";
 import { Turnstile, type TurnstileInstance } from "@marsidev/react-turnstile";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { trackEvent } from "@/lib/analytics";
 
 interface ContactFormProps {
   subdomain: string;
@@ -108,8 +109,10 @@ export function ContactForm({ subdomain }: ContactFormProps) {
       const data = await res.json();
 
       if (data.ok) {
+        trackEvent("contact_form_submitted", { subdomain });
         dispatch({ type: "SUCCESS" });
       } else {
+        trackEvent("contact_form_error", { subdomain, error: data.error });
         dispatch({ type: "FAILURE", error: data.error || "Something went wrong. Please try again." });
       }
     } catch {
@@ -143,12 +146,15 @@ export function ContactForm({ subdomain }: ContactFormProps) {
                   id="contact-name"
                   type="text"
                   placeholder="Your name"
+                  autoComplete="name"
                   value={state.name}
                   onChange={(e) => dispatch({ type: "SET_FIELD", field: "name", value: e.target.value })}
                   disabled={state.status === "submitting"}
+                  aria-invalid={!!state.errors.name}
+                  aria-describedby={state.errors.name ? "contact-name-error" : undefined}
                 />
                 {state.errors.name && (
-                  <p className="text-sm text-destructive mt-2">{state.errors.name}</p>
+                  <p id="contact-name-error" className="text-sm text-destructive mt-2" role="alert">{state.errors.name}</p>
                 )}
               </div>
 
@@ -160,12 +166,15 @@ export function ContactForm({ subdomain }: ContactFormProps) {
                   id="contact-email"
                   type="email"
                   placeholder="you@example.com"
+                  autoComplete="email"
                   value={state.email}
                   onChange={(e) => dispatch({ type: "SET_FIELD", field: "email", value: e.target.value })}
                   disabled={state.status === "submitting"}
+                  aria-invalid={!!state.errors.email}
+                  aria-describedby={state.errors.email ? "contact-email-error" : undefined}
                 />
                 {state.errors.email && (
-                  <p className="text-sm text-destructive mt-2">
+                  <p id="contact-email-error" className="text-sm text-destructive mt-2" role="alert">
                     {state.errors.email}
                   </p>
                 )}
@@ -179,14 +188,16 @@ export function ContactForm({ subdomain }: ContactFormProps) {
                 <textarea
                   id="contact-message"
                   rows={4}
-                  placeholder="Tell me about your project..."
+                  placeholder="I'd love to bring this redesign to life. Let's discuss making it real!"
                   value={state.message}
                   onChange={(e) => dispatch({ type: "SET_FIELD", field: "message", value: e.target.value })}
                   disabled={state.status === "submitting"}
+                  aria-invalid={!!state.errors.message}
+                  aria-describedby={state.errors.message ? "contact-message-error" : undefined}
                   className="flex w-full rounded-lg border border-input bg-transparent px-2.5 py-2 text-base md:text-sm text-foreground placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 outline-none resize-none disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50"
                 />
                 {state.errors.message && (
-                  <p className="text-sm text-destructive mt-2">
+                  <p id="contact-message-error" className="text-sm text-destructive mt-2" role="alert">
                     {state.errors.message}
                   </p>
                 )}
@@ -220,7 +231,7 @@ export function ContactForm({ subdomain }: ContactFormProps) {
 
               {/* Server error display */}
               {state.serverError && (
-                <p className="text-sm text-destructive mt-2">{state.serverError}</p>
+                <p className="text-sm text-destructive mt-2" role="alert">{state.serverError}</p>
               )}
 
               {/* Submit button — per D-05 */}
@@ -254,6 +265,17 @@ export function ContactForm({ subdomain }: ContactFormProps) {
             <p className="text-base text-muted-foreground mt-2">
               I typically reply within 24 hours.
             </p>
+            {process.env.NEXT_PUBLIC_CALENDAR_URL && (
+              <a
+                href={process.env.NEXT_PUBLIC_CALENDAR_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center justify-center gap-2 rounded-lg border border-border bg-secondary text-secondary-foreground text-sm font-medium h-11 px-6 mt-6 transition-all hover:bg-secondary/80 active:translate-y-px"
+              >
+                <Calendar className="w-4 h-4" />
+                Book a Consultation
+              </a>
+            )}
           </m.div>
         )}
       </AnimatePresence>

@@ -74,6 +74,46 @@ export async function POST(request: NextRequest) {
       return Response.json({ error: "Failed to send message" }, { status: 500 });
     }
 
+    // 5. Send transactional email to submitter (only if subdomain provided)
+    if (subdomain?.trim()) {
+      const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://sastaspace.com";
+      const redesignLink = `${baseUrl}/${subdomain}/`;
+      try {
+        await getResend().emails.send({
+          from: `SastaSpace <noreply@sastaspace.com>`,
+          to: [email],
+          subject: "Your SastaSpace Redesign is Ready",
+          html: `
+            <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 560px; margin: 0 auto; padding: 40px 24px;">
+              <h1 style="font-size: 24px; font-weight: 600; color: #1a1a1a; margin: 0 0 16px;">
+                Thanks for your interest, ${escapeHtml(name)}!
+              </h1>
+              <p style="font-size: 16px; line-height: 1.6; color: #444; margin: 0 0 24px;">
+                Your AI-powered website redesign is ready to view.
+              </p>
+              <a href="${redesignLink}" style="display: inline-block; background-color: #b8860b; color: #1a1a1a; text-decoration: none; font-weight: 500; font-size: 16px; padding: 12px 28px; border-radius: 8px;">
+                View Your Redesign
+              </a>
+              <p style="font-size: 14px; line-height: 1.6; color: #666; margin: 24px 0 0;">
+                Or copy this link: <a href="${redesignLink}" style="color: #b8860b;">${redesignLink}</a>
+              </p>
+              <hr style="border: none; border-top: 1px solid #e5e5e5; margin: 32px 0;" />
+              <p style="font-size: 14px; line-height: 1.6; color: #666; margin: 0;">
+                Want to make it real? Reply to this email or
+                <a href="mailto:${process.env.OWNER_EMAIL}" style="color: #b8860b;">book a consultation</a>.
+              </p>
+              <p style="font-size: 12px; color: #999; margin: 24px 0 0;">
+                SastaSpace &mdash; AI Website Redesigner
+              </p>
+            </div>
+          `,
+        });
+      } catch (emailErr) {
+        // Transactional email failure is non-blocking
+        console.error("Transactional email error:", emailErr);
+      }
+    }
+
     // Sync to Twenty CRM — strict 2s timeout
     try {
       const controller = new AbortController();

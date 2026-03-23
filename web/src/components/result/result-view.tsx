@@ -3,6 +3,9 @@
 import { m } from "motion/react";
 import { ExternalLink } from "lucide-react";
 import { ContactForm } from "@/components/result/contact-form";
+import { BeforeAfterSlider } from "@/components/result/before-after-slider";
+import { ShareButtons } from "@/components/result/share-buttons";
+import { QualityRating } from "@/components/result/quality-rating";
 
 interface ResultViewProps {
   subdomain: string;
@@ -13,6 +16,9 @@ export function ResultView({ subdomain }: ResultViewProps) {
   const originalUrl = `https://${domain}`;
   const headerText = `${domain} has been redesigned`;
   const previewUrl = `/${subdomain}/preview`;
+  const shareUrl = typeof window !== "undefined"
+    ? `${window.location.origin}/${subdomain}`
+    : `/${subdomain}`;
 
   return (
     <m.div
@@ -26,34 +32,39 @@ export function ResultView({ subdomain }: ResultViewProps) {
           {headerText}
         </h1>
 
-        <div className="relative w-full aspect-[4/3] sm:aspect-video rounded-xl overflow-hidden border border-border">
-          <iframe
-            src={previewUrl}
-            sandbox="allow-scripts"
-            className="w-full h-full"
-            title="Your redesigned site preview"
-          />
-          <div className="absolute inset-0 backdrop-blur-md bg-background/30 flex flex-col items-center justify-center gap-4">
-            <a
-              href={previewUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center justify-center rounded-lg bg-accent text-accent-foreground text-base font-medium h-12 px-8 transition-all hover:bg-accent/90 active:translate-y-px"
-            >
-              Take me to the future
-            </a>
-          </div>
+        {/* Before/After comparison slider */}
+        <BeforeAfterSlider originalUrl={originalUrl} redesignUrl={previewUrl} />
+
+        {/* CTA to open full redesign */}
+        <div className="mt-6 flex flex-col sm:flex-row items-center gap-4">
+          <a
+            href={previewUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center justify-center rounded-lg bg-accent text-accent-foreground text-base font-medium h-12 px-8 transition-all hover:bg-accent/90 active:translate-y-px"
+          >
+            Take me to the future
+          </a>
+          <a
+            href={originalUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 text-sm text-muted-foreground underline underline-offset-4 hover:text-foreground transition-colors"
+          >
+            View original site
+            <ExternalLink className="w-3.5 h-3.5" />
+          </a>
         </div>
 
-        <a
-          href={originalUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center gap-1.5 text-sm text-muted-foreground underline underline-offset-4 mt-6 hover:text-foreground transition-colors"
-        >
-          View original site
-          <ExternalLink className="w-3.5 h-3.5" />
-        </a>
+        {/* Social sharing buttons */}
+        <div className="mt-6">
+          <ShareButtons url={shareUrl} domain={domain} />
+        </div>
+
+        {/* Quality rating — collect user feedback */}
+        <div className="mt-10">
+          <QualityRating subdomain={subdomain} />
+        </div>
 
         {/* Contact form section — per D-01 */}
         <hr className="border-border w-full max-w-3xl mt-16" />

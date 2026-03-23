@@ -85,6 +85,15 @@ export function ProgressView({ state, onRetry }: ProgressViewProps) {
 
   const progressValue = STEP_TO_PROGRESS[currentStep] ?? 5;
 
+  const STEP_LABELS: Record<string, string> = {
+    connecting: "Connecting to server",
+    crawling: "Crawling website content",
+    redesigning: "AI is redesigning your website",
+    deploying: "Deploying the redesigned site",
+    done: "Redesign complete",
+  };
+  const currentStepLabel = STEP_LABELS[currentStep] ?? "Processing";
+
   return (
     <AuroraBackground className="min-h-screen" showRadialGradient>
       {/* Top progress bar */}
@@ -97,7 +106,12 @@ export function ProgressView({ state, onRetry }: ProgressViewProps) {
       </div>
 
       {/* Centered content */}
-      <div className="relative z-10 flex flex-col items-center gap-6 px-4 py-16 w-full max-w-md">
+      <div
+        className="relative z-10 flex flex-col items-center gap-6 px-4 py-16 w-full max-w-md"
+        role="status"
+        aria-live="polite"
+        aria-label={currentStepLabel}
+      >
         {/* Spinner */}
         <LumaSpin />
 

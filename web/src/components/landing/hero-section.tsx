@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import Link from "next/link";
 import { m } from "motion/react";
 import { FlickeringGrid } from "@/components/backgrounds/flickering-grid";
 import { UrlInputForm } from "@/components/landing/url-input-form";
@@ -14,6 +15,15 @@ export function HeroSection({ onSubmit }: HeroSectionProps) {
   return (
     <div className="relative min-h-screen flex flex-col justify-center overflow-hidden bg-background">
       <FlickeringGrid className="absolute inset-0 z-0" />
+      <nav className="absolute top-0 left-0 right-0 z-20 flex items-center justify-between w-full max-w-6xl mx-auto px-6 sm:px-8 lg:px-12 py-6">
+        <span className="font-heading text-xl text-foreground">SastaSpace</span>
+        <Link
+          href="/pricing"
+          className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+        >
+          Pricing
+        </Link>
+      </nav>
       <div className="relative z-10 w-full max-w-6xl mx-auto px-6 sm:px-8 lg:px-12 py-24">
         <div className="max-w-2xl">
           <m.h1

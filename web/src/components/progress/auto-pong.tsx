@@ -163,6 +163,8 @@ export function AutoPong({ width = 320, height = 180, className }: AutoPongProps
     <div className={className}>
       <canvas
         ref={canvasRef}
+        role="img"
+        aria-label="Decorative Pong game animation"
         style={{ width, height }}
         className="rounded-lg border border-border/50"
       />
