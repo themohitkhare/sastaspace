@@ -72,10 +72,120 @@ const STEP_TO_PROGRESS: Record<string, number> = {
 };
 
 type ProgressViewState = Extract<RedesignState, { status: "progress" | "error" | "connecting" }>;
+type ErrorState = Extract<RedesignState, { status: "error" }>;
+
+function ErrorView({
+  state,
+  onRetry,
+  onReset,
+  lastStep,
+}: {
+  state: ErrorState;
+  onRetry: (updatedPrompt?: string) => void;
+  onReset?: () => void;
+  lastStep?: string;
+}) {
+  const [retryPrompt, setRetryPrompt] = useState(state.prompt ?? "");
+  const isRateLimit =
+    state.message.toLowerCase().includes("rate limit") ||
+    state.message.toLowerCase().includes("limit");
+  const isNetworkError = Boolean(state.resumeJobId);
+  const failedStepLabel = lastStep ? STEP_FAILURE_LABELS[lastStep] : undefined;
+
+  const handleRetry = () => {
+    onRetry(retryPrompt.trim() || undefined);
+  };
+
+  return (
+    <div className="min-h-screen flex items-center justify-center px-4">
+      <m.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.3 }}
+        className="flex flex-col items-center gap-4 text-center w-full max-w-md"
+      >
+        <AlertCircle className="w-12 h-12 text-destructive" />
+        <h2 className="font-heading text-[clamp(1.5rem,3vw,2rem)] text-foreground">
+          Something went wrong
+        </h2>
+
+        {/* Show the original URL that was submitted */}
+        {state.url && (
+          <p className="text-sm text-muted-foreground font-mono bg-muted px-3 py-1.5 rounded-md">
+            {state.url}
+          </p>
+        )}
+
+        {/* Show which step failed */}
+        {failedStepLabel && !isRateLimit && (
+          <p className="text-sm text-muted-foreground">
+            Failed during: <span className="font-medium text-foreground">{failedStepLabel}</span>
+          </p>
+        )}
+
+        <p className="text-base text-muted-foreground max-w-sm">
+          {isRateLimit
+            ? "You've reached the limit. Please try again in an hour."
+            : state.message}
+        </p>
+
+        {/* Custom instructions textarea — shown for non-network errors */}
+        {!isNetworkError && !isRateLimit && (
+          <div className="w-full">
+            <label
+              htmlFor="retry-prompt"
+              className="block text-sm font-medium text-muted-foreground text-left mb-1.5"
+            >
+              Custom instructions <span className="text-muted-foreground/60">(optional)</span>
+            </label>
+            <textarea
+              id="retry-prompt"
+              value={retryPrompt}
+              onChange={(e) => setRetryPrompt(e.target.value)}
+              placeholder="e.g. Make it dark theme, use a SaaS landing page layout..."
+              rows={3}
+              className="w-full rounded-md border border-border bg-muted/50 px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-accent/50 focus:border-accent resize-none"
+            />
+          </div>
+        )}
+
+        <div className="flex flex-col sm:flex-row items-center gap-3">
+          <Button
+            size="lg"
+            onClick={handleRetry}
+            className="bg-accent text-accent-foreground hover:bg-accent/90"
+          >
+            {isNetworkError ? (
+              <>
+                <RefreshCw className="w-4 h-4 mr-2" />
+                Check status
+              </>
+            ) : (
+              <>
+                <RotateCcw className="w-4 h-4 mr-2" />
+                Try again with {state.url ? new URL(state.url.startsWith("http") ? state.url : `https://${state.url}`).hostname : "this URL"}
+              </>
+            )}
+          </Button>
+          {onReset && (
+            <Button
+              size="lg"
+              variant="outline"
+              onClick={onReset}
+            >
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Try a different URL
+            </Button>
+          )}
+        </div>
+      </m.div>
+    </div>
+  );
+}
 
 interface ProgressViewProps {
   state: ProgressViewState;
-  onRetry: () => void;
+  onRetry: (updatedPrompt?: string) => void;
   onReset?: () => void;
   lastStep?: string;
 }
@@ -89,76 +199,13 @@ export function ProgressView({ state, onRetry, onReset, lastStep }: ProgressView
 
   // --- Error state ---
   if (state.status === "error") {
-    const isRateLimit =
-      state.message.toLowerCase().includes("rate limit") ||
-      state.message.toLowerCase().includes("limit");
-    const isNetworkError = Boolean(state.resumeJobId);
-    const failedStepLabel = lastStep ? STEP_FAILURE_LABELS[lastStep] : undefined;
-
     return (
-      <div className="min-h-screen flex items-center justify-center px-4">
-        <m.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.3 }}
-          className="flex flex-col items-center gap-4 text-center"
-        >
-          <AlertCircle className="w-12 h-12 text-destructive" />
-          <h2 className="font-heading text-[clamp(1.5rem,3vw,2rem)] text-foreground">
-            Something went wrong
-          </h2>
-
-          {/* Show the original URL that was submitted */}
-          {state.url && (
-            <p className="text-sm text-muted-foreground font-mono bg-muted px-3 py-1.5 rounded-md">
-              {state.url}
-            </p>
-          )}
-
-          {/* Show which step failed */}
-          {failedStepLabel && !isRateLimit && (
-            <p className="text-sm text-muted-foreground">
-              Failed during: <span className="font-medium text-foreground">{failedStepLabel}</span>
-            </p>
-          )}
-
-          <p className="text-base text-muted-foreground max-w-sm">
-            {isRateLimit
-              ? "You've reached the limit. Please try again in an hour."
-              : state.message}
-          </p>
-
-          <div className="flex flex-col sm:flex-row items-center gap-3">
-            <Button
-              size="lg"
-              onClick={onRetry}
-              className="bg-accent text-accent-foreground hover:bg-accent/90"
-            >
-              {isNetworkError ? (
-                <>
-                  <RefreshCw className="w-4 h-4 mr-2" />
-                  Check status
-                </>
-              ) : (
-                <>
-                  <RotateCcw className="w-4 h-4 mr-2" />
-                  Try again with {state.url ? new URL(state.url.startsWith("http") ? state.url : `https://${state.url}`).hostname : "this URL"}
-                </>
-              )}
-            </Button>
-            {onReset && (
-              <Button
-                size="lg"
-                variant="outline"
-                onClick={onReset}
-              >
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Try a different URL
-              </Button>
-            )}
-          </div>
-        </m.div>
-      </div>
+      <ErrorView
+        state={state}
+        onRetry={onRetry}
+        onReset={onReset}
+        lastStep={lastStep}
+      />
     );
   }
 

@@ -39,8 +39,10 @@ GROUP_NAME = "redesign-workers"
 CONSUMER_PREFIX = "worker"
 STATUS_CHANNEL = "sastaspace:job-status"
 
-# How long to block waiting for new messages (ms)
-BLOCK_MS = 5000
+# How long to block waiting for new messages (ms).
+# Lower = faster job pickup, but more Redis round-trips when idle.
+# 1s is a good balance: responsive without excessive polling.
+BLOCK_MS = 1000
 # Max messages to read per batch
 BATCH_SIZE = 1
 
@@ -111,6 +113,7 @@ class JobService:
         client_ip: str,
         tier: str = "free",
         model_provider: str = "claude",
+        prompt: str = "",
     ) -> str:
         """Add a redesign job to the Redis Stream. Returns job_id."""
         job_id = str(uuid4())
@@ -125,17 +128,17 @@ class JobService:
         )
 
         # Push to Redis Stream
-        await self.redis.xadd(
-            STREAM_KEY,
-            {
-                "job_id": job_id,
-                "url": url,
-                "tier": tier,
-                "model_provider": model_provider,
-                "client_ip": client_ip,
-                "created_at": datetime.now(UTC).isoformat(),
-            },
-        )
+        stream_fields: dict[str, str] = {
+            "job_id": job_id,
+            "url": url,
+            "tier": tier,
+            "model_provider": model_provider,
+            "client_ip": client_ip,
+            "created_at": datetime.now(UTC).isoformat(),
+        }
+        if prompt:
+            stream_fields["prompt"] = prompt
+        await self.redis.xadd(STREAM_KEY, stream_fields)
 
         logger.info(
             "Enqueued job %s for %s (tier=%s, model_provider=%s)",
@@ -236,6 +239,7 @@ class JobService:
                     url = fields["url"]
                     tier = fields.get("tier", "free")
                     model_provider = fields.get("model_provider", "claude")
+                    prompt = fields.get("prompt", "")
 
                     # Check if job already completed (avoid double-processing)
                     job = await get_job(job_id)
@@ -257,25 +261,32 @@ class JobService:
                             self,
                             checkpoint=cp,
                             model_provider=model_provider,
+                            prompt=prompt,
                         )
                         await self.redis.xack(STREAM_KEY, GROUP_NAME, msg_id)
                         recovered += 1
                     except Exception:  # noqa: BLE001
                         logger.exception("Recovery: job %s failed on retry", job_id)
-                        await update_job(
-                            job_id,
-                            status=JobStatus.FAILED.value,
-                            error="Redesign failed after recovery. Please try again.",
-                            progress=0,
-                        )
-                        await self.publish_status(
-                            job_id,
-                            "error",
-                            {
-                                "job_id": job_id,
-                                "error": "Redesign failed after recovery. Please try again.",
-                            },
-                        )
+                        try:
+                            await update_job(
+                                job_id,
+                                status=JobStatus.FAILED.value,
+                                error="Redesign failed after recovery. Please try again.",
+                                progress=0,
+                            )
+                        except Exception:  # noqa: BLE001
+                            logger.warning("Recovery: failed to update job %s in DB", job_id)
+                        try:
+                            await self.publish_status(
+                                job_id,
+                                "error",
+                                {
+                                    "job_id": job_id,
+                                    "error": "Redesign failed after recovery. Please try again.",
+                                },
+                            )
+                        except Exception:  # noqa: BLE001
+                            logger.warning("Recovery: failed to publish error for job %s", job_id)
                         await self.redis.xack(STREAM_KEY, GROUP_NAME, msg_id)
 
                 # If next_id is "0-0", we've processed all pending entries
@@ -328,6 +339,7 @@ class JobService:
                         url = fields["url"]
                         tier = fields.get("tier", "free")
                         model_provider = fields.get("model_provider", "claude")
+                        prompt = fields.get("prompt", "")
 
                         logger.info("Processing job %s: %s", job_id, url)
 
@@ -351,25 +363,32 @@ class JobService:
                                 self,
                                 checkpoint=prev_checkpoint,
                                 model_provider=model_provider,
+                                prompt=prompt,
                             )
                             # Acknowledge message on success
                             await self.redis.xack(STREAM_KEY, GROUP_NAME, msg_id)
                         except Exception:  # noqa: BLE001
                             logger.exception("Job %s failed", job_id)
-                            await update_job(
-                                job_id,
-                                status=JobStatus.FAILED.value,
-                                error="Internal processing error",
-                                progress=0,
-                            )
-                            await self.publish_status(
-                                job_id,
-                                "error",
-                                {
-                                    "job_id": job_id,
-                                    "error": "Redesign failed. Please try again later.",
-                                },
-                            )
+                            try:
+                                await update_job(
+                                    job_id,
+                                    status=JobStatus.FAILED.value,
+                                    error="Internal processing error",
+                                    progress=0,
+                                )
+                            except Exception:  # noqa: BLE001
+                                logger.warning("Failed to update job %s status in DB", job_id)
+                            try:
+                                await self.publish_status(
+                                    job_id,
+                                    "error",
+                                    {
+                                        "job_id": job_id,
+                                        "error": "Redesign failed. Please try again later.",
+                                    },
+                                )
+                            except Exception:  # noqa: BLE001
+                                logger.warning("Failed to publish error status for job %s", job_id)
                             await self.redis.xack(STREAM_KEY, GROUP_NAME, msg_id)
 
             except aioredis.ConnectionError:
@@ -387,6 +406,7 @@ async def redesign_handler(
     job_service: JobService,
     checkpoint: dict | None = None,
     model_provider: str = "claude",
+    prompt: str = "",
 ) -> None:
     """
     The actual redesign pipeline handler run by workers.
@@ -598,6 +618,7 @@ async def redesign_handler(
         _on_checkpoint,
         enhanced=enhanced_result,
         model_provider=model_provider,
+        user_prompt=prompt,
     )
 
     # Handle both RedesignResult and raw string (for backward compat with mocked tests)
@@ -653,23 +674,46 @@ async def redesign_handler(
     )
 
     _assets = enhanced_result.assets.assets if enhanced_result else []
-    result = await asyncio.to_thread(
-        deploy,
-        url,
-        html,
-        settings.sites_dir,
-        assets=_assets,
-        build_dir=build_dir,
-    )
+    deploy_start = _time.monotonic()
+    try:
+        result = await asyncio.to_thread(
+            deploy,
+            url,
+            html,
+            settings.sites_dir,
+            assets=_assets,
+            build_dir=build_dir,
+        )
+    except Exception as deploy_exc:
+        logger.error(
+            "JOB DEPLOY FAILED | job=%s error=%s",
+            job_id,
+            deploy_exc,
+            exc_info=True,
+        )
+        await update_job(
+            job_id,
+            status=JobStatus.FAILED.value,
+            error="Failed to deploy your redesign. Please try again.",
+        )
+        await job_service.publish_status(
+            job_id,
+            "error",
+            {"job_id": job_id, "error": "Failed to deploy your redesign. Please try again."},
+        )
+        return
 
+    deploy_duration = _time.monotonic() - deploy_start
     total_duration = _time.monotonic() - job_start
     logger.info(
-        "JOB DONE | job=%s subdomain=%s html_size=%d crawl=%.1fs redesign=%.1fs total=%.1fs",
+        "PERF | JOB DONE job=%s subdomain=%s html_size=%d "
+        "crawl=%.1fs redesign=%.1fs deploy=%.1fs total=%.1fs",
         job_id,
         result.subdomain,
         len(html),
         crawl_duration,
         redesign_duration,
+        deploy_duration,
         total_duration,
     )
 

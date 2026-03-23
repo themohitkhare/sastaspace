@@ -30,6 +30,7 @@ class RedesignRequest(BaseModel):
     url: str
     tier: str = "free"  # "free" or "premium"
     model_provider: str = "claude"  # "claude" or "gemini"
+    prompt: str = ""  # optional user instructions for the redesign
 
 
 def create_redesign_router(
@@ -124,6 +125,7 @@ def create_redesign_router(
                 client_ip=ip,
                 tier=tier,
                 model_provider=model_provider,
+                prompt=body.prompt,
             )
             return JSONResponse(content={"job_id": job_id}, headers=rate_limit_headers)
 
@@ -139,7 +141,14 @@ def create_redesign_router(
         redesign_requests_total.labels(status="started").inc()
         return EventSourceResponse(
             redesign_stream(
-                body.url, settings, sites_dir, semaphore, deploy_fn, tier, model_provider
+                body.url,
+                settings,
+                sites_dir,
+                semaphore,
+                deploy_fn,
+                tier,
+                model_provider,
+                prompt=body.prompt,
             )
         )
 

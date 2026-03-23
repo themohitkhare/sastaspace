@@ -11,7 +11,7 @@ import { trackEvent } from "@/lib/analytics";
 import type { RedesignTier, ModelProvider } from "@/hooks/use-redesign";
 
 interface UrlInputFormProps {
-  onSubmit: (url: string, tier: RedesignTier, modelProvider: ModelProvider) => void;
+  onSubmit: (url: string, tier: RedesignTier, modelProvider: ModelProvider, prompt: string) => void;
   isConnecting?: boolean;
 }
 
@@ -21,6 +21,7 @@ export function UrlInputForm({ onSubmit, isConnecting }: UrlInputFormProps) {
   const [faviconUrl, setFaviconUrl] = useState<string | null>(null);
   const [tier, setTier] = useState<RedesignTier>("free");
   const [modelProvider, setModelProvider] = useState<ModelProvider>("claude");
+  const [prompt, setPrompt] = useState("");
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -90,7 +91,7 @@ export function UrlInputForm({ onSubmit, isConnecting }: UrlInputFormProps) {
       return;
     }
 
-    onSubmit(result.url, tier, modelProvider);
+    onSubmit(result.url, tier, modelProvider, prompt);
   }
 
   return (
@@ -218,6 +219,19 @@ export function UrlInputForm({ onSubmit, isConnecting }: UrlInputFormProps) {
         >
           {isConnecting ? "Connecting..." : "Redesign My Site"}
         </Button>
+      </div>
+      <div className="mt-3">
+        <Label htmlFor="prompt-input" className="text-xs text-muted-foreground mb-1 block">
+          Custom instructions (optional)
+        </Label>
+        <textarea
+          id="prompt-input"
+          rows={2}
+          placeholder="e.g., Make it minimal and dark, focus on conversions, use blue as primary color..."
+          value={prompt}
+          onChange={(e) => setPrompt(e.target.value)}
+          className="w-full rounded-lg border border-border/50 bg-background px-3 py-2 text-sm font-sans text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring resize-y min-h-[2.5rem]"
+        />
       </div>
       {error && <p id="url-error" className="text-sm text-destructive mt-2" role="alert">{error}</p>}
       <p className="text-xs text-muted-foreground text-center mt-2">

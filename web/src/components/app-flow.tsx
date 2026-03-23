@@ -7,9 +7,7 @@ import { HeroSection } from "@/components/landing/hero-section";
 import { TrustBadges } from "@/components/landing/trust-badges";
 import { HowItWorks } from "@/components/landing/how-it-works";
 import { FaqSection } from "@/components/landing/faq-section";
-import { Testimonials } from "@/components/landing/testimonials";
 import { Footer } from "@/components/landing/footer";
-import { EmailCaptureModal } from "@/components/landing/email-capture-modal";
 import { ProgressView } from "@/components/progress/progress-view";
 import { SuccessCelebration } from "@/components/progress/success-celebration";
 import { useRedesign } from "@/hooks/use-redesign";
@@ -58,11 +56,7 @@ export function AppFlow() {
           <section className="py-16 px-4">
             <FaqSection />
           </section>
-          <section className="py-16 px-4">
-            <Testimonials />
-          </section>
           <Footer />
-          <EmailCaptureModal />
         </m.div>
       )}
 

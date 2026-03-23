@@ -8,7 +8,7 @@ import { UrlInputForm } from "@/components/landing/url-input-form";
 import type { RedesignTier, ModelProvider } from "@/hooks/use-redesign";
 
 interface HeroSectionProps {
-  onSubmit: (url: string, tier: RedesignTier, modelProvider: ModelProvider) => void;
+  onSubmit: (url: string, tier: RedesignTier, modelProvider: ModelProvider, prompt: string) => void;
   isConnecting?: boolean;
 }
 
@@ -61,9 +61,7 @@ export function HeroSection({ onSubmit, isConnecting }: HeroSectionProps) {
             transition={{ duration: 0.4, delay: 0.5, ease: "easeOut" }}
             className="text-sm text-muted-foreground mt-4"
           >
-            <span className="font-semibold text-foreground">2,400+</span> websites redesigned
-            <span className="mx-2 text-muted-foreground/40">·</span>
-            Saving businesses <span className="font-semibold text-foreground">$12M+</span> in design costs
+            Free AI website redesigns — no signup required
           </m.p>
         </div>
       </div>

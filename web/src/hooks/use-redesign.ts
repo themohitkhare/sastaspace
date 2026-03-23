@@ -31,7 +31,7 @@ export type RedesignState =
       jobCreatedAt: string;
     }
   | { status: "done"; subdomain: string; originalUrl: string; domain: string; tier: RedesignTier }
-  | { status: "error"; message: string; url: string; resumeJobId?: string; lastStep?: string };
+  | { status: "error"; message: string; url: string; resumeJobId?: string; lastStep?: string; prompt?: string };
 
 const STEPS = [
   { name: "crawling", label: (d: string) => `Analyzing ${d}` },
@@ -108,6 +108,7 @@ export function useRedesign() {
               message: job.error || GENERIC_ERROR_MESSAGE,
               url,
               lastStep: lastStepRef.current,
+              prompt: lastPromptRef.current || undefined,
             });
             return;
           }
@@ -145,6 +146,7 @@ export function useRedesign() {
                   "This is taking longer than expected. Please check back in a few minutes.",
                 url,
                 lastStep: lastStepRef.current,
+                prompt: lastPromptRef.current || undefined,
               });
               return;
             }
@@ -186,26 +188,30 @@ export function useRedesign() {
           url,
           resumeJobId: isPollFailed ? jobId : undefined,
           lastStep: lastStepRef.current,
+          prompt: lastPromptRef.current || undefined,
         });
       }
     },
     []
   );
 
+  const lastPromptRef = useRef<string>("");
+
   const start = useCallback(
-    async (url: string, tier: RedesignTier = "free", modelProvider: ModelProvider = "claude") => {
+    async (url: string, tier: RedesignTier = "free", modelProvider: ModelProvider = "claude", prompt: string = "") => {
       abortRef.current?.abort();
       const controller = new AbortController();
       abortRef.current = controller;
       lastUrlRef.current = url;
       lastTierRef.current = tier;
       lastModelProviderRef.current = modelProvider;
+      lastPromptRef.current = prompt;
 
       setState({ status: "connecting" });
       trackEvent("redesign_started", { url, tier, modelProvider });
 
       try {
-        const jobId = await submitRedesign(url, tier, modelProvider, controller.signal);
+        const jobId = await submitRedesign(url, tier, modelProvider, controller.signal, prompt);
         if (controller.signal.aborted) return;
 
         // Persist job ID + original URL for page-refresh reconnection
@@ -223,21 +229,22 @@ export function useRedesign() {
         await pollJob(jobId, url, tier, controller);
       } catch {
         if (controller.signal.aborted) return;
-        setState({ status: "error", message: GENERIC_ERROR_MESSAGE, url, lastStep: lastStepRef.current });
+        setState({ status: "error", message: GENERIC_ERROR_MESSAGE, url, lastStep: lastStepRef.current, prompt: lastPromptRef.current || undefined });
       }
     },
     [pollJob]
   );
 
-  const retry = useCallback(() => {
+  const retry = useCallback((updatedPrompt?: string) => {
     if (state.status !== "error") return;
+    const promptToUse = updatedPrompt ?? lastPromptRef.current;
     if (state.resumeJobId) {
       // Network failure: resume polling the existing job
       const controller = new AbortController();
       abortRef.current = controller;
       pollJob(state.resumeJobId, state.url, lastTierRef.current, controller);
     } else {
-      start(state.url, lastTierRef.current, lastModelProviderRef.current);
+      start(state.url, lastTierRef.current, lastModelProviderRef.current, promptToUse);
     }
   }, [state, start, pollJob]);
 

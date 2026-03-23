@@ -66,11 +66,11 @@ spec:
           periodSeconds: 5
         resources:
           requests:
-            memory: "256Mi"
-            cpu: "100m"
+            memory: "512Mi"
+            cpu: "250m"
           limits:
-            memory: "1Gi"
-            cpu: "500m"
+            memory: "2Gi"
+            cpu: "1000m"
       # ClamAV sidecar disabled — official image requires root/chown which
       # violates the pod's runAsNonRoot policy. The asset validation pipeline
       # still has 4 layers (magic bytes, Pillow, defusedxml, YARA).

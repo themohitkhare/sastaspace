@@ -17,6 +17,9 @@ from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
+# Cache the template mtime so we can skip re-checking node_modules on repeat builds
+_template_deps_verified: dict[str, bool] = {}
+
 
 class BuildError(Exception):
     """Raised when the Vite build fails."""
@@ -37,9 +40,18 @@ def is_node_available() -> bool:
 
 
 def _ensure_template_deps(template_dir: Path) -> None:
-    """Install template dependencies if node_modules doesn't exist."""
+    """Install template dependencies if node_modules doesn't exist.
+
+    Caches the check per template_dir path to avoid repeated filesystem lookups
+    across multiple builds in the same process.
+    """
+    key = str(template_dir)
+    if key in _template_deps_verified:
+        return
+
     nm_path = template_dir / "node_modules"
     if nm_path.exists():
+        _template_deps_verified[key] = True
         return
 
     logger.info("Installing template dependencies in %s", template_dir)
@@ -52,6 +64,7 @@ def _ensure_template_deps(template_dir: Path) -> None:
     )
     if result.returncode != 0:
         raise BuildError(f"npm install failed: {result.stderr[:500]}")
+    _template_deps_verified[key] = True
     logger.info("Template dependencies installed")
 
 
@@ -177,6 +190,8 @@ def build_react_page(
     Raises:
         BuildError: If the build fails.
     """
+    import time as _time
+
     if not is_node_available():
         raise BuildError("Node.js not available — cannot build React pages")
 
@@ -185,13 +200,21 @@ def build_react_page(
     with tempfile.TemporaryDirectory(prefix="sastaspace-build-") as tmp:
         tmp_path = Path(tmp)
 
+        t_copy = _time.monotonic()
         _copy_template(template_dir, tmp_path)
         _write_generated_files(files, tmp_path)
+        logger.info(
+            "PERF | react_build template_copy=%.2fs files=%d",
+            _time.monotonic() - t_copy,
+            len(files),
+        )
 
         if brand_css_vars:
             _inject_css_vars(tmp_path, brand_css_vars)
 
+        t_vite = _time.monotonic()
         dist_path = _run_vite_build(tmp_path)
+        logger.info("PERF | react_build vite_build=%.1fs", _time.monotonic() - t_vite)
 
         # Copy dist to output
         if output_dir.exists():

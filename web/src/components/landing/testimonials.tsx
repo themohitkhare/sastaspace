@@ -1,51 +1,42 @@
-const TESTIMONIALS = [
+const USE_CASES = [
   {
-    quote:
-      "I pasted my URL expecting a gimmick. What came back looked better than what my agency delivered last quarter.",
-    name: "Sarah Chen",
-    role: "Head of Marketing",
-    company: "Nordvik Analytics",
+    heading: "See your site reimagined",
+    description:
+      "Paste any URL and get a full AI-generated redesign in under 60 seconds. No signup, no credit card.",
   },
   {
-    quote:
-      "We used the AI redesign as a starting point for our rebrand. Saved us weeks of back-and-forth with designers.",
-    name: "James Okafor",
-    role: "Co-founder",
-    company: "Relay Commerce",
+    heading: "Pitch clients with proof",
+    description:
+      "Show prospects a before/after of their own website. Close deals faster with tangible results.",
   },
   {
-    quote:
-      "Showed the before/after to our board and got budget approved for a full site overhaul the same day.",
-    name: "Priya Sharma",
-    role: "VP of Product",
-    company: "Mapleleaf SaaS",
+    heading: "Kickstart your rebrand",
+    description:
+      "Use the AI output as a design reference or starting point. Export the HTML and iterate from there.",
   },
 ];
 
 export function Testimonials() {
   return (
     <div className="w-full max-w-6xl mx-auto">
-      <h2 className="font-heading text-2xl sm:text-3xl text-foreground text-center mb-12">
-        What people are saying
+      <h2 className="font-heading text-2xl sm:text-3xl text-foreground text-center mb-4">
+        How people use SastaSpace
       </h2>
+      <p className="text-muted-foreground text-center mb-12 max-w-lg mx-auto">
+        A free redesign preview that speaks for itself.
+      </p>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {TESTIMONIALS.map((t) => (
+        {USE_CASES.map((uc) => (
           <div
-            key={t.name}
+            key={uc.heading}
             className="rounded-xl border border-border/50 bg-background p-6 flex flex-col"
           >
-            <span className="text-3xl text-muted-foreground/30 font-serif leading-none select-none">
-              &ldquo;
-            </span>
-            <p className="text-sm text-muted-foreground mt-2 flex-1 leading-relaxed">
-              {t.quote}
+            <h3 className="text-base font-medium text-foreground mb-2">
+              {uc.heading}
+            </h3>
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              {uc.description}
             </p>
-            <div className="mt-6 pt-4 border-t border-border/30">
-              <p className="text-sm font-medium text-foreground">{t.name}</p>
-              <p className="text-xs text-muted-foreground">
-                {t.role}, {t.company}
-              </p>
-            </div>
           </div>
         ))}
       </div>

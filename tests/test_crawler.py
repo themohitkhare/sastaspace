@@ -306,11 +306,12 @@ def test_ensure_chromium_runs_install_when_needed():
     mock_dry_run.returncode = 1
     mock_dry_run.stdout = b"chromium not installed"
 
-    with patch("sastaspace.crawler.subprocess.run") as mock_run:
-        mock_run.side_effect = [mock_dry_run, MagicMock()]
-        _ensure_chromium()
+    with patch("sastaspace.crawler._chromium_verified", False):
+        with patch("sastaspace.crawler.subprocess.run") as mock_run:
+            mock_run.side_effect = [mock_dry_run, MagicMock()]
+            _ensure_chromium()
 
-    assert mock_run.call_count == 2
+        assert mock_run.call_count == 2
 
 
 def test_ensure_chromium_skips_install_when_ok():
@@ -319,16 +320,18 @@ def test_ensure_chromium_skips_install_when_ok():
     mock_dry_run.returncode = 0
     mock_dry_run.stdout = b""
 
-    with patch("sastaspace.crawler.subprocess.run", return_value=mock_dry_run) as mock_run:
-        _ensure_chromium()
+    with patch("sastaspace.crawler._chromium_verified", False):
+        with patch("sastaspace.crawler.subprocess.run", return_value=mock_dry_run) as mock_run:
+            _ensure_chromium()
 
-    assert mock_run.call_count == 1
+        assert mock_run.call_count == 1
 
 
 def test_ensure_chromium_handles_exception():
     """Lines 28-29: _ensure_chromium swallows exceptions."""
-    with patch("sastaspace.crawler.subprocess.run", side_effect=OSError("oops")):
-        _ensure_chromium()  # Should not raise
+    with patch("sastaspace.crawler._chromium_verified", False):
+        with patch("sastaspace.crawler.subprocess.run", side_effect=OSError("oops")):
+            _ensure_chromium()  # Should not raise
 
 
 # --- crawl() with meta_description and favicon ---

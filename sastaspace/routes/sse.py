@@ -87,6 +87,7 @@ async def redesign_stream(
     deploy_fn,
     tier: str = "free",
     model_provider: str = "claude",
+    prompt: str = "",
 ) -> AsyncGenerator[bytes, None]:
     """SSE stream (inline fallback when Redis is unavailable)."""
     task = asyncio.current_task()
@@ -167,6 +168,7 @@ async def redesign_stream(
                         settings,
                         tier,
                         model_provider=model_provider,
+                        user_prompt=prompt,
                     ),
                     timeout=600,
                 )

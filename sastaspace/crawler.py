@@ -92,8 +92,14 @@ _NOISE_PATH_SEGMENTS = frozenset(
 )
 
 
+_chromium_verified = False
+
+
 def _ensure_chromium() -> None:
-    """Auto-install Chromium if not present. Runs once, transparent to user."""
+    """Auto-install Chromium if not present. Cached after first successful check."""
+    global _chromium_verified
+    if _chromium_verified:
+        return
     try:
         result = subprocess.run(
             [sys.executable, "-m", "playwright", "install", "chromium", "--dry-run"],
@@ -105,6 +111,7 @@ def _ensure_chromium() -> None:
                 [sys.executable, "-m", "playwright", "install", "chromium"],
                 check=True,
             )
+        _chromium_verified = True
     except (OSError, subprocess.SubprocessError):
         pass
 
@@ -157,6 +164,17 @@ class CrawlResult:
         return "\n\n".join(lines)
 
 
+_CHROMIUM_ARGS = [
+    "--disable-dev-shm-usage",  # Use /tmp instead of /dev/shm (fixes crashes in Docker)
+    "--disable-gpu",
+    "--no-sandbox",
+    "--disable-setuid-sandbox",
+    "--disable-web-security",  # Allow cross-origin requests
+    "--disable-features=VizDisplayCompositor",
+    "--disable-blink-features=AutomationControlled",
+]
+
+
 @contextlib.asynccontextmanager
 async def _browser_context(browserless_url: str | None = None):
     """Connect to remote Browserless via CDP. Falls back to local launch for dev."""
@@ -164,11 +182,13 @@ async def _browser_context(browserless_url: str | None = None):
         if browserless_url:
             browser = await pw.chromium.connect_over_cdp(browserless_url)
         else:
-            browser = await pw.chromium.launch(headless=True)
+            browser = await pw.chromium.launch(headless=True, args=_CHROMIUM_ARGS)
         try:
             ctx = await browser.new_context(
                 user_agent=_USER_AGENT,
                 viewport={"width": 1280, "height": 800},
+                java_script_enabled=True,
+                bypass_csp=True,
             )
             page = await ctx.new_page()
             yield browser, ctx, page
@@ -324,10 +344,15 @@ def _filter_noise_links(links: list[dict], base_url: str) -> list[dict]:
 # --- Part B: Refactored _crawl_page ---
 
 
-async def _crawl_page(page, url: str) -> CrawlResult:
-    """Core page extraction logic. Accepts an existing Playwright Page object."""
-    await page.goto(url, wait_until="networkidle", timeout=30000)
-    await asyncio.sleep(2)
+async def _crawl_page(page, url: str, *, settle_delay: float = 0.5) -> CrawlResult:
+    """Core page extraction logic. Accepts an existing Playwright Page object.
+
+    Args:
+        settle_delay: Seconds to wait after networkidle for JS to settle.
+            Default 0.5s (was 2s — most sites finish JS within 300ms of networkidle).
+    """
+    await page.goto(url, wait_until="networkidle", timeout=60000)
+    await asyncio.sleep(settle_delay)
 
     title = await page.title()
     html = await page.content()
@@ -429,7 +454,7 @@ async def crawl(url: str, browserless_url: str | None = None) -> CrawlResult:
 async def _crawl_internal_page(page, url: str):
     """Lightweight crawl for an internal page. No screenshot."""
     try:
-        await page.goto(url, wait_until="networkidle", timeout=30000)
+        await page.goto(url, wait_until="networkidle", timeout=60000)
 
         # Detect auth redirect
         final_url = page.url.lower()
@@ -551,7 +576,16 @@ def _llm_select_pages(links: list[dict], api_url: str, model: str, api_key: str)
 
 
 async def enhanced_crawl(url: str, settings):
-    """Crawl homepage + up to 3 internal pages, download assets, build business profile."""
+    """Crawl homepage + up to 3 internal pages, download assets, build business profile.
+
+    Performance optimizations:
+    - Asset download and business profiling run in parallel (both depend on crawl data only).
+    - Per-step timing logged with PERF prefix for profiling.
+    - Homepage settle delay reduced from 2s to 0.5s.
+    """
+    import time as _time
+
+    t0 = _time.monotonic()
     _raw = getattr(settings, "browserless_url", None)
     browserless_url = _raw if isinstance(_raw, str) else None
     if not browserless_url:
@@ -560,7 +594,13 @@ async def enhanced_crawl(url: str, settings):
     try:
         async with _browser_context(browserless_url=browserless_url) as (browser, ctx, page):
             # 1. Crawl homepage
+            t_hp = _time.monotonic()
             homepage = await _crawl_page(page, url)
+            logger.info(
+                "PERF | enhanced_crawl homepage=%.1fs url=%s",
+                _time.monotonic() - t_hp,
+                url,
+            )
 
             # If homepage failed, return early
             if homepage.error:
@@ -571,12 +611,18 @@ async def enhanced_crawl(url: str, settings):
             filtered_links = _filter_noise_links(all_links, url)
 
             # 3. LLM picks best pages (sync call via to_thread)
+            t_sel = _time.monotonic()
             selected_urls = await asyncio.to_thread(
                 _llm_select_pages,
                 filtered_links,
                 settings.claude_code_api_url,
                 settings.claude_model,
                 settings.claude_code_api_key,
+            )
+            logger.info(
+                "PERF | enhanced_crawl page_selection=%.1fs selected=%d",
+                _time.monotonic() - t_sel,
+                len(selected_urls),
             )
 
             # 4. Crawl internal pages in parallel with per-page timeout
@@ -595,8 +641,14 @@ async def enhanced_crawl(url: str, settings):
                 except (PlaywrightError, OSError) as e:
                     return PageCrawlResult(url=link_url, error=str(e))
 
+            t_int = _time.monotonic()
             internal_pages = list(
                 await asyncio.gather(*[_safe_crawl_internal(u) for u in selected_urls])
+            )
+            logger.info(
+                "PERF | enhanced_crawl internal_pages=%.1fs count=%d",
+                _time.monotonic() - t_int,
+                len(internal_pages),
             )
 
             # 5. Collect asset URLs from homepage + internal pages
@@ -619,27 +671,49 @@ async def enhanced_crawl(url: str, settings):
                                 }
                             )
 
-            # 6. Download and validate assets
+            # 6 + 7: Asset download and business profiling run IN PARALLEL.
+            # Both only depend on crawl data, so overlapping saves significant time
+            # (business profiling is an LLM call that takes 3-10s).
             asset_url_strings = [a["url"] for a in asset_urls]
             tmp_dir = Path(tempfile.mkdtemp(prefix="sastaspace-assets-"))
-            try:
-                concurrency = getattr(settings, "asset_download_concurrency", 10)
-                assets = await download_and_validate_assets(
-                    asset_url_strings, tmp_dir, skip_clamav=True, concurrency=concurrency
-                )
-            except (TimeoutError, OSError, ConnectionError) as exc:
-                logger.warning("Asset download failed, continuing without assets: %s", exc)
-                assets = AssetManifest(assets=[], total_size_bytes=0)
+            concurrency = getattr(settings, "asset_download_concurrency", 10)
 
-            # 7. Build business profile via LLM (sync call via to_thread)
-            business_profile = await asyncio.to_thread(
-                build_business_profile,
-                homepage,
-                internal_pages,
-                settings.claude_code_api_url,
-                settings.claude_model,
-                settings.claude_code_api_key,
-            )
+            async def _download_assets() -> AssetManifest:
+                t_dl = _time.monotonic()
+                try:
+                    result = await download_and_validate_assets(
+                        asset_url_strings, tmp_dir, skip_clamav=True, concurrency=concurrency
+                    )
+                except (TimeoutError, OSError, ConnectionError) as exc:
+                    logger.warning("Asset download failed, continuing without assets: %s", exc)
+                    result = AssetManifest(assets=[], total_size_bytes=0)
+                logger.info(
+                    "PERF | enhanced_crawl asset_download=%.1fs assets=%d",
+                    _time.monotonic() - t_dl,
+                    len(result.assets),
+                )
+                return result
+
+            async def _build_profile():
+                t_bp = _time.monotonic()
+                profile = await asyncio.to_thread(
+                    build_business_profile,
+                    homepage,
+                    internal_pages,
+                    settings.claude_code_api_url,
+                    settings.claude_model,
+                    settings.claude_code_api_key,
+                )
+                logger.info(
+                    "PERF | enhanced_crawl business_profile=%.1fs",
+                    _time.monotonic() - t_bp,
+                )
+                return profile
+
+            assets, business_profile = await asyncio.gather(_download_assets(), _build_profile())
+
+            total = _time.monotonic() - t0
+            logger.info("PERF | enhanced_crawl TOTAL=%.1fs url=%s", total, url)
 
             return EnhancedCrawlResult(
                 homepage=homepage,

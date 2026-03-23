@@ -173,6 +173,7 @@ def agno_redesign(
     checkpoint: dict | None = None,
     checkpoint_callback: Callable[[str, dict], None] | None = None,
     model_provider: str = "claude",
+    user_prompt: str = "",
 ) -> str:
     """Redesign using Agno multi-agent pipeline.
 
@@ -201,6 +202,7 @@ def agno_redesign(
         checkpoint=checkpoint,
         checkpoint_callback=checkpoint_callback,
         model_provider=model_provider,
+        user_prompt=user_prompt,
     )
     # Pipeline now returns RedesignResult
     if isinstance(result, RedesignResult):
@@ -371,6 +373,7 @@ class RedesignOptions:
     checkpoint_callback: Callable[[str, dict], None] | None = None
     enhanced: object = None  # EnhancedCrawlResult | None
     model_provider: str = "claude"
+    user_prompt: str = ""
 
 
 def _run_agno_path(
@@ -381,6 +384,7 @@ def _run_agno_path(
     checkpoint,
     checkpoint_callback,
     model_provider: str,
+    user_prompt: str = "",
 ) -> RedesignResult:
     """Run the Agno multi-agent pipeline path."""
     result = agno_redesign(
@@ -391,6 +395,7 @@ def _run_agno_path(
         checkpoint,
         checkpoint_callback,
         model_provider=model_provider,
+        user_prompt=user_prompt,
     )
     if isinstance(result, RedesignResult):
         return result
@@ -440,6 +445,7 @@ def run_redesign(
     model_provider: str = "claude",
     *,
     options: RedesignOptions | None = None,
+    user_prompt: str = "",
 ) -> RedesignResult:
     """Dispatch to the appropriate redesign function based on settings and tier.
 
@@ -457,6 +463,7 @@ def run_redesign(
         checkpoint_callback = options.checkpoint_callback
         enhanced = options.enhanced
         model_provider = options.model_provider
+        user_prompt = options.user_prompt
 
     crawl_context = enhanced.to_prompt_context() if enhanced is not None else None
 
@@ -469,6 +476,7 @@ def run_redesign(
             checkpoint,
             checkpoint_callback,
             model_provider,
+            user_prompt=user_prompt,
         )
 
     return _run_prompt_path(crawl_result, settings, tier, enhanced, crawl_context)

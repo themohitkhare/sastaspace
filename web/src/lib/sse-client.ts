@@ -19,13 +19,16 @@ export async function submitRedesign(
   url: string,
   tier: "free" | "premium" = "free",
   modelProvider: "claude" | "gemini" = "claude",
-  signal?: AbortSignal
+  signal?: AbortSignal,
+  prompt: string = "",
 ): Promise<string> {
   const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:8080"
+  const body: Record<string, string> = { url, tier, model_provider: modelProvider }
+  if (prompt) body.prompt = prompt
   const resp = await fetch(`${backendUrl}/redesign`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ url, tier, model_provider: modelProvider }),
+    body: JSON.stringify(body),
     signal,
   })
   if (!resp.ok) throw new Error(`Redesign request failed: ${resp.status}`)

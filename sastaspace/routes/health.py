@@ -29,11 +29,17 @@ def configure(
     active_sse_tasks: set,
     svc_ref: list,
 ) -> None:
-    """Wire runtime references from the main server module."""
-    global _active_sse_tasks_ref
+    """Wire runtime references from the main server module.
+
+    IMPORTANT: we store the *same* svc_ref object (a _SvcProxy in production)
+    rather than copying its contents.  The proxy's __getitem__ dynamically reads
+    the module-level ``svc`` variable, so copying would lose that behaviour and
+    the health check would always see the initial ``None``.
+    """
+    global _active_sse_tasks_ref, _svc_ref
     _startup_time_ref[:] = startup_time_ref
     _active_sse_tasks_ref = active_sse_tasks
-    _svc_ref[:] = svc_ref
+    _svc_ref = svc_ref
 
 
 @router.get("/health", response_model=None)

@@ -246,20 +246,29 @@ def _run_planner(
     settings: Settings,
     tier: str = "premium",
     model_provider: str = "claude",
+    user_prompt: str = "",
 ) -> RedesignPlan:
     """Run the Planner -- analyze, design, and write copy in one shot."""
     # Ollama only for free tier when no explicit provider (claude/gemini)
     use_ollama = tier == "free" and model_provider not in ("claude", "gemini")
     model_id = settings.free_crawl_analyst_model if use_ollama else settings.crawl_analyst_model
     model = _create_model(model_id, settings, use_ollama=use_ollama, model_provider=model_provider)
-    user_prompt = PLANNER_USER_TEMPLATE.format(
+    planner_system = PLANNER_SYSTEM
+    if user_prompt:
+        planner_system += (
+            "\n\n## User Instructions\n"
+            "The user has provided the following specific instructions for this redesign:\n"
+            f"{user_prompt}\n\n"
+            "Honor these instructions while maintaining design quality standards."
+        )
+    planner_user_text = PLANNER_USER_TEMPLATE.format(
         crawl_context=crawl_result.to_prompt_context(),
         title=crawl_result.title,
         meta_description=crawl_result.meta_description,
         colors=", ".join(crawl_result.colors[:10]) or "not detected",
         fonts=", ".join(crawl_result.fonts[:5]) or "not detected",
     )
-    raw = _run_agent("planner", PLANNER_SYSTEM, user_prompt, model)
+    raw = _run_agent("planner", planner_system, planner_user_text, model)
     try:
         data = _extract_json(raw)
         result = RedesignPlan.model_validate(data)
@@ -432,6 +441,7 @@ def run_redesign_pipeline(
     checkpoint: dict | None = None,
     checkpoint_callback: CheckpointCallback = None,
     model_provider: str = "claude",
+    user_prompt: str = "",
 ) -> str:
     """
     Execute the redesign pipeline.
@@ -526,7 +536,7 @@ def run_redesign_pipeline(
                 pipeline_label,
             )
             _emit("planner")
-            plan = _run_planner(crawl_result, settings, tier, model_provider)
+            plan = _run_planner(crawl_result, settings, tier, model_provider, user_prompt)
             cp_data["plan"] = plan.model_dump_json()
             _checkpoint("planner", cp_data)
         else:

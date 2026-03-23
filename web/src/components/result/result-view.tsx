@@ -1,7 +1,7 @@
 "use client";
 
 import { m } from "motion/react";
-import { ExternalLink } from "lucide-react";
+import { ExternalLink, Download, ArrowRight } from "lucide-react";
 import { NavHeader } from "@/components/ui/nav-header";
 import { ContactForm } from "@/components/result/contact-form";
 import { BeforeAfterSlider } from "@/components/result/before-after-slider";
@@ -17,8 +17,9 @@ interface ResultViewProps {
 export function ResultView({ subdomain, tier }: ResultViewProps) {
   const domain = subdomain.replace(/-/g, ".");
   const originalUrl = `https://${domain}`;
-  const headerText = `${domain} has been redesigned`;
   const previewUrl = `/${subdomain}/preview`;
+  const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8080";
+  const downloadUrl = `${backendUrl}/${subdomain}/index.html`;
   const shareUrl = typeof window !== "undefined"
     ? `${window.location.origin}/${subdomain}`
     : `/${subdomain}`;
@@ -32,22 +33,37 @@ export function ResultView({ subdomain, tier }: ResultViewProps) {
     >
       <NavHeader />
       <div className="w-full max-w-4xl flex flex-col items-center pt-8">
-        <h1 className="font-heading text-[clamp(1.75rem,5vw,3rem)] leading-[1.1] text-foreground text-center mb-8">
-          {headerText}
+        <p className="text-sm text-accent font-medium uppercase tracking-wide mb-3">
+          Your Redesign
+        </p>
+        <h1 className="font-heading text-[clamp(1.75rem,5vw,3rem)] leading-[1.1] text-foreground text-center mb-2">
+          {domain}
         </h1>
+        <p className="text-muted-foreground text-center mb-8">
+          Here&apos;s what your website could look like.
+        </p>
 
         {/* Before/After comparison slider */}
         <BeforeAfterSlider originalUrl={originalUrl} redesignUrl={previewUrl} />
 
-        {/* CTA to open full redesign */}
-        <div className="mt-6 flex flex-col sm:flex-row items-center gap-4">
+        {/* Action buttons */}
+        <div className="mt-6 flex flex-col sm:flex-row items-center gap-3">
           <a
             href={previewUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center justify-center rounded-lg bg-accent text-accent-foreground text-base font-medium h-12 px-8 transition-all hover:bg-accent/90 active:translate-y-px"
+            className="inline-flex items-center gap-2 justify-center rounded-lg bg-accent text-accent-foreground text-base font-medium h-12 px-8 transition-all hover:bg-accent/90 active:translate-y-px"
           >
-            Take me to the future
+            Open Full Preview
+            <ExternalLink className="w-4 h-4" />
+          </a>
+          <a
+            href={downloadUrl}
+            download={`${subdomain}-redesign.html`}
+            className="inline-flex items-center gap-2 justify-center rounded-lg bg-secondary text-secondary-foreground text-sm font-medium h-11 px-6 transition-all hover:bg-secondary/80 active:translate-y-px"
+          >
+            <Download className="w-4 h-4" />
+            Download HTML
           </a>
           <a
             href={originalUrl}
@@ -55,7 +71,7 @@ export function ResultView({ subdomain, tier }: ResultViewProps) {
             rel="noopener noreferrer"
             className="inline-flex items-center gap-1.5 text-sm text-muted-foreground underline underline-offset-4 hover:text-foreground transition-colors"
           >
-            View original site
+            View original
             <ExternalLink className="w-3.5 h-3.5" />
           </a>
         </div>
@@ -80,9 +96,26 @@ export function ResultView({ subdomain, tier }: ResultViewProps) {
           <QualityRating subdomain={subdomain} />
         </div>
 
-        {/* Contact form section — per D-01 */}
+        {/* CTA section — lead generation */}
+        <div className="mt-16 w-full max-w-2xl mx-auto text-center">
+          <h2 className="font-heading text-2xl sm:text-3xl text-foreground mb-3">
+            Love it? Let&apos;s make it real.
+          </h2>
+          <p className="text-muted-foreground mb-8 max-w-lg mx-auto">
+            This is an AI-generated preview. Get a production-ready website with custom features, real content, and ongoing support.
+          </p>
+          <a
+            href="#contact"
+            className="inline-flex items-center gap-2 justify-center rounded-lg bg-accent text-accent-foreground text-base font-medium h-12 px-8 transition-all hover:bg-accent/90 active:translate-y-px"
+          >
+            Get in Touch
+            <ArrowRight className="w-4 h-4" />
+          </a>
+        </div>
+
+        {/* Contact form section */}
         <hr className="border-border w-full max-w-3xl mt-16" />
-        <div className="mt-16 w-full flex flex-col items-center pb-16">
+        <div id="contact" className="mt-16 w-full flex flex-col items-center pb-16">
           <ContactForm subdomain={subdomain} />
         </div>
       </div>

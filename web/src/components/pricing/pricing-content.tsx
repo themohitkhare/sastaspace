@@ -10,24 +10,6 @@ import { Footer } from "@/components/landing/footer";
 
 const TIERS = [
   {
-    name: "Free",
-    price: "$0",
-    priceLabel: "forever",
-    description: "Open Source CLI",
-    cta: "Get Started Free",
-    ctaHref: "/#url-input",
-    highlighted: false,
-    features: [
-      { text: "Bring your own API key", included: true },
-      { text: "Unlimited redesigns", included: true },
-      { text: "Full pipeline access", included: true },
-      { text: "Local-first, zero lock-in", included: true },
-      { text: "Community support", included: true },
-      { text: "Hosted previews", included: false },
-      { text: "White-label output", included: false },
-    ],
-  },
-  {
     name: "Pro",
     price: "$19",
     priceLabel: "/mo",
@@ -37,7 +19,6 @@ const TIERS = [
     highlighted: true,
     badge: "Most Popular",
     features: [
-      { text: "Everything in Free, plus:", included: true, isSectionLabel: true },
       { text: "No API key needed", included: true },
       { text: "Hosted previews", included: true },
       { text: "Custom domains", included: true },
@@ -85,14 +66,9 @@ const TIERS = [
 
 const PRICING_FAQS = [
   {
-    question: "Can I use SastaSpace for free?",
+    question: "Is there a free option?",
     answer:
-      "Yes! The CLI is open source and free forever. Bring your own Anthropic API key (~$0.10/redesign).",
-  },
-  {
-    question: "What's the difference between Free and Pro?",
-    answer:
-      "Free is CLI-only with your own API key. Pro gives you a web UI, hosted previews, and we handle the API costs.",
+      "The open-source CLI is free forever — bring your own Anthropic API key (~$0.10/redesign). The hosted plans below add convenience, previews, and scale.",
   },
   {
     question: "Can I remove the 'Redesigned by SastaSpace' badge?",
@@ -158,7 +134,7 @@ export function PricingContent() {
           </p>
         </m.div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
           {TIERS.map((tier, index) => (
             <m.div
               key={tier.name}
