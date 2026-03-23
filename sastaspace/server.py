@@ -44,7 +44,7 @@ from sastaspace.database import (
     set_mongo_url,
     update_job,
 )
-from sastaspace.deployer import deploy
+from sastaspace.deployer import deploy, derive_subdomain
 from sastaspace.jobs import JobService
 from sastaspace.redesigner import run_redesign
 from sastaspace.twenty_sync import NoopTwentyClient, get_twenty_client
@@ -529,6 +529,25 @@ def make_app(sites_dir: Path) -> FastAPI:
                 return Response(status_code=200, content="duplicate")
 
         payload = json.loads(body)
+
+        # --- Handle Twenty native CRUD events (company.deleted, etc.) ---
+        event_name = payload.get("eventName", "")
+        if event_name == "company.deleted":
+            record = payload.get("record", {})
+            domain_url = ""
+            domain_name = record.get("domainName", {})
+            if isinstance(domain_name, dict):
+                domain_url = domain_name.get("primaryLinkUrl", "")
+            if domain_url:
+                subdomain = derive_subdomain(domain_url)
+                logger.info("Twenty company.deleted → subdomain=%s url=%s", subdomain, domain_url)
+                await delete_site_files(subdomain, settings.sites_dir)
+                await delete_site_db_record(subdomain)
+                return Response(status_code=200, content="deleted")
+            logger.warning("company.deleted but no domainName URL in record")
+            return Response(status_code=200, content="no-url")
+
+        # --- Handle custom admin actions (adminAction field) ---
         data = payload.get("data", {})
         action = data.get("adminAction")
         subdomain = data.get("subdomain", "")
@@ -541,7 +560,6 @@ def make_app(sites_dir: Path) -> FastAPI:
             url = await get_original_url_from_db(subdomain)
             if not url:
                 return Response(status_code=404, content="URL not found")
-            # Enqueue new job BEFORE deleting files
             if svc:
                 await svc.enqueue(url, "admin", tier=data.get("tier", "free"))
             else:
