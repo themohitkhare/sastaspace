@@ -178,7 +178,7 @@ def test_run_redesign_with_enhanced_context():
     with patch("sastaspace.redesigner._redesign_with_prompts", return_value=SAMPLE_REDESIGNED_HTML):
         result = run_redesign(homepage, settings, tier="free", enhanced=enhanced)
 
-    assert "<!DOCTYPE html>" in result
+    assert "<!DOCTYPE html>" in result.html
 
 
 # --- Test 3: EnhancedCrawlResult prompt context with no assets ---

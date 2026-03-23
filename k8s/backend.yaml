@@ -51,6 +51,13 @@ spec:
             port: 8080
           initialDelaySeconds: 10
           periodSeconds: 5
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 15
+          failureThreshold: 3
         resources:
           requests:
             memory: "256Mi"

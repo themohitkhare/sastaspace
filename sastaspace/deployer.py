@@ -70,9 +70,20 @@ def deploy(
     sites_dir: Path,
     subdomain: str | None = None,
     assets: list | None = None,
+    build_dir: Path | None = None,
 ) -> DeployResult:
     """
     Write redesigned HTML to sites/{subdomain}/ and update registry.
+
+    Args:
+        url: Original website URL.
+        html: The redesigned HTML string (index.html content).
+        sites_dir: Root sites directory.
+        subdomain: Optional pre-determined subdomain slug.
+        assets: Optional crawled asset files to deploy alongside.
+        build_dir: Optional Vite build output directory. When provided, all files
+            from this directory are copied to the site dir (JS/CSS bundles, etc.)
+            instead of writing just the HTML string.
 
     Returns DeployResult with final subdomain and path.
     """
@@ -84,8 +95,21 @@ def deploy(
     site_dir = sites_dir / final_subdomain
     site_dir.mkdir(parents=True, exist_ok=True)
 
-    index_path = site_dir / "index.html"
-    index_path.write_text(html, encoding="utf-8")
+    if build_dir and build_dir.exists():
+        # Deploy full Vite build output (index.html + assets/)
+        for item in build_dir.iterdir():
+            dest = site_dir / item.name
+            if item.is_dir():
+                if dest.exists():
+                    shutil.rmtree(dest)
+                shutil.copytree(item, dest)
+            else:
+                shutil.copy2(item, dest)
+        index_path = site_dir / "index.html"
+    else:
+        # Deploy single HTML file (legacy path)
+        index_path = site_dir / "index.html"
+        index_path.write_text(html, encoding="utf-8")
 
     if assets:
         for asset in assets:
@@ -98,6 +122,7 @@ def deploy(
         "original_url": url,
         "timestamp": datetime.now(UTC).isoformat(),
         "status": "deployed",
+        "build_type": "react" if build_dir else "html",
     }
     if assets:
         metadata["assets_count"] = len(assets)

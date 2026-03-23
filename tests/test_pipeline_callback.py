@@ -52,14 +52,15 @@ def test_progress_callback_called_for_each_agent():
     """progress_callback fires once per agent stage."""
     callback = MagicMock()
     mock_html = "<!DOCTYPE html><html><body>Test</body></html>"
+    settings = Settings(use_component_pipeline=False)
 
     with (
         patch("sastaspace.agents.pipeline._run_planner", return_value=MagicMock()),
         patch("sastaspace.agents.pipeline._run_builder", return_value=mock_html),
     ):
-        result = run_redesign_pipeline(_crawl(), Settings(), progress_callback=callback)
+        result = run_redesign_pipeline(_crawl(), settings, progress_callback=callback)
 
-    assert isinstance(result, str)
+    assert result.html == mock_html
     assert callback.call_count == 2
     event, data = callback.call_args_list[0][0]
     assert event == "agent_activity"
@@ -70,18 +71,22 @@ def test_agent_messages_covers_all_agents():
     expected = {
         "planner",
         "builder",
+        "component_selector",
+        "composer",
+        "react_build",
     }
     assert set(AGENT_MESSAGES.keys()) == expected
 
 
 def test_progress_callback_none_is_safe():
     mock_html = "<!DOCTYPE html><html><body>Test</body></html>"
+    settings = Settings(use_component_pipeline=False)
     with (
         patch("sastaspace.agents.pipeline._run_planner", return_value=MagicMock()),
         patch("sastaspace.agents.pipeline._run_builder", return_value=mock_html),
     ):
-        result = run_redesign_pipeline(_crawl(), Settings(), progress_callback=None)
-    assert result == mock_html
+        result = run_redesign_pipeline(_crawl(), settings, progress_callback=None)
+    assert result.html == mock_html
 
 
 def _mock_enhanced(crawl_result):

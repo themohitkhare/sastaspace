@@ -25,6 +25,17 @@ from sastaspace.models import EnhancedCrawlResult, PageCrawlResult
 
 logger = logging.getLogger(__name__)
 
+_openai_client: OpenAI | None = None
+
+
+def _get_openai_client(api_url: str, api_key: str) -> OpenAI:
+    """Return a cached OpenAI client singleton, creating it on first call."""
+    global _openai_client
+    if _openai_client is None:
+        _openai_client = OpenAI(base_url=api_url, api_key=api_key)
+    return _openai_client
+
+
 _USER_AGENT = (
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
     "AppleWebKit/537.36 (KHTML, like Gecko) "
@@ -494,7 +505,7 @@ def _llm_select_pages(links: list[dict], api_url: str, model: str, api_key: str)
         return urls
 
     try:
-        client = OpenAI(base_url=api_url, api_key=api_key)
+        client = _get_openai_client(api_url, api_key)
 
         link_list = "\n".join(f"- {link['url']} (text: {link.get('text', '')})" for link in links)
 
@@ -612,8 +623,9 @@ async def enhanced_crawl(url: str, settings):
             asset_url_strings = [a["url"] for a in asset_urls]
             tmp_dir = Path(tempfile.mkdtemp(prefix="sastaspace-assets-"))
             try:
+                concurrency = getattr(settings, "asset_download_concurrency", 10)
                 assets = await download_and_validate_assets(
-                    asset_url_strings, tmp_dir, skip_clamav=True
+                    asset_url_strings, tmp_dir, skip_clamav=True, concurrency=concurrency
                 )
             except (TimeoutError, OSError, ConnectionError) as exc:
                 logger.warning("Asset download failed, continuing without assets: %s", exc)

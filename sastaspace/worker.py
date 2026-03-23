@@ -3,15 +3,49 @@
 from __future__ import annotations
 
 import asyncio
+import json
 import logging
 import os
 import sys
+from http.server import BaseHTTPRequestHandler, HTTPServer
+from threading import Thread
 
 from sastaspace.config import Settings
 from sastaspace.database import close_db, init_db, set_mongo_url
 from sastaspace.jobs import JobService, redesign_handler
 
 logger = logging.getLogger("sastaspace.worker")
+
+HEALTH_PORT = int(os.environ.get("WORKER_HEALTH_PORT", "8081"))
+
+
+class _HealthHandler(BaseHTTPRequestHandler):
+    """Minimal HTTP handler for k8s liveness/readiness probes."""
+
+    def do_GET(self):  # noqa: N802
+        if self.path == "/health":
+            body = json.dumps({"status": "healthy", "worker": True}).encode()
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+        else:
+            self.send_response(404)
+            self.end_headers()
+
+    def log_message(self, format, *args):  # noqa: A002
+        """Suppress default stderr logging to avoid probe noise."""
+        pass
+
+
+def _start_health_server() -> HTTPServer:
+    """Start a background thread serving /health for k8s probes."""
+    server = HTTPServer(("0.0.0.0", HEALTH_PORT), _HealthHandler)
+    thread = Thread(target=server.serve_forever, daemon=True, name="health-server")
+    thread.start()
+    logger.info("Health server listening on port %d", HEALTH_PORT)
+    return server
 
 
 async def _connect_mongodb(settings: Settings, max_retries: int, retry_delay: int) -> None:
@@ -67,6 +101,8 @@ async def main():
         settings.use_agno_pipeline,
     )
 
+    health_server = _start_health_server()
+
     await _connect_mongodb(settings, max_retries=5, retry_delay=2)
     svc = await _connect_redis(settings, max_retries=5, retry_delay=2)
 
@@ -81,6 +117,7 @@ async def main():
         logger.exception("Worker crashed")
         raise
     finally:
+        health_server.shutdown()
         await svc.close()
         await close_db()
         logger.info("Worker shutdown complete")

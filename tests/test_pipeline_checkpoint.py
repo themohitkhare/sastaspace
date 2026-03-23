@@ -49,6 +49,7 @@ def fake_crawl():
 def fake_settings():
     s = MagicMock()
     s.use_agno_pipeline = True
+    s.use_component_pipeline = False  # disable React pipeline in tests
     s.claude_code_api_url = "http://localhost:8000/v1"
     s.claude_code_api_key = "test"
     s.claude_model = "test-model"
@@ -95,7 +96,7 @@ def test_checkpoint_skips_completed_steps(
         checkpoint=checkpoint,
     )
 
-    assert result == _HTML
+    assert result.html == _HTML
     mock_planner.assert_not_called()
     mock_builder.assert_called_once()
 
@@ -116,7 +117,7 @@ def test_no_checkpoint_runs_all_steps(
     """Without checkpoint every step runs."""
     result = run_redesign_pipeline(fake_crawl, fake_settings)
 
-    assert result == _HTML
+    assert result.html == _HTML
     mock_planner.assert_called_once()
     mock_builder.assert_called_once()
 

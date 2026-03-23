@@ -6,6 +6,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libmagic1 \
     && rm -rf /var/lib/apt/lists/*
 
+# Node.js 22 — required for React component pipeline (Vite builds)
+RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
+    && apt-get install -y --no-install-recommends nodejs \
+    && rm -rf /var/lib/apt/lists/*
+
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 
 WORKDIR /app
@@ -15,8 +20,14 @@ RUN useradd -m -u 1000 appuser && mkdir -p /data/sites && chown appuser /data/si
 COPY pyproject.toml uv.lock ./
 COPY sastaspace/ ./sastaspace/
 COPY components/ ./components/
+COPY redesign-template/ ./redesign-template/
 
+# Install Python deps
 RUN uv sync --frozen --no-dev --no-editable
+
+# Pre-install React template deps (avoids npm install at runtime)
+RUN cd redesign-template && npm install --prefer-offline --no-audit --no-fund \
+    && chown -R appuser:appuser /app/redesign-template
 
 ENV PATH="/app/.venv/bin:$PATH"
 

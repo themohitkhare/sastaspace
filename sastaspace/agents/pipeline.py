@@ -1,9 +1,9 @@
 # sastaspace/agents/pipeline.py
-"""2-step redesign pipeline: Planner -> Builder.
+"""Redesign pipeline: Planner -> (Builder | Component Composer + React Build).
 
 Planner: Analyze site + design brief + copy in ONE LLM call.
-Builder: Generate the final HTML from the plan in ONE LLM call.
-No quality review loop -- quality constraints are in the Builder prompt.
+Builder: Generate the final HTML from the plan in ONE LLM call (legacy path).
+Component path: Select components → Compose React page → Vite build.
 """
 
 from __future__ import annotations
@@ -11,8 +11,10 @@ from __future__ import annotations
 import json
 import logging
 import re
+import tempfile
 import time
 from collections.abc import Callable
+from pathlib import Path
 
 from agno.agent import Agent
 from agno.models.google import Gemini
@@ -31,14 +33,18 @@ from sastaspace.agents.models import (
 from sastaspace.agents.prompts import (
     BUILDER_SYSTEM,
     BUILDER_USER_TEMPLATE,
+    COMPOSER_SYSTEM,
+    COMPOSER_USER_TEMPLATE,
     PLANNER_SYSTEM,
     PLANNER_USER_TEMPLATE,
 )
+from sastaspace.component_selector import ComponentManifest, select_components
 from sastaspace.config import Settings
 from sastaspace.crawler import CrawlResult
-from sastaspace.html_utils import RedesignError
+from sastaspace.html_utils import RedesignError, RedesignResult
 from sastaspace.html_utils import clean_html as _clean_html
 from sastaspace.html_utils import validate_html as _validate_html
+from sastaspace.react_builder import BuildError, build_react_page, parse_composer_output
 
 logger = logging.getLogger(__name__)
 
@@ -52,10 +58,30 @@ PIPELINE_STEPS = [
     "builder",
 ]
 
+# Component pipeline has additional steps
+COMPONENT_PIPELINE_STEPS = [
+    "planner",
+    "component_selector",
+    "composer",
+    "react_build",
+]
+
 AGENT_MESSAGES: dict[str, dict] = {
     "planner": {
         "message": "Analyzing your site and crafting the redesign plan",
-        "step_progress": 45,
+        "step_progress": 35,
+    },
+    "component_selector": {
+        "message": "Selecting premium components for your site",
+        "step_progress": 50,
+    },
+    "composer": {
+        "message": "Composing your page from premium React components",
+        "step_progress": 65,
+    },
+    "react_build": {
+        "message": "Building your interactive React page",
+        "step_progress": 80,
     },
     "builder": {
         "message": "Building your redesigned page",
@@ -285,15 +311,101 @@ def _run_builder(
     return html
 
 
-def _restore_from_checkpoint(checkpoint: dict) -> tuple[int, dict]:
+def _run_composer(
+    plan: RedesignPlan,
+    manifest: ComponentManifest,
+    crawl_result: CrawlResult,
+    settings: Settings,
+    tier: str = "premium",
+    model_provider: str = "claude",
+) -> dict[str, str]:
+    """Run the Composer — compose React components into a page."""
+    use_ollama = tier == "free" and model_provider not in ("claude", "gemini")
+    model_id = settings.free_html_generator_model if use_ollama else settings.html_generator_model
+    model = _create_model(model_id, settings, use_ollama=use_ollama, model_provider=model_provider)
+
+    user_prompt = COMPOSER_USER_TEMPLATE.format(
+        plan_json=plan.model_dump_json(indent=2),
+        component_source=manifest.to_prompt_context(),
+        crawl_context=crawl_result.to_prompt_context(),
+        title=crawl_result.title,
+        meta_description=crawl_result.meta_description,
+    )
+    raw = _run_agent("composer", COMPOSER_SYSTEM, user_prompt, model)
+
+    files = parse_composer_output(raw)
+    if not files:
+        raise RedesignError("Composer returned no parseable files")
+    if "src/App.tsx" not in files:
+        raise RedesignError("Composer output missing src/App.tsx")
+
+    logger.info(
+        "COMPOSER RESULT | files=%d total_size=%d",
+        len(files),
+        sum(len(v) for v in files.values()),
+    )
+    return files
+
+
+def _run_react_build(
+    files: dict[str, str],
+    manifest: ComponentManifest,
+    settings: Settings,
+) -> RedesignResult:
+    """Build the composed React page using Vite and return a RedesignResult."""
+    template_dir = settings.redesign_template_dir.resolve()
+    if not template_dir.exists():
+        raise RedesignError(f"Redesign template not found at {template_dir}")
+
+    # Write selected component source files that weren't modified by Composer
+    all_files = dict(files)
+    for comp in manifest.components:
+        for f in comp.files:
+            path = f.get("path", "")
+            content = f.get("content", "")
+            if not path or not content:
+                continue
+            # Normalize path: /components/ui/foo.tsx → src/components/foo.tsx
+            if path.startswith("/components/ui/"):
+                rel_path = "src/components/" + path.split("/components/ui/")[-1]
+            elif path.startswith("/components/blocks/"):
+                rel_path = "src/components/" + path.split("/components/blocks/")[-1]
+            elif path.startswith("/components/"):
+                rel_path = "src" + path
+            else:
+                rel_path = "src/components/" + path.split("/")[-1]
+
+            # Don't overwrite Composer-modified files
+            if rel_path not in all_files:
+                all_files[rel_path] = content
+
+    # Use a persistent temp dir (caller is responsible for cleanup after deploy)
+    output_dir = Path(tempfile.mkdtemp(prefix="sastaspace-build-"))
+    build_start = time.monotonic()
+
+    try:
+        build_react_page(all_files, template_dir, output_dir)
+    except BuildError as exc:
+        raise RedesignError(f"React build failed: {exc}") from exc
+
+    build_duration = time.monotonic() - build_start
+    logger.info("React build completed in %.1fs", build_duration)
+
+    # Read the built index.html
+    index_html = (output_dir / "index.html").read_text(encoding="utf-8")
+
+    return RedesignResult(html=index_html, build_dir=output_dir)
+
+
+def _restore_from_checkpoint(checkpoint: dict, steps: list[str]) -> tuple[int, dict]:
     """Determine resume index from checkpoint."""
     completed = checkpoint.get("completed_step", "")
     data = checkpoint.get("data", {})
 
-    if completed not in PIPELINE_STEPS:
+    if completed not in steps:
         return 0, {}
 
-    resume_idx = PIPELINE_STEPS.index(completed) + 1
+    resume_idx = steps.index(completed) + 1
     restored: dict = {}
 
     if "plan" in data:
@@ -314,7 +426,13 @@ def run_redesign_pipeline(
     model_provider: str = "claude",
 ) -> str:
     """
-    Execute the 2-step redesign pipeline: Planner -> Builder.
+    Execute the redesign pipeline.
+
+    If use_component_pipeline is enabled and components are available, uses:
+        Planner → Component Selector → Composer → React Build
+
+    Otherwise falls back to:
+        Planner → Builder (HTML generation)
 
     Args:
         crawl_result: The crawled website data.
@@ -326,8 +444,26 @@ def run_redesign_pipeline(
         model_provider: "claude" or "gemini".
 
     Returns:
-        The final redesigned HTML string.
+        RedesignResult with HTML and optional build directory.
     """
+    # Determine if we should use the component pipeline
+    use_components = (
+        settings.use_component_pipeline
+        and settings.components_dir.exists()
+        and settings.redesign_template_dir.exists()
+    )
+    if use_components:
+        try:
+            from sastaspace.react_builder import is_node_available
+
+            if not is_node_available():
+                logger.warning("Node.js not available — falling back to HTML pipeline")
+                use_components = False
+        except ImportError:
+            use_components = False
+
+    steps = COMPONENT_PIPELINE_STEPS if use_components else PIPELINE_STEPS
+    pipeline_label = "component" if use_components else "html"
 
     def _emit(agent_name: str) -> None:
         if progress_callback is None:
@@ -359,21 +495,28 @@ def run_redesign_pipeline(
     resume_idx = 0
     restored: dict = {}
     if checkpoint:
-        resume_idx, restored = _restore_from_checkpoint(checkpoint)
+        resume_idx, restored = _restore_from_checkpoint(checkpoint, steps)
         if resume_idx > 0:
-            logger.info("Resuming pipeline from step %d/%d", resume_idx + 1, len(PIPELINE_STEPS))
+            logger.info("Resuming pipeline from step %d/%d", resume_idx + 1, len(steps))
 
     def _should_run(step_name: str) -> bool:
-        return PIPELINE_STEPS.index(step_name) >= resume_idx
+        return steps.index(step_name) >= resume_idx
 
     pipeline_start = time.monotonic()
     status = "success"
     cp_data: dict = {}
 
     try:
-        # Step 1: Planner -- analyze + design + copy
+        # Step 1: Planner -- analyze + design + copy (shared by both paths)
         if _should_run("planner"):
-            logger.info("Pipeline step 1/2: Planner (tier=%s, provider=%s)", tier, model_provider)
+            n_steps = len(steps)
+            logger.info(
+                "Pipeline step 1/%d: Planner (tier=%s, provider=%s, mode=%s)",
+                n_steps,
+                tier,
+                model_provider,
+                pipeline_label,
+            )
             _emit("planner")
             plan = _run_planner(crawl_result, settings, tier, model_provider)
             cp_data["plan"] = plan.model_dump_json()
@@ -381,17 +524,67 @@ def run_redesign_pipeline(
         else:
             plan = restored.get("plan", RedesignPlan())
 
-        # Step 2: Builder -- generate HTML
-        if _should_run("builder"):
-            logger.info("Pipeline step 2/2: Builder (tier=%s, provider=%s)", tier, model_provider)
-            _emit("builder")
-            html = _run_builder(plan, crawl_result, settings, tier, model_provider)
-            cp_data["html"] = html
-            _checkpoint("builder", cp_data)
-        else:
-            html = restored.get("html", "")
+        if use_components:
+            # --- Component Pipeline ---
 
-        return html
+            # Step 2: Select components
+            if _should_run("component_selector"):
+                logger.info("Pipeline step 2/%d: Component Selector", len(steps))
+                _emit("component_selector")
+                manifest = select_components(plan.model_dump(), settings.components_dir)
+                logger.info(
+                    "Selected %d components: %s",
+                    len(manifest.components),
+                    [c.title for c in manifest.components],
+                )
+                _checkpoint("component_selector", cp_data)
+            else:
+                manifest = ComponentManifest()
+
+            # Step 3: Compose React page
+            if _should_run("composer"):
+                logger.info(
+                    "Pipeline step 3/%d: Composer (provider=%s)", len(steps), model_provider
+                )
+                _emit("composer")
+                react_files = _run_composer(
+                    plan, manifest, crawl_result, settings, tier, model_provider
+                )
+                _checkpoint("composer", cp_data)
+            else:
+                react_files = {}
+
+            # Step 4: Build with Vite
+            if _should_run("react_build"):
+                logger.info("Pipeline step 4/%d: React Build", len(steps))
+                _emit("react_build")
+                result = _run_react_build(react_files, manifest, settings)
+                cp_data["html"] = result.html
+                _checkpoint("react_build", cp_data)
+            else:
+                result = RedesignResult(html=restored.get("html", ""))
+
+            return result
+
+        else:
+            # --- Legacy HTML Pipeline ---
+
+            # Step 2: Builder -- generate HTML
+            if _should_run("builder"):
+                logger.info(
+                    "Pipeline step 2/%d: Builder (tier=%s, provider=%s)",
+                    len(steps),
+                    tier,
+                    model_provider,
+                )
+                _emit("builder")
+                html = _run_builder(plan, crawl_result, settings, tier, model_provider)
+                cp_data["html"] = html
+                _checkpoint("builder", cp_data)
+            else:
+                html = restored.get("html", "")
+
+            return RedesignResult(html=html)
 
     except RedesignError:
         status = "failure"
@@ -403,4 +596,6 @@ def run_redesign_pipeline(
         duration = time.monotonic() - pipeline_start
         redesign_pipeline_duration_seconds.labels(tier=tier, status=status).observe(duration)
         redesign_pipeline_total.labels(tier=tier, status=status).inc()
-        logger.info("Pipeline completed in %.1fs (status=%s)", duration, status)
+        logger.info(
+            "Pipeline completed in %.1fs (status=%s, mode=%s)", duration, status, pipeline_label
+        )

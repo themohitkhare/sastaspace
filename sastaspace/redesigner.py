@@ -1,6 +1,9 @@
 # sastaspace/redesigner.py
 from __future__ import annotations
 
+import logging
+import threading
+import time
 from collections.abc import Callable
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
@@ -9,9 +12,94 @@ from openai import OpenAI
 
 from sastaspace.agents.pipeline import run_redesign_pipeline
 from sastaspace.crawler import CrawlResult
-from sastaspace.html_utils import RedesignError  # noqa: F401
+from sastaspace.html_utils import (
+    RedesignError,  # noqa: F401
+    RedesignResult,  # noqa: F401
+)
 from sastaspace.html_utils import clean_html as _clean_html  # noqa: F401
 from sastaspace.html_utils import validate_html as _validate_html  # noqa: F401
+
+_logger = logging.getLogger(__name__)
+
+
+# ---------------------------------------------------------------------------
+# Simple circuit breaker for LLM API calls
+# ---------------------------------------------------------------------------
+
+
+class CircuitBreaker:
+    """Thread-safe circuit breaker — no external dependencies.
+
+    States:
+        CLOSED   — normal operation, requests pass through
+        OPEN     — consecutive failures >= threshold, requests rejected immediately
+        HALF_OPEN — after reset_timeout, allow one probe request through
+    """
+
+    CLOSED = "closed"
+    OPEN = "open"
+    HALF_OPEN = "half_open"
+
+    def __init__(self, failure_threshold: int = 5, reset_timeout: float = 60.0):
+        self._failure_threshold = failure_threshold
+        self._reset_timeout = reset_timeout
+        self._consecutive_failures = 0
+        self._state = self.CLOSED
+        self._opened_at: float = 0.0
+        self._lock = threading.Lock()
+
+    @property
+    def state(self) -> str:
+        with self._lock:
+            if self._state == self.OPEN:
+                if time.monotonic() - self._opened_at >= self._reset_timeout:
+                    self._state = self.HALF_OPEN
+            return self._state
+
+    def call(self, fn: Callable, *args, **kwargs):
+        """Execute *fn* through the circuit breaker.
+
+        Raises RedesignError immediately when the circuit is open.
+        """
+        current_state = self.state
+
+        if current_state == self.OPEN:
+            _logger.warning("Circuit breaker OPEN — rejecting API call")
+            raise RedesignError(
+                "Claude API circuit breaker is open after repeated failures. "
+                "Retrying automatically in 60 seconds."
+            )
+
+        try:
+            result = fn(*args, **kwargs)
+        except Exception:
+            self._record_failure()
+            raise
+        else:
+            self._record_success()
+            return result
+
+    def _record_failure(self) -> None:
+        with self._lock:
+            self._consecutive_failures += 1
+            if self._consecutive_failures >= self._failure_threshold:
+                self._state = self.OPEN
+                self._opened_at = time.monotonic()
+                _logger.error(
+                    "Circuit breaker tripped OPEN after %d consecutive failures",
+                    self._consecutive_failures,
+                )
+
+    def _record_success(self) -> None:
+        with self._lock:
+            self._consecutive_failures = 0
+            if self._state == self.HALF_OPEN:
+                _logger.info("Circuit breaker recovered — moving to CLOSED")
+            self._state = self.CLOSED
+
+
+# Module-level circuit breaker shared across all redesign calls
+_circuit_breaker = CircuitBreaker(failure_threshold=5, reset_timeout=60.0)
 
 
 @dataclass
@@ -111,7 +199,8 @@ def _redesign_with_prompts(
         )
     user_content.append({"type": "text", "text": user_text})
 
-    response = client.chat.completions.create(
+    response = _circuit_breaker.call(
+        client.chat.completions.create,
         model=llm.model,
         messages=[
             {"role": "system", "content": system_prompt},
@@ -179,7 +268,7 @@ def agno_redesign(
     Raises:
         RedesignError: if crawl_result.error is set or pipeline fails.
     """
-    return run_redesign_pipeline(
+    result = run_redesign_pipeline(
         crawl_result,
         settings,
         progress_callback=progress_callback,
@@ -188,6 +277,11 @@ def agno_redesign(
         checkpoint_callback=checkpoint_callback,
         model_provider=model_provider,
     )
+    # Pipeline now returns RedesignResult
+    if isinstance(result, RedesignResult):
+        return result
+    # Backwards compat: if somehow returns str
+    return RedesignResult(html=result)
 
 
 # ---------------------------------------------------------------------------
@@ -351,8 +445,11 @@ def run_redesign(
     checkpoint_callback: Callable[[str, dict], None] | None = None,
     enhanced=None,  # EnhancedCrawlResult | None
     model_provider: str = "claude",
-) -> str:
+) -> RedesignResult:
     """Dispatch to the appropriate redesign function based on settings and tier.
+
+    Returns:
+        RedesignResult with HTML and optional build directory.
 
     Args:
         enhanced: Optional EnhancedCrawlResult from the enhanced crawl pipeline.
@@ -366,7 +463,7 @@ def run_redesign(
         crawl_context = None  # let _redesign_with_prompts use crawl_result default
 
     if settings.use_agno_pipeline:
-        return agno_redesign(
+        result = agno_redesign(
             crawl_result,
             settings,
             tier,
@@ -375,6 +472,10 @@ def run_redesign(
             checkpoint_callback,
             model_provider=model_provider,
         )
+        # agno_redesign returns either str (legacy) or RedesignResult (component pipeline)
+        if isinstance(result, RedesignResult):
+            return result
+        return RedesignResult(html=result)
     elif tier == "premium":
         system_prompt = PREMIUM_SYSTEM_PROMPT
         if enhanced is not None:
@@ -385,13 +486,14 @@ def run_redesign(
             api_key=settings.claude_code_api_key,
             max_tokens=20000,
         )
-        return _redesign_with_prompts(
+        html = _redesign_with_prompts(
             crawl_result,
             system_prompt,
             PREMIUM_USER_PROMPT_TEMPLATE,
             llm,
             crawl_context=crawl_context,
         )
+        return RedesignResult(html=html)
     else:
         system_prompt = SYSTEM_PROMPT
         if enhanced is not None:
@@ -401,10 +503,11 @@ def run_redesign(
             model=settings.claude_model,
             api_key=settings.claude_code_api_key,
         )
-        return _redesign_with_prompts(
+        html = _redesign_with_prompts(
             crawl_result,
             system_prompt,
             USER_PROMPT_TEMPLATE,
             llm,
             crawl_context=crawl_context,
         )
+        return RedesignResult(html=html)

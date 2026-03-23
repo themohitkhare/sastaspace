@@ -3,11 +3,14 @@
 
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from enum import StrEnum
 
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
+
+logger = logging.getLogger(__name__)
 
 _client: AsyncIOMotorClient | None = None
 _db: AsyncIOMotorDatabase | None = None
@@ -92,6 +95,7 @@ async def create_job(
         "completed_at": None,
     }
     await _get_db()["jobs"].insert_one(doc)
+    logger.debug("create_job | id=%s url=%s tier=%s", job_id, url, tier)
     return {k: v for k, v in doc.items() if k != "_id"}
 
 
@@ -168,6 +172,7 @@ async def update_job(
         mongo_updates["completed_at"] = now
 
     await _get_db()["jobs"].update_one({"_id": job_id}, {"$set": mongo_updates})
+    logger.debug("update_job | id=%s fields=%s", job_id, list(mongo_updates.keys()))
 
 
 async def get_job(job_id: str) -> dict | None:
@@ -217,6 +222,7 @@ async def register_site(
         {"$set": doc, "$setOnInsert": {"created_at": now}},
         upsert=True,
     )
+    logger.debug("register_site | subdomain=%s url=%s job=%s", subdomain, original_url, job_id)
 
 
 async def find_site_by_url_hash(url_hash: str) -> dict | None:

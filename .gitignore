@@ -27,6 +27,7 @@ htmlcov/
 # Node.js / Next.js
 web/node_modules/
 web/.next/
+redesign-template/node_modules/
 
 # claude-code-api — clone from https://github.com/codingworkflow/claude-code-api
 claude-code-api/

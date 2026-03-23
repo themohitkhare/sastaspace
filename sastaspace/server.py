@@ -20,7 +20,7 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
 from fastapi.sse import EventSourceResponse, format_sse_event
-from prometheus_client import Counter, Gauge, make_asgi_app
+from prometheus_client import Counter, Gauge, Histogram, make_asgi_app
 from pydantic import BaseModel
 from starlette.responses import Response
 
@@ -46,6 +46,7 @@ from sastaspace.database import (
 )
 from sastaspace.deployer import deploy, derive_subdomain
 from sastaspace.jobs import JobService
+from sastaspace.logging_setup import configure_logging
 from sastaspace.redesigner import run_redesign
 from sastaspace.twenty_sync import NoopTwentyClient, get_twenty_client
 from sastaspace.urls import extract_domain, is_valid_url, url_hash
@@ -61,6 +62,20 @@ _redesign_requests_total = Counter(
     "redesign_requests_total",
     "Total redesign requests received",
     ["status"],  # "started" | "rate_limited" | "concurrency_limited"
+)
+_redesign_latency_seconds = Histogram(
+    "redesign_latency_seconds",
+    "End-to-end redesign duration in seconds",
+    buckets=[10, 30, 60, 120, 300, 600],
+)
+_redesign_errors_total = Counter(
+    "redesign_errors_total",
+    "Total redesign errors",
+    ["phase"],  # "crawl" | "redesign" | "deploy" | "unknown"
+)
+_active_connections_gauge = Gauge(
+    "active_sse_connections",
+    "Number of active SSE streaming connections",
 )
 
 
@@ -140,6 +155,25 @@ def make_app(sites_dir: Path) -> FastAPI:
                     )
                     await asyncio.sleep(retry_delay)
 
+        # Startup health checks (non-blocking — warn only, don't fail startup)
+        import httpx
+
+        # Check Claude Code API reachability
+        claude_health_url = settings.claude_code_api_url.rstrip("/").rsplit("/v1", 1)[0]
+        try:
+            async with httpx.AsyncClient(timeout=5.0) as client:
+                resp = await client.get(f"{claude_health_url}/health")
+                if resp.status_code == 200:
+                    logger.info("Claude Code API reachable at %s", claude_health_url)
+                else:
+                    logger.warning(
+                        "Claude Code API returned status %d at %s/health",
+                        resp.status_code,
+                        claude_health_url,
+                    )
+        except (httpx.ConnectError, httpx.TimeoutException, OSError) as e:
+            logger.warning("Claude Code API unreachable at %s/health: %s", claude_health_url, e)
+
         yield
 
         # --- Shutdown ---
@@ -182,7 +216,10 @@ def make_app(sites_dir: Path) -> FastAPI:
         now = time.time()
         timestamps = _rate_limit_store.get(ip, [])
         timestamps = [t for t in timestamps if t > now - settings.rate_limit_window_seconds]
-        _rate_limit_store[ip] = timestamps
+        if not timestamps:
+            _rate_limit_store.pop(ip, None)
+        else:
+            _rate_limit_store[ip] = timestamps
         if len(timestamps) >= settings.rate_limit_max:
             retry_after = int(timestamps[0] - (now - settings.rate_limit_window_seconds)) + 1
             return (True, retry_after)
@@ -197,6 +234,8 @@ def make_app(sites_dir: Path) -> FastAPI:
         url: str, tier: str = "free", model_provider: str = "claude"
     ) -> AsyncGenerator[bytes, None]:
         job_id = str(uuid4())
+        start_time = time.monotonic()
+        _active_connections_gauge.inc()
 
         # Record job in database
         ip = "inline"
@@ -208,8 +247,8 @@ def make_app(sites_dir: Path) -> FastAPI:
                 tier=tier,
                 model_provider=model_provider,
             )
-        except (ConnectionError, OSError):
-            pass
+        except (ConnectionError, OSError) as e:
+            logger.warning("Failed to record job: %s", e)
 
         async with _redesign_semaphore:
             try:
@@ -227,6 +266,7 @@ def make_app(sites_dir: Path) -> FastAPI:
                 crawl_result = await crawl(url)
                 if crawl_result.error:
                     err_msg = "Could not reach that website. Check the URL and try again."
+                    _redesign_errors_total.labels(phase="crawl").inc()
                     await update_job(job_id, status=JobStatus.FAILED.value, error=err_msg)
                     yield format_sse_event(
                         data_str=json.dumps({"job_id": job_id, "error": err_msg}),
@@ -249,17 +289,69 @@ def make_app(sites_dir: Path) -> FastAPI:
                     message="Redesigning...",
                 )
 
-                html = await asyncio.to_thread(
-                    run_redesign,
-                    crawl_result,
-                    settings,
-                    tier,
-                    model_provider=model_provider,
-                )
+                try:
+                    redesign_result = await asyncio.wait_for(
+                        asyncio.to_thread(
+                            run_redesign,
+                            crawl_result,
+                            settings,
+                            tier,
+                            model_provider=model_provider,
+                        ),
+                        timeout=600,
+                    )
+                except TimeoutError:
+                    err_msg = "Redesign timed out after 10 minutes."
+                    logger.warning("Redesign timeout | job_id=%s url=%s", job_id, url)
+                    _redesign_errors_total.labels(phase="redesign").inc()
+                    await update_job(job_id, status=JobStatus.FAILED.value, error=err_msg)
+                    yield format_sse_event(
+                        data_str=json.dumps({"job_id": job_id, "error": err_msg}),
+                        event="error",
+                    )
+                    return
 
-                # AI-generated HTML is trusted output — do not sanitize with nh3
-                # as it strips <script> tags and event handlers that are part
-                # of the design.
+                # Handle both RedesignResult and raw string
+                if hasattr(redesign_result, "html"):
+                    html = redesign_result.html
+                    build_dir = redesign_result.build_dir
+                else:
+                    html = redesign_result
+                    build_dir = None
+
+                # Sanitize AI-generated HTML — strip inline event handlers
+                # (onclick, onerror, onload, etc.) and javascript: URLs.
+                # Note: nh3.clean() strips <script>/<style> which breaks
+                # AI-generated pages, so we use targeted regex sanitization
+                # to remove only dangerous patterns while preserving structure.
+                import re
+
+                # Strip inline event handlers (on*="...")
+                html = re.sub(
+                    r'\s+on\w+\s*=\s*"[^"]*"',
+                    "",
+                    html,
+                    flags=re.IGNORECASE,
+                )
+                html = re.sub(
+                    r"\s+on\w+\s*=\s*'[^']*'",
+                    "",
+                    html,
+                    flags=re.IGNORECASE,
+                )
+                # Strip javascript: URLs in href/src attributes
+                html = re.sub(
+                    r'(href|src)\s*=\s*"javascript:[^"]*"',
+                    r'\1=""',
+                    html,
+                    flags=re.IGNORECASE,
+                )
+                html = re.sub(
+                    r"(href|src)\s*=\s*'javascript:[^']*'",
+                    r"\1=''",
+                    html,
+                    flags=re.IGNORECASE,
+                )
 
                 # Step 3: Deploy (sync -- use to_thread)
                 deploying_data = {
@@ -275,7 +367,9 @@ def make_app(sites_dir: Path) -> FastAPI:
                     progress=80,
                     message="Deploying...",
                 )
-                result = await asyncio.to_thread(deploy, url, html, settings.sites_dir)
+                result = await asyncio.to_thread(
+                    deploy, url, html, settings.sites_dir, build_dir=build_dir
+                )
                 _sites_deployed_gauge.inc()
 
                 # Step 4: Done
@@ -294,8 +388,10 @@ def make_app(sites_dir: Path) -> FastAPI:
                     subdomain=result.subdomain,
                     html_path=str(result.index_path),
                 )
+                _redesign_latency_seconds.observe(time.monotonic() - start_time)
                 yield format_sse_event(data_str=json.dumps(done_data), event="done")
-            except Exception:  # noqa: pycodegate[no-broad-exception] — SSE stream error handler
+            except Exception:  # Broad catch: log and emit SSE error to client
+                _redesign_errors_total.labels(phase="unknown").inc()
                 err_data = {
                     "job_id": job_id,
                     "error": ("Redesign service unavailable. Please try again later."),
@@ -307,6 +403,8 @@ def make_app(sites_dir: Path) -> FastAPI:
                 )
                 yield format_sse_event(data_str=json.dumps(err_data), event="error")
                 return
+            finally:
+                _active_connections_gauge.dec()
 
     # ---- SSE stream via Redis Pub/Sub ----
 
@@ -352,8 +450,8 @@ def make_app(sites_dir: Path) -> FastAPI:
                 # Return the existing job_id so the client streams from /jobs/{id}/stream
                 # That endpoint immediately emits the terminal done event for completed jobs.
                 return JSONResponse(content={"job_id": existing["job_id"]})
-        except (ConnectionError, OSError):
-            pass  # DB unavailable — proceed with redesign
+        except (ConnectionError, OSError) as e:
+            logger.warning("Failed to check dedup: %s", e)  # DB unavailable — proceed with redesign
 
         # Validate tier
         tier = body.tier if body.tier in ("free", "premium") else "free"
@@ -765,4 +863,5 @@ def ensure_running(sites_dir: Path, preferred_port: int = 8080) -> int:
 
 # Default app instance used by uvicorn when spawned as subprocess
 _settings = Settings()
+configure_logging(_settings.log_format)
 app = make_app(_settings.sites_dir)

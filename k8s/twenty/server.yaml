@@ -17,6 +17,10 @@ spec:
       securityContext:
         runAsNonRoot: true
         runAsUser: 1000
+      initContainers:
+      - name: wait-for-postgres
+        image: busybox:1.36
+        command: ['sh', '-c', 'until nc -z twenty-postgres 5432; do echo "waiting for postgres..."; sleep 2; done']
       containers:
       - name: server
         image: twentycrm/twenty:latest
@@ -52,6 +56,13 @@ spec:
             port: 3000
           initialDelaySeconds: 30
           periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 3000
+          initialDelaySeconds: 45
+          periodSeconds: 15
+          failureThreshold: 3
       volumes:
       - name: storage
         emptyDir:

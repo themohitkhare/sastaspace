@@ -49,6 +49,9 @@ class Settings(BaseSettings):
     free_html_generator_model: str = "glm-4.7-flash:latest"
     free_quality_reviewer_model: str = "glm-4.7-flash:latest"
 
+    # Logging
+    log_format: str = "text"  # "text" (human-readable) or "json" (structured)
+
     cors_origins: str | list[str] = ["http://localhost:3000"]
     rate_limit_max: int = 3
     rate_limit_window_seconds: int = 3600
@@ -66,14 +69,16 @@ class Settings(BaseSettings):
     twenty_webhook_secret: str = ""
     twenty_admin_key: str = ""
 
+    # Asset download concurrency (number of parallel downloads)
+    asset_download_concurrency: int = 10
+
     # Browserless (remote Chromium via CDP)
     browserless_url: str = "ws://localhost:3100"
 
-    # Twenty CRM (empty = integration disabled)
-    twenty_url: str = ""
-    twenty_api_key: str = ""
-    twenty_webhook_secret: str = ""
-    twenty_admin_key: str = ""
+    # Component-based React pipeline
+    use_component_pipeline: bool = True
+    components_dir: Path = Path("./components")
+    redesign_template_dir: Path = Path("./redesign-template")
 
     @field_validator("cors_origins", mode="before")
     @classmethod

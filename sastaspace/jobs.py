@@ -25,7 +25,7 @@ from sastaspace.database import (
     update_job,
 )
 from sastaspace.deployer import deploy
-from sastaspace.html_utils import RedesignError
+from sastaspace.html_utils import RedesignError, RedesignResult
 from sastaspace.html_utils import validate_html as _validate_html
 from sastaspace.redesigner import run_redesign
 from sastaspace.twenty_sync import get_twenty_client
@@ -588,7 +588,7 @@ async def redesign_handler(
             pass  # never crash the pipeline thread over a checkpoint save
 
     # Choose redesign function based on tier / pipeline setting
-    html = await asyncio.to_thread(
+    redesign_result = await asyncio.to_thread(
         run_redesign,
         crawl_result,
         settings,
@@ -600,11 +600,20 @@ async def redesign_handler(
         model_provider=model_provider,
     )
 
+    # Handle both RedesignResult and raw string (for backward compat with mocked tests)
+    if isinstance(redesign_result, RedesignResult):
+        html = redesign_result.html
+        build_dir = redesign_result.build_dir
+    else:
+        html = redesign_result
+        build_dir = None
+
     redesign_duration = _time.monotonic() - redesign_start
     logger.info(
-        "JOB REDESIGN OK | job=%s html_size=%d duration=%.1fs",
+        "JOB REDESIGN OK | job=%s html_size=%d build_dir=%s duration=%.1fs",
         job_id,
         len(html),
+        build_dir is not None,
         redesign_duration,
     )
 
@@ -646,6 +655,7 @@ async def redesign_handler(
         html,
         settings.sites_dir,
         assets=_assets,
+        build_dir=build_dir,
     )
 
     total_duration = _time.monotonic() - job_start

@@ -4,8 +4,10 @@
 from __future__ import annotations
 
 import asyncio
+import ipaddress
 import logging
 import re
+import socket
 from pathlib import Path
 from urllib.parse import urljoin, urlparse, urlunparse
 
@@ -16,6 +18,74 @@ from sastaspace.asset_validator import file_hash, validate_asset
 from sastaspace.models import AssetManifest, DownloadedAsset
 
 logger = logging.getLogger(__name__)
+
+# ---------------------------------------------------------------------------
+# SSRF protection
+# ---------------------------------------------------------------------------
+
+_BLOCKED_SCHEMES = frozenset({"file", "ftp", "gopher", "data", "blob", "javascript"})
+_ALLOWED_SCHEMES = frozenset({"http", "https"})
+
+
+def _is_safe_url(url: str) -> bool:
+    """Validate a URL to prevent SSRF attacks.
+
+    Blocks:
+    - Non-http(s) schemes (file://, ftp://, gopher://, etc.)
+    - Localhost (127.0.0.1, ::1, localhost)
+    - Link-local addresses (169.254.x.x)
+    - RFC1918 private ranges (10.x.x.x, 172.16-31.x.x, 192.168.x.x)
+    """
+    try:
+        parsed = urlparse(url)
+    except ValueError:
+        return False
+
+    # Scheme check — only allow http and https
+    scheme = (parsed.scheme or "").lower()
+    if scheme not in _ALLOWED_SCHEMES:
+        return False
+
+    hostname = (parsed.hostname or "").lower()
+    if not hostname:
+        return False
+
+    # Block localhost names
+    if hostname in ("localhost", "localhost.localdomain", "[::1]"):
+        return False
+
+    # Resolve hostname to IP and check against blocked ranges
+    try:
+        addr_infos = socket.getaddrinfo(hostname, None, proto=socket.IPPROTO_TCP)
+    except (socket.gaierror, OSError):
+        # DNS resolution failed — block by default
+        return False
+
+    for family, _, _, _, sockaddr in addr_infos:
+        ip_str = sockaddr[0]
+        try:
+            ip = ipaddress.ip_address(ip_str)
+        except ValueError:
+            return False
+
+        # Block loopback (127.x.x.x, ::1)
+        if ip.is_loopback:
+            return False
+
+        # Block link-local (169.254.x.x, fe80::/10)
+        if ip.is_link_local:
+            return False
+
+        # Block private ranges (10.x.x.x, 172.16-31.x.x, 192.168.x.x, fc00::/7)
+        if ip.is_private:
+            return False
+
+        # Block reserved/unspecified
+        if ip.is_reserved or ip.is_unspecified:
+            return False
+
+    return True
+
 
 # ---------------------------------------------------------------------------
 # Constants
@@ -198,6 +268,9 @@ async def _download_one(
 ) -> DownloadedAsset | None:
     """Download a single asset to tmp_dir. Returns DownloadedAsset or None on failure."""
     async with semaphore:
+        if not _is_safe_url(url):
+            logger.info("Blocked unsafe URL (SSRF protection): %s", url)
+            return None
         try:
             async with session.get(
                 url, timeout=aiohttp.ClientTimeout(total=DOWNLOAD_TIMEOUT)
@@ -242,10 +315,11 @@ async def download_and_validate_assets(
     skip_clamav: bool = False,
     max_total: int = MAX_TOTAL,
     max_site_bytes: int = MAX_SITE_BYTES,
+    concurrency: int = 10,
 ) -> AssetManifest:
     """Download, deduplicate, and validate assets.
 
-    Creates an asyncio.Semaphore(5) INSIDE this function to avoid event loop binding issues.
+    Creates an asyncio.Semaphore INSIDE this function to avoid event loop binding issues.
     Downloads concurrently with aiohttp, streams to disk, deduplicates by SHA-256 content hash,
     and validates each asset via validate_asset().
     """
@@ -272,7 +346,7 @@ async def download_and_validate_assets(
     # Ensure tmp_dir exists
     tmp_dir.mkdir(parents=True, exist_ok=True)
 
-    semaphore = asyncio.Semaphore(5)
+    semaphore = asyncio.Semaphore(concurrency)
     seen_filenames: dict[str, int] = {}
 
     async with aiohttp.ClientSession() as session:

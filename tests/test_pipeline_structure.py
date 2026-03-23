@@ -182,12 +182,12 @@ class TestRestoreFromCheckpoint:
     """_restore_from_checkpoint deserializes checkpoint data back into Pydantic models."""
 
     def test_empty_checkpoint_returns_zero_index(self):
-        idx, data = _restore_from_checkpoint({})
+        idx, data = _restore_from_checkpoint({}, PIPELINE_STEPS)
         assert idx == 0
         assert data == {}
 
     def test_unknown_step_returns_zero_index(self):
-        idx, data = _restore_from_checkpoint({"completed_step": "nonexistent"})
+        idx, data = _restore_from_checkpoint({"completed_step": "nonexistent"}, PIPELINE_STEPS)
         assert idx == 0
         assert data == {}
 
@@ -197,7 +197,7 @@ class TestRestoreFromCheckpoint:
             "completed_step": "planner",
             "data": {"plan": plan.model_dump_json()},
         }
-        idx, restored = _restore_from_checkpoint(checkpoint)
+        idx, restored = _restore_from_checkpoint(checkpoint, PIPELINE_STEPS)
         assert idx == 1  # resume at builder
         assert "plan" in restored
         assert restored["plan"].primary_goal == "lead gen"
@@ -207,7 +207,7 @@ class TestRestoreFromCheckpoint:
             "completed_step": "builder",
             "data": {"html": "<html><body>Test</body></html>"},
         }
-        idx, restored = _restore_from_checkpoint(checkpoint)
+        idx, restored = _restore_from_checkpoint(checkpoint, PIPELINE_STEPS)
         assert idx == PIPELINE_STEPS.index("builder") + 1
         assert restored["html"] == "<html><body>Test</body></html>"
 
@@ -221,7 +221,7 @@ class TestRestoreFromCheckpoint:
                 "html": "<html></html>",
             },
         }
-        idx, restored = _restore_from_checkpoint(checkpoint)
+        idx, restored = _restore_from_checkpoint(checkpoint, PIPELINE_STEPS)
         assert idx == PIPELINE_STEPS.index("builder") + 1
         assert restored["plan"].primary_goal == "ecommerce"
         assert restored["plan"].design_direction == "bold"
