@@ -1,7 +1,7 @@
 # k8s/network-policies.yaml
 #
 # Pod-to-pod isolation for sastaspace namespace.
-# Default deny all ingress, then allow only required paths.
+# Default deny all ingress + egress, then allow only required paths.
 #
 ---
 # Default: deny all ingress to all pods
@@ -14,6 +14,149 @@ spec:
   podSelector: {}
   policyTypes:
   - Ingress
+  - Egress
+---
+# All pods: allow egress to kube-dns (UDP+TCP 53)
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-dns-egress
+  namespace: sastaspace
+spec:
+  podSelector: {}
+  policyTypes:
+  - Egress
+  egress:
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: kube-system
+    ports:
+    - protocol: UDP
+      port: 53
+    - protocol: TCP
+      port: 53
+---
+# Backend: allow egress to Redis, MongoDB, and external HTTPS (claude-code-api)
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-backend-egress
+  namespace: sastaspace
+spec:
+  podSelector:
+    matchLabels:
+      app: backend
+  policyTypes:
+  - Egress
+  egress:
+  # Redis
+  - to:
+    - podSelector:
+        matchLabels:
+          app: redis
+    ports:
+    - port: 6379
+  # MongoDB
+  - to:
+    - podSelector:
+        matchLabels:
+          app: mongodb
+    ports:
+    - port: 27017
+  # External HTTPS (claude-code-api, etc.)
+  - to:
+    - ipBlock:
+        cidr: 0.0.0.0/0
+        except:
+        - 10.0.0.0/8
+        - 172.16.0.0/12
+        - 192.168.0.0/16
+    ports:
+    - port: 443
+      protocol: TCP
+    - port: 8000
+      protocol: TCP
+---
+# Frontend: allow egress to backend service and external HTTPS
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-frontend-egress
+  namespace: sastaspace
+spec:
+  podSelector:
+    matchLabels:
+      app: frontend
+  policyTypes:
+  - Egress
+  egress:
+  # Backend API (server-side rendering / preview proxy)
+  - to:
+    - podSelector:
+        matchLabels:
+          app: backend
+    ports:
+    - port: 8080
+  # External HTTPS (Resend email API, Turnstile verification)
+  - to:
+    - ipBlock:
+        cidr: 0.0.0.0/0
+        except:
+        - 10.0.0.0/8
+        - 172.16.0.0/12
+        - 192.168.0.0/16
+    ports:
+    - port: 443
+      protocol: TCP
+---
+# Worker: allow egress to Redis, MongoDB, Browserless, and external HTTPS
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-worker-egress
+  namespace: sastaspace
+spec:
+  podSelector:
+    matchLabels:
+      app: worker
+  policyTypes:
+  - Egress
+  egress:
+  # Redis
+  - to:
+    - podSelector:
+        matchLabels:
+          app: redis
+    ports:
+    - port: 6379
+  # MongoDB
+  - to:
+    - podSelector:
+        matchLabels:
+          app: mongodb
+    ports:
+    - port: 27017
+  # Browserless
+  - to:
+    - podSelector:
+        matchLabels:
+          app: browserless
+    ports:
+    - port: 3000
+  # External HTTPS (AI APIs)
+  - to:
+    - ipBlock:
+        cidr: 0.0.0.0/0
+        except:
+        - 10.0.0.0/8
+        - 172.16.0.0/12
+        - 192.168.0.0/16
+    ports:
+    - port: 443
+      protocol: TCP
+    - port: 8000
+      protocol: TCP
 ---
 # Backend: allow ingress from nginx ingress controller
 apiVersion: networking.k8s.io/v1

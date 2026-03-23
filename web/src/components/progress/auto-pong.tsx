@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 interface AutoPongProps {
   width?: number;
@@ -10,8 +10,19 @@ interface AutoPongProps {
 
 export function AutoPong({ width = 320, height = 180, className }: AutoPongProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
 
   useEffect(() => {
+    const mql = window.matchMedia("(prefers-reduced-motion: reduce)");
+    setPrefersReducedMotion(mql.matches);
+    const handler = (e: MediaQueryListEvent) => setPrefersReducedMotion(e.matches);
+    mql.addEventListener("change", handler);
+    return () => mql.removeEventListener("change", handler);
+  }, []);
+
+  useEffect(() => {
+    if (prefersReducedMotion) return;
+
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
@@ -157,7 +168,22 @@ export function AutoPong({ width = 320, height = 180, className }: AutoPongProps
 
     animId = requestAnimationFrame(draw);
     return () => cancelAnimationFrame(animId);
-  }, [width, height]);
+  }, [width, height, prefersReducedMotion]);
+
+  if (prefersReducedMotion) {
+    return (
+      <div className={className}>
+        <div
+          role="img"
+          aria-label="Pong game — animation paused (reduced motion preferred)"
+          style={{ width, height }}
+          className="rounded-lg border border-border/50 bg-background flex items-center justify-center"
+        >
+          <span className="text-xs text-muted-foreground/50 font-mono">AI vs AI</span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={className}>

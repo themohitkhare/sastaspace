@@ -11,6 +11,11 @@ from sastaspace.config import Settings
 from sastaspace.crawler import CrawlResult
 from sastaspace.server import _is_port_listening, ensure_running, make_app
 
+# After the server.py refactor, crawl lives in routes.sse and deploy is injected
+# via the deploy_fn parameter (from sastaspace.deployer). Patch at the import site.
+_CRAWL_PATCH = "sastaspace.routes.sse.crawl"
+_DEPLOY_PATCH = "sastaspace.server.deploy"
+
 SAMPLE_HTML = "<!DOCTYPE html><html><body><h1>Acme</h1></body></html>"
 
 
@@ -274,7 +279,7 @@ def test_to_thread_wrapping(tmp_sites, mock_crawl_result, mock_deploy_result):
     mock_html = "<html><body><p>OK</p></body></html>"
     with (
         patch(
-            "sastaspace.server.crawl",
+            "sastaspace.routes.sse.crawl",
             new_callable=AsyncMock,
             return_value=mock_crawl_result,
         ) as m_crawl,
@@ -312,7 +317,7 @@ def test_concurrency_cap(tmp_sites, mock_crawl_result, mock_deploy_result):
 
     mock_html = "<html><body>OK</body></html>"
     with (
-        patch("sastaspace.server.crawl", side_effect=slow_crawl),
+        patch("sastaspace.routes.sse.crawl", side_effect=slow_crawl),
         patch("sastaspace.redesigner.agno_redesign", return_value=mock_html),
         patch(
             "sastaspace.server.deploy",
@@ -347,7 +352,7 @@ def test_rate_limit(tmp_sites, mock_crawl_result, mock_deploy_result):
     mock_html = "<html><body>OK</body></html>"
     with (
         patch(
-            "sastaspace.server.crawl",
+            "sastaspace.routes.sse.crawl",
             new_callable=AsyncMock,
             return_value=mock_crawl_result,
         ),
@@ -389,7 +394,7 @@ def test_rate_limit_localhost_exempt(tmp_sites, mock_crawl_result, mock_deploy_r
     mock_html = "<html><body>OK</body></html>"
     with (
         patch(
-            "sastaspace.server.crawl",
+            "sastaspace.routes.sse.crawl",
             new_callable=AsyncMock,
             return_value=mock_crawl_result,
         ),
@@ -427,7 +432,7 @@ def test_error_crawl_failure(tmp_sites):
         error="timeout",
     )
     with patch(
-        "sastaspace.server.crawl",
+        "sastaspace.routes.sse.crawl",
         new_callable=AsyncMock,
         return_value=failed_crawl,
     ):
@@ -446,7 +451,7 @@ def test_error_redesign_failure(tmp_sites, mock_crawl_result):
     """redesign exception emits error SSE event."""
     with (
         patch(
-            "sastaspace.server.crawl",
+            "sastaspace.routes.sse.crawl",
             new_callable=AsyncMock,
             return_value=mock_crawl_result,
         ),
@@ -473,7 +478,9 @@ def test_get_client_ip_cf_connecting_ip(tmp_sites, mock_crawl_result, mock_deplo
     """Line 57: get_client_ip returns cf-connecting-ip header."""
     mock_html = "<html><body>OK</body></html>"
     with (
-        patch("sastaspace.server.crawl", new_callable=AsyncMock, return_value=mock_crawl_result),
+        patch(
+            "sastaspace.routes.sse.crawl", new_callable=AsyncMock, return_value=mock_crawl_result
+        ),
         patch("sastaspace.redesigner.agno_redesign", return_value=mock_html),
         patch("sastaspace.server.deploy", return_value=mock_deploy_result),
     ):
@@ -493,7 +500,9 @@ def test_get_client_ip_unknown_no_client(tmp_sites, mock_crawl_result, mock_depl
     """Line 63: get_client_ip returns 'unknown' when request.client is None."""
     mock_html = "<html><body>OK</body></html>"
     with (
-        patch("sastaspace.server.crawl", new_callable=AsyncMock, return_value=mock_crawl_result),
+        patch(
+            "sastaspace.routes.sse.crawl", new_callable=AsyncMock, return_value=mock_crawl_result
+        ),
         patch("sastaspace.redesigner.agno_redesign", return_value=mock_html),
         patch("sastaspace.server.deploy", return_value=mock_deploy_result),
     ):

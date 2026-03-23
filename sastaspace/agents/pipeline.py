@@ -226,7 +226,7 @@ def _run_agent(
         )
 
         return content
-    except Exception as exc:  # noqa: pycodegate[no-broad-exception] — re-raises after logging
+    except Exception as exc:  # noqa: BLE001 — re-raises after logging
         status = "error"
         duration = time.monotonic() - start
         logger.error(
@@ -347,6 +347,23 @@ def _run_composer(
     return files
 
 
+def _normalize_component_path(path: str) -> str:
+    """Normalize a component file path to a src-relative path.
+
+    /components/ui/foo.tsx    → src/components/foo.tsx
+    /components/blocks/bar.tsx → src/components/bar.tsx
+    /components/baz.tsx        → src/components/baz.tsx
+    other/file.tsx             → src/components/file.tsx
+    """
+    if path.startswith("/components/ui/"):
+        return "src/components/" + path.split("/components/ui/")[-1]
+    if path.startswith("/components/blocks/"):
+        return "src/components/" + path.split("/components/blocks/")[-1]
+    if path.startswith("/components/"):
+        return "src" + path
+    return "src/components/" + path.split("/")[-1]
+
+
 def _run_react_build(
     files: dict[str, str],
     manifest: ComponentManifest,
@@ -365,16 +382,7 @@ def _run_react_build(
             content = f.get("content", "")
             if not path or not content:
                 continue
-            # Normalize path: /components/ui/foo.tsx → src/components/foo.tsx
-            if path.startswith("/components/ui/"):
-                rel_path = "src/components/" + path.split("/components/ui/")[-1]
-            elif path.startswith("/components/blocks/"):
-                rel_path = "src/components/" + path.split("/components/blocks/")[-1]
-            elif path.startswith("/components/"):
-                rel_path = "src" + path
-            else:
-                rel_path = "src/components/" + path.split("/")[-1]
-
+            rel_path = _normalize_component_path(path)
             # Don't overwrite Composer-modified files
             if rel_path not in all_files:
                 all_files[rel_path] = content
@@ -454,7 +462,7 @@ def run_redesign_pipeline(
     )
     if use_components:
         try:
-            from sastaspace.react_builder import is_node_available
+            from sastaspace.react_builder import is_node_available  # noqa: I001 — optional module, guarded by try/except ImportError
 
             if not is_node_available():
                 logger.warning("Node.js not available — falling back to HTML pipeline")
@@ -478,7 +486,7 @@ def run_redesign_pipeline(
                     "step_progress": meta["step_progress"],
                 },
             )
-        except Exception:  # noqa: pycodegate[no-broad-exception]
+        except Exception:  # noqa: BLE001
             pass
 
     def _checkpoint(step_name: str, accumulated: dict) -> None:
@@ -486,7 +494,7 @@ def run_redesign_pipeline(
             return
         try:
             checkpoint_callback(step_name, {"completed_step": step_name, "data": accumulated})
-        except Exception:  # noqa: pycodegate[no-broad-exception]
+        except Exception:  # noqa: BLE001
             pass
 
     if crawl_result.error:
@@ -589,7 +597,7 @@ def run_redesign_pipeline(
     except RedesignError:
         status = "failure"
         raise
-    except Exception as exc:  # noqa: pycodegate[no-broad-exception] — top-level handler
+    except Exception as exc:  # noqa: BLE001 — top-level handler
         status = "failure"
         raise RedesignError(f"Pipeline failed: {exc}") from exc
     finally:

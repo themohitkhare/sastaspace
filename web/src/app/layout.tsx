@@ -95,6 +95,7 @@ export default function RootLayout({
           <ThemeToggle />
         </div>
         <MotionProvider>{children}</MotionProvider>
+        <div aria-live="polite" aria-atomic="true" className="sr-only" id="route-announcer" />
       </body>
     </html>
   );

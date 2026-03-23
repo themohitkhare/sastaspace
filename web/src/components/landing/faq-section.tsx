@@ -26,9 +26,26 @@ const FAQ_ITEMS = [
   },
 ];
 
+const FAQ_JSON_LD = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: FAQ_ITEMS.map((item) => ({
+    "@type": "Question",
+    name: item.question,
+    acceptedAnswer: {
+      "@type": "Answer",
+      text: item.answer,
+    },
+  })),
+};
+
 export function FaqSection() {
   return (
     <div className="w-full max-w-2xl mx-auto">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(FAQ_JSON_LD) }}
+      />
       <h2 className="font-heading text-[clamp(1.75rem,4vw,2.5rem)] leading-[1.1] text-foreground text-center mb-10">
         Frequently asked questions
       </h2>

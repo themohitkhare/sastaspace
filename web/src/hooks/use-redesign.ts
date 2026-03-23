@@ -31,7 +31,7 @@ export type RedesignState =
       jobCreatedAt: string;
     }
   | { status: "done"; subdomain: string; originalUrl: string; domain: string; tier: RedesignTier }
-  | { status: "error"; message: string; url: string; resumeJobId?: string };
+  | { status: "error"; message: string; url: string; resumeJobId?: string; lastStep?: string };
 
 const STEPS = [
   { name: "crawling", label: (d: string) => `Analyzing ${d}` },
@@ -79,6 +79,7 @@ export function useRedesign() {
   const lastUrlRef = useRef<string>("");
   const lastTierRef = useRef<RedesignTier>("free");
   const lastModelProviderRef = useRef<ModelProvider>("claude");
+  const lastStepRef = useRef<string>("");
 
   const pollJob = useCallback(
     async (jobId: string, url: string, tier: RedesignTier, controller: AbortController) => {
@@ -106,6 +107,7 @@ export function useRedesign() {
               status: "error",
               message: job.error || GENERIC_ERROR_MESSAGE,
               url,
+              lastStep: lastStepRef.current,
             });
             return;
           }
@@ -142,6 +144,7 @@ export function useRedesign() {
                 message:
                   "This is taking longer than expected. Please check back in a few minutes.",
                 url,
+                lastStep: lastStepRef.current,
               });
               return;
             }
@@ -150,6 +153,7 @@ export function useRedesign() {
           // In-progress update
           const { stepName, progressValue } =
             STATUS_TO_STEP[job.status] ?? STATUS_TO_STEP.queued;
+          lastStepRef.current = stepName;
           const stepIndex = STEP_NAMES.indexOf(stepName);
           const updatedSteps = makeInitialSteps(domain).map((step, i) => {
             if (i < stepIndex) return { ...step, value: 100, status: "done" as const };
@@ -181,6 +185,7 @@ export function useRedesign() {
             : GENERIC_ERROR_MESSAGE,
           url,
           resumeJobId: isPollFailed ? jobId : undefined,
+          lastStep: lastStepRef.current,
         });
       }
     },
@@ -218,7 +223,7 @@ export function useRedesign() {
         await pollJob(jobId, url, tier, controller);
       } catch {
         if (controller.signal.aborted) return;
-        setState({ status: "error", message: GENERIC_ERROR_MESSAGE, url });
+        setState({ status: "error", message: GENERIC_ERROR_MESSAGE, url, lastStep: lastStepRef.current });
       }
     },
     [pollJob]

@@ -56,3 +56,20 @@ CVE-2026-23949
 # Our Dockerfile now uses uv for all package installation, bypassing wheel entirely.
 # wheel is never invoked at runtime in the production container.
 CVE-2026-24049
+
+# CVE-2026-24882: GnuPG dirmngr — stack-based buffer overflow in tpm2daemon
+# dirmngr is installed as a dependency of the Debian base image. We do not use
+# TPM2 or GnuPG at runtime. No Debian fix available yet.
+CVE-2026-24882
+
+# CPython 3.13 system packages — Debian base image, no fix available
+# These affect the Debian-packaged Python 3.13 (libpython3.13, python3.13-minimal),
+# NOT the Python 3.11 our app actually runs. They exist because python:3.11-slim
+# is built on Debian 13 which ships Python 3.13 as the system interpreter.
+# None of these modules (http.client buffering, IMAP/POP3 injection, tarfile,
+# email headers) are exploitable through our application.
+CVE-2025-13836
+CVE-2025-15366
+CVE-2025-15367
+CVE-2025-8194
+CVE-2026-1299

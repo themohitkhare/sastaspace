@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import hashlib
+import ipaddress
 import re
 from urllib.parse import urlparse
 
@@ -86,43 +87,75 @@ def extract_domain(raw: str) -> str:
     return (parsed.hostname or raw).lower().lstrip("www.")
 
 
+_MAX_URL_LENGTH = 2048
+
+_LOCALHOST_NAMES = frozenset({"localhost", "127.0.0.1", "0.0.0.0", "::1", "localhost.localdomain"})
+
+_PRIVATE_IP_PREFIXES = ("192.168.", "10.", "172.")
+
+
+def _ensure_scheme(url: str) -> str:
+    """Add https:// if no scheme is present."""
+    if not re.match(r"^https?://", url, re.IGNORECASE):
+        return f"https://{url}"
+    return url
+
+
+def _validate_hostname(hostname: str) -> str | None:
+    """Return an error message if the hostname is disallowed, or None if OK."""
+    if not hostname:
+        return "Please enter a valid website address"
+
+    if hostname in _LOCALHOST_NAMES:
+        return "Cannot redesign localhost"
+
+    try:
+        addr = ipaddress.ip_address(hostname)
+        if addr.is_private or addr.is_loopback or addr.is_link_local or addr.is_reserved:
+            return "Cannot redesign internal network addresses"
+    except ValueError:
+        pass
+
+    if hostname.startswith(_PRIVATE_IP_PREFIXES):
+        return "Cannot redesign internal network addresses"
+
+    return None
+
+
 def is_valid_url(raw: str) -> tuple[bool, str]:
     """Validate and normalize a URL input.
 
     Returns (is_valid, normalized_url_or_error_message).
     Accepts: domains, http://, https://, with paths, ports, etc.
-    Rejects: empty, no TLD, localhost, internal IPs.
+    Rejects: empty, no TLD, localhost, internal IPs, overly long URLs,
+    non-http(s) schemes, and raw IP addresses pointing to internal networks.
     """
     raw = raw.strip()
     if not raw:
         return False, "Please enter a website address"
 
-    # Add protocol if missing
-    url = raw
-    if not re.match(r"^https?://", url, re.IGNORECASE):
-        url = f"https://{url}"
+    if len(raw) > _MAX_URL_LENGTH:
+        return False, f"URL too long (max {_MAX_URL_LENGTH} characters)"
+
+    url = _ensure_scheme(raw)
 
     try:
         parsed = urlparse(url)
     except (ValueError, TypeError):
         return False, "Please enter a valid website address"
 
+    scheme = (parsed.scheme or "").lower()
+    if scheme not in ("http", "https"):
+        return False, "Only http and https URLs are supported"
+
     hostname = (parsed.hostname or "").lower()
-    if not hostname:
-        return False, "Please enter a valid website address"
+    hostname_err = _validate_hostname(hostname)
+    if hostname_err:
+        return False, hostname_err
 
-    # Reject localhost and internal IPs
-    if hostname in ("localhost", "127.0.0.1", "0.0.0.0", "::1"):
-        return False, "Cannot redesign localhost"
-    if hostname.startswith("192.168.") or hostname.startswith("10.") or hostname.startswith("172."):
-        return False, "Cannot redesign internal network addresses"
-
-    # Use tldextract to validate it's a real domain with TLD
     ext = tldextract.extract(url)
-    if not ext.suffix:
-        # No TLD found — might be a bare hostname
-        if "." not in hostname:
-            return False, "Please enter a valid website address (e.g. example.com)"
+    if not ext.suffix and "." not in hostname:
+        return False, "Please enter a valid website address (e.g. example.com)"
 
     normalized = normalize_url(raw)
     return True, normalized

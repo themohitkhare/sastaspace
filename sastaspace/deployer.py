@@ -64,6 +64,51 @@ def save_registry(sites_dir: Path, registry: list[dict]) -> None:
     os.replace(tmp_path, sites_dir / "_registry.json")
 
 
+def _deploy_build_output(build_dir: Path, site_dir: Path) -> None:
+    """Copy all files from a Vite build output directory into the site directory."""
+    for item in build_dir.iterdir():
+        dest = site_dir / item.name
+        if item.is_dir():
+            if dest.exists():
+                shutil.rmtree(dest)
+            shutil.copytree(item, dest)
+        else:
+            shutil.copy2(item, dest)
+
+
+def _deploy_assets(assets: list, site_dir: Path) -> None:
+    """Move crawled asset files into the site directory."""
+    for asset in assets:
+        dest = site_dir / asset.local_path
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        shutil.move(str(asset.tmp_path), str(dest))
+
+
+def _build_metadata(
+    final_subdomain: str, url: str, build_dir: Path | None, assets: list | None
+) -> dict:
+    """Build the metadata dict for a deployed site."""
+    metadata = {
+        "subdomain": final_subdomain,
+        "original_url": url,
+        "timestamp": datetime.now(UTC).isoformat(),
+        "status": "deployed",
+        "build_type": "react" if build_dir else "html",
+    }
+    if assets:
+        metadata["assets_count"] = len(assets)
+        metadata["total_assets_size"] = sum(a.size_bytes for a in assets)
+    return metadata
+
+
+def _update_registry(sites_dir: Path, metadata: dict) -> None:
+    """Append metadata to the site registry, replacing any existing entry for the subdomain."""
+    registry = load_registry(sites_dir)
+    registry = [e for e in registry if e.get("subdomain") != metadata["subdomain"]]
+    registry.append(metadata)
+    save_registry(sites_dir, registry)
+
+
 def deploy(
     url: str,
     html: str,
@@ -96,42 +141,16 @@ def deploy(
     site_dir.mkdir(parents=True, exist_ok=True)
 
     if build_dir and build_dir.exists():
-        # Deploy full Vite build output (index.html + assets/)
-        for item in build_dir.iterdir():
-            dest = site_dir / item.name
-            if item.is_dir():
-                if dest.exists():
-                    shutil.rmtree(dest)
-                shutil.copytree(item, dest)
-            else:
-                shutil.copy2(item, dest)
-        index_path = site_dir / "index.html"
+        _deploy_build_output(build_dir, site_dir)
     else:
-        # Deploy single HTML file (legacy path)
-        index_path = site_dir / "index.html"
-        index_path.write_text(html, encoding="utf-8")
+        (site_dir / "index.html").write_text(html, encoding="utf-8")
+    index_path = site_dir / "index.html"
 
     if assets:
-        for asset in assets:
-            dest = site_dir / asset.local_path
-            dest.parent.mkdir(parents=True, exist_ok=True)
-            shutil.move(str(asset.tmp_path), str(dest))
+        _deploy_assets(assets, site_dir)
 
-    metadata = {
-        "subdomain": final_subdomain,
-        "original_url": url,
-        "timestamp": datetime.now(UTC).isoformat(),
-        "status": "deployed",
-        "build_type": "react" if build_dir else "html",
-    }
-    if assets:
-        metadata["assets_count"] = len(assets)
-        metadata["total_assets_size"] = sum(a.size_bytes for a in assets)
+    metadata = _build_metadata(final_subdomain, url, build_dir, assets)
     (site_dir / "metadata.json").write_text(json.dumps(metadata, indent=2))
-
-    registry = load_registry(sites_dir)
-    registry = [e for e in registry if e.get("subdomain") != final_subdomain]
-    registry.append(metadata)
-    save_registry(sites_dir, registry)
+    _update_registry(sites_dir, metadata)
 
     return DeployResult(subdomain=final_subdomain, index_path=index_path, sites_dir=sites_dir)

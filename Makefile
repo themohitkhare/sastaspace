@@ -7,7 +7,7 @@ RSYNC_EXCLUDE := --exclude='.git' --exclude='node_modules' --exclude='__pycache_
                  --exclude='.venv' --exclude='*.pyc' --exclude='.next' \
                  --exclude='test-results' --exclude='*.egg-info'
 
-.PHONY: ci install lint k8s-lint test dupes semgrep dev dev-api dev-web \
+.PHONY: ci install lint k8s-lint test dupes semgrep audit dev dev-api dev-web \
         deploy deploy-build deploy-logs deploy-status deploy-down k8s-apply \
         deploy-monitoring monitoring-status monitoring-logs \
         deploy-twenty twenty-status twenty-logs twenty-setup
@@ -31,6 +31,9 @@ dupes:  ## Check for duplicate code
 
 semgrep:  ## Static analysis with semgrep
 	semgrep scan --config auto --severity ERROR --exclude='node_modules' --exclude='.next' sastaspace/ web/src/
+
+audit:  ## Scan Python dependencies for known vulnerabilities
+	uv run pip-audit
 
 ci: lint test
 

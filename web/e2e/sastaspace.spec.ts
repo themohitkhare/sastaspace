@@ -1,4 +1,5 @@
 import { test, expect, type Page } from "@playwright/test";
+import AxeBuilder from "@axe-core/playwright";
 
 // Use baseURL from playwright config (supports both local and Docker)
 const BASE = process.env.BASE_URL || "http://localhost:3000";
@@ -513,5 +514,24 @@ test.describe("SSE progress flow (mocked backend)", () => {
     await expect(page.getByText(/Something went wrong/i)).toBeVisible({ timeout: 5000 });
     // "Try again" button should be visible
     await expect(page.getByRole("button", { name: /Try again/i })).toBeVisible();
+  });
+});
+
+// ─── 11. Accessibility audit (axe-core) ─────────────────────────────────────
+
+test.describe("Accessibility – axe-core audit", () => {
+  test("landing page has no accessibility violations", async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await page.goto(BASE);
+    const results = await new AxeBuilder({ page }).analyze();
+    expect(results.violations).toEqual([]);
+  });
+
+  test("result page has no accessibility violations", async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await page.goto(RESULT_URL);
+    await page.waitForSelector("h2", { timeout: 5000 });
+    const results = await new AxeBuilder({ page }).analyze();
+    expect(results.violations).toEqual([]);
   });
 });

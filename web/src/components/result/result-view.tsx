@@ -6,12 +6,14 @@ import { ContactForm } from "@/components/result/contact-form";
 import { BeforeAfterSlider } from "@/components/result/before-after-slider";
 import { ShareButtons } from "@/components/result/share-buttons";
 import { QualityRating } from "@/components/result/quality-rating";
+import { Footer } from "@/components/landing/footer";
 
 interface ResultViewProps {
   subdomain: string;
+  tier?: string;
 }
 
-export function ResultView({ subdomain }: ResultViewProps) {
+export function ResultView({ subdomain, tier }: ResultViewProps) {
   const domain = subdomain.replace(/-/g, ".");
   const originalUrl = `https://${domain}`;
   const headerText = `${domain} has been redesigned`;
@@ -61,6 +63,16 @@ export function ResultView({ subdomain }: ResultViewProps) {
           <ShareButtons url={shareUrl} domain={domain} />
         </div>
 
+        {/* Upgrade CTA for Express tier */}
+        {tier === "express" && (
+          <div className="text-center p-4 bg-accent/5 rounded-lg border border-accent/20 mt-6">
+            <p className="text-sm text-muted-foreground">
+              This was an <strong>Express</strong> preview.
+              <a href="/pricing" className="text-accent hover:underline ml-1">Upgrade to Studio</a> for premium quality.
+            </p>
+          </div>
+        )}
+
         {/* Quality rating — collect user feedback */}
         <div className="mt-10">
           <QualityRating subdomain={subdomain} />
@@ -72,6 +84,7 @@ export function ResultView({ subdomain }: ResultViewProps) {
           <ContactForm subdomain={subdomain} />
         </div>
       </div>
+      <Footer />
     </m.div>
   );
 }

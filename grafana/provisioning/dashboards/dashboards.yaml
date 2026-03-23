@@ -1,0 +1,12 @@
+apiVersion: 1
+
+providers:
+  - name: SastaSpace
+    orgId: 1
+    folder: SastaSpace
+    type: file
+    disableDeletion: false
+    editable: true
+    options:
+      path: /etc/grafana/provisioning/dashboards
+      foldersFromFilesStructure: false

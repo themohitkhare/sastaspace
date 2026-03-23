@@ -3,14 +3,39 @@
 
 from __future__ import annotations
 
+import asyncio
 import logging
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from enum import StrEnum
+from functools import wraps
 
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
 
 logger = logging.getLogger(__name__)
+
+
+def retry_on_transient(max_retries: int = 3, delay: float = 0.5):
+    """Retry decorator for MongoDB operations that may fail due to transient errors."""
+
+    def decorator(func):
+        @wraps(func)
+        async def wrapper(*args, **kwargs):
+            for attempt in range(max_retries):
+                try:
+                    return await func(*args, **kwargs)
+                except (ConnectionError, OSError) as e:
+                    if attempt == max_retries - 1:
+                        raise
+                    logger.warning(
+                        "DB transient error (attempt %d/%d): %s", attempt + 1, max_retries, e
+                    )
+                    await asyncio.sleep(delay * (2**attempt))
+
+        return wrapper
+
+    return decorator
+
 
 _client: AsyncIOMotorClient | None = None
 _db: AsyncIOMotorDatabase | None = None
@@ -67,6 +92,7 @@ async def close_db() -> None:
         _db = None
 
 
+@retry_on_transient()
 async def create_job(
     job_id: str,
     url: str,
@@ -147,6 +173,7 @@ def _job_update_to_dict(updates: JobUpdate) -> dict:
     return result
 
 
+@retry_on_transient()
 async def update_job(
     job_id: str,
     *,
@@ -175,6 +202,7 @@ async def update_job(
     logger.debug("update_job | id=%s fields=%s", job_id, list(mongo_updates.keys()))
 
 
+@retry_on_transient()
 async def get_job(job_id: str) -> dict | None:
     """Fetch a single job by ID."""
     doc = await _get_db()["jobs"].find_one({"_id": job_id})

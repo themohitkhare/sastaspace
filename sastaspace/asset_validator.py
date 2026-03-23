@@ -166,7 +166,7 @@ def scan_clamav(path: Path, host: str = "localhost", port: int = 3310, timeout: 
     """Scan file with ClamAV via network socket. Returns True if clean or if ClamAV is unreachable
     (graceful fallback)."""
     try:
-        import pyclamd
+        import pyclamd  # noqa: I001 — optional dependency, not always installed
 
         cd = pyclamd.ClamdNetworkSocket(host=host, port=port, timeout=timeout)
         if not cd.ping():

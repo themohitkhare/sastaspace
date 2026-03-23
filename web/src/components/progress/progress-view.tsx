@@ -1,8 +1,9 @@
 // web/src/components/progress/progress-view.tsx
 "use client";
 
+import { useState, useEffect } from "react";
 import { m } from "motion/react";
-import { AlertCircle, RotateCcw, RefreshCw } from "lucide-react";
+import { AlertCircle, RotateCcw, RefreshCw, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { AuroraBackground } from "@/components/ui/aurora-background";
@@ -11,7 +12,55 @@ import { StepPills } from "@/components/progress/step-pills";
 import { InsightCards } from "@/components/progress/insight-cards";
 import { ColorSwatches } from "@/components/progress/color-swatches";
 import { AutoPong } from "@/components/progress/auto-pong";
-import type { RedesignState } from "@/hooks/use-redesign";
+import type { RedesignState, RedesignTier } from "@/hooks/use-redesign";
+
+// ETA in seconds by tier
+const TIER_ETA_SECONDS: Record<RedesignTier, number> = {
+  free: 120,
+  premium: 300,
+};
+
+// Which step failed, for user-friendly error context
+const STEP_FAILURE_LABELS: Record<string, string> = {
+  connecting: "connecting to server",
+  crawling: "crawling your website",
+  discovering: "discovering pages",
+  downloading: "downloading assets",
+  analyzing: "analyzing content",
+  redesigning: "AI redesign",
+  deploying: "deploying the result",
+};
+
+function useCountdown(tier: RedesignTier, isActive: boolean) {
+  const totalSeconds = TIER_ETA_SECONDS[tier];
+  const [remaining, setRemaining] = useState(totalSeconds);
+
+  useEffect(() => {
+    if (!isActive) return;
+
+    let elapsed = 0;
+    const interval = setInterval(() => {
+      elapsed += 1;
+      setRemaining((prev) => Math.max(0, prev - 1));
+    }, 1000);
+
+    return () => {
+      clearInterval(interval);
+      // Suppress: elapsed used in interval callback
+      void elapsed;
+    };
+  }, [isActive, totalSeconds]);
+
+  return isActive ? remaining : totalSeconds;
+}
+
+function formatCountdown(seconds: number): string {
+  if (seconds <= 0) return "Almost done...";
+  if (seconds < 30) return "Almost done...";
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return `${m}:${s.toString().padStart(2, "0")}`;
+}
 
 // Map step name → top-level progress bar value
 const STEP_TO_PROGRESS: Record<string, number> = {
@@ -27,15 +76,24 @@ type ProgressViewState = Extract<RedesignState, { status: "progress" | "error" |
 interface ProgressViewProps {
   state: ProgressViewState;
   onRetry: () => void;
+  onReset?: () => void;
+  lastStep?: string;
 }
 
-export function ProgressView({ state, onRetry }: ProgressViewProps) {
+export function ProgressView({ state, onRetry, onReset, lastStep }: ProgressViewProps) {
+  // Hooks must be called unconditionally — derive tier before the early return
+  const tierForCountdown: RedesignTier =
+    state.status === "progress" ? state.tier : "free";
+  const isActiveProgress = state.status === "progress" || state.status === "connecting";
+  const remaining = useCountdown(tierForCountdown, isActiveProgress);
+
   // --- Error state ---
   if (state.status === "error") {
     const isRateLimit =
       state.message.toLowerCase().includes("rate limit") ||
       state.message.toLowerCase().includes("limit");
     const isNetworkError = Boolean(state.resumeJobId);
+    const failedStepLabel = lastStep ? STEP_FAILURE_LABELS[lastStep] : undefined;
 
     return (
       <div className="min-h-screen flex items-center justify-center px-4">
@@ -49,28 +107,56 @@ export function ProgressView({ state, onRetry }: ProgressViewProps) {
           <h2 className="font-heading text-[clamp(1.5rem,3vw,2rem)] text-foreground">
             Something went wrong
           </h2>
+
+          {/* Show the original URL that was submitted */}
+          {state.url && (
+            <p className="text-sm text-muted-foreground font-mono bg-muted px-3 py-1.5 rounded-md">
+              {state.url}
+            </p>
+          )}
+
+          {/* Show which step failed */}
+          {failedStepLabel && !isRateLimit && (
+            <p className="text-sm text-muted-foreground">
+              Failed during: <span className="font-medium text-foreground">{failedStepLabel}</span>
+            </p>
+          )}
+
           <p className="text-base text-muted-foreground max-w-sm">
             {isRateLimit
               ? "You've reached the limit. Please try again in an hour."
               : state.message}
           </p>
-          <Button
-            size="lg"
-            onClick={onRetry}
-            className="bg-accent text-accent-foreground hover:bg-accent/90"
-          >
-            {isNetworkError ? (
-              <>
-                <RefreshCw className="w-4 h-4 mr-2" />
-                Check status
-              </>
-            ) : (
-              <>
-                <RotateCcw className="w-4 h-4 mr-2" />
-                Try again
-              </>
+
+          <div className="flex flex-col sm:flex-row items-center gap-3">
+            <Button
+              size="lg"
+              onClick={onRetry}
+              className="bg-accent text-accent-foreground hover:bg-accent/90"
+            >
+              {isNetworkError ? (
+                <>
+                  <RefreshCw className="w-4 h-4 mr-2" />
+                  Check status
+                </>
+              ) : (
+                <>
+                  <RotateCcw className="w-4 h-4 mr-2" />
+                  Try again with {state.url ? new URL(state.url.startsWith("http") ? state.url : `https://${state.url}`).hostname : "this URL"}
+                </>
+              )}
+            </Button>
+            {onReset && (
+              <Button
+                size="lg"
+                variant="outline"
+                onClick={onReset}
+              >
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Try a different URL
+              </Button>
             )}
-          </Button>
+          </div>
         </m.div>
       </div>
     );
@@ -82,7 +168,6 @@ export function ProgressView({ state, onRetry }: ProgressViewProps) {
   const currentStep = isConnecting ? "connecting" : state.currentStep;
   const siteColors = isConnecting ? [] : state.siteColors;
   const jobStatus = isConnecting ? "queued" : state.currentStep;
-
   const progressValue = STEP_TO_PROGRESS[currentStep] ?? 5;
 
   const STEP_LABELS: Record<string, string> = {
@@ -124,8 +209,10 @@ export function ProgressView({ state, onRetry }: ProgressViewProps) {
           ) : (
             <p className="font-heading text-lg font-medium text-foreground">Starting…</p>
           )}
-          <p className="text-xs text-muted-foreground mt-1">
-            AI redesigns typically take 2–3 minutes
+          <p className="text-xs text-muted-foreground mt-1 tabular-nums">
+            {remaining < 30
+              ? "Almost done..."
+              : `Estimated time remaining: ${formatCountdown(remaining)}`}
           </p>
         </div>
 

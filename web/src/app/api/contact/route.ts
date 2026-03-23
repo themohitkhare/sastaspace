@@ -105,6 +105,10 @@ export async function POST(request: NextRequest) {
               <p style="font-size: 12px; color: #999; margin: 24px 0 0;">
                 SastaSpace &mdash; AI Website Redesigner
               </p>
+              <p style="color: #999; font-size: 12px; margin-top: 32px; border-top: 1px solid #eee; padding-top: 16px;">
+                You received this because you submitted a redesign request on SastaSpace.
+                <br />This is a one-time email &mdash; we won't send more unless you reach out.
+              </p>
             </div>
           `,
         });

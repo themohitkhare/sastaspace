@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { AppFlow } from "@/components/app-flow";
+import { PageEntrance } from "@/components/ui/page-entrance";
 
 export const metadata: Metadata = {
   title: "SastaSpace — Free AI Website Redesign",
@@ -10,7 +11,9 @@ export const metadata: Metadata = {
 export default function Home() {
   return (
     <main id="main">
-      <AppFlow />
+      <PageEntrance>
+        <AppFlow />
+      </PageEntrance>
     </main>
   );
 }

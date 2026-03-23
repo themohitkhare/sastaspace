@@ -11,6 +11,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from sastaspace.asset_downloader import (
+    _is_safe_url,
     download_and_validate_assets,
     extract_asset_urls,
     is_stock_photo,
@@ -404,3 +405,95 @@ class TestDownloadAndValidateAssets:
         manifest = await download_and_validate_assets([], tmp_dir)
         assert len(manifest.assets) == 0
         assert manifest.total_size_bytes == 0
+
+
+# --- TestIsSafeUrl (SSRF protection) ---
+
+
+class TestIsSafeUrl:
+    """Tests for _is_safe_url() SSRF protection."""
+
+    def test_blocks_localhost(self):
+        assert _is_safe_url("http://localhost/secret") is False
+
+    def test_blocks_127_0_0_1(self):
+        assert _is_safe_url("http://127.0.0.1/admin") is False
+
+    def test_blocks_127_x_x_x(self):
+        assert _is_safe_url("http://127.0.0.2:8080/") is False
+
+    @patch(
+        "sastaspace.asset_downloader.socket.getaddrinfo",
+        return_value=[
+            (2, 1, 6, "", ("10.0.0.1", 0)),
+        ],
+    )
+    def test_blocks_10_x_x_x(self, _mock):
+        assert _is_safe_url("http://internal.corp/data") is False
+
+    @patch(
+        "sastaspace.asset_downloader.socket.getaddrinfo",
+        return_value=[
+            (2, 1, 6, "", ("192.168.1.1", 0)),
+        ],
+    )
+    def test_blocks_192_168_x_x(self, _mock):
+        assert _is_safe_url("http://router.local/config") is False
+
+    @patch(
+        "sastaspace.asset_downloader.socket.getaddrinfo",
+        return_value=[
+            (2, 1, 6, "", ("172.16.0.5", 0)),
+        ],
+    )
+    def test_blocks_172_16_x_x(self, _mock):
+        assert _is_safe_url("http://private.net/api") is False
+
+    @patch(
+        "sastaspace.asset_downloader.socket.getaddrinfo",
+        return_value=[
+            (2, 1, 6, "", ("169.254.169.254", 0)),
+        ],
+    )
+    def test_blocks_link_local_169_254(self, _mock):
+        assert _is_safe_url("http://metadata.google/v1") is False
+
+    def test_blocks_file_scheme(self):
+        assert _is_safe_url("file:///etc/passwd") is False
+
+    def test_blocks_ftp_scheme(self):
+        assert _is_safe_url("ftp://evil.com/payload") is False
+
+    def test_blocks_gopher_scheme(self):
+        assert _is_safe_url("gopher://evil.com/exploit") is False
+
+    def test_blocks_data_scheme(self):
+        assert _is_safe_url("data:text/html,<h1>hi</h1>") is False
+
+    def test_blocks_empty_hostname(self):
+        assert _is_safe_url("http:///no-host") is False
+
+    def test_blocks_ipv6_loopback(self):
+        assert _is_safe_url("http://[::1]/admin") is False
+
+    @patch(
+        "sastaspace.asset_downloader.socket.getaddrinfo",
+        return_value=[
+            (2, 1, 6, "", ("93.184.216.34", 0)),
+        ],
+    )
+    def test_allows_valid_https(self, _mock):
+        assert _is_safe_url("https://example.com/image.png") is True
+
+    @patch(
+        "sastaspace.asset_downloader.socket.getaddrinfo",
+        return_value=[
+            (2, 1, 6, "", ("93.184.216.34", 0)),
+        ],
+    )
+    def test_allows_valid_http(self, _mock):
+        assert _is_safe_url("http://example.com/page") is True
+
+    def test_blocks_dns_failure(self):
+        """Unresolvable hostnames should be blocked by default."""
+        assert _is_safe_url("http://this-domain-definitely-does-not-exist-xyz.invalid/") is False

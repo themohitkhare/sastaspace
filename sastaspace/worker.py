@@ -113,7 +113,7 @@ async def main():
         )
     except KeyboardInterrupt:
         logger.info("Worker shutting down (KeyboardInterrupt)")
-    except Exception:  # noqa: pycodegate[no-broad-exception] — top-level worker crash handler
+    except Exception:  # noqa: BLE001 — top-level worker crash handler
         logger.exception("Worker crashed")
         raise
     finally:

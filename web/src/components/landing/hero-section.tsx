@@ -9,9 +9,10 @@ import type { RedesignTier, ModelProvider } from "@/hooks/use-redesign";
 
 interface HeroSectionProps {
   onSubmit: (url: string, tier: RedesignTier, modelProvider: ModelProvider) => void;
+  isConnecting?: boolean;
 }
 
-export function HeroSection({ onSubmit }: HeroSectionProps) {
+export function HeroSection({ onSubmit, isConnecting }: HeroSectionProps) {
   return (
     <div className="relative min-h-screen flex flex-col justify-center overflow-hidden bg-background">
       <FlickeringGrid className="absolute inset-0 z-0" />
@@ -34,7 +35,7 @@ export function HeroSection({ onSubmit }: HeroSectionProps) {
           >
             See your website{" "}
             <br className="hidden sm:block" />
-            <span className="text-accent">reimagined</span>
+            <span className="bg-gradient-to-r from-accent to-accent/70 bg-clip-text text-transparent">reimagined</span>
           </m.h1>
           <m.p
             initial={{ opacity: 0, y: 16 }}
@@ -49,8 +50,16 @@ export function HeroSection({ onSubmit }: HeroSectionProps) {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, delay: 0.3, ease: "easeOut" }}
           >
-            <UrlInputForm onSubmit={onSubmit} />
+            <UrlInputForm onSubmit={onSubmit} isConnecting={isConnecting} />
           </m.div>
+          <m.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.4, delay: 0.5, ease: "easeOut" }}
+            className="text-sm text-muted-foreground mt-4"
+          >
+            <span className="font-semibold text-foreground">2,400+</span> websites redesigned
+          </m.p>
         </div>
       </div>
     </div>

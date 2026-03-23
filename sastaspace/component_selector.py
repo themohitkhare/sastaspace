@@ -268,6 +268,29 @@ def _determine_sections(plan: dict) -> list[str]:
     return sections
 
 
+def _try_load_candidate(
+    comp_meta: dict,
+    category: str,
+    category_group: str,
+    tier_name: str,
+    components_dir: Path,
+) -> SelectedComponent | None:
+    """Try to load a single candidate component. Returns None if invalid."""
+    file_ref = comp_meta.get("file", "")
+    if not file_ref:
+        return None
+
+    comp_json = _load_component_json(file_ref, category_group, category, components_dir)
+    if comp_json is None:
+        return None
+
+    files = comp_json.get("files", [])
+    if not files or not any(f.get("content") for f in files):
+        return None
+
+    return _make_selected(comp_json, comp_meta, category, category_group, tier_name)
+
+
 def _pick_best_for_category(
     category: str,
     category_group: str,
@@ -286,30 +309,15 @@ def _pick_best_for_category(
         if not candidates:
             continue
 
-        # Score each candidate
-        scored = []
-        for comp_meta in candidates:
-            score = _score_component(comp_meta, plan, category)
-            scored.append((score, comp_meta))
-
+        scored = [(_score_component(m, plan, category), m) for m in candidates]
         scored.sort(key=lambda x: x[0], reverse=True)
 
-        # Try loading the top candidates until we find one that works
         for score, comp_meta in scored[:max_candidates]:
-            file_ref = comp_meta.get("file", "")
-            if not file_ref:
+            selected = _try_load_candidate(
+                comp_meta, category, category_group, tier_name, components_dir
+            )
+            if selected is None:
                 continue
-
-            comp_json = _load_component_json(file_ref, category_group, category, components_dir)
-            if comp_json is None:
-                continue
-
-            # Skip components with no files/content
-            files = comp_json.get("files", [])
-            if not files or not any(f.get("content") for f in files):
-                continue
-
-            selected = _make_selected(comp_json, comp_meta, category, category_group, tier_name)
             logger.info(
                 "Selected %s/%s: %s (tier=%s, score=%.1f, downloads=%d)",
                 category_group,
@@ -322,6 +330,43 @@ def _pick_best_for_category(
             return selected
 
     return None
+
+
+def _select_for_sections(
+    sections: list[str], plan: dict, components_dir: Path
+) -> tuple[list[SelectedComponent], set[str]]:
+    """Select the best component for each section, collecting dependencies."""
+    selected: list[SelectedComponent] = []
+    all_deps: set[str] = set()
+    seen_categories: set[str] = set()
+
+    for section_type in sections:
+        mapping = SECTION_TO_CATEGORY.get(section_type)
+        if not mapping:
+            logger.debug("No category mapping for section type: %s", section_type)
+            continue
+
+        category, category_group = mapping
+        cache_key = f"{category_group}/{category}"
+        if cache_key in seen_categories:
+            continue
+        seen_categories.add(cache_key)
+
+        component = _pick_best_for_category(category, category_group, plan, components_dir)
+        if component:
+            selected.append(component)
+            all_deps.update(component.dependencies)
+
+    return selected, all_deps
+
+
+def _merge_tailwind_configs(components: list[SelectedComponent]) -> dict:
+    """Merge tailwind configs from all selected components."""
+    merged: dict = {}
+    for comp in components:
+        if comp.tailwind_config:
+            _deep_merge(merged, comp.tailwind_config)
+    return merged
 
 
 def select_components(plan: dict, components_dir: Path) -> ComponentManifest:
@@ -337,34 +382,8 @@ def select_components(plan: dict, components_dir: Path) -> ComponentManifest:
     sections = _determine_sections(plan)
     logger.info("Determined %d sections needed: %s", len(sections), sections)
 
-    selected: list[SelectedComponent] = []
-    all_deps: set[str] = set()
-    seen_categories: set[str] = set()
-
-    for section_type in sections:
-        mapping = SECTION_TO_CATEGORY.get(section_type)
-        if not mapping:
-            logger.debug("No category mapping for section type: %s", section_type)
-            continue
-
-        category, category_group = mapping
-
-        # Avoid duplicate category selections
-        cache_key = f"{category_group}/{category}"
-        if cache_key in seen_categories:
-            continue
-        seen_categories.add(cache_key)
-
-        component = _pick_best_for_category(category, category_group, plan, components_dir)
-        if component:
-            selected.append(component)
-            all_deps.update(component.dependencies)
-
-    # Merge tailwind configs
-    merged_tw: dict = {}
-    for comp in selected:
-        if comp.tailwind_config:
-            _deep_merge(merged_tw, comp.tailwind_config)
+    selected, all_deps = _select_for_sections(sections, plan, components_dir)
+    merged_tw = _merge_tailwind_configs(selected)
 
     manifest = ComponentManifest(
         components=selected,

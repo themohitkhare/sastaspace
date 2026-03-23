@@ -340,23 +340,3 @@ Compose a premium React page from these pre-built components.
 5. Keep all animations and interactions from the original components
 6. Replace Next.js-specific imports (next/link, next/image, "use client")
 7. Output files using the --- FILE: path --- delimiter format"""
-
-# ---------------------------------------------------------------------------
-# LEGACY — kept for backward compatibility, not used in 2-step pipeline
-# ---------------------------------------------------------------------------
-
-CRAWL_ANALYST_SYSTEM = """DEPRECATED — merged into PLANNER_SYSTEM."""
-CRAWL_ANALYST_USER_TEMPLATE = """DEPRECATED"""
-DESIGN_STRATEGIST_SYSTEM = """DEPRECATED — merged into PLANNER_SYSTEM."""
-DESIGN_STRATEGIST_USER_TEMPLATE = """DEPRECATED"""
-COPYWRITER_SYSTEM = """DEPRECATED — merged into PLANNER_SYSTEM."""
-COPYWRITER_USER_TEMPLATE = """DEPRECATED"""
-HTML_GENERATOR_SYSTEM = """DEPRECATED — replaced by BUILDER_SYSTEM."""
-HTML_GENERATOR_USER_TEMPLATE = """DEPRECATED"""
-HTML_GENERATOR_USER_TEMPLATE_WITH_FEEDBACK = """DEPRECATED"""
-QUALITY_REVIEWER_SYSTEM = """DEPRECATED — quality checks built into BUILDER_SYSTEM."""
-QUALITY_REVIEWER_USER_TEMPLATE = """DEPRECATED"""
-COMPONENT_SELECTOR_SYSTEM = """DEPRECATED"""
-COMPONENT_SELECTOR_USER_TEMPLATE = """DEPRECATED"""
-NORMALIZER_SYSTEM = """DEPRECATED"""
-NORMALIZER_USER_TEMPLATE = """DEPRECATED"""

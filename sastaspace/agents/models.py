@@ -53,6 +53,16 @@ def _flatten_to_str(v: object) -> str:
     return str(v)
 
 
+def _coerce_str_list(cls, field_name: str, val: list) -> list:
+    """Flatten non-string items in a list[str] field, unless it has a custom validator."""
+    has_custom_validator = any(
+        field_name in str(v) for v in cls.__pydantic_decorators__.field_validators
+    )
+    if has_custom_validator:
+        return val
+    return [_flatten_to_str(item) if not isinstance(item, str) else item for item in val]
+
+
 class _NullSafeModel(BaseModel):
     """Base model that coerces null values to defaults for all str fields.
 
@@ -80,13 +90,7 @@ class _NullSafeModel(BaseModel):
             # Coerce non-string items inside list[str] fields
             # Skip fields that have custom field_validators (check via class validators)
             elif isinstance(val, list) and _is_str_list_field(field_info):
-                has_custom_validator = any(
-                    field_name in str(v) for v in cls.__pydantic_decorators__.field_validators
-                )
-                if not has_custom_validator:
-                    data[field_name] = [
-                        _flatten_to_str(item) if not isinstance(item, str) else item for item in val
-                    ]
+                data[field_name] = _coerce_str_list(cls, field_name, val)
         return data
 
 

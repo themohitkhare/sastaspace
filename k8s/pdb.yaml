@@ -1,0 +1,26 @@
+# k8s/pdb.yaml
+#
+# Pod Disruption Budgets — guarantee availability during voluntary disruptions
+# (node drain, cluster upgrade, etc.).
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: backend-pdb
+  namespace: sastaspace
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: backend
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: frontend-pdb
+  namespace: sastaspace
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: frontend

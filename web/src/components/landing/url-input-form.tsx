@@ -12,15 +12,33 @@ import type { RedesignTier, ModelProvider } from "@/hooks/use-redesign";
 
 interface UrlInputFormProps {
   onSubmit: (url: string, tier: RedesignTier, modelProvider: ModelProvider) => void;
+  isConnecting?: boolean;
 }
 
-export function UrlInputForm({ onSubmit }: UrlInputFormProps) {
+export function UrlInputForm({ onSubmit, isConnecting }: UrlInputFormProps) {
   const [input, setInput] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [faviconUrl, setFaviconUrl] = useState<string | null>(null);
   const [tier, setTier] = useState<RedesignTier>("free");
   const [modelProvider, setModelProvider] = useState<ModelProvider>("claude");
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  // Pre-select Studio tier if ?tier=studio is in the URL (from pricing page CTA)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("tier") === "studio") {
+      setTier("premium");
+    }
+  }, []);
+
+  // Auto-focus URL input on page load
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      inputRef.current?.focus();
+    }, 300);
+    return () => clearTimeout(timer);
+  }, []);
 
   const fetchFavicon = useCallback((value: string) => {
     if (debounceRef.current) {
@@ -171,11 +189,18 @@ export function UrlInputForm({ onSubmit }: UrlInputFormProps) {
             )}
           </div>
           <Input
+            ref={inputRef}
             id="url-input"
             type="url"
             placeholder="yourwebsite.com"
             value={input}
             onChange={handleInputChange}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+                e.preventDefault();
+                handleSubmit(e as unknown as React.FormEvent);
+              }
+            }}
             autoComplete="url"
             className="h-12 ps-12 rounded-lg sm:rounded-r-none text-base font-sans"
             aria-invalid={!!error}
@@ -185,12 +210,19 @@ export function UrlInputForm({ onSubmit }: UrlInputFormProps) {
         <Button
           type="submit"
           size="lg"
-          className="h-12 min-h-12 rounded-lg sm:rounded-l-none px-8 bg-accent text-accent-foreground hover:bg-accent/90 font-medium"
+          disabled={isConnecting}
+          className={[
+            "h-12 min-h-12 rounded-lg sm:rounded-l-none px-8 bg-accent text-accent-foreground hover:bg-accent/90 font-medium",
+            isConnecting ? "animate-pulse" : "",
+          ].join(" ")}
         >
-          Redesign My Site
+          {isConnecting ? "Connecting..." : "Redesign My Site"}
         </Button>
       </div>
       {error && <p id="url-error" className="text-sm text-destructive mt-2" role="alert">{error}</p>}
+      <p className="text-xs text-muted-foreground text-center mt-2">
+        Free tier: 3 redesigns per hour
+      </p>
     </form>
   );
 }

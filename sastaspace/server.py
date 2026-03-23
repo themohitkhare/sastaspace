@@ -2,103 +2,54 @@
 from __future__ import annotations
 
 import asyncio
-import hashlib
-import html
-import json
 import logging
 import os
 import socket
 import subprocess
 import sys
 import time
-from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from pathlib import Path
 from uuid import uuid4
 
-from fastapi import FastAPI, HTTPException, Request
+import httpx
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
-from fastapi.sse import EventSourceResponse, format_sse_event
-from prometheus_client import Counter, Gauge, Histogram, make_asgi_app
-from pydantic import BaseModel
-from starlette.responses import Response
+from prometheus_client import make_asgi_app
 
-from sastaspace.admin import (
-    delete_site_db_record,
-    delete_site_files,
-    get_original_url_from_db,
-    verify_webhook_signature,
-)
 from sastaspace.config import Settings
-from sastaspace.crawler import crawl
-from sastaspace.database import (
-    JobStatus,
-    close_db,
-    create_job,
-    find_site_by_url_hash,
-    get_job,
-    init_db,
-    list_jobs,
-    list_sites,
-    set_mongo_url,
-    update_job,
-)
-from sastaspace.deployer import deploy, derive_subdomain
+from sastaspace.crawler import crawl  # noqa: F401 — re-exported for test patching
+from sastaspace.database import close_db, init_db, set_mongo_url
+from sastaspace.deployer import deploy  # noqa: F401 — re-exported for test patching
 from sastaspace.jobs import JobService
-from sastaspace.logging_setup import configure_logging
-from sastaspace.redesigner import run_redesign
-from sastaspace.twenty_sync import NoopTwentyClient, get_twenty_client
-from sastaspace.urls import extract_domain, is_valid_url, url_hash
-
-# Module-level job service reference — updated during lifespan, patchable in tests
-svc: JobService | None = None
+from sastaspace.logging_setup import configure_logging, request_id_ctx
+from sastaspace.routes.admin import create_admin_router
+from sastaspace.routes.health import configure as configure_health
+from sastaspace.routes.health import router as health_router
+from sastaspace.routes.redesign import create_redesign_router
+from sastaspace.routes.sites import create_sites_router
+from sastaspace.routes.sse import active_sse_tasks, sites_deployed_gauge
 
 logger = logging.getLogger(__name__)
 
-# Business metrics (module-level so they survive app reloads)
-_sites_deployed_gauge = Gauge("sites_deployed_total", "Number of sites currently deployed")
-_redesign_requests_total = Counter(
-    "redesign_requests_total",
-    "Total redesign requests received",
-    ["status"],  # "started" | "rate_limited" | "concurrency_limited"
-)
-_redesign_latency_seconds = Histogram(
-    "redesign_latency_seconds",
-    "End-to-end redesign duration in seconds",
-    buckets=[10, 30, 60, 120, 300, 600],
-)
-_redesign_errors_total = Counter(
-    "redesign_errors_total",
-    "Total redesign errors",
-    ["phase"],  # "crawl" | "redesign" | "deploy" | "unknown"
-)
-_active_connections_gauge = Gauge(
-    "active_sse_connections",
-    "Number of active SSE streaming connections",
-)
-
-
-class RedesignRequest(BaseModel):
-    url: str
-    tier: str = "free"  # "free" or "premium"
-    model_provider: str = "claude"  # "claude" or "gemini"
-
+# Module-level job service reference -- updated during lifespan, patchable in tests
+svc: JobService | None = None
 
 _SITES_DIR: Path = Path("./sites")
+_startup_time: float = 0.0
 
 
-def make_app(sites_dir: Path) -> FastAPI:
-    """Create the FastAPI app bound to a specific sites directory."""
-    settings = Settings()
+# ---------------------------------------------------------------------------
+# Lifespan
+# ---------------------------------------------------------------------------
 
-    _rate_limit_store: dict[str, list[float]] = {}
-    _redesign_semaphore = asyncio.Semaphore(1)
+
+def _create_lifespan(settings: Settings, sites_dir: Path):
+    """Return the lifespan context manager for the FastAPI app."""
 
     @asynccontextmanager
     async def lifespan(app: FastAPI):
-        global svc
-        # --- Startup (crash if dependencies unavailable after retries) ---
+        global svc, _startup_time
         max_retries = 5
         retry_delay = 2
 
@@ -128,11 +79,11 @@ def make_app(sites_dir: Path) -> FastAPI:
         # Seed sites_deployed_total from disk on startup
         try:
             count = sum(1 for d in sites_dir.iterdir() if d.is_dir() and not d.name.startswith("_"))
-            _sites_deployed_gauge.set(count)
+            sites_deployed_gauge.set(count)
         except OSError:
             pass
 
-        # Connect Redis (required — without it, jobs go inline and crawling fails)
+        # Connect Redis (required -- without it, jobs go inline and crawling fails)
         if settings.redis_url:
             for attempt in range(1, max_retries + 1):
                 try:
@@ -144,7 +95,8 @@ def make_app(sites_dir: Path) -> FastAPI:
                 except (ConnectionError, OSError, TimeoutError):
                     if attempt == max_retries:
                         logger.error(
-                            "Redis unavailable after %d attempts — refusing to start", max_retries
+                            "Redis unavailable after %d attempts — refusing to start",
+                            max_retries,
                         )
                         raise
                     logger.warning(
@@ -155,14 +107,11 @@ def make_app(sites_dir: Path) -> FastAPI:
                     )
                     await asyncio.sleep(retry_delay)
 
-        # Startup health checks (non-blocking — warn only, don't fail startup)
-        import httpx
-
-        # Check Claude Code API reachability
+        # Startup health checks (non-blocking -- warn only, don't fail startup)
         claude_health_url = settings.claude_code_api_url.rstrip("/").rsplit("/v1", 1)[0]
         try:
             async with httpx.AsyncClient(timeout=5.0) as client:
-                resp = await client.get(f"{claude_health_url}/health")
+                resp = await client.get(f"{claude_health_url}/health", timeout=10)
                 if resp.status_code == 200:
                     logger.info("Claude Code API reachable at %s", claude_health_url)
                 else:
@@ -174,21 +123,44 @@ def make_app(sites_dir: Path) -> FastAPI:
         except (httpx.ConnectError, httpx.TimeoutException, OSError) as e:
             logger.warning("Claude Code API unreachable at %s/health: %s", claude_health_url, e)
 
+        _startup_time = time.monotonic()
+        logger.info("Server startup complete")
+
         yield
 
-        # --- Shutdown ---
+        # --- Graceful Shutdown ---
+        logger.info("Shutting down gracefully...")
+
+        if active_sse_tasks:
+            logger.info(
+                "Waiting for %d active SSE connection(s) to drain...", len(active_sse_tasks)
+            )
+            done, pending = await asyncio.wait(active_sse_tasks, timeout=10.0)
+            if pending:
+                logger.warning(
+                    "Shutdown: %d SSE connection(s) did not drain in 10s, cancelling",
+                    len(pending),
+                )
+                for task in pending:
+                    task.cancel()
+
         if svc:
             await svc.close()
             svc = None
+
         await close_db()
+        logger.info("Shutdown complete")
 
-    app = FastAPI(title="SastaSpace Preview Server", lifespan=lifespan)
+    return lifespan
 
-    # Prometheus metrics — mounted as ASGI sub-app, access restricted via ingress
-    # annotation (server-snippet) and k8s NetworkPolicy. In-cluster Prometheus
-    # scrapes the pod IP directly, bypassing ingress.
-    app.mount("/metrics", make_asgi_app())
 
+# ---------------------------------------------------------------------------
+# Middleware setup
+# ---------------------------------------------------------------------------
+
+
+def _setup_middleware(app: FastAPI, settings: Settings, get_client_ip):
+    """Attach all middleware to the FastAPI app."""
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.cors_origins,
@@ -197,608 +169,173 @@ def make_app(sites_dir: Path) -> FastAPI:
         allow_headers=["Content-Type"],
     )
 
-    def get_client_ip(request: Request) -> str:
-        """Extract client IP, preferring Cloudflare/proxy headers."""
-        cf_ip = request.headers.get("cf-connecting-ip")
-        if cf_ip:
-            return cf_ip
-        forwarded = request.headers.get("x-forwarded-for")
-        if forwarded:
-            return forwarded.split(",")[0].strip()
-        if request.client:
-            return request.client.host
-        return "unknown"
+    @app.middleware("http")
+    async def request_id_middleware(request: Request, call_next):
+        """Generate a unique request ID, set it in contextvars, return in headers."""
+        rid = request.headers.get("X-Request-ID") or str(uuid4())
+        token = request_id_ctx.set(rid)
+        try:
+            response = await call_next(request)
+            response.headers["X-Request-ID"] = rid
+            return response
+        finally:
+            request_id_ctx.reset(token)
 
-    def _is_localhost(ip: str) -> bool:
-        return ip in ("127.0.0.1", "::1", "::ffff:127.0.0.1")
+    @app.middleware("http")
+    async def add_security_headers(request: Request, call_next):
+        response = await call_next(request)
+        response.headers["Content-Security-Policy"] = (
+            "default-src 'self'; "
+            "script-src 'self' 'unsafe-inline' https:; "
+            "style-src 'self' 'unsafe-inline' https:; "
+            "img-src 'self' data: https:; "
+            "font-src 'self' https:; "
+            "connect-src 'self' https:; "
+            "frame-ancestors 'self'"
+        )
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-Frame-Options"] = "SAMEORIGIN"
+        response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+        response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
+        return response
 
-    def is_rate_limited(ip: str) -> tuple[bool, int]:
+    @app.middleware("http")
+    async def log_request_duration(request: Request, call_next):
+        start = time.monotonic()
+        response = await call_next(request)
+        duration_ms = round((time.monotonic() - start) * 1000, 2)
+        path = request.url.path
+        if not path.startswith("/metrics"):
+            logger.info(
+                "request_completed",
+                extra={
+                    "method": request.method,
+                    "path": path,
+                    "status": response.status_code,
+                    "duration_ms": duration_ms,
+                    "client_ip": get_client_ip(request),
+                },
+            )
+        return response
+
+
+# ---------------------------------------------------------------------------
+# Helper functions (used by routes and middleware)
+# ---------------------------------------------------------------------------
+
+
+def _get_client_ip(request: Request) -> str:
+    """Extract client IP, preferring Cloudflare/proxy headers."""
+    cf_ip = request.headers.get("cf-connecting-ip")
+    if cf_ip:
+        return cf_ip
+    forwarded = request.headers.get("x-forwarded-for")
+    if forwarded:
+        return forwarded.split(",")[0].strip()
+    if request.client:
+        return request.client.host
+    return "unknown"
+
+
+def _is_localhost(ip: str) -> bool:
+    return ip in ("127.0.0.1", "::1", "::ffff:127.0.0.1")
+
+
+# ---------------------------------------------------------------------------
+# App factory
+# ---------------------------------------------------------------------------
+
+
+def make_app(sites_dir: Path) -> FastAPI:
+    """Create the FastAPI app bound to a specific sites directory."""
+    settings = Settings()
+
+    _rate_limit_store: dict[str, list[float]] = {}
+    _redesign_semaphore = asyncio.Semaphore(1)
+
+    def is_rate_limited(ip: str) -> tuple[bool, int, int, int]:
+        """Check rate limit status for an IP.
+
+        Returns (is_limited, retry_after, remaining, reset_timestamp).
+        """
         now = time.time()
+        window = settings.rate_limit_window_seconds
         timestamps = _rate_limit_store.get(ip, [])
-        timestamps = [t for t in timestamps if t > now - settings.rate_limit_window_seconds]
+        timestamps = [t for t in timestamps if t > now - window]
         if not timestamps:
             _rate_limit_store.pop(ip, None)
         else:
             _rate_limit_store[ip] = timestamps
+
+        remaining = max(0, settings.rate_limit_max - len(timestamps))
+        reset_ts = int(timestamps[0] + window) if timestamps else int(now + window)
+
         if len(timestamps) >= settings.rate_limit_max:
-            retry_after = int(timestamps[0] - (now - settings.rate_limit_window_seconds)) + 1
-            return (True, retry_after)
-        return (False, 0)
+            retry_after = int(timestamps[0] - (now - window)) + 1
+            return (True, retry_after, 0, reset_ts)
+        return (False, 0, remaining, reset_ts)
 
     def record_request(ip: str) -> None:
         _rate_limit_store.setdefault(ip, []).append(time.time())
 
-    # ---- SSE stream (inline fallback when Redis is unavailable) ----
-
-    async def redesign_stream(
-        url: str, tier: str = "free", model_provider: str = "claude"
-    ) -> AsyncGenerator[bytes, None]:
-        job_id = str(uuid4())
-        start_time = time.monotonic()
-        _active_connections_gauge.inc()
-
-        # Record job in database
-        ip = "inline"
-        try:
-            await create_job(
-                job_id=job_id,
-                url=url,
-                client_ip=ip,
-                tier=tier,
-                model_provider=model_provider,
-            )
-        except (ConnectionError, OSError) as e:
-            logger.warning("Failed to record job: %s", e)
-
-        async with _redesign_semaphore:
-            try:
-                # Step 1: Crawl
-                crawling_data = {
-                    "job_id": job_id,
-                    "message": "Crawling your site...",
-                    "progress": 10,
-                }
-                yield format_sse_event(data_str=json.dumps(crawling_data), event="crawling")
-
-                await update_job(
-                    job_id, status=JobStatus.CRAWLING.value, progress=10, message="Crawling..."
-                )
-                crawl_result = await crawl(url)
-                if crawl_result.error:
-                    err_msg = "Could not reach that website. Check the URL and try again."
-                    _redesign_errors_total.labels(phase="crawl").inc()
-                    await update_job(job_id, status=JobStatus.FAILED.value, error=err_msg)
-                    yield format_sse_event(
-                        data_str=json.dumps({"job_id": job_id, "error": err_msg}),
-                        event="error",
-                    )
-                    return
-
-                # Step 2: Redesign (sync -- use to_thread)
-                redesigning_data = {
-                    "job_id": job_id,
-                    "message": "Claude is redesigning...",
-                    "progress": 40,
-                }
-                yield format_sse_event(data_str=json.dumps(redesigning_data), event="redesigning")
-
-                await update_job(
-                    job_id,
-                    status=JobStatus.REDESIGNING.value,
-                    progress=40,
-                    message="Redesigning...",
-                )
-
-                try:
-                    redesign_result = await asyncio.wait_for(
-                        asyncio.to_thread(
-                            run_redesign,
-                            crawl_result,
-                            settings,
-                            tier,
-                            model_provider=model_provider,
-                        ),
-                        timeout=600,
-                    )
-                except TimeoutError:
-                    err_msg = "Redesign timed out after 10 minutes."
-                    logger.warning("Redesign timeout | job_id=%s url=%s", job_id, url)
-                    _redesign_errors_total.labels(phase="redesign").inc()
-                    await update_job(job_id, status=JobStatus.FAILED.value, error=err_msg)
-                    yield format_sse_event(
-                        data_str=json.dumps({"job_id": job_id, "error": err_msg}),
-                        event="error",
-                    )
-                    return
-
-                # Handle both RedesignResult and raw string
-                if hasattr(redesign_result, "html"):
-                    html = redesign_result.html
-                    build_dir = redesign_result.build_dir
-                else:
-                    html = redesign_result
-                    build_dir = None
-
-                # Sanitize AI-generated HTML — strip inline event handlers
-                # (onclick, onerror, onload, etc.) and javascript: URLs.
-                # Note: nh3.clean() strips <script>/<style> which breaks
-                # AI-generated pages, so we use targeted regex sanitization
-                # to remove only dangerous patterns while preserving structure.
-                import re
-
-                # Strip inline event handlers (on*="...")
-                html = re.sub(
-                    r'\s+on\w+\s*=\s*"[^"]*"',
-                    "",
-                    html,
-                    flags=re.IGNORECASE,
-                )
-                html = re.sub(
-                    r"\s+on\w+\s*=\s*'[^']*'",
-                    "",
-                    html,
-                    flags=re.IGNORECASE,
-                )
-                # Strip javascript: URLs in href/src attributes
-                html = re.sub(
-                    r'(href|src)\s*=\s*"javascript:[^"]*"',
-                    r'\1=""',
-                    html,
-                    flags=re.IGNORECASE,
-                )
-                html = re.sub(
-                    r"(href|src)\s*=\s*'javascript:[^']*'",
-                    r"\1=''",
-                    html,
-                    flags=re.IGNORECASE,
-                )
-
-                # Step 3: Deploy (sync -- use to_thread)
-                deploying_data = {
-                    "job_id": job_id,
-                    "message": "Deploying your redesign...",
-                    "progress": 80,
-                }
-                yield format_sse_event(data_str=json.dumps(deploying_data), event="deploying")
-
-                await update_job(
-                    job_id,
-                    status=JobStatus.DEPLOYING.value,
-                    progress=80,
-                    message="Deploying...",
-                )
-                result = await asyncio.to_thread(
-                    deploy, url, html, settings.sites_dir, build_dir=build_dir
-                )
-                _sites_deployed_gauge.inc()
-
-                # Step 4: Done
-                done_data = {
-                    "job_id": job_id,
-                    "message": "Done!",
-                    "progress": 100,
-                    "url": f"/{result.subdomain}/",
-                    "subdomain": result.subdomain,
-                }
-                await update_job(
-                    job_id,
-                    status=JobStatus.DONE.value,
-                    progress=100,
-                    message="Done!",
-                    subdomain=result.subdomain,
-                    html_path=str(result.index_path),
-                )
-                _redesign_latency_seconds.observe(time.monotonic() - start_time)
-                yield format_sse_event(data_str=json.dumps(done_data), event="done")
-            except Exception:  # Broad catch: log and emit SSE error to client
-                _redesign_errors_total.labels(phase="unknown").inc()
-                err_data = {
-                    "job_id": job_id,
-                    "error": ("Redesign service unavailable. Please try again later."),
-                }
-                await update_job(
-                    job_id,
-                    status=JobStatus.FAILED.value,
-                    error="Redesign service unavailable",
-                )
-                yield format_sse_event(data_str=json.dumps(err_data), event="error")
-                return
-            finally:
-                _active_connections_gauge.dec()
-
-    # ---- SSE stream via Redis Pub/Sub ----
-
-    async def redis_job_stream(job_id: str) -> AsyncGenerator[bytes, None]:
-        """Stream job status updates from Redis Pub/Sub as SSE events."""
-        if not svc:
-            return
-
-        async for update in svc.subscribe_job(job_id):
-            event_name = update.get("event", "message")
-            data = update.get("data", update)
-            yield format_sse_event(data_str=json.dumps(data), event=event_name)
-
-    # ---- API Endpoints ----
-
-    @app.post("/redesign", response_model=None)
-    async def redesign_endpoint(
-        body: RedesignRequest, request: Request
-    ) -> JSONResponse | EventSourceResponse:
-        ip = get_client_ip(request)
-
-        # Validate and normalize URL
-        valid, normalized_or_error = is_valid_url(body.url)
-        if not valid:
-            return JSONResponse(
-                status_code=400,
-                content={"error": normalized_or_error},
-            )
-        body.url = normalized_or_error
-
-        # Check for existing redesign (dedup by URL hash)
-        uhash = url_hash(body.url)
-        try:
-            existing = await find_site_by_url_hash(uhash)
-            if existing and existing.get("subdomain") and existing.get("job_id"):
-                logger.info(
-                    "DEDUP HIT | url=%s hash=%s subdomain=%s",
-                    body.url,
-                    uhash,
-                    existing["subdomain"],
-                )
-
-                # Return the existing job_id so the client streams from /jobs/{id}/stream
-                # That endpoint immediately emits the terminal done event for completed jobs.
-                return JSONResponse(content={"job_id": existing["job_id"]})
-        except (ConnectionError, OSError) as e:
-            logger.warning("Failed to check dedup: %s", e)  # DB unavailable — proceed with redesign
-
-        # Validate tier
-        tier = body.tier if body.tier in ("free", "premium") else "free"
-        model_provider = (
-            body.model_provider if body.model_provider in ("claude", "gemini") else "claude"
-        )
-
-        # Rate limit check (localhost exempt)
-        if not _is_localhost(ip):
-            limited, retry_after = is_rate_limited(ip)
-            if limited:
-                _redesign_requests_total.labels(status="rate_limited").inc()
-                return JSONResponse(
-                    status_code=429,
-                    content={
-                        "error": (
-                            f"Rate limit exceeded. Try again in {retry_after // 60 + 1} minutes."
-                        ),
-                        "retry_after": retry_after,
-                    },
-                )
-
-        # Record attempt (localhost exempt)
-        if not _is_localhost(ip):
-            record_request(ip)
-
-        # If Redis is available, use async job queue — return job_id immediately
-        if svc is not None:
-            _redesign_requests_total.labels(status="started").inc()
-            job_id = await svc.enqueue(
-                url=body.url,
-                client_ip=ip,
-                tier=tier,
-                model_provider=model_provider,
-            )
-            return JSONResponse(content={"job_id": job_id})
-
-        # Fallback: inline processing (no Redis)
-        # Concurrency check
-        if _redesign_semaphore.locked():
-            _redesign_requests_total.labels(status="concurrency_limited").inc()
-            return JSONResponse(
-                status_code=429,
-                content={"error": "A redesign is already in progress. Please wait and try again."},
-            )
-
-        _redesign_requests_total.labels(status="started").inc()
-        return EventSourceResponse(redesign_stream(body.url, tier, model_provider))
-
-    # ---- Job status endpoints ----
-
-    @app.get("/jobs/{job_id}/stream", response_model=None)
-    async def job_stream_endpoint(job_id: str) -> EventSourceResponse:
-        """SSE stream for a specific job. Reconnectable."""
-        job = await get_job(job_id)
-        if job is None:
-            raise HTTPException(status_code=404, detail="Job not found")
-
-        if job["status"] in (JobStatus.DONE.value, JobStatus.FAILED.value):
-
-            async def _terminal():
-                if job["status"] == JobStatus.DONE.value:
-                    payload = json.dumps(
-                        {
-                            "job_id": job_id,
-                            "subdomain": job.get("subdomain", ""),
-                            "url": job.get("url", ""),
-                            "progress": 100,
-                        }
-                    )
-                    yield format_sse_event(data_str=payload, event="done")
-                else:
-                    payload = json.dumps(
-                        {
-                            "job_id": job_id,
-                            "error": job.get("error", "Job failed"),
-                        }
-                    )
-                    yield format_sse_event(data_str=payload, event="error")
-
-            return EventSourceResponse(_terminal())
-
-        if svc is None:
-            raise HTTPException(status_code=503, detail="Job queue unavailable")
-
-        return EventSourceResponse(redis_job_stream(job_id))
-
-    @app.get("/jobs/{job_id}", response_model=None)
-    async def get_job_status(job_id: str) -> JSONResponse:
-        """Get the current status of a redesign job."""
-        job = await get_job(job_id)
-        if job is None:
-            return JSONResponse(status_code=404, content={"error": "Job not found"})
-        return JSONResponse(content=job)
-
-    @app.get("/jobs", response_model=None)
-    async def list_jobs_endpoint(
-        status: str | None = None,
-        limit: int = 50,
-    ) -> JSONResponse:
-        """List recent redesign jobs."""
-        jobs = await list_jobs(limit=min(limit, 100), status=status)
-        return JSONResponse(content={"jobs": jobs, "count": len(jobs)})
-
-    @app.get("/sites", response_model=None)
-    async def list_sites_endpoint(limit: int = 100) -> JSONResponse:
-        """List all deployed redesigned sites."""
-        sites_list = await list_sites(limit=min(limit, 200))
-        return JSONResponse(content={"sites": sites_list, "count": len(sites_list)})
-
-    # ---- Twenty CRM sync ----
-
-    @app.post("/twenty/person", response_model=None)
-    async def create_twenty_person(request: Request) -> JSONResponse:
-        twenty = get_twenty_client(settings.twenty_url, settings.twenty_api_key)
-        try:
-            body = await request.json()
-            name = body.get("name", "").strip()
-            email = body.get("email", "").strip()
-            message = body.get("message", "")
-            domain = body.get("domain")  # subdomain or null
-
-            if not email:
-                return JSONResponse(status_code=400, content={"error": "Email required"})
-
-            parts = name.split(None, 1)
-            first_name = parts[0] if parts else ""
-            last_name = parts[1] if len(parts) > 1 else ""
-
-            company_id = None
-            if domain:
-                company = await twenty.find_company_by_domain(domain)
-                if not company:
-                    company = await twenty.upsert_company(domain, name=domain)
-                if company:
-                    company_id = company.get("id")
-
-            person = await twenty.create_person(
-                email=email,
-                company_id=company_id,
-                first_name=first_name,
-                last_name=last_name,
-            )
-            if person and message:
-                await twenty.create_note(person["id"], message)
-
-            return JSONResponse(content={"ok": True})
-        except (ValueError, KeyError, TypeError, OSError) as e:
-            logger.warning("Twenty person creation failed: %s", e)
-            return JSONResponse(content={"ok": True})  # Don't reveal failures
-
-    # ---- Webhook routes ----
-
-    @app.post("/webhooks/twenty", response_model=None)
-    async def twenty_webhook(request: Request) -> Response:
-        """Handle admin actions from Twenty CRM via webhooks."""
-        if not settings.twenty_webhook_secret:
-            return Response(status_code=404)
-
-        body = await request.body()
-        signature = request.headers.get("X-Twenty-Webhook-Signature", "")
-        timestamp = request.headers.get("X-Twenty-Webhook-Timestamp", "")
-
-        if not verify_webhook_signature(body, signature, timestamp, settings.twenty_webhook_secret):
-            return Response(status_code=401)
-
-        # Redis dedup — skip duplicate webhooks
-        # SET NX returns True if key was newly created (first time), None if it already existed
-        payload_hash = hashlib.sha256(body).hexdigest()
-        if svc and svc._redis:
-            is_new = await svc._redis.set(f"webhook:twenty:{payload_hash}", "1", nx=True, ex=600)
-            if not is_new:  # None = key already existed = duplicate webhook
-                return Response(status_code=200, content="duplicate")
-
-        payload = json.loads(body)
-
-        # --- Handle Twenty native CRUD events (company.deleted, etc.) ---
-        event_name = payload.get("eventName", "")
-        if event_name == "company.deleted":
-            record = payload.get("record", {})
-            domain_url = ""
-            domain_name = record.get("domainName", {})
-            if isinstance(domain_name, dict):
-                domain_url = domain_name.get("primaryLinkUrl", "")
-            if domain_url:
-                subdomain = derive_subdomain(domain_url)
-                logger.info("Twenty company.deleted → subdomain=%s url=%s", subdomain, domain_url)
-                await delete_site_files(subdomain, settings.sites_dir)
-                await delete_site_db_record(subdomain)
-                return Response(status_code=200, content="deleted")
-            logger.warning("company.deleted but no domainName URL in record")
-            return Response(status_code=200, content="no-url")
-
-        # --- Handle custom admin actions (adminAction field) ---
-        data = payload.get("data", {})
-        action = data.get("adminAction")
-        subdomain = data.get("subdomain", "")
-        if action == "delete":
-            await delete_site_files(subdomain, settings.sites_dir)
-            await delete_site_db_record(subdomain)
-            return Response(status_code=200, content="deleted")
-
-        elif action == "reprocess":
-            url = await get_original_url_from_db(subdomain)
-            if not url:
-                return Response(status_code=404, content="URL not found")
-            if svc:
-                await svc.enqueue(url, "admin", tier=data.get("tier", "free"))
-            else:
-                return Response(status_code=503, content="Job service unavailable")
-            await delete_site_files(subdomain, settings.sites_dir)
-            return Response(status_code=200, content="reprocessing")
-
-        return Response(status_code=200, content="ignored")
-
-    # ---- Admin endpoints ----
-
-    @app.get("/admin/sites", response_model=None)
-    async def admin_list_sites(request: Request) -> JSONResponse | Response:
-        """List all deployed sites for Twenty reconciliation."""
-        auth = request.headers.get("Authorization", "")
-        if not settings.twenty_admin_key or auth != f"Bearer {settings.twenty_admin_key}":
-            return Response(status_code=401)
-        sites = await list_sites(limit=1000)
-        return JSONResponse(content={"sites": sites})
-
-    @app.get("/admin/sync", response_model=None)
-    async def admin_sync(request: Request) -> JSONResponse | Response:
-        """Reconcile missed push events — sync recent jobs to Twenty."""
-        auth = request.headers.get("Authorization", "")
-        if not settings.twenty_admin_key or auth != f"Bearer {settings.twenty_admin_key}":
-            return Response(status_code=401)
-
-        twenty = get_twenty_client(settings.twenty_url, settings.twenty_api_key)
-        if isinstance(twenty, NoopTwentyClient):
-            return JSONResponse(content={"synced": 0, "message": "Twenty integration disabled"})
-
-        # Get recent completed/failed jobs from last 24h
-        recent_jobs = await list_jobs(limit=100, status="done")
-        synced = 0
-        already_exists = 0
-        errors = 0
-
-        for job in recent_jobs:
-            job_id = job.get("id", "")
-            try:
-                domain = extract_domain(job.get("url", ""))
-                company = await twenty.upsert_company(domain, name=job.get("site_title", domain))
-                if company:
-                    synced += 1
-            except (ValueError, KeyError, TypeError, OSError) as e:
-                logger.warning("Sync failed for job %s: %s", job_id, e)
-                errors += 1
-
-        return JSONResponse(
-            content={"synced": synced, "already_exists": already_exists, "errors": errors}
-        )
-
-    # ---- Existing routes ----
-
-    @app.get("/", response_class=HTMLResponse)
-    async def index() -> str:
-        registry_path = sites_dir / "_registry.json"
-        registry: list[dict] = []
-        if registry_path.exists():
-            try:
-                registry = json.loads(registry_path.read_text())
-            except (json.JSONDecodeError, OSError):
-                registry = []
-
-        row_parts: list[str] = []
-        for entry in sorted(registry, key=lambda e: e.get("timestamp", ""), reverse=True):
-            sub = entry["subdomain"]
-            orig = entry.get("original_url", "")
-            orig_escaped = html.escape(orig, quote=True)
-            ts = entry.get("timestamp", "")[:19].replace("T", " ")
-            row_parts.append(
-                f"<tr>"
-                f"<td><a href='/{sub}/'>{sub}</a></td>"
-                f"<td><a href='{orig_escaped}' target='_blank'>{orig_escaped}</a></td>"
-                f"<td>{ts}</td>"
-                f"</tr>"
-            )
-        rows = "".join(row_parts)
-
-        if not rows:
-            body = (
-                "<p>No sites redesigned yet. Run <code>sastaspace redesign &lt;url&gt;</code></p>"
-            )
-        else:
-            body = f"""
-            <table>
-              <thead><tr><th>Preview</th><th>Original URL</th><th>Created</th></tr></thead>
-              <tbody>{rows}</tbody>
-            </table>"""
-
-        return f"""<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>SastaSpace — Redesigned Sites</title>
-  <style>
-    body {{ font-family: system-ui, sans-serif; max-width: 900px;
-            margin: 40px auto; padding: 0 20px; }}
-    h1 {{ font-size: 1.8rem; margin-bottom: 4px; }}
-    p.tagline {{ color: #666; margin-top: 0; }}
-    table {{ width: 100%; border-collapse: collapse; margin-top: 24px; }}
-    th, td {{ text-align: left; padding: 10px 12px; border-bottom: 1px solid #eee; }}
-    th {{ background: #f5f5f5; font-weight: 600; }}
-    a {{ color: #0066cc; }}
-    code {{ background: #f0f0f0; padding: 2px 6px; border-radius: 4px; font-size: 0.9em; }}
-  </style>
-</head>
-<body>
-  <h1>SastaSpace</h1>
-  <p class="tagline">AI Website Redesigner — local preview server</p>
-  {body}
-</body>
-</html>"""
-
-    @app.get("/{subdomain}/", response_class=HTMLResponse)
-    async def serve_site(subdomain: str) -> Response:
-        resolved_root = sites_dir.resolve()
-        index_path = (sites_dir / subdomain / "index.html").resolve()
-        if not index_path.is_relative_to(resolved_root):
-            return HTMLResponse("<h1>404</h1>", status_code=404)
-        if not index_path.exists():
-            return HTMLResponse(
-                f"<h1>404</h1><p>No redesign found for <code>{html.escape(subdomain)}</code></p>",
-                status_code=404,
-            )
-        return FileResponse(str(index_path), media_type="text/html")
-
-    @app.get("/{subdomain}/{path:path}", response_class=HTMLResponse)
-    async def serve_site_asset(subdomain: str, path: str) -> Response:
-        resolved_root = sites_dir.resolve()
-        asset_path = (sites_dir / subdomain / path).resolve()
-        if not asset_path.is_relative_to(resolved_root):
-            return HTMLResponse("<h1>404</h1>", status_code=404)
-        if asset_path.exists() and asset_path.is_file():
-            return FileResponse(str(asset_path))
-        index_path = (sites_dir / subdomain / "index.html").resolve()
-        if index_path.is_relative_to(resolved_root) and index_path.exists():
-            return FileResponse(str(index_path), media_type="text/html")
-        return HTMLResponse("<h1>404</h1>", status_code=404)
+    # --- Build the app ---
+    app = FastAPI(title="SastaSpace Preview Server", lifespan=_create_lifespan(settings, sites_dir))
+
+    # Prometheus metrics
+    app.mount("/metrics", make_asgi_app())
+
+    # Middleware
+    _setup_middleware(app, settings, _get_client_ip)
+
+    # A mutable proxy so routers can access the live `svc` reference
+    # (updated in lifespan). Reads always reflect the current module-level svc.
+    import sastaspace.server as _self_module
+
+    class _SvcProxy(list):
+        """List-like proxy that always returns the current module-level svc."""
+
+        def __getitem__(self, idx):
+            return _self_module.svc
+
+    svc_ref = _SvcProxy([None])
+
+    # Wire health check router
+    configure_health(
+        startup_time_ref=[0.0],
+        active_sse_tasks=active_sse_tasks,
+        svc_ref=svc_ref,
+    )
+    app.include_router(health_router)
+
+    # Wire redesign + job routes
+    redesign_router = create_redesign_router(
+        settings=settings,
+        sites_dir=sites_dir,
+        get_client_ip=_get_client_ip,
+        is_localhost_fn=_is_localhost,
+        is_rate_limited_fn=is_rate_limited,
+        record_request_fn=record_request,
+        rate_limit_store=_rate_limit_store,
+        semaphore=_redesign_semaphore,
+        deploy_fn=deploy,
+        svc_ref=svc_ref,
+    )
+    app.include_router(redesign_router)
+
+    # Wire admin/webhook routes
+    admin_router = create_admin_router(settings=settings, svc_ref=svc_ref)
+    app.include_router(admin_router)
+
+    # Wire site-serving routes (must be last -- catch-all path patterns)
+    sites_router = create_sites_router(sites_dir)
+    app.include_router(sites_router)
 
     return app
+
+
+# ---------------------------------------------------------------------------
+# Standalone server helpers (used by CLI)
+# ---------------------------------------------------------------------------
 
 
 def _is_port_listening(port: int) -> bool:

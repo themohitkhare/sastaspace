@@ -1,6 +1,15 @@
 "use client";
 
 import { useState, useRef, useCallback, useEffect } from "react";
+import { Monitor, Tablet, Smartphone } from "lucide-react";
+
+type DeviceMode = "desktop" | "tablet" | "mobile";
+
+const DEVICE_CONFIG: Record<DeviceMode, { maxWidth: string; label: string; icon: typeof Monitor }> = {
+  desktop: { maxWidth: "100%", label: "Desktop", icon: Monitor },
+  tablet: { maxWidth: "768px", label: "Tablet", icon: Tablet },
+  mobile: { maxWidth: "375px", label: "Mobile", icon: Smartphone },
+};
 
 interface BeforeAfterSliderProps {
   originalUrl: string;
@@ -11,6 +20,7 @@ export function BeforeAfterSlider({ originalUrl, redesignUrl }: BeforeAfterSlide
   const [splitPosition, setSplitPosition] = useState(50);
   const [isDragging, setIsDragging] = useState(false);
   const [activeTab, setActiveTab] = useState<"before" | "after">("after");
+  const [deviceMode, setDeviceMode] = useState<DeviceMode>("desktop");
   const containerRef = useRef<HTMLDivElement>(null);
 
   const handleMove = useCallback(
@@ -69,14 +79,52 @@ export function BeforeAfterSlider({ originalUrl, redesignUrl }: BeforeAfterSlide
     };
   }, [isDragging, handleMove]);
 
+  const currentDevice = DEVICE_CONFIG[deviceMode];
+  const isMobileFrame = deviceMode === "mobile";
+
   return (
     <div className="w-full">
+      {/* Device switcher — desktop only */}
+      <div className="hidden md:flex items-center justify-center gap-1 mb-4">
+        <div className="flex gap-1 p-1 rounded-lg bg-muted">
+          {(Object.keys(DEVICE_CONFIG) as DeviceMode[]).map((mode) => {
+            const { label, icon: Icon } = DEVICE_CONFIG[mode];
+            const isActive = deviceMode === mode;
+            return (
+              <button
+                key={mode}
+                type="button"
+                onClick={() => setDeviceMode(mode)}
+                aria-label={`Preview as ${label}`}
+                className={[
+                  "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors",
+                  isActive
+                    ? "bg-background text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground",
+                ].join(" ")}
+              >
+                <Icon className="w-4 h-4" />
+                <span className="hidden lg:inline">{label}</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
       {/* Desktop: side-by-side slider */}
-      <div className="hidden md:block">
+      <div className="hidden md:flex justify-center">
         <div
           ref={containerRef}
-          className="relative w-full aspect-[4/3] sm:aspect-video rounded-xl overflow-hidden border border-border select-none"
-          style={{ boxShadow: "var(--shadow-lg)" }}
+          className={[
+            "relative w-full aspect-[4/3] sm:aspect-video rounded-xl overflow-hidden border select-none transition-all duration-300",
+            isMobileFrame
+              ? "border-[12px] border-foreground/20 rounded-[2rem]"
+              : "border-border",
+          ].join(" ")}
+          style={{
+            boxShadow: "var(--shadow-lg)",
+            maxWidth: currentDevice.maxWidth,
+          }}
           onMouseDown={handleMouseDown}
           onTouchStart={(e) => {
             setIsDragging(true);
