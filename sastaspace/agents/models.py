@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 
 def _coerce_int(v: object) -> object:
@@ -13,10 +13,35 @@ def _coerce_int(v: object) -> object:
     return v
 
 
+def _coerce_str(v: object) -> object:
+    """Coerce None to empty string — LLMs often return null for optional strings."""
+    if v is None:
+        return ""
+    return v
+
+
+class _NullSafeModel(BaseModel):
+    """Base model that coerces null values to defaults for all str fields.
+
+    LLMs (especially Gemini) frequently return null instead of "" for
+    optional string fields. This base class handles it globally.
+    """
+
+    @model_validator(mode="before")
+    @classmethod
+    def coerce_nulls_to_defaults(cls, data: dict) -> dict:
+        if not isinstance(data, dict):
+            return data
+        for field_name, field_info in cls.model_fields.items():
+            if field_name in data and data[field_name] is None:
+                data[field_name] = field_info.default if field_info.default is not None else ""
+        return data
+
+
 # --- Crawl Analyst output ---
 
 
-class BrandProfile(BaseModel):
+class BrandProfile(_NullSafeModel):
     """Extracted brand identity from the crawled site."""
 
     name: str = ""
@@ -26,7 +51,7 @@ class BrandProfile(BaseModel):
     personality: str = ""  # deeper brand character for design decisions
 
 
-class ContentSection(BaseModel):
+class ContentSection(_NullSafeModel):
     """A logical content section identified on the page."""
 
     heading: str = ""
@@ -41,7 +66,7 @@ class ContentSection(BaseModel):
         return _coerce_int(v)
 
 
-class SiteAnalysis(BaseModel):
+class SiteAnalysis(_NullSafeModel):
     """Complete analysis of a crawled website — output of the CrawlAnalyst agent."""
 
     brand: BrandProfile = Field(default_factory=BrandProfile)
@@ -60,7 +85,7 @@ class SiteAnalysis(BaseModel):
 # --- Design Strategist output ---
 
 
-class ColorPalette(BaseModel):
+class ColorPalette(_NullSafeModel):
     """Color palette recommendation for the redesign."""
 
     primary: str = ""
@@ -71,7 +96,7 @@ class ColorPalette(BaseModel):
     rationale: str = ""
 
 
-class DesignTokens(BaseModel):
+class DesignTokens(_NullSafeModel):
     """Exact design tokens ensuring visual consistency without a normalizer pass."""
 
     spacing_unit: str = "8px"
@@ -85,7 +110,7 @@ class DesignTokens(BaseModel):
     max_content_width: str = "1200px"
 
 
-class TypographyPlan(BaseModel):
+class TypographyPlan(_NullSafeModel):
     """Typography choices for the redesign."""
 
     heading_font: str = "Inter"
@@ -94,7 +119,7 @@ class TypographyPlan(BaseModel):
     rationale: str = ""
 
 
-class Component(BaseModel):
+class Component(_NullSafeModel):
     """A UI component to include in the redesign."""
 
     name: str = ""  # e.g. "hero-section", "feature-grid", "testimonial-carousel"
@@ -102,7 +127,7 @@ class Component(BaseModel):
     layout_hint: str = ""  # e.g. "CSS Grid 3-col", "Flexbox centered"
 
 
-class DesignBrief(BaseModel):
+class DesignBrief(_NullSafeModel):
     """Design strategy and plan — output of the DesignStrategist agent."""
 
     design_direction: str = ""  # overall design approach
@@ -139,14 +164,14 @@ class DesignBrief(BaseModel):
 # --- Copywriter output ---
 
 
-class CopywriterCTA(BaseModel):
+class CopywriterCTA(_NullSafeModel):
     """A call-to-action written by the copywriter."""
 
     text: str = ""
     context: str = ""  # where this CTA appears on the page
 
 
-class CopywriterSection(BaseModel):
+class CopywriterSection(_NullSafeModel):
     """A rewritten content section."""
 
     original_heading: str = ""
@@ -155,7 +180,7 @@ class CopywriterSection(BaseModel):
     section_type: str = ""  # features, testimonials, pricing, about, etc.
 
 
-class CopywriterOutput(BaseModel):
+class CopywriterOutput(_NullSafeModel):
     """Conversion-optimized copy — output of the Copywriter agent."""
 
     headline: str = ""
@@ -173,7 +198,7 @@ class CopywriterOutput(BaseModel):
 # --- Component Selector output ---
 
 
-class SelectedComponent(BaseModel):
+class SelectedComponent(_NullSafeModel):
     """A component selected from the library for use in the redesign."""
 
     category: str = ""  # e.g. "heroes", "testimonials", "pricing-sections"
@@ -183,7 +208,7 @@ class SelectedComponent(BaseModel):
     conversion_impact: str = ""  # how it helps sell/convert
 
 
-class ComponentSelection(BaseModel):
+class ComponentSelection(_NullSafeModel):
     """Selected components from the library — output of the ComponentSelector agent."""
 
     selected: list[SelectedComponent] = Field(default_factory=list)
@@ -195,7 +220,7 @@ class ComponentSelection(BaseModel):
 # --- Quality Reviewer output ---
 
 
-class QualityIssue(BaseModel):
+class QualityIssue(_NullSafeModel):
     """A quality issue found in the generated HTML."""
 
     severity: str = "warning"  # "critical", "warning", "info"
@@ -204,7 +229,7 @@ class QualityIssue(BaseModel):
     suggestion: str = ""
 
 
-class QualityReport(BaseModel):
+class QualityReport(_NullSafeModel):
     """Quality review of generated HTML — output of the QualityReviewer agent."""
 
     passed: bool = False
