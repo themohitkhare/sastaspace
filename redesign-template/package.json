@@ -27,6 +27,11 @@
     "@radix-ui/react-select": "^2.1.0",
     "@radix-ui/react-checkbox": "^1.1.0"
   },
+  "overrides": {
+    "glob": "^11.1.0",
+    "minimatch": "^9.0.7",
+    "tar": "^7.5.11"
+  },
   "devDependencies": {
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",

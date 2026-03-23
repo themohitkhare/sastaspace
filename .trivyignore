@@ -73,3 +73,14 @@ CVE-2025-15366
 CVE-2025-15367
 CVE-2025-8194
 CVE-2026-1299
+
+# Go stdlib CVEs in Playwright's bundled Chromium/driver binary
+# These affect Go's crypto/tls, archive/tar, net/url, archive/zip, crypto/x509.
+# Playwright bundles a Go binary we don't control; fix requires upstream Playwright update.
+# Not exploitable through our application (we don't use Go directly).
+CVE-2025-68121
+CVE-2025-58183
+CVE-2025-61726
+CVE-2025-61728
+CVE-2025-61729
+CVE-2026-25679
