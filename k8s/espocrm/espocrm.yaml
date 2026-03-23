@@ -1,0 +1,94 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: espocrm-data-pvc
+  namespace: espocrm
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 2Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: espocrm
+  namespace: espocrm
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: espocrm
+  template:
+    metadata:
+      labels:
+        app: espocrm
+    spec:
+      containers:
+        - name: espocrm
+          image: espocrm/espocrm:latest
+          ports:
+            - containerPort: 80
+          env:
+            - name: ESPOCRM_DATABASE_HOST
+              value: espocrm-mariadb
+            - name: ESPOCRM_DATABASE_NAME
+              value: espocrm
+            - name: ESPOCRM_DATABASE_USER
+              value: espocrm
+            - name: ESPOCRM_DATABASE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: espocrm-env
+                  key: ESPOCRM_DATABASE_PASSWORD
+            - name: ESPOCRM_ADMIN_USERNAME
+              value: admin
+            - name: ESPOCRM_ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: espocrm-env
+                  key: ESPOCRM_ADMIN_PASSWORD
+            - name: ESPOCRM_SITE_URL
+              value: https://crm.sastaspace.com
+          volumeMounts:
+            - name: espocrm-data
+              mountPath: /var/www/html
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "100m"
+            limits:
+              memory: "1Gi"
+              cpu: "500m"
+          readinessProbe:
+            httpGet:
+              path: /api/v1/App/user
+              port: 80
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            timeoutSeconds: 5
+      volumes:
+        - name: espocrm-data
+          persistentVolumeClaim:
+            claimName: espocrm-data-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: espocrm
+  namespace: espocrm
+spec:
+  selector:
+    app: espocrm
+  ports:
+    - port: 80
+      targetPort: 80
+  type: ClusterIP

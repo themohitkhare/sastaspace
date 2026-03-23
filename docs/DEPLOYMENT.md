@@ -65,6 +65,7 @@ k8s/
 ├── frontend.yaml       (+ service)
 ├── mongodb.yaml        (+ service + pvc 5Gi)
 ├── redis.yaml          (+ service + pvc 2Gi)
+├── espocrm/            (namespace, app, mariadb, secret, ingress)
 ├── twenty/             (namespace, server, worker, postgres, redis, secrets, ingress)
 └── monitoring/         (namespace, grafana, prometheus, loki, promtail, node-exporter,
                          kube-state-metrics, blackbox-exporter, redis-exporter,
@@ -92,7 +93,7 @@ backend ──► redis:6379        (enqueue jobs, pub/sub for SSE)
 Internet → Cloudflare Edge → cloudflared (systemd) → localhost:80 (nginx ingress)
   sastaspace.com / www    → frontend :3000
   api.sastaspace.com      → backend :8080
-  crm.sastaspace.com      → twenty-server :3000 (twenty ns)
+  crm.sastaspace.com      → espocrm :80 (espocrm ns) [migrating from twenty-server :3000]
   monitor.sastaspace.com  → grafana :3001 (monitoring ns)
 ```
 
@@ -191,6 +192,11 @@ make deploy-twenty      # deploy Twenty CRM stack
 make twenty-status
 make twenty-logs        # tail Twenty server logs
 make twenty-setup       # first-time instructions
+make espocrm-deploy    # deploy EspoCRM stack
+make espocrm-status
+make espocrm-logs      # tail EspoCRM app logs
+make espocrm-restart   # rolling restart EspoCRM
+make twenty-remove     # delete Twenty namespace (after EspoCRM verified)
 ```
 
 Custom remote: `make deploy REMOTE_HOST=taxila REMOTE_USER=mkhare`
@@ -227,6 +233,21 @@ make deploy-twenty
 make twenty-status            # verify pods
 # Access: https://crm.sastaspace.com
 ```
+
+### EspoCRM (Lead Management)
+
+Replaces Twenty CRM. 2 pods (app + MariaDB) vs Twenty's 6 pods.
+
+#### First-time setup
+1. Generate secure passwords and update `k8s/espocrm/secret.yaml`
+2. `make espocrm-deploy`
+3. Access https://crm.sastaspace.com, login with admin credentials
+4. Go to Administration → API Users → Create API User → copy API key
+5. Set `ESPOCRM_URL` and `ESPOCRM_API_KEY` in sastaspace-env secret
+6. Verify: `make espocrm-status`
+
+#### After verifying EspoCRM works
+- `make twenty-remove` to delete the Twenty namespace and free ~3GB RAM
 
 ---
 

@@ -1,4 +1,6 @@
 # sastaspace/twenty_models.py
+# DEPRECATED: Use espocrm_sync.py instead. This file will be removed
+# once EspoCRM migration is verified in production.
 """Pydantic models for Twenty CRM API — typed schemas prevent field-name bugs."""
 
 from __future__ import annotations

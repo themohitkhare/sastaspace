@@ -74,6 +74,8 @@ def _settings_mock():
     m = MagicMock()
     m.use_agno_pipeline = True
     m.sites_dir = Path("/data/sites")
+    m.espocrm_url = ""  # Disabled — uses NoopEspoCRMClient
+    m.espocrm_api_key = ""
     return m
 
 

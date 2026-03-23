@@ -25,10 +25,10 @@ from sastaspace.database import (
     update_job,
 )
 from sastaspace.deployer import deploy
+from sastaspace.espocrm_sync import get_espocrm_client
 from sastaspace.html_utils import RedesignError, RedesignResult, inject_badge
 from sastaspace.html_utils import validate_html as _validate_html
 from sastaspace.redesigner import run_redesign
-from sastaspace.twenty_sync import get_twenty_client
 from sastaspace.urls import extract_domain, url_hash
 
 logger = logging.getLogger(__name__)
@@ -487,16 +487,17 @@ async def redesign_handler(
                 {"job_id": job_id, "error": err},
             )
 
-            # Sync failure to Twenty CRM (fire-and-forget)
+            # Sync failure to EspoCRM (fire-and-forget)
             try:
-                twenty = get_twenty_client(settings.twenty_url, settings.twenty_api_key)
+                espo = get_espocrm_client(settings.espocrm_url, settings.espocrm_api_key)
                 domain = extract_domain(url)
-                company = await twenty.upsert_company(
-                    domain,
-                    name=crawl_result.title or domain,
+                await espo.create_or_update_lead(
+                    first_name="",
+                    last_name="",
+                    email="",
+                    website=f"https://{domain}",
+                    description=f"Crawl failed for {domain}",
                 )
-                if company:
-                    logger.info("Twenty CRM: company synced for %s (crawl failed)", domain)
             except (httpx.HTTPError, KeyError, ValueError, OSError):
                 pass
 
@@ -757,22 +758,25 @@ async def redesign_handler(
         url_hash=url_hash(url),
     )
 
-    # Sync to Twenty CRM (fire-and-forget — failure doesn't affect pipeline)
-    twenty = get_twenty_client(settings.twenty_url, settings.twenty_api_key)
+    # Sync to EspoCRM (fire-and-forget — failure doesn't affect pipeline)
+    espo = get_espocrm_client(settings.espocrm_url, settings.espocrm_api_key)
     try:
         bp = getattr(enhanced_result, "business_profile", None) if enhanced_result else None
         company_name = (
             bp.business_name if bp and bp.business_name != "unknown" else crawl_result.title
         )
         domain = extract_domain(url)
-        company = await twenty.upsert_company(
-            domain,
-            name=company_name,
+        lead_id = await espo.create_or_update_lead(
+            first_name="",
+            last_name=company_name or domain,
+            email="",
+            website=f"https://{domain}",
+            description=f"Redesign completed for {domain} (job {job_id})",
         )
-        if company:
-            logger.info("Twenty CRM: company synced for %s (id=%s)", domain, company["id"])
+        if lead_id:
+            logger.info("EspoCRM: lead synced for %s (id=%s)", domain, lead_id)
     except (httpx.HTTPError, KeyError, ValueError, OSError) as e:
-        logger.warning("Twenty sync failed for job %s: %s", job_id, e)
+        logger.warning("EspoCRM sync failed for job %s: %s", job_id, e)
 
     # Clear checkpoint — job is done, no need to keep checkpoint data
     await update_job(

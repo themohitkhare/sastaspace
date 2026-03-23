@@ -1,4 +1,6 @@
 # sastaspace/twenty_sync.py
+# DEPRECATED: Use espocrm_sync.py instead. This file will be removed
+# once EspoCRM migration is verified in production.
 """Twenty CRM sync client — async wrapper around Twenty REST API."""
 
 from __future__ import annotations

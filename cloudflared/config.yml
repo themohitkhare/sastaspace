@@ -12,6 +12,10 @@ ingress:
     path: ^/api/.*
     service: http://localhost:8080
 
+  # EspoCRM -> nginx ingress (routed to espocrm namespace via k8s ingress)
+  - hostname: crm.sastaspace.com
+    service: http://localhost:80
+
   # Everything else -> Next.js (port 3000)
   - hostname: <HOSTNAME>
     service: http://localhost:3000

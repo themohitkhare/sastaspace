@@ -69,7 +69,12 @@ class Settings(BaseSettings):
     # Redis
     redis_url: str = "redis://localhost:6379"
 
-    # Twenty CRM (empty = integration disabled)
+    # EspoCRM integration (replaces Twenty CRM)
+    espocrm_url: str = ""  # e.g., "http://espocrm.espocrm.svc.cluster.local"
+    espocrm_api_key: str = ""  # API key from EspoCRM admin
+    espocrm_admin_key: str = ""  # Admin key for /admin/* endpoints
+
+    # DEPRECATED: Twenty CRM (replaced by EspoCRM — will be removed once migration is verified)
     twenty_url: str = ""
     twenty_api_key: str = ""
     twenty_webhook_secret: str = ""

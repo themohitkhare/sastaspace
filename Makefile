@@ -10,7 +10,8 @@ RSYNC_EXCLUDE := --exclude='.git' --exclude='node_modules' --exclude='__pycache_
 .PHONY: ci install lint k8s-lint test dupes semgrep audit dev dev-api dev-web \
         deploy deploy-build deploy-logs deploy-status deploy-down k8s-apply \
         deploy-monitoring monitoring-status monitoring-logs \
-        deploy-twenty twenty-status twenty-logs twenty-setup
+        deploy-twenty twenty-status twenty-logs twenty-setup \
+        espocrm-deploy espocrm-status espocrm-logs espocrm-restart twenty-remove
 
 install:
 	uv sync
@@ -21,7 +22,7 @@ lint:
 	uv run ruff format --check sastaspace/ tests/
 
 k8s-lint:  ## Validate k8s manifests with kubeconform
-	kubeconform -summary -strict k8s/*.yaml k8s/monitoring/*.yaml
+	kubeconform -summary -strict k8s/*.yaml k8s/monitoring/*.yaml k8s/espocrm/*.yaml
 
 test:
 	uv run pytest tests/ -v
@@ -116,3 +117,23 @@ twenty-setup: ## First-time Twenty setup instructions
 	@echo "2. Run: make deploy-twenty"
 	@echo "3. Wait for pods: make twenty-status"
 	@echo "4. Access: https://crm.sastaspace.com"
+
+# ── EspoCRM ──────────────────────────────────────────────────────────────────
+
+espocrm-deploy: ## Deploy EspoCRM to k8s
+	$(SSH) "cd $(REMOTE_DIR) && sudo microk8s kubectl apply -f k8s/espocrm/"
+	@echo "→ EspoCRM deployed. Access at https://crm.sastaspace.com"
+
+espocrm-status: ## Show EspoCRM pod/svc/ingress status
+	$(SSH) "sudo microk8s kubectl get pods,svc,ingress -n espocrm"
+
+espocrm-logs: ## Tail EspoCRM app logs
+	$(SSH) "sudo microk8s kubectl logs -n espocrm deploy/espocrm --tail=50 -f"
+
+espocrm-restart: ## Rolling restart EspoCRM
+	$(SSH) "sudo microk8s kubectl rollout restart deployment/espocrm -n espocrm"
+
+# Remove Twenty CRM (run after verifying EspoCRM works)
+twenty-remove: ## Delete Twenty CRM namespace
+	$(SSH) "sudo microk8s kubectl delete namespace twenty"
+	@echo "→ Twenty CRM namespace deleted"
