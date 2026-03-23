@@ -80,7 +80,7 @@ def redesign_client(tmp_sites, mock_crawl_result, mock_deploy_result):
 
     with (
         patch(
-            "sastaspace.server.crawl",
+            "sastaspace.routes.sse.crawl",
             new_callable=AsyncMock,
             return_value=mock_crawl_result,
         ) as m_crawl,

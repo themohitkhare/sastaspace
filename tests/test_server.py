@@ -11,11 +11,6 @@ from sastaspace.config import Settings
 from sastaspace.crawler import CrawlResult
 from sastaspace.server import _is_port_listening, ensure_running, make_app
 
-# After the server.py refactor, crawl lives in routes.sse and deploy is injected
-# via the deploy_fn parameter (from sastaspace.deployer). Patch at the import site.
-_CRAWL_PATCH = "sastaspace.routes.sse.crawl"
-_DEPLOY_PATCH = "sastaspace.server.deploy"
-
 SAMPLE_HTML = "<!DOCTYPE html><html><body><h1>Acme</h1></body></html>"
 
 
