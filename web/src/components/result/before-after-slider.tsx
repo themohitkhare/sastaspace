@@ -158,7 +158,7 @@ export function BeforeAfterSlider({ originalUrl, redesignUrl }: BeforeAfterSlide
             After
           </button>
         </div>
-        <div className="relative w-full aspect-[4/3] rounded-xl overflow-hidden border border-border">
+        <div className="relative w-full aspect-[4/3] rounded-xl overflow-hidden border border-border" style={{ boxShadow: "var(--shadow-lg)" }}>
           <iframe
             src={activeTab === "before" ? originalUrl : redesignUrl}
             sandbox="allow-scripts"

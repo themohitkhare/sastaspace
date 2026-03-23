@@ -7,6 +7,9 @@ import { Button } from "@/components/ui/button";
 type Theme = "light" | "dark" | "system";
 
 const STORAGE_KEY = "sastaspace-theme";
+const CYCLE: Theme[] = ["light", "dark", "system"];
+const ICONS: Record<Theme, typeof Sun> = { light: Sun, dark: Moon, system: Monitor };
+const LABELS: Record<Theme, string> = { light: "Light mode", dark: "Dark mode", system: "System theme" };
 
 function getSystemTheme(): "light" | "dark" {
   if (typeof window === "undefined") return "light";
@@ -18,22 +21,27 @@ function applyTheme(theme: Theme) {
   document.documentElement.classList.toggle("dark", resolved === "dark");
 }
 
-const CYCLE: Theme[] = ["light", "dark", "system"];
-const ICONS: Record<Theme, typeof Sun> = { light: Sun, dark: Moon, system: Monitor };
-const LABELS: Record<Theme, string> = { light: "Light mode", dark: "Dark mode", system: "System theme" };
+function getStoredTheme(): Theme {
+  if (typeof window === "undefined") return "system";
+  const stored = localStorage.getItem(STORAGE_KEY) as Theme | null;
+  return stored && CYCLE.includes(stored) ? stored : "system";
+}
+
+// Track whether we are on the client for hydration safety
+function useHasMounted() {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []); // eslint-disable-line react-hooks/set-state-in-effect
+  return mounted;
+}
 
 export function ThemeToggle() {
-  const [theme, setTheme] = useState<Theme>("system");
-  const [mounted, setMounted] = useState(false);
+  const mounted = useHasMounted();
+  const [theme, setThemeState] = useState<Theme>(getStoredTheme);
 
-  // Read stored preference on mount
+  // Apply theme to DOM whenever it changes
   useEffect(() => {
-    const stored = localStorage.getItem(STORAGE_KEY) as Theme | null;
-    const initial = stored && CYCLE.includes(stored) ? stored : "system";
-    setTheme(initial);
-    applyTheme(initial);
-    setMounted(true);
-  }, []);
+    applyTheme(theme);
+  }, [theme]);
 
   // Listen for system theme changes when in "system" mode
   useEffect(() => {
@@ -45,15 +53,14 @@ export function ThemeToggle() {
   }, [theme]);
 
   const cycle = useCallback(() => {
-    setTheme((prev) => {
+    setThemeState((prev) => {
       const next = CYCLE[(CYCLE.indexOf(prev) + 1) % CYCLE.length];
       localStorage.setItem(STORAGE_KEY, next);
-      applyTheme(next);
       return next;
     });
   }, []);
 
-  // Prevent hydration mismatch — render nothing until mounted
+  // Prevent hydration mismatch — render placeholder until mounted
   if (!mounted) return <div className="size-8" />;
 
   const Icon = ICONS[theme];

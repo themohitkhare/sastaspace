@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, m } from "motion/react";
 import { HeroSection } from "@/components/landing/hero-section";
@@ -13,18 +13,18 @@ import { useRedesign } from "@/hooks/use-redesign";
 export function AppFlow() {
   const { state, start, retry } = useRedesign();
   const router = useRouter();
-  const [celebrating, setCelebrating] = useState(false);
+  const redirectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Show celebration for 1.5s, then navigate to result page
+  // Navigate to result page after 1.5s celebration delay
   useEffect(() => {
     if (state.status === "done") {
-      setCelebrating(true);
-      const timer = setTimeout(() => {
+      redirectTimerRef.current = setTimeout(() => {
         router.replace(`/${state.subdomain}`);
       }, 1500);
-      return () => clearTimeout(timer);
+      return () => {
+        if (redirectTimerRef.current) clearTimeout(redirectTimerRef.current);
+      };
     }
-    setCelebrating(false);
   }, [state, router]);
 
   return (
@@ -64,7 +64,7 @@ export function AppFlow() {
         </m.div>
       )}
 
-      {state.status === "done" && celebrating && (
+      {state.status === "done" && (
         <m.div
           key="celebration"
           initial={{ opacity: 0 }}
