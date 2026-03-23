@@ -62,7 +62,7 @@ jobs:
             sastaspace/ web/src/
 
       - name: Run tests (parallel)
-        run: uv run pytest tests/ -n auto -q --tb=short
+        run: uv run pytest tests/ -n 4 -q --tb=short --timeout=120
 
       - name: Validate k8s manifests
         run: |
