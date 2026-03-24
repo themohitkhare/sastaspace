@@ -93,6 +93,25 @@ _LOCALHOST_NAMES = frozenset({"localhost", "127.0.0.1", "0.0.0.0", "::1", "local
 
 _PRIVATE_IP_PREFIXES = ("192.168.", "10.", "172.")
 
+# Cloud metadata service hostnames that must never be crawled
+_METADATA_HOSTNAMES = frozenset(
+    {
+        "metadata.google.internal",  # GCP
+        "metadata.goog",  # GCP alternate
+        "instance-data",  # DigitalOcean
+        "169.254.169.254",  # AWS / Azure / GCP (handled by IP check too, belt-and-suspenders)
+        "fd00:ec2::254",  # AWS IMDSv2 IPv6
+    }
+)
+
+# Regex to detect alternative IPv4 representations that browsers resolve but
+# Python's ipaddress module does not parse as IPs (decimal integer, hex, octal-dotted).
+# Legitimate public hostnames never look like these.
+_ALT_IPV4_RE = re.compile(
+    r"^(?:0x[0-9a-fA-F]+|\d+)$"  # full decimal integer or 0x hex
+    r"|^0\d+\."  # octal-dotted notation (e.g. 0177.0.0.1)
+)
+
 
 def _ensure_scheme(url: str) -> str:
     """Add https:// if no scheme is present."""
@@ -109,8 +128,20 @@ def _validate_hostname(hostname: str) -> str | None:
     if hostname in _LOCALHOST_NAMES:
         return "Cannot redesign localhost"
 
+    if hostname in _METADATA_HOSTNAMES:
+        return "Cannot redesign internal network addresses"
+
+    # Block alternative IPv4 representations (decimal int, hex, octal-dotted) that
+    # Chromium resolves to real IPs but that ipaddress.ip_address() won't catch.
+    if _ALT_IPV4_RE.match(hostname):
+        return "Cannot redesign internal network addresses"
+
     try:
         addr = ipaddress.ip_address(hostname)
+        # Unwrap IPv4-mapped IPv6 (::ffff:x.x.x.x) so the IPv4 checks apply correctly.
+        # Python's is_link_local / is_private do not always propagate through the mapping.
+        if isinstance(addr, ipaddress.IPv6Address) and addr.ipv4_mapped:
+            addr = addr.ipv4_mapped
         if addr.is_private or addr.is_loopback or addr.is_link_local or addr.is_reserved:
             return "Cannot redesign internal network addresses"
     except ValueError:

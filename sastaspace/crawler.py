@@ -22,6 +22,7 @@ from playwright.async_api import async_playwright
 from sastaspace.asset_downloader import AssetManifest, download_and_validate_assets
 from sastaspace.business_profiler import build_business_profile
 from sastaspace.models import EnhancedCrawlResult, PageCrawlResult
+from sastaspace.urls import is_valid_url
 
 logger = logging.getLogger(__name__)
 
@@ -426,6 +427,21 @@ async def _crawl_page(page, url: str, *, settle_delay: float = 0.5) -> CrawlResu
 
 async def crawl(url: str, browserless_url: str | None = None) -> CrawlResult:
     """Crawl a URL and return a CrawlResult. Sets result.error on failure."""
+    # Defense-in-depth: validate URL before opening any network connection.
+    # The route layer also validates, but this guards direct callers (CLI, workers).
+    valid, normalized_or_error = is_valid_url(url)
+    if not valid:
+        return CrawlResult(
+            url=url,
+            title="",
+            meta_description="",
+            favicon_url="",
+            html_source="",
+            screenshot_base64="",
+            error=normalized_or_error,
+        )
+    url = normalized_or_error
+
     if not browserless_url:
         _ensure_chromium()
 
@@ -584,6 +600,21 @@ async def enhanced_crawl(url: str, settings):
     - Homepage settle delay reduced from 2s to 0.5s.
     """
     import time as _time
+
+    # Defense-in-depth: validate URL before opening any network connection.
+    valid, normalized_or_error = is_valid_url(url)
+    if not valid:
+        empty_homepage = CrawlResult(
+            url=url,
+            title="",
+            meta_description="",
+            favicon_url="",
+            html_source="",
+            screenshot_base64="",
+            error=normalized_or_error,
+        )
+        return EnhancedCrawlResult(homepage=empty_homepage)
+    url = normalized_or_error
 
     t0 = _time.monotonic()
     _raw = getattr(settings, "browserless_url", None)
