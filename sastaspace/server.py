@@ -411,6 +411,10 @@ def ensure_running(sites_dir: Path, preferred_port: int = 8080) -> int:
             break
         time.sleep(0.2)
 
+    if not _is_port_listening(port):
+        log_path = sites_dir / ".server.log"
+        raise RuntimeError(f"Server failed to start on port {port}; check {log_path}")
+
     port_file.write_text(str(port))
     return port
 
