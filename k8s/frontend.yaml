@@ -23,10 +23,19 @@ spec:
           allowPrivilegeEscalation: false
         ports:
         - containerPort: 3000
-        # NEXT_PUBLIC_BACKEND_URL and NEXT_PUBLIC_TURNSTILE_SITE_KEY are set via
-        # --build-arg at image build time for client components (see CI workflow).
-        # Server-side secrets (Resend, Turnstile secret, owner email) are injected
-        # at runtime via the secretRef below — they're only used in API routes.
+        # NEXT_PUBLIC_* vars are injected at runtime via entrypoint.sh (not baked at build time).
+        # Server-side secrets (Resend, Turnstile secret, owner email) come from the secretRef below.
+        env:
+        - name: NEXT_PUBLIC_BACKEND_URL
+          value: "https://api.sastaspace.com"
+        - name: NEXT_PUBLIC_TURNSTILE_SITE_KEY
+          valueFrom:
+            secretKeyRef:
+              name: sastaspace-frontend-env
+              key: NEXT_PUBLIC_TURNSTILE_SITE_KEY
+              optional: true
+        - name: NEXT_PUBLIC_ENABLE_TURNSTILE
+          value: "true"
         envFrom:
         - secretRef:
             name: sastaspace-frontend-env

@@ -155,13 +155,9 @@ jobs:
       - name: Build frontend image
         run: |
           docker build \
-            --build-arg NEXT_PUBLIC_BACKEND_URL=https://api.sastaspace.com \
-            --build-arg NEXT_PUBLIC_TURNSTILE_SITE_KEY="${TURNSTILE_SITE_KEY}" \
             -t localhost:32000/sastaspace-frontend:latest \
             -t localhost:32000/sastaspace-frontend:${{ github.sha }} \
             -f web/Dockerfile web/
-        env:
-          TURNSTILE_SITE_KEY: ${{ secrets.NEXT_PUBLIC_TURNSTILE_SITE_KEY }}
 
       - name: Trivy — scan frontend image
         run: |
