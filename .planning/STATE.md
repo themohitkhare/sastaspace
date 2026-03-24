@@ -83,12 +83,13 @@ None yet.
 |---|-------------|------|--------|-----------|
 | 260322-hh0 | Add pipeline checkpointing to agno redesign pipeline | 2026-03-22 | 0625b8de | [260322-hh0-add-pipeline-checkpointing-to-agno-redes](./quick/260322-hh0-add-pipeline-checkpointing-to-agno-redes/) |
 | 260322-mg1 | Replace local Playwright with Browserless k8s service | 2026-03-22 | 2b4e8813 | [260322-mg1-replace-local-playwright-with-browserles](./quick/260322-mg1-replace-local-playwright-with-browserles/) |
+| 260325-3uk | Fix NEXT_PUBLIC_BACKEND_URL runtime injection | 2026-03-25 | b9f70ffe | [260325-3uk-fix-next-public-backend-url-runtime-inje](./quick/260325-3uk-fix-next-public-backend-url-runtime-inje/) |
 
 ## Session Continuity
 
-Last activity: 2026-03-22 - Completed quick task 260322-mg1: Replace local Playwright with Browserless k8s service
-Last session: 2026-03-22T07:15:42.655Z
-Stopped at: Completed quick/260322-hh0
+Last activity: 2026-03-25 - Completed quick task 260325-3uk: Fix NEXT_PUBLIC_BACKEND_URL runtime injection
+Last session: 2026-03-25T21:19:15Z
+Stopped at: Completed quick/260325-3uk
 Resume file: None
 
 ## Parallelization Note
