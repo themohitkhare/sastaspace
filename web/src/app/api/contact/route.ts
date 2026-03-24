@@ -118,29 +118,6 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Sync to Twenty CRM — strict 2s timeout
-    try {
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 2000);
-      await fetch(
-        `${process.env.NEXT_PUBLIC_BACKEND_URL}/twenty/person`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            name,
-            email,
-            message,
-            domain: subdomain || null,
-          }),
-          signal: controller.signal,
-        }
-      );
-      clearTimeout(timeout);
-    } catch {
-      // Twenty sync failure doesn't block the contact form
-    }
-
     return Response.json({ ok: true });
   } catch {
     return Response.json({ error: "Internal server error" }, { status: 500 });

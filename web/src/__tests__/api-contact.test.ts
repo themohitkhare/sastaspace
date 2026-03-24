@@ -106,7 +106,8 @@ describe('POST /api/contact', () => {
 
     expect(res.status).toBe(200)
     expect(data.ok).toBe(true)
-    expect(mockSend).toHaveBeenCalledOnce()
+    // Owner email + transactional email to submitter (subdomain provided)
+    expect(mockSend).toHaveBeenCalledTimes(2)
   })
 
   it('returns 500 when Resend returns an error', async () => {
