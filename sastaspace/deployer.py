@@ -64,6 +64,13 @@ def save_registry(sites_dir: Path, registry: list[dict]) -> None:
     os.replace(tmp_path, sites_dir / "_registry.json")
 
 
+def _atomic_write(path: Path, content: str, encoding: str = "utf-8") -> None:
+    """Write content to a file atomically via write-to-temp + os.replace."""
+    tmp_path = path.parent / f"{path.name}.tmp"
+    tmp_path.write_text(content, encoding=encoding)
+    os.replace(tmp_path, path)
+
+
 def _deploy_build_output(build_dir: Path, site_dir: Path) -> None:
     """Copy all files from a Vite build output directory into the site directory."""
     for item in build_dir.iterdir():
@@ -143,14 +150,14 @@ def deploy(
     if build_dir and build_dir.exists():
         _deploy_build_output(build_dir, site_dir)
     else:
-        (site_dir / "index.html").write_text(html, encoding="utf-8")
+        _atomic_write(site_dir / "index.html", html)
     index_path = site_dir / "index.html"
 
     if assets:
         _deploy_assets(assets, site_dir)
 
     metadata = _build_metadata(final_subdomain, url, build_dir, assets)
-    (site_dir / "metadata.json").write_text(json.dumps(metadata, indent=2))
+    _atomic_write(site_dir / "metadata.json", json.dumps(metadata, indent=2))
     _update_registry(sites_dir, metadata)
 
     return DeployResult(subdomain=final_subdomain, index_path=index_path, sites_dir=sites_dir)

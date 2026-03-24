@@ -209,3 +209,11 @@ def test_deploy_without_assets_unchanged(tmp_path):
     index = tmp_path / result.subdomain / "index.html"
     assert index.exists()
     assert index.read_text() == SAMPLE_HTML
+
+
+def test_deploy_no_tmp_files_in_site_dir(tmp_path):
+    """Atomic writes must not leave .tmp files behind after deploy."""
+    result = deploy(url="https://acme.com", html=SAMPLE_HTML, sites_dir=tmp_path)
+    site_dir = tmp_path / result.subdomain
+    tmp_files = [f for f in site_dir.iterdir() if f.name.endswith(".tmp")]
+    assert tmp_files == [], f"Leftover .tmp files found: {tmp_files}"
