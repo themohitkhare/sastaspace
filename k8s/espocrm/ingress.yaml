@@ -18,3 +18,32 @@ spec:
                 name: espocrm
                 port:
                   number: 80
+---
+# Allow ingress from sastaspace namespace (backend + worker lead sync)
+# and from nginx ingress controller (public web UI)
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-sastaspace-ingress
+  namespace: espocrm
+spec:
+  podSelector:
+    matchLabels:
+      app: espocrm
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: sastaspace
+      ports:
+        - port: 80
+          protocol: TCP
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: ingress
+      ports:
+        - port: 80
+          protocol: TCP
+  policyTypes:
+    - Ingress

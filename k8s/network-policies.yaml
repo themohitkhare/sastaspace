@@ -64,6 +64,16 @@ spec:
           app: mongodb
     ports:
     - port: 27017
+  # EspoCRM (cross-namespace lead sync)
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: espocrm
+      podSelector:
+        matchLabels:
+          app: espocrm
+    ports:
+    - port: 80
   # External HTTPS (claude-code-api, etc.)
   - to:
     - ipBlock:
@@ -144,6 +154,16 @@ spec:
           app: browserless
     ports:
     - port: 3000
+  # EspoCRM (cross-namespace lead sync)
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: espocrm
+      podSelector:
+        matchLabels:
+          app: espocrm
+    ports:
+    - port: 80
   # External HTTPS (AI APIs)
   - to:
     - ipBlock:
