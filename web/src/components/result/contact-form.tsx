@@ -8,6 +8,7 @@ import { Turnstile, type TurnstileInstance } from "@marsidev/react-turnstile";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { getTurnstileSiteKey, isTurnstileEnabled } from "@/lib/env";
 import { trackEvent } from "@/lib/analytics";
 
 interface ContactFormProps {
@@ -67,8 +68,7 @@ function formReducer(state: FormState, action: FormAction): FormState {
 }
 
 export function ContactForm({ subdomain }: ContactFormProps) {
-  const turnstileEnabled =
-    process.env.NEXT_PUBLIC_ENABLE_TURNSTILE !== "false";
+  const turnstileEnabled = isTurnstileEnabled();
   const [state, dispatch] = useReducer(formReducer, initialState);
   const turnstileRef = useRef<TurnstileInstance>(null);
 
@@ -220,7 +220,7 @@ export function ContactForm({ subdomain }: ContactFormProps) {
               {turnstileEnabled && (
                 <Turnstile
                   ref={turnstileRef}
-                  siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY!}
+                  siteKey={getTurnstileSiteKey()}
                   onSuccess={(token) => dispatch({ type: "SET_TURNSTILE", token })}
                   onExpire={() => {
                     dispatch({ type: "SET_TURNSTILE", token: null });

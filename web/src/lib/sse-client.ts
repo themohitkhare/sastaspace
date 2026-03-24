@@ -1,5 +1,7 @@
 // web/src/lib/sse-client.ts
 
+import { getBackendUrl } from "@/lib/env";
+
 export type JobStatus = {
   id: string
   status: "queued" | "crawling" | "discovering" | "downloading" | "analyzing" | "redesigning" | "deploying" | "done" | "failed"
@@ -22,7 +24,7 @@ export async function submitRedesign(
   signal?: AbortSignal,
   prompt: string = "",
 ): Promise<string> {
-  const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:8080"
+  const backendUrl = getBackendUrl()
   const body: Record<string, string> = { url, tier, model_provider: modelProvider }
   if (prompt) body.prompt = prompt
   const resp = await fetch(`${backendUrl}/redesign`, {
@@ -50,7 +52,7 @@ export async function* pollJobStatus(
   jobId: string,
   signal?: AbortSignal
 ): AsyncGenerator<JobStatus> {
-  const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:8080"
+  const backendUrl = getBackendUrl()
   let consecutiveFailures = 0
   let lastStatus: string = "queued"
 
