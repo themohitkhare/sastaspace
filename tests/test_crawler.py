@@ -1,5 +1,5 @@
 # tests/test_crawler.py
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
 from bs4 import BeautifulSoup
@@ -301,30 +301,24 @@ def test_extract_sections():
 
 
 def test_ensure_chromium_runs_install_when_needed():
-    """Lines 24-29: _ensure_chromium installs chromium when dry-run fails."""
-    mock_dry_run = MagicMock()
-    mock_dry_run.returncode = 1
-    mock_dry_run.stdout = b"chromium not installed"
-
+    """_ensure_chromium always runs playwright install chromium (idempotent)."""
     with patch("sastaspace.crawler._chromium_verified", False):
         with patch("sastaspace.crawler.subprocess.run") as mock_run:
-            mock_run.side_effect = [mock_dry_run, MagicMock()]
-            _ensure_chromium()
-
-        assert mock_run.call_count == 2
-
-
-def test_ensure_chromium_skips_install_when_ok():
-    """_ensure_chromium skips install when dry-run succeeds."""
-    mock_dry_run = MagicMock()
-    mock_dry_run.returncode = 0
-    mock_dry_run.stdout = b""
-
-    with patch("sastaspace.crawler._chromium_verified", False):
-        with patch("sastaspace.crawler.subprocess.run", return_value=mock_dry_run) as mock_run:
             _ensure_chromium()
 
         assert mock_run.call_count == 1
+        args = mock_run.call_args[0][0]
+        assert "install" in args
+        assert "chromium" in args
+
+
+def test_ensure_chromium_skips_install_when_ok():
+    """_ensure_chromium skips subprocess call when already verified."""
+    with patch("sastaspace.crawler._chromium_verified", True):
+        with patch("sastaspace.crawler.subprocess.run") as mock_run:
+            _ensure_chromium()
+
+        assert mock_run.call_count == 0
 
 
 def test_ensure_chromium_handles_exception():

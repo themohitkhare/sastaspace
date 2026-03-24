@@ -101,16 +101,11 @@ def _ensure_chromium() -> None:
     if _chromium_verified:
         return
     try:
-        result = subprocess.run(
-            [sys.executable, "-m", "playwright", "install", "chromium", "--dry-run"],
-            capture_output=True,
-            timeout=10,
+        # playwright install is idempotent — no-op when already installed
+        subprocess.run(
+            [sys.executable, "-m", "playwright", "install", "chromium"],
+            check=True,
         )
-        if result.returncode != 0 and b"chromium" in result.stdout.lower():
-            subprocess.run(
-                [sys.executable, "-m", "playwright", "install", "chromium"],
-                check=True,
-            )
         _chromium_verified = True
     except (OSError, subprocess.SubprocessError):
         pass
