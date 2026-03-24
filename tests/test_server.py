@@ -138,9 +138,15 @@ def test_ensure_running_tries_next_port_when_in_use(tmp_path):
     sites = tmp_path / "sites"
     sites.mkdir()
 
+    call_count = {"n": 0}
+
     def mock_listening(port):
-        # Port 8080 is in use, 8081 is free
-        return port == 8080
+        call_count["n"] += 1
+        # First two calls: port selection (8080 in use, 8081 free)
+        # Subsequent calls (polling + confirmation): 8081 is now up
+        if call_count["n"] <= 2:
+            return port == 8080
+        return port == 8081
 
     with (
         patch("sastaspace.server._is_port_listening", side_effect=mock_listening),
