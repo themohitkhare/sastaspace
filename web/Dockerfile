@@ -9,12 +9,6 @@ RUN npm ci
 
 COPY . .
 
-# Build-time env vars (NEXT_PUBLIC_* are inlined at build, not runtime)
-ARG NEXT_PUBLIC_BACKEND_URL=http://localhost:8080
-ARG NEXT_PUBLIC_TURNSTILE_SITE_KEY=""
-ENV NEXT_PUBLIC_BACKEND_URL=${NEXT_PUBLIC_BACKEND_URL}
-ENV NEXT_PUBLIC_TURNSTILE_SITE_KEY=${NEXT_PUBLIC_TURNSTILE_SITE_KEY}
-
 # Build Next.js in standalone mode
 RUN npm run build
 
@@ -33,6 +27,7 @@ RUN apk upgrade --no-cache && npm cache clean --force && rm -rf /usr/local/lib/n
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/public ./public
+COPY entrypoint.sh ./entrypoint.sh
 
 # node:22-alpine ships with a 'node' user (uid 1000) — run as it
 RUN chown -R node:node /app
@@ -43,4 +38,4 @@ EXPOSE 3000
 HEALTHCHECK --interval=10s --timeout=5s --retries=5 --start-period=30s \
     CMD wget --no-verbose --tries=1 --spider http://127.0.0.1:3000/ || exit 1
 
-CMD ["node", "server.js"]
+ENTRYPOINT ["/app/entrypoint.sh"]

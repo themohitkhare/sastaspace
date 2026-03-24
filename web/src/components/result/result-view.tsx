@@ -8,6 +8,7 @@ import { BeforeAfterSlider } from "@/components/result/before-after-slider";
 import { ShareButtons } from "@/components/result/share-buttons";
 import { QualityRating } from "@/components/result/quality-rating";
 import { Footer } from "@/components/landing/footer";
+import { getBackendUrl } from "@/lib/env";
 
 interface ResultViewProps {
   subdomain: string;
@@ -18,7 +19,7 @@ export function ResultView({ subdomain, tier }: ResultViewProps) {
   const domain = subdomain.replace(/-/g, ".");
   const originalUrl = `https://${domain}`;
   const previewUrl = `/${subdomain}/preview`;
-  const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8080";
+  const backendUrl = getBackendUrl();
   const downloadUrl = `${backendUrl}/${subdomain}/index.html`;
   const shareUrl = typeof window !== "undefined"
     ? `${window.location.origin}/${subdomain}`
