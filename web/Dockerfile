@@ -11,7 +11,9 @@ COPY . .
 
 # Build-time env vars (NEXT_PUBLIC_* are inlined at build, not runtime)
 ARG NEXT_PUBLIC_BACKEND_URL=http://localhost:8080
+ARG NEXT_PUBLIC_TURNSTILE_SITE_KEY=""
 ENV NEXT_PUBLIC_BACKEND_URL=${NEXT_PUBLIC_BACKEND_URL}
+ENV NEXT_PUBLIC_TURNSTILE_SITE_KEY=${NEXT_PUBLIC_TURNSTILE_SITE_KEY}
 
 # Build Next.js in standalone mode
 RUN npm run build

@@ -71,7 +71,7 @@ jobs:
               | sudo tar xz -C /usr/local/bin kubeconform
           fi
           kubeconform -summary -strict k8s/*.yaml k8s/monitoring/*.yaml \
-            k8s/espocrm/namespace.yaml k8s/espocrm/mariadb.yaml k8s/espocrm/espocrm.yaml k8s/espocrm/ingress.yaml
+            k8s/vikunja/namespace.yaml k8s/vikunja/vikunja.yaml k8s/vikunja/ingress.yaml
 
   security:
     name: Security Scan
@@ -156,9 +156,12 @@ jobs:
         run: |
           docker build \
             --build-arg NEXT_PUBLIC_BACKEND_URL=https://api.sastaspace.com \
+            --build-arg NEXT_PUBLIC_TURNSTILE_SITE_KEY="${TURNSTILE_SITE_KEY}" \
             -t localhost:32000/sastaspace-frontend:latest \
             -t localhost:32000/sastaspace-frontend:${{ github.sha }} \
             -f web/Dockerfile web/
+        env:
+          TURNSTILE_SITE_KEY: ${{ secrets.NEXT_PUBLIC_TURNSTILE_SITE_KEY }}
 
       - name: Trivy — scan frontend image
         run: |
@@ -184,15 +187,10 @@ jobs:
           # Monitoring namespace + manifests
           sudo microk8s kubectl apply -f k8s/monitoring/namespace.yaml
           sudo microk8s kubectl apply -f k8s/monitoring/
-          # EspoCRM namespace + manifests (secret is managed manually, not in repo)
-          if sudo microk8s kubectl get secret espocrm-env -n espocrm &>/dev/null; then
-            sudo microk8s kubectl apply -f k8s/espocrm/namespace.yaml
-            sudo microk8s kubectl apply -f k8s/espocrm/mariadb.yaml
-            sudo microk8s kubectl apply -f k8s/espocrm/espocrm.yaml
-            sudo microk8s kubectl apply -f k8s/espocrm/ingress.yaml
-          else
-            echo "Skipping EspoCRM — secrets not yet created. Run: make espocrm-deploy"
-          fi
+          # Vikunja namespace + manifests
+          sudo microk8s kubectl apply -f k8s/vikunja/namespace.yaml
+          sudo microk8s kubectl apply -f k8s/vikunja/
+          # EspoCRM removed — replaced by Vikunja (deployed above)
 
       - name: Rolling restart (all deployments)
         run: |
@@ -206,10 +204,9 @@ jobs:
           sudo microk8s kubectl rollout restart deployment/prometheus deployment/grafana -n monitoring 2>/dev/null || true
           # Restart promtail daemonset to pick up config changes
           sudo microk8s kubectl rollout restart daemonset/promtail -n monitoring 2>/dev/null || true
-          # Restart EspoCRM if deployed
-          if sudo microk8s kubectl get deployments -n espocrm -o name 2>/dev/null | grep -q .; then
-            sudo microk8s kubectl rollout restart $(sudo microk8s kubectl get deployments -n espocrm -o name) -n espocrm 2>/dev/null || true
-          fi
+          # Restart Vikunja
+          sudo microk8s kubectl rollout restart deployment/vikunja -n vikunja 2>/dev/null || true
+          # EspoCRM removed — replaced by Vikunja (restarted above)
 
       - name: Wait for rollout
         run: |
@@ -218,6 +215,9 @@ jobs:
             echo "Waiting for $DEPLOY..."
             sudo microk8s kubectl rollout status "$DEPLOY" -n sastaspace --timeout=300s
           done
+          # Wait for Vikunja
+          echo "Waiting for vikunja..."
+          sudo microk8s kubectl rollout status deployment/vikunja -n vikunja --timeout=300s
 
       - name: Verify deployment
         run: |
@@ -229,3 +229,5 @@ jobs:
           sudo microk8s kubectl get ingress -n sastaspace
           echo "=== monitoring pods ==="
           sudo microk8s kubectl get pods -n monitoring
+          echo "=== vikunja pods ==="
+          sudo microk8s kubectl get pods -n vikunja

@@ -52,7 +52,7 @@ OLLAMA_URL: "http://host.k8s.internal:11434/v1"          # via microk8s host-acc
 BROWSERLESS_URL: "ws://browserless:3000"
 ```
 
-Secrets in `sastaspace-env` Secret (EspoCRM keys, admin key).
+Secrets in `sastaspace-env` Secret (Vikunja keys, admin key, Anthropic API key).
 
 ## k8s Manifest Tree
 
@@ -65,10 +65,10 @@ k8s/
 ├── frontend.yaml       (+ service)
 ├── mongodb.yaml        (+ service + pvc 5Gi)
 ├── redis.yaml          (+ service + pvc 2Gi)
-├── espocrm/            (namespace, app, mariadb, secret.yaml.example, ingress)
+├── vikunja/            (namespace, vikunja, ingress)
 └── monitoring/         (namespace, grafana, prometheus, loki, promtail, node-exporter,
                          kube-state-metrics, blackbox-exporter, redis-exporter,
-                         dcgm-exporter, dashboards/, ingress)
+                         dcgm-exporter, alerts, secrets.yaml.template, dashboards/, ingress)
 ```
 
 ---
@@ -92,7 +92,7 @@ backend ──► redis:6379        (enqueue jobs, pub/sub for SSE)
 Internet → Cloudflare Edge → cloudflared (systemd) → localhost:80 (nginx ingress)
   sastaspace.com / www    → frontend :3000
   api.sastaspace.com      → backend :8080
-  crm.sastaspace.com      → espocrm :80 (espocrm ns)
+  tasks.sastaspace.com    → vikunja :3456 (vikunja ns)
   monitor.sastaspace.com  → grafana :3001 (monitoring ns)
 ```
 
@@ -114,7 +114,7 @@ POST /redesign → Redis Stream (sastaspace:jobs) → Worker consumer
   3. Deploy
      - Write HTML + assets to /data/sites/{subdomain}/
      - Register in MongoDB (URL hash dedup)
-     - Sync to EspoCRM (fire-and-forget)
+     - Sync to Vikunja (fire-and-forget)
 ```
 
 Status via Redis Pub/Sub → SSE. Checkpoints in MongoDB. Dead job recovery via XAUTOCLAIM (>60s idle).
@@ -187,10 +187,10 @@ make deploy-down        # delete namespace
 make deploy-monitoring  # apply monitoring manifests
 make monitoring-status
 make monitoring-logs    # tail grafana/prometheus/loki
-make espocrm-deploy    # deploy EspoCRM stack (secret managed manually)
-make espocrm-status
-make espocrm-logs      # tail EspoCRM app logs
-make espocrm-restart   # rolling restart EspoCRM
+make vikunja-deploy    # deploy Vikunja lead tracker
+make vikunja-status
+make vikunja-logs      # tail Vikunja logs
+make vikunja-restart   # rolling restart Vikunja
 ```
 
 Custom remote: `make deploy REMOTE_HOST=taxila REMOTE_USER=mkhare`
@@ -220,17 +220,17 @@ sudo microk8s kubectl create secret generic grafana-admin --namespace monitoring
 make deploy-monitoring
 ```
 
-### EspoCRM (Lead Management)
+### Vikunja (Lead Tracking)
 
-2 pods (app + MariaDB).
+1 pod (SQLite, no external DB).
 
 #### First-time setup
-1. Copy `k8s/espocrm/secret.yaml.example`, fill real passwords, apply once on server
-2. `make espocrm-deploy`
-3. Access https://crm.sastaspace.com, login with admin credentials
-4. Go to Administration → API Users → Create API User → copy API key
-5. Set `ESPOCRM_URL` and `ESPOCRM_API_KEY` in sastaspace-env secret
-6. Verify: `make espocrm-status`
+1. `make vikunja-deploy`
+2. Access https://tasks.sastaspace.com, create admin account
+3. Go to Settings → API Tokens → create token
+4. Create a project for leads, note the project ID
+5. Set `VIKUNJA_URL`, `VIKUNJA_TOKEN`, `VIKUNJA_PROJECT_ID` in sastaspace-env secret
+6. Verify: `make vikunja-status`
 
 ---
 
@@ -244,7 +244,7 @@ sudo microk8s kubectl get pods,svc,ingress -n sastaspace
 sudo microk8s kubectl logs -n sastaspace deployment/worker --tail=50           # worker
 sudo microk8s kubectl logs -n sastaspace deployment/browserless --tail=20      # browserless
 sudo microk8s kubectl exec -n sastaspace deployment/redis -- redis-cli XLEN sastaspace:jobs
-make espocrm-status
+make vikunja-status
 make monitoring-status
 rocm-smi                                                                       # GPU
 sudo docker logs vllm-coder --tail 20                                          # vLLM
@@ -368,7 +368,7 @@ curl -fsSL https://pkg.cloudflare.com/cloudflare-main.gpg | sudo gpg --dearmor -
 echo "deb [signed-by=/usr/share/keyrings/cloudflare-main.gpg] https://pkg.cloudflare.com/cloudflared any main" | sudo tee /etc/apt/sources.list.d/cloudflared.list
 sudo apt update && sudo apt install -y cloudflared
 sudo cloudflared service install <TUNNEL_TOKEN>
-# Ingress: sastaspace.com, www, api, crm, monitor → http://localhost:80; catch-all → 404
+# Ingress: sastaspace.com, www, api, tasks, monitor → http://localhost:80; catch-all → 404
 ```
 
 ### 12. claude-code-api — see "Host systemd Services" section above

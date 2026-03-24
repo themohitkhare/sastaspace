@@ -10,7 +10,7 @@ RSYNC_EXCLUDE := --exclude='.git' --exclude='node_modules' --exclude='__pycache_
 .PHONY: ci install lint k8s-lint test dupes semgrep audit dev dev-api dev-web \
         deploy deploy-build deploy-logs deploy-status deploy-down k8s-apply \
         deploy-monitoring monitoring-status monitoring-logs \
-        espocrm-deploy espocrm-status espocrm-logs espocrm-restart
+        vikunja-deploy vikunja-status vikunja-logs vikunja-restart
 
 install:
 	uv sync
@@ -22,7 +22,7 @@ lint:
 
 k8s-lint:  ## Validate k8s manifests with kubeconform
 	kubeconform -summary -strict k8s/*.yaml k8s/monitoring/*.yaml \
-		k8s/espocrm/namespace.yaml k8s/espocrm/mariadb.yaml k8s/espocrm/espocrm.yaml k8s/espocrm/ingress.yaml
+		k8s/vikunja/namespace.yaml k8s/vikunja/vikunja.yaml k8s/vikunja/ingress.yaml
 
 test:
 	uv run pytest tests/ -v
@@ -96,17 +96,17 @@ monitoring-status:
 monitoring-logs:
 	@$(SSH) "sudo microk8s kubectl logs -f -n monitoring -l 'app in (grafana,prometheus,loki)' --max-log-requests=6"
 
-# ── EspoCRM ──────────────────────────────────────────────────────────────────
+# ── Vikunja (Lead Tracking) ─────────────────────────────────────────────────
 
-espocrm-deploy: ## Deploy EspoCRM to k8s (secret managed manually)
-	$(SSH) "cd $(REMOTE_DIR) && sudo microk8s kubectl apply -f k8s/espocrm/namespace.yaml -f k8s/espocrm/mariadb.yaml -f k8s/espocrm/espocrm.yaml -f k8s/espocrm/ingress.yaml"
-	@echo "→ EspoCRM deployed. Access at https://crm.sastaspace.com"
+vikunja-deploy: ## Deploy Vikunja to k8s
+	$(SSH) "cd $(REMOTE_DIR) && sudo microk8s kubectl apply -f k8s/vikunja/namespace.yaml -f k8s/vikunja/vikunja.yaml -f k8s/vikunja/ingress.yaml"
+	@echo "→ Vikunja deployed. Access at https://tasks.sastaspace.com"
 
-espocrm-status: ## Show EspoCRM pod/svc/ingress status
-	$(SSH) "sudo microk8s kubectl get pods,svc,ingress -n espocrm"
+vikunja-status: ## Show Vikunja pod/svc/ingress status
+	$(SSH) "sudo microk8s kubectl get pods,svc,ingress -n vikunja"
 
-espocrm-logs: ## Tail EspoCRM app logs
-	$(SSH) "sudo microk8s kubectl logs -n espocrm deploy/espocrm --tail=50 -f"
+vikunja-logs: ## Tail Vikunja logs
+	$(SSH) "sudo microk8s kubectl logs -n vikunja deploy/vikunja --tail=50 -f"
 
-espocrm-restart: ## Rolling restart EspoCRM
-	$(SSH) "sudo microk8s kubectl rollout restart deployment/espocrm -n espocrm"
+vikunja-restart: ## Rolling restart Vikunja
+	$(SSH) "sudo microk8s kubectl rollout restart deployment/vikunja -n vikunja"
