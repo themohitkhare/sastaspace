@@ -17,7 +17,7 @@ class TestWebhookVerification:
     def test_valid_signature_passes(self):
         hmac_key = "test-hmac-value"
         body = b'{"event":"redesignJob.updated"}'
-        # Twenty sends timestamps in milliseconds
+        # Timestamps in milliseconds
         timestamp = str(int(time.time() * 1000))
         string_to_sign = f"{timestamp}:{body.decode()}"
         sig = hmac.new(hmac_key.encode(), string_to_sign.encode(), hashlib.sha256).hexdigest()

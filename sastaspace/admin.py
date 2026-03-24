@@ -18,8 +18,8 @@ logger = logging.getLogger(__name__)
 def verify_webhook_signature(
     body: bytes, signature: str, timestamp: str, secret: str, max_age_seconds: int = 300
 ) -> bool:
-    """Verify Twenty webhook HMAC SHA256 signature with replay protection."""
-    # Check timestamp age (Twenty sends milliseconds, convert to seconds)
+    """Verify webhook HMAC SHA256 signature with replay protection."""
+    # Check timestamp age (timestamps in milliseconds, convert to seconds)
     try:
         ts_ms = int(timestamp)
         if abs(time.time() - ts_ms / 1000) > max_age_seconds:
@@ -27,7 +27,7 @@ def verify_webhook_signature(
     except (ValueError, TypeError):
         return False
 
-    # Twenty signs: HMAC-SHA256(secret, "timestamp:body")
+    # HMAC-SHA256(secret, "timestamp:body")
     string_to_sign = f"{timestamp}:{body.decode()}"
     expected = hmac.new(secret.encode(), string_to_sign.encode(), hashlib.sha256).hexdigest()
     return hmac.compare_digest(expected, signature)

@@ -22,9 +22,8 @@ def test_settings_override_api_url(monkeypatch):
     assert s.claude_code_api_url == "http://localhost:9000/v1"
 
 
-def test_twenty_defaults_disabled():
+def test_espocrm_defaults_disabled():
     s = Settings()
-    assert s.twenty_url == ""
-    assert s.twenty_api_key == ""
-    assert s.twenty_webhook_secret == ""
-    assert s.twenty_admin_key == ""
+    assert s.espocrm_url == ""
+    assert s.espocrm_api_key == ""
+    assert s.espocrm_admin_key == ""

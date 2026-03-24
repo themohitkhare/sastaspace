@@ -1,3 +1,4 @@
+import asyncio
 from unittest.mock import AsyncMock, patch
 
 import pytest
@@ -25,6 +26,21 @@ def mock_db(monkeypatch):
     yield
     monkeypatch.setattr(db_module, "_client", None)
     monkeypatch.setattr(db_module, "_db", None)
+
+
+@pytest.fixture(autouse=True)
+def _inline_to_thread(monkeypatch):
+    """Run asyncio.to_thread inline instead of in a thread pool.
+
+    Prevents lingering thread pool workers during pytest teardown on
+    Python 3.12+, which cause the test suite to hang at the 10-minute
+    CI timeout.
+    """
+
+    async def _inline(func, /, *args, **kwargs):
+        return func(*args, **kwargs)
+
+    monkeypatch.setattr(asyncio, "to_thread", _inline)
 
 
 @pytest.fixture

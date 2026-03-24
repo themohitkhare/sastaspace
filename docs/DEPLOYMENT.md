@@ -52,7 +52,7 @@ OLLAMA_URL: "http://host.k8s.internal:11434/v1"          # via microk8s host-acc
 BROWSERLESS_URL: "ws://browserless:3000"
 ```
 
-Secrets in `sastaspace-env` Secret (Twenty keys, webhook secret, admin key).
+Secrets in `sastaspace-env` Secret (EspoCRM keys, admin key).
 
 ## k8s Manifest Tree
 
@@ -65,8 +65,7 @@ k8s/
 ├── frontend.yaml       (+ service)
 ├── mongodb.yaml        (+ service + pvc 5Gi)
 ├── redis.yaml          (+ service + pvc 2Gi)
-├── espocrm/            (namespace, app, mariadb, secret, ingress)
-├── twenty/             (namespace, server, worker, postgres, redis, secrets, ingress)
+├── espocrm/            (namespace, app, mariadb, secret.yaml.example, ingress)
 └── monitoring/         (namespace, grafana, prometheus, loki, promtail, node-exporter,
                          kube-state-metrics, blackbox-exporter, redis-exporter,
                          dcgm-exporter, dashboards/, ingress)
@@ -93,7 +92,7 @@ backend ──► redis:6379        (enqueue jobs, pub/sub for SSE)
 Internet → Cloudflare Edge → cloudflared (systemd) → localhost:80 (nginx ingress)
   sastaspace.com / www    → frontend :3000
   api.sastaspace.com      → backend :8080
-  crm.sastaspace.com      → espocrm :80 (espocrm ns) [migrating from twenty-server :3000]
+  crm.sastaspace.com      → espocrm :80 (espocrm ns)
   monitor.sastaspace.com  → grafana :3001 (monitoring ns)
 ```
 
@@ -115,7 +114,7 @@ POST /redesign → Redis Stream (sastaspace:jobs) → Worker consumer
   3. Deploy
      - Write HTML + assets to /data/sites/{subdomain}/
      - Register in MongoDB (URL hash dedup)
-     - Sync to Twenty CRM (fire-and-forget)
+     - Sync to EspoCRM (fire-and-forget)
 ```
 
 Status via Redis Pub/Sub → SSE. Checkpoints in MongoDB. Dead job recovery via XAUTOCLAIM (>60s idle).
@@ -153,7 +152,7 @@ test → security → deploy (main branch only)
 |-----|-------|
 | `test` | ruff lint+format, jscpd (dupes), semgrep (SAST), pytest -n auto, kubeconform |
 | `security` | pip-audit (OSV), npm audit, Trivy fs scan (secrets + misconfigs) |
-| `deploy` | build images → Trivy image scan per image → push registry → kubectl apply (app + monitoring + twenty if secrets exist) → rolling restart all → rollout wait 300s |
+| `deploy` | build images → Trivy image scan per image → push registry → kubectl apply (app + monitoring + espocrm if secrets exist) → rolling restart all → rollout wait 300s |
 
 Deploy builds with `--build-arg NEXT_PUBLIC_BACKEND_URL=https://api.sastaspace.com`. Tags: `latest` + `${{ github.sha }}`. Suppressions in `.trivyignore`.
 
@@ -188,15 +187,10 @@ make deploy-down        # delete namespace
 make deploy-monitoring  # apply monitoring manifests
 make monitoring-status
 make monitoring-logs    # tail grafana/prometheus/loki
-make deploy-twenty      # deploy Twenty CRM stack
-make twenty-status
-make twenty-logs        # tail Twenty server logs
-make twenty-setup       # first-time instructions
-make espocrm-deploy    # deploy EspoCRM stack
+make espocrm-deploy    # deploy EspoCRM stack (secret managed manually)
 make espocrm-status
 make espocrm-logs      # tail EspoCRM app logs
 make espocrm-restart   # rolling restart EspoCRM
-make twenty-remove     # delete Twenty namespace (after EspoCRM verified)
 ```
 
 Custom remote: `make deploy REMOTE_HOST=taxila REMOTE_USER=mkhare`
@@ -226,28 +220,17 @@ sudo microk8s kubectl create secret generic grafana-admin --namespace monitoring
 make deploy-monitoring
 ```
 
-### Twenty CRM
-```bash
-vi k8s/twenty/secrets.yaml   # fill template with real values
-make deploy-twenty
-make twenty-status            # verify pods
-# Access: https://crm.sastaspace.com
-```
-
 ### EspoCRM (Lead Management)
 
-Replaces Twenty CRM. 2 pods (app + MariaDB) vs Twenty's 6 pods.
+2 pods (app + MariaDB).
 
 #### First-time setup
-1. Generate secure passwords and update `k8s/espocrm/secret.yaml`
+1. Copy `k8s/espocrm/secret.yaml.example`, fill real passwords, apply once on server
 2. `make espocrm-deploy`
 3. Access https://crm.sastaspace.com, login with admin credentials
 4. Go to Administration → API Users → Create API User → copy API key
 5. Set `ESPOCRM_URL` and `ESPOCRM_API_KEY` in sastaspace-env secret
 6. Verify: `make espocrm-status`
-
-#### After verifying EspoCRM works
-- `make twenty-remove` to delete the Twenty namespace and free ~3GB RAM
 
 ---
 
@@ -261,7 +244,7 @@ sudo microk8s kubectl get pods,svc,ingress -n sastaspace
 sudo microk8s kubectl logs -n sastaspace deployment/worker --tail=50           # worker
 sudo microk8s kubectl logs -n sastaspace deployment/browserless --tail=20      # browserless
 sudo microk8s kubectl exec -n sastaspace deployment/redis -- redis-cli XLEN sastaspace:jobs
-make twenty-status
+make espocrm-status
 make monitoring-status
 rocm-smi                                                                       # GPU
 sudo docker logs vllm-coder --tail 20                                          # vLLM

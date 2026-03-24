@@ -19,8 +19,8 @@ job_stream_endpoint  # noqa
 get_job_status  # noqa
 list_jobs_endpoint  # noqa
 list_sites_endpoint  # noqa
-create_twenty_person  # noqa
-twenty_webhook  # noqa
+create_espocrm_lead  # noqa
+crm_webhook  # noqa
 admin_list_sites  # noqa
 admin_sync  # noqa
 serve_site  # noqa

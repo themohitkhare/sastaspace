@@ -74,12 +74,6 @@ class Settings(BaseSettings):
     espocrm_api_key: str = ""  # API key from EspoCRM admin
     espocrm_admin_key: str = ""  # Admin key for /admin/* endpoints
 
-    # DEPRECATED: Twenty CRM (replaced by EspoCRM — will be removed once migration is verified)
-    twenty_url: str = ""
-    twenty_api_key: str = ""
-    twenty_webhook_secret: str = ""
-    twenty_admin_key: str = ""
-
     # Badge injection on generated sites
     include_badge: bool = True
 

@@ -64,14 +64,15 @@ def create_admin_router(settings: Settings, svc_ref: list) -> APIRouter:
     @r.post("/webhooks/crm", response_model=None)
     async def crm_webhook(request: Request) -> Response:
         """Handle admin actions from EspoCRM (or any CRM) via webhooks."""
-        if not settings.twenty_webhook_secret:
+        webhook_secret = settings.espocrm_admin_key
+        if not webhook_secret:
             return Response(status_code=404)
 
         body = await request.body()
         signature = request.headers.get("X-Webhook-Signature", "")
         timestamp = request.headers.get("X-Webhook-Timestamp", "")
 
-        if not verify_webhook_signature(body, signature, timestamp, settings.twenty_webhook_secret):
+        if not verify_webhook_signature(body, signature, timestamp, webhook_secret):
             return Response(status_code=401)
 
         # Redis dedup -- skip duplicate webhooks
@@ -110,7 +111,7 @@ def create_admin_router(settings: Settings, svc_ref: list) -> APIRouter:
     async def admin_list_sites(request: Request) -> JSONResponse | Response:
         """List all deployed sites for CRM reconciliation."""
         auth = request.headers.get("Authorization", "")
-        admin_key = settings.espocrm_admin_key or settings.twenty_admin_key
+        admin_key = settings.espocrm_admin_key
         if not admin_key or auth != f"Bearer {admin_key}":
             return Response(status_code=401)
         sites = await list_sites(limit=1000)
@@ -120,7 +121,7 @@ def create_admin_router(settings: Settings, svc_ref: list) -> APIRouter:
     async def admin_sync(request: Request) -> JSONResponse | Response:
         """Reconcile missed push events -- sync recent jobs to EspoCRM."""
         auth = request.headers.get("Authorization", "")
-        admin_key = settings.espocrm_admin_key or settings.twenty_admin_key
+        admin_key = settings.espocrm_admin_key
         if not admin_key or auth != f"Bearer {admin_key}":
             return Response(status_code=401)
 

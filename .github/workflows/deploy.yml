@@ -70,7 +70,8 @@ jobs:
             curl -sSL https://github.com/yannh/kubeconform/releases/latest/download/kubeconform-linux-amd64.tar.gz \
               | sudo tar xz -C /usr/local/bin kubeconform
           fi
-          kubeconform -summary -strict k8s/*.yaml k8s/monitoring/*.yaml k8s/espocrm/*.yaml
+          kubeconform -summary -strict k8s/*.yaml k8s/monitoring/*.yaml \
+            k8s/espocrm/namespace.yaml k8s/espocrm/mariadb.yaml k8s/espocrm/espocrm.yaml k8s/espocrm/ingress.yaml
 
   security:
     name: Security Scan
@@ -183,17 +184,14 @@ jobs:
           # Monitoring namespace + manifests
           sudo microk8s kubectl apply -f k8s/monitoring/namespace.yaml
           sudo microk8s kubectl apply -f k8s/monitoring/
-          # EspoCRM namespace + manifests (skipped if secrets not yet created)
+          # EspoCRM namespace + manifests (secret is managed manually, not in repo)
           if sudo microk8s kubectl get secret espocrm-env -n espocrm &>/dev/null; then
-            sudo microk8s kubectl apply -f k8s/espocrm/
+            sudo microk8s kubectl apply -f k8s/espocrm/namespace.yaml
+            sudo microk8s kubectl apply -f k8s/espocrm/mariadb.yaml
+            sudo microk8s kubectl apply -f k8s/espocrm/espocrm.yaml
+            sudo microk8s kubectl apply -f k8s/espocrm/ingress.yaml
           else
             echo "Skipping EspoCRM — secrets not yet created. Run: make espocrm-deploy"
-          fi
-          # Twenty CRM namespace + manifests (skipped if secrets not yet created)
-          if sudo microk8s kubectl get secret twenty-env -n twenty &>/dev/null; then
-            sudo microk8s kubectl apply -f k8s/twenty/
-          else
-            echo "Skipping Twenty CRM — secrets not yet created. Run: make twenty-setup"
           fi
 
       - name: Rolling restart (all deployments)
@@ -211,10 +209,6 @@ jobs:
           # Restart EspoCRM if deployed
           if sudo microk8s kubectl get deployments -n espocrm -o name 2>/dev/null | grep -q .; then
             sudo microk8s kubectl rollout restart $(sudo microk8s kubectl get deployments -n espocrm -o name) -n espocrm 2>/dev/null || true
-          fi
-          # Restart Twenty CRM if deployed
-          if sudo microk8s kubectl get deployments -n twenty -o name 2>/dev/null | grep -q .; then
-            sudo microk8s kubectl rollout restart $(sudo microk8s kubectl get deployments -n twenty -o name) -n twenty 2>/dev/null || true
           fi
 
       - name: Wait for rollout
