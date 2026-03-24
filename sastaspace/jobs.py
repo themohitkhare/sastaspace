@@ -25,11 +25,11 @@ from sastaspace.database import (
     update_job,
 )
 from sastaspace.deployer import deploy
-from sastaspace.espocrm_sync import get_espocrm_client
 from sastaspace.html_utils import RedesignError, RedesignResult, inject_badge
 from sastaspace.html_utils import validate_html as _validate_html
 from sastaspace.redesigner import run_redesign
 from sastaspace.urls import extract_domain, url_hash
+from sastaspace.vikunja_sync import get_vikunja_client
 
 logger = logging.getLogger(__name__)
 
@@ -487,16 +487,16 @@ async def redesign_handler(
                 {"job_id": job_id, "error": err},
             )
 
-            # Sync failure to EspoCRM (fire-and-forget)
+            # Sync failure to Vikunja (fire-and-forget)
             try:
-                espo = get_espocrm_client(settings.espocrm_url, settings.espocrm_api_key)
+                vikunja = get_vikunja_client(
+                    settings.vikunja_url, settings.vikunja_token, settings.vikunja_project_id
+                )
                 domain = extract_domain(url)
-                await espo.create_or_update_lead(
-                    first_name="",
-                    last_name="",
-                    email="",
-                    website=f"https://{domain}",
-                    description=f"Crawl failed for {domain}",
+                await vikunja.create_or_update_lead(
+                    domain=domain,
+                    job_id=job_id,
+                    tier=tier,
                 )
             except (httpx.HTTPError, KeyError, ValueError, OSError):
                 pass
@@ -758,25 +758,27 @@ async def redesign_handler(
         url_hash=url_hash(url),
     )
 
-    # Sync to EspoCRM (fire-and-forget — failure doesn't affect pipeline)
-    espo = get_espocrm_client(settings.espocrm_url, settings.espocrm_api_key)
+    # Sync to Vikunja (fire-and-forget — failure doesn't affect pipeline)
+    vikunja = get_vikunja_client(
+        settings.vikunja_url, settings.vikunja_token, settings.vikunja_project_id
+    )
     try:
         bp = getattr(enhanced_result, "business_profile", None) if enhanced_result else None
         company_name = (
             bp.business_name if bp and bp.business_name != "unknown" else crawl_result.title
         )
         domain = extract_domain(url)
-        lead_id = await espo.create_or_update_lead(
-            first_name="",
-            last_name=company_name or domain,
-            email="",
-            website=f"https://{domain}",
-            description=f"Redesign completed for {domain} (job {job_id})",
+        lead_id = await vikunja.create_or_update_lead(
+            domain=domain,
+            job_id=job_id,
+            tier=tier,
+            subdomain=result.subdomain,
+            site_title=company_name or domain,
         )
         if lead_id:
-            logger.info("EspoCRM: lead synced for %s (id=%s)", domain, lead_id)
+            logger.info("Vikunja: lead synced for %s (task=%s)", domain, lead_id)
     except (httpx.HTTPError, KeyError, ValueError, OSError) as e:
-        logger.warning("EspoCRM sync failed for job %s: %s", job_id, e)
+        logger.warning("Vikunja sync failed for job %s: %s", job_id, e)
 
     # Clear checkpoint — job is done, no need to keep checkpoint data
     await update_job(

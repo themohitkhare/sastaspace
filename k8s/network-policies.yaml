@@ -64,16 +64,16 @@ spec:
           app: mongodb
     ports:
     - port: 27017
-  # EspoCRM (cross-namespace lead sync)
+  # Vikunja (cross-namespace lead/task tracking)
   - to:
     - namespaceSelector:
         matchLabels:
-          kubernetes.io/metadata.name: espocrm
+          kubernetes.io/metadata.name: vikunja
       podSelector:
         matchLabels:
-          app: espocrm
+          app: vikunja
     ports:
-    - port: 80
+    - port: 3456
   # External HTTPS (claude-code-api, etc.)
   - to:
     - ipBlock:
@@ -154,16 +154,16 @@ spec:
           app: browserless
     ports:
     - port: 3000
-  # EspoCRM (cross-namespace lead sync)
+  # Vikunja (cross-namespace lead/task tracking)
   - to:
     - namespaceSelector:
         matchLabels:
-          kubernetes.io/metadata.name: espocrm
+          kubernetes.io/metadata.name: vikunja
       podSelector:
         matchLabels:
-          app: espocrm
+          app: vikunja
     ports:
-    - port: 80
+    - port: 3456
   # External HTTPS (AI APIs)
   - to:
     - ipBlock:

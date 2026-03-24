@@ -22,8 +22,8 @@ def test_settings_override_api_url(monkeypatch):
     assert s.claude_code_api_url == "http://localhost:9000/v1"
 
 
-def test_espocrm_defaults_disabled():
+def test_vikunja_defaults_disabled():
     s = Settings()
-    assert s.espocrm_url == ""
-    assert s.espocrm_api_key == ""
-    assert s.espocrm_admin_key == ""
+    assert s.vikunja_url == ""
+    assert s.vikunja_token == ""
+    assert s.vikunja_project_id == 2

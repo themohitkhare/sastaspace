@@ -1,5 +1,5 @@
 # sastaspace/routes/admin.py
-"""Admin, webhook, and EspoCRM sync endpoints."""
+"""Admin, webhook, and Vikunja sync endpoints."""
 
 from __future__ import annotations
 
@@ -19,8 +19,8 @@ from sastaspace.admin import (
 )
 from sastaspace.config import Settings
 from sastaspace.database import list_jobs, list_sites
-from sastaspace.espocrm_sync import NoopEspoCRMClient, get_espocrm_client
 from sastaspace.urls import extract_domain
+from sastaspace.vikunja_sync import NoopVikunjaClient, get_vikunja_client
 
 logger = logging.getLogger(__name__)
 
@@ -30,9 +30,11 @@ def create_admin_router(settings: Settings, svc_ref: list) -> APIRouter:
     r = APIRouter()
 
     @r.post("/crm/lead", response_model=None)
-    async def create_espocrm_lead(request: Request) -> JSONResponse:
-        """Create or update a lead in EspoCRM from a contact form submission."""
-        espo = get_espocrm_client(settings.espocrm_url, settings.espocrm_api_key)
+    async def create_lead(request: Request) -> JSONResponse:
+        """Create or update a lead in Vikunja from a contact form submission."""
+        vikunja = get_vikunja_client(
+            settings.vikunja_url, settings.vikunja_token, settings.vikunja_project_id
+        )
         try:
             body = await request.json()
             name = body.get("name", "").strip()
@@ -43,28 +45,21 @@ def create_admin_router(settings: Settings, svc_ref: list) -> APIRouter:
             if not email:
                 return JSONResponse(status_code=400, content={"error": "Email required"})
 
-            parts = name.split(None, 1)
-            first_name = parts[0] if parts else ""
-            last_name = parts[1] if len(parts) > 1 else ""
-
-            website = f"https://{domain}" if domain else ""
-            await espo.create_or_update_lead(
-                first_name=first_name,
-                last_name=last_name,
-                email=email,
-                website=website,
-                description=message,
+            description = f"**Name:** {name}\n**Email:** {email}\n**Domain:** {domain}\n\n{message}"
+            await vikunja.create_task(
+                title=f"Contact: {name or email} ({domain})",
+                description=description,
             )
 
             return JSONResponse(content={"ok": True})
         except (ValueError, KeyError, TypeError, OSError) as e:
-            logger.warning("EspoCRM lead creation failed: %s", e)
+            logger.warning("Vikunja lead creation failed: %s", e)
             return JSONResponse(content={"ok": True})  # Don't reveal failures
 
     @r.post("/webhooks/crm", response_model=None)
     async def crm_webhook(request: Request) -> Response:
-        """Handle admin actions from EspoCRM (or any CRM) via webhooks."""
-        webhook_secret = settings.espocrm_admin_key
+        """Handle admin actions via webhooks."""
+        webhook_secret = settings.admin_key
         if not webhook_secret:
             return Response(status_code=404)
 
@@ -109,9 +104,9 @@ def create_admin_router(settings: Settings, svc_ref: list) -> APIRouter:
 
     @r.get("/admin/sites", response_model=None)
     async def admin_list_sites(request: Request) -> JSONResponse | Response:
-        """List all deployed sites for CRM reconciliation."""
+        """List all deployed sites."""
         auth = request.headers.get("Authorization", "")
-        admin_key = settings.espocrm_admin_key
+        admin_key = settings.admin_key
         if not admin_key or auth != f"Bearer {admin_key}":
             return Response(status_code=401)
         sites = await list_sites(limit=1000)
@@ -119,40 +114,39 @@ def create_admin_router(settings: Settings, svc_ref: list) -> APIRouter:
 
     @r.get("/admin/sync", response_model=None)
     async def admin_sync(request: Request) -> JSONResponse | Response:
-        """Reconcile missed push events -- sync recent jobs to EspoCRM."""
+        """Reconcile missed push events -- sync recent jobs to Vikunja."""
         auth = request.headers.get("Authorization", "")
-        admin_key = settings.espocrm_admin_key
+        admin_key = settings.admin_key
         if not admin_key or auth != f"Bearer {admin_key}":
             return Response(status_code=401)
 
-        espo = get_espocrm_client(settings.espocrm_url, settings.espocrm_api_key)
-        if isinstance(espo, NoopEspoCRMClient):
-            return JSONResponse(content={"synced": 0, "message": "EspoCRM integration disabled"})
+        vikunja = get_vikunja_client(
+            settings.vikunja_url, settings.vikunja_token, settings.vikunja_project_id
+        )
+        if isinstance(vikunja, NoopVikunjaClient):
+            return JSONResponse(content={"synced": 0, "message": "Vikunja integration disabled"})
 
         recent_jobs = await list_jobs(limit=100, status="done")
         synced = 0
-        already_exists = 0
         errors = 0
 
         for job in recent_jobs:
             job_id = job.get("id", "")
             try:
                 domain = extract_domain(job.get("url", ""))
-                lead_id = await espo.create_or_update_lead(
-                    first_name="",
-                    last_name=job.get("site_title", domain),
-                    email="",
-                    website=f"https://{domain}",
-                    description=f"Synced from job {job_id}",
+                task_id = await vikunja.create_or_update_lead(
+                    domain=domain,
+                    job_id=job_id,
+                    tier=job.get("tier", "free"),
+                    subdomain=job.get("subdomain", ""),
+                    site_title=job.get("site_title", domain),
                 )
-                if lead_id:
+                if task_id:
                     synced += 1
             except (ValueError, KeyError, TypeError, OSError) as e:
                 logger.warning("Sync failed for job %s: %s", job_id, e)
                 errors += 1
 
-        return JSONResponse(
-            content={"synced": synced, "already_exists": already_exists, "errors": errors}
-        )
+        return JSONResponse(content={"synced": synced, "errors": errors})
 
     return r

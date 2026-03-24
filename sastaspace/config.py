@@ -69,10 +69,11 @@ class Settings(BaseSettings):
     # Redis
     redis_url: str = "redis://localhost:6379"
 
-    # EspoCRM integration (replaces Twenty CRM)
-    espocrm_url: str = ""  # e.g., "http://espocrm.espocrm.svc.cluster.local"
-    espocrm_api_key: str = ""  # API key from EspoCRM admin
-    espocrm_admin_key: str = ""  # Admin key for /admin/* endpoints
+    # Vikunja integration (task-based lead tracking)
+    vikunja_url: str = ""  # e.g., "http://vikunja.vikunja.svc.cluster.local:3456"
+    vikunja_token: str = ""  # API token from Vikunja
+    vikunja_project_id: int = 2  # Project ID for leads
+    admin_key: str = ""  # Admin key for /admin/* endpoints
 
     # Badge injection on generated sites
     include_badge: bool = True
