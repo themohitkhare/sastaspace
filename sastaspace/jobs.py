@@ -27,6 +27,7 @@ from sastaspace.database import (
 from sastaspace.deployer import deploy
 from sastaspace.html_utils import RedesignError, RedesignResult, inject_badge, sanitize_html
 from sastaspace.html_utils import validate_html as _validate_html
+from sastaspace.quality_scorer import score_redesign
 from sastaspace.redesigner import run_redesign
 from sastaspace.urls import extract_domain, url_hash
 from sastaspace.vikunja_sync import get_vikunja_client
@@ -655,6 +656,24 @@ async def redesign_handler(
             {"job_id": job_id, "error": "Redesign produced invalid HTML. Please try again."},
         )
         return
+
+    # Quality scoring gate — log quality and warn on low scores
+    try:
+        quality = score_redesign(
+            html,
+            original_headings=crawl_result.headings if crawl_result else None,
+            original_text=crawl_result.text_content if crawl_result else "",
+            original_images=crawl_result.images if crawl_result else None,
+        )
+        if quality.overall < 30:
+            logger.warning(
+                "QUALITY GATE | job=%s grade=%s score=%d — very low quality redesign",
+                job_id,
+                quality.grade,
+                quality.overall,
+            )
+    except Exception:  # noqa: BLE001
+        logger.debug("Quality scoring failed for job=%s", job_id, exc_info=True)
 
     # Inject SastaSpace badge (marketing watermark)
     if settings.include_badge:
