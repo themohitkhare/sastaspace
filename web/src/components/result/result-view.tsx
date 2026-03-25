@@ -18,8 +18,8 @@ interface ResultViewProps {
 export function ResultView({ subdomain, tier }: ResultViewProps) {
   const domain = subdomain.replace(/-/g, ".");
   const originalUrl = `https://${domain}`;
-  const previewUrl = `/${subdomain}/preview`;
   const backendUrl = getBackendUrl();
+  const previewUrl = `${backendUrl}/${subdomain}/preview`;
   const downloadUrl = `${backendUrl}/${subdomain}/index.html`;
   const shareUrl = typeof window !== "undefined"
     ? `${window.location.origin}/${subdomain}`

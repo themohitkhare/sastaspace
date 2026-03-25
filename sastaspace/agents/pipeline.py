@@ -190,15 +190,16 @@ def _run_agent(
             agent = Agent(model=model, instructions=system_prompt, tools=[])
             response = agent.run(user_prompt)
             content = response.content or ""
-            # Treat rate limit error text as empty (trigger retry)
-            if content and "rate limit" not in content.lower():
+            # Treat rate limit / timeout error text as empty (trigger retry)
+            _lower = content.lower() if content else ""
+            if content and "rate limit" not in _lower and "timed out" not in _lower:
                 break
             if content:
-                logger.warning("AGENT RATE LIMITED | agent=%s content=%.100s", name, content)
+                logger.warning("AGENT RETRYABLE ERROR | agent=%s content=%.100s", name, content)
                 content = ""
         if not content:
             n = len(_RETRY_DELAYS) + 1
-            raise RedesignError(f"{name} failed after {n} attempts — rate limited")
+            raise RedesignError(f"{name} failed after {n} attempts — API unavailable")
 
         # Extract token metrics
         if response.metrics:
