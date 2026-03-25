@@ -315,7 +315,7 @@ def _esbuild_validate(files: dict[str, str], template_dir: Path) -> None:
         ext = path.rsplit(".", 1)[-1]
         try:
             result = subprocess.run(
-                [str(esbuild_bin), f"--loader={ext}", "--bundle=false"],
+                [str(esbuild_bin), f"--loader={ext}"],
                 input=content,
                 capture_output=True,
                 text=True,
