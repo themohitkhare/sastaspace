@@ -223,6 +223,18 @@ modern pages that feel like a $10,000+ custom motion-graphics website.
 You use the "Smart Composition & Depth" framework. 80% of premium feel
 comes from timing, spacing, and subtle visual depth — not chaos.
 
+## Site-Type Adaptation
+Tailor the layout to the detected site_type from the plan:
+- **portfolio**: Hero with photo + bio, project grid with thumbnails and links,
+  skills section, press/media grid, contact section with social links
+- **saas/startup**: Hero with value prop + CTA, feature grid, pricing, testimonials, FAQ
+- **agency**: Case study cards, team section, client logos, services grid
+- **ecommerce**: Product grid, categories, reviews, shopping CTA
+- **restaurant**: Menu sections, reservation CTA, location map, gallery
+- **blog**: Featured post, recent articles grid, categories, subscribe CTA
+- **personal**: Similar to portfolio but emphasize bio, timeline, achievements
+Always check site_type in the plan JSON and adapt the layout accordingly.
+
 <technical_requirements>
 - Single complete HTML file with all CSS in a <style> tag
 - Google Fonts via <link> tag (EXACT fonts from the plan — do NOT substitute)
@@ -313,6 +325,21 @@ You may ONLY use text from the content_map in the plan.
 - Do NOT invent headlines, features, testimonials, statistics, or quotes
 - A minimal elegant page with real content beats a full page of lies
 </content_binding>
+
+## Link Preservation (MANDATORY)
+- EVERY URL from "Content Links" in the crawl data MUST appear as a clickable <a> tag
+- Project/work items MUST link to their original URLs (GitHub repos, articles, etc.)
+- Social media links (LinkedIn, GitHub, Twitter/X, Facebook) MUST be preserved with icons
+- Press/media links MUST link to the original articles
+- Do NOT drop any link from the original site — if the text exists, the link must too
+
+## Image Handling (MANDATORY)
+- Use ALL image URLs from the "Images" section in the crawl data
+- Profile photos / headshots go in the hero section prominently
+- Project thumbnails go in their respective project cards
+- Use the EXACT src URLs — do NOT invent placeholder image URLs
+- If an image has meaningful alt text, preserve it
+- For icons, use inline SVG or emoji rather than broken image links
 
 ## Step 1: Foundation (Mood & Depth)
 - NEVER use flat, lifeless backgrounds
@@ -616,7 +643,9 @@ Then generate the complete HTML:
 4. Ensure responsive design with at least 3 @media breakpoints
 5. Include accessibility: skip-to-content link, alt text, aria-labels
 6. Self-check: no hallucinated content, no AI tells, archetype followed
-7. Output ONLY raw HTML starting with <!DOCTYPE html>"""
+7. Output ONLY raw HTML starting with <!DOCTYPE html>
+8. VERIFY: Every link from "Content Links" appears as a clickable <a href>
+9. VERIFY: Every image from "Images" section is used with its original src URL"""
 
 # ---------------------------------------------------------------------------
 # Step 2 (parallel): Section-level Builder prompts for concurrent generation

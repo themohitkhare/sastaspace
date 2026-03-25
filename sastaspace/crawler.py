@@ -122,6 +122,7 @@ class CrawlResult:
     screenshot_base64: str
     headings: list[str] = field(default_factory=list)
     navigation_links: list[dict] = field(default_factory=list)
+    content_links: list[dict] = field(default_factory=list)
     text_content: str = ""
     images: list[dict] = field(default_factory=list)
     colors: list[str] = field(default_factory=list)
@@ -141,6 +142,11 @@ class CrawlResult:
         if self.navigation_links:
             nav = "\n".join(f"- {n['text']} → {n['href']}" for n in self.navigation_links)
             lines.append(f"## Navigation\n{nav}")
+        if self.content_links:
+            link_lines = "\n".join(
+                f"- [{lnk['text']}]({lnk['href']})" for lnk in self.content_links[:30]
+            )
+            lines.append(f"## Content Links (preserve these URLs in the redesign)\n{link_lines}")
         if self.text_content:
             lines.append(f"## Main Text Content\n{self.text_content[:4999]}")
         if self.images:
@@ -219,6 +225,44 @@ def _extract_nav_links(soup: BeautifulSoup) -> list[dict]:
             if text and href:
                 links.append({"text": text, "href": href})
     return links[:15]
+
+
+def _extract_content_links(soup: BeautifulSoup, base_url: str) -> list[dict]:
+    """Extract all meaningful content links from the page body.
+
+    Captures project links, social links, article links — anything outside nav/header/footer
+    that could be a portfolio item, work sample, or external reference.
+    """
+    links = []
+    seen_hrefs = set()
+
+    # Skip nav/header/footer links (already captured by _extract_nav_links)
+    skip_parents = {"nav", "header", "footer"}
+
+    for a in soup.find_all("a", href=True):
+        # Skip if inside nav/header/footer
+        if any(p.name in skip_parents for p in a.parents):
+            continue
+
+        href = a["href"]
+        text = a.get_text(strip=True)
+
+        # Skip empty, anchors, javascript
+        if not href or href.startswith(("#", "javascript:", "mailto:", "tel:")):
+            continue
+
+        # Deduplicate
+        if href in seen_hrefs:
+            continue
+        seen_hrefs.add(href)
+
+        # Resolve relative URLs
+        if not href.startswith(("http://", "https://")):
+            href = urljoin(base_url, href)
+
+        links.append({"text": text or href, "href": href})
+
+    return links[:50]  # Cap at 50 to avoid bloating the prompt
 
 
 def _extract_images(soup: BeautifulSoup) -> list[dict]:
@@ -414,6 +458,7 @@ async def _crawl_page(page, url: str, *, settle_delay: float = 0.5) -> CrawlResu
         screenshot_base64=screenshot_b64,
         headings=_extract_headings(soup),
         navigation_links=_extract_nav_links(soup),
+        content_links=_extract_content_links(soup, url),
         text_content=_extract_text(html),
         images=_extract_images(soup),
         colors=list(colors),
@@ -733,9 +778,9 @@ async def enhanced_crawl(url: str, settings):
                     build_business_profile,
                     homepage,
                     internal_pages,
-                    settings.claude_code_api_url,
-                    settings.claude_model,
-                    settings.claude_code_api_key,
+                    settings.gemini_api_url,
+                    settings.gemini_model,
+                    settings.gemini_api_key,
                 )
                 logger.info(
                     "PERF | enhanced_crawl business_profile=%.1fs",
