@@ -80,8 +80,8 @@ def extract_domain(raw: str) -> str:
         raw = f"https://{raw}"
 
     ext = tldextract.extract(raw)
-    if ext.registered_domain:
-        return ext.registered_domain
+    if ext.top_domain_under_public_suffix:
+        return ext.top_domain_under_public_suffix
     # Fallback to hostname
     parsed = urlparse(raw)
     return (parsed.hostname or raw).lower().lstrip("www.")
