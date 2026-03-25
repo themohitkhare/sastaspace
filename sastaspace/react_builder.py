@@ -13,6 +13,7 @@ import re
 import shutil
 import subprocess
 import tempfile
+from functools import lru_cache
 from pathlib import Path
 
 logger = logging.getLogger(__name__)
@@ -165,9 +166,17 @@ def _sanitize_imports(files: dict[str, str]) -> dict[str, str]:
 
     This prevents Vite build failures from LLM-hallucinated package imports.
     Lines importing unknown packages are commented out with a warning.
+    Also validates lucide-react icon names, replacing non-existent icons with Circle.
     """
     import_pattern = re.compile(
         r'^(import\s+.*\s+from\s+["\'])([^"\']+)(["\'];?\s*)$', re.MULTILINE
+    )
+    lucide_icons = _load_lucide_icon_names()
+
+    # Pattern to match: import { Icon1, Icon2 } from 'lucide-react'
+    lucide_import_re = re.compile(
+        r"""^(import\s*\{)([^}]+)(\}\s*from\s*['"]lucide-react['"];?\s*)$""",
+        re.MULTILINE,
     )
 
     sanitized = {}
@@ -183,9 +192,142 @@ def _sanitize_imports(files: dict[str, str]) -> dict[str, str]:
             logger.warning("Stripped unavailable import: %s (from %s)", module, path)
             return f"// STRIPPED: unavailable package — {m.group(0)}"
 
-        sanitized[path] = import_pattern.sub(_check_import, content)
+        content = import_pattern.sub(_check_import, content)
+
+        # Validate lucide-react icon names if we have the icon set loaded
+        if lucide_icons:
+
+            def _fix_lucide_icons(m: re.Match) -> str:
+                prefix = m.group(1)
+                names_str = m.group(2)
+                suffix = m.group(3)
+
+                names = [n.strip() for n in names_str.split(",") if n.strip()]
+                fixed_names: list[str] = []
+                for name in names:
+                    # Handle "Icon as Alias" syntax
+                    parts = name.split(" as ")
+                    icon_name = parts[0].strip()
+                    if icon_name not in lucide_icons:
+                        logger.warning(
+                            "Replaced non-existent lucide icon '%s' with 'Circle' in %s",
+                            icon_name,
+                            path,
+                        )
+                        if len(parts) > 1:
+                            fixed_names.append(f"Circle as {parts[1].strip()}")
+                        else:
+                            fixed_names.append(f"Circle as {icon_name}")
+                    else:
+                        fixed_names.append(name)
+
+                return f"{prefix} {', '.join(fixed_names)} {suffix}"
+
+            content = lucide_import_re.sub(_fix_lucide_icons, content)
+
+        sanitized[path] = content
 
     return sanitized
+
+
+@lru_cache(maxsize=1)
+def _load_lucide_icon_names() -> frozenset[str]:
+    """Load valid lucide-react icon export names from the template's node_modules.
+
+    Parses the ESM icons index.js to extract all ``export { default as IconName }``
+    entries.  Returns a frozenset for O(1) lookups.  Cached so the file is read at
+    most once per process.
+    """
+    candidates = [
+        Path("redesign-template/node_modules/lucide-react/dist/esm/icons/index.js"),
+        Path("redesign-template/node_modules/lucide-react/dist/cjs/lucide-react.js"),
+    ]
+    for rel in candidates:
+        p = Path(__file__).resolve().parent.parent / rel
+        if p.exists():
+            text = p.read_text(encoding="utf-8")
+            names = set(re.findall(r"export\s*\{\s*default\s+as\s+(\w+)\s*\}", text))
+            if names:
+                logger.info("Loaded %d lucide-react icon names from %s", len(names), p)
+                return frozenset(names)
+
+    logger.warning("Could not locate lucide-react icon index — icon validation disabled")
+    return frozenset()
+
+
+def _fix_css_import_ordering(files: dict[str, str]) -> dict[str, str]:
+    """Move all CSS @import statements to the top of each .css file.
+
+    CSS spec requires @import rules to precede all other rules (except @charset
+    and @layer).  LLMs frequently place @import after @tailwind or :root blocks,
+    causing build failures in ~15-20%% of generations.
+    """
+    fixed: dict[str, str] = {}
+    import_re = re.compile(r"^\s*@import\s", re.IGNORECASE)
+
+    for path, content in files.items():
+        if not path.endswith(".css"):
+            fixed[path] = content
+            continue
+
+        lines = content.splitlines(keepends=True)
+        import_lines: list[str] = []
+        other_lines: list[str] = []
+
+        for line in lines:
+            if import_re.match(line):
+                import_lines.append(line)
+            else:
+                other_lines.append(line)
+
+        if import_lines:
+            logger.info(
+                "Reordered %d @import statement(s) to top of %s",
+                len(import_lines),
+                path,
+            )
+            fixed[path] = "".join(import_lines) + "".join(other_lines)
+        else:
+            fixed[path] = content
+
+    return fixed
+
+
+def _esbuild_validate(files: dict[str, str], template_dir: Path) -> None:
+    """Run esbuild syntax validation on each .tsx/.ts file.
+
+    Takes ~7ms per file.  Raises BuildError with the file path and error details
+    on syntax errors.  Gracefully skips if esbuild binary is not found.
+    """
+    esbuild_bin = template_dir / "node_modules" / ".bin" / "esbuild"
+    if not esbuild_bin.exists():
+        # Try system-level esbuild
+        esbuild_bin_str = shutil.which("esbuild")
+        if not esbuild_bin_str:
+            logger.debug("esbuild not found — skipping pre-validation")
+            return
+        esbuild_bin = Path(esbuild_bin_str)
+
+    for path, content in files.items():
+        if not path.endswith((".tsx", ".ts")):
+            continue
+
+        ext = path.rsplit(".", 1)[-1]
+        try:
+            result = subprocess.run(
+                [str(esbuild_bin), f"--loader={ext}", "--bundle=false"],
+                input=content,
+                capture_output=True,
+                text=True,
+                timeout=10,
+            )
+        except (FileNotFoundError, subprocess.TimeoutExpired) as exc:
+            logger.debug("esbuild validation skipped for %s: %s", path, exc)
+            continue
+
+        if result.returncode != 0:
+            stderr = result.stderr.strip()[:500]
+            raise BuildError(f"Syntax error in {path}:\n{stderr}")
 
 
 def _write_generated_files(files: dict[str, str], project_dir: Path) -> None:
@@ -258,6 +400,8 @@ def build_react_page(
         t_copy = _time.monotonic()
         _copy_template(template_dir, tmp_path)
         files = _sanitize_imports(files)
+        files = _fix_css_import_ordering(files)
+        _esbuild_validate(files, template_dir)
         _write_generated_files(files, tmp_path)
         logger.info(
             "PERF | react_build template_copy=%.2fs files=%d",

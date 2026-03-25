@@ -50,7 +50,12 @@ from sastaspace.html_utils import RedesignError, RedesignResult
 from sastaspace.html_utils import clean_html as _clean_html
 from sastaspace.html_utils import validate_html as _validate_html
 from sastaspace.plan_cache import cache_plan, get_cached_plan, merge_cached_plan
-from sastaspace.react_builder import BuildError, build_react_page, parse_composer_output
+from sastaspace.react_builder import (
+    BuildError,
+    _sanitize_imports,
+    build_react_page,
+    parse_composer_output,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -587,8 +592,11 @@ def _run_react_build(
     files: dict[str, str],
     manifest: ComponentManifest,
     settings: Settings,
+    max_retries: int = 2,
 ) -> RedesignResult:
     """Build the composed React page using Vite and return a RedesignResult."""
+    import shutil
+
     template_dir = settings.redesign_template_dir.resolve()
     if not template_dir.exists():
         raise RedesignError(f"Redesign template not found at {template_dir}")
@@ -610,10 +618,43 @@ def _run_react_build(
     output_dir = Path(tempfile.mkdtemp(prefix="sastaspace-build-"))
     build_start = time.monotonic()
 
-    try:
-        build_react_page(all_files, template_dir, output_dir)
-    except BuildError as exc:
-        raise RedesignError(f"React build failed: {exc}") from exc
+    for attempt in range(1 + max_retries):
+        try:
+            build_react_page(all_files, template_dir, output_dir)
+            break  # success
+        except BuildError as exc:
+            if attempt < max_retries:
+                logger.warning(
+                    "React build failed (attempt %d/%d): %s — requesting LLM fix",
+                    attempt + 1,
+                    1 + max_retries,
+                    str(exc)[:200],
+                )
+                # Feed error back to Composer for fix
+                fix_prompt = (
+                    f"The React build failed with this error:\n\n{str(exc)[:500]}\n\n"
+                    "Fix the error and output ONLY the corrected file(s) "
+                    "using the same --- FILE: path --- format."
+                )
+
+                # Use the same model as the original Composer
+                provider = _resolve_step_provider("composer", settings, "gemini")
+                model = _create_model("gemini", settings, model_provider=provider)
+                fix_response = _run_agent("composer_fix", COMPOSER_SYSTEM, fix_prompt, model)
+
+                # Parse the fix and merge into files
+                fixed_files = parse_composer_output(fix_response)
+                if fixed_files:
+                    fixed_files = _sanitize_imports(fixed_files)
+                    all_files.update(fixed_files)
+                    # Clean up output dir for retry
+                    if output_dir.exists():
+                        shutil.rmtree(output_dir)
+                    output_dir = Path(tempfile.mkdtemp(prefix="sastaspace-build-"))
+            else:
+                raise RedesignError(
+                    f"React build failed after {1 + max_retries} attempts: {exc}"
+                ) from exc
 
     build_duration = time.monotonic() - build_start
     logger.info("React build completed in %.1fs", build_duration)
@@ -913,11 +954,19 @@ def run_redesign_pipeline(
             else:
                 react_files = {}
 
-            # Step 4: Build with Vite
+            # Step 4: Build with Vite (with HTML fallback)
             if _should_run("react_build"):
-                logger.info("Pipeline step 4/%d: React Build", len(steps))
+                logger.info("Pipeline step %d/%d: React Build", len(steps), len(steps))
                 _emit("react_build")
-                result = _run_react_build(react_files, manifest, settings)
+                try:
+                    result = _run_react_build(react_files, manifest, settings)
+                except RedesignError:
+                    logger.warning(
+                        "React build failed after retries — falling back to HTML builder"
+                    )
+                    _emit("builder_fallback")
+                    html = _run_builder(plan, crawl_result, settings, tier, model_provider)
+                    result = RedesignResult(html=html)
                 cp_data["html"] = result.html
                 _checkpoint("react_build", cp_data)
             else:
