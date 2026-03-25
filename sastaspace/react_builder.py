@@ -216,6 +216,11 @@ def build_react_page(
         dist_path = _run_vite_build(tmp_path)
         logger.info("PERF | react_build vite_build=%.1fs", _time.monotonic() - t_vite)
 
+        # Inline all CSS/JS assets into index.html so the result is a single
+        # self-contained file. This avoids CORS issues when the HTML is served
+        # from api.sastaspace.com but embedded in an iframe on sastaspace.com.
+        _inline_assets(dist_path)
+
         # Copy dist to output
         if output_dir.exists():
             shutil.rmtree(output_dir)
@@ -230,6 +235,48 @@ def build_react_page(
         )
 
         return output_dir
+
+
+def _inline_assets(dist_path: Path) -> None:
+    """Inline all CSS and JS assets into index.html.
+
+    Replaces <link rel="stylesheet" href="/assets/..."> with <style>...</style>
+    and <script type="module" src="/assets/..."> with <script>...</script>.
+    Removes the separate asset files afterward.
+    """
+    index_html = dist_path / "index.html"
+    if not index_html.exists():
+        return
+
+    html = index_html.read_text(encoding="utf-8")
+    assets_dir = dist_path / "assets"
+    if not assets_dir.exists():
+        return
+
+    # Inline CSS: <link rel="stylesheet" ... href="/assets/xxx.css">
+    for css_file in sorted(assets_dir.glob("*.css")):
+        css_content = css_file.read_text(encoding="utf-8")
+        # Match link tags referencing this asset
+        pattern = rf'<link[^>]*href="[./]*assets/{re.escape(css_file.name)}"[^>]*/?\s*>'
+        replacement = f"<style>{css_content}</style>"
+        html = re.sub(pattern, replacement, html)
+
+    # Inline JS: <script type="module" ... src="/assets/xxx.js">
+    for js_file in sorted(assets_dir.glob("*.js")):
+        js_content = js_file.read_text(encoding="utf-8")
+        pattern = (
+            rf'<script[^>]*src="[./]*assets/{re.escape(js_file.name)}"[^>]*>'
+            r"</script>"
+        )
+        replacement = f'<script type="module">{js_content}</script>'
+        html = re.sub(pattern, replacement, html)
+
+    index_html.write_text(html, encoding="utf-8")
+
+    # Remove assets directory — everything is inlined
+    shutil.rmtree(assets_dir, ignore_errors=True)
+
+    logger.info("Assets inlined into index.html — single-file output")
 
 
 def _inject_css_vars(project_dir: Path, css_vars: dict[str, str]) -> None:
