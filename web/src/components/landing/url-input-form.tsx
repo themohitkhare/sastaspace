@@ -21,7 +21,7 @@ export function UrlInputForm({ onSubmit, isConnecting }: UrlInputFormProps) {
   const [faviconUrl, setFaviconUrl] = useState<string | null>(null);
   const [tier, setTier] = useState<RedesignTier>("free");
   // Model selection handled by per-step routing on the backend
-  const modelProvider: ModelProvider = "claude";
+  const modelProvider: ModelProvider = "gemini";
   const [prompt, setPrompt] = useState("");
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);

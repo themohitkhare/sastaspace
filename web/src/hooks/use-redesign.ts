@@ -198,7 +198,7 @@ export function useRedesign() {
   const lastPromptRef = useRef<string>("");
 
   const start = useCallback(
-    async (url: string, tier: RedesignTier = "free", modelProvider: ModelProvider = "claude", prompt: string = "") => {
+    async (url: string, tier: RedesignTier = "free", modelProvider: ModelProvider = "gemini", prompt: string = "") => {
       abortRef.current?.abort();
       const controller = new AbortController();
       abortRef.current = controller;

@@ -277,7 +277,7 @@ spec:
     ports:
     - port: 27017
 ---
-# Browserless: allow from worker only
+# Browserless: allow ingress from worker, egress to internet (HTTP/HTTPS for crawling)
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
@@ -287,6 +287,9 @@ spec:
   podSelector:
     matchLabels:
       app: browserless
+  policyTypes:
+  - Ingress
+  - Egress
   ingress:
   - from:
     - podSelector:
@@ -294,3 +297,17 @@ spec:
           app: worker
     ports:
     - port: 3000
+  egress:
+  # External HTTP/HTTPS (Browserless fetches web pages for crawling)
+  - to:
+    - ipBlock:
+        cidr: 0.0.0.0/0
+        except:
+        - 10.0.0.0/8
+        - 172.16.0.0/12
+        - 192.168.0.0/16
+    ports:
+    - port: 80
+      protocol: TCP
+    - port: 443
+      protocol: TCP

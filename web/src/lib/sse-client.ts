@@ -20,7 +20,7 @@ export type JobStatus = {
 export async function submitRedesign(
   url: string,
   tier: "free" | "premium" = "free",
-  modelProvider: "claude" | "gemini" = "claude",
+  modelProvider: "claude" | "gemini" = "gemini",
   signal?: AbortSignal,
   prompt: string = "",
 ): Promise<string> {

@@ -344,10 +344,13 @@ async def _crawl_page(page, url: str, *, settle_delay: float = 0.5) -> CrawlResu
     """Core page extraction logic. Accepts an existing Playwright Page object.
 
     Args:
-        settle_delay: Seconds to wait after networkidle for JS to settle.
-            Default 0.5s (was 2s — most sites finish JS within 300ms of networkidle).
+        settle_delay: Seconds to wait after load for JS to settle.
     """
-    await page.goto(url, wait_until="networkidle", timeout=60000)
+    await page.goto(url, wait_until="domcontentloaded", timeout=60000)
+    try:
+        await page.wait_for_load_state("networkidle", timeout=10000)
+    except Exception:
+        pass  # Many sites never reach networkidle — proceed with what we have
     await asyncio.sleep(settle_delay)
 
     title = await page.title()
@@ -465,7 +468,11 @@ async def crawl(url: str, browserless_url: str | None = None) -> CrawlResult:
 async def _crawl_internal_page(page, url: str):
     """Lightweight crawl for an internal page. No screenshot."""
     try:
-        await page.goto(url, wait_until="networkidle", timeout=60000)
+        await page.goto(url, wait_until="domcontentloaded", timeout=60000)
+        try:
+            await page.wait_for_load_state("networkidle", timeout=10000)
+        except Exception:
+            pass
 
         # Detect auth redirect
         final_url = page.url.lower()
