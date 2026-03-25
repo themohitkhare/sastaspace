@@ -85,6 +85,11 @@ spec:
     ports:
     - port: 443
       protocol: TCP
+  # Host claude-code-api gateway (runs on host network, not in k8s)
+  - to:
+    - ipBlock:
+        cidr: 192.168.0.37/32
+    ports:
     - port: 8000
       protocol: TCP
 ---
@@ -175,7 +180,19 @@ spec:
     ports:
     - port: 443
       protocol: TCP
+  # Host claude-code-api gateway (runs on host network, not in k8s)
+  - to:
+    - ipBlock:
+        cidr: 192.168.0.37/32
+    ports:
     - port: 8000
+      protocol: TCP
+  # Host Ollama (runs on host network)
+  - to:
+    - ipBlock:
+        cidr: 192.168.0.37/32
+    ports:
+    - port: 11434
       protocol: TCP
 ---
 # Backend: allow ingress from nginx ingress controller
