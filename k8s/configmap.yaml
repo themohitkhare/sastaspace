@@ -11,3 +11,6 @@ data:
   OLLAMA_URL: "http://192.168.0.37:11434/v1"
   BROWSERLESS_URL: "ws://browserless:3000"
   GEMINI_API_URL: "https://generativelanguage.googleapis.com/v1beta/openai/"
+  # Route composer to Gemini — claude-code-api returns tool calls that Agno can't handle
+  COMPOSER_MODEL_PROVIDER: "gemini"
+  BUILDER_MODEL_PROVIDER: "gemini"
