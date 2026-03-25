@@ -256,10 +256,9 @@ def _inline_assets(dist_path: Path) -> None:
     # Inline CSS: <link rel="stylesheet" ... href="/assets/xxx.css">
     for css_file in sorted(assets_dir.glob("*.css")):
         css_content = css_file.read_text(encoding="utf-8")
-        # Match link tags referencing this asset
         pattern = rf'<link[^>]*href="[./]*assets/{re.escape(css_file.name)}"[^>]*/?\s*>'
-        replacement = f"<style>{css_content}</style>"
-        html = re.sub(pattern, replacement, html)
+        # Use lambda to avoid re.sub interpreting \u escapes in CSS as backreferences
+        html = re.sub(pattern, lambda _: f"<style>{css_content}</style>", html)
 
     # Inline JS: <script type="module" ... src="/assets/xxx.js">
     for js_file in sorted(assets_dir.glob("*.js")):
@@ -268,8 +267,8 @@ def _inline_assets(dist_path: Path) -> None:
             rf'<script[^>]*src="[./]*assets/{re.escape(js_file.name)}"[^>]*>'
             r"</script>"
         )
-        replacement = f'<script type="module">{js_content}</script>'
-        html = re.sub(pattern, replacement, html)
+        # Use lambda to avoid re.sub interpreting \u escapes in JS as backreferences
+        html = re.sub(pattern, lambda _: f'<script type="module">{js_content}</script>', html)
 
     index_html.write_text(html, encoding="utf-8")
 
