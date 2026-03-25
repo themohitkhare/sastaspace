@@ -823,6 +823,22 @@ Output each file with this EXACT delimiter format:
 --- FILE: src/components/[name].tsx ---
 [modified component code — only if you need to change it]
 
+## Available Packages (ONLY use these — anything else will break the build)
+- `react`, `react-dom` — core React 19
+- `lucide-react` — icons (e.g. `import { ArrowRight, Menu, X } from "lucide-react"`)
+- `react-icons` — alternative icons (e.g. `import { FiArrowRight } from "react-icons/fi"`)
+- `framer-motion` or `motion` — animations
+- `@radix-ui/react-*` — UI primitives (accordion, dialog, tabs, tooltip, etc.)
+- `class-variance-authority`, `clsx`, `tailwind-merge` — className utilities
+- `embla-carousel-react` — carousels
+- `@/lib/utils` — the `cn()` utility (combines clsx + tailwind-merge)
+
+DO NOT import from: `@tabler/icons-react`, `@heroicons/react`, `@phosphor-icons/react`,
+`next/*`, `@nextui-org/*`, `@mui/*`, `@chakra-ui/*`, `styled-components`, or any package
+not listed above. If a provided component imports an unavailable package, replace those
+imports with equivalents from the available packages (e.g. replace @tabler icons with
+lucide-react equivalents).
+
 ## Rules
 1. Start with `--- FILE: src/App.tsx ---` — this is REQUIRED
 2. App.tsx imports and composes all components in page order

@@ -135,6 +135,59 @@ def _copy_template(template_dir: Path, dest: Path) -> None:
         raise BuildError("Template node_modules not found — run npm install first")
 
 
+# Packages available in redesign-template/package.json — imports outside this set
+# are stripped by _sanitize_imports to prevent Vite build failures.
+_ALLOWED_PACKAGES = {
+    "react",
+    "react-dom",
+    "react-icons",
+    "lucide-react",
+    "framer-motion",
+    "motion",
+    "clsx",
+    "class-variance-authority",
+    "tailwind-merge",
+    "embla-carousel-react",
+}
+# @radix-ui/* and @/ (alias) are also allowed — matched by prefix
+_ALLOWED_PREFIXES = ("@radix-ui/", "@/", "./", "../", "react-icons/")
+
+
+def _is_allowed_import(module: str) -> bool:
+    """Check if a module import is available in the build template."""
+    if module in _ALLOWED_PACKAGES:
+        return True
+    return any(module.startswith(p) for p in _ALLOWED_PREFIXES)
+
+
+def _sanitize_imports(files: dict[str, str]) -> dict[str, str]:
+    """Remove import statements for unavailable packages from generated files.
+
+    This prevents Vite build failures from LLM-hallucinated package imports.
+    Lines importing unknown packages are commented out with a warning.
+    """
+    import_pattern = re.compile(
+        r'^(import\s+.*\s+from\s+["\'])([^"\']+)(["\'];?\s*)$', re.MULTILINE
+    )
+
+    sanitized = {}
+    for path, content in files.items():
+        if not path.endswith((".tsx", ".ts", ".jsx", ".js")):
+            sanitized[path] = content
+            continue
+
+        def _check_import(m: re.Match) -> str:
+            module = m.group(2)
+            if _is_allowed_import(module):
+                return m.group(0)
+            logger.warning("Stripped unavailable import: %s (from %s)", module, path)
+            return f"// STRIPPED: unavailable package — {m.group(0)}"
+
+        sanitized[path] = import_pattern.sub(_check_import, content)
+
+    return sanitized
+
+
 def _write_generated_files(files: dict[str, str], project_dir: Path) -> None:
     """Write generated source files into the project directory."""
     for rel_path, content in files.items():
@@ -204,6 +257,7 @@ def build_react_page(
 
         t_copy = _time.monotonic()
         _copy_template(template_dir, tmp_path)
+        files = _sanitize_imports(files)
         _write_generated_files(files, tmp_path)
         logger.info(
             "PERF | react_build template_copy=%.2fs files=%d",
