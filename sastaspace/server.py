@@ -196,6 +196,24 @@ def _setup_middleware(app: FastAPI, settings: Settings, get_client_ip):
     @app.middleware("http")
     async def add_security_headers(request: Request, call_next):
         response = await call_next(request)
+        # Site preview routes need relaxed frame-ancestors so the frontend can
+        # embed them in iframes. All other routes use strict 'self'.
+        path = request.url.path
+        path_parts = path.strip("/").split("/")
+        is_site_route = (
+            len(path_parts) >= 1
+            and path_parts[0] not in ("health", "redesign", "metrics", "api", "")
+            and not path.startswith("/docs")
+            and not path.startswith("/openapi")
+        )
+        if is_site_route:
+            origins = settings.cors_origins
+            if isinstance(origins, str):
+                origins = [o.strip() for o in origins.split(",") if o.strip()]
+            ancestors = " ".join(["'self'", *origins])
+            frame_ancestors = f"frame-ancestors {ancestors}"
+        else:
+            frame_ancestors = "frame-ancestors 'self'"
         response.headers["Content-Security-Policy"] = (
             "default-src 'self'; "
             "script-src 'self' 'unsafe-inline' https:; "
@@ -203,10 +221,11 @@ def _setup_middleware(app: FastAPI, settings: Settings, get_client_ip):
             "img-src 'self' data: https:; "
             "font-src 'self' https:; "
             "connect-src 'self' https:; "
-            "frame-ancestors 'self'"
+            f"{frame_ancestors}"
         )
         response.headers["X-Content-Type-Options"] = "nosniff"
-        response.headers["X-Frame-Options"] = "SAMEORIGIN"
+        if not is_site_route:
+            response.headers["X-Frame-Options"] = "SAMEORIGIN"
         response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
         response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
         return response
