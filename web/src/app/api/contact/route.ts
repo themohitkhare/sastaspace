@@ -18,6 +18,14 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { name, email, message, website, turnstileToken, subdomain } = body;
 
+    // 0. Env var guard — fail fast if not configured
+    if (!process.env.RESEND_API_KEY || !process.env.OWNER_EMAIL) {
+      return Response.json(
+        { error: "Contact form is not configured. Please try again later." },
+        { status: 503 }
+      );
+    }
+
     // 1. Honeypot — return success to not reveal detection (per D-10)
     if (website) {
       return Response.json({ ok: true });

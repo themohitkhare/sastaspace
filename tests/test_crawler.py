@@ -275,9 +275,9 @@ def test_extract_images():
     """Line 112: _extract_images function."""
     html = '<html><body><img src="logo.png" alt="Logo" width="100" height="50"></body></html>'
     soup = BeautifulSoup(html, "html.parser")
-    images = _extract_images(soup)
+    images = _extract_images(soup, "https://example.com")
     assert len(images) == 1
-    assert images[0]["src"] == "logo.png"
+    assert images[0]["src"] == "https://example.com/logo.png"
     assert images[0]["alt"] == "Logo"
 
 

@@ -6,7 +6,6 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
-import re
 import time
 from collections.abc import AsyncGenerator
 from uuid import uuid4
@@ -17,7 +16,7 @@ from prometheus_client import Counter, Gauge, Histogram
 from sastaspace.config import Settings
 from sastaspace.crawler import crawl
 from sastaspace.database import JobStatus, create_job, update_job
-from sastaspace.html_utils import inject_badge
+from sastaspace.html_utils import inject_badge, sanitize_html
 from sastaspace.redesigner import run_redesign
 
 logger = logging.getLogger(__name__)
@@ -49,34 +48,12 @@ active_sse_tasks: set[asyncio.Task] = set()
 
 
 def _sanitize_html(html_str: str) -> str:
-    """Strip inline event handlers and javascript: URLs from AI-generated HTML."""
-    # Strip inline event handlers (on*="...")
-    html_str = re.sub(
-        r'\s+on\w+\s*=\s*"[^"]*"',
-        "",
-        html_str,
-        flags=re.IGNORECASE,
-    )
-    html_str = re.sub(
-        r"\s+on\w+\s*=\s*'[^']*'",
-        "",
-        html_str,
-        flags=re.IGNORECASE,
-    )
-    # Strip javascript: URLs in href/src attributes
-    html_str = re.sub(
-        r'(href|src)\s*=\s*"javascript:[^"]*"',
-        r'\1=""',
-        html_str,
-        flags=re.IGNORECASE,
-    )
-    html_str = re.sub(
-        r"(href|src)\s*=\s*'javascript:[^']*'",
-        r"\1=''",
-        html_str,
-        flags=re.IGNORECASE,
-    )
-    return html_str
+    """Strip inline event handlers and javascript: URLs from AI-generated HTML.
+
+    Delegates to the shared sanitize_html() in html_utils.
+    Kept as a thin wrapper to preserve the local call-site API.
+    """
+    return sanitize_html(html_str)
 
 
 async def redesign_stream(

@@ -29,8 +29,13 @@ export const metadata: Metadata = {
   metadataBase: new URL(
     process.env.NEXT_PUBLIC_BASE_URL || "https://sastaspace.com"
   ),
-  title: "SastaSpace - AI Website Redesigner",
-  description: "See your website redesigned by AI in 60 seconds",
+  title: "SastaSpace — Free AI Website Redesign",
+  description:
+    "See your website reimagined in 60 seconds. Traditional redesigns cost $5,000+ — SastaSpace does it for the cost of a coffee.",
+  icons: {
+    icon: [{ url: "/icon-192.svg", type: "image/svg+xml" }],
+    apple: [{ url: "/icon-192.svg", type: "image/svg+xml" }],
+  },
   openGraph: {
     title: "SastaSpace - AI Website Redesigner",
     description:

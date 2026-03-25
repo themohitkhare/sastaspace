@@ -337,7 +337,7 @@ class TestCrawlInternalPage:
         page = make_mock_page(html=html, final_url="https://example.com/gallery")
         result = await _crawl_internal_page(page, "https://example.com/gallery")
         assert len(result.images) == 2
-        assert result.images[0]["src"] == "/img/photo1.jpg"
+        assert result.images[0]["src"] == "https://example.com/img/photo1.jpg"
 
     @pytest.mark.asyncio
     async def test_handles_exception(self):

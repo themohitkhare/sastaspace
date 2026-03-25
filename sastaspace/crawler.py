@@ -265,12 +265,12 @@ def _extract_content_links(soup: BeautifulSoup, base_url: str) -> list[dict]:
     return links[:50]  # Cap at 50 to avoid bloating the prompt
 
 
-def _extract_images(soup: BeautifulSoup) -> list[dict]:
+def _extract_images(soup: BeautifulSoup, base_url: str) -> list[dict]:
     images = []
     for img in soup.find_all("img", src=True)[:10]:
         images.append(
             {
-                "src": img["src"],
+                "src": urljoin(base_url, img["src"]),
                 "alt": img.get("alt", ""),
                 "width": img.get("width", ""),
                 "height": img.get("height", ""),
@@ -460,7 +460,7 @@ async def _crawl_page(page, url: str, *, settle_delay: float = 0.5) -> CrawlResu
         navigation_links=_extract_nav_links(soup),
         content_links=_extract_content_links(soup, url),
         text_content=_extract_text(html),
-        images=_extract_images(soup),
+        images=_extract_images(soup, url),
         colors=list(colors),
         fonts=list(fonts),
         sections=_extract_sections(soup),
@@ -548,7 +548,7 @@ async def _crawl_internal_page(page, url: str):
                 break
 
         # Extract images (first 10)
-        images = _extract_images(soup)
+        images = _extract_images(soup, url)
 
         # Extract testimonials
         testimonials = []

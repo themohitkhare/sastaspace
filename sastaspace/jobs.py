@@ -25,7 +25,7 @@ from sastaspace.database import (
     update_job,
 )
 from sastaspace.deployer import deploy
-from sastaspace.html_utils import RedesignError, RedesignResult, inject_badge
+from sastaspace.html_utils import RedesignError, RedesignResult, inject_badge, sanitize_html
 from sastaspace.html_utils import validate_html as _validate_html
 from sastaspace.redesigner import run_redesign
 from sastaspace.urls import extract_domain, url_hash
@@ -689,6 +689,9 @@ async def redesign_handler(
             asyncio.create_task(_run_a11y_validation(html, job_id))
         except Exception:  # noqa: BLE001
             logger.debug("Could not start A11Y validation for job=%s", job_id, exc_info=True)
+
+    # Sanitize AI-generated HTML (strip event handlers, javascript: URLs)
+    html = sanitize_html(html)
 
     # Step 3: Deploying
     logger.info("JOB STEP 3/3: Deploying | job=%s", job_id)

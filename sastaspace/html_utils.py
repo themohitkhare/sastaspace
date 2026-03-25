@@ -68,6 +68,41 @@ def inject_badge(html: str) -> str:
     return html + "\n" + SASTASPACE_BADGE
 
 
+def sanitize_html(html_str: str) -> str:
+    """Strip inline event handlers and javascript: URLs from AI-generated HTML.
+
+    This MUST be applied to all AI-generated HTML before writing to disk,
+    regardless of code path (SSE inline or Redis worker).
+    """
+    # Strip inline event handlers (on*="...")
+    html_str = re.sub(
+        r'\s+on\w+\s*=\s*"[^"]*"',
+        "",
+        html_str,
+        flags=re.IGNORECASE,
+    )
+    html_str = re.sub(
+        r"\s+on\w+\s*=\s*'[^']*'",
+        "",
+        html_str,
+        flags=re.IGNORECASE,
+    )
+    # Strip javascript: URLs in href/src attributes
+    html_str = re.sub(
+        r'(href|src)\s*=\s*"javascript:[^"]*"',
+        r'\1=""',
+        html_str,
+        flags=re.IGNORECASE,
+    )
+    html_str = re.sub(
+        r"(href|src)\s*=\s*'javascript:[^']*'",
+        r"\1=''",
+        html_str,
+        flags=re.IGNORECASE,
+    )
+    return html_str
+
+
 def validate_html(html: str) -> None:
     """Raise RedesignError if the HTML looks truncated or malformed."""
     if not html:
