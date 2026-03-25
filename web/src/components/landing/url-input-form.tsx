@@ -26,10 +26,18 @@ export function UrlInputForm({ onSubmit, isConnecting }: UrlInputFormProps) {
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Pre-select Studio tier if ?tier=studio is in the URL (from pricing page CTA)
+  // Pre-select Studio tier if tier=studio is in the URL.
+  // The pricing page links to /#url-input?tier=studio, so the param lives
+  // inside the hash fragment, not in window.location.search.
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    if (params.get("tier") === "studio") {
+    // Check query string first (standard ?tier=studio)
+    let tierParam = new URLSearchParams(window.location.search).get("tier");
+    // Fall back to hash fragment (/#url-input?tier=studio)
+    if (!tierParam && window.location.hash.includes("?")) {
+      const hashQuery = window.location.hash.substring(window.location.hash.indexOf("?"));
+      tierParam = new URLSearchParams(hashQuery).get("tier");
+    }
+    if (tierParam === "studio") {
       setTier("premium");
     }
   }, []);
