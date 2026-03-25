@@ -62,7 +62,7 @@ class TestDeduplicateText:
 
 
 class TestBuildBusinessProfile:
-    @patch("sastaspace.business_profiler._call_llm")
+    @patch("sastaspace.business_profiler._call_gemini")
     def test_returns_profile_from_llm(self, mock_llm):
         mock_llm.return_value = json.dumps(
             {
@@ -83,7 +83,7 @@ class TestBuildBusinessProfile:
         assert result.business_name == "Acme Corp"
         assert result.industry == "manufacturing"
 
-    @patch("sastaspace.business_profiler._call_llm")
+    @patch("sastaspace.business_profiler._call_gemini")
     def test_fallback_on_llm_failure(self, mock_llm):
         mock_llm.side_effect = ValueError("API down")
         homepage = _make_homepage()
@@ -91,7 +91,7 @@ class TestBuildBusinessProfile:
         assert result.business_name == "Acme Corp"
         assert result.industry == "unknown"
 
-    @patch("sastaspace.business_profiler._call_llm")
+    @patch("sastaspace.business_profiler._call_gemini")
     def test_fallback_on_invalid_json(self, mock_llm):
         mock_llm.return_value = "not valid json at all"
         homepage = _make_homepage()

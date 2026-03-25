@@ -8,8 +8,6 @@ import logging
 import re
 from typing import TYPE_CHECKING
 
-from openai import OpenAI, OpenAIError
-
 from sastaspace.models import BusinessProfile, PageCrawlResult
 
 if TYPE_CHECKING:
@@ -36,14 +34,9 @@ Return ONLY valid JSON matching this exact schema (no markdown, no explanation):
 
 
 def _deduplicate_text(texts: list[str]) -> str:
-    """Remove duplicate sentences across pages (header/footer boilerplate).
-
-    The crawler's _extract_text() collapses whitespace into single spaces,
-    so we split on sentence boundaries ('. ') rather than newlines.
-    """
+    """Remove duplicate sentences across pages (header/footer boilerplate)."""
     all_sentences: list[list[str]] = []
     for text in texts:
-        # Split on sentence-ending punctuation followed by space
         sentences = [s.strip() for s in re.split(r"(?<=[.!?])\s+", text) if s.strip()]
         all_sentences.append(sentences)
     result_parts: list[str] = []
@@ -57,19 +50,17 @@ def _deduplicate_text(texts: list[str]) -> str:
     return " ".join(result_parts)
 
 
-def _call_llm(prompt: str, api_url: str, model: str, api_key: str) -> str:
-    """Make a single LLM call for extraction."""
-    client = OpenAI(base_url=api_url, api_key=api_key)
-    resp = client.chat.completions.create(
+def _call_gemini(prompt: str, model: str, api_key: str) -> str:
+    """Call Gemini via the google-genai SDK."""
+    from google import genai
+
+    client = genai.Client(api_key=api_key)
+    response = client.models.generate_content(
         model=model,
-        messages=[
-            {"role": "system", "content": _EXTRACTION_PROMPT},
-            {"role": "user", "content": prompt},
-        ],
-        max_tokens=1000,
-        temperature=0.1,
+        contents=f"{_EXTRACTION_PROMPT}\n\n{prompt}",
+        config={"temperature": 0.1, "max_output_tokens": 1000},
     )
-    return resp.choices[0].message.content or ""
+    return response.text or ""
 
 
 def _build_profile_prompt(
@@ -131,8 +122,8 @@ def build_business_profile(
     prompt = _build_profile_prompt(homepage, internal_pages, _deduplicate_text(texts))
 
     try:
-        raw = _call_llm(prompt, api_url, model, api_key)
+        raw = _call_gemini(prompt, model, api_key)
         return _parse_profile_response(raw, homepage.title)
-    except (OpenAIError, json.JSONDecodeError, ValueError, KeyError) as e:
+    except Exception as e:
         logger.warning("Business profiling failed, using minimal profile: %s", e)
         return BusinessProfile.minimal(homepage.title)
