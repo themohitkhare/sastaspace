@@ -96,6 +96,8 @@ def parse_composer_output(raw: str) -> dict[str, str]:
         # Strip markdown code fences if the LLM wrapped them
         content = re.sub(r"^```(?:tsx|ts|css|json)?\s*\n?", "", content, flags=re.IGNORECASE)
         content = re.sub(r"\n?```\s*$", "", content, flags=re.IGNORECASE)
+        # Strip trailing bare `---` delimiters the LLM sometimes adds as closing markers
+        content = re.sub(r"\n---\s*$", "", content)
         content = content.strip()
 
         if path and content:
