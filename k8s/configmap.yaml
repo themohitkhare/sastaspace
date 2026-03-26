@@ -14,3 +14,5 @@ data:
   # Route composer to Gemini — claude-code-api returns tool calls that Agno can't handle
   COMPOSER_MODEL_PROVIDER: "gemini"
   BUILDER_MODEL_PROVIDER: "gemini"
+  # Swarm pipeline — enable for new 14-agent swarm redesign pipeline
+  USE_SWARM_PIPELINE: "true"
