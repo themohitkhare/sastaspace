@@ -817,6 +817,21 @@ async def redesign_handler(
     except (httpx.HTTPError, KeyError, ValueError, OSError) as e:
         logger.warning("Vikunja sync failed for job %s: %s", job_id, e)
 
+    # Post-deploy verification: check for broken images and links (fire-and-forget)
+    try:
+        from sastaspace.post_deploy_verify import log_verify_result, verify_urls
+
+        async def _run_post_deploy_verify(html_content: str, jid: str) -> None:
+            try:
+                vresult = await verify_urls(html_content)
+                log_verify_result(vresult, jid)
+            except Exception:  # noqa: BLE001
+                logger.debug("Post-deploy verify failed for job=%s", jid, exc_info=True)
+
+        asyncio.create_task(_run_post_deploy_verify(html, job_id))
+    except Exception:  # noqa: BLE001
+        logger.debug("Could not start post-deploy verify for job=%s", job_id, exc_info=True)
+
     # Clear checkpoint — job is done, no need to keep checkpoint data
     await update_job(
         job_id,
