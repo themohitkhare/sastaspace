@@ -230,6 +230,65 @@ def _sanitize_imports(files: dict[str, str]) -> dict[str, str]:
     return sanitized
 
 
+def _strip_broken_relative_imports(files: dict[str, str]) -> dict[str, str]:
+    """Strip relative imports that don't resolve to any generated file.
+
+    The LLM often generates components importing from sibling files (e.g.,
+    ``from "../sheet"`` in ``components/ui/commerce-hero.tsx``) that were never
+    generated.  These cause Vite ``Could not resolve`` build failures.
+
+    Checks whether the import target (with .tsx/.ts/.jsx/.js extensions) exists
+    in the generated file set.  If not, the import line is commented out.
+    """
+    import_re = re.compile(r'^(import\s+.*\s+from\s+["\'])(\.\.?/.+?)(["\'];?\s*)$', re.MULTILINE)
+
+    # Build a set of all known file paths (normalised, without extensions for flexibility)
+    known_paths: set[str] = set()
+    for p in files:
+        known_paths.add(p)
+        # Also add without extension so "../sheet" matches "src/components/ui/sheet.tsx"
+        for ext in (".tsx", ".ts", ".jsx", ".js", ".css"):
+            if p.endswith(ext):
+                known_paths.add(p[: -len(ext)])
+
+    fixed: dict[str, str] = {}
+    for path, content in files.items():
+        if not path.endswith((".tsx", ".ts", ".jsx", ".js")):
+            fixed[path] = content
+            continue
+
+        from pathlib import PurePosixPath
+
+        dir_of_file = str(PurePosixPath(path).parent)
+
+        def _check_relative(m: re.Match) -> str:
+            module = m.group(2)
+            # Resolve the import relative to the file's directory
+            resolved = str(PurePosixPath(dir_of_file) / module)
+            # Normalise away ../ segments
+            resolved = str(PurePosixPath(resolved))
+
+            # Check if the resolved path (with or without extension) exists
+            if resolved in known_paths:
+                return m.group(0)
+            for ext in (".tsx", ".ts", ".jsx", ".js", ".css"):
+                if (resolved + ext) in known_paths or resolved in known_paths:
+                    return m.group(0)
+
+            logger.warning(
+                "Stripped broken relative import: %s (from %s, resolved to %s)",
+                module,
+                path,
+                resolved,
+            )
+            return f"// STRIPPED: missing file — {m.group(0)}"
+
+        content = import_re.sub(_check_relative, content)
+        fixed[path] = content
+
+    return fixed
+
+
 @lru_cache(maxsize=1)
 def _load_lucide_icon_names() -> frozenset[str]:
     """Load valid lucide-react icon export names from the template's node_modules.
@@ -400,6 +459,7 @@ def build_react_page(
         t_copy = _time.monotonic()
         _copy_template(template_dir, tmp_path)
         files = _sanitize_imports(files)
+        files = _strip_broken_relative_imports(files)
         files = _fix_css_import_ordering(files)
         _esbuild_validate(files, template_dir)
         _write_generated_files(files, tmp_path)
