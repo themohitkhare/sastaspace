@@ -24,11 +24,13 @@ export async function submitRedesign(
   signal?: AbortSignal,
   prompt: string = "",
   force: boolean = false,
+  email: string = "",
 ): Promise<string> {
   const backendUrl = getBackendUrl()
   const body: Record<string, string | boolean> = { url, tier, model_provider: modelProvider }
   if (prompt) body.prompt = prompt
   if (force) body.force = true
+  if (email) body.email = email
   const resp = await fetch(`${backendUrl}/redesign`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },

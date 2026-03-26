@@ -215,6 +215,11 @@ export function ProgressView({ state, onRetry, onReset, lastStep }: ProgressView
   const STEP_LABELS: Record<string, string> = {
     connecting: "Connecting to server",
     crawling: "Crawling website content",
+    analyzing: "Analyzing your website",
+    designing: "Crafting your design system",
+    selecting: "Selecting components",
+    building: "Building your new site",
+    reviewing: "Running quality checks",
     redesigning: "AI is redesigning your website",
     deploying: "Deploying the redesigned site",
     done: "Redesign complete",
