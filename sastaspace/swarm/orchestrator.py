@@ -124,8 +124,8 @@ class SwarmOrchestrator:
         self._emit("phase1_start")
         crawl_context = crawl.to_prompt_context()
 
-        # Parallel: 3 analysis agents
-        with ThreadPoolExecutor(max_workers=3) as pool:
+        # Parallel: 3 analysis agents (max 2 concurrent to avoid rate limits)
+        with ThreadPoolExecutor(max_workers=2) as pool:
             futures = {
                 pool.submit(
                     self._caller.call,
@@ -218,7 +218,7 @@ class SwarmOrchestrator:
     # --- Phase 2: Design Strategy ---
 
     def _run_phase2(self, phase1: dict) -> dict:
-        """Run design agents: palette + UX + KISS (parallel)."""
+        """Run design agents: palette + UX + KISS (parallel, max 2 concurrent)."""
         self._emit("phase2_start")
         design_context = {
             "classification": phase1["classification"],
@@ -226,7 +226,7 @@ class SwarmOrchestrator:
             "business_profile": phase1["business_profile"],
         }
 
-        with ThreadPoolExecutor(max_workers=3) as pool:
+        with ThreadPoolExecutor(max_workers=2) as pool:
             futures = {
                 pool.submit(
                     self._caller.call,

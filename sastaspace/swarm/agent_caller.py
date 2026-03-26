@@ -6,8 +6,9 @@ from __future__ import annotations
 import json
 import logging
 import re
+import time
 
-from openai import OpenAI
+from openai import OpenAI, RateLimitError
 
 _logger = logging.getLogger(__name__)
 
@@ -61,26 +62,47 @@ class AgentCaller:
         max_tokens: int = 16000,
         timeout: int = 120,
     ) -> str:
-        """Call an agent and return raw string response (for HTML/code output)."""
+        """Call an agent and return raw string response (for HTML/code output).
+
+        Retries up to 4 times with exponential backoff on rate limit (429) errors.
+        """
         user_content = context if isinstance(context, str) else json.dumps(context)
         _logger.info("agent_call_start role=%s model=%s", role, model or self._default_model)
 
-        response = self._client.chat.completions.create(
-            model=model or self._default_model,
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_content},
-            ],
-            max_tokens=max_tokens,
-            timeout=timeout,
-        )
+        delays = [0, 5, 15, 30]
+        last_error: Exception | None = None
 
-        content = response.choices[0].message.content or ""
-        if not content.strip():
-            raise AgentCallError(f"Empty response from agent '{role}'")
+        for attempt, delay in enumerate(delays):
+            if delay > 0:
+                _logger.warning(
+                    "agent_call_retry role=%s attempt=%d delay=%ds", role, attempt + 1, delay
+                )
+                time.sleep(delay)
 
-        _logger.info("agent_call_done role=%s chars=%d", role, len(content))
-        return content
+            try:
+                response = self._client.chat.completions.create(
+                    model=model or self._default_model,
+                    messages=[
+                        {"role": "system", "content": system_prompt},
+                        {"role": "user", "content": user_content},
+                    ],
+                    max_tokens=max_tokens,
+                    timeout=timeout,
+                )
+
+                content = response.choices[0].message.content or ""
+                if not content.strip():
+                    raise AgentCallError(f"Empty response from agent '{role}'")
+
+                _logger.info("agent_call_done role=%s chars=%d", role, len(content))
+                return content
+
+            except RateLimitError as e:
+                last_error = e
+                _logger.warning("agent_call_rate_limited role=%s attempt=%d", role, attempt + 1)
+                continue
+
+        raise AgentCallError(f"Agent '{role}' failed after {len(delays)} attempts: {last_error}")
 
     def _parse_json(self, raw: str, role: str) -> dict:
         """Extract JSON from raw response, handling markdown fences."""
