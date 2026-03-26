@@ -47,7 +47,7 @@ _MODEL_TIERS = {
     "kiss-metrics": "haiku",
     "component-selector": "sonnet",
     "copywriter": "sonnet",
-    "builder": "opus",
+    "builder": "sonnet",  # Use sonnet until rate limits are resolved; switch to opus later
     "animation": "sonnet",
     "visual-qa": "sonnet",
     "content-qa": "haiku",
@@ -331,9 +331,19 @@ class SwarmOrchestrator:
                 system_prompt=BUILDER_SECTION_SYSTEM,
                 context=section_context,
                 model=self._model_for("builder"),
-                max_tokens=4096,
+                max_tokens=8000,
                 timeout=_TIMEOUTS["builder"],
             )
+
+            # Validate builder output contains actual HTML, not an error message
+            if "<" not in html or len(html) < 200:
+                _logger.warning(
+                    "builder returned non-HTML for section=%s chars=%d — skipping",
+                    section["section_name"],
+                    len(html),
+                )
+                continue
+
             fragments.append(SectionFragment(section_name=section["section_name"], html=html))
 
         # 4b: Stitch (deterministic)
@@ -349,17 +359,27 @@ class SwarmOrchestrator:
                 "visual_noise_budget": kiss.visual_noise_budget,
             },
         }
-        enhanced = self._caller.call_raw(
-            role="animation",
-            system_prompt=ANIMATION_SPECIALIST_SYSTEM,
-            context=anim_context,
-            model=self._model_for("animation"),
-            max_tokens=20000,
-            timeout=_TIMEOUTS["animation"],
-        )
+        try:
+            enhanced = self._caller.call_raw(
+                role="animation",
+                system_prompt=ANIMATION_SPECIALIST_SYSTEM,
+                context=anim_context,
+                model=self._model_for("animation"),
+                max_tokens=20000,
+                timeout=_TIMEOUTS["animation"],
+            )
+            # Validate animation output is actual HTML, not an explanation
+            if "<!DOCTYPE" in enhanced or ("<html" in enhanced and "</html>" in enhanced):
+                assembled = enhanced
+            elif "<" in enhanced and len(enhanced) > len(assembled) * 0.5:
+                assembled = enhanced  # Accept if it looks like HTML even without full wrapper
+            else:
+                _logger.warning("Animation specialist returned non-HTML — using unenhanced page")
+        except Exception as e:
+            _logger.warning("Animation specialist failed: %s — using unenhanced page", e)
 
         self._emit("phase4_done")
-        return enhanced
+        return assembled
 
     # --- Phase 5: QA ---
 

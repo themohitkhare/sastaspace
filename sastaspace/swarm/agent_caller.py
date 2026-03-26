@@ -94,6 +94,15 @@ class AgentCaller:
                 if not content.strip():
                     raise AgentCallError(f"Empty response from agent '{role}'")
 
+                # Log a warning if response is suspiciously short (likely an error message)
+                if len(content) < 200:
+                    _logger.warning(
+                        "agent_call_short_response role=%s chars=%d content=%s",
+                        role,
+                        len(content),
+                        content[:200],
+                    )
+
                 _logger.info("agent_call_done role=%s chars=%d", role, len(content))
                 return content
 
