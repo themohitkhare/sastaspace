@@ -1,14 +1,13 @@
 # sastaspace/swarm/agent_caller.py
-"""Thin wrapper around OpenAI client for focused per-agent calls."""
+"""Call Claude Code CLI directly for per-agent calls — no API gateway needed."""
 
 from __future__ import annotations
 
 import json
 import logging
 import re
-import time
-
-from openai import OpenAI, RateLimitError
+import shutil
+import subprocess
 
 _logger = logging.getLogger(__name__)
 
@@ -19,17 +18,36 @@ class AgentCallError(Exception):
     """Raised when an agent call fails."""
 
 
+def _find_claude_binary() -> str:
+    """Locate the claude CLI binary."""
+    path = shutil.which("claude")
+    if path:
+        return path
+    # Common install locations
+    for candidate in ["/usr/bin/claude", "/usr/local/bin/claude"]:
+        import os
+
+        if os.path.isfile(candidate):
+            return candidate
+    raise AgentCallError("Claude CLI not found — install via https://claude.ai/install.sh")
+
+
 class AgentCaller:
-    """Makes single-purpose calls to claude-code-api for individual agents."""
+    """Makes single-purpose calls to Claude Code CLI for individual agents.
+
+    Uses `claude -p <prompt> --output-format text --model <model>` subprocess calls.
+    No API gateway, no rate limits — uses the host's Claude Max subscription directly.
+    """
 
     def __init__(
         self,
-        api_url: str = "http://localhost:8000/v1",
-        api_key: str = "claude-code",
+        api_url: str = "",  # Kept for backward compat but unused
+        api_key: str = "",  # Kept for backward compat but unused
         default_model: str = "claude-sonnet-4-6-20250514",
     ):
-        self._client = OpenAI(base_url=api_url, api_key=api_key)
+        self._claude_bin = _find_claude_binary()
         self._default_model = default_model
+        _logger.info("AgentCaller using CLI at %s", self._claude_bin)
 
     def call(
         self,
@@ -60,58 +78,64 @@ class AgentCaller:
         *,
         model: str | None = None,
         max_tokens: int = 16000,
-        timeout: int = 120,
+        timeout: int = 300,
     ) -> str:
-        """Call an agent and return raw string response (for HTML/code output).
+        """Call Claude CLI and return raw text response.
 
-        Retries up to 4 times with exponential backoff on rate limit (429) errors.
+        Uses `claude -p` (print mode) which sends a single prompt and exits.
         """
         user_content = context if isinstance(context, str) else json.dumps(context)
-        _logger.info("agent_call_start role=%s model=%s", role, model or self._default_model)
+        resolved_model = model or self._default_model
+        _logger.info("agent_call_start role=%s model=%s via=cli", role, resolved_model)
 
-        delays = [0, 5, 15, 30]
-        last_error: Exception | None = None
+        # Build the combined prompt (system + user)
+        full_prompt = f"{system_prompt}\n\n---\n\n{user_content}"
 
-        for attempt, delay in enumerate(delays):
-            if delay > 0:
-                _logger.warning(
-                    "agent_call_retry role=%s attempt=%d delay=%ds", role, attempt + 1, delay
-                )
-                time.sleep(delay)
+        cmd = [
+            self._claude_bin,
+            "-p",
+            full_prompt,
+            "--output-format",
+            "text",
+            "--model",
+            resolved_model,
+            "--max-turns",
+            "1",
+            "--dangerously-skip-permissions",
+        ]
 
-            try:
-                response = self._client.chat.completions.create(
-                    model=model or self._default_model,
-                    messages=[
-                        {"role": "system", "content": system_prompt},
-                        {"role": "user", "content": user_content},
-                    ],
-                    max_tokens=max_tokens,
-                    timeout=timeout,
-                )
+        try:
+            result = subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+                timeout=timeout,
+                env=None,  # Inherit parent environment (Claude auth)
+            )
+        except subprocess.TimeoutExpired:
+            raise AgentCallError(f"Agent '{role}' timed out after {timeout}s")
 
-                content = response.choices[0].message.content or ""
-                if not content.strip():
-                    raise AgentCallError(f"Empty response from agent '{role}'")
+        if result.returncode != 0:
+            stderr = result.stderr.strip()[:500] if result.stderr else "no stderr"
+            _logger.error(
+                "agent_call_failed role=%s rc=%d stderr=%s", role, result.returncode, stderr
+            )
+            raise AgentCallError(f"Agent '{role}' CLI failed (rc={result.returncode}): {stderr}")
 
-                # Log a warning if response is suspiciously short (likely an error message)
-                if len(content) < 200:
-                    _logger.warning(
-                        "agent_call_short_response role=%s chars=%d content=%s",
-                        role,
-                        len(content),
-                        content[:200],
-                    )
+        content = result.stdout.strip()
+        if not content:
+            raise AgentCallError(f"Empty response from agent '{role}'")
 
-                _logger.info("agent_call_done role=%s chars=%d", role, len(content))
-                return content
+        if len(content) < 200:
+            _logger.warning(
+                "agent_call_short_response role=%s chars=%d content=%s",
+                role,
+                len(content),
+                content[:200],
+            )
 
-            except RateLimitError as e:
-                last_error = e
-                _logger.warning("agent_call_rate_limited role=%s attempt=%d", role, attempt + 1)
-                continue
-
-        raise AgentCallError(f"Agent '{role}' failed after {len(delays)} attempts: {last_error}")
+        _logger.info("agent_call_done role=%s chars=%d", role, len(content))
+        return content
 
     def _parse_json(self, raw: str, role: str) -> dict:
         """Extract JSON from raw response, handling markdown fences."""

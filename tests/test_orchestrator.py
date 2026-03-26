@@ -375,8 +375,8 @@ class TestSwarmOrchestratorModelTiers:
         assert "sonnet" in orchestrator._model_for("copywriter")
         assert "sonnet" in orchestrator._model_for("animation")
 
-        # Builder uses sonnet during rate-limit mitigation
-        assert "sonnet" in orchestrator._model_for("builder")
+        # Opus for builder (CLI has no rate limits)
+        assert "opus" in orchestrator._model_for("builder")
 
     @patch("sastaspace.swarm.orchestrator.AgentCaller")
     def test_model_override(self, mock_caller_cls):

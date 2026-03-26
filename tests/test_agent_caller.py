@@ -1,4 +1,5 @@
 # tests/test_agent_caller.py
+import subprocess
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -8,27 +9,19 @@ from sastaspace.swarm.agent_caller import AgentCaller, AgentCallError
 
 class TestAgentCaller:
     def _make_caller(self):
-        return AgentCaller(
-            api_url="http://localhost:8000/v1",
-            api_key="test-key",
-            default_model="claude-sonnet-4-6-20250514",
-        )
+        with patch(
+            "sastaspace.swarm.agent_caller._find_claude_binary", return_value="/usr/bin/claude"
+        ):
+            return AgentCaller(default_model="claude-sonnet-4-6-20250514")
 
-    def _mock_response(self, content: str):
-        choice = MagicMock()
-        choice.message.content = content
-        resp = MagicMock()
-        resp.choices = [choice]
-        return resp
+    def _mock_run(self, stdout: str, returncode: int = 0):
+        return MagicMock(stdout=stdout, stderr="", returncode=returncode)
 
-    @patch("sastaspace.swarm.agent_caller.OpenAI")
-    def test_call_returns_parsed_json(self, mock_openai_cls):
-        client = MagicMock()
-        mock_openai_cls.return_value = client
-        client.chat.completions.create.return_value = self._mock_response(
-            '{"site_type": "saas", "industry": "dev tools"}'
-        )
-        caller = self._make_caller()
+    @patch("subprocess.run")
+    @patch("sastaspace.swarm.agent_caller._find_claude_binary", return_value="/usr/bin/claude")
+    def test_call_returns_parsed_json(self, _find, mock_run):
+        mock_run.return_value = self._mock_run('{"site_type": "saas", "industry": "dev tools"}')
+        caller = AgentCaller(default_model="claude-sonnet-4-6-20250514")
         result = caller.call(
             role="site-classifier",
             system_prompt="Classify this site.",
@@ -37,58 +30,59 @@ class TestAgentCaller:
         )
         assert result["site_type"] == "saas"
 
-    @patch("sastaspace.swarm.agent_caller.OpenAI")
-    def test_call_extracts_json_from_markdown_fence(self, mock_openai_cls):
-        client = MagicMock()
-        mock_openai_cls.return_value = client
-        client.chat.completions.create.return_value = self._mock_response(
+    @patch("subprocess.run")
+    @patch("sastaspace.swarm.agent_caller._find_claude_binary", return_value="/usr/bin/claude")
+    def test_call_extracts_json_from_markdown_fence(self, _find, mock_run):
+        mock_run.return_value = self._mock_run(
             'Here is the result:\n```json\n{"site_type": "blog"}\n```'
         )
-        caller = self._make_caller()
+        caller = AgentCaller(default_model="claude-sonnet-4-6-20250514")
         result = caller.call(role="site-classifier", system_prompt="Classify.", context={})
         assert result["site_type"] == "blog"
 
-    @patch("sastaspace.swarm.agent_caller.OpenAI")
-    def test_call_returns_raw_string_when_not_json(self, mock_openai_cls):
-        client = MagicMock()
-        mock_openai_cls.return_value = client
-        client.chat.completions.create.return_value = self._mock_response(
-            "<!DOCTYPE html><html><body>Hello</body></html>"
-        )
-        caller = self._make_caller()
+    @patch("subprocess.run")
+    @patch("sastaspace.swarm.agent_caller._find_claude_binary", return_value="/usr/bin/claude")
+    def test_call_returns_raw_string(self, _find, mock_run):
+        mock_run.return_value = self._mock_run("<!DOCTYPE html><html><body>Hello</body></html>")
+        caller = AgentCaller(default_model="claude-sonnet-4-6-20250514")
         result = caller.call_raw(role="builder", system_prompt="Build HTML.", context={})
         assert result.startswith("<!DOCTYPE html>")
 
-    @patch("sastaspace.swarm.agent_caller.OpenAI")
-    def test_call_with_model_override(self, mock_openai_cls):
-        client = MagicMock()
-        mock_openai_cls.return_value = client
-        client.chat.completions.create.return_value = self._mock_response('{"ok": true}')
-        caller = self._make_caller()
+    @patch("subprocess.run")
+    @patch("sastaspace.swarm.agent_caller._find_claude_binary", return_value="/usr/bin/claude")
+    def test_call_with_model_override(self, _find, mock_run):
+        mock_run.return_value = self._mock_run('{"ok": true}')
+        caller = AgentCaller(default_model="claude-sonnet-4-6-20250514")
         caller.call(
             role="builder",
             system_prompt="Build.",
             context={},
             model="claude-opus-4-6-20250514",
         )
-        call_kwargs = client.chat.completions.create.call_args
-        assert call_kwargs.kwargs["model"] == "claude-opus-4-6-20250514"
+        cmd = mock_run.call_args[0][0]
+        assert "claude-opus-4-6-20250514" in cmd
 
-    @patch("sastaspace.swarm.agent_caller.OpenAI")
-    def test_call_raises_on_empty_response(self, mock_openai_cls):
-        client = MagicMock()
-        mock_openai_cls.return_value = client
-        client.chat.completions.create.return_value = self._mock_response("")
-        caller = self._make_caller()
+    @patch("subprocess.run")
+    @patch("sastaspace.swarm.agent_caller._find_claude_binary", return_value="/usr/bin/claude")
+    def test_call_raises_on_empty_response(self, _find, mock_run):
+        mock_run.return_value = self._mock_run("")
+        caller = AgentCaller(default_model="claude-sonnet-4-6-20250514")
         with pytest.raises(AgentCallError, match="Empty response"):
             caller.call(role="test", system_prompt="Test.", context={})
 
-    @patch("sastaspace.swarm.agent_caller.OpenAI")
-    def test_call_with_max_tokens(self, mock_openai_cls):
-        client = MagicMock()
-        mock_openai_cls.return_value = client
-        client.chat.completions.create.return_value = self._mock_response('{"ok": true}')
-        caller = self._make_caller()
-        caller.call(role="test", system_prompt="Test.", context={}, max_tokens=5000)
-        call_kwargs = client.chat.completions.create.call_args
-        assert call_kwargs.kwargs["max_tokens"] == 5000
+    @patch("subprocess.run")
+    @patch("sastaspace.swarm.agent_caller._find_claude_binary", return_value="/usr/bin/claude")
+    def test_call_raises_on_timeout(self, _find, mock_run):
+        mock_run.side_effect = subprocess.TimeoutExpired(cmd="claude", timeout=60)
+        caller = AgentCaller(default_model="claude-sonnet-4-6-20250514")
+        with pytest.raises(AgentCallError, match="timed out"):
+            caller.call_raw(role="test", system_prompt="Test.", context={}, timeout=60)
+
+    @patch("subprocess.run")
+    @patch("sastaspace.swarm.agent_caller._find_claude_binary", return_value="/usr/bin/claude")
+    def test_call_raises_on_nonzero_exit(self, _find, mock_run):
+        mock_run.return_value = self._mock_run("", returncode=1)
+        mock_run.return_value.stderr = "Some error"
+        caller = AgentCaller(default_model="claude-sonnet-4-6-20250514")
+        with pytest.raises(AgentCallError, match="CLI failed"):
+            caller.call_raw(role="test", system_prompt="Test.", context={})

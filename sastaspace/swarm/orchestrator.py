@@ -45,7 +45,7 @@ _MODEL_TIERS = {
     "kiss-metrics": "haiku",
     "component-selector": "sonnet",
     "copywriter": "sonnet",
-    "builder": "sonnet",  # Use sonnet until rate limits are resolved; switch to opus later
+    "builder": "opus",  # CLI has no rate limits — use best model for quality
     "animation": "sonnet",
     "visual-qa": "sonnet",
     "content-qa": "haiku",
@@ -122,8 +122,8 @@ class SwarmOrchestrator:
         self._emit("phase1_start")
         crawl_context = crawl.to_prompt_context()
 
-        # Parallel: 3 analysis agents (max 2 concurrent to avoid rate limits)
-        with ThreadPoolExecutor(max_workers=2) as pool:
+        # Parallel: 3 analysis agents (CLI has no rate limits)
+        with ThreadPoolExecutor(max_workers=3) as pool:
             futures = {
                 pool.submit(
                     self._caller.call,
@@ -216,7 +216,7 @@ class SwarmOrchestrator:
     # --- Phase 2: Design Strategy ---
 
     def _run_phase2(self, phase1: dict) -> dict:
-        """Run design agents: palette + UX + KISS (parallel, max 2 concurrent)."""
+        """Run design agents: palette + UX + KISS (parallel)."""
         self._emit("phase2_start")
         design_context = {
             "classification": phase1["classification"],
@@ -224,7 +224,7 @@ class SwarmOrchestrator:
             "business_profile": phase1["business_profile"],
         }
 
-        with ThreadPoolExecutor(max_workers=2) as pool:
+        with ThreadPoolExecutor(max_workers=3) as pool:
             futures = {
                 pool.submit(
                     self._caller.call,
@@ -309,11 +309,8 @@ class SwarmOrchestrator:
         sections = phase3["manifest"].get("sections", [])
         copy_slots = phase3["copy"].get("slots", {})
 
-        # 4a: Build each section sequentially (parallel hits rate limits on claude-code-api)
-        fragments: list[SectionFragment] = []
-        sorted_sections = sorted(sections, key=lambda s: s.get("placement_order", 0))
-
-        for section in sorted_sections:
+        # 4a: Build each section in parallel (CLI has no rate limits)
+        def _build_section(section: dict) -> SectionFragment | None:
             section_context = {
                 "section": section,
                 "palette": phase2["palette"],
@@ -323,25 +320,44 @@ class SwarmOrchestrator:
                 "wireframe": phase2.get("wireframe", {}),
             }
             _logger.info("building section=%s", section["section_name"])
-            html = self._caller.call_raw(
-                role="builder",
-                system_prompt=BUILDER_SECTION_SYSTEM,
-                context=section_context,
-                model=self._model_for("builder"),
-                max_tokens=8000,
-                timeout=_TIMEOUTS["builder"],
-            )
-
-            # Validate builder output contains actual HTML, not an error message
-            if "<" not in html or len(html) < 200:
-                _logger.warning(
-                    "builder returned non-HTML for section=%s chars=%d — skipping",
-                    section["section_name"],
-                    len(html),
+            try:
+                html = self._caller.call_raw(
+                    role="builder",
+                    system_prompt=BUILDER_SECTION_SYSTEM,
+                    context=section_context,
+                    model=self._model_for("builder"),
+                    max_tokens=8000,
+                    timeout=_TIMEOUTS["builder"],
                 )
-                continue
+                if "<" not in html or len(html) < 200:
+                    _logger.warning(
+                        "builder returned non-HTML for section=%s chars=%d — skipping",
+                        section["section_name"],
+                        len(html),
+                    )
+                    return None
+                return SectionFragment(section_name=section["section_name"], html=html)
+            except Exception as e:
+                _logger.warning("builder failed for section=%s: %s", section["section_name"], e)
+                return None
 
-            fragments.append(SectionFragment(section_name=section["section_name"], html=html))
+        sorted_sections = sorted(sections, key=lambda s: s.get("placement_order", 0))
+        fragments: list[SectionFragment] = []
+
+        with ThreadPoolExecutor(max_workers=4) as pool:
+            future_to_order = {
+                pool.submit(_build_section, s): s.get("placement_order", i)
+                for i, s in enumerate(sorted_sections)
+            }
+            indexed: list[tuple[int, SectionFragment]] = []
+            for future in as_completed(future_to_order):
+                order = future_to_order[future]
+                result = future.result()
+                if result is not None:
+                    indexed.append((order, result))
+
+        indexed.sort(key=lambda x: x[0])
+        fragments = [frag for _, frag in indexed]
 
         # 4b: Stitch (deterministic)
         title = phase1.get("classification", {}).get("industry", "Site")
