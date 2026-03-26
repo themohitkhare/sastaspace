@@ -24,8 +24,11 @@ export function ResultView({ subdomain, tier }: ResultViewProps) {
   const domain = subdomain.replace(/-/g, ".");
   const originalUrl = `https://${domain}`;
   const backendUrl = getBackendUrl();
-  const previewUrl = `${backendUrl}/${subdomain}/preview`;
-  const downloadUrl = `${backendUrl}/${subdomain}/index.html`;
+  // Iframe loads from backend directly (needs actual HTML content)
+  const iframePreviewUrl = `${backendUrl}/${subdomain}/preview`;
+  // User-facing links use frontend domain (proxied via Next.js rewrites)
+  const previewUrl = `/${subdomain}/preview`;
+  const downloadUrl = `/${subdomain}/index.html`;
   const shareUrl = typeof window !== "undefined"
     ? `${window.location.origin}/${subdomain}`
     : `/${subdomain}`;
@@ -109,7 +112,7 @@ export function ResultView({ subdomain, tier }: ResultViewProps) {
         </p>
 
         {/* Before/After comparison slider */}
-        <BeforeAfterSlider originalUrl={originalUrl} redesignUrl={previewUrl} />
+        <BeforeAfterSlider originalUrl={originalUrl} redesignUrl={iframePreviewUrl} />
 
         {/* Action buttons */}
         <div className="mt-6 flex flex-col sm:flex-row items-center gap-3">
