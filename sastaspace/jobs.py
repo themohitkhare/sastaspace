@@ -663,7 +663,8 @@ async def redesign_handler(
             api_key=settings.claude_code_api_key,
             progress_callback=_on_swarm_progress,
         )
-        swarm_result = await asyncio.to_thread(orchestrator.run, crawl_result)
+        # Use fast 3-step pipeline (Plan → Build parallel → QA) instead of full 6-phase
+        swarm_result = await asyncio.to_thread(orchestrator.run_fast, crawl_result)
         html = swarm_result.html
         build_dir = None
     else:

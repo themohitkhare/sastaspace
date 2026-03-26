@@ -9,7 +9,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, field
 
 from sastaspace.crawler import CrawlResult
-from sastaspace.swarm.agent_caller import AgentCaller
+from sastaspace.swarm.agent_caller import AgentCaller, AgentCallError
 from sastaspace.swarm.prompts import (
     A11Y_SEO_SYSTEM,
     BUILDER_SECTION_SYSTEM,
@@ -492,4 +492,137 @@ class SwarmOrchestrator:
             quality_report=qa_report,
             iterations=iteration,
             phases_completed=phases_completed,
+        )
+
+    # --- Fast 3-step pipeline: Plan → Build (parallel) → QA ---
+
+    def run_fast(self, crawl: CrawlResult) -> SwarmResult:
+        """Execute the consolidated 3-step pipeline.
+
+        Step 1: PLAN — single call analyzing site + designing + creating section plan
+        Step 2: BUILD — N parallel calls generating HTML per section + stitching
+        Step 3: QA — static analyzer + single LLM quality check
+
+        Much faster than the full 6-phase pipeline (~5 min vs ~15 min).
+        """
+        from sastaspace.swarm.prompts_fast import BUILDER_SECTION_SYSTEM as FAST_BUILDER
+        from sastaspace.swarm.prompts_fast import PLANNER_SYSTEM as FAST_PLANNER
+        from sastaspace.swarm.prompts_fast import QA_SYSTEM as FAST_QA
+
+        _logger.info("swarm_fast_start url=%s", crawl.url)
+        self._emit("phase1_start")
+
+        # Step 1: PLAN (single consolidated call)
+        plan = self._caller.call(
+            role="planner",
+            system_prompt=FAST_PLANNER,
+            context=crawl.to_prompt_context(),
+            model=self._model_for("spec-challenger"),  # Use sonnet for planning
+            max_tokens=8000,
+            timeout=180,
+        )
+        self._emit("phase2_start")
+        _logger.info("fast_plan_done sections=%d", len(plan.get("sections", [])))
+
+        # Extract palette and sections from plan
+        palette_data = plan.get("palette", {})
+        sections = plan.get("sections", [])
+
+        if not sections:
+            raise AgentCallError("Planner returned no sections")
+
+        # Build palette (with defaults for missing fields)
+        palette = ColorPalette(
+            primary=palette_data.get("primary", "#1a1a2e"),
+            secondary=palette_data.get("secondary", "#16213e"),
+            accent=palette_data.get("accent", "#e94560"),
+            background=palette_data.get("background", "#ffffff"),
+            text=palette_data.get("text", "#333333"),
+            headline_font=palette_data.get("headline_font", "'Inter', sans-serif"),
+            body_font=palette_data.get("body_font", "'Source Sans 3', sans-serif"),
+            color_mode=palette_data.get("color_mode", "light"),
+            roundness=palette_data.get("roundness", "8px"),
+        )
+
+        # Step 2: BUILD (parallel section generation)
+        self._emit("phase4_start")
+
+        def _build_section(section: dict) -> SectionFragment | None:
+            section_context = {
+                "section_name": section.get("section_name", "unknown"),
+                "slot_definitions": section.get("slot_definitions", {}),
+                "copy": section.get("copy", {}),
+                "palette": palette_data,
+            }
+            _logger.info("fast_building section=%s", section.get("section_name"))
+            try:
+                html = self._caller.call_raw(
+                    role="builder",
+                    system_prompt=FAST_BUILDER,
+                    context=section_context,
+                    model=self._model_for("builder"),
+                    max_tokens=8000,
+                    timeout=_TIMEOUTS["builder"],
+                )
+                if "<" not in html or len(html) < 200:
+                    _logger.warning("fast_builder non-HTML section=%s", section.get("section_name"))
+                    return None
+                return SectionFragment(section_name=section["section_name"], html=html)
+            except Exception as e:
+                _logger.warning(
+                    "fast_builder failed section=%s: %s", section.get("section_name"), e
+                )
+                return None
+
+        sorted_sections = sorted(sections, key=lambda s: s.get("placement_order", 0))
+        fragments: list[SectionFragment] = []
+
+        with ThreadPoolExecutor(max_workers=4) as pool:
+            future_to_order = {
+                pool.submit(_build_section, s): s.get("placement_order", i)
+                for i, s in enumerate(sorted_sections)
+            }
+            indexed: list[tuple[int, SectionFragment]] = []
+            for future in as_completed(future_to_order):
+                order = future_to_order[future]
+                result = future.result()
+                if result is not None:
+                    indexed.append((order, result))
+
+        indexed.sort(key=lambda x: x[0])
+        fragments = [frag for _, frag in indexed]
+
+        if not fragments:
+            raise AgentCallError("No sections were built successfully")
+
+        # Stitch
+        title = plan.get("industry", crawl.title or "Site")
+        html = stitch_page(fragments, palette, title)
+
+        # Step 3: QA
+        self._emit("phase5_start")
+        static_result = StaticAnalyzer.analyze(html)
+
+        qa_result = self._safe_qa_call(
+            "content-qa",
+            FAST_QA,
+            {"original_content": crawl.to_prompt_context()[:10000], "html": html[:30000]},
+        )
+
+        all_passed = static_result.passed
+        qa_report = {
+            "passed": all_passed,
+            "static": {"passed": static_result.passed, "failures": static_result.failures},
+            "content_qa": qa_result,
+            "feedback": "\n".join(static_result.failures) if not static_result.passed else "",
+        }
+
+        self._emit("phase5_done", {"passed": all_passed})
+        _logger.info("swarm_fast_done passed=%s sections=%d", all_passed, len(fragments))
+
+        return SwarmResult(
+            html=html,
+            quality_report=qa_report,
+            iterations=1,
+            phases_completed=["plan", "build", "qa"],
         )
