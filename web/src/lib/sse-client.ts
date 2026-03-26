@@ -35,7 +35,16 @@ export async function submitRedesign(
     body: JSON.stringify(body),
     signal,
   })
-  if (!resp.ok) throw new Error(`Redesign request failed: ${resp.status}`)
+  if (!resp.ok) {
+    // Parse the error body for a meaningful message (e.g., rate limit details)
+    try {
+      const errData = (await resp.json()) as { error?: string; retry_after?: number }
+      if (errData.error) throw new Error(errData.error)
+    } catch (e) {
+      if (e instanceof Error && e.message !== `Unexpected end of JSON input`) throw e
+    }
+    throw new Error(`Redesign request failed: ${resp.status}`)
+  }
   const data = (await resp.json()) as { job_id?: string }
   if (data.job_id) return data.job_id
   throw new Error("No job_id returned from server")

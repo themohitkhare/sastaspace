@@ -124,9 +124,7 @@ function ErrorView({
         )}
 
         <p className="text-base text-muted-foreground max-w-sm">
-          {isRateLimit
-            ? "You've reached the limit. Please try again in an hour."
-            : state.message}
+          {state.message}
         </p>
 
         {/* Custom instructions textarea — shown for non-network errors */}

@@ -28,10 +28,35 @@ describe('submitRedesign', () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValue({
       ok: false,
       status: 500,
+      json: async () => ({ error: 'Internal server error' }),
     } as unknown as Response)
 
     await expect(submitRedesign('https://example.com')).rejects.toThrow(
-      'Redesign request failed: 500'
+      'Internal server error'
+    )
+  })
+
+  it('passes through rate limit error message', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+      ok: false,
+      status: 429,
+      json: async () => ({ error: 'Rate limit exceeded. Try again in 39 minutes.', retry_after: 2309 }),
+    } as unknown as Response)
+
+    await expect(submitRedesign('https://example.com')).rejects.toThrow(
+      'Rate limit exceeded. Try again in 39 minutes.'
+    )
+  })
+
+  it('falls back to generic message when error body has no error field', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+      ok: false,
+      status: 502,
+      json: async () => ({}),
+    } as unknown as Response)
+
+    await expect(submitRedesign('https://example.com')).rejects.toThrow(
+      'Redesign request failed: 502'
     )
   })
 

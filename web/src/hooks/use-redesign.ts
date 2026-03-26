@@ -227,9 +227,12 @@ export function useRedesign() {
         }
 
         await pollJob(jobId, url, tier, controller);
-      } catch {
+      } catch (err) {
         if (controller.signal.aborted) return;
-        setState({ status: "error", message: GENERIC_ERROR_MESSAGE, url, lastStep: lastStepRef.current, prompt: lastPromptRef.current || undefined });
+        const errorMessage = err instanceof Error && err.message && !err.message.startsWith("Redesign request failed")
+          ? err.message
+          : GENERIC_ERROR_MESSAGE;
+        setState({ status: "error", message: errorMessage, url, lastStep: lastStepRef.current, prompt: lastPromptRef.current || undefined });
       }
     },
     [pollJob]
