@@ -12,15 +12,9 @@ RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
     && rm -rf /var/lib/apt/lists/*
 
 # Claude Code CLI — required for swarm pipeline agent calls
-# Download the binary directly (skip the install script's shell integration)
-RUN ARCH=$(dpkg --print-architecture) && \
-    if [ "$ARCH" = "amd64" ]; then PLATFORM="linux-x64"; \
-    elif [ "$ARCH" = "arm64" ]; then PLATFORM="linux-arm64"; \
-    else echo "Unsupported arch: $ARCH" && exit 1; fi && \
-    GCS_BUCKET="https://storage.googleapis.com/claude-code-dist-86c565f3-f756-42ad-8dfa-d59b1c096819/claude-code-releases" && \
-    curl -fsSL "$GCS_BUCKET/latest/$PLATFORM/claude" -o /usr/local/bin/claude && \
-    chmod +x /usr/local/bin/claude && \
-    echo "Claude CLI installed: $(/usr/local/bin/claude --version 2>/dev/null || echo 'version check failed')"
+# Install via npm (claude-code is published as @anthropic-ai/claude-code)
+RUN npm install -g @anthropic-ai/claude-code && \
+    echo "Claude CLI installed: $(claude --version 2>/dev/null || echo 'version check skipped')"
 
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 
