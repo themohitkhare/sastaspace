@@ -1,20 +1,22 @@
 import type { NextConfig } from "next";
 
-const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8080";
+// Rewrite destination for server-side proxying of preview/download URLs.
+// In k8s: INTERNAL_BACKEND_URL=http://backend:8080 (cluster-internal)
+// In dev: falls back to localhost:8080
+const rewriteBackend =
+  process.env.INTERNAL_BACKEND_URL || "http://localhost:8080";
 
 const nextConfig: NextConfig = {
   output: "standalone",
   async rewrites() {
     return [
       {
-        // Proxy preview pages: /foo-com/preview → backend/foo-com/preview
         source: "/:subdomain/preview",
-        destination: `${backendUrl}/:subdomain/preview`,
+        destination: `${rewriteBackend}/:subdomain/preview`,
       },
       {
-        // Proxy HTML downloads: /foo-com/index.html → backend/foo-com/index.html
         source: "/:subdomain/index.html",
-        destination: `${backendUrl}/:subdomain/index.html`,
+        destination: `${rewriteBackend}/:subdomain/index.html`,
       },
     ];
   },

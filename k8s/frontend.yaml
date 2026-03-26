@@ -28,6 +28,8 @@ spec:
         env:
         - name: NEXT_PUBLIC_BACKEND_URL
           value: "https://api.sastaspace.com"
+        - name: INTERNAL_BACKEND_URL
+          value: "http://backend:8080"
         - name: NEXT_PUBLIC_TURNSTILE_SITE_KEY
           valueFrom:
             secretKeyRef:
