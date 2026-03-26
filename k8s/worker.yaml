@@ -40,6 +40,10 @@ spec:
         - name: claude-auth
           mountPath: /home/appuser/.claude
           readOnly: true
+        - name: claude-config
+          mountPath: /home/appuser/.claude.json
+          subPath: .claude.json
+          readOnly: true
         resources:
           requests:
             memory: "512Mi"
@@ -54,4 +58,8 @@ spec:
       - name: claude-auth
         hostPath:
           path: /home/mkhare/.claude
+          type: Directory
+      - name: claude-config
+        hostPath:
+          path: /home/mkhare
           type: Directory
