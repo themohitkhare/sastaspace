@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
 import { Resend } from "resend";
+import { subdomainToDomain } from "@/lib/url-utils";
 
 function getResend() {
   return new Resend(process.env.RESEND_API_KEY);
@@ -61,7 +62,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 4. Send email via Resend (per D-15, D-16, D-17)
-    const domain = subdomain?.replace(/-/g, ".") || "unknown";
+    const domain = subdomain ? subdomainToDomain(subdomain) : "unknown";
     const { error } = await getResend().emails.send({
       from: `SastaSpace <noreply@sastaspace.com>`,
       to: [process.env.OWNER_EMAIL!],

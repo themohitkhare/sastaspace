@@ -1,12 +1,13 @@
 import { ImageResponse } from "next/og";
 import type { NextRequest } from "next/server";
+import { subdomainToDomain } from "@/lib/url-utils";
 
 export const runtime = "edge";
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const subdomain = searchParams.get("subdomain") ?? "your-site";
-  const domain = subdomain.replace(/-/g, ".");
+  const domain = subdomainToDomain(subdomain);
 
   return new ImageResponse(
     (

@@ -39,6 +39,19 @@ export function validateUrl(input: string): {
   }
 }
 
+/**
+ * Convert a SastaSpace subdomain slug back to a domain name.
+ * Strips the version suffix (--2, --3, etc.) before converting.
+ *
+ * "ashwinkulkarni-com--2" → "ashwinkulkarni.com"
+ * "mrbrownbakery-com"     → "mrbrownbakery.com"
+ * "example-com--3"        → "example.com"
+ */
+export function subdomainToDomain(subdomain: string): string {
+  const base = subdomain.replace(/--\d+$/, "");
+  return base.replace(/-/g, ".");
+}
+
 export function extractDomain(url: string): string {
   try {
     let urlString = url.trim();

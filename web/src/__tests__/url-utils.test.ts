@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { validateUrl, extractDomain } from '@/lib/url-utils'
+import { validateUrl, extractDomain, subdomainToDomain } from '@/lib/url-utils'
 
 describe('validateUrl', () => {
   it('returns invalid for empty string', () => {
@@ -84,5 +84,40 @@ describe('extractDomain', () => {
 
   it('returns raw input on parse failure', () => {
     expect(extractDomain('')).toBe('')
+  })
+})
+
+describe('subdomainToDomain', () => {
+  it('converts simple subdomain to domain', () => {
+    expect(subdomainToDomain('example-com')).toBe('example.com')
+  })
+
+  it('strips version suffix --2', () => {
+    expect(subdomainToDomain('ashwinkulkarni-com--2')).toBe('ashwinkulkarni.com')
+  })
+
+  it('strips version suffix --3', () => {
+    expect(subdomainToDomain('example-com--3')).toBe('example.com')
+  })
+
+  it('strips high version numbers', () => {
+    expect(subdomainToDomain('mrbrownbakery-com--15')).toBe('mrbrownbakery.com')
+  })
+
+  it('handles subdomain without version suffix', () => {
+    expect(subdomainToDomain('mrbrownbakery-com')).toBe('mrbrownbakery.com')
+  })
+
+  it('handles multi-part domains', () => {
+    expect(subdomainToDomain('acme-corp-co-uk')).toBe('acme.corp.co.uk')
+  })
+
+  it('handles multi-part domains with version', () => {
+    expect(subdomainToDomain('acme-corp-co-uk--2')).toBe('acme.corp.co.uk')
+  })
+
+  it('does not strip single dash followed by number', () => {
+    // "site-2" is a valid domain part, not a version suffix
+    expect(subdomainToDomain('my-site-2-com')).toBe('my.site.2.com')
   })
 })

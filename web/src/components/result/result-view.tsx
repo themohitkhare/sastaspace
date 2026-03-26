@@ -13,6 +13,7 @@ import { ProgressView } from "@/components/progress/progress-view";
 import { SuccessCelebration } from "@/components/progress/success-celebration";
 import { Footer } from "@/components/landing/footer";
 import { getBackendUrl } from "@/lib/env";
+import { subdomainToDomain } from "@/lib/url-utils";
 import { useRedesign } from "@/hooks/use-redesign";
 
 interface ResultViewProps {
@@ -21,7 +22,7 @@ interface ResultViewProps {
 }
 
 export function ResultView({ subdomain, tier }: ResultViewProps) {
-  const domain = subdomain.replace(/-/g, ".");
+  const domain = subdomainToDomain(subdomain);
   const originalUrl = `https://${domain}`;
   const backendUrl = getBackendUrl();
   // Iframe loads from backend directly (needs actual HTML content)

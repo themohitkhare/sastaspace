@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { ResultView } from "@/components/result/result-view";
+import { subdomainToDomain } from "@/lib/url-utils";
 
 export async function generateMetadata({
   params,
@@ -7,7 +8,7 @@ export async function generateMetadata({
   params: Promise<{ subdomain: string }>;
 }): Promise<Metadata> {
   const { subdomain } = await params;
-  const domain = subdomain.replace(/-/g, ".");
+  const domain = subdomainToDomain(subdomain);
   const baseUrl =
     process.env.NEXT_PUBLIC_BASE_URL || "https://sastaspace.com";
   return {
