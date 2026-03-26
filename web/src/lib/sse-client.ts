@@ -23,10 +23,12 @@ export async function submitRedesign(
   modelProvider: "claude" | "gemini" = "gemini",
   signal?: AbortSignal,
   prompt: string = "",
+  force: boolean = false,
 ): Promise<string> {
   const backendUrl = getBackendUrl()
-  const body: Record<string, string> = { url, tier, model_provider: modelProvider }
+  const body: Record<string, string | boolean> = { url, tier, model_provider: modelProvider }
   if (prompt) body.prompt = prompt
+  if (force) body.force = true
   const resp = await fetch(`${backendUrl}/redesign`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },

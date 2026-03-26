@@ -11,7 +11,7 @@ import { trackEvent } from "@/lib/analytics";
 import type { RedesignTier, ModelProvider } from "@/hooks/use-redesign";
 
 interface UrlInputFormProps {
-  onSubmit: (url: string, tier: RedesignTier, modelProvider: ModelProvider, prompt: string) => void;
+  onSubmit: (url: string, tier: RedesignTier, modelProvider: ModelProvider, prompt: string, force?: boolean) => void;
   isConnecting?: boolean;
 }
 
@@ -23,6 +23,7 @@ export function UrlInputForm({ onSubmit, isConnecting }: UrlInputFormProps) {
   // Model selection handled by per-step routing on the backend
   const modelProvider: ModelProvider = "gemini";
   const [prompt, setPrompt] = useState("");
+  const forceRef = useRef(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -43,11 +44,13 @@ export function UrlInputForm({ onSubmit, isConnecting }: UrlInputFormProps) {
   }, []);
 
   // Pre-fill URL from query parameter (e.g. /?url=example.com from "Redesign again")
+  // When pre-filled, force=true so the backend skips the dedup cache
   useEffect(() => {
     const urlParam = new URLSearchParams(window.location.search).get("url");
     if (urlParam) {
       setInput(urlParam);
       fetchFavicon(urlParam);
+      forceRef.current = true;
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -109,7 +112,8 @@ export function UrlInputForm({ onSubmit, isConnecting }: UrlInputFormProps) {
       return;
     }
 
-    onSubmit(result.url, tier, modelProvider, prompt);
+    onSubmit(result.url, tier, modelProvider, prompt, forceRef.current);
+    forceRef.current = false; // Only force on the first submit after pre-fill
   }
 
   return (

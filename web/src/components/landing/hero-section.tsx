@@ -8,7 +8,7 @@ import { UrlInputForm } from "@/components/landing/url-input-form";
 import type { RedesignTier, ModelProvider } from "@/hooks/use-redesign";
 
 interface HeroSectionProps {
-  onSubmit: (url: string, tier: RedesignTier, modelProvider: ModelProvider, prompt: string) => void;
+  onSubmit: (url: string, tier: RedesignTier, modelProvider: ModelProvider, prompt: string, force?: boolean) => void;
   isConnecting?: boolean;
 }
 

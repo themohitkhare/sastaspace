@@ -31,6 +31,7 @@ class RedesignRequest(BaseModel):
     tier: str = "free"  # "free" or "premium"
     model_provider: str = "claude"  # "claude" or "gemini"
     prompt: str = ""  # optional user instructions for the redesign
+    force: bool = False  # skip dedup check — used by "Redesign again"
 
 
 def create_redesign_router(
@@ -63,19 +64,21 @@ def create_redesign_router(
         body.url = normalized_or_error
 
         # Check for existing redesign (dedup by URL hash)
-        uhash = url_hash(body.url)
-        try:
-            existing = await find_site_by_url_hash(uhash)
-            if existing and existing.get("subdomain") and existing.get("job_id"):
-                logger.info(
-                    "DEDUP HIT | url=%s hash=%s subdomain=%s",
-                    body.url,
-                    uhash,
-                    existing["subdomain"],
-                )
-                return JSONResponse(content={"job_id": existing["job_id"]})
-        except (ConnectionError, OSError) as e:
-            logger.warning("Failed to check dedup: %s", e)
+        # Skip when force=true (user clicked "Redesign again")
+        if not body.force:
+            uhash = url_hash(body.url)
+            try:
+                existing = await find_site_by_url_hash(uhash)
+                if existing and existing.get("subdomain") and existing.get("job_id"):
+                    logger.info(
+                        "DEDUP HIT | url=%s hash=%s subdomain=%s",
+                        body.url,
+                        uhash,
+                        existing["subdomain"],
+                    )
+                    return JSONResponse(content={"job_id": existing["job_id"]})
+            except (ConnectionError, OSError) as e:
+                logger.warning("Failed to check dedup: %s", e)
 
         # Validate tier
         tier = body.tier if body.tier in ("free", "premium") else "free"

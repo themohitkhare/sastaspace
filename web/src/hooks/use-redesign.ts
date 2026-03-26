@@ -198,7 +198,7 @@ export function useRedesign() {
   const lastPromptRef = useRef<string>("");
 
   const start = useCallback(
-    async (url: string, tier: RedesignTier = "free", modelProvider: ModelProvider = "gemini", prompt: string = "") => {
+    async (url: string, tier: RedesignTier = "free", modelProvider: ModelProvider = "gemini", prompt: string = "", force: boolean = false) => {
       abortRef.current?.abort();
       const controller = new AbortController();
       abortRef.current = controller;
@@ -211,7 +211,7 @@ export function useRedesign() {
       trackEvent("redesign_started", { url, tier, modelProvider });
 
       try {
-        const jobId = await submitRedesign(url, tier, modelProvider, controller.signal, prompt);
+        const jobId = await submitRedesign(url, tier, modelProvider, controller.signal, prompt, force);
         if (controller.signal.aborted) return;
 
         // Persist job ID + original URL for page-refresh reconnection
