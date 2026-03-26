@@ -163,23 +163,36 @@ Before any redesign runs, the existing component catalog (2,474+ components from
 
 | Agent | Ruflo Role | Cognitive Pattern | Input | Output |
 |-------|-----------|-------------------|-------|--------|
-| **Color Palette Architect** | specialist | divergent | Brand colors from crawl, industry, business profile | Harmonious color palette using color theory (complementary/analogous/triadic). Industry-appropriate. Psychology-informed (warm for urgency, cool for trust). OKLCH format with hex fallbacks. |
+| **Color Palette Architect** | specialist | divergent | Brand colors from crawl, industry, business profile | Harmonious color palette using color theory (complementary/analogous/triadic). Industry-appropriate. Psychology-informed (warm for urgency, cool for trust). OKLCH format with hex fallbacks. **Typography must include web-safe fallback stacks** (e.g., `'Inter', 'Helvetica Neue', Arial, sans-serif`) so a failed Google Fonts import never ruins the deploy. |
 | **UX Expert** | specialist | systems | Site type, business profile, content map, conversion goals | Information architecture, user flow, conversion funnel design. F/Z-pattern selection. Mobile-first wireframe logic. Industry-specific UX patterns (e.g., e-commerce needs product grid + cart flow, portfolio needs gallery + case studies). |
 | **KISS Metric Expert** | specialist | critical | All Phase 1 outputs, content map | Complexity scores: cognitive load (1-10), visual noise budget, interaction cost limit, content density target. These scores constrain Phase 4 — Builder and Animation Specialist must respect them. |
 
-### Phase 3 — SELECTION (parallel)
+### Phase 3 — SELECTION (sequential, not parallel)
 
-| Agent | Ruflo Role | Cognitive Pattern | Input | Output |
-|-------|-----------|-------------------|-------|--------|
-| **Component Selector** | worker | convergent | Site type, UX wireframe, design tokens, KISS scores, pre-indexed component catalog | Component manifest: exact components to use with file paths, layout placement, and customization notes. Queries the pre-built index, not LLM guessing. |
-| **Copywriter** | specialist | adaptive | Content map, business profile, brand voice, UX flow | Polished copy for new layout: headlines, CTAs, microcopy, section descriptions. STRICT RULE: only improve/rephrase existing text. NEVER invent new content, features, testimonials, or statistics. |
+**Why sequential:** The Copywriter must know which components were selected to map copy into the correct UI slots. If a Bento Grid with 5 feature slots is selected but the Copywriter independently rewrites text into 3 paragraphs, the Builder is forced to hallucinate 2 extra features — defeating the zero-hallucination guarantee.
 
-### Phase 4 — BUILD (sequential)
+| # | Agent | Ruflo Role | Cognitive Pattern | Input | Output |
+|---|-------|-----------|-------------------|-------|--------|
+| 1st | **Component Selector** | worker | convergent | Site type, UX wireframe, design tokens, KISS scores, pre-indexed component catalog | Component manifest: exact components with file paths, layout placement, **slot definitions** (e.g., "hero: 1 heading + 1 subheading + 1 CTA", "features: 5 feature cards with icon + title + description"). |
+| 2nd | **Copywriter** | specialist | adaptive | Content map, business profile, brand voice, UX flow, **component manifest with slot definitions** | Polished copy **mapped directly into component slots** (e.g., `{ "hero.heading": "...", "hero.subheading": "...", "features[0].title": "..." }`). STRICT RULE: only fill slots that have matching original content. Leave slots empty rather than invent content. NEVER invent new features, testimonials, or statistics. |
 
-| Agent | Ruflo Role | Cognitive Pattern | Input | Output |
-|-------|-----------|-------------------|-------|--------|
-| **Builder** | worker | convergent | Component manifest, design tokens, polished copy, UX wireframe, content map | Complete HTML or React output. Pure assembly — creative decisions already made. Uses exact components, exact colors, exact copy. Output format decided by Site Classifier in Phase 1. |
-| **Animation Specialist** | specialist | divergent | Builder output, KISS scores | Enhanced output with: scroll reveals, micro-interactions, hover effects, page transitions. CSS-first, minimal JS. Amount of animation constrained by KISS score — simpler sites get fewer animations. |
+**Execution:** Component Selector runs first → Copywriter runs second with manifest as input.
+
+### Phase 4 — BUILD (section-by-section, then enhance)
+
+**Why section-by-section:** Asking Opus to output 15K tokens of flawless HTML in a single shot frequently triggers max_tokens limits or timeouts mid-output (e.g., inside a massive SVG path). Since we have a Component Manifest with defined sections, the Builder generates each section independently. Python stitches them into the final page.
+
+| Step | Agent | Input | Output |
+|------|-------|-------|--------|
+| 4a | **Builder** (N parallel calls) | Per-section: component source + design tokens + slot-mapped copy + UX placement | One HTML/React fragment per section (~2-4K tokens each). Each call is small, fast, and reliable. |
+| 4b | **Python Stitcher** (no LLM) | All section fragments + page template | Complete assembled page: `<!DOCTYPE html>` wrapper, shared `<style>` block with CSS custom properties, sections in UX-defined order. Deterministic — no LLM involved. |
+| 4c | **Animation Specialist** | Assembled page, KISS scores | Enhanced page with: scroll reveals, micro-interactions, hover effects. CSS-first, minimal JS. Animation budget constrained by KISS score. |
+
+**Builder parallelism:** If the page has 6 sections (nav, hero, features, testimonials, CTA, footer), the Builder makes 6 parallel Opus calls, each outputting ~2-4K tokens. This is 3-4x faster than a single 15K token call and far more reliable.
+
+**Model assignment:**
+- Builder section calls: **Opus** (quality matters, but output is small per call)
+- Animation Specialist: **Sonnet** (enhancement, not generation)
 
 ### Phase 5 — QA SWARM (parallel, all must pass)
 
@@ -198,6 +211,7 @@ Before any redesign runs, the existing component catalog (2,474+ components from
 - No orphaned CSS classes (referenced in HTML but undefined in CSS)
 - No external CDN dependencies (except Google Fonts)
 - All Google Fonts `@import` URLs return 200
+- All `font-family` declarations include a web-safe fallback (e.g., `sans-serif`, `serif`, `monospace`)
 - `<!DOCTYPE html>` present, `</html>` closing tag present
 - File/bundle size under 500KB (HTML) or 2MB (React build)
 - No inline `console.log` or debug statements
@@ -212,9 +226,12 @@ Before any redesign runs, the existing component catalog (2,474+ components from
 6. After 3 fails: ship best-scoring version with a quality warning flag in metadata
 7. No consensus voting for QA — quality gates are binary pass/fail, not opinion-based
 
+**Visual regression optimization (cost control):**
+On QA retries (iterations 2-3), use `pixelmatch` (Python: `pixelmatch-py` or Node: `pixelmatch`) to diff the new Playwright screenshot against the previous iteration's screenshot before sending to the Visual QA LLM. If pixel difference is < 5%, skip the expensive Vision API re-evaluation — the layout hasn't meaningfully changed, so only re-run the Static Analyzer and Content QA (text-based, cheap). This saves ~$0.03-0.05 per skipped Visual QA call.
+
 **Per-agent timeouts:**
 - Phase 1-3 agents: 120s per agent call
-- Phase 4 Builder: 300s (large output)
+- Phase 4 Builder (per section): 120s (small output per section)
 - Phase 4 Animation: 120s
 - Phase 5 QA agents: 60s each
 - Static Analyzer: 30s (programmatic, no LLM)
@@ -311,14 +328,15 @@ Screenshots are passed to the Visual QA agent for AI-powered visual analysis.
 | KISS Metric Expert | ~5K | ~1K | Haiku | ~$0.005 |
 | Component Selector | ~5K | ~2K | Sonnet | ~$0.025 |
 | Copywriter | ~8K | ~3K | Sonnet | ~$0.04 |
-| Builder | ~15K | ~15K | Opus (quality) | ~$0.75 |
+| Builder (per section, ~6 sections) | ~5K x 6 | ~3K x 6 | Opus (quality) | ~$0.90 total |
+| Python Stitcher | 0 | 0 | N/A (deterministic) | $0.00 |
 | Animation Specialist | ~10K | ~5K | Sonnet | ~$0.06 |
 | Visual QA | ~5K + screenshot | ~2K | Sonnet | ~$0.03 |
 | Content QA | ~10K | ~2K | Haiku | ~$0.01 |
 | A11y/SEO Auditor | ~5K | ~2K | Haiku | ~$0.005 |
 
-**Per-redesign cost (no retries):** ~$1.05
-**Per-redesign cost (3 QA retries):** ~$2.80 (Builder re-runs are the expensive part)
+**Per-redesign cost (no retries):** ~$1.20
+**Per-redesign cost (3 QA retries):** ~$3.00 (Builder section re-runs are the expensive part, pixelmatch skips Visual QA when layout unchanged)
 **Monthly projection (100 redesigns/month):** ~$105-280
 
 **Model tier strategy:**
@@ -471,10 +489,11 @@ User → Frontend → Backend → Redis
 │          UX Expert                ├→ (parallel)  │
 │          KISS Metric Expert ──────┘              │
 │                                                  │
-│ Phase 3: Component Selector ─┐                   │
-│          Copywriter ─────────┘ (parallel)        │
+│ Phase 3: Component Selector → Copywriter          │
+│          (sequential — copy maps to slots)        │
 │                                                  │
-│ Phase 4: Builder → Animation Specialist          │
+│ Phase 4: Builder (per-section, parallel Opus)    │
+│          → Python Stitcher → Animation Specialist│
 │                                                  │
 │ Phase 5: Visual QA ──────┐                       │
 │          Content QA ──────├→ Consensus Vote       │
