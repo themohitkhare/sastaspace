@@ -86,37 +86,7 @@ def create_redesign_router(
             body.model_provider if body.model_provider in ("claude", "gemini") else "claude"
         )
 
-        # Rate limit check (localhost exempt)
-        rate_limit_headers: dict[str, str] = {}
-        if not is_localhost_fn(ip):
-            limited, retry_after, remaining, reset_ts = is_rate_limited_fn(ip)
-            rate_limit_headers = {
-                "X-RateLimit-Limit": str(settings.rate_limit_max),
-                "X-RateLimit-Remaining": str(remaining),
-                "X-RateLimit-Reset": str(reset_ts),
-            }
-            if limited:
-                redesign_requests_total.labels(status="rate_limited").inc()
-                return JSONResponse(
-                    status_code=429,
-                    content={
-                        "error": (
-                            f"Rate limit exceeded. Try again in {retry_after // 60 + 1} minutes."
-                        ),
-                        "retry_after": retry_after,
-                    },
-                    headers={
-                        **rate_limit_headers,
-                        "Retry-After": str(retry_after),
-                    },
-                )
-
-        # Record attempt (localhost exempt)
-        if not is_localhost_fn(ip):
-            record_request_fn(ip)
-            rate_limit_headers["X-RateLimit-Remaining"] = str(
-                max(0, int(rate_limit_headers.get("X-RateLimit-Remaining", "0")) - 1)
-            )
+        # Rate limiting disabled — open access for now
 
         svc = svc_ref[0] if svc_ref else None
 
@@ -130,7 +100,7 @@ def create_redesign_router(
                 model_provider=model_provider,
                 prompt=body.prompt,
             )
-            return JSONResponse(content={"job_id": job_id}, headers=rate_limit_headers)
+            return JSONResponse(content={"job_id": job_id})
 
         # Fallback: inline processing (no Redis)
         if semaphore.locked():
@@ -138,7 +108,6 @@ def create_redesign_router(
             return JSONResponse(
                 status_code=429,
                 content={"error": "A redesign is already in progress. Please wait and try again."},
-                headers=rate_limit_headers,
             )
 
         redesign_requests_total.labels(status="started").inc()

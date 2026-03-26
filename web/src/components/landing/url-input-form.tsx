@@ -223,9 +223,6 @@ export function UrlInputForm({ onSubmit, isConnecting }: UrlInputFormProps) {
         />
       </div>
       {error && <p id="url-error" className="text-sm text-destructive mt-2" role="alert">{error}</p>}
-      <p className="text-xs text-muted-foreground text-center mt-2">
-        Free tier: 3 redesigns per hour
-      </p>
     </form>
   );
 }

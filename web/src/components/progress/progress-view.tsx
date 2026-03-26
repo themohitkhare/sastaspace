@@ -86,9 +86,6 @@ function ErrorView({
   lastStep?: string;
 }) {
   const [retryPrompt, setRetryPrompt] = useState(state.prompt ?? "");
-  const isRateLimit =
-    state.message.toLowerCase().includes("rate limit") ||
-    state.message.toLowerCase().includes("limit");
   const isNetworkError = Boolean(state.resumeJobId);
   const failedStepLabel = lastStep ? STEP_FAILURE_LABELS[lastStep] : undefined;
 
@@ -117,7 +114,7 @@ function ErrorView({
         )}
 
         {/* Show which step failed */}
-        {failedStepLabel && !isRateLimit && (
+        {failedStepLabel && (
           <p className="text-sm text-muted-foreground">
             Failed during: <span className="font-medium text-foreground">{failedStepLabel}</span>
           </p>
@@ -128,7 +125,7 @@ function ErrorView({
         </p>
 
         {/* Custom instructions textarea — shown for non-network errors */}
-        {!isNetworkError && !isRateLimit && (
+        {!isNetworkError && (
           <div className="w-full">
             <label
               htmlFor="retry-prompt"
