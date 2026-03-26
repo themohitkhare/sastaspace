@@ -16,7 +16,7 @@ from prometheus_client import Counter, Gauge, Histogram
 from sastaspace.config import Settings
 from sastaspace.crawler import crawl
 from sastaspace.database import JobStatus, create_job, update_job
-from sastaspace.html_utils import inject_badge, sanitize_html
+from sastaspace.html_utils import inject_badge, sanitize_html, strip_hallucinated_images
 from sastaspace.redesigner import run_redesign
 
 logger = logging.getLogger(__name__)
@@ -177,6 +177,11 @@ async def redesign_stream(
             else:
                 html_content = redesign_result
                 build_dir = None
+
+            # Strip hallucinated stock photo URLs
+            html_content, _hallucinated = strip_hallucinated_images(html_content)
+            if _hallucinated > 0:
+                logger.warning("Stripped %d hallucinated image URLs", _hallucinated)
 
             # Sanitize AI-generated HTML
             html_content = _sanitize_html(html_content)

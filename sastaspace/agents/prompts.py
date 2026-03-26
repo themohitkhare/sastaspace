@@ -308,16 +308,24 @@ Add text-wrap: balance on headings.
 - If the site has no clear brand color, use: warm amber, deep teal, rich forest green, or terracotta
 - Generate OKLCH palette: primary, primary-foreground, secondary, muted, accent, destructive
 
-## Images
-When the original site has images, preserve them with their original URLs.
-When placeholder images are needed, use Unsplash Source URLs:
-- https://images.unsplash.com/photo-{relevant-id}?w=800&auto=format&q=80
+## Images (CRITICAL — NO HALLUCINATED URLs)
+You MUST use ONLY image URLs from the crawl data's "Images" section and content_map "image:*" keys.
+These are the REAL images from the original website — use them exactly as provided.
 
-For hero backgrounds, use full-width images with overlay:
+ABSOLUTELY FORBIDDEN:
+- unsplash.com URLs (they return 404 — the photo IDs don't exist)
+- placeholder.com, via.placeholder.com, picsum.photos, or any stock photo service
+- Gray boxes or colored rectangles as image substitutes
+- ANY image URL you invent or guess — if it's not in the crawl data, don't use it
+
+If a section needs an image but none is available in the crawl data:
+- Use a CSS gradient background instead of a broken image URL
+- Or use an inline SVG illustration/icon
+- Or simply omit the image — a clean section without images beats broken ones
+
+For hero backgrounds without a crawled image, use gradient-only:
 background: linear-gradient(to bottom,
-  oklch(20% 0.02 250 / 0.7), oklch(20% 0.02 250 / 0.9)), url('...');
-
-NEVER use placeholder.com, via.placeholder.com, or gray boxes.
+  oklch(20% 0.02 250 / 0.7), oklch(20% 0.02 250 / 0.9));
 
 <content_binding>
 You may ONLY use text from the content_map in the plan.
@@ -606,7 +614,8 @@ NEVER use identical background + layout in consecutive sections.
 - Are Google Fonts loaded via <link> tag? Fix if not.
 - Are micro-interactions (button hover, card hover, scroll reveal) present? Add if missing.
 - Is the IntersectionObserver script included? Add if missing.
-- Are placeholder images using Unsplash URLs (not placeholder.com)? Fix if not.
+- Are ALL image src URLs from the original crawl data? Remove any
+  unsplash.com, placeholder.com, or invented URLs — use CSS gradients instead.
 - Are 2-3 premium animation patterns (gradient-text, blur-fade,
   dot-grid, etc.) used? Add if missing.
 - Is blur-fade used instead of plain fade-in for section reveals? Prefer blur-fade.

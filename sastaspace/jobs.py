@@ -25,7 +25,13 @@ from sastaspace.database import (
     update_job,
 )
 from sastaspace.deployer import deploy
-from sastaspace.html_utils import RedesignError, RedesignResult, inject_badge, sanitize_html
+from sastaspace.html_utils import (
+    RedesignError,
+    RedesignResult,
+    inject_badge,
+    sanitize_html,
+    strip_hallucinated_images,
+)
 from sastaspace.html_utils import validate_html as _validate_html
 from sastaspace.quality_scorer import score_redesign
 from sastaspace.redesigner import run_redesign
@@ -708,6 +714,15 @@ async def redesign_handler(
             asyncio.create_task(_run_a11y_validation(html, job_id))
         except Exception:  # noqa: BLE001
             logger.debug("Could not start A11Y validation for job=%s", job_id, exc_info=True)
+
+    # Strip hallucinated stock photo URLs (unsplash, placeholder.com, etc.)
+    html, hallucinated_count = strip_hallucinated_images(html)
+    if hallucinated_count > 0:
+        logger.warning(
+            "HALLUCINATED IMAGES | job=%s replaced=%d fake stock photo URLs with placeholders",
+            job_id,
+            hallucinated_count,
+        )
 
     # Sanitize AI-generated HTML (strip event handlers, javascript: URLs)
     html = sanitize_html(html)

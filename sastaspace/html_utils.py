@@ -103,6 +103,41 @@ def sanitize_html(html_str: str) -> str:
     return html_str
 
 
+# Domains that the LLM hallucinates image URLs for — these return 404s
+_HALLUCINATED_IMAGE_DOMAINS = re.compile(
+    r"https?://(?:images\.)?unsplash\.com/photo-[^\s\"']+|"
+    r"https?://(?:via\.)?placeholder\.com/[^\s\"']+|"
+    r"https?://picsum\.photos/[^\s\"']+|"
+    r"https?://placehold\.(?:co|it)/[^\s\"']+"
+)
+
+# Transparent 1x1 pixel data URI — renders as invisible, won't break layout
+_TRANSPARENT_PIXEL = (
+    "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' "
+    "width='800' height='400' viewBox='0 0 800 400'%3E"
+    "%3Crect width='800' height='400' fill='%23e5e7eb'/%3E"
+    "%3Ctext x='400' y='200' text-anchor='middle' dy='.35em' "
+    "fill='%239ca3af' font-family='system-ui' font-size='14'%3E"
+    "Image%3C/text%3E%3C/svg%3E"
+)
+
+
+def strip_hallucinated_images(html: str) -> tuple[str, int]:
+    """Replace hallucinated stock photo URLs with a neutral SVG placeholder.
+
+    Returns the cleaned HTML and the count of URLs replaced.
+    """
+    count = 0
+
+    def _replace(m: re.Match) -> str:
+        nonlocal count
+        count += 1
+        return _TRANSPARENT_PIXEL
+
+    cleaned = _HALLUCINATED_IMAGE_DOMAINS.sub(_replace, html)
+    return cleaned, count
+
+
 def validate_html(html: str) -> None:
     """Raise RedesignError if the HTML looks truncated or malformed."""
     if not html:
