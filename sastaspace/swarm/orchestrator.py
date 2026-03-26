@@ -66,7 +66,7 @@ _TIMEOUTS = {
     "component-selector": 120,
     "copywriter": 120,
     "builder": 120,
-    "animation": 120,
+    "animation": 300,
     "visual-qa": 60,
     "content-qa": 60,
     "a11y-seo": 60,
@@ -312,10 +312,11 @@ class SwarmOrchestrator:
         sections = phase3["manifest"].get("sections", [])
         copy_slots = phase3["copy"].get("slots", {})
 
-        # 4a: Build each section in parallel
+        # 4a: Build each section sequentially (parallel hits rate limits on claude-code-api)
         fragments: list[SectionFragment] = []
+        sorted_sections = sorted(sections, key=lambda s: s.get("placement_order", 0))
 
-        def _build_section(section: dict) -> SectionFragment:
+        for section in sorted_sections:
             section_context = {
                 "section": section,
                 "palette": phase2["palette"],
@@ -324,6 +325,7 @@ class SwarmOrchestrator:
                 },
                 "wireframe": phase2.get("wireframe", {}),
             }
+            _logger.info("building section=%s", section["section_name"])
             html = self._caller.call_raw(
                 role="builder",
                 system_prompt=BUILDER_SECTION_SYSTEM,
@@ -332,21 +334,7 @@ class SwarmOrchestrator:
                 max_tokens=4096,
                 timeout=_TIMEOUTS["builder"],
             )
-            return SectionFragment(section_name=section["section_name"], html=html)
-
-        with ThreadPoolExecutor(max_workers=6) as pool:
-            future_to_order = {
-                pool.submit(_build_section, s): s.get("placement_order", i)
-                for i, s in enumerate(sections)
-            }
-            indexed: list[tuple[int, SectionFragment]] = []
-            for future in as_completed(future_to_order):
-                order = future_to_order[future]
-                indexed.append((order, future.result()))
-
-        # Sort by placement order
-        indexed.sort(key=lambda x: x[0])
-        fragments = [frag for _, frag in indexed]
+            fragments.append(SectionFragment(section_name=section["section_name"], html=html))
 
         # 4b: Stitch (deterministic)
         title = phase1.get("classification", {}).get("industry", "Site")
