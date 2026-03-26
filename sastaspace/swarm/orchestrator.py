@@ -12,7 +12,6 @@ from sastaspace.crawler import CrawlResult
 from sastaspace.swarm.agent_caller import AgentCaller
 from sastaspace.swarm.prompts import (
     A11Y_SEO_SYSTEM,
-    ANIMATION_SPECIALIST_SYSTEM,
     BUILDER_SECTION_SYSTEM,
     BUSINESS_ANALYZER_SYSTEM,
     COLOR_PALETTE_ARCHITECT_SYSTEM,
@@ -27,7 +26,6 @@ from sastaspace.swarm.prompts import (
 )
 from sastaspace.swarm.schemas import (
     ColorPalette,
-    KISSMetrics,
     SectionFragment,
     SpecChallengerResult,
 )
@@ -307,7 +305,6 @@ class SwarmOrchestrator:
         """Build page section-by-section, stitch, then enhance with animations."""
         self._emit("phase4_start")
         palette = ColorPalette(**phase2["palette"])
-        kiss = KISSMetrics(**phase2["kiss"])
 
         sections = phase3["manifest"].get("sections", [])
         copy_slots = phase3["copy"].get("slots", {})
@@ -350,33 +347,12 @@ class SwarmOrchestrator:
         title = phase1.get("classification", {}).get("industry", "Site")
         assembled = stitch_page(fragments, palette, title)
 
-        # 4c: Animation enhancement
-        anim_context = {
-            "html": assembled,
-            "animation_budget": kiss.animation_budget,
-            "kiss_scores": {
-                "cognitive_load": kiss.cognitive_load,
-                "visual_noise_budget": kiss.visual_noise_budget,
-            },
-        }
-        try:
-            enhanced = self._caller.call_raw(
-                role="animation",
-                system_prompt=ANIMATION_SPECIALIST_SYSTEM,
-                context=anim_context,
-                model=self._model_for("animation"),
-                max_tokens=20000,
-                timeout=_TIMEOUTS["animation"],
-            )
-            # Validate animation output is actual HTML, not an explanation
-            if "<!DOCTYPE" in enhanced or ("<html" in enhanced and "</html>" in enhanced):
-                assembled = enhanced
-            elif "<" in enhanced and len(enhanced) > len(assembled) * 0.5:
-                assembled = enhanced  # Accept if it looks like HTML even without full wrapper
-            else:
-                _logger.warning("Animation specialist returned non-HTML — using unenhanced page")
-        except Exception as e:
-            _logger.warning("Animation specialist failed: %s — using unenhanced page", e)
+        # 4c: Animation enhancement — SKIPPED for now
+        # Passing the full assembled page (~40K chars) to the animation specialist
+        # exceeds practical limits (response too large, timeouts). The stitcher already
+        # includes base styles and CSS custom properties. Animations can be added in a
+        # future iteration via targeted CSS injection rather than full-page rewrite.
+        _logger.info("animation_skipped — page already has base styles from stitcher")
 
         self._emit("phase4_done")
         return assembled
@@ -466,11 +442,11 @@ class SwarmOrchestrator:
         phase3 = self._run_phase3(phase1, phase2)
         phases_completed.append("selection")
 
-        # Phase 4 + 5: Build -> QA loop (max 3 iterations)
+        # Phase 4 + 5: Build -> QA loop (1 iteration for now — each takes ~7 min)
         html = ""
         qa_report: dict = {}
         iteration = 1
-        for iteration in range(1, 4):
+        for iteration in range(1, 2):  # TODO: increase to 3 once pipeline is faster
             _logger.info("swarm_build_iteration %d", iteration)
 
             # Phase 4: Build
