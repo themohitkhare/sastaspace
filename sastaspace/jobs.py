@@ -121,17 +121,19 @@ class JobService:
         tier: str = "free",
         model_provider: str = "claude",
         prompt: str = "",
+        email: str = "",
     ) -> str:
         """Add a redesign job to the Redis Stream. Returns job_id."""
         job_id = str(uuid4())
 
-        # Persist in SQLite
+        # Persist in MongoDB
         await create_job(
             job_id=job_id,
             url=url,
             client_ip=client_ip,
             tier=tier,
             model_provider=model_provider,
+            email=email,
         )
 
         # Push to Redis Stream
@@ -145,6 +147,8 @@ class JobService:
         }
         if prompt:
             stream_fields["prompt"] = prompt
+        if email:
+            stream_fields["email"] = email
         await self.redis.xadd(STREAM_KEY, stream_fields)
 
         logger.info(
@@ -247,6 +251,7 @@ class JobService:
                     tier = fields.get("tier", "free")
                     model_provider = fields.get("model_provider", "claude")
                     prompt = fields.get("prompt", "")
+                    email = fields.get("email", "")
 
                     # Check if job already completed (avoid double-processing)
                     job = await get_job(job_id)
@@ -269,6 +274,7 @@ class JobService:
                             checkpoint=cp,
                             model_provider=model_provider,
                             prompt=prompt,
+                            email=email,
                         )
                         await self.redis.xack(STREAM_KEY, GROUP_NAME, msg_id)
                         recovered += 1
@@ -347,6 +353,7 @@ class JobService:
                         tier = fields.get("tier", "free")
                         model_provider = fields.get("model_provider", "claude")
                         prompt = fields.get("prompt", "")
+                        email = fields.get("email", "")
 
                         logger.info("Processing job %s: %s", job_id, url)
 
@@ -371,6 +378,7 @@ class JobService:
                                 checkpoint=prev_checkpoint,
                                 model_provider=model_provider,
                                 prompt=prompt,
+                                email=email,
                             )
                             # Acknowledge message on success
                             await self.redis.xack(STREAM_KEY, GROUP_NAME, msg_id)
@@ -414,6 +422,7 @@ async def redesign_handler(
     checkpoint: dict | None = None,
     model_provider: str = "claude",
     prompt: str = "",
+    email: str = "",
 ) -> None:
     """
     The actual redesign pipeline handler run by workers.
@@ -615,27 +624,70 @@ async def redesign_handler(
         except (RuntimeError, OSError):
             pass  # never crash the pipeline thread over a checkpoint save
 
-    # Choose redesign function based on tier / pipeline setting
-    redesign_result = await asyncio.to_thread(
-        run_redesign,
-        crawl_result,
-        settings,
-        tier,
-        _on_agent_progress,
-        pipeline_checkpoint,
-        _on_checkpoint,
-        enhanced=enhanced_result,
-        model_provider=model_provider,
-        user_prompt=prompt,
-    )
+    # Choose redesign function based on pipeline setting
+    if settings.use_swarm_pipeline:
+        import asyncio as _asyncio
 
-    # Handle both RedesignResult and raw string (for backward compat with mocked tests)
-    if isinstance(redesign_result, RedesignResult):
-        html = redesign_result.html
-        build_dir = redesign_result.build_dir
-    else:
-        html = redesign_result
+        from sastaspace.swarm import SwarmOrchestrator
+
+        _loop = _asyncio.get_running_loop()
+
+        def _on_swarm_progress(phase, data):
+            phase_map = {
+                "phase1_start": ("analyzing", 15),
+                "phase1_done": ("analyzing", 30),
+                "phase2_start": ("designing", 35),
+                "phase2_done": ("designing", 45),
+                "phase3_start": ("selecting", 50),
+                "phase3_done": ("selecting", 60),
+                "phase4_start": ("building", 65),
+                "phase4_done": ("building", 75),
+                "phase5_start": ("reviewing", 80),
+                "phase5_done": ("reviewing", 90),
+            }
+            if phase in phase_map:
+                event, progress = phase_map[phase]
+                future = _asyncio.run_coroutine_threadsafe(
+                    job_service.publish_status(
+                        job_id, event, {"progress": progress, "message": f"Phase: {phase}"}
+                    ),
+                    _loop,
+                )
+                try:
+                    future.result(timeout=5)
+                except Exception:
+                    pass  # Don't block pipeline on status update failure
+
+        orchestrator = SwarmOrchestrator(
+            api_url=settings.claude_code_api_url,
+            api_key=settings.claude_code_api_key,
+            progress_callback=_on_swarm_progress,
+        )
+        swarm_result = await asyncio.to_thread(orchestrator.run, crawl_result)
+        html = swarm_result.html
         build_dir = None
+    else:
+        # Existing Agno pipeline call
+        redesign_result = await asyncio.to_thread(
+            run_redesign,
+            crawl_result,
+            settings,
+            tier,
+            _on_agent_progress,
+            pipeline_checkpoint,
+            _on_checkpoint,
+            enhanced=enhanced_result,
+            model_provider=model_provider,
+            user_prompt=prompt,
+        )
+
+        # Handle both RedesignResult and raw string (for backward compat with mocked tests)
+        if isinstance(redesign_result, RedesignResult):
+            html = redesign_result.html
+            build_dir = redesign_result.build_dir
+        else:
+            html = redesign_result
+            build_dir = None
 
     redesign_duration = _time.monotonic() - redesign_start
     logger.info(

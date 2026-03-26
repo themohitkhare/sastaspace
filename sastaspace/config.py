@@ -93,6 +93,10 @@ class Settings(BaseSettings):
     # Parallel builder (experimental — split HTML generation into concurrent section calls)
     enable_parallel_builder: bool = False  # ENABLE_PARALLEL_BUILDER=true to opt in
 
+    # Swarm pipeline
+    use_swarm_pipeline: bool = False  # Feature flag — default off during migration
+    swarm_builder_model: str = "claude-opus-4-6-20250514"
+
     # Component-based React pipeline
     use_component_pipeline: bool = True
     components_dir: Path = Path("./components")

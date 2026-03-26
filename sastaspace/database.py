@@ -99,6 +99,7 @@ async def create_job(
     client_ip: str,
     tier: str = "free",
     model_provider: str = "claude",
+    email: str = "",
 ) -> dict:
     """Insert a new job record. Returns the job dict."""
     now = datetime.now(UTC).isoformat()
@@ -110,6 +111,7 @@ async def create_job(
         "client_ip": client_ip,
         "tier": tier,
         "model_provider": model_provider,
+        "email": email,
         "progress": 0,
         "message": "Queued",
         "subdomain": None,

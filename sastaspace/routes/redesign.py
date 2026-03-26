@@ -32,6 +32,7 @@ class RedesignRequest(BaseModel):
     model_provider: str = "claude"  # "claude" or "gemini"
     prompt: str = ""  # optional user instructions for the redesign
     force: bool = False  # skip dedup check — used by "Redesign again"
+    email: str = ""  # Optional — for email notification on completion
 
 
 def create_redesign_router(
@@ -99,6 +100,7 @@ def create_redesign_router(
                 tier=tier,
                 model_provider=model_provider,
                 prompt=body.prompt,
+                email=body.email,
             )
             return JSONResponse(content={"job_id": job_id})
 
