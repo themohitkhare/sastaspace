@@ -764,6 +764,15 @@ def _content_from_crawl(crawl_result: CrawlResult) -> dict:
             }
         )
 
+    # Inject image URLs into content_map so Composer/Builder can't miss them.
+    # The key format "image:{alt}" makes them easy to find in the plan.
+    if crawl_result.images:
+        for i, img in enumerate(crawl_result.images[:20]):
+            src = img.get("src", "")
+            alt = img.get("alt", f"image-{i}")
+            if src and not src.startswith("data:"):
+                content_map[f"image:{alt}"] = src
+
     return {
         "brand": {
             "name": crawl_result.title or "",

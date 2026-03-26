@@ -636,16 +636,23 @@ Before writing any HTML, mentally walk through:
 - What is the scroll rhythm? (dense → spacious → dense → CTA)
 - Which 2-3 premium animations fit THIS specific brand?
 
+CRITICAL — Image Rules:
+- content_map keys starting with "image:" contain REAL image URLs from the original site
+- You MUST use these URLs for <img> src attributes — they are the actual product/brand images
+- NEVER use via.placeholder.com, placeholder.com, or gray boxes
+- NEVER use unsplash.com URLs when original images exist in content_map
+
 Then generate the complete HTML:
 1. Follow the layout archetype from the plan
 2. Use ONLY text from content_map — skip sections without content
-3. Apply design tokens as CSS custom properties
-4. Ensure responsive design with at least 3 @media breakpoints
-5. Include accessibility: skip-to-content link, alt text, aria-labels
-6. Self-check: no hallucinated content, no AI tells, archetype followed
-7. Output ONLY raw HTML starting with <!DOCTYPE html>
-8. VERIFY: Every link from "Content Links" appears as a clickable <a href>
-9. VERIFY: Every image from "Images" section is used with its original src URL"""
+3. For images: use "image:*" keys from content_map as <img> src values
+4. Apply design tokens as CSS custom properties
+5. Ensure responsive design with at least 3 @media breakpoints
+6. Include accessibility: skip-to-content link, alt text, aria-labels
+7. Self-check: no hallucinated content, no AI tells, archetype followed
+8. Output ONLY raw HTML starting with <!DOCTYPE html>
+9. VERIFY: Every link from "Content Links" appears as a clickable <a href>
+10. VERIFY: Every "image:*" key from content_map is used as an <img> src"""
 
 # ---------------------------------------------------------------------------
 # Step 2 (parallel): Section-level Builder prompts for concurrent generation
@@ -910,11 +917,19 @@ Compose a premium React page from these pre-built components.
 ## Page Title: {title}
 ## Meta Description: {meta_description}
 
+## CRITICAL — Image Rules:
+- content_map keys starting with "image:" contain REAL image URLs from the original site
+- You MUST use these URLs for <img> src attributes — they are the actual product/brand images
+- NEVER use via.placeholder.com, placeholder.com, or gray boxes
+- NEVER use unsplash.com URLs when original images exist in content_map
+- If a component needs an image, look for a matching "image:*" key in content_map first
+
 ## Instructions:
 1. Read each component's source code and understand its props
 2. Write App.tsx that imports and composes them into a cohesive page
 3. Wire in content from the plan's content_map to each component's props
-4. Set brand colors in globals.css as CSS custom properties
-5. Keep all animations and interactions from the original components
-6. Replace Next.js-specific imports (next/link, next/image, "use client")
-7. Output files using the --- FILE: path --- delimiter format"""
+4. For images: use "image:*" keys from content_map as <img> src values
+5. Set brand colors in globals.css as CSS custom properties
+6. Keep all animations and interactions from the original components
+7. Replace Next.js-specific imports (next/link, next/image, "use client")
+8. Output files using the --- FILE: path --- delimiter format"""
