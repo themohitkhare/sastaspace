@@ -73,6 +73,7 @@ def _settings_mock():
     """Return a Settings-like mock without touching env."""
     m = MagicMock()
     m.use_agno_pipeline = True
+    m.use_swarm_pipeline = False
     m.sites_dir = Path("/data/sites")
     m.vikunja_url = ""  # Disabled — uses NoopVikunjaClient
     m.vikunja_token = ""
