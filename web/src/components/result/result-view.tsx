@@ -1,7 +1,7 @@
 "use client";
 
 import { m } from "motion/react";
-import { ExternalLink, Download, ArrowRight } from "lucide-react";
+import { ExternalLink, Download, ArrowRight, RefreshCw } from "lucide-react";
 import { NavHeader } from "@/components/ui/nav-header";
 import { ContactForm } from "@/components/result/contact-form";
 import { BeforeAfterSlider } from "@/components/result/before-after-slider";
@@ -74,6 +74,13 @@ export function ResultView({ subdomain, tier }: ResultViewProps) {
           >
             View original
             <ExternalLink className="w-3.5 h-3.5" />
+          </a>
+          <a
+            href={`/?url=${encodeURIComponent(domain)}`}
+            className="inline-flex items-center gap-1.5 text-sm text-muted-foreground underline underline-offset-4 hover:text-foreground transition-colors"
+          >
+            <RefreshCw className="w-3.5 h-3.5" />
+            Redesign again
           </a>
         </div>
 

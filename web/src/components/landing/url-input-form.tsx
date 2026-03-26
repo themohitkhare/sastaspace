@@ -42,6 +42,15 @@ export function UrlInputForm({ onSubmit, isConnecting }: UrlInputFormProps) {
     }
   }, []);
 
+  // Pre-fill URL from query parameter (e.g. /?url=example.com from "Redesign again")
+  useEffect(() => {
+    const urlParam = new URLSearchParams(window.location.search).get("url");
+    if (urlParam) {
+      setInput(urlParam);
+      fetchFavicon(urlParam);
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Auto-focus URL input on page load
   useEffect(() => {
     const timer = setTimeout(() => {
