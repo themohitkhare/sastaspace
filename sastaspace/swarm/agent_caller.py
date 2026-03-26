@@ -117,10 +117,16 @@ class AgentCaller:
 
         if result.returncode != 0:
             stderr = result.stderr.strip()[:500] if result.stderr else "no stderr"
+            stdout = result.stdout.strip()[:500] if result.stdout else "no stdout"
             _logger.error(
-                "agent_call_failed role=%s rc=%d stderr=%s", role, result.returncode, stderr
+                "agent_call_failed role=%s rc=%d stderr=%s stdout=%s",
+                role,
+                result.returncode,
+                stderr,
+                stdout,
             )
-            raise AgentCallError(f"Agent '{role}' CLI failed (rc={result.returncode}): {stderr}")
+            msg = f"Agent '{role}' CLI failed (rc={result.returncode})"
+            raise AgentCallError(f"{msg}: stderr={stderr} stdout={stdout}")
 
         content = result.stdout.strip()
         if not content:
