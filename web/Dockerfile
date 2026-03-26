@@ -9,6 +9,9 @@ RUN npm ci
 
 COPY . .
 
+# Set internal backend URL for Next.js rewrites (baked at build time)
+ENV INTERNAL_BACKEND_URL=http://backend:8080
+
 # Build Next.js in standalone mode
 RUN npm run build
 
