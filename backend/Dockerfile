@@ -11,6 +11,13 @@ RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
     && apt-get install -y --no-install-recommends nodejs \
     && rm -rf /var/lib/apt/lists/*
 
+# Claude Code CLI — required for swarm pipeline agent calls
+# Install as root, then symlink to a path accessible by appuser
+RUN curl -fsSL https://claude.ai/install.sh | bash 2>/dev/null || true
+RUN if [ -f /root/.claude/local/bin/claude ]; then \
+      cp /root/.claude/local/bin/claude /usr/local/bin/claude && chmod +x /usr/local/bin/claude; \
+    fi
+
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 
 WORKDIR /app

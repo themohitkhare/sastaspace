@@ -37,14 +37,21 @@ spec:
         volumeMounts:
         - name: sites-data
           mountPath: /data/sites
+        - name: claude-auth
+          mountPath: /home/appuser/.claude
+          readOnly: true
         resources:
           requests:
-            memory: "256Mi"
-            cpu: "100m"
+            memory: "512Mi"
+            cpu: "250m"
           limits:
-            memory: "1Gi"
-            cpu: "500m"
+            memory: "2Gi"
+            cpu: "1000m"
       volumes:
       - name: sites-data
         persistentVolumeClaim:
           claimName: sites-pvc
+      - name: claude-auth
+        hostPath:
+          path: /home/mkhare/.claude
+          type: Directory
