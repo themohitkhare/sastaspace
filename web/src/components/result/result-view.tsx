@@ -1,14 +1,19 @@
 "use client";
 
-import { m } from "motion/react";
+import { useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
+import { m, AnimatePresence } from "motion/react";
 import { ExternalLink, Download, ArrowRight, RefreshCw } from "lucide-react";
 import { NavHeader } from "@/components/ui/nav-header";
 import { ContactForm } from "@/components/result/contact-form";
 import { BeforeAfterSlider } from "@/components/result/before-after-slider";
 import { ShareButtons } from "@/components/result/share-buttons";
 import { QualityRating } from "@/components/result/quality-rating";
+import { ProgressView } from "@/components/progress/progress-view";
+import { SuccessCelebration } from "@/components/progress/success-celebration";
 import { Footer } from "@/components/landing/footer";
 import { getBackendUrl } from "@/lib/env";
+import { useRedesign } from "@/hooks/use-redesign";
 
 interface ResultViewProps {
   subdomain: string;
@@ -25,6 +30,65 @@ export function ResultView({ subdomain, tier }: ResultViewProps) {
     ? `${window.location.origin}/${subdomain}`
     : `/${subdomain}`;
 
+  const { state, start, retry, reset } = useRedesign();
+  const router = useRouter();
+  const redirectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // When redesign completes, redirect to the new result page
+  useEffect(() => {
+    if (state.status === "done") {
+      const tierParam = state.tier === "free" ? "?tier=express" : "";
+      redirectTimerRef.current = setTimeout(() => {
+        router.push(`/${state.subdomain}${tierParam}`);
+      }, 1500);
+      return () => {
+        if (redirectTimerRef.current) clearTimeout(redirectTimerRef.current);
+      };
+    }
+  }, [state, router]);
+
+  function handleRedesignAgain() {
+    start(originalUrl, "free", "gemini", "", true);
+  }
+
+  // Show progress view when redesign is in progress
+  if (state.status === "connecting" || state.status === "progress" || state.status === "error") {
+    return (
+      <AnimatePresence mode="wait">
+        <m.div
+          key="progress"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -20 }}
+          transition={{ duration: 0.3, ease: "easeInOut" }}
+        >
+          <ProgressView
+            state={state}
+            onRetry={retry}
+            onReset={reset}
+            lastStep={state.status === "error" ? state.lastStep : undefined}
+          />
+        </m.div>
+      </AnimatePresence>
+    );
+  }
+
+  // Show celebration when done
+  if (state.status === "done") {
+    return (
+      <m.div
+        key="celebration"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.2 }}
+      >
+        <SuccessCelebration domain={state.domain} />
+      </m.div>
+    );
+  }
+
+  // Default: show result view
   return (
     <m.div
       initial={{ opacity: 0, scale: 0.95 }}
@@ -75,13 +139,14 @@ export function ResultView({ subdomain, tier }: ResultViewProps) {
             View original
             <ExternalLink className="w-3.5 h-3.5" />
           </a>
-          <a
-            href={`/?url=${encodeURIComponent(domain)}`}
-            className="inline-flex items-center gap-1.5 text-sm text-muted-foreground underline underline-offset-4 hover:text-foreground transition-colors"
+          <button
+            type="button"
+            onClick={handleRedesignAgain}
+            className="inline-flex items-center gap-1.5 text-sm text-muted-foreground underline underline-offset-4 hover:text-foreground transition-colors cursor-pointer"
           >
             <RefreshCw className="w-3.5 h-3.5" />
             Redesign again
-          </a>
+          </button>
         </div>
 
         {/* Social sharing buttons */}
