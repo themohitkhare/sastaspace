@@ -100,16 +100,13 @@ class SwarmOrchestrator:
         self._progress = progress_callback
 
     def _model_for(self, role: str) -> str:
-        """Resolve model ID for a given agent role."""
+        """Resolve model name for a given agent role.
+
+        Uses Claude CLI short names (sonnet, opus, haiku) — not full API model IDs.
+        """
         if role in self._models:
             return self._models[role]
-        tier = _MODEL_TIERS.get(role, "sonnet")
-        # Default model IDs per tier — override via models dict
-        return {
-            "haiku": "claude-haiku-4-5-20251001",
-            "sonnet": "claude-sonnet-4-6-20250514",
-            "opus": "claude-opus-4-6-20250514",
-        }.get(tier, "claude-sonnet-4-6-20250514")
+        return _MODEL_TIERS.get(role, "sonnet")
 
     def _emit(self, phase: str, data: dict | None = None):
         if self._progress:
