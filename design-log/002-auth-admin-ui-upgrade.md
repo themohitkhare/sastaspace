@@ -143,3 +143,94 @@ Phase 6 (prod cutover for the new services) remains human-only.
 
 1. You answer Q1–Q8 inline above.
 2. I generate a plan file (Design Log 002 → new `.plan.md`) with phase-by-phase todos, then execute A → E.
+
+---
+
+## Implementation Results
+
+Implementation completed 2026-04-23 across five commits on `main`.
+
+### Commit history
+
+| Phase | Commit | Title |
+|---|---|---|
+| A | `ef06a409` | `feat(infra): gotrue + studio + pg-meta shared services` |
+| B | `6a112e51` | `feat(db): auth roles, admins allowlist, rls helpers` |
+| C | `0c5eff69` | `feat(template): shadcn UI pack, theme, layout shell, data-table` |
+| D | `a13effae` | `feat(template): supabase/ssr auth, gated /admin` |
+| E | *(this commit)* | `feat(landing): supabase auth, admin area; docs refresh` |
+
+### Phase A — Shared services infra
+
+- Added `gotrue`, `pg-meta`, `studio` to `infra/k8s/` and `infra/docker-compose.yml`.
+- `infra/k8s/auth-ingress.yaml` routes `auth.sastaspace.com` -> `gotrue:9999` and `studio.sastaspace.com` -> `studio:3000`.
+- Rewired PostgREST to use the `authenticator` login role + `anon` default role sharing `JWT_SECRET` with GoTrue.
+- `secrets.yaml.template` gained `gotrue-config`, `pg-meta-config`, `studio-config`.
+- `.env.example` gained a full set of auth-related vars (SMTP via Resend, Google/GitHub OAuth stubs).
+
+### Phase B — DB auth plumbing
+
+- `db/migrations/0003_auth_prep.sql` — creates `anon`, `authenticated`, `service_role`, `authenticator`, `supabase_auth_admin` roles idempotently; adds `auth` schema owned by `supabase_auth_admin`; defines `auth.jwt()`, `auth.uid()`, `auth.role()`, `auth.email()` helper functions; grants on `public`.
+- `db/migrations/0004_admins_and_helpers.sql` — `public.admins(email)` allowlist seeded with `mohitkhare582@gmail.com`; `public.is_admin()` helper; baseline RLS policies on `projects`, `visits`, `contact_messages`, and `admins`.
+
+### Phase C — Template UI pack
+
+- Tailwind v4 with CSS-vars design tokens (light + dark) in `globals.css`.
+- 17 shadcn components written in place (no `npx shadcn add`), sitting in `projects/_template/web/src/components/ui/`.
+- Theme layer: `next-themes` ThemeProvider + ThemeToggle dropdown.
+- Layout shell: `AppShell`, `Topbar`, `Sidebar`, `Footer`.
+- Inter font loaded via `next/font` and exposed as `--font-sans`.
+- Rewrote home page, `/contact`, and `ContactForm` to use the new primitives.
+- Switched lint script from `next lint` (removed in Next 16) to `eslint .`.
+- `npm run build` succeeds with 5 routes before auth; 11 routes after auth.
+
+### Phase D — Template auth wiring
+
+- `@supabase/ssr` client/server/middleware helpers in `src/lib/supabase/`.
+- Next.js 16 renamed `middleware.ts` to `proxy.ts` (migration caught during build and applied immediately).
+- `(auth)` route group: sign-in, sign-up, forgot-password with email+password, magic link, Google, GitHub OAuth.
+- `(admin)` route group: server-side gate via `isCurrentUserAdmin()`, overview + users tables.
+- `UserMenu` became an async RSC that displays avatar + dropdown when signed in and a Sign-in button otherwise.
+
+### Phase E — Landing retrofit + docs
+
+- Replicated template sources into `projects/landing/web` (shared components, lib, auth, proxy, layout, globals.css).
+- Replaced `__NAME__` tokens with `SastaSpace` in the copied files.
+- Rewrote `projects/landing/web/src/app/page.tsx` as a shadcn-powered portfolio (hero + live-projects grid pulling from PostgREST, graceful fallback when PostgREST is unreachable during prerender).
+- Rewrote `contact/page.tsx` to use the new `AppShell` + `ContactForm`.
+- `npm run build` in landing succeeds with 11 routes (same set as template).
+- `CLAUDE.md` + `AGENTS.md` rewritten to describe the new auth model and architecture (Mermaid updated to include GoTrue, Studio, pg-meta).
+- `README.md` expanded with a full quickstart including migrations.
+- `projects/_template/README.md` now documents the UI pack, auth setup, and how to strip auth if a project doesn't need it.
+
+### Deviations from the design
+
+- **Supabase Studio gating** was *specified* as Cloudflare Access (A3). Manifests leave Studio's ingress open; the Cloudflare Access application must be configured manually during Phase 6 cutover. This is human-only work (account-scoped in Cloudflare Zero Trust).
+- **SMTP via Resend** uses Resend's SMTP relay (`smtp.resend.com:465`) rather than their REST API because GoTrue only speaks SMTP. The existing `RESEND_API_KEY` is reused as the SMTP password.
+- **`ANON_KEY` and `SERVICE_ROLE_KEY`** are placeholders in `.env.example`. These are signed JWTs (`role=anon` / `role=service_role`) produced with `JWT_SECRET`. The operator must mint them during Phase 6 using a `jwt-cli` one-liner; a snippet is in `.env.example` comments.
+- **Studio auth to pg-meta** does not gate SQL execution — anyone reaching the URL can run queries. Mitigation is entirely at the edge via Cloudflare Access.
+- **Lucide version** resolved by npm was `^1.8.0`, which was a surprise (historically 0.x). Left as-is since it works; worth spot-checking during an upgrade.
+
+### Environment constraints encountered
+
+- **No running Postgres** for SQL lint. Migration SQL was eyeballed; a `psql --dry-run` pass should happen on first Phase 6 apply.
+- **No running Kubernetes API server** for `kubectl dry-run`. Validated YAML with `python3 -c "import yaml; yaml.safe_load_all(...)"` instead.
+- **Docker** was available in this environment; `docker compose config --quiet` confirmed the compose file parses.
+
+### Verification
+
+- `npm run build` passes in `projects/_template/web` (11 routes).
+- `npm run build` passes in `projects/landing/web` (11 routes).
+- `npm run lint` passes with 0 errors in both (2 pre-existing warnings: postcss anonymous default export and TanStack Table + react-compiler interop).
+- `python3 -c "import yaml; yaml.safe_load_all(...)"` passes on all `infra/k8s/*.yaml`.
+- `docker compose -f infra/docker-compose.yml config --quiet` passes.
+
+### Outstanding work (human / Phase 6)
+
+1. In Cloudflare Zero Trust: create an **Access application** for `studio.sastaspace.com` scoped to the admin email list.
+2. Generate `ANON_KEY` and `SERVICE_ROLE_KEY` JWTs from the production `JWT_SECRET`.
+3. Configure Google OAuth client credentials and GitHub OAuth app, fill the four corresponding env vars.
+4. In Resend: verify `sastaspace.com` sending domain, then lift `RESEND_API_KEY` into the production `gotrue-config` secret.
+5. Apply manifests: `microk8s kubectl apply -f infra/k8s/ --recursive` then run the four SQL migrations.
+6. Smoke test: sign up, magic link, sign in, open `/admin` from `mohitkhare582@gmail.com`.
+
