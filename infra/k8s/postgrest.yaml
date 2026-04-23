@@ -3,6 +3,8 @@ kind: Deployment
 metadata:
   name: postgrest
   namespace: sastaspace
+  labels:
+    app: postgrest
 spec:
   replicas: 1
   selector:
@@ -15,27 +17,48 @@ spec:
     spec:
       containers:
         - name: postgrest
-          image: postgrest/postgrest:latest
+          image: postgrest/postgrest:v14.10
+          imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 3000
+              name: http
           envFrom:
             - secretRef:
                 name: pgrst-config
+          env:
+            - name: PGRST_SERVER_PORT
+              value: "3000"
+            - name: PGRST_SERVER_HOST
+              value: "*4"
           readinessProbe:
-            httpGet:
-              path: /
+            tcpSocket:
               port: 3000
             initialDelaySeconds: 5
             periodSeconds: 10
+          livenessProbe:
+            tcpSocket:
+              port: 3000
+            initialDelaySeconds: 20
+            periodSeconds: 30
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
 ---
 apiVersion: v1
 kind: Service
 metadata:
   name: postgrest
   namespace: sastaspace
+  labels:
+    app: postgrest
 spec:
   selector:
     app: postgrest
   ports:
     - port: 3000
       targetPort: 3000
+      name: http

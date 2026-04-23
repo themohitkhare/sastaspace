@@ -3,6 +3,8 @@ kind: Deployment
 metadata:
   name: gotrue
   namespace: sastaspace
+  labels:
+    app: gotrue
 spec:
   replicas: 1
   selector:
@@ -16,12 +18,15 @@ spec:
       containers:
         - name: gotrue
           image: supabase/gotrue:v2.188.1
+          imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 9999
+              name: http
           envFrom:
             - secretRef:
                 name: gotrue-config
           env:
+            # Static pieces that don't need to live in a Secret.
             - name: GOTRUE_API_HOST
               value: "0.0.0.0"
             - name: GOTRUE_API_PORT
@@ -36,32 +41,39 @@ spec:
               value: "service_role"
             - name: GOTRUE_JWT_AUD
               value: "authenticated"
-        - name: GOTRUE_EXTERNAL_EMAIL_ENABLED
-          value: "true"
-        - name: API_EXTERNAL_URL
-          value: "https://auth.sastaspace.com"
+            - name: GOTRUE_EXTERNAL_EMAIL_ENABLED
+              value: "true"
           readinessProbe:
             httpGet:
               path: /health
               port: 9999
             initialDelaySeconds: 10
             periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 9999
+            initialDelaySeconds: 30
+            periodSeconds: 30
           resources:
             requests:
-              cpu: "50m"
-              memory: "128Mi"
+              cpu: 50m
+              memory: 128Mi
             limits:
-              cpu: "500m"
-              memory: "256Mi"
+              cpu: 500m
+              memory: 256Mi
 ---
 apiVersion: v1
 kind: Service
 metadata:
   name: gotrue
   namespace: sastaspace
+  labels:
+    app: gotrue
 spec:
   selector:
     app: gotrue
   ports:
     - port: 9999
       targetPort: 9999
+      name: http

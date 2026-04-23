@@ -1,0 +1,66 @@
+# Cluster ingress — assumes:
+#   • cloudflared (systemd on host) routes sastaspace.com, www.sastaspace.com,
+#     api.sastaspace.com to http://localhost:80 on the node.
+#   • microk8s ingress-nginx listens on the host's :80 via the public
+#     ingressClass ("public").
+#   • Cloudflare terminates TLS at the edge, so ssl-redirect is OFF here.
+#
+# Routing:
+#   sastaspace.com, www.sastaspace.com  →  landing (Next.js)
+#   api.sastaspace.com                  →  gateway (nginx → gotrue/postgrest)
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: landing-ingress
+  namespace: sastaspace
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+    nginx.ingress.kubernetes.io/use-forwarded-headers: "true"
+spec:
+  ingressClassName: public
+  rules:
+    - host: sastaspace.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: landing
+                port:
+                  number: 3000
+    - host: www.sastaspace.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: landing
+                port:
+                  number: 3000
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: api-ingress
+  namespace: sastaspace
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+    nginx.ingress.kubernetes.io/use-forwarded-headers: "true"
+    # Gateway owns CORS. Don't let nginx-ingress add or rewrite them.
+    nginx.ingress.kubernetes.io/enable-cors: "false"
+    nginx.ingress.kubernetes.io/proxy-body-size: "2m"
+spec:
+  ingressClassName: public
+  rules:
+    - host: api.sastaspace.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: gateway
+                port:
+                  number: 8000

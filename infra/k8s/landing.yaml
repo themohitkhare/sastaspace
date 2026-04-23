@@ -1,0 +1,84 @@
+# Next.js landing app (the "project bank" front door). The image is built on
+# the cluster host and pushed to the microk8s private registry at
+# localhost:32000 by scripts/k8s-deploy.sh. Image tag is parameterised via the
+# `landing-image` ConfigMap's IMAGE_TAG (rolled out by the deploy script).
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: landing
+  namespace: sastaspace
+  labels:
+    app: landing
+spec:
+  replicas: 1
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: landing
+  template:
+    metadata:
+      labels:
+        app: landing
+    spec:
+      containers:
+        - name: landing
+          image: localhost:32000/sastaspace-landing:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 3000
+              name: http
+          env:
+            - name: NODE_ENV
+              value: production
+            - name: PORT
+              value: "3000"
+            - name: HOSTNAME
+              value: "0.0.0.0"
+            # Server-side calls go through the cluster-internal gateway so the
+            # browser's public URL can differ (Cloudflare-fronted) without a
+            # second round-trip through the edge.
+            - name: SUPABASE_INTERNAL_URL
+              value: "http://gateway.sastaspace.svc.cluster.local:8000"
+            - name: POSTGREST_URL
+              value: "http://postgrest.sastaspace.svc.cluster.local:3000"
+          envFrom:
+            - secretRef:
+                name: landing-runtime
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 3000
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 3000
+            initialDelaySeconds: 30
+            periodSeconds: 30
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 1000m
+              memory: 512Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: landing
+  namespace: sastaspace
+  labels:
+    app: landing
+spec:
+  selector:
+    app: landing
+  ports:
+    - port: 3000
+      targetPort: 3000
+      name: http

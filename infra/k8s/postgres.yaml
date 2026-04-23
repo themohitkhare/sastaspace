@@ -1,20 +1,14 @@
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: postgres-pvc
-  namespace: sastaspace
-spec:
-  accessModes:
-    - ReadWriteOnce
-  resources:
-    requests:
-      storage: 20Gi
----
+# Postgres 17 (Supabase flavour) as a single-replica StatefulSet with
+# persistent storage on the microk8s hostpath provisioner. Matches the image
+# pin and role model used by the local docker-compose stack so migrations and
+# seed data behave identically across environments.
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
   name: postgres
   namespace: sastaspace
+  labels:
+    app: postgres
 spec:
   serviceName: postgres
   replicas: 1
@@ -26,34 +20,63 @@ spec:
       labels:
         app: postgres
     spec:
+      terminationGracePeriodSeconds: 30
       containers:
         - name: postgres
           image: supabase/postgres:17.6.1.110
+          imagePullPolicy: IfNotPresent
+          args:
+            - "postgres"
+            # The supabase/postgres image ships with listen_addresses='localhost'
+            # in its bundled postgresql.conf, which makes it unreachable from
+            # other pods. We override on the command line (highest precedence).
+            - "-c"
+            - "listen_addresses=*"
+            - "-c"
+            - "shared_preload_libraries=pg_stat_statements,pg_net,pgaudit,plpgsql"
           ports:
             - containerPort: 5432
+              name: postgres
           envFrom:
             - secretRef:
                 name: postgres-credentials
+          env:
+            - name: PGDATA
+              value: /var/lib/postgresql/data/pgdata
+          readinessProbe:
+            exec:
+              command:
+                - sh
+                - -c
+                - "pg_isready -U $POSTGRES_USER -d $POSTGRES_DB -h 127.0.0.1"
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            timeoutSeconds: 3
+          livenessProbe:
+            exec:
+              command:
+                - sh
+                - -c
+                - "pg_isready -U $POSTGRES_USER -d $POSTGRES_DB -h 127.0.0.1"
+            initialDelaySeconds: 30
+            periodSeconds: 15
+            timeoutSeconds: 5
           resources:
             requests:
               memory: 512Mi
               cpu: 250m
             limits:
               memory: 2Gi
-              cpu: 1000m
+              cpu: 1500m
           volumeMounts:
-            - name: postgres-data
+            - name: data
               mountPath: /var/lib/postgresql/data
-          readinessProbe:
-            exec:
-              command: ["sh", "-c", "pg_isready -U $POSTGRES_USER -d $POSTGRES_DB"]
-            initialDelaySeconds: 10
-            periodSeconds: 10
   volumeClaimTemplates:
     - metadata:
-        name: postgres-data
+        name: data
       spec:
         accessModes: ["ReadWriteOnce"]
+        storageClassName: microk8s-hostpath
         resources:
           requests:
             storage: 20Gi
@@ -63,9 +86,13 @@ kind: Service
 metadata:
   name: postgres
   namespace: sastaspace
+  labels:
+    app: postgres
 spec:
+  clusterIP: None  # headless: stable DNS for the StatefulSet pod
   selector:
     app: postgres
   ports:
     - port: 5432
       targetPort: 5432
+      name: postgres

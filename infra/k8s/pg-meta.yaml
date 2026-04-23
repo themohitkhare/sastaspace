@@ -3,6 +3,8 @@ kind: Deployment
 metadata:
   name: pg-meta
   namespace: sastaspace
+  labels:
+    app: pg-meta
 spec:
   replicas: 1
   selector:
@@ -16,8 +18,10 @@ spec:
       containers:
         - name: pg-meta
           image: supabase/postgres-meta:v0.96.4
+          imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8080
+              name: http
           env:
             - name: PG_META_PORT
               value: "8080"
@@ -28,22 +32,30 @@ spec:
           envFrom:
             - secretRef:
                 name: pg-meta-config
+          readinessProbe:
+            tcpSocket:
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
           resources:
             requests:
-              cpu: "50m"
-              memory: "64Mi"
+              cpu: 25m
+              memory: 64Mi
             limits:
-              cpu: "200m"
-              memory: "128Mi"
+              cpu: 200m
+              memory: 128Mi
 ---
 apiVersion: v1
 kind: Service
 metadata:
   name: pg-meta
   namespace: sastaspace
+  labels:
+    app: pg-meta
 spec:
   selector:
     app: pg-meta
   ports:
     - port: 8080
       targetPort: 8080
+      name: http

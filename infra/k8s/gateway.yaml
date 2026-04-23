@@ -1,0 +1,159 @@
+# API gateway (aka "Kong-lite") — a single nginx pod that terminates the
+# browser-facing Supabase contract:
+#
+#   GET /auth/v1/*  → gotrue:9999/*
+#   ANY /rest/v1/*  → postgrest:3000/*
+#   GET /healthz    → 200
+#
+# It also owns CORS for both backends so the individual services don't have to.
+# The ConfigMap below is kept in sync with infra/gateway/nginx.conf (local).
+# If you change one, change the other.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: gateway-nginx
+  namespace: sastaspace
+data:
+  default.conf: |
+    map $http_origin $cors_origin {
+      default                                         "";
+      "~^https?://localhost(:\d+)?$"                 $http_origin;
+      "~^https?://127\.0\.0\.1(:\d+)?$"              $http_origin;
+      "~^https?://192\.168\.\d+\.\d+(:\d+)?$"        $http_origin;
+      "~^https?://([a-z0-9-]+\.)?sastaspace\.com$"   $http_origin;
+    }
+
+    server {
+      listen 8000;
+      server_name _;
+
+      client_max_body_size 2m;
+      proxy_read_timeout 60s;
+      proxy_connect_timeout 5s;
+
+      add_header Access-Control-Allow-Origin      $cors_origin      always;
+      add_header Access-Control-Allow-Credentials "true"            always;
+      add_header Access-Control-Allow-Headers     "authorization, x-client-info, apikey, content-type, prefer, x-upsert, x-supabase-api-version, range" always;
+      add_header Access-Control-Allow-Methods     "GET, POST, PUT, PATCH, DELETE, OPTIONS" always;
+      add_header Access-Control-Expose-Headers    "content-range, x-supabase-api-version" always;
+      add_header Vary                             "Origin"          always;
+
+      location = /healthz {
+        default_type application/json;
+        return 200 '{"status":"ok","gateway":"sastaspace-nginx"}';
+      }
+
+      location /auth/v1/ {
+        if ($request_method = OPTIONS) { return 204; }
+        proxy_hide_header Access-Control-Allow-Origin;
+        proxy_hide_header Access-Control-Allow-Credentials;
+        proxy_hide_header Access-Control-Allow-Methods;
+        proxy_hide_header Access-Control-Allow-Headers;
+        proxy_hide_header Access-Control-Expose-Headers;
+        proxy_pass http://gotrue.sastaspace.svc.cluster.local:9999/;
+        proxy_set_header Host              $host;
+        proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Real-IP         $remote_addr;
+      }
+
+      # GoTrue's mailer templates generate bare-path URLs (e.g.
+      # https://api.sastaspace.com/verify?token=... and /callback for OAuth)
+      # because it drops the path component of API_EXTERNAL_URL. Supabase's
+      # own Kong gateway mirrors both prefixed and bare paths; we do the
+      # same so confirmation / magic-link emails work out of the box.
+      location ~ ^/(verify|callback|authorize|otp|magiclink|recover|sso|invite)(/.*)?$ {
+        if ($request_method = OPTIONS) { return 204; }
+        proxy_hide_header Access-Control-Allow-Origin;
+        proxy_hide_header Access-Control-Allow-Credentials;
+        proxy_hide_header Access-Control-Allow-Methods;
+        proxy_hide_header Access-Control-Allow-Headers;
+        proxy_hide_header Access-Control-Expose-Headers;
+        proxy_pass http://gotrue.sastaspace.svc.cluster.local:9999$request_uri;
+        proxy_set_header Host              $host;
+        proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Real-IP         $remote_addr;
+      }
+
+      location /rest/v1/ {
+        if ($request_method = OPTIONS) { return 204; }
+        proxy_hide_header Access-Control-Allow-Origin;
+        proxy_hide_header Access-Control-Allow-Credentials;
+        proxy_hide_header Access-Control-Allow-Methods;
+        proxy_hide_header Access-Control-Allow-Headers;
+        proxy_hide_header Access-Control-Expose-Headers;
+        proxy_pass http://postgrest.sastaspace.svc.cluster.local:3000/;
+        proxy_set_header Host              $host;
+        proxy_set_header Authorization     $http_authorization;
+        proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Real-IP         $remote_addr;
+      }
+    }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gateway
+  namespace: sastaspace
+  labels:
+    app: gateway
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: gateway
+  template:
+    metadata:
+      labels:
+        app: gateway
+      annotations:
+        # Re-roll the pod when the ConfigMap changes (kubectl rollout restart
+        # is also fine; this just makes accidental gateway edits self-heal).
+        config.hash: "v1"
+    spec:
+      containers:
+        - name: nginx
+          image: nginx:1.29-alpine
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8000
+              name: http
+          volumeMounts:
+            - name: conf
+              mountPath: /etc/nginx/conf.d/default.conf
+              subPath: default.conf
+              readOnly: true
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8000
+            initialDelaySeconds: 3
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: 25m
+              memory: 32Mi
+            limits:
+              cpu: 200m
+              memory: 128Mi
+      volumes:
+        - name: conf
+          configMap:
+            name: gateway-nginx
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: gateway
+  namespace: sastaspace
+  labels:
+    app: gateway
+spec:
+  selector:
+    app: gateway
+  ports:
+    - port: 8000
+      targetPort: 8000
+      name: http
