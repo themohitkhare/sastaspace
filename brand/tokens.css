@@ -1,0 +1,72 @@
+/*
+ * SastaSpace brand tokens
+ * Import once into each project's root layout.
+ */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500&family=JetBrains+Mono:wght@400;500&family=IBM+Plex+Sans+Devanagari:wght@400;500&display=swap');
+
+:root {
+  /* Color — ink, sasta, rust, paper, dust */
+  --brand-ink: #1a1917;
+  --brand-sasta: #c05621;
+  --brand-rust: #8a3d14;
+  --brand-paper: #f5f1e8;
+  --brand-dust: #a8a196;
+  --brand-dust-40: rgba(168, 161, 150, 0.4);
+
+  /* Semantic — map these to your components */
+  --color-bg: var(--brand-paper);
+  --color-surface: #ffffff;
+  --color-fg: var(--brand-ink);
+  --color-fg-muted: #6b6458;
+  --color-accent: var(--brand-sasta);
+  --color-accent-hover: var(--brand-rust);
+  --color-border: var(--brand-dust-40);
+
+  /* Type */
+  --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+  --font-deva: 'IBM Plex Sans Devanagari', 'Inter', system-ui, sans-serif;
+
+  /* Scale */
+  --text-h1: 48px;
+  --text-h2: 32px;
+  --text-h3: 20px;
+  --text-body: 16px;
+  --text-label: 12px;
+
+  /* Rhythm */
+  --space-xs: 8px;
+  --space-sm: 12px;
+  --space-md: 20px;
+  --space-lg: 32px;
+  --space-xl: 64px;
+
+  /* Shape */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+}
+
+/* Global resets that encode the brand. */
+html { background: var(--color-bg); color: var(--color-fg); font-family: var(--font-sans); }
+body { line-height: 1.7; }
+a { color: var(--color-accent); text-decoration: none; border-bottom: 1px solid currentColor; }
+a:hover { color: var(--color-accent-hover); }
+code, pre, .mono { font-family: var(--font-mono); }
+.deva { font-family: var(--font-deva); }
+
+/* Utility — the signature stat chip. */
+.stat-chip {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 2px;
+  background: var(--brand-ink);
+  color: var(--brand-paper);
+  padding: 10px 14px;
+  border-radius: var(--radius-md);
+  font-family: var(--font-mono);
+}
+.stat-chip--accent { background: var(--brand-sasta); }
+.stat-chip__label { font-size: 11px; color: var(--brand-dust); letter-spacing: 0.06em; }
+.stat-chip__value { font-size: 18px; font-weight: 500; }

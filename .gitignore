@@ -7,6 +7,8 @@
 *.p12
 *.pfx
 *.jks
+infra/k8s/secrets.yaml
+.last-image-tag
 
 # Dependencies
 node_modules/
