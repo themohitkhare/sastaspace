@@ -34,12 +34,6 @@ jobs:
           sudo microk8s kubectl apply -f infra/k8s/namespace.yaml
           sudo microk8s kubectl apply -f infra/k8s/ --recursive
 
-      - name: Apply project manifests
-        run: |
-          for f in projects/*/k8s.yaml; do
-            [ -f "$f" ] && sudo microk8s kubectl apply -f "$f"
-          done
-
       - name: Rolling restart and rollout status
         run: |
           DEPLOYMENTS=$(sudo microk8s kubectl get deploy -A -o name)
