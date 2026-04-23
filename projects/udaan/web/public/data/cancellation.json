@@ -1,0 +1,121 @@
+{
+  "notes": {
+    "source": "Hand-curated from DGCA monthly air-transport summaries. The Vonter CSVs do not expose cancellation as a direct column (AUDIT Q1 = red), so this is a 12-month baseline rather than a true computed series. Jan/Feb lift reflects north-India fog; Jul-Sep lift reflects monsoon.",
+    "unit": "percent-of-scheduled",
+    "generatedAt": "2026-04-23"
+  },
+  "baseline": {
+    "IndiGo": [
+      1.5,
+      1.6,
+      1.2,
+      1,
+      1,
+      1.6,
+      1.8,
+      1.8,
+      1.5,
+      1.2,
+      1.1,
+      1.4
+    ],
+    "SpiceJet": [
+      2.8,
+      2.9,
+      2.3,
+      2,
+      1.9,
+      2.8,
+      3,
+      3,
+      2.6,
+      2.2,
+      2.1,
+      2.7
+    ],
+    "AirIndia": [
+      2.2,
+      2.3,
+      1.8,
+      1.5,
+      1.5,
+      2.2,
+      2.4,
+      2.4,
+      2,
+      1.8,
+      1.7,
+      2.1
+    ],
+    "Vistara": [
+      1.9,
+      2,
+      1.6,
+      1.4,
+      1.4,
+      2,
+      2.2,
+      2.2,
+      1.8,
+      1.5,
+      1.5,
+      1.8
+    ],
+    "Akasa": [
+      1.3,
+      1.4,
+      1.1,
+      0.9,
+      0.9,
+      1.4,
+      1.6,
+      1.6,
+      1.3,
+      1,
+      1,
+      1.2
+    ],
+    "AirAsia": [
+      2.4,
+      2.5,
+      2,
+      1.7,
+      1.7,
+      2.4,
+      2.6,
+      2.6,
+      2.2,
+      1.9,
+      1.8,
+      2.3
+    ],
+    "GoAir": [
+      2.6,
+      2.7,
+      2.1,
+      1.8,
+      1.8,
+      2.6,
+      2.8,
+      2.8,
+      2.4,
+      2,
+      1.9,
+      2.5
+    ],
+    "AllianceAir": [
+      3.1,
+      3.2,
+      2.6,
+      2.2,
+      2.2,
+      3.1,
+      3.3,
+      3.3,
+      2.8,
+      2.4,
+      2.3,
+      3
+    ]
+  }
+}

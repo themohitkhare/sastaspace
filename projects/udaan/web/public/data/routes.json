@@ -1,0 +1,399 @@
+{
+  "notes": {
+    "source": "Derived from DGCA domestic city-pair rows; curated to metro core.",
+    "unit": "severity 0..1",
+    "generatedAt": "2026-04-23"
+  },
+  "routes": [
+    {
+      "from": "DEL",
+      "to": "BOM",
+      "monsoonSeverity": 1,
+      "fogSeverity": 1,
+      "carriers": [
+        "IndiGo",
+        "AirIndia",
+        "SpiceJet",
+        "Akasa",
+        "Vistara"
+      ]
+    },
+    {
+      "from": "DEL",
+      "to": "BLR",
+      "monsoonSeverity": 0.7,
+      "fogSeverity": 1,
+      "carriers": [
+        "IndiGo",
+        "AirIndia",
+        "SpiceJet",
+        "Akasa",
+        "Vistara"
+      ]
+    },
+    {
+      "from": "DEL",
+      "to": "HYD",
+      "monsoonSeverity": 0.7,
+      "fogSeverity": 1,
+      "carriers": [
+        "IndiGo",
+        "AirIndia",
+        "SpiceJet",
+        "Akasa",
+        "Vistara"
+      ]
+    },
+    {
+      "from": "DEL",
+      "to": "MAA",
+      "monsoonSeverity": 0.7,
+      "fogSeverity": 1,
+      "carriers": [
+        "IndiGo",
+        "AirIndia",
+        "SpiceJet",
+        "Akasa",
+        "Vistara"
+      ]
+    },
+    {
+      "from": "DEL",
+      "to": "CCU",
+      "monsoonSeverity": 1,
+      "fogSeverity": 1,
+      "carriers": [
+        "IndiGo",
+        "AirIndia",
+        "SpiceJet",
+        "Akasa",
+        "Vistara"
+      ]
+    },
+    {
+      "from": "BOM",
+      "to": "DEL",
+      "monsoonSeverity": 1,
+      "fogSeverity": 1,
+      "carriers": [
+        "IndiGo",
+        "AirIndia",
+        "SpiceJet",
+        "Akasa",
+        "Vistara"
+      ]
+    },
+    {
+      "from": "BOM",
+      "to": "BLR",
+      "monsoonSeverity": 1,
+      "fogSeverity": 0.3,
+      "carriers": [
+        "IndiGo",
+        "AirIndia",
+        "SpiceJet",
+        "Akasa",
+        "Vistara"
+      ]
+    },
+    {
+      "from": "BOM",
+      "to": "HYD",
+      "monsoonSeverity": 1,
+      "fogSeverity": 0.3,
+      "carriers": [
+        "IndiGo",
+        "AirIndia",
+        "SpiceJet",
+        "Akasa",
+        "Vistara"
+      ]
+    },
+    {
+      "from": "BOM",
+      "to": "MAA",
+      "monsoonSeverity": 1,
+      "fogSeverity": 0.3,
+      "carriers": [
+        "IndiGo",
+        "AirIndia",
+        "SpiceJet",
+        "Akasa",
+        "Vistara"
+      ]
+    },
+    {
+      "from": "BOM",
+      "to": "CCU",
+      "monsoonSeverity": 1,
+      "fogSeverity": 0.3,
+      "carriers": [
+        "IndiGo",
+        "AirIndia",
+        "SpiceJet",
+        "Akasa",
+        "Vistara"
+      ]
+    },
+    {
+      "from": "BLR",
+      "to": "DEL",
+      "monsoonSeverity": 0.7,
+      "fogSeverity": 1,
+      "carriers": [
+        "IndiGo",
+        "AirIndia",
+        "SpiceJet",
+        "Akasa",
+        "Vistara"
+      ]
+    },
+    {
+      "from": "BLR",
+      "to": "BOM",
+      "monsoonSeverity": 1,
+      "fogSeverity": 0.3,
+      "carriers": [
+        "IndiGo",
+        "AirIndia",
+        "SpiceJet",
+        "Akasa",
+        "Vistara"
+      ]
+    },
+    {
+      "from": "BLR",
+      "to": "HYD",
+      "monsoonSeverity": 0.7,
+      "fogSeverity": 0.3,
+      "carriers": [
+        "IndiGo",
+        "AirIndia",
+        "SpiceJet",
+        "Akasa",
+        "Vistara"
+      ]
+    },
+    {
+      "from": "BLR",
+      "to": "MAA",
+      "monsoonSeverity": 0.7,
+      "fogSeverity": 0.3,
+      "carriers": [
+        "IndiGo",
+        "AirIndia",
+        "SpiceJet",
+        "Akasa",
+        "Vistara"
+      ]
+    },
+    {
+      "from": "BLR",
+      "to": "CCU",
+      "monsoonSeverity": 1,
+      "fogSeverity": 0.3,
+      "carriers": [
+        "IndiGo",
+        "AirIndia",
+        "SpiceJet",
+        "Akasa",
+        "Vistara"
+      ]
+    },
+    {
+      "from": "HYD",
+      "to": "DEL",
+      "monsoonSeverity": 0.7,
+      "fogSeverity": 1,
+      "carriers": [
+        "IndiGo",
+        "AirIndia",
+        "SpiceJet",
+        "Akasa",
+        "Vistara"
+      ]
+    },
+    {
+      "from": "HYD",
+      "to": "BOM",
+      "monsoonSeverity": 1,
+      "fogSeverity": 0.3,
+      "carriers": [
+        "IndiGo",
+        "AirIndia",
+        "SpiceJet",
+        "Akasa",
+        "Vistara"
+      ]
+    },
+    {
+      "from": "HYD",
+      "to": "BLR",
+      "monsoonSeverity": 0.7,
+      "fogSeverity": 0.3,
+      "carriers": [
+        "IndiGo",
+        "AirIndia",
+        "SpiceJet",
+        "Akasa",
+        "Vistara"
+      ]
+    },
+    {
+      "from": "HYD",
+      "to": "MAA",
+      "monsoonSeverity": 0.7,
+      "fogSeverity": 0.3,
+      "carriers": [
+        "IndiGo",
+        "AirIndia",
+        "SpiceJet",
+        "Akasa",
+        "Vistara"
+      ]
+    },
+    {
+      "from": "HYD",
+      "to": "CCU",
+      "monsoonSeverity": 1,
+      "fogSeverity": 0.3,
+      "carriers": [
+        "IndiGo",
+        "AirIndia",
+        "SpiceJet",
+        "Akasa",
+        "Vistara"
+      ]
+    },
+    {
+      "from": "MAA",
+      "to": "DEL",
+      "monsoonSeverity": 0.7,
+      "fogSeverity": 1,
+      "carriers": [
+        "IndiGo",
+        "AirIndia",
+        "SpiceJet",
+        "Akasa",
+        "Vistara"
+      ]
+    },
+    {
+      "from": "MAA",
+      "to": "BOM",
+      "monsoonSeverity": 1,
+      "fogSeverity": 0.3,
+      "carriers": [
+        "IndiGo",
+        "AirIndia",
+        "SpiceJet",
+        "Akasa",
+        "Vistara"
+      ]
+    },
+    {
+      "from": "MAA",
+      "to": "BLR",
+      "monsoonSeverity": 0.7,
+      "fogSeverity": 0.3,
+      "carriers": [
+        "IndiGo",
+        "AirIndia",
+        "SpiceJet",
+        "Akasa",
+        "Vistara"
+      ]
+    },
+    {
+      "from": "MAA",
+      "to": "HYD",
+      "monsoonSeverity": 0.7,
+      "fogSeverity": 0.3,
+      "carriers": [
+        "IndiGo",
+        "AirIndia",
+        "SpiceJet",
+        "Akasa",
+        "Vistara"
+      ]
+    },
+    {
+      "from": "MAA",
+      "to": "CCU",
+      "monsoonSeverity": 1,
+      "fogSeverity": 0.3,
+      "carriers": [
+        "IndiGo",
+        "AirIndia",
+        "SpiceJet",
+        "Akasa",
+        "Vistara"
+      ]
+    },
+    {
+      "from": "CCU",
+      "to": "DEL",
+      "monsoonSeverity": 1,
+      "fogSeverity": 1,
+      "carriers": [
+        "IndiGo",
+        "AirIndia",
+        "SpiceJet",
+        "Akasa",
+        "Vistara"
+      ]
+    },
+    {
+      "from": "CCU",
+      "to": "BOM",
+      "monsoonSeverity": 1,
+      "fogSeverity": 0.3,
+      "carriers": [
+        "IndiGo",
+        "AirIndia",
+        "SpiceJet",
+        "Akasa",
+        "Vistara"
+      ]
+    },
+    {
+      "from": "CCU",
+      "to": "BLR",
+      "monsoonSeverity": 1,
+      "fogSeverity": 0.3,
+      "carriers": [
+        "IndiGo",
+        "AirIndia",
+        "SpiceJet",
+        "Akasa",
+        "Vistara"
+      ]
+    },
+    {
+      "from": "CCU",
+      "to": "HYD",
+      "monsoonSeverity": 1,
+      "fogSeverity": 0.3,
+      "carriers": [
+        "IndiGo",
+        "AirIndia",
+        "SpiceJet",
+        "Akasa",
+        "Vistara"
+      ]
+    },
+    {
+      "from": "CCU",
+      "to": "MAA",
+      "monsoonSeverity": 1,
+      "fogSeverity": 0.3,
+      "carriers": [
+        "IndiGo",
+        "AirIndia",
+        "SpiceJet",
+        "Akasa",
+        "Vistara"
+      ]
+    }
+  ]
+}
