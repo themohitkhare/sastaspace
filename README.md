@@ -1,22 +1,29 @@
 # SastaSpace Project Bank
 
-SastaSpace is now a personal project bank monorepo.
+SastaSpace is a personal project bank monorepo.
 
-Each project lives under `projects/<name>/` and is deployed to `<name>.sastaspace.com`.
+Each project lives in `projects/<name>/` and is deployed to `<name>.sastaspace.com`.
+The root domain `sastaspace.com` is served by `projects/landing`.
 
-This repository is currently being reset from the legacy AI redesigner stack to the new foundations.
+## Quickstart
 
-## Current status
+1. Copy env vars:
+   - `cp .env.example .env`
+2. Start shared local services:
+   - `docker compose -f infra/docker-compose.yml up -d postgres postgrest`
+3. Run landing project:
+   - `cd projects/landing/web && npm install && npm run dev`
+4. Scaffold a new project:
+   - `make new p=my-project`
 
-- Foundations plan: `design-log/001-project-bank-foundations.md`
-- Execution mode: phased migration (Phase 0 through Phase 5)
-- Production cutover remains manual in Phase 6
+## Structure
 
-## What to expect next
+- `infra/` - Kubernetes and local infra definitions
+- `db/` - shared migrations and seeds
+- `projects/` - deployable projects and template
+- `scripts/` - scaffolding and local dev helpers
+- `design-log/` - architecture and implementation logs
 
-- Shared Postgres (`supabase/postgres`) with core extensions
-- Optional shared PostgREST sidecar
-- Project template for Next.js + Go
-- Landing project at `sastaspace.com`
+## Design log
 
-See `design-log/001-project-bank-foundations.md` for the full design and implementation phases.
+See `design-log/001-project-bank-foundations.md` for the baseline architecture and implementation phases.

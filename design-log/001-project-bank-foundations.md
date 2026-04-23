@@ -440,3 +440,27 @@ spec:
 1. You answer **Q2–Q10** inline above (A2 … A10). Even a one-word answer per Q is fine.
 2. I update this log, mark it approved, and start **Phase 0**.
 3. Between each phase I pause for a quick look-see.
+
+## Implementation Results
+
+### Completed phases
+
+- Phase 0: Archived legacy stack to `archive/redesigner` and reset main.
+- Phase 1: Created monorepo skeleton (`infra/`, `db/`, `projects/`, `packages/`, `scripts/`) with compose, migrations, and helper scripts.
+- Phase 2: Added shared Kubernetes manifests and simplified deploy workflow.
+- Phase 3: Added full `projects/_template` scaffold (Next.js + Go + migrations + k8s) and validated template generation.
+- Phase 4: Added `projects/landing` with PostgREST-backed project listing and `/contact` route.
+- Phase 5: Rewrote documentation to match the new project-bank architecture.
+
+### Deviations from original plan
+
+- Go build verification for template API could not be executed because `go` is not installed in the local environment.
+- Docker image build and compose smoke test were not executable because Docker daemon is not running on this machine.
+- Contact form salvage was implemented as a streamlined route compatible with Turnstile and Resend envs rather than a direct line-by-line copy.
+
+### Verification notes
+
+- Passed: scaffold generation (`scripts/new-project.sh test-project`) and placeholder replacement checks.
+- Passed: Next.js production builds for template-derived landing project.
+- Passed: YAML parse checks for `infra/k8s/*.yaml`.
+- Blocked by environment: Go build, Docker image build, compose runtime smoke test.
