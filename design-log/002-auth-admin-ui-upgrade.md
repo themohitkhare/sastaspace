@@ -272,3 +272,33 @@ Gotchas documented in comments:
 - On the remote, run `make remote-env` once to rewrite `localhost` → `192.168.0.37` in the shipped `.env`; `remote.sh sync` excludes `.env` afterwards so the remote-specific config isn't clobbered on every sync.
 - Role passwords are synced to `POSTGRES_PASSWORD` on every `make migrate` via `ALTER ROLE … WITH PASSWORD`. If you change `POSTGRES_PASSWORD`, re-run `make migrate` to keep `authenticator` and `supabase_auth_admin` in sync (otherwise PostgREST/GoTrue will fail to connect).
 
+### Phase G — End-to-end verification + real bugs shaken out
+
+Follow-up session: *"Run and test and verify"*. Built `scripts/verify.sh`, a 57-check assertion harness covering service health, DB schema, RLS, GoTrue flows, admin allowlist, Next.js SSR routes, internal DNS, CORS, and end-to-end browser signup via Playwright. The harness caught five real bugs that the first-pass "it builds and starts" verification had missed.
+
+1. **RLS recursion on `public.admins`.** `projects_admin_write` (`FOR ALL`, qual: `is_admin() OR service_role`) applied to SELECTs too, so anon SELECT on `projects` evaluated `is_admin()`, which SELECTed `public.admins`, whose own policy called `is_admin()` again → `stack depth limit exceeded (SQLSTATE 54001)`. **Fix**: `CREATE OR REPLACE FUNCTION public.is_admin() … SECURITY DEFINER SET search_path = public, pg_temp` in new migration `0005_fix_anon_grants_and_is_admin.sql`. Definer is `postgres` (table owner) so the inner lookup bypasses RLS.
+2. **Anon `INSERT` returned 401 (really `permission denied for sequence`).** Migration 0002 granted INSERT to a legacy `web_anon` role; the Supabase `anon` role had no privileges and BIGSERIAL `nextval()` fails before RLS is even evaluated. **Fix**: in 0005, `GRANT USAGE ON SCHEMA public`, `GRANT INSERT ON public.visits, public.contact_messages TO anon, authenticated`, `GRANT USAGE, SELECT ON SEQUENCE ...` for each BIGSERIAL. Also set `ALTER DEFAULT PRIVILEGES` so future tables behave correctly.
+3. **No Supabase API gateway.** The browser supabase-js client calls `$url/auth/v1/signup` and `$url/rest/v1/...`; with `NEXT_PUBLIC_SUPABASE_URL=http://localhost:9999` those hit GoTrue's non-existent `/auth/v1/*` routes and CORS failed. Real Supabase solves this with Kong. **Fix**: added a tiny nginx service as `gateway` on port 8000 (`infra/gateway/nginx.conf`). It strips `/auth/v1/` → `gotrue:9999/` and `/rest/v1/` → `postgrest:3000/`, and owns CORS (hides upstream `Access-Control-*` to avoid duplicate headers that browsers reject). Set `NEXT_PUBLIC_SUPABASE_URL=http://localhost:8000`, `SUPABASE_INTERNAL_URL=http://gateway:8000`, and `GOTRUE_API_EXTERNAL_URL=http://localhost:8000/auth/v1`.
+4. **Auth session cookie name mismatch between browser and SSR.** `@supabase/ssr` derives the cookie name from the supabase URL host. Browser sees `localhost:8000` → writes `sb-localhost-auth-token`; server sees `gateway:8000` → reads `sb-gateway-auth-token`. Signed-in admin was being treated as anonymous by SSR. **Fix**: new `lib/supabase/cookies.ts` exports `AUTH_COOKIE_NAME = "sb-sastaspace-auth-token"`; all three clients (`client.ts`, `server.ts`, `middleware.ts`) pass it via `cookieOptions.name`. Applied to both `projects/landing` and `projects/_template`.
+5. **Lucide icons passed across the server→client boundary** (Next 16 / React 19 rejects function references in props → `Error: Functions cannot be passed directly to Client Components`). **Fix**: `Sidebar` now accepts `icon: "dashboard" | "users"` string enums and resolves them client-side. Applied to landing + template.
+
+New files:
+- `scripts/verify.sh` — 57 assertions; exit 0 iff all pass. Includes a DB-side `is_admin()` check run with `set_config('request.jwt.claims', ...)` to simulate authenticated context.
+- `db/migrations/0005_fix_anon_grants_and_is_admin.sql`.
+- `infra/gateway/nginx.conf` + `gateway` service in compose.
+- `projects/{landing,_template}/web/src/lib/supabase/cookies.ts`.
+
+Changed files:
+- `infra/docker-compose.yml` — added `gateway`, added `GATEWAY_PORT`, landing now `depends_on: gateway`, `SUPABASE_INTERNAL_URL` points at the gateway.
+- `.env.example` — gateway port + updated `NEXT_PUBLIC_SUPABASE_URL`, `GOTRUE_API_EXTERNAL_URL`, `GOTRUE_URI_ALLOW_LIST`.
+- `projects/{landing,_template}/web/src/lib/supabase/{client,server,middleware}.ts` — pin cookie name.
+- `projects/{landing,_template}/web/src/components/layout/sidebar.tsx` — string-keyed icons.
+- `projects/{landing,_template}/web/src/app/(admin)/admin/layout.tsx` — pass icon names instead of components.
+
+Verification (this session, cold boot):
+- `docker compose ... down -v && make up-full && make migrate` brings every service from a dropped volume.
+- `./scripts/verify.sh` → **All 57 checks passed**.
+- Playwright: filled `/sign-up`, posted to `/auth/v1/signup` through the gateway, got "Check your email" (auto-confirmed), signed in via `/sign-in`, session cookie set, `/admin` and `/admin/users` rendered for `mohitkhare582@gmail.com` with the live admins table.
+
+Running URLs: landing http://localhost:3000, gateway http://localhost:8000, Studio http://localhost:3002, GoTrue direct http://localhost:9999, PostgREST direct http://localhost:3001, pg-meta http://localhost:8080, Postgres localhost:5432.
+

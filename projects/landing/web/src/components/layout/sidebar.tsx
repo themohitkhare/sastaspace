@@ -2,13 +2,23 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import type { LucideIcon } from "lucide-react";
+import { LayoutDashboard, Users, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
+
+// Next 16 / React 19 forbid passing function/class references across the
+// server→client boundary, which rules out passing lucide-react components
+// directly. Accept a short string name instead and resolve it client-side.
+export type SidebarIconName = "dashboard" | "users";
+
+const ICONS: Record<SidebarIconName, LucideIcon> = {
+  dashboard: LayoutDashboard,
+  users: Users,
+};
 
 export type SidebarItem = {
   href: string;
   label: string;
-  icon?: LucideIcon;
+  icon?: SidebarIconName;
 };
 
 export function Sidebar({ items, title }: { items: SidebarItem[]; title?: string }) {
@@ -21,8 +31,9 @@ export function Sidebar({ items, title }: { items: SidebarItem[]; title?: string
             {title}
           </p>
         ) : null}
-        {items.map(({ href, label, icon: Icon }) => {
+        {items.map(({ href, label, icon }) => {
           const active = pathname === href || pathname?.startsWith(`${href}/`);
+          const Icon = icon ? ICONS[icon] : null;
           return (
             <Link
               key={href}

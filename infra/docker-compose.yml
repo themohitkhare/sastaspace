@@ -74,6 +74,24 @@ services:
       - "${GOTRUE_PORT:-9999}:9999"
     restart: unless-stopped
 
+  gateway:
+    # Kong-lite for single-dev self-host: fronts gotrue + postgrest on one
+    # base URL (the browser talks to this; supabase-js appends /auth/v1 and
+    # /rest/v1). Also handles CORS so we don't have to bake it into each
+    # backend service.
+    image: nginx:1.29-alpine
+    container_name: sastaspace-gateway
+    depends_on:
+      gotrue:
+        condition: service_started
+      postgrest:
+        condition: service_started
+    volumes:
+      - ./gateway/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    ports:
+      - "${GATEWAY_PORT:-8000}:8000"
+    restart: unless-stopped
+
   pg-meta:
     image: supabase/postgres-meta:v0.96.4
     container_name: sastaspace-pg-meta
@@ -129,6 +147,8 @@ services:
         condition: service_started
       postgrest:
         condition: service_started
+      gateway:
+        condition: service_started
     environment:
       NODE_ENV: production
       PORT: "3000"
@@ -137,11 +157,13 @@ services:
       NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL}
       NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY}
       # Server-side URL used inside the compose network. The landing app
-      # prefers this over NEXT_PUBLIC_SUPABASE_URL for its own fetches.
-      SUPABASE_INTERNAL_URL: http://gotrue:9999
+      # prefers this over NEXT_PUBLIC_SUPABASE_URL for its own fetches so
+      # that container→container traffic stays on the compose network.
+      SUPABASE_INTERNAL_URL: http://gateway:8000
       SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY}
       NEXT_PUBLIC_BASE_URL: ${NEXT_PUBLIC_BASE_URL_LOCAL:-http://localhost:3000}
-      # PostgREST is reachable on port 3000 inside the compose network.
+      # PostgREST is reachable directly on port 3000 inside the compose
+      # network (bypasses the gateway for page-rendering fetches).
       POSTGREST_URL: http://postgrest:3000
       NEXT_PUBLIC_TURNSTILE_SITE_KEY: ${NEXT_PUBLIC_TURNSTILE_SITE_KEY}
       TURNSTILE_SECRET_KEY: ${TURNSTILE_SECRET_KEY}

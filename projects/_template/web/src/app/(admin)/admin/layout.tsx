@@ -1,5 +1,4 @@
 import { redirect } from "next/navigation";
-import { LayoutDashboard, Users } from "lucide-react";
 import { isCurrentUserAdmin, getSessionUser } from "@/lib/supabase/auth-helpers";
 import { Topbar } from "@/components/layout/topbar";
 import { Sidebar } from "@/components/layout/sidebar";
@@ -17,8 +16,8 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         <Sidebar
           title="Admin"
           items={[
-            { href: "/admin", label: "Overview", icon: LayoutDashboard },
-            { href: "/admin/users", label: "Users", icon: Users },
+            { href: "/admin", label: "Overview", icon: "dashboard" },
+            { href: "/admin/users", label: "Users", icon: "users" },
           ]}
         />
         <div className="flex-1 p-6">{children}</div>

@@ -1,4 +1,4 @@
-.PHONY: help ci lint test \
+.PHONY: help ci lint test verify \
         keys up up-full down reset logs ps migrate psql env-check \
         dev new \
         remote-sync remote-env remote-up remote-up-core remote-down \
@@ -14,6 +14,7 @@ help:
 	@echo "  make up           Start shared services (postgres, postgrest, gotrue, pg-meta, studio)"
 	@echo "  make up-full      Same as 'up' plus the landing app as a container"
 	@echo "  make migrate      Apply db/migrations/*.sql in order"
+	@echo "  make verify       Run the full end-to-end assertion suite (57 checks)"
 	@echo "  make logs         Tail compose logs"
 	@echo "  make ps           Show container status"
 	@echo "  make psql         Open psql in the postgres container"
@@ -71,6 +72,9 @@ ps:
 
 migrate: env-check
 	./scripts/migrate.sh
+
+verify: env-check
+	./scripts/verify.sh
 
 psql:
 	docker exec -it sastaspace-postgres psql -U postgres -d sastaspace
