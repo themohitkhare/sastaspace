@@ -51,6 +51,12 @@ END $$;
 
 -- RLS helper functions. Mirrors the shape Supabase provides so app code can
 -- use `auth.uid()`, `auth.role()`, `auth.jwt()` inside RLS policies.
+--
+-- Create these AS supabase_auth_admin so GoTrue (which also runs as
+-- supabase_auth_admin) can CREATE OR REPLACE them during its embedded
+-- migrations without tripping "must be owner" errors.
+SET ROLE supabase_auth_admin;
+
 CREATE OR REPLACE FUNCTION auth.jwt()
 RETURNS jsonb
 LANGUAGE sql
@@ -98,6 +104,15 @@ AS $$
     (nullif(current_setting('request.jwt.claims', true), '')::jsonb ->> 'email')
   );
 $$;
+
+RESET ROLE;
+
+-- Re-assert ownership in case the functions pre-existed from an older run
+-- where they were created by the postgres superuser.
+ALTER FUNCTION auth.jwt()   OWNER TO supabase_auth_admin;
+ALTER FUNCTION auth.uid()   OWNER TO supabase_auth_admin;
+ALTER FUNCTION auth.role()  OWNER TO supabase_auth_admin;
+ALTER FUNCTION auth.email() OWNER TO supabase_auth_admin;
 
 GRANT EXECUTE ON FUNCTION auth.jwt()   TO anon, authenticated, service_role;
 GRANT EXECUTE ON FUNCTION auth.uid()   TO anon, authenticated, service_role;

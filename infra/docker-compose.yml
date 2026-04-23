@@ -1,6 +1,6 @@
 services:
   postgres:
-    image: supabase/postgres:17.6.1.104-tuned
+    image: supabase/postgres:17.6.1.110
     container_name: sastaspace-postgres
     environment:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
@@ -19,7 +19,7 @@ services:
     restart: unless-stopped
 
   postgrest:
-    image: postgrest/postgrest:v12.2.3
+    image: postgrest/postgrest:v14.10
     container_name: sastaspace-postgrest
     depends_on:
       postgres:
@@ -35,7 +35,7 @@ services:
     restart: unless-stopped
 
   gotrue:
-    image: supabase/gotrue:v2.172.1
+    image: supabase/gotrue:v2.188.1
     container_name: sastaspace-gotrue
     depends_on:
       postgres:
@@ -43,6 +43,7 @@ services:
     environment:
       GOTRUE_API_HOST: 0.0.0.0
       GOTRUE_API_PORT: 9999
+      API_EXTERNAL_URL: ${GOTRUE_API_EXTERNAL_URL:-http://localhost:9999}
       GOTRUE_DB_DRIVER: postgres
       GOTRUE_DB_DATABASE_URL: postgres://supabase_auth_admin:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?search_path=auth
       GOTRUE_SITE_URL: ${GOTRUE_SITE_URL}
@@ -74,7 +75,7 @@ services:
     restart: unless-stopped
 
   pg-meta:
-    image: supabase/postgres-meta:v0.84.2
+    image: supabase/postgres-meta:v0.96.4
     container_name: sastaspace-pg-meta
     depends_on:
       postgres:
@@ -91,7 +92,7 @@ services:
     restart: unless-stopped
 
   studio:
-    image: supabase/studio:20250224-d10db0f
+    image: supabase/studio:2026.04.20-sha-b721a2d
     container_name: sastaspace-studio
     depends_on:
       - pg-meta
@@ -108,6 +109,46 @@ services:
       AUTH_JWT_SECRET: ${JWT_SECRET}
     ports:
       - "${STUDIO_PORT:-3002}:3000"
+    restart: unless-stopped
+
+  landing:
+    profiles: ["full"]
+    build:
+      context: ../projects/landing/web
+      dockerfile: ../Dockerfile.web
+      args:
+        NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL}
+        NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY}
+        NEXT_PUBLIC_BASE_URL: ${NEXT_PUBLIC_BASE_URL_LOCAL:-http://localhost:3000}
+        NEXT_PUBLIC_TURNSTILE_SITE_KEY: ${NEXT_PUBLIC_TURNSTILE_SITE_KEY}
+    container_name: sastaspace-landing
+    depends_on:
+      postgres:
+        condition: service_healthy
+      gotrue:
+        condition: service_started
+      postgrest:
+        condition: service_started
+    environment:
+      NODE_ENV: production
+      PORT: "3000"
+      HOSTNAME: "0.0.0.0"
+      # Browser-facing URL (baked into the client bundle at build time).
+      NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL}
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY}
+      # Server-side URL used inside the compose network. The landing app
+      # prefers this over NEXT_PUBLIC_SUPABASE_URL for its own fetches.
+      SUPABASE_INTERNAL_URL: http://gotrue:9999
+      SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY}
+      NEXT_PUBLIC_BASE_URL: ${NEXT_PUBLIC_BASE_URL_LOCAL:-http://localhost:3000}
+      # PostgREST is reachable on port 3000 inside the compose network.
+      POSTGREST_URL: http://postgrest:3000
+      NEXT_PUBLIC_TURNSTILE_SITE_KEY: ${NEXT_PUBLIC_TURNSTILE_SITE_KEY}
+      TURNSTILE_SECRET_KEY: ${TURNSTILE_SECRET_KEY}
+      RESEND_API_KEY: ${RESEND_API_KEY}
+      OWNER_EMAIL: ${OWNER_EMAIL}
+    ports:
+      - "${LANDING_PORT:-3000}:3000"
     restart: unless-stopped
 
 volumes:

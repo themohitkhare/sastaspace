@@ -228,9 +228,47 @@ Implementation completed 2026-04-23 across five commits on `main`.
 ### Outstanding work (human / Phase 6)
 
 1. In Cloudflare Zero Trust: create an **Access application** for `studio.sastaspace.com` scoped to the admin email list.
-2. Generate `ANON_KEY` and `SERVICE_ROLE_KEY` JWTs from the production `JWT_SECRET`.
+2. Generate `ANON_KEY` and `SERVICE_ROLE_KEY` JWTs from the production `JWT_SECRET` (`make keys` on the remote does this automatically).
 3. Configure Google OAuth client credentials and GitHub OAuth app, fill the four corresponding env vars.
 4. In Resend: verify `sastaspace.com` sending domain, then lift `RESEND_API_KEY` into the production `gotrue-config` secret.
 5. Apply manifests: `microk8s kubectl apply -f infra/k8s/ --recursive` then run the four SQL migrations.
 6. Smoke test: sign up, magic link, sign in, open `/admin` from `mohitkhare582@gmail.com`.
+
+### Phase F — Local + remote docker-compose dev flow
+
+Follow-up session after the user asked: *"can we setup a docker-compose to test locally as well? as the machine where we deploy is at ssh 192.168.0.37"*.
+
+Decisions:
+
+- **Local scope**: full stack — landing app also runs as a container under `docker compose --profile full`. Services-only mode (`make up`) stays the default for fast iteration with `npm run dev`.
+- **Remote box (192.168.0.37)**: keep MicroK8s for real prod; add compose-over-ssh as a quick staging/dev environment.
+- **Migrations**: explicit `make migrate` target, re-runnable (SQL is idempotent).
+- **Keys**: `make keys` — pure bash + openssl HS256 signer, no npm/python deps.
+
+New files:
+
+- `scripts/gen-keys.sh` — mints `JWT_SECRET` + signed `ANON_KEY` + `SERVICE_ROLE_KEY`, writes idempotently to `.env`. Reuses existing `JWT_SECRET` when already real so `ANON/SERVICE` re-issue remains valid.
+- `scripts/migrate.sh` — waits for postgres healthy, `sed`-substitutes `change-me-sync-with-POSTGRES_PASSWORD` → real password before piping each SQL file through `docker exec psql`. Also re-alters `authenticator` + `supabase_auth_admin` passwords on every run (defensive).
+- `scripts/remote.sh` — `sync | env | up | up-core | down | reset | logs | migrate | psql | status | exec`. `env` rewrites `localhost` → `$REMOTE_HOST` and scps a remote-specific `.env`.
+
+Changed files:
+
+- `infra/docker-compose.yml` — added `landing` service under `profiles: ["full"]`. Uses `extra_hosts: "localhost:host-gateway"` so server-side code inside the container reaches the same `localhost:9999/:3001` URLs the browser uses. Build args pass `NEXT_PUBLIC_*` at build time (Next.js bakes them into the client bundle).
+- `projects/landing/Dockerfile.web` and `projects/_template/Dockerfile.web` — accept `ARG NEXT_PUBLIC_*` and export via `ENV` before `npm run build`. Switched to `npm ci` with `|| npm install` fallback. Runner stage now sets `HOSTNAME=0.0.0.0` so Next.js standalone binds correctly in a container.
+- `.env.example` — grouped/annotated. Added `LANDING_PORT`, `NEXT_PUBLIC_BASE_URL_LOCAL`, `POSTGREST_URL_LOCAL`, `SSH_HOST`, `SSH_REMOTE_DIR`, `REMOTE_HOST`.
+- `Makefile` — proper targets with help: `keys`, `up`, `up-full`, `down`, `reset`, `logs`, `ps`, `migrate`, `psql`, and a full `remote-*` family. Compose invocation uses `--env-file .env` because the compose file lives under `infra/` (otherwise env is not auto-resolved).
+- `README.md` — new Local quickstart and Remote staging sections.
+
+Verification (run this session):
+
+- `make keys` on a fresh checkout created `.env` and signed both JWTs. Running `make keys` a second time kept `JWT_SECRET` stable (only re-minted the time-stamped JWTs).
+- Python verifier confirmed both `ANON_KEY` and `SERVICE_ROLE_KEY` are valid HMAC-SHA256 JWTs against `JWT_SECRET`, with the correct `role` claim.
+- `docker compose --env-file .env -f infra/docker-compose.yml config` parses cleanly for both the default profile (5 services) and `--profile full` (6 services, landing included, build args + `extra_hosts: localhost=host-gateway` present, `POSTGREST_URL: http://localhost:3001` wired).
+- `make up` could not complete because Docker Desktop is not running on this laptop (known env constraint). The `make up` → compose → pull sequence kicked off correctly before the daemon error, confirming the wiring.
+
+Gotchas documented in comments:
+
+- NEXT_PUBLIC_* must be passed as `build.args` (baked at build time) AND runtime `environment` (for server components). Same URL is used everywhere so the browser and server see a consistent `localhost:9999`.
+- On the remote, run `make remote-env` once to rewrite `localhost` → `192.168.0.37` in the shipped `.env`; `remote.sh sync` excludes `.env` afterwards so the remote-specific config isn't clobbered on every sync.
+- Role passwords are synced to `POSTGRES_PASSWORD` on every `make migrate` via `ALTER ROLE … WITH PASSWORD`. If you change `POSTGRES_PASSWORD`, re-run `make migrate` to keep `authenticator` and `supabase_auth_admin` in sync (otherwise PostgREST/GoTrue will fail to connect).
 

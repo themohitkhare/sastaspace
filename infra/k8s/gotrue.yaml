@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: gotrue
-          image: supabase/gotrue:v2.172.1
+          image: supabase/gotrue:v2.188.1
           ports:
             - containerPort: 9999
           envFrom:
@@ -36,8 +36,10 @@ spec:
               value: "service_role"
             - name: GOTRUE_JWT_AUD
               value: "authenticated"
-            - name: GOTRUE_EXTERNAL_EMAIL_ENABLED
-              value: "true"
+        - name: GOTRUE_EXTERNAL_EMAIL_ENABLED
+          value: "true"
+        - name: API_EXTERNAL_URL
+          value: "https://auth.sastaspace.com"
           readinessProbe:
             httpGet:
               path: /health

@@ -14,12 +14,15 @@ type Project = {
   live_at: string | null;
 };
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 async function getProjects(): Promise<Project[]> {
   const base = process.env.POSTGREST_URL || "http://localhost:3001";
   try {
     const res = await fetch(
       `${base}/projects?live_at=not.is.null&order=live_at.desc`,
-      { next: { revalidate: 60 } },
+      { cache: "no-store" },
     );
     if (!res.ok) return [];
     return (await res.json()) as Project[];

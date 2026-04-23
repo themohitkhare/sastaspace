@@ -14,28 +14,63 @@ The root domain `sastaspace.com` is served by `projects/landing`.
 
 Every project shares the same JWT secret so RLS policies written in SQL apply uniformly.
 
-## Quickstart
+## Local quickstart
 
-1. Copy env vars: `cp .env.example .env` and edit. The important one is a strong `JWT_SECRET` (min 32 chars).
-2. Start shared local services:
-   ```bash
-   docker compose -f infra/docker-compose.yml up -d
-   ```
-   This brings up Postgres, PostgREST, GoTrue, pg-meta, and Studio.
-3. Apply migrations into the database (SQL files in order):
-   ```bash
-   for f in db/migrations/*.sql; do
-     docker exec -i sastaspace-postgres psql -U postgres -d sastaspace < "$f"
-   done
-   ```
-4. Run the landing project:
-   ```bash
-   cd projects/landing/web && npm install && npm run dev
-   ```
-5. Scaffold a new project:
-   ```bash
-   make new p=my-project
-   ```
+Requires Docker + Docker Compose.
+
+```bash
+make keys          # generates .env + JWT_SECRET + signed ANON/SERVICE keys
+make up            # boots postgres, postgrest, gotrue, pg-meta, studio
+make migrate       # applies db/migrations/*.sql (roles, auth, RLS, helpers)
+```
+
+Everything is now reachable on your machine:
+
+| Service      | URL                      |
+| ------------ | ------------------------ |
+| Landing app  | http://localhost:3000    |
+| PostgREST    | http://localhost:3001    |
+| GoTrue       | http://localhost:9999    |
+| Studio       | http://localhost:3002    |
+| pg-meta      | http://localhost:8080    |
+| Postgres     | localhost:5432           |
+
+Then run the landing app against those services:
+
+```bash
+cd projects/landing/web && npm install && npm run dev
+```
+
+Prefer everything containerised? `make up-full` builds and runs the landing app
+as a container too (at http://localhost:3000, alongside the rest).
+
+Other useful targets: `make logs`, `make ps`, `make psql`, `make down`,
+`make reset` (wipes volumes), `make help`.
+
+## Remote staging on 192.168.0.37
+
+The same compose stack runs on your deploy box over ssh. One-time setup:
+
+```bash
+# On the remote: ensure docker is installed and your user is in the docker group.
+# Locally:
+make remote-env           # creates a remote .env (rewrites localhost → 192.168.0.37)
+make remote-up            # rsync repo + `make up-full` on the remote
+make remote-migrate       # apply migrations on the remote
+```
+
+The stack is then reachable at `http://192.168.0.37:3000`, `:9999`, `:3002`, …
+from any machine on the LAN. Useful targets: `make remote-logs`,
+`make remote-status`, `make remote-psql`, `make remote-down`, `make remote-reset`.
+
+Production (MicroK8s + Cloudflare tunnel with real `sastaspace.com` subdomains)
+still ships via `infra/k8s/` — see `design-log/001-project-bank-foundations.md`.
+
+## Scaffold a new project
+
+```bash
+make new p=my-project
+```
 
 ## Structure
 
@@ -43,7 +78,7 @@ Every project shares the same JWT secret so RLS policies written in SQL apply un
 - `db/` — shared migrations, auth roles, RLS helpers, seeds
 - `projects/_template/` — default scaffold (Next.js + shadcn + Supabase auth + Go API)
 - `projects/landing/` — `sastaspace.com` portfolio app
-- `scripts/` — scaffolder and dev helpers
+- `scripts/` — key-gen, migrations, ssh/remote helpers, scaffolder
 - `design-log/` — architecture and implementation decisions
 
 ## Design logs

@@ -28,7 +28,7 @@ spec:
     spec:
       containers:
         - name: postgres
-          image: supabase/postgres:17.6.1.104-tuned
+          image: supabase/postgres:17.6.1.110
           ports:
             - containerPort: 5432
           envFrom:
