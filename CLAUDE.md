@@ -86,28 +86,56 @@ ssh 192.168.0.37 'cd /tmp/<name>-deploy && \
   microk8s kubectl apply -f k8s.yaml && \
   microk8s kubectl -n sastaspace rollout status deploy/<name> --timeout=180s'
 
-# 2. DNS — use the zone-scoped token in keychain
+# 2. DNS + tunnel public hostname — same keychain token (it has both scopes)
 CF_TOKEN=$(security find-generic-password -a sastaspace -s cloudflare-api-token -w)
-ZONE=f90dcc0f12180c1d2b5fb5d488887c24        # sastaspace.com
-TUNNEL=b3d36ee8-8bd2-4289-83a0-bf2ab53aa3b8  # Tunnel ID
+ZONE=f90dcc0f12180c1d2b5fb5d488887c24      # sastaspace.com
+ACCOUNT=c207f71f99a2484494c84d95e6cb7178   # 32 hex chars — verify from
+                                            #   curl /client/v4/zones/$ZONE | .result.account.id
+                                            # Do NOT decode the tunnel token in your head; it's easy to
+                                            # mis-transcribe and the API returns 7003 "Could not route"
+                                            # for any typo, which looks like a permissions error.
+TUNNEL=b3d36ee8-8bd2-4289-83a0-bf2ab53aa3b8
+
+# 2a. CNAME the subdomain at the tunnel
 curl -X POST "https://api.cloudflare.com/client/v4/zones/$ZONE/dns_records" \
   -H "Authorization: Bearer $CF_TOKEN" -H "Content-Type: application/json" \
   --data "{\"type\":\"CNAME\",\"name\":\"<name>\",\"content\":\"$TUNNEL.cfargotunnel.com\",\"proxied\":true}"
 
-# 3. Tunnel public hostname — still manual (dashboard), see note below
+# 2b. Add the public hostname to the tunnel ingress (ORDERED list; the trailing
+#     {"service":"http_status:404"} catch-all must stay last)
+CFG=$(curl -sS "https://api.cloudflare.com/client/v4/accounts/$ACCOUNT/cfd_tunnel/$TUNNEL/configurations" \
+       -H "Authorization: Bearer $CF_TOKEN")
+echo "$CFG" | python3 -c '
+import json,sys
+d = json.load(sys.stdin)
+cfg = d["result"]["config"]
+ing = cfg["ingress"]
+if not any(r.get("hostname") == "<name>.sastaspace.com" for r in ing):
+    idx = next(i for i,r in enumerate(ing) if "hostname" not in r)
+    ing.insert(idx, {"service": "http://localhost:80", "hostname": "<name>.sastaspace.com"})
+json.dump({"config": cfg}, open("/tmp/cfg-new.json","w"))
+'
+curl -X PUT "https://api.cloudflare.com/client/v4/accounts/$ACCOUNT/cfd_tunnel/$TUNNEL/configurations" \
+  -H "Authorization: Bearer $CF_TOKEN" -H "Content-Type: application/json" --data @/tmp/cfg-new.json
 ```
 
 Remote `~/sastaspace` often lags behind `main`. Don't rsync the whole tree to the remote unless you intend to sync the repo — build out of `/tmp/<name>-deploy/` instead.
 
-### Cloudflare tunnel — what the zone-scoped API token can and can't do
+### Cloudflare tunnel — managed tunnel + account-scoped API token
 
-The token at `security find-generic-password -a sastaspace -s cloudflare-api-token -w` is **zone-scoped**. It can create DNS records on `sastaspace.com` but it **cannot** add public-hostname routes to the tunnel — the tunnel config lives at account scope and returns `7003 Could not route / perhaps your object identifier is invalid` for any `accounts/*/cfd_tunnel/*/configurations` call.
+The tunnel `sastaspace-prod` (ID `b3d36ee8-8bd2-4289-83a0-bf2ab53aa3b8`) is a **Cloudflare-managed / remote-config** tunnel — it runs via `cloudflared --token …` under systemd, with no `cert.pem` on the host, so the `cloudflared` CLI can't edit it locally. Config lives in Cloudflare's side (`config_src: cloudflare`), accessed at `GET|PUT /accounts/{account_id}/cfd_tunnel/{tunnel_id}/configurations`.
 
-What this means in practice:
+The keychain token (`cloudflare-api-token`) has **both** zone-DNS and account-tunnel permissions. The current ingress list is ordered and looks like:
+```
+sastaspace.com, www.sastaspace.com, api.sastaspace.com, tasks.sastaspace.com,
+monitor.sastaspace.com, llm.sastaspace.com, <your new host>, http_status:404 (catch-all)
+```
 
-- DNS CNAME + ingress + pod is **not enough** on its own. A brand-new subdomain without a matching public-hostname route on the tunnel returns **HTTP 404 from Cloudflare** (body empty, `server: cloudflare`) — the tunnel drops the request before it reaches the node.
-- Adding a public hostname currently requires the **Cloudflare Zero Trust dashboard** → Networks → Tunnels → `sastaspace-prod` (tunnel id `b3d36ee8-8bd2-4289-83a0-bf2ab53aa3b8`) → Public Hostname → add `<name>.sastaspace.com` with service `http://localhost:80`.
-- Or: mint an account-scoped Cloudflare token with `Account:Cloudflare Tunnel:Edit` and stash it in keychain under a second service name (e.g. `cloudflare-tunnel-token`) so future deploys can PUT the configuration via `PUT /accounts/{account_id}/cfd_tunnel/{tunnel_id}/configurations`.
+Gotchas that cost real time on this repo:
+
+- A malformed account ID (e.g. an extra hex char pulled from hand-transcribing the base64-decoded tunnel token) returns `7003 Could not route to /client/v4/accounts/<id>/cfd_tunnel/... perhaps your object identifier is invalid?` — the error reads like a permissions issue but is almost always a bad ID. Pull the correct account ID straight from `GET /zones/{zone}/.result.account.id` instead of decoding the token manually.
+- Without a matching public-hostname row on the tunnel, a new subdomain returns **HTTP 404 from Cloudflare** even with a correct CNAME and a healthy ingress on the node. `server: cloudflare`, empty body — the tunnel drops the request before it reaches ingress-nginx.
+- The `ingress` array is **ordered**. Always insert new hostnames before the trailing catch-all (the entry with no `hostname` field), never after.
 
 ### Scaffolding into a pre-existing project directory
 
