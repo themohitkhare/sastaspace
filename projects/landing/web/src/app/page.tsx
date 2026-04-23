@@ -2,13 +2,17 @@ import Link from "next/link";
 import { AppShell } from "@/components/layout/app-shell";
 import { ProjectCard, type Project } from "@/components/projects/project-card";
 
-export const revalidate = 300;
+// POSTGREST_URL is cluster-internal and unreachable at build time, so a
+// static prerender bakes in an empty project list. Render dynamically
+// instead — the page serves a handful of rows so the per-request query
+// cost is negligible.
+export const dynamic = "force-dynamic";
 
 async function getProjects(): Promise<Project[]> {
   const base = process.env.POSTGREST_URL || "http://localhost:3001";
   try {
     const res = await fetch(`${base}/projects?order=live_at.desc.nullslast`, {
-      next: { revalidate: 300 },
+      cache: "no-store",
     });
     if (!res.ok) return [];
     return (await res.json()) as Project[];
