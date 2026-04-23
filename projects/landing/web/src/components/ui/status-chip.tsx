@@ -15,7 +15,7 @@ const chipStyles = cva(
     variants: {
       value: {
         live: "bg-[var(--brand-ink)] text-[var(--brand-paper)] before:bg-[#8cc67a] dark:bg-[var(--brand-paper)] dark:text-[var(--brand-ink)]",
-        wip: "bg-[var(--brand-sasta)] text-[var(--brand-paper)] before:bg-[var(--brand-paper)]",
+        wip: "bg-[var(--brand-paper-lifted)] text-[var(--brand-rust)] border border-[var(--brand-rust)] before:bg-[var(--brand-rust)] dark:bg-transparent dark:text-[var(--brand-sasta-text)] dark:border-[var(--brand-sasta-text)] dark:before:bg-[var(--brand-sasta-text)]",
         paused:
           "bg-transparent text-muted-foreground border border-border before:bg-[var(--brand-dust)]",
         archived:

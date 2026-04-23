@@ -11,7 +11,7 @@ const DEFAULT_NAV: NavLink[] = [
 
 export function Topbar({ nav = DEFAULT_NAV }: { nav?: NavLink[] }) {
   return (
-    <header className="sticky top-0 z-40 w-full border-b border-border bg-background/85 backdrop-blur-md">
+    <header className="sticky top-0 z-40 w-full border-b border-border bg-background">
       <div className="mx-auto flex h-16 max-w-5xl items-center justify-between px-6 sm:px-8">
         <Link
           href="/"
@@ -70,13 +70,13 @@ function BrandMark() {
         x="40"
         y="49"
         textAnchor="middle"
-        fontFamily="var(--font-inter), sans-serif"
+        fontFamily="Inter, system-ui, sans-serif"
         fontSize="24"
         fontWeight="500"
         fill="var(--brand-paper)"
         letterSpacing="-0.02em"
       >
-        स/S
+        S
       </text>
     </svg>
   );

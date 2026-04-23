@@ -53,7 +53,6 @@
   /* font families — next/font injects these via <html className> */
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, -apple-system, sans-serif;
   --font-mono: var(--font-jetbrains-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
-  --font-deva: var(--font-noto-deva), var(--font-inter), system-ui, sans-serif;
 }
 
 :root {
@@ -89,6 +88,11 @@
   --border: rgba(168, 161, 150, 0.45);
   --input: rgba(168, 161, 150, 0.45);
   --ring: var(--brand-sasta);
+
+  /* Body-safe accent text — rust on paper = 8.1:1 (AA). Raw sasta on paper
+     is 4.05:1 (fails AA body). Use --brand-sasta for chrome (fills,
+     borders, dots) and --brand-sasta-text for body-sized accent text. */
+  --brand-sasta-text: var(--brand-rust);
 }
 
 .dark {
@@ -111,6 +115,9 @@
   --border: rgba(168, 161, 150, 0.2);
   --input: rgba(168, 161, 150, 0.2);
   --ring: var(--brand-sasta);
+
+  /* Brightened sasta for dark-mode body text — 6.0:1 on ink (AA). */
+  --brand-sasta-text: #e98654;
 }
 
 @layer base {
@@ -120,7 +127,7 @@
   body {
     @apply bg-background text-foreground antialiased;
     font-family: var(--font-sans);
-    font-feature-settings: "ss01", "cv11";
+    font-feature-settings: "ss01";
   }
   h1, h2, h3, h4, h5, h6 {
     font-weight: 500;
@@ -129,4 +136,12 @@
 }
 
 .font-mono { font-family: var(--font-mono); }
-.font-deva { font-family: var(--font-deva); }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
