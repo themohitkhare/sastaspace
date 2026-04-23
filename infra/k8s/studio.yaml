@@ -1,0 +1,55 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: studio
+  namespace: sastaspace
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: studio
+  template:
+    metadata:
+      labels:
+        app: studio
+    spec:
+      containers:
+        - name: studio
+          image: supabase/studio:20250224-d10db0f
+          ports:
+            - containerPort: 3000
+          env:
+            - name: STUDIO_PG_META_URL
+              value: "http://pg-meta.sastaspace.svc.cluster.local:8080"
+            - name: NEXT_PUBLIC_ENABLE_LOGS
+              value: "false"
+            - name: DEFAULT_ORGANIZATION_NAME
+              value: "SastaSpace"
+            - name: DEFAULT_PROJECT_NAME
+              value: "sastaspace"
+            - name: SUPABASE_URL
+              value: "http://gotrue.sastaspace.svc.cluster.local:9999"
+            - name: SUPABASE_PUBLIC_URL
+              value: "https://auth.sastaspace.com"
+          envFrom:
+            - secretRef:
+                name: studio-config
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "256Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: studio
+  namespace: sastaspace
+spec:
+  selector:
+    app: studio
+  ports:
+    - port: 3000
+      targetPort: 3000

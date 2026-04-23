@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pg-meta
+  namespace: sastaspace
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: pg-meta
+  template:
+    metadata:
+      labels:
+        app: pg-meta
+    spec:
+      containers:
+        - name: pg-meta
+          image: supabase/postgres-meta:v0.84.2
+          ports:
+            - containerPort: 8080
+          env:
+            - name: PG_META_PORT
+              value: "8080"
+            - name: PG_META_DB_HOST
+              value: "postgres.sastaspace.svc.cluster.local"
+            - name: PG_META_DB_PORT
+              value: "5432"
+          envFrom:
+            - secretRef:
+                name: pg-meta-config
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "64Mi"
+            limits:
+              cpu: "200m"
+              memory: "128Mi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: pg-meta
+  namespace: sastaspace
+spec:
+  selector:
+    app: pg-meta
+  ports:
+    - port: 8080
+      targetPort: 8080
