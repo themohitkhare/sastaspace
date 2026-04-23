@@ -91,6 +91,10 @@ export function computeRisk(input: RiskInput, data: UdaanData): RiskResult {
   const isMonsoon = MONSOON_MONTHS.has(month);
   const isFog = FOG_MONTHS.has(month);
   const delhiPair = from === "DEL" || to === "DEL";
+  // Route is in the North-Indian fog belt if either endpoint is fog-prone.
+  // fogSeverity >= 0.7 is the threshold the ETL uses (1.0 when either
+  // endpoint carries fogProne; 0.3 otherwise).
+  const fogBeltPair = (route?.fogSeverity ?? 0) >= 0.7;
 
   // ----- delay -----
   const carriers = (route?.carriers ?? METRO_CARRIERS) as AirlineCode[];
@@ -110,10 +114,12 @@ export function computeRisk(input: RiskInput, data: UdaanData): RiskResult {
     delayPct += monsoonLift;
     delaySub = `monsoon adds ~${Math.round(monsoonLift)}pp`;
   }
-  if (isFog && delhiPair) {
+  if (isFog && (delhiPair || fogBeltPair)) {
     const fogLift = 9 * (route?.fogSeverity ?? 1.0);
     delayPct += fogLift;
-    delaySub = `Delhi fog adds ~${Math.round(fogLift)}pp`;
+    delaySub = delhiPair
+      ? `Delhi fog adds ~${Math.round(fogLift)}pp`
+      : `winter fog adds ~${Math.round(fogLift)}pp`;
   }
   delayPct = Math.min(60, Math.round(delayPct));
   const delayBand = classifyBand(delayPct, [15, 28]);
@@ -157,6 +163,7 @@ export function computeRisk(input: RiskInput, data: UdaanData): RiskResult {
   let seasonTag: string | null = null;
   if (isMonsoon) seasonTag = "peak monsoon";
   else if (isFog && delhiPair) seasonTag = "Delhi fog window";
+  else if (isFog && fogBeltPair) seasonTag = "winter fog";
   else if (isFog) seasonTag = "winter";
 
   const shortRead = buildShortRead({
@@ -166,6 +173,7 @@ export function computeRisk(input: RiskInput, data: UdaanData): RiskResult {
     cancelBand,
     isMonsoon,
     isFogDelhi: isFog && delhiPair,
+    isFogNorth: isFog && fogBeltPair && !delhiPair,
   });
 
   return {
@@ -190,8 +198,9 @@ function buildShortRead(args: {
   cancelBand: RiskBand;
   isMonsoon: boolean;
   isFogDelhi: boolean;
+  isFogNorth: boolean;
 }): RiskResult["shortRead"] {
-  const { delayBand, isMonsoon, isFogDelhi } = args;
+  const { delayBand, isMonsoon, isFogDelhi, isFogNorth } = args;
 
   if (isFogDelhi) {
     return {
@@ -199,6 +208,15 @@ function buildShortRead(args: {
       leadEm: "Delay risk is the big story",
       leadTail:
         " — Delhi-area December and January mornings routinely pile up 2+ hour delays when visibility drops. Airlines treat fog as force majeure, so no compensation for a delay alone.",
+      body: "Cancellation stays in the normal band because DGCA already refunds airline-caused cancels in full, and baggage liability is ₹20,000 per passenger before you pay anyone a paisa.",
+    };
+  }
+  if (isFogNorth) {
+    return {
+      lead: "Winter-fog route.",
+      leadEm: "Delay risk is elevated",
+      leadTail:
+        " — the Gangetic and Punjab fog belt runs December and January mornings. 2+ hour delays are common when visibility drops. Airlines treat fog as force majeure, so no compensation for a delay alone.",
       body: "Cancellation stays in the normal band because DGCA already refunds airline-caused cancels in full, and baggage liability is ₹20,000 per passenger before you pay anyone a paisa.",
     };
   }

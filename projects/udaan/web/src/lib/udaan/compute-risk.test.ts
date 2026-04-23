@@ -35,10 +35,26 @@ describe("computeRisk", () => {
     expect(r.delaySub).toContain("Delhi fog");
   });
 
-  it("uses a generic winter tag for a non-Delhi January route", () => {
+  it("uses a generic winter tag for a non-Delhi January route with no fog-belt endpoint", () => {
     const r = computeRisk({ from: "BOM", to: "BLR", date: "2026-01-20" }, data);
     expect(r.seasonTag).toBe("winter");
     expect(r.delaySub).not.toContain("Delhi fog");
+    expect(r.delaySub).not.toContain("winter fog");
+  });
+
+  it("flags winter fog on a non-Delhi January route with a fog-belt endpoint", () => {
+    // LKO is fogProne in the Gangetic belt; CCU is not — but fogSeverity is
+    // max across endpoints, so the route lands at 1.0 and the fog lift fires.
+    const r = computeRisk({ from: "LKO", to: "CCU", date: "2026-01-20" }, data);
+    expect(r.seasonTag).toBe("winter fog");
+    expect(r.delaySub).toContain("winter fog");
+    expect(r.delaySub).not.toContain("Delhi fog");
+  });
+
+  it("raises January delay risk on a fog-belt route vs. a non-fog inland pair", () => {
+    const fogBelt = computeRisk({ from: "LKO", to: "CCU", date: "2026-01-20" }, data);
+    const inland = computeRisk({ from: "BLR", to: "HYD", date: "2026-01-20" }, data);
+    expect(fogBelt.delayPct).toBeGreaterThan(inland.delayPct);
   });
 
   it("returns no season tag for a shoulder-month route", () => {
