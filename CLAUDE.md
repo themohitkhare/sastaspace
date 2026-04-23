@@ -60,7 +60,9 @@ make remote-psql     # psql into remote postgres
 
 ### CI/CD
 
-Single workflow `.github/workflows/deploy.yml` triggers on push to `main`. The self-hosted runner lives on the production host (192.168.0.37) and: builds Docker images, pushes to the MicroK8s-local registry (`localhost:32000`), applies shared + per-project k8s manifests, then does a rolling restart with a 300s rollout check. No separate lint/test CI jobs yet.
+Single workflow `.github/workflows/deploy.yml` triggers on push to `main` **or `develop`**. The self-hosted runner lives on the production host (192.168.0.37) and: builds each project's Docker image, pushes to the MicroK8s-local registry (`localhost:32000`), applies shared + per-project k8s manifests (`projects/*/k8s.yaml`, globbed), then does a rolling restart with a 300s rollout check. Both branches deploy to the same cluster today; there is no separate staging namespace. No separate lint/test CI jobs yet.
+
+New projects need one manual edit to the workflow — a `Build <name> image` + `Push <name> image` block per project — because Dockerfiles and build contexts vary. The apply + rollout steps pick up `projects/<name>/k8s.yaml` automatically via the glob.
 
 ### Deploying a feature branch manually
 

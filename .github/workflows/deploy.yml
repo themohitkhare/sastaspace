@@ -2,7 +2,7 @@ name: Deploy Project Bank
 
 on:
   push:
-    branches: [main]
+    branches: [main, develop]
   workflow_dispatch:
 
 permissions:
@@ -17,6 +17,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      # --- landing (sastaspace.com) ---
       - name: Build landing image
         run: |
           docker build \
@@ -29,10 +30,34 @@ jobs:
           docker push localhost:32000/sastaspace-landing:latest
           docker push localhost:32000/sastaspace-landing:${{ github.sha }}
 
+      # --- udaan (udaan.sastaspace.com) ---
+      # Uses the _template Dockerfile because udaan inherits the web scaffold
+      # verbatim (no project-specific Dockerfile.web).
+      - name: Build udaan image
+        run: |
+          docker build \
+            -t localhost:32000/sastaspace-udaan:latest \
+            -t localhost:32000/sastaspace-udaan:${{ github.sha }} \
+            -f projects/_template/Dockerfile.web projects/udaan/web
+
+      - name: Push udaan image
+        run: |
+          docker push localhost:32000/sastaspace-udaan:latest
+          docker push localhost:32000/sastaspace-udaan:${{ github.sha }}
+
+      # --- apply shared + per-project manifests ---
       - name: Apply shared manifests
         run: |
           sudo microk8s kubectl apply -f infra/k8s/namespace.yaml
           sudo microk8s kubectl apply -f infra/k8s/ --recursive
+
+      - name: Apply project manifests
+        run: |
+          shopt -s nullglob
+          for manifest in projects/*/k8s.yaml; do
+            echo "applying $manifest"
+            sudo microk8s kubectl apply -f "$manifest"
+          done
 
       - name: Rolling restart and rollout status
         run: |
