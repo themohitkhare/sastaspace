@@ -1,0 +1,48 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cloudflared-config
+  namespace: sastaspace
+data:
+  config.yml: |
+    tunnel: __TUNNEL_ID__
+    credentials-file: /etc/cloudflared/creds/credentials.json
+    ingress:
+      - hostname: '*.sastaspace.com'
+        service: http://ingress-nginx-controller.ingress-nginx.svc.cluster.local:80
+      - hostname: sastaspace.com
+        service: http://ingress-nginx-controller.ingress-nginx.svc.cluster.local:80
+      - service: http_status:404
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cloudflared
+  namespace: sastaspace
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cloudflared
+  template:
+    metadata:
+      labels:
+        app: cloudflared
+    spec:
+      containers:
+        - name: cloudflared
+          image: cloudflare/cloudflared:latest
+          args: ["tunnel", "--config", "/etc/cloudflared/config/config.yml", "run"]
+          volumeMounts:
+            - name: config
+              mountPath: /etc/cloudflared/config
+            - name: creds
+              mountPath: /etc/cloudflared/creds
+              readOnly: true
+      volumes:
+        - name: config
+          configMap:
+            name: cloudflared-config
+        - name: creds
+          secret:
+            secretName: cloudflared-credentials

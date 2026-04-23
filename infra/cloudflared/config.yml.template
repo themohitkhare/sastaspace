@@ -1,0 +1,8 @@
+tunnel: __TUNNEL_ID__
+credentials-file: /etc/cloudflared/credentials.json
+ingress:
+  - hostname: '*.sastaspace.com'
+    service: http://ingress-nginx-controller.ingress-nginx.svc.cluster.local:80
+  - hostname: sastaspace.com
+    service: http://ingress-nginx-controller.ingress-nginx.svc.cluster.local:80
+  - service: http_status:404

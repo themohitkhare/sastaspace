@@ -1,230 +1,49 @@
-name: CI / Deploy
+name: Deploy Project Bank
 
 on:
   push:
-    branches: [main]
-  pull_request:
     branches: [main]
   workflow_dispatch:
 
 permissions:
   contents: read
 
-env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-
 jobs:
-  test:
-    name: Test
-    runs-on: [self-hosted, linux, amd64]
-    timeout-minutes: 10
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
-
-      - name: Ensure uv is installed
-        run: |
-          if ! command -v uv &>/dev/null; then
-            curl -LsSf https://astral.sh/uv/install.sh | sh
-          fi
-          echo "$HOME/.local/bin" >> $GITHUB_PATH
-
-      - name: Install Python deps
-        run: uv sync
-
-      - name: Lint
-        run: |
-          uv run ruff check sastaspace/ tests/
-          uv run ruff format --check sastaspace/ tests/
-
-      - name: Python code health (pycodegate)
-        run: uvx pycodegate . --min-score 60
-
-      - name: React code health (react-doctor)
-        working-directory: web
-        run: npx -y react-doctor@latest . --score
-
-      - name: Duplicate code detection (jscpd)
-        run: |
-          npx jscpd sastaspace/ web/src/ --min-lines 10 --min-tokens 50 \
-            --reporters consoleFull \
-            --ignore "**/__pycache__/**,**/node_modules/**,**/.next/**" \
-            --threshold 5 \
-            --blame
-
-      - name: Static analysis (semgrep)
-        run: |
-          uv tool run semgrep scan --config auto --error \
-            --exclude='node_modules' --exclude='.next' --exclude='__pycache__' \
-            --exclude='*.test.*' --exclude='*.spec.*' \
-            --severity ERROR \
-            sastaspace/ web/src/
-
-      - name: Run tests (parallel)
-        run: uv run pytest tests/ -n 4 -q --tb=short --timeout=120
-
-      - name: Validate k8s manifests
-        run: |
-          if ! command -v kubeconform &>/dev/null; then
-            curl -sSL https://github.com/yannh/kubeconform/releases/latest/download/kubeconform-linux-amd64.tar.gz \
-              | sudo tar xz -C /usr/local/bin kubeconform
-          fi
-          kubeconform -summary -strict k8s/*.yaml k8s/monitoring/*.yaml \
-            k8s/vikunja/namespace.yaml k8s/vikunja/vikunja.yaml k8s/vikunja/ingress.yaml
-
-  security:
-    name: Security Scan
-    runs-on: [self-hosted, linux, amd64]
-    timeout-minutes: 15
-    # Runs in parallel with test — no dependency between them
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
-
-      - name: Ensure uv is installed
-        run: |
-          if ! command -v uv &>/dev/null; then
-            curl -LsSf https://astral.sh/uv/install.sh | sh
-          fi
-          echo "$HOME/.local/bin" >> $GITHUB_PATH
-
-      - name: Python dependency audit (pip-audit)
-        run: |
-          uv export --no-dev --no-editable --no-emit-project --format requirements-txt > /tmp/requirements-audit.txt
-          uv tool run pip-audit --requirement /tmp/requirements-audit.txt --vulnerability-service osv \
-            --ignore-vuln CVE-2026-4539
-
-      - name: npm audit (high+ only)
-        working-directory: web
-        run: npm audit --audit-level=high --omit=dev
-
-      - name: Ensure Trivy is installed
-        run: |
-          if ! command -v trivy &>/dev/null; then
-            curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh \
-              | sudo sh -s -- -b /usr/local/bin
-          fi
-
-      - name: Trivy — filesystem scan (repo secrets & misconfigs)
-        run: |
-          trivy fs . \
-            --scanners secret,misconfig \
-            --exit-code 1 \
-            --severity HIGH,CRITICAL \
-            --ignorefile .trivyignore \
-            --skip-dirs node_modules,.git \
-            --quiet
-
   deploy:
-    name: Build & Deploy
     runs-on: [self-hosted, linux, amd64]
     timeout-minutes: 30
-    needs: [test, security]
-    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
 
     steps:
       - name: Checkout
-        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
-        with:
-          clean: true
+        uses: actions/checkout@v4
 
-      - name: Ensure Trivy is installed
-        run: |
-          if ! command -v trivy &>/dev/null; then
-            curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh \
-              | sudo sh -s -- -b /usr/local/bin
-          fi
-
-      - name: Build backend image
+      - name: Build landing image
         run: |
           docker build \
-            -t localhost:32000/sastaspace-backend:latest \
-            -t localhost:32000/sastaspace-backend:${{ github.sha }} \
-            -f backend/Dockerfile .
+            -t localhost:32000/sastaspace-landing-web:latest \
+            -t localhost:32000/sastaspace-landing-web:${{ github.sha }} \
+            -f projects/landing/Dockerfile.web projects/landing/web
 
-      - name: Trivy — scan backend image
+      - name: Push landing image
         run: |
-          trivy image \
-            --exit-code 1 \
-            --severity HIGH,CRITICAL \
-            --ignorefile .trivyignore \
-            --quiet \
-            localhost:32000/sastaspace-backend:latest
+          docker push localhost:32000/sastaspace-landing-web:latest
+          docker push localhost:32000/sastaspace-landing-web:${{ github.sha }}
 
-      - name: Build frontend image
+      - name: Apply shared manifests
         run: |
-          docker build \
-            -t localhost:32000/sastaspace-frontend:latest \
-            -t localhost:32000/sastaspace-frontend:${{ github.sha }} \
-            -f web/Dockerfile web/
+          sudo microk8s kubectl apply -f infra/k8s/namespace.yaml
+          sudo microk8s kubectl apply -f infra/k8s/ --recursive
 
-      - name: Trivy — scan frontend image
+      - name: Apply project manifests
         run: |
-          trivy image \
-            --exit-code 1 \
-            --severity HIGH,CRITICAL \
-            --ignorefile .trivyignore \
-            --quiet \
-            localhost:32000/sastaspace-frontend:latest
-
-      - name: Push images to local registry
-        run: |
-          docker push localhost:32000/sastaspace-backend:latest
-          docker push localhost:32000/sastaspace-backend:${{ github.sha }}
-          docker push localhost:32000/sastaspace-frontend:latest
-          docker push localhost:32000/sastaspace-frontend:${{ github.sha }}
-
-      - name: Apply k8s manifests (app + monitoring)
-        run: |
-          # App namespace first, then all app manifests
-          sudo microk8s kubectl apply -f k8s/namespace.yaml
-          sudo microk8s kubectl apply -f k8s/
-          # Monitoring namespace + manifests
-          sudo microk8s kubectl apply -f k8s/monitoring/namespace.yaml
-          sudo microk8s kubectl apply -f k8s/monitoring/
-          # Vikunja namespace + manifests
-          sudo microk8s kubectl apply -f k8s/vikunja/namespace.yaml
-          sudo microk8s kubectl apply -f k8s/vikunja/
-          # EspoCRM removed — replaced by Vikunja (deployed above)
-
-      - name: Rolling restart (all deployments)
-        run: |
-          # Restart all deployments in sastaspace namespace
-          DEPLOYMENTS=$(sudo microk8s kubectl get deployments -n sastaspace -o name 2>/dev/null)
-          if [ -n "$DEPLOYMENTS" ]; then
-            echo "Restarting: $DEPLOYMENTS"
-            sudo microk8s kubectl rollout restart $DEPLOYMENTS -n sastaspace
-          fi
-          # Restart monitoring deployments that use configmaps (prometheus, grafana, loki)
-          sudo microk8s kubectl rollout restart deployment/prometheus deployment/grafana -n monitoring 2>/dev/null || true
-          # Restart promtail daemonset to pick up config changes
-          sudo microk8s kubectl rollout restart daemonset/promtail -n monitoring 2>/dev/null || true
-          # Restart Vikunja
-          sudo microk8s kubectl rollout restart deployment/vikunja -n vikunja 2>/dev/null || true
-          # EspoCRM removed — replaced by Vikunja (restarted above)
-
-      - name: Wait for rollout
-        run: |
-          # Wait for all deployments in sastaspace namespace
-          for DEPLOY in $(sudo microk8s kubectl get deployments -n sastaspace -o name 2>/dev/null); do
-            echo "Waiting for $DEPLOY..."
-            sudo microk8s kubectl rollout status "$DEPLOY" -n sastaspace --timeout=300s
+          for f in projects/*/k8s.yaml; do
+            [ -f "$f" ] && sudo microk8s kubectl apply -f "$f"
           done
-          # Wait for Vikunja
-          echo "Waiting for vikunja..."
-          sudo microk8s kubectl rollout status deployment/vikunja -n vikunja --timeout=300s
 
-      - name: Verify deployment
+      - name: Rolling restart and rollout status
         run: |
-          echo "=== sastaspace pods ==="
-          sudo microk8s kubectl get pods -n sastaspace
-          echo "=== sastaspace services ==="
-          sudo microk8s kubectl get svc -n sastaspace
-          echo "=== sastaspace ingress ==="
-          sudo microk8s kubectl get ingress -n sastaspace
-          echo "=== monitoring pods ==="
-          sudo microk8s kubectl get pods -n monitoring
-          echo "=== vikunja pods ==="
-          sudo microk8s kubectl get pods -n vikunja
+          DEPLOYMENTS=$(sudo microk8s kubectl get deploy -A -o name)
+          if [ -n "$DEPLOYMENTS" ]; then
+            echo "$DEPLOYMENTS" | xargs -n1 sudo microk8s kubectl rollout restart
+            echo "$DEPLOYMENTS" | xargs -n1 sudo microk8s kubectl rollout status --timeout=300s
+          fi

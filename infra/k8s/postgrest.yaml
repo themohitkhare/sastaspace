@@ -1,0 +1,41 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgrest
+  namespace: sastaspace
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgrest
+  template:
+    metadata:
+      labels:
+        app: postgrest
+    spec:
+      containers:
+        - name: postgrest
+          image: postgrest/postgrest:latest
+          ports:
+            - containerPort: 3000
+          envFrom:
+            - secretRef:
+                name: pgrst-config
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 3000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgrest
+  namespace: sastaspace
+spec:
+  selector:
+    app: postgrest
+  ports:
+    - port: 3000
+      targetPort: 3000
