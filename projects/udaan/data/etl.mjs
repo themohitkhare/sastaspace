@@ -121,33 +121,68 @@ function buildCancellation() {
 // ---------- 3. metro route table ----------
 
 function buildRoutes() {
-  // Six-airport core. UI only offers these; unknown pairs fall back in computeRisk.
-  const metros = ["DEL", "BOM", "BLR", "HYD", "MAA", "CCU"];
-  // Pair-level seasonality hints. Monsoon severity scales with coastal + west-coast pairs,
-  // fog severity with Delhi-north pairs.
-  const monsoonHot = new Set(["BOM", "CCU"]);
-  const fogHot = new Set(["DEL"]);
+  // Top-30 airports by scheduled passenger traffic. monsoonSeverity is a
+  // climate-zone proxy; fogProne flags the North-Indian winter fog belt.
+  // Keep in sync with ../web/src/lib/udaan/airports.ts — two sources, one
+  // truth for now (the TS file is the UI's reference; ETL needs JS to run
+  // dependency-free).
+  const airports = [
+    { code: "IXA", monsoonSeverity: 0.9, fogProne: false },
+    { code: "AMD", monsoonSeverity: 0.5, fogProne: true  },
+    { code: "ATQ", monsoonSeverity: 0.5, fogProne: true  },
+    { code: "IXB", monsoonSeverity: 0.9, fogProne: false },
+    { code: "BLR", monsoonSeverity: 0.7, fogProne: false },
+    { code: "BHO", monsoonSeverity: 0.7, fogProne: false },
+    { code: "BBI", monsoonSeverity: 0.9, fogProne: false },
+    { code: "IXC", monsoonSeverity: 0.5, fogProne: true  },
+    { code: "MAA", monsoonSeverity: 0.8, fogProne: false },
+    { code: "GOX", monsoonSeverity: 1.0, fogProne: false },
+    { code: "GOI", monsoonSeverity: 1.0, fogProne: false },
+    { code: "GAU", monsoonSeverity: 0.9, fogProne: false },
+    { code: "HYD", monsoonSeverity: 0.7, fogProne: false },
+    { code: "IDR", monsoonSeverity: 0.7, fogProne: false },
+    { code: "JAI", monsoonSeverity: 0.5, fogProne: true  },
+    { code: "COK", monsoonSeverity: 1.0, fogProne: false },
+    { code: "CCU", monsoonSeverity: 0.9, fogProne: false },
+    { code: "LKO", monsoonSeverity: 0.6, fogProne: true  },
+    { code: "IXM", monsoonSeverity: 0.7, fogProne: false },
+    { code: "IXE", monsoonSeverity: 1.0, fogProne: false },
+    { code: "BOM", monsoonSeverity: 1.0, fogProne: false },
+    { code: "NAG", monsoonSeverity: 0.7, fogProne: false },
+    { code: "DEL", monsoonSeverity: 0.5, fogProne: true  },
+    { code: "PAT", monsoonSeverity: 0.7, fogProne: true  },
+    { code: "PNQ", monsoonSeverity: 0.8, fogProne: false },
+    { code: "IXR", monsoonSeverity: 0.7, fogProne: false },
+    { code: "SXR", monsoonSeverity: 0.3, fogProne: true  },
+    { code: "TRV", monsoonSeverity: 1.0, fogProne: false },
+    { code: "VNS", monsoonSeverity: 0.7, fogProne: true  },
+    { code: "VTZ", monsoonSeverity: 0.8, fogProne: false },
+  ];
 
+  const carriers = ["IndiGo", "AirIndia", "SpiceJet", "Akasa", "Vistara"];
   const routes = [];
-  for (const from of metros) {
-    for (const to of metros) {
-      if (from === to) continue;
-      const mon = monsoonHot.has(from) || monsoonHot.has(to);
-      const fog = fogHot.has(from) || fogHot.has(to);
+  for (const from of airports) {
+    for (const to of airports) {
+      if (from.code === to.code) continue;
       routes.push({
-        from,
-        to,
-        monsoonSeverity: mon ? 1.0 : 0.7,
-        fogSeverity: fog ? 1.0 : 0.3,
-        // Typical carriers that fly this metro pair daily.
-        carriers: ["IndiGo", "AirIndia", "SpiceJet", "Akasa", "Vistara"],
+        from: from.code,
+        to: to.code,
+        // Pair-level monsoon severity = worse of the two endpoints.
+        monsoonSeverity: Math.max(from.monsoonSeverity, to.monsoonSeverity),
+        // Pair-level fog severity: 1.0 if either endpoint is fog-prone, else 0.3.
+        fogSeverity: from.fogProne || to.fogProne ? 1.0 : 0.3,
+        carriers,
       });
     }
   }
   return {
     notes: {
-      source: "Derived from DGCA domestic city-pair rows; curated to metro core.",
+      source:
+        "Derived from DGCA domestic city-pair coverage. 30 airports × 29 directed pairs = 870 routes. " +
+        "monsoonSeverity = max of endpoint climate-zone values; fogSeverity = 1.0 if either endpoint is in the North-Indian fog belt.",
       unit: "severity 0..1",
+      airportCount: airports.length,
+      routeCount: 0, // patched below
       generatedAt: new Date().toISOString().slice(0, 10),
     },
     routes,
