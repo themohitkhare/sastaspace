@@ -36,8 +36,8 @@ jobs:
 
       - name: Rolling restart and rollout status
         run: |
-          DEPLOYMENTS=$(sudo microk8s kubectl get deploy -A -o name)
+          DEPLOYMENTS=$(sudo microk8s kubectl -n sastaspace get deploy -o name)
           if [ -n "$DEPLOYMENTS" ]; then
-            echo "$DEPLOYMENTS" | xargs -n1 sudo microk8s kubectl rollout restart
-            echo "$DEPLOYMENTS" | xargs -n1 sudo microk8s kubectl rollout status --timeout=300s
+            echo "$DEPLOYMENTS" | xargs -n1 sudo microk8s kubectl -n sastaspace rollout restart
+            echo "$DEPLOYMENTS" | xargs -n1 sudo microk8s kubectl -n sastaspace rollout status --timeout=300s
           fi
