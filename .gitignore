@@ -34,3 +34,9 @@ tmp/
 # Docker/local artifacts
 *.pid
 .playwright-mcp/
+
+# Ruflo / claude-flow MCP artifacts (do not commit)
+.claude-flow/
+.swarm/
+ruvector.db
+.mcp.json
