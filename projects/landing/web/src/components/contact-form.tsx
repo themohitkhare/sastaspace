@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Turnstile } from "@marsidev/react-turnstile";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,9 +9,12 @@ import { Label } from "@/components/ui/label";
 
 export function ContactForm({ source = "SastaSpace" }: { source?: string }) {
   const [status, setStatus] = useState<"idle" | "submitting" | "success">("idle");
+  const [error, setError] = useState<string | null>(null);
+  const turnstileSiteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
 
   async function onSubmit(formData: FormData) {
     setStatus("submitting");
+    setError(null);
 
     const payload = {
       name: String(formData.get("name") || ""),
@@ -34,8 +38,24 @@ export function ContactForm({ source = "SastaSpace" }: { source?: string }) {
     }
 
     const body = (await res.json().catch(() => ({}))) as { error?: string };
-    toast.error(body.error ?? "Failed to send message");
+    const msg = body.error ?? "Couldn't send the message. Try again, or email me directly.";
+    setError(msg);
+    toast.error(msg);
     setStatus("idle");
+  }
+
+  if (status === "success") {
+    return (
+      <div
+        role="status"
+        className="max-w-md rounded-[var(--radius-lg)] border border-border bg-card p-6"
+      >
+        <p className="font-medium">Sent.</p>
+        <p className="mt-3 text-sm text-muted-foreground">
+          I read everything. Reply comes from my own email.
+        </p>
+      </div>
+    );
   }
 
   return (
@@ -55,7 +75,7 @@ export function ContactForm({ source = "SastaSpace" }: { source?: string }) {
           name="message"
           required
           rows={5}
-          className="flex min-h-20 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+          className="flex min-h-20 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         />
       </div>
       <input
@@ -65,8 +85,20 @@ export function ContactForm({ source = "SastaSpace" }: { source?: string }) {
         autoComplete="off"
         aria-hidden="true"
       />
-      <Button type="submit" disabled={status === "submitting"}>
-        {status === "submitting" ? "Sending..." : status === "success" ? "Sent" : "Send message"}
+      {turnstileSiteKey && (
+        <Turnstile siteKey={turnstileSiteKey} options={{ theme: "auto" }} />
+      )}
+      {error && (
+        <p id="form-error" role="alert" className="text-sm text-[var(--brand-rust)]">
+          {error}
+        </p>
+      )}
+      <Button
+        type="submit"
+        disabled={status === "submitting"}
+        aria-describedby={error ? "form-error" : undefined}
+      >
+        {status === "submitting" ? "Sending..." : "Send message"}
       </Button>
     </form>
   );

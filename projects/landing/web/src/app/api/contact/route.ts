@@ -11,10 +11,25 @@ type ContactPayload = {
   source?: string;
 };
 
+const ESC_MAP = {
+  "&": "&amp;",
+  "<": "&lt;",
+  ">": "&gt;",
+  '"': "&quot;",
+  "'": "&#39;",
+} as const;
+
+const esc = (s: string) =>
+  s.replace(/[&<>"']/g, (c) => ESC_MAP[c as keyof typeof ESC_MAP]);
+
 async function verifyTurnstile(token: string, remoteip?: string): Promise<boolean> {
   const secret = process.env.TURNSTILE_SECRET_KEY;
   if (!secret) {
-    return true;
+    return process.env.NODE_ENV !== "production";
+  }
+
+  if (!token) {
+    return false;
   }
 
   const body = new URLSearchParams({
@@ -43,6 +58,25 @@ async function verifyTurnstile(token: string, remoteip?: string): Promise<boolea
 
 export async function POST(req: NextRequest) {
   try {
+    const origin = req.headers.get("origin") ?? "";
+    const allowedOrigins = ["https://sastaspace.com"];
+    const allowedSuffix = ".sastaspace.com";
+    let originAllowed = process.env.NODE_ENV !== "production";
+    if (!originAllowed && origin) {
+      if (allowedOrigins.includes(origin)) {
+        originAllowed = true;
+      } else if (origin.startsWith("https://")) {
+        try {
+          originAllowed = new URL(origin).hostname.endsWith(allowedSuffix);
+        } catch {
+          originAllowed = false;
+        }
+      }
+    }
+    if (!originAllowed) {
+      return NextResponse.json({ error: "Forbidden origin" }, { status: 403 });
+    }
+
     const body = (await req.json()) as ContactPayload;
 
     if (body.honeypot) {
@@ -54,16 +88,10 @@ export async function POST(req: NextRequest) {
     }
 
     const token = body.turnstileToken ?? "";
-    if (process.env.TURNSTILE_SECRET_KEY && !token) {
-      return NextResponse.json({ error: "Missing verification token" }, { status: 400 });
-    }
-
     const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim();
-    if (token) {
-      const ok = await verifyTurnstile(token, ip);
-      if (!ok) {
-        return NextResponse.json({ error: "Verification failed" }, { status: 400 });
-      }
+    const verified = await verifyTurnstile(token, ip);
+    if (!verified) {
+      return NextResponse.json({ error: "Verification failed" }, { status: 400 });
     }
 
     const resendKey = process.env.RESEND_API_KEY;
@@ -76,7 +104,8 @@ export async function POST(req: NextRequest) {
       from: "SastaSpace <onboarding@resend.dev>",
       to: [ownerEmail],
       subject: `New message from ${body.source || "project-bank"}`,
-      html: `<p><strong>Name:</strong> ${body.name}</p><p><strong>Email:</strong> ${body.email}</p><p>${body.message}</p>`,
+      html: `<p><strong>Name:</strong> ${esc(body.name)}</p><p><strong>Email:</strong> ${esc(body.email)}</p><p>${esc(body.message).replace(/\n/g, "<br>")}</p>`,
+      text: `Name: ${body.name}\nEmail: ${body.email}\n\n${body.message}`,
     };
 
     const emailRes = await fetch("https://api.resend.com/emails", {
