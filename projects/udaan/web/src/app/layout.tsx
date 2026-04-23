@@ -26,8 +26,9 @@ const notoDeva = Noto_Sans_Devanagari({
 });
 
 export const metadata: Metadata = {
-  title: "udaan — sastaspace",
-  description: "A project on sastaspace.com. Built sasta. Shared openly.",
+  title: "udaan — what to expect on your flight",
+  description:
+    "Tell udaan where and when you're flying. It tells you the risk of delay, cancellation, and baggage trouble — from DGCA data.",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

@@ -1,70 +1,60 @@
-import Link from "next/link";
-import { ArrowRight } from "lucide-react";
-import { AppShell } from "@/components/layout/app-shell";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+"use client";
 
-export default function Page() {
+import { useState } from "react";
+import "./udaan.css";
+import { Topbar } from "@/components/udaan/topbar";
+import { Hero } from "@/components/udaan/hero";
+import { SearchBar, type SearchValue } from "@/components/udaan/search-bar";
+import { ResultCard, type ResultData } from "@/components/udaan/result-card";
+import { UdaanFooter } from "@/components/udaan/footer";
+
+const DEFAULT_INPUT: SearchValue = {
+  from: "DEL",
+  to: "BOM",
+  date: "2026-07-15",
+};
+
+// Static default that mirrors the mockup. Task 5 swaps this for computeRisk(data, input).
+const DEFAULT_RESULT: ResultData = {
+  fromCity: "Delhi",
+  toCity: "Mumbai",
+  dateLabel: "Wed, 15 Jul 2026",
+  seasonTag: "peak monsoon",
+  delayPct: "22%",
+  delayBand: "mid",
+  delaySub: "mid-risk · monsoon adds ~6pp",
+  cancelPct: "1.8%",
+  cancelBand: "low",
+  cancelSub: "low · IndiGo 1.4, SpiceJet 2.5",
+  baggagePct: "0.4%",
+  baggageBand: "low",
+  baggageSub: "low · within normal range",
+  shortRead: {
+    lead: "Mid-risk monsoon flight.",
+    leadEm: "Delay is the main story",
+    leadTail:
+      " — roughly one in five flights on this route in July runs more than two hours late. But monsoon delays are treated as force majeure, so the airline isn’t liable for compensation.",
+    body: "Cancellation and baggage risk are both low. DGCA already refunds airline-caused cancellations in full, and baggage liability is ₹20,000 per passenger before you pay anyone a paisa.",
+  },
+};
+
+export default function UdaanPage() {
+  const [input, setInput] = useState<SearchValue>(DEFAULT_INPUT);
+  // Task 5 replaces this with derived state from computeRisk().
+  const result = DEFAULT_RESULT;
+
   return (
-    <AppShell projectName="udaan">
-      <section className="border-b">
-        <div className="mx-auto max-w-6xl px-4 py-20 sm:py-28">
-          <Badge variant="outline" className="mb-6 text-xs">
-            Project Bank
-          </Badge>
-          <h1 className="max-w-3xl text-4xl font-semibold tracking-tight sm:text-5xl">
-            udaan
-          </h1>
-          <p className="mt-4 max-w-2xl text-lg text-muted-foreground">
-            A project on sastaspace.com. Replace this copy with what the project does and why it
-            exists.
-          </p>
-          <div className="mt-8 flex gap-3">
-            <Button asChild>
-              <Link href="/contact">
-                Get in touch
-                <ArrowRight className="ml-1 h-4 w-4" />
-              </Link>
-            </Button>
-            <Button asChild variant="outline">
-              <Link href="https://sastaspace.com">All projects</Link>
-            </Button>
-          </div>
+    <div className="udaan">
+      <div className="wrap">
+        <Topbar />
+        <Hero />
+        <SearchBar value={input} onChange={setInput} />
+        <div className="search-sub">
+          Based on DGCA data through January 2026. No login, no emails, no tracking.
         </div>
-      </section>
-
-      <section className="mx-auto max-w-6xl px-4 py-16">
-        <div className="grid gap-4 sm:grid-cols-3">
-          <Card>
-            <CardHeader>
-              <CardTitle>Fast</CardTitle>
-              <CardDescription>Next.js App Router with streaming and RSC.</CardDescription>
-            </CardHeader>
-            <CardContent className="text-sm text-muted-foreground">
-              Built-in SSR, edge-ready by default.
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader>
-              <CardTitle>Data</CardTitle>
-              <CardDescription>Postgres + PostgREST shared across projects.</CardDescription>
-            </CardHeader>
-            <CardContent className="text-sm text-muted-foreground">
-              50+ extensions via supabase/postgres.
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader>
-              <CardTitle>Auth</CardTitle>
-              <CardDescription>GoTrue + RLS, opt-in per project.</CardDescription>
-            </CardHeader>
-            <CardContent className="text-sm text-muted-foreground">
-              Same JWT secret as PostgREST.
-            </CardContent>
-          </Card>
-        </div>
-      </section>
-    </AppShell>
+        <ResultCard data={result} />
+        <UdaanFooter />
+      </div>
+    </div>
   );
 }
