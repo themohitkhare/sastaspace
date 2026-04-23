@@ -3,14 +3,14 @@ import { Footer } from "@/components/layout/footer";
 
 export function AppShell({
   children,
-  projectName,
 }: {
   children: React.ReactNode;
+  /** Reserved for future per-project branding. Currently unused on sastaspace.com itself. */
   projectName?: string;
 }) {
   return (
     <div className="flex min-h-screen flex-col">
-      <Topbar projectName={projectName} />
+      <Topbar />
       <main className="flex-1">{children}</main>
       <Footer />
     </div>

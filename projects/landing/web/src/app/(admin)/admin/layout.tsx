@@ -11,7 +11,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
   return (
     <div className="flex min-h-screen flex-col">
-      <Topbar projectName="SastaSpace" />
+      <Topbar />
       <div className="flex flex-1">
         <Sidebar
           title="Admin"
