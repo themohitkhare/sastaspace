@@ -1,0 +1,108 @@
+# Per-project manifest for udaan.sastaspace.com.
+#
+# Build image on the cluster host (see scripts/k8s-deploy.sh):
+#   docker build -f projects/_template/Dockerfile.web \
+#                -t localhost:32000/sastaspace-udaan:latest \
+#                projects/udaan/web
+#   docker push localhost:32000/sastaspace-udaan:latest
+#
+# udaan has no auth, no database, no Supabase dependencies — it's a static
+# Next app that serves three JSON bundles from /public/data/ and does all
+# computation in the client. So no gotrue, no postgrest, no secrets wiring.
+#
+# DO NOT apply this file yet. The Cloudflare tunnel needs a matching hostname
+# route (udaan.sastaspace.com → node:80) added by the owner before ingress-
+# nginx will receive traffic. See design-log/004-udaan-v1.md for the deploy
+# checklist.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: udaan
+  namespace: sastaspace
+  labels:
+    app: udaan
+spec:
+  replicas: 1
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: udaan
+  template:
+    metadata:
+      labels:
+        app: udaan
+    spec:
+      containers:
+        - name: udaan
+          image: localhost:32000/sastaspace-udaan:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 3000
+              name: http
+          env:
+            - name: NODE_ENV
+              value: production
+            - name: PORT
+              value: "3000"
+            - name: HOSTNAME
+              value: "0.0.0.0"
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 3000
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 3000
+            initialDelaySeconds: 30
+            periodSeconds: 30
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 384Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: udaan
+  namespace: sastaspace
+  labels:
+    app: udaan
+spec:
+  selector:
+    app: udaan
+  ports:
+    - port: 3000
+      targetPort: 3000
+      name: http
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: udaan-ingress
+  namespace: sastaspace
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+    nginx.ingress.kubernetes.io/use-forwarded-headers: "true"
+spec:
+  ingressClassName: public
+  rules:
+    - host: udaan.sastaspace.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: udaan
+                port:
+                  number: 3000
