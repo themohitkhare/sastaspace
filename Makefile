@@ -18,7 +18,7 @@ new:
 	./scripts/new-project.sh $(p)
 
 migrate:
-	@echo "migrate placeholder"
+	@echo "migrate placeholder for project $(p)"
 
 build:
 	@echo "build placeholder"
