@@ -60,7 +60,69 @@ make remote-psql     # psql into remote postgres
 
 ### CI/CD
 
-Single workflow `.github/workflows/deploy.yml` triggers on push to `main`. The self-hosted runner lives on the production host (192.168.0.37) and: builds Docker images, pushes to the MicroK8s-local registry (`localhost:32000`), applies shared + per-project k8s manifests, then does a rolling restart with a 300s rollout check. The Cloudflare tunnel already has the routes, so new pods are live on `*.sastaspace.com` without any DNS changes. No separate lint/test CI jobs yet.
+Single workflow `.github/workflows/deploy.yml` triggers on push to `main`. The self-hosted runner lives on the production host (192.168.0.37) and: builds Docker images, pushes to the MicroK8s-local registry (`localhost:32000`), applies shared + per-project k8s manifests, then does a rolling restart with a 300s rollout check. No separate lint/test CI jobs yet.
+
+### Deploying a feature branch manually
+
+`.github/workflows/deploy.yml` only runs on pushes to `main`. To ship a feature branch to production without merging, do the three pieces yourself:
+
+```bash
+# 1. Image — rsync only what's needed, then build + push on the host
+ssh 192.168.0.37 "mkdir -p /tmp/<name>-deploy"
+rsync -az --exclude node_modules --exclude .next \
+  projects/<name>/web/ 192.168.0.37:/tmp/<name>-deploy/web/
+scp projects/_template/Dockerfile.web 192.168.0.37:/tmp/<name>-deploy/Dockerfile.web
+scp projects/<name>/k8s.yaml        192.168.0.37:/tmp/<name>-deploy/
+
+ssh 192.168.0.37 'cd /tmp/<name>-deploy && \
+  TAG=$(date -u +%Y%m%d-%H%M%S) && \
+  docker build -f Dockerfile.web \
+    -t localhost:32000/sastaspace-<name>:$TAG \
+    -t localhost:32000/sastaspace-<name>:latest web && \
+  docker push localhost:32000/sastaspace-<name>:$TAG && \
+  docker push localhost:32000/sastaspace-<name>:latest && \
+  microk8s kubectl apply -f k8s.yaml && \
+  microk8s kubectl -n sastaspace rollout status deploy/<name> --timeout=180s'
+
+# 2. DNS — use the zone-scoped token in keychain
+CF_TOKEN=$(security find-generic-password -a sastaspace -s cloudflare-api-token -w)
+ZONE=f90dcc0f12180c1d2b5fb5d488887c24        # sastaspace.com
+TUNNEL=b3d36ee8-8bd2-4289-83a0-bf2ab53aa3b8  # Tunnel ID
+curl -X POST "https://api.cloudflare.com/client/v4/zones/$ZONE/dns_records" \
+  -H "Authorization: Bearer $CF_TOKEN" -H "Content-Type: application/json" \
+  --data "{\"type\":\"CNAME\",\"name\":\"<name>\",\"content\":\"$TUNNEL.cfargotunnel.com\",\"proxied\":true}"
+
+# 3. Tunnel public hostname — still manual (dashboard), see note below
+```
+
+Remote `~/sastaspace` often lags behind `main`. Don't rsync the whole tree to the remote unless you intend to sync the repo — build out of `/tmp/<name>-deploy/` instead.
+
+### Cloudflare tunnel — what the zone-scoped API token can and can't do
+
+The token at `security find-generic-password -a sastaspace -s cloudflare-api-token -w` is **zone-scoped**. It can create DNS records on `sastaspace.com` but it **cannot** add public-hostname routes to the tunnel — the tunnel config lives at account scope and returns `7003 Could not route / perhaps your object identifier is invalid` for any `accounts/*/cfd_tunnel/*/configurations` call.
+
+What this means in practice:
+
+- DNS CNAME + ingress + pod is **not enough** on its own. A brand-new subdomain without a matching public-hostname route on the tunnel returns **HTTP 404 from Cloudflare** (body empty, `server: cloudflare`) — the tunnel drops the request before it reaches the node.
+- Adding a public hostname currently requires the **Cloudflare Zero Trust dashboard** → Networks → Tunnels → `sastaspace-prod` (tunnel id `b3d36ee8-8bd2-4289-83a0-bf2ab53aa3b8`) → Public Hostname → add `<name>.sastaspace.com` with service `http://localhost:80`.
+- Or: mint an account-scoped Cloudflare token with `Account:Cloudflare Tunnel:Edit` and stash it in keychain under a second service name (e.g. `cloudflare-tunnel-token`) so future deploys can PUT the configuration via `PUT /accounts/{account_id}/cfd_tunnel/{tunnel_id}/configurations`.
+
+### Scaffolding into a pre-existing project directory
+
+`scripts/new-project.sh` (and therefore `make new p=<name>`) refuses to run if `projects/<name>/` already exists — even if only sibling directories like `data-audit/` or `design/` are present. Two ways forward:
+
+```bash
+# (a) do it manually — same effect as the script's guts
+rsync -a --exclude node_modules --exclude .next \
+  projects/_template/web/ projects/<name>/web/
+find projects/<name>/web -type f \
+  -exec sed -i.bak "s/__NAME__/<name>/g" {} \; && \
+  find projects/<name>/web -name "*.bak" -delete
+
+# (b) or move the pre-existing subdir out, scaffold, move it back.
+```
+
+The scaffold assumes a Next.js + Go split. For a web-only project (no API, no auth, no DB) the Supabase machinery in `src/lib/supabase/`, `src/app/(auth)/`, `src/app/(admin)/`, and `proxy.ts` is inherited but unused; either leave it be (routes work but aren't linked) or prune in a follow-up pass.
 
 ## Tech Stack
 
@@ -80,6 +142,11 @@ Single workflow `.github/workflows/deploy.yml` triggers on push to `main`. The s
 - `db/seed/` - seed data scripts
 - `projects/_template/` - default scaffold (Next.js + shadcn + Supabase auth + Go API)
 - `projects/landing/` - `sastaspace.com` portfolio app
+- `projects/<name>/data/` - optional: per-project ETL (Node/Python) that writes
+  JSON bundles into both `data/out/` and `<name>/web/public/data/`. Pattern
+  established by udaan; keeps the ETL script in the repo and the generated
+  JSONs out of `data/out/` (gitignored) while the copy under `web/public/data/`
+  ships in the image. See `projects/udaan/data/README.md`.
 - `scripts/` - key-gen, migrations, scaffolder, remote helpers, verify
 - `design-log/` - design decisions and implementation history
 
@@ -142,8 +209,18 @@ graph TD
 4. Keep one project per subdomain and one `k8s.yaml` per project
 5. Validate locally (`npm run build` in the project), then deploy via `.github/workflows/deploy.yml`
 
+## Testing conventions
+
+No test runner is wired in by default. Projects that need unit coverage should:
+
+- Add `vitest` (+ `@vitest/coverage-v8`) as a devDependency and expose `test` / `test:watch` scripts. This is the minimum footprint for a Next.js 16 TS app and matches what udaan uses (`src/lib/*/compute-risk.test.ts`).
+- Put tests next to the code they exercise (`foo.test.ts` beside `foo.ts`), not in a top-level `tests/` tree.
+- Keep pure-function cores pure. A risk/score/price function that reaches for `fetch`, `Date.now()`, or `Math.random()` is hard to test deterministically — push side effects out to the caller.
+
 ## References
 
 - Foundation design: `design-log/001-project-bank-foundations.md`
 - Auth + UI upgrade: `design-log/002-auth-admin-ui-upgrade.md`
+- Brand rollout: `design-log/003-brand-rollout.md`
+- udaan v1 (first post-brand project + deploy learnings): `design-log/004-udaan-v1.md`
 - Root quickstart: `README.md`
