@@ -1,68 +1,33 @@
-# Claude Code internals
-.claude/
-.claude-flow/
-
-# Ruflo swarm state
-.swarm/
-
-# Environment & secrets
+# Environment and secrets
 .env
 .env.*
-web/.env.local
-k8s/secrets.yaml
-k8s/monitoring/secrets.yaml
+!.env.example
 *.pem
 *.key
 *.p12
 *.pfx
 *.jks
 
-# Generated sites
-sites/
+# Dependencies
+node_modules/
 
-# Python
-__pycache__/
-*.py[cod]
-.venv/
-*.egg-info/
+# JavaScript / TypeScript build outputs
+.next/
+out/
 dist/
-.coverage
-.pytest_cache/
-htmlcov/
+coverage/
+*.tsbuildinfo
 
-# Node.js / Next.js
-web/node_modules/
-web/.next/
-redesign-template/node_modules/
+# Go build outputs
+bin/
+*.test
+*.out
 
-# claude-code-api — clone from https://github.com/codingworkflow/claude-code-api
-claude-code-api/
-
-# Test artifacts
-test-results/
-web/test-results/
-
-# Screenshots (from browser monitoring — not source assets)
-*.png
-*.jpg
-*.jpeg
-
-# Playwright MCP logs
-.playwright-mcp/
-
-# Plan cache (generated at runtime)
-plan_cache/
-
-# Runtime data (never commit)
-backend/data/
-grafana/data/
-loki/data/
-
-# Docker
+# General runtime/cache
 *.log
+tmp/
+.cache/
+.DS_Store
 
-# Build artifacts
-.coverage
-.pytest_cache/
-.ruff_cache/
-
+# Docker/local artifacts
+*.pid

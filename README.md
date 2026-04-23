@@ -1,46 +1,22 @@
-# SastaSpace — AI Website Redesigner
+# SastaSpace Project Bank
 
-Enter any website URL → get a beautiful AI-redesigned version in your browser in under 60 seconds.
+SastaSpace is now a personal project bank monorepo.
 
-## Quick Start
+Each project lives under `projects/<name>/` and is deployed to `<name>.sastaspace.com`.
 
-```bash
-# 1. Install dependencies
-uv sync
-uv run playwright install chromium
+This repository is currently being reset from the legacy AI redesigner stack to the new foundations.
 
-# 2. Configure
-cp .env.example .env
-# Edit .env and add your ANTHROPIC_API_KEY
+## Current status
 
-# 3. Redesign a website
-sastaspace redesign https://example.com
-```
+- Foundations plan: `design-log/001-project-bank-foundations.md`
+- Execution mode: phased migration (Phase 0 through Phase 5)
+- Production cutover remains manual in Phase 6
 
-## Commands
+## What to expect next
 
-| Command | Description |
-|---------|-------------|
-| `sastaspace redesign <url>` | Full pipeline: crawl → AI redesign → preview |
-| `sastaspace redesign <url> -s myname` | Use custom subdomain |
-| `sastaspace redesign <url> --no-open` | Skip auto-opening browser |
-| `sastaspace list` | List all redesigned sites |
-| `sastaspace open <subdomain>` | Open a site in browser |
-| `sastaspace remove <subdomain>` | Remove a site |
-| `sastaspace serve` | Start preview server (foreground) |
+- Shared Postgres (`supabase/postgres`) with core extensions
+- Optional shared PostgREST sidecar
+- Project template for Next.js + Go
+- Landing project at `sastaspace.com`
 
-## How It Works
-
-1. **Crawl** — Playwright headless browser renders the target site, extracts content + screenshot
-2. **Redesign** — Claude AI analyzes screenshot + content, generates a modern single-file HTML redesign
-3. **Deploy** — HTML saved to `sites/{subdomain}/index.html`
-4. **Serve** — FastAPI server at `http://localhost:8080` serves all redesigns
-
-## Configuration (.env)
-
-```env
-ANTHROPIC_API_KEY=sk-ant-...  # Required
-SITES_DIR=./sites             # Where to save redesigns (default: ./sites)
-SERVER_PORT=8080              # Preview server port (default: 8080)
-CLAUDE_MODEL=claude-sonnet-4-20250514  # Claude model (default)
-```
+See `design-log/001-project-bank-foundations.md` for the full design and implementation phases.

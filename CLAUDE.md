@@ -1,3 +1,5 @@
+> Pivot in progress: this repo is being migrated to the Project Bank architecture (see design-log/001-project-bank-foundations.md).
+
 <!-- GSD:project-start source:PROJECT.md -->
 ## Project
 
