@@ -64,9 +64,18 @@ Single workflow `.github/workflows/deploy.yml` triggers on push to `main` **or `
 
 New projects need one manual edit to the workflow — a `Build <name> image` + `Push <name> image` block per project — because Dockerfiles and build contexts vary. The apply + rollout steps pick up `projects/<name>/k8s.yaml` automatically via the glob.
 
+**First-push-to-a-new-branch quirk.** If a push to a brand-new branch *also* introduces the `on:` trigger for that branch in the workflow file (the classic bootstrap situation), GitHub occasionally doesn't auto-trigger the run. Workaround: `gh workflow run deploy.yml --ref <branch>` once — the next push onward auto-triggers normally.
+
+### Git flow
+
+- `main` — production. Anything here should have been deployed and verified.
+- `develop` — integration. Both branches deploy to the same cluster via the CI/CD workflow above; there is no separate staging environment today, so "land on develop" and "land on main" are effectively the same blast radius.
+- Feature branches — named after what they do (`udaan-v1`, `espocrm-migration`, …). Merge `--ff-only` into `develop` when ready, then fast-forward into `main` when you want the canonical tip to move. Don't rebase shared branches; don't force-push `main` or `develop`.
+- When in doubt, develop → main is the safer path than feature → main directly, so the CI run on develop catches problems before they touch production-tagged history.
+
 ### Deploying a feature branch manually
 
-`.github/workflows/deploy.yml` only runs on pushes to `main`. To ship a feature branch to production without merging, do the three pieces yourself:
+Sometimes you need a subdomain live before the branch is ready to merge. The CI path (push to `develop` or `main`) handles everything; this manual recipe is the escape hatch when you can't or don't want to push. Three pieces:
 
 ```bash
 # 1. Image — rsync only what's needed, then build + push on the host
@@ -154,6 +163,29 @@ find projects/<name>/web -type f \
 
 The scaffold assumes a Next.js + Go split. For a web-only project (no API, no auth, no DB) the Supabase machinery in `src/lib/supabase/`, `src/app/(auth)/`, `src/app/(admin)/`, and `proxy.ts` is inherited but unused; either leave it be (routes work but aren't linked) or prune in a follow-up pass.
 
+### New project — end-to-end checklist
+
+The one-stop list for bringing a new subdomain online. Every step links to the relevant detail above.
+
+1. **Design log first.** `design-log/NNN-<name>.md` — scope, what shared infra you opt in to (auth? DB? neither?), what data you need. This is the decision record.
+2. **Brand compliance.** Read `brand/BRAND_GUIDE.md` before writing any UI. Invariants that have bitten recent projects: no gradients/shadows/glows, only 400/500 font weights, paper (`#f5f1e8`) not white as the page bg, sasta orange used in ≤4 accent places (never body text), Hindi only where the design calls for it. Code review rejects violations.
+3. **Scaffold.** `make new p=<name>`, or the manual rsync + sed fallback above if `projects/<name>/` already exists.
+4. **Build the project.** `projects/<name>/web` is the Next.js app; `projects/<name>/api` is the optional Go API. Static-data projects can drop a `projects/<name>/data/` ETL that writes JSON into `web/public/data/` (udaan established this pattern).
+5. **Verify locally.** `npm run build && npm test && npx eslint .` in `projects/<name>/web/` before committing. Keep pure cores pure (see "Testing conventions").
+6. **Per-project manifest.** `projects/<name>/k8s.yaml` — Deployment + Service + Ingress. Model it on `infra/k8s/landing.yaml` for the shapes and on `projects/udaan/k8s.yaml` if you don't need DB/auth/Supabase envs. Image name convention: `localhost:32000/sastaspace-<name>:latest`.
+7. **Wire the CI build.** Add a `Build <name> image` + `Push <name> image` step pair in `.github/workflows/deploy.yml`. Use `projects/<name>/Dockerfile.web` if it exists, otherwise `projects/_template/Dockerfile.web` with `projects/<name>/web` as the build context.
+8. **DNS + tunnel hostname.** The two curls in "Deploying a feature branch manually" above. CI doesn't handle this today; it's a one-shot per project and both calls use the same keychain token.
+9. **Land on `develop`** via a fast-forward merge; CI deploys automatically; smoke-test `https://<name>.sastaspace.com/`. Fast-forward `develop` → `main` when you're ready to mark it shipped.
+
+### Known fragile spots
+
+Writing these down so they stop wasting re-discovery time:
+
+- Account ID typos read like permission errors (Cloudflare 7003). See the tunnel section above — always pull the account ID from `/zones/{zone}/.result.account.id`, never hand-decode the base64 tunnel token.
+- `~/sastaspace` on the prod host is a separate clone and is often on a different branch from your local tip. `scripts/k8s-deploy.sh` and `scripts/remote.sh` do some rsyncs that assume the remote matches local — don't use them mid-flight if you're on a feature branch. Build out of `/tmp/<name>-deploy/` for feature-branch deploys.
+- `next-env.d.ts` gets rewritten by `next build` and `next dev` slightly differently (the internal routes path changes between `.next/dev/types/` and `.next/types/`). If git shows it dirty right after running dev, don't commit the churn — revert and let build settle it.
+- The `_template` re-uses `Noto Sans Devanagari` via `next/font`, not IBM Plex Sans Devanagari as the brand guide originally specified. The mockup and the runtime both use Noto; updating the brand guide is cleaner than fighting it.
+
 ## Tech Stack
 
 - Frontend: Next.js 16 (App Router) + TypeScript + Tailwind v4 + shadcn/ui
@@ -182,44 +214,48 @@ The scaffold assumes a Next.js + Go split. For a web-only project (no API, no au
 
 ## Conventions
 
-- Project folders use kebab-case: `projects/my-project`
-- Project schema naming: `project_<name>`
-- Web app code in `projects/<name>/web`, Go API in `projects/<name>/api`
-- Shared services in `infra/k8s`, per-project manifests in `projects/<name>/k8s.yaml`
-- No secrets in git: only `.env.example` and `infra/k8s/secrets.yaml.template`
-- Design log first for significant changes (see `design-log/`)
+- Project folders use kebab-case: `projects/my-project`.
+- Project schema naming (when using shared Postgres): `project_<name>`.
+- Web app code in `projects/<name>/web`, Go API in `projects/<name>/api`, data pipeline (if any) in `projects/<name>/data/` with generated JSON copied into `<name>/web/public/data/`.
+- Shared services in `infra/k8s`, per-project manifests in `projects/<name>/k8s.yaml`.
+- Image tag convention: `localhost:32000/sastaspace-<name>:latest` (plus `<sha>` or `<timestamp>` for immutable pins).
+- No secrets in git: only `.env.example` and `infra/k8s/secrets.yaml.template`. Secrets live in macOS Keychain locally and in `infra/k8s/secrets.yaml` (gitignored) on the cluster.
+- Design log first for significant changes (see `design-log/`).
+- Commit message format for task-structured work: `<project>: task <n> — <short>` (see the udaan-v1 branch).
+- Branch commits granularly, one commit per task; fast-forward merge feature branches into `develop`.
 
 ## Architecture
 
+Everything lives in the single `sastaspace` namespace on MicroK8s. Per-project deployments opt in to shared Postgres / GoTrue only if they need them — udaan, for example, has no DB or auth dependencies at all.
+
 ```mermaid
 graph TD
-    CF[CloudflareTunnel]
-    subgraph mk8s [MicroK8s]
-        ING[NginxIngress]
-        subgraph shared [sastaspaceNamespace]
+    CF[Cloudflare Tunnel]
+    subgraph mk8s [MicroK8s · namespace sastaspace]
+        ING[nginx-ingress]
+        subgraph shared [shared services]
             PG[(Postgres)]
             PGR[PostgREST]
             GT[GoTrue]
             ST[Studio]
-            PM[pgMeta]
+            PM[pg-meta]
         end
-        subgraph proj [projectsNamespace]
+        subgraph proj [project deployments]
             LAND[landing]
-            APP1[projectFoo]
-            APP2[projectBar]
+            UD[udaan]
+            APPn[... future]
         end
     end
     CF -->|*.sastaspace.com| ING
     ING -->|sastaspace.com| LAND
     ING -->|auth.sastaspace.com| GT
     ING -->|studio.sastaspace.com| ST
-    ING -->|foo.sastaspace.com| APP1
-    ING -->|bar.sastaspace.com| APP2
+    ING -->|udaan.sastaspace.com| UD
+    ING -->|name.sastaspace.com| APPn
     LAND --> PG
-    APP1 --> PG
-    APP2 --> PG
+    APPn -.optional.-> PG
     LAND -->|JWT| GT
-    APP1 -->|JWT| GT
+    APPn -.optional.-> GT
     ST --> PM --> PG
 ```
 
@@ -233,11 +269,15 @@ graph TD
 
 ## Workflow
 
-1. Add or update design log in `design-log/`
-2. Use `make new p=<name>` (or `scripts/new-project.sh <name>`) for new apps
-3. Add project DB migrations under `projects/<name>/db/migrations/`
-4. Keep one project per subdomain and one `k8s.yaml` per project
-5. Validate locally (`npm run build` in the project), then deploy via `.github/workflows/deploy.yml`
+For a substantive change (new project, new subsystem, architectural shift): follow the **New project end-to-end checklist** in the Build & Dev Commands section above.
+
+For an incremental change to an existing project:
+
+1. Work on a feature branch, not on `develop` or `main` directly.
+2. Keep commits small and task-scoped (`<project>: task <n> — <short>`).
+3. Validate locally — `npm run build`, `npm test` (if wired), `npx eslint .` — before pushing.
+4. Fast-forward merge into `develop`; CI deploys automatically. Fast-forward `develop` into `main` once you're confident.
+5. Update the design log in `design-log/` when the change is significant enough that a future agent would benefit from the context.
 
 ## Testing conventions
 
