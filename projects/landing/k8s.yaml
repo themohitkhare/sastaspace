@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: landing-web
+  namespace: projects
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: landing-web
+  template:
+    metadata:
+      labels:
+        app: landing-web
+    spec:
+      containers:
+        - name: web
+          image: localhost:32000/sastaspace-landing-web:latest
+          ports:
+            - containerPort: 3000
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: landing-web
+  namespace: projects
+spec:
+  selector:
+    app: landing-web
+  ports:
+    - port: 80
+      targetPort: 3000
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: landing
+  namespace: projects
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: sastaspace.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: landing-web
+                port:
+                  number: 80

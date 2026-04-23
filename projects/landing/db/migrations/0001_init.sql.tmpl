@@ -1,0 +1,9 @@
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'project_landing') THEN
+    CREATE ROLE project_landing NOLOGIN;
+  END IF;
+END $$;
+
+CREATE SCHEMA IF NOT EXISTS project_landing AUTHORIZATION project_landing;
+GRANT USAGE ON SCHEMA project_landing TO web_anon;
