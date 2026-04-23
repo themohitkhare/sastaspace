@@ -20,7 +20,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
             { href: "/admin/users", label: "Users", icon: "users" },
           ]}
         />
-        <div className="flex-1 p-6">{children}</div>
+        <main id="main" className="flex-1 p-6">{children}</main>
       </div>
     </div>
   );

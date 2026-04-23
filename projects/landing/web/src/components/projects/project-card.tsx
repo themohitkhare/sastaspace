@@ -30,7 +30,7 @@ export function ProjectCard({ project }: { project: Project }) {
       rel="noreferrer"
       className="group block rounded-[var(--radius-lg)] border border-border bg-card p-6 transition-all hover:-translate-y-[1px] hover:border-foreground"
     >
-      <div className="font-mono text-[11px] tracking-[0.04em] text-[var(--brand-sasta)]">
+      <div className="font-mono text-[11px] tracking-[0.04em] text-[var(--brand-sasta-text)]">
         {hostname}
       </div>
       <h3 className="mt-1.5 text-xl font-medium tracking-tight">{project.name}</h3>

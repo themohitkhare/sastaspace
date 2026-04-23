@@ -2,14 +2,13 @@ import Link from "next/link";
 import { AppShell } from "@/components/layout/app-shell";
 import { ProjectCard, type Project } from "@/components/projects/project-card";
 
-export const dynamic = "force-dynamic";
-export const revalidate = 0;
+export const revalidate = 300;
 
 async function getProjects(): Promise<Project[]> {
   const base = process.env.POSTGREST_URL || "http://localhost:3001";
   try {
     const res = await fetch(`${base}/projects?order=live_at.desc.nullslast`, {
-      cache: "no-store",
+      next: { revalidate: 300 },
     });
     if (!res.ok) return [];
     return (await res.json()) as Project[];
@@ -44,11 +43,6 @@ function Hero() {
         A <span className="text-[var(--brand-sasta)]">sasta</span> lab for the
         things I want to build.
       </h1>
-      <p className="mt-4 font-deva text-base text-muted-foreground sm:text-lg">
-        जो बनाना है, बनाओ.
-        <span className="px-2 text-[var(--brand-dust)]">·</span>
-        <span className="font-sans">build what you want to build.</span>
-      </p>
       <p className="mt-6 max-w-2xl text-[17px] leading-relaxed text-foreground/85 sm:text-[19px] sm:leading-[1.55]">
         This is my workshop on the open internet. I make the small things I want
         to exist — tools, toys, half-built experiments — and put them somewhere
@@ -96,15 +90,12 @@ function LabSection() {
       id="lab"
       className="mx-auto max-w-5xl border-t border-border px-6 py-20 sm:px-8"
     >
-      <div className="font-mono text-xs tracking-[0.08em] text-[var(--brand-sasta)]">
+      <div className="font-mono text-xs tracking-[0.08em] text-[var(--brand-sasta-text)]">
         the idea
       </div>
       <h2 className="mt-3.5 text-[32px] leading-[1.1] tracking-[-0.02em] sm:text-[42px]">
         Not a portfolio. A lab.
       </h2>
-      <p className="mt-1 font-deva text-base text-muted-foreground">
-        पोर्टफोलियो नहीं, एक प्रयोगशाला.
-      </p>
       <p className="mt-6 max-w-2xl text-[17px] leading-[1.6] text-foreground/85 sm:text-[18px]">
         Portfolios edit for wins. Labs show the whole bench. Sastaspace runs on
         three rules — the ones that make it possible to keep shipping small
@@ -117,7 +108,7 @@ function LabSection() {
             key={p.num}
             className="rounded-[var(--radius-lg)] border border-border bg-card p-6"
           >
-            <div className="font-mono text-xs tracking-[0.08em] text-[var(--brand-sasta)]">
+            <div className="font-mono text-xs tracking-[0.08em] text-[var(--brand-sasta-text)]">
               {p.num}
             </div>
             <h3 className="mt-2.5 text-xl font-medium tracking-tight">
@@ -141,7 +132,7 @@ function ProjectsSection({ projects }: { projects: Project[] }) {
     >
       <div className="flex items-end justify-between">
         <div>
-          <div className="font-mono text-xs tracking-[0.08em] text-[var(--brand-sasta)]">
+          <div className="font-mono text-xs tracking-[0.08em] text-[var(--brand-sasta-text)]">
             projects
           </div>
           <h2 className="mt-3.5 text-[32px] leading-[1.1] tracking-[-0.02em] sm:text-[42px]">
@@ -159,9 +150,6 @@ function ProjectsSection({ projects }: { projects: Project[] }) {
         <div className="mt-10 rounded-[var(--radius-lg)] border border-dashed border-border bg-card px-6 py-14 text-center">
           <p className="text-[17px] text-foreground">
             The workshop&apos;s quiet today. Come back soon.
-          </p>
-          <p className="mt-2 font-deva text-sm text-muted-foreground">
-            आज कार्यशाला शांत है.
           </p>
         </div>
       ) : (
@@ -187,7 +175,7 @@ function NotesSection() {
       id="notes"
       className="mx-auto max-w-5xl border-t border-border px-6 py-20 sm:px-8"
     >
-      <div className="font-mono text-xs tracking-[0.08em] text-[var(--brand-sasta)]">
+      <div className="font-mono text-xs tracking-[0.08em] text-[var(--brand-sasta-text)]">
         workshop notes
       </div>
       <h2 className="mt-3.5 text-[32px] leading-[1.1] tracking-[-0.02em] sm:text-[42px]">
@@ -225,15 +213,12 @@ function AboutSection() {
     >
       <div className="grid gap-10 sm:grid-cols-[1fr_1.25fr] sm:gap-16">
         <div>
-          <div className="font-mono text-xs tracking-[0.08em] text-[var(--brand-sasta)]">
+          <div className="font-mono text-xs tracking-[0.08em] text-[var(--brand-sasta-text)]">
             about
           </div>
           <h2 className="mt-3.5 text-[32px] leading-[1.1] tracking-[-0.02em] sm:text-[42px]">
             Hi — I&apos;m Mohit.
           </h2>
-          <p className="mt-2 font-deva text-base text-muted-foreground">
-            नमस्ते, मैं मोहित हूँ.
-          </p>
         </div>
         <div className="space-y-4 text-[17px] leading-[1.7] text-foreground/90">
           <p>
@@ -254,14 +239,14 @@ function AboutSection() {
             bookmark{" "}
             <Link
               href="#notes"
-              className="text-[var(--brand-sasta)] underline-offset-4 hover:underline"
+              className="text-[var(--brand-sasta-text)] underline-offset-4 hover:underline"
             >
               the notes
             </Link>
             , or grab the{" "}
             <Link
               href="/rss.xml"
-              className="text-[var(--brand-sasta)] underline-offset-4 hover:underline"
+              className="text-[var(--brand-sasta-text)] underline-offset-4 hover:underline"
             >
               RSS feed
             </Link>

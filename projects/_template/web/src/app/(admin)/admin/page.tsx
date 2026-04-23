@@ -8,8 +8,8 @@ export default async function AdminOverviewPage() {
   return (
     <div className="grid gap-6">
       <div>
-        <h1 className="text-3xl font-semibold tracking-tight">Admin</h1>
-        <p className="text-muted-foreground">Signed in as {user?.email}</p>
+        <h1 className="text-3xl font-medium tracking-tight">The back room.</h1>
+        <p className="mt-2 text-sm text-muted-foreground">Signed in as {user?.email}.</p>
       </div>
       <div className="grid gap-4 sm:grid-cols-2">
         <Card>

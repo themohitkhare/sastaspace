@@ -7,7 +7,6 @@ Ready to paste. Lengths scale: bio1 for Twitter / GitHub, bio2 for LinkedIn summ
 ## Taglines
 
 - **Primary:** A sasta lab for the things I want to build.
-- **Hindi:** जो बनाना है, बनाओ. *(build what you want to build)*
 - **Sub:** Small projects, built cheap, out in the open.
 - **Short (social bios):** My lab. Shipped sasta. Shared openly.
 - **Alt:** Built sasta. Shared openly. No roadmap.
@@ -37,7 +36,7 @@ Variants:
 >
 > His real fun lives at **sastaspace.com**: a personal lab where he builds the things he wants to build and shares them with the world. Every project gets its own subdomain, shares one database and one design language, and stays live as long as it's useful. Some of the work is polished. Some is a prototype he hasn't touched in months. All of it is out in the open.
 >
-> The name is a promise. *Sasta* is Hindi for *affordable* — and at this lab, that cheapness is the feature, not the flaw. Sasta projects can keep shipping, keep changing, and keep being shared without needing to justify themselves. Expensive ones usually don't ship at all.
+> The name is a promise. *Sasta* is the Hindi word for *affordable* — and at this lab, that cheapness is the feature, not the flaw. Sasta projects can keep shipping, keep changing, and keep being shared without needing to justify themselves. Expensive ones usually don't ship at all.
 
 ---
 
@@ -102,7 +101,7 @@ Examples:
 
 ## 404 / empty states
 
-- **404:** यहाँ कुछ नहीं है. Nothing here. Try the homepage.
+- **404:** Nothing here. Try the homepage.
 - **Empty projects list:** The workshop's quiet today. Come back soon.
 - **WIP page:** Work in progress. Come back when the paint's dry.
-- **Error:** कुछ गड़बड़ है. Something broke. Try again, or email me.
+- **Error:** Something broke. Try again, or email me.

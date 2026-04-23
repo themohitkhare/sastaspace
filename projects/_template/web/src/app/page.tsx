@@ -3,17 +3,16 @@ import { ArrowRight } from "lucide-react";
 import { AppShell } from "@/components/layout/app-shell";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 
 export default function Page() {
   return (
     <AppShell projectName="__NAME__">
       <section className="border-b">
         <div className="mx-auto max-w-6xl px-4 py-20 sm:py-28">
-          <Badge variant="outline" className="mb-6 text-xs">
-            Project Bank
-          </Badge>
-          <h1 className="max-w-3xl text-4xl font-semibold tracking-tight sm:text-5xl">
+          <p className="mb-6 font-mono text-xs tracking-[0.08em] text-muted-foreground">
+            ~/mohit · __NAME__.sastaspace.com
+          </p>
+          <h1 className="max-w-3xl text-4xl font-medium tracking-tight sm:text-5xl">
             __NAME__
           </h1>
           <p className="mt-4 max-w-2xl text-lg text-muted-foreground">

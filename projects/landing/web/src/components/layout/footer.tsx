@@ -15,7 +15,7 @@ export function Footer() {
                 href="https://github.com/themohitkhare"
                 target="_blank"
                 rel="noreferrer"
-                className="text-foreground transition-colors hover:text-[var(--brand-sasta)]"
+                className="text-foreground transition-colors hover:text-[var(--brand-sasta-text)]"
               >
                 github
               </Link>
@@ -25,7 +25,7 @@ export function Footer() {
                 href="https://linkedin.com/in/themohitkhare"
                 target="_blank"
                 rel="noreferrer"
-                className="text-foreground transition-colors hover:text-[var(--brand-sasta)]"
+                className="text-foreground transition-colors hover:text-[var(--brand-sasta-text)]"
               >
                 linkedin
               </Link>
@@ -33,7 +33,7 @@ export function Footer() {
             <li>
               <Link
                 href="/rss.xml"
-                className="text-foreground transition-colors hover:text-[var(--brand-sasta)]"
+                className="text-foreground transition-colors hover:text-[var(--brand-sasta-text)]"
               >
                 rss
               </Link>
@@ -41,15 +41,12 @@ export function Footer() {
             <li>
               <Link
                 href="/contact"
-                className="text-foreground transition-colors hover:text-[var(--brand-sasta)]"
+                className="text-foreground transition-colors hover:text-[var(--brand-sasta-text)]"
               >
                 contact
               </Link>
             </li>
           </ul>
-        </div>
-        <div className="mt-6 font-deva text-sm text-[var(--brand-dust)]">
-          जो बनाना है, बनाओ.
         </div>
       </div>
     </footer>

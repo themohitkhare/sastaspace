@@ -6,9 +6,9 @@ export default function ForgotPasswordPage() {
   return (
     <div className="grid gap-6">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Forgot your password?</h1>
-        <p className="text-sm text-muted-foreground">
-          Enter your email and we&apos;ll send you a reset link.
+        <h1 className="text-[32px] font-medium leading-[1.1] tracking-[-0.02em]">Reset the password.</h1>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Drop your email. Reset link arrives in your inbox.
         </p>
       </div>
       <ForgotPasswordForm />

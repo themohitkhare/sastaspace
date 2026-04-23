@@ -28,9 +28,9 @@ export default async function AdminUsersPage() {
   return (
     <div className="grid gap-6">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Admins</h1>
-        <p className="text-sm text-muted-foreground">
-          Emails in this list can access the /admin area. Add or remove via Studio.
+        <h1 className="text-2xl font-medium tracking-tight">Keyholders.</h1>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Anyone here can poke around /admin. Add or drop names from Studio.
         </p>
       </div>
       <div className="rounded-md border">
@@ -46,7 +46,7 @@ export default async function AdminUsersPage() {
             {rows.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={3} className="h-20 text-center text-muted-foreground">
-                  No admins found. Run migrations to seed.
+                  No one&apos;s been let in yet. Seed via <code>make migrate</code>.
                 </TableCell>
               </TableRow>
             ) : (

@@ -27,7 +27,7 @@ export function Sidebar({ items, title }: { items: SidebarItem[]; title?: string
     <aside className="hidden w-60 shrink-0 border-r lg:block">
       <div className="flex h-full flex-col gap-1 p-4">
         {title ? (
-          <p className="mb-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">
+          <p className="mb-2 font-mono text-[11px] tracking-[0.06em] text-muted-foreground">
             {title}
           </p>
         ) : null}

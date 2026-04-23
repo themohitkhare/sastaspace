@@ -18,7 +18,7 @@ export function BrandFooter({
           <div className="font-mono text-[13px] leading-relaxed text-muted-foreground">
             Part of <Link
               href="https://sastaspace.com"
-              className="text-foreground transition-colors hover:text-[var(--brand-sasta)]"
+              className="text-foreground transition-colors hover:text-[var(--brand-sasta-text)]"
             >sastaspace</Link> · {projectName}
             <br />
             Built <span className="font-medium text-foreground">sasta</span>. Shared openly.
@@ -27,7 +27,7 @@ export function BrandFooter({
             <li>
               <Link
                 href="https://sastaspace.com"
-                className="text-foreground transition-colors hover:text-[var(--brand-sasta)]"
+                className="text-foreground transition-colors hover:text-[var(--brand-sasta-text)]"
               >
                 ← the lab
               </Link>
@@ -37,7 +37,7 @@ export function BrandFooter({
                 href="https://github.com/themohitkhare"
                 target="_blank"
                 rel="noreferrer"
-                className="text-foreground transition-colors hover:text-[var(--brand-sasta)]"
+                className="text-foreground transition-colors hover:text-[var(--brand-sasta-text)]"
               >
                 github
               </Link>
@@ -45,15 +45,12 @@ export function BrandFooter({
             <li>
               <Link
                 href="https://sastaspace.com/contact"
-                className="text-foreground transition-colors hover:text-[var(--brand-sasta)]"
+                className="text-foreground transition-colors hover:text-[var(--brand-sasta-text)]"
               >
                 contact
               </Link>
             </li>
           </ul>
-        </div>
-        <div className="mt-6 font-deva text-sm text-[var(--brand-dust)]">
-          जो बनाना है, बनाओ.
         </div>
       </div>
     </footer>

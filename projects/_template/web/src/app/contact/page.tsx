@@ -9,7 +9,7 @@ export default function ContactPage() {
   return (
     <AppShell projectName="__NAME__">
       <section className="mx-auto max-w-2xl px-4 py-16">
-        <h1 className="text-3xl font-semibold tracking-tight">Get in touch</h1>
+        <h1 className="text-3xl font-medium tracking-tight">Get in touch</h1>
         <p className="mt-2 text-muted-foreground">
           Drop a note and it lands in our inbox. We read everything.
         </p>
