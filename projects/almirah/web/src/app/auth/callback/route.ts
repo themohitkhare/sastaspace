@@ -16,9 +16,11 @@ export async function GET(request: NextRequest) {
   const supabase = await createClient();
   const { error } = await supabase.auth.exchangeCodeForSession(code);
   if (error) {
-    return NextResponse.redirect(
-      `${origin}/signin?error=${encodeURIComponent(error.message)}`,
-    );
+    // Log the full Supabase error server-side; return a generic code in the
+    // URL. Supabase messages can include PKCE/storage internals that aren't
+    // useful to the user and shouldn't be reflected back into the browser.
+    console.error("[auth/callback] exchange failed:", error.message);
+    return NextResponse.redirect(`${origin}/signin?error=auth_callback_failed`);
   }
 
   const destination = next.startsWith("http") ? next : `${origin}${next}`;

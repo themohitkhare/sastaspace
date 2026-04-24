@@ -6,7 +6,7 @@ function reqWith(url: string, headers: Record<string, string> = {}): Request {
 }
 
 describe("publicOrigin", () => {
-  test("uses x-forwarded-host + x-forwarded-proto when present", () => {
+  test("uses x-forwarded-host, always https for public hosts", () => {
     const r = reqWith("http://0.0.0.0:3000/foo", {
       "x-forwarded-host": "sastaspace.com",
       "x-forwarded-proto": "https",
@@ -14,19 +14,26 @@ describe("publicOrigin", () => {
     expect(publicOrigin(r)).toBe("https://sastaspace.com");
   });
 
-  test("falls back to host header when x-forwarded-host is missing", () => {
+  test("forces https even when x-forwarded-proto is http (Cloudflare → tunnel → ingress is http)", () => {
     const r = reqWith("http://0.0.0.0:3000/foo", {
-      host: "sastaspace.com",
-      "x-forwarded-proto": "https",
+      "x-forwarded-host": "sastaspace.com",
+      "x-forwarded-proto": "http",
     });
     expect(publicOrigin(r)).toBe("https://sastaspace.com");
   });
 
-  test("defaults scheme to https when x-forwarded-proto is absent", () => {
+  test("falls back to host header when x-forwarded-host is missing", () => {
     const r = reqWith("http://0.0.0.0:3000/foo", {
-      "x-forwarded-host": "almirah.sastaspace.com",
+      host: "almirah.sastaspace.com",
     });
     expect(publicOrigin(r)).toBe("https://almirah.sastaspace.com");
+  });
+
+  test("keeps http for localhost dev", () => {
+    const r = reqWith("http://0.0.0.0:3000/foo", {
+      host: "localhost:3000",
+    });
+    expect(publicOrigin(r)).toBe("http://localhost:3000");
   });
 
   test("last-resort falls back to request URL origin", () => {
@@ -34,7 +41,7 @@ describe("publicOrigin", () => {
     expect(publicOrigin(r)).toBe("http://localhost:3000");
   });
 
-  test("never returns 0.0.0.0 when forwarded headers exist", () => {
+  test("never returns 0.0.0.0 when any host header exists", () => {
     const r = reqWith("http://0.0.0.0:3000/foo", {
       "x-forwarded-host": "sastaspace.com",
     });

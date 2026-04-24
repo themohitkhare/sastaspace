@@ -18,6 +18,12 @@ function redirectToSignin(request: NextRequest) {
   return NextResponse.redirect(signin);
 }
 
+// API routes enforce their own auth (401 JSON). Don't 307 them to /signin —
+// that would give API callers an HTML redirect instead of a proper 401.
+function isApiRoute(pathname: string): boolean {
+  return pathname.startsWith("/api/");
+}
+
 export async function proxy(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
 
@@ -28,7 +34,8 @@ export async function proxy(request: NextRequest) {
   // Fail closed if Supabase isn't configured — treat missing env as
   // unauthenticated instead of silently serving every route.
   if (!url || !anonKey) {
-    if (isPublic(request.nextUrl.pathname)) return supabaseResponse;
+    const pathname = request.nextUrl.pathname;
+    if (isPublic(pathname) || isApiRoute(pathname)) return supabaseResponse;
     return redirectToSignin(request);
   }
 
@@ -53,7 +60,7 @@ export async function proxy(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   const { pathname } = request.nextUrl;
-  if (!user && !isPublic(pathname)) {
+  if (!user && !isPublic(pathname) && !isApiRoute(pathname)) {
     return redirectToSignin(request);
   }
 
