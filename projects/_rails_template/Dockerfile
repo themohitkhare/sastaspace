@@ -9,7 +9,7 @@
 #   - Minimal image with compiled app
 #   - Runs Puma as PID 1 via thruster (HTTP/2, asset caching, gzip)
 #
-# Target arch: arm64 (Apple Silicon / prod host 192.168.0.37).
+# Target arch: amd64 (Ubuntu x86_64 prod host 192.168.0.37 / taxila).
 #
 # Build command:
 #   docker build \

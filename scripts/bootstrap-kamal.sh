@@ -26,7 +26,7 @@
 #
 # Prerequisites on dev machine:
 #   - Ruby >= 3.1 installed (rbenv, rvm, or system)
-#   - SSH key set up for ubuntu@192.168.0.37
+#   - SSH key set up for mkhare@192.168.0.37 (host: taxila, Ubuntu x86_64)
 #   - Docker installed locally (for `kamal` CLI)
 #
 # Prerequisites on prod host (192.168.0.37):
@@ -36,7 +36,7 @@
 set -euo pipefail
 
 HOST="192.168.0.37"
-SSH_USER="ubuntu"
+SSH_USER="mkhare"
 KAMAL_PROXY_IMAGE="basecamp/kamal-proxy:latest"
 DOCKER_NETWORK="kamal"
 PREFLIGHT_PORT="8080"   # kamal-proxy pre-cutover port; becomes 80 at cutover

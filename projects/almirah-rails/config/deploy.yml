@@ -70,10 +70,10 @@ registry:
 # --------------------------------------------------------------------------
 # Builder
 # --------------------------------------------------------------------------
-# The prod host is Apple Silicon (arm64). Build there so the image arch
+# The prod host (taxila) is Ubuntu on x86_64. Build there so the image arch
 # matches without emulation overhead.
 builder:
-  arch: arm64
+  arch: amd64
   # Build on the remote host via SSH. This avoids cross-arch emulation on
   # a dev laptop and keeps the image local to the push target.
   remote:
@@ -159,7 +159,7 @@ proxy:
 # SSH
 # --------------------------------------------------------------------------
 ssh:
-  user: ubuntu               # adjust if the prod host uses a different user
+  user: mkhare               # Linux account on 192.168.0.37 (taxila)
   # The deploy key must be in ~/.ssh/known_hosts on the dev machine.
   # First-time setup: `ssh-keyscan 192.168.0.37 >> ~/.ssh/known_hosts`
 
