@@ -18,4 +18,15 @@ class User < ApplicationRecord
   def google?
     provider == "google"
   end
+
+  # Admin gate — joins against public.admins allowlist.
+  # Returns false (not nil) when admins table is empty or email not found,
+  # so the app renders normally even with an empty allowlist.
+  def admin?
+    Admin.exists?(email: email_address)
+  rescue ActiveRecord::StatementInvalid
+    # Guard: if admins table doesn't exist yet (fresh env before migrations),
+    # degrade gracefully — no user is admin, app still renders.
+    false
+  end
 end

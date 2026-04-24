@@ -1,0 +1,37 @@
+<%#
+  Project card partial.
+  Local variable: project (Project model instance)
+  Visual pattern mirrors projects/landing/web/src/components/projects/project-card.tsx
+%>
+<a href="<%= project.path_link %>"
+   class="group block rounded-[16px] border border-dust/40 bg-paper-lifted p-6 transition-all hover:-translate-y-[1px] hover:border-ink no-underline">
+
+  <%# Slug-as-hostname micro-label (path-routed style) %>
+  <div class="font-mono text-[11px] tracking-[0.04em] text-rust">
+    sastaspace.com<%= project.path_link %>
+  </div>
+
+  <h3 class="mt-1.5 text-xl font-medium tracking-tight text-ink"><%= project.name %></h3>
+
+  <p class="mt-1 text-[15px] leading-relaxed text-muted">
+    <%= project.description %>
+  </p>
+
+  <%# Status chip — inline ERB, mirrors the CSS classes from tailwind/application.css %>
+  <div class="mt-4 flex items-center gap-2">
+    <%
+      status = project.derived_status
+      chip_classes = case status
+        when "live"        then "status-chip status-chip--live"
+        when "wip"         then "status-chip status-chip--wip"
+        when "paused"      then "status-chip status-chip--paused"
+        when "archived"    then "status-chip status-chip--archived"
+        else                    "status-chip"
+      end
+      chip_label = status == "open-source" ? "open source" : status
+    %>
+    <span class="<%= chip_classes %>" aria-label="status: <%= chip_label %>">
+      <%= chip_label %>
+    </span>
+  </div>
+</a>

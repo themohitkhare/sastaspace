@@ -13,6 +13,9 @@ Rails.application.routes.draw do
   post "/auth/google/callback", to: "omniauth_callbacks#google_oauth2"
   get  "/auth/failure",         to: "omniauth_callbacks#failure"
 
-  # Placeholder home page — override per project.
+  # Home page — project card grid + hero.
   root "pages#home"
+
+  # Admin dashboard — gated by current_user.admin? in AdminController.
+  get "/admin" => "admin#index", as: :admin_root
 end

@@ -1,28 +1,172 @@
-<% content_for :title, "__NAME__ — sastaspace" %>
+<% content_for :title, "sastaspace.com — a sasta lab for the things I want to build" %>
 
-<div class="max-w-2xl mx-auto py-16 px-4">
-  <%# Terminal-prompt anchor — brand convention %>
-  <p class="font-mono text-sm text-dust mb-8 tracking-wide">sastaspace.com/<%= Rails.application.config.relative_url_root&.delete_prefix("/") || "" %> —</p>
-
-  <h1 class="text-4xl font-medium tracking-tight text-ink mb-6">
-    __NAME__
+<%# ──────────────────────────────────────────── %>
+<%# Hero -%>
+<section class="mx-auto max-w-5xl px-6 pb-14 pt-16 sm:px-8 sm:pt-20">
+  <div class="font-mono text-xs tracking-[0.05em] text-muted">
+    ~/mohit · sastaspace.com
+  </div>
+  <h1 class="mt-5 max-w-4xl text-[44px] leading-[1.02] tracking-[-0.025em] sm:text-[68px]">
+    A <span class="text-rust">sasta</span> lab for the
+    things I want to build.
   </h1>
-
-  <p class="text-body text-muted leading-7 mb-10">
-    Replace this placeholder with your project's hero copy.
-    Sentence case. No hype. Let the working thing speak.
+  <p class="mt-6 max-w-2xl text-[17px] leading-relaxed text-ink/85 sm:text-[19px] sm:leading-[1.55]">
+    This is my workshop on the open internet. I make the small things I want
+    to exist &#8212; tools, toys, half-built experiments &#8212; and put them somewhere
+    anyone can use them. Cheap to build. Cheap to run. Open to share.
   </p>
+  <div class="mt-8 flex flex-wrap gap-3">
+    <a href="#projects"
+       class="rounded-[10px] bg-ink px-5 py-3 text-[15px] font-medium text-paper transition-colors hover:bg-rust">
+      see the lab &#8594;
+    </a>
+    <a href="#about"
+       class="rounded-[10px] border border-dust/40 px-5 py-3 text-[15px] font-medium text-ink transition-colors hover:border-ink">
+      about the idea
+    </a>
+  </div>
 
-  <% if authenticated? %>
-    <p class="text-sm text-muted mb-6">
-      Signed in as <span class="font-mono text-ink"><%= Current.user.email_address %></span>.
+  <%# Auth status -%>
+  <div class="mt-8 flex items-center gap-3">
+    <% if authenticated? %>
+      <span class="text-sm text-muted font-mono">
+        &#8627; signed in as <%= Current.user.email_address %>
+        <% if Current.user.admin? %>
+          &#183; <%= link_to "admin", admin_root_path, class: "text-rust border-b border-rust hover:text-ink hover:border-ink" %>
+        <% end %>
+      </span>
       <%= button_to "Sign out", session_path, method: :delete,
             class: "text-sm text-rust border-b border-rust hover:text-ink hover:border-ink bg-transparent cursor-pointer" %>
-    </p>
+    <% else %>
+      <%= link_to "Sign in with Google", new_session_path,
+            class: "text-sm text-rust border-b border-rust hover:text-ink hover:border-ink" %>
+    <% end %>
+  </div>
+</section>
+
+<%# ──────────────────────────────────────────── %>
+<%# Lab principles -%>
+<section id="lab" class="mx-auto max-w-5xl border-t border-dust/40 px-6 py-20 sm:px-8">
+  <div class="font-mono text-xs tracking-[0.08em] text-rust">the idea</div>
+  <h2 class="mt-3.5 text-[32px] leading-[1.1] tracking-[-0.02em] sm:text-[42px]">
+    Not a portfolio. A lab.
+  </h2>
+  <p class="mt-6 max-w-2xl text-[17px] leading-[1.6] text-ink/85 sm:text-[18px]">
+    Portfolios edit for wins. Labs show the whole bench. Sastaspace runs on
+    three rules &#8212; the ones that make it possible to keep shipping small
+    things without turning each one into a startup.
+  </p>
+
+  <div class="mt-10 grid gap-5 sm:grid-cols-3">
+    <% [
+      { num: "01 / sasta",   title: "Cheap to build.",     body: "Boring tools. Shared infrastructure. New projects cost closer to zero than they do to a weekend brunch. The bill stays small so the imagination stays loud." },
+      { num: "02 / shipped", title: "One command to live.", body: "Every experiment gets its own path and goes from an idea to a working URL in the time it takes to name it. If it doesn't ship, it doesn't count." },
+      { num: "03 / shared",  title: "Open by default.",    body: "Open URL, open source, open to being copied, forked, or improved on. The lab is on the internet so other people can find it — including me, six months from now." },
+    ].each do |p| %>
+      <div class="rounded-[16px] border border-dust/40 bg-paper-lifted p-6">
+        <div class="font-mono text-xs tracking-[0.08em] text-rust"><%= p[:num] %></div>
+        <h3 class="mt-2.5 text-xl font-medium tracking-tight"><%= p[:title] %></h3>
+        <p class="mt-1.5 text-[15px] leading-[1.6] text-ink/80"><%= p[:body] %></p>
+      </div>
+    <% end %>
+  </div>
+</section>
+
+<%# ──────────────────────────────────────────── %>
+<%# Projects grid -%>
+<section id="projects" class="mx-auto max-w-5xl border-t border-dust/40 px-6 py-20 sm:px-8">
+  <div class="flex items-end justify-between">
+    <div>
+      <div class="font-mono text-xs tracking-[0.08em] text-rust">projects</div>
+      <h2 class="mt-3.5 text-[32px] leading-[1.1] tracking-[-0.02em] sm:text-[42px]">
+        What&#8217;s on the bench.
+      </h2>
+    </div>
+    <% if @projects.any? %>
+      <div class="font-mono text-xs text-muted hidden sm:block">
+        <%= @projects.length %> on display &#183; more in the drawer
+      </div>
+    <% end %>
+  </div>
+
+  <% if @projects.empty? %>
+    <div class="mt-10 rounded-[16px] border border-dashed border-dust/40 bg-paper-lifted px-6 py-14 text-center">
+      <p class="text-[17px] text-ink">The workshop&#8217;s quiet today. Come back soon.</p>
+    </div>
   <% else %>
-    <div class="flex gap-4 items-center">
-      <%= link_to "Sign in", new_session_path,
-            class: "inline-block px-4 py-2 bg-sasta text-paper rounded text-sm font-medium hover:bg-rust transition-colors" %>
+    <div class="mt-8 grid gap-4 sm:grid-cols-2">
+      <% @projects.each do |project| %>
+        <%= render "projects/project_card", project: project %>
+      <% end %>
     </div>
   <% end %>
-</div>
+</section>
+
+<%# ──────────────────────────────────────────── %>
+<%# Workshop notes -%>
+<section id="notes" class="mx-auto max-w-5xl border-t border-dust/40 px-6 py-20 sm:px-8">
+  <div class="font-mono text-xs tracking-[0.08em] text-rust">workshop notes</div>
+  <h2 class="mt-3.5 text-[32px] leading-[1.1] tracking-[-0.02em] sm:text-[42px]">
+    Thinking out loud.
+  </h2>
+  <p class="mt-6 max-w-2xl text-[17px] leading-[1.6] text-ink/85">
+    Short posts on what I&#8217;m making, why a thing is built a certain way,
+    and the mistakes I&#8217;d rather you not repeat. Written for me six months from now.
+  </p>
+  <ul class="mt-8 divide-y divide-dust/40 border-y border-dust/40">
+    <% [
+      "Why everything here shares one database.",
+      "A path prefix is the cheapest deployable unit I know.",
+      "How to keep a side project from becoming a second job.",
+    ].each do |title| %>
+      <li class="flex flex-col gap-2 py-3.5 sm:flex-row sm:items-baseline sm:gap-5">
+        <span class="min-w-[96px] font-mono text-xs tracking-[0.04em] text-muted">&#183; coming soon</span>
+        <span class="text-[17px] font-medium text-ink"><%= title %></span>
+      </li>
+    <% end %>
+  </ul>
+</section>
+
+<%# ──────────────────────────────────────────── %>
+<%# About -%>
+<section id="about" class="mx-auto max-w-5xl border-t border-dust/40 px-6 py-20 sm:px-8">
+  <div class="grid gap-10 sm:grid-cols-[1fr_1.25fr] sm:gap-16">
+    <div>
+      <div class="font-mono text-xs tracking-[0.08em] text-rust">about</div>
+      <h2 class="mt-3.5 text-[32px] leading-[1.1] tracking-[-0.02em] sm:text-[42px]">
+        Hi &#8212; I&#8217;m Mohit.
+      </h2>
+    </div>
+    <div class="space-y-4 text-[17px] leading-[1.7] text-ink/90">
+      <p>
+        I&#8217;m a software engineer in Bengaluru. I spend my days on the
+        unglamorous end of software &#8212; making slow things fast, fragile
+        things dependable, complicated things small. I like boring tools
+        that age well.
+      </p>
+      <p>
+        Sastaspace is the other half. It&#8217;s where I build what I want to
+        build &#8212; without asking anyone for a roadmap &#8212; and put it on the
+        internet for whoever might want it. Some things here will get
+        polished. Some will stay half-built forever. All of them are out in
+        the open.
+      </p>
+      <p>
+        If any of this is interesting, the best way to follow along is to
+        bookmark <a href="#notes">the notes</a>.
+      </p>
+
+      <div class="mt-6 rounded-[16px] border border-dust/40 bg-paper-lifted p-6">
+        <div class="font-mono text-[11px] tracking-[0.06em] text-muted">the lab, in one line</div>
+        <dl class="mt-3 divide-y divide-dust/40">
+          <% [["Run by", "one person"], ["Budget", "sasta — close to ₹0"], ["Roadmap", "none on purpose"], ["Default state", "open to the public"]].each do |label, value| %>
+            <div class="flex justify-between py-2 text-[15px]">
+              <dt class="font-medium text-ink"><%= label %></dt>
+              <dd class="text-ink/80"><%= value %></dd>
+            </div>
+          <% end %>
+        </dl>
+      </div>
+    </div>
+  </div>
+</section>
