@@ -31,8 +31,11 @@
     <div class="flex-1 h-px bg-dust/30"></div>
   </div>
 
-  <%# Email + password form %>
-  <%= form_with url: session_path, class: "space-y-4" do |f| %>
+  <%# Email + password form — data-turbo="false" ensures a full-page redirect
+      so the session_id cookie is committed to the browser cookie jar before
+      the next request. Turbo's async form submission can otherwise cause
+      the cookie not to persist in Selenium-based system tests. %>
+  <%= form_with url: session_path, class: "space-y-4", data: { turbo: false } do |f| %>
     <div>
       <%= f.label :email_address, "Email", class: "block text-sm font-medium text-ink mb-1" %>
       <%= f.email_field :email_address,

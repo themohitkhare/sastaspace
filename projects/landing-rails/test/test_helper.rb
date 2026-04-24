@@ -5,11 +5,13 @@ require "rails/test_help"
 
 module ActiveSupport
   class TestCase
-    # Run tests in parallel with specified workers
+    # Run unit tests in parallel; system tests run serially (see ApplicationSystemTestCase).
     parallelize(workers: :number_of_processors)
 
-    # Setup all fixtures in test/fixtures/*.yml for all tests in alphabetical order.
-    fixtures :all
+    # Fixtures are disabled for now: the shared Postgres instance has seed data
+    # that overlaps with fixture table names. Individual tests create their own
+    # data as needed.
+    # fixtures :all
 
     # Add more helper methods to be used by all tests here...
   end

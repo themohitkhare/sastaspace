@@ -31,9 +31,8 @@ servers:
   web:
     hosts:
       - 192.168.0.37
-    labels:
-      # Landing is at root "/" — no path_prefix label.
-      # kamal-proxy routes all unmatched requests to this container.
+    # Landing is at root "/" — no kamal-proxy.path_prefix label.
+    # kamal-proxy routes all unmatched requests to this container.
 
     # Health-check path. Landing is at root, so Rails /up is directly reachable.
     healthcheck:
