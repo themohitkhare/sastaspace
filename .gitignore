@@ -40,3 +40,6 @@ tmp/
 .swarm/
 ruvector.db
 .mcp.json
+
+# Superpowers brainstorming companion
+.superpowers/
