@@ -85,20 +85,16 @@ env:
     # Puma listens on 3001. Each app gets its own port so they can all run
     # simultaneously on the same host without fighting kamal-proxy.
     PORT: "3001"
-    # Postgres connection (shared instance, per-app schema)
-    DATABASE_HOST: "192.168.0.37"
-    DATABASE_PORT: "5432"
-    DATABASE_NAME: "postgres"   # supabase/postgres default DB
-    DATABASE_SCHEMA: "public"
     # LiteLLM (Anthropic-compatible proxy for Gemma 4)
     LITELLM_BASE_URL: "http://192.168.0.37:4000"
   secret:
     # Sourced from .kamal/secrets at deploy time. Never commit .kamal/secrets.
     - RAILS_MASTER_KEY
-    - DATABASE_USERNAME
-    - DATABASE_PASSWORD
+    - SECRET_KEY_BASE
+    - POSTGRES_URL
     - GOOGLE_CLIENT_ID
     - GOOGLE_CLIENT_SECRET
+    - LITELLM_API_KEY
     - REGISTRY_USERNAME
     - REGISTRY_PASSWORD
 
