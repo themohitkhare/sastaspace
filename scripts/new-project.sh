@@ -27,16 +27,21 @@ fi
 
 cp -R projects/_template "projects/$NAME"
 
+# Skip heavy directories during substitution — vendor/bundle, tmp/, log/
+# are not version-controlled and won't contain __NAME__ placeholders.
 while IFS= read -r -d '' file; do
   sed -i.bak "s/__NAME__/$NAME/g" "$file" && rm -f "$file.bak"
-done < <(find "projects/$NAME" -type f -print0)
+done < <(find "projects/$NAME" -type f \
+  \! -path "projects/$NAME/vendor/*" \
+  \! -path "projects/$NAME/tmp/*" \
+  \! -path "projects/$NAME/log/*" \
+  -print0)
 
-if [[ -f "projects/$NAME/db/migrations/0001_init.sql.tmpl" ]]; then
-  mv "projects/$NAME/db/migrations/0001_init.sql.tmpl" "projects/$NAME/db/migrations/0001_init.sql"
-fi
-
-echo "Project '$NAME' created."
+echo "Project '$NAME' created from the Rails 8 template."
 echo "Next steps:"
-echo "  make migrate p=$NAME"
-echo "  make dev p=$NAME"
-echo "  git add . && git commit"
+echo "  cd projects/$NAME"
+echo "  bundle install"
+echo "  bin/rails db:prepare"
+echo "  bin/rails server           # dev at http://localhost:3000"
+echo "  # then wire: projects/$NAME/k8s.yaml (see projects/almirah/k8s.yaml)"
+echo "  #           infra/k8s/ingress.yaml (add /$NAME path rule)"

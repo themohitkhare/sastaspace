@@ -1,0 +1,32 @@
+# 301 redirect almirah.sastaspace.com → sastaspace.com/almirah
+# Old-link compatibility during the subdomain → path-routing cutover
+# (design-log 006 acceptance criteria #5).
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: almirah
+  namespace: sastaspace
+  annotations:
+    # permanent-redirect accepts a plain URL only — no $request_uri
+    # interpolation. Subpath preservation would need a configuration-
+    # snippet, but the old subdomain was only live briefly so a flat
+    # 301 to /almirah is fine.
+    nginx.ingress.kubernetes.io/permanent-redirect: "https://sastaspace.com/almirah"
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: almirah.sastaspace.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                # Service is unused because the redirect annotation short-
+                # circuits the request, but nginx-ingress requires a backend
+                # with live endpoints; the scaled-to-0 almirah Service
+                # produced 503s. Point at landing-rails (always healthy).
+                name: landing-rails
+                port:
+                  number: 3000

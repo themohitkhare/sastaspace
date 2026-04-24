@@ -5,9 +5,17 @@
 #     ingressClass ("public").
 #   • Cloudflare terminates TLS at the edge, so ssl-redirect is OFF here.
 #
-# Routing:
-#   sastaspace.com, www.sastaspace.com  →  landing (Next.js)
-#   api.sastaspace.com                  →  gateway (nginx → gotrue/postgrest)
+# Routing (post Rails migration, design-log 006):
+#   sastaspace.com/          → landing-rails (Rails 8)
+#   sastaspace.com/almirah/* → almirah-rails (Rails 8, routes scoped to /almirah)
+#   www.sastaspace.com       → landing-rails
+#   api.sastaspace.com       → gateway (nginx → gotrue/postgrest)
+#
+# IMPORTANT: with pathType: Prefix, the /almirah rule must appear *before*
+# the / rule inside the same host block. Microk8s ingress-nginx evaluates
+# rules in declaration order when multiple would match, so the more
+# specific prefix has to come first or every /almirah request ends up at
+# landing-rails.
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
@@ -22,11 +30,18 @@ spec:
     - host: sastaspace.com
       http:
         paths:
+          - path: /almirah
+            pathType: Prefix
+            backend:
+              service:
+                name: almirah-rails
+                port:
+                  number: 3000
           - path: /
             pathType: Prefix
             backend:
               service:
-                name: landing
+                name: landing-rails
                 port:
                   number: 3000
     - host: www.sastaspace.com
@@ -36,7 +51,7 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name: landing
+                name: landing-rails
                 port:
                   number: 3000
 ---

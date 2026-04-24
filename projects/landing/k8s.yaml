@@ -1,14 +1,19 @@
-# Rails 8 almirah — MicroK8s Deployment + Service.
+# Rails 8 landing — MicroK8s Deployment + Service.
 #
-# Routes are scoped under /almirah in config/routes.rb, so nginx-ingress
-# forwards the full /almirah/* path to this service unchanged.
+# Mounts two Secrets:
+#   • sastaspace-rails-landing-runtime — per-app secrets (RAILS_MASTER_KEY,
+#     SECRET_KEY_BASE, GOOGLE_CLIENT_ID/SECRET, LITELLM_API_KEY)
+#   • postgres-credentials              — shared DB password (for POSTGRES_URL)
+#
+# Image comes from the in-cluster registry (localhost:32000). Build + push
+# with scripts/k8s-deploy.sh <name> (or similar rsync-on-host flow).
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: almirah-rails
+  name: landing-rails
   namespace: sastaspace
   labels:
-    app: almirah-rails
+    app: landing-rails
     tier: app
 spec:
   replicas: 1
@@ -19,16 +24,16 @@ spec:
       maxUnavailable: 0
   selector:
     matchLabels:
-      app: almirah-rails
+      app: landing-rails
   template:
     metadata:
       labels:
-        app: almirah-rails
+        app: landing-rails
         tier: app
     spec:
       containers:
-        - name: almirah-rails
-          image: localhost:32000/sastaspace-almirah:latest
+        - name: landing-rails
+          image: localhost:32000/sastaspace-landing:latest
           imagePullPolicy: Always
           ports:
             - containerPort: 3000
@@ -40,11 +45,9 @@ spec:
               value: "1"
             - name: RAILS_SERVE_STATIC_FILES
               value: "1"
-            - name: RAILS_RELATIVE_URL_ROOT
-              value: "/almirah"
             # Thruster defaults to :80; under non-root k8s user 1000 that
-            # fails with "bind: permission denied". Pin thruster-front to
-            # 3000 and Rails-target behind it to 3001.
+            # fails with "bind: permission denied". Pin both the thruster
+            # front and the Rails target to 3000 (container-internal).
             - name: HTTP_PORT
               value: "3000"
             - name: TARGET_PORT
@@ -53,6 +56,7 @@ spec:
               value: "3001"
             - name: LITELLM_BASE_URL
               value: "http://litellm.sastaspace.svc.cluster.local:4000"
+            # POSTGRES_URL is assembled from host (pod DNS) + password Secret.
             - name: POSTGRES_HOST
               value: "postgres.sastaspace.svc.cluster.local"
             - name: POSTGRES_DB
@@ -68,10 +72,10 @@ spec:
               value: "postgres://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@$(POSTGRES_HOST):5432/$(POSTGRES_DB)"
           envFrom:
             - secretRef:
-                name: sastaspace-rails-almirah-runtime
+                name: sastaspace-rails-landing-runtime
           readinessProbe:
             httpGet:
-              path: /almirah/up
+              path: /up
               port: 3000
             initialDelaySeconds: 5
             periodSeconds: 5
@@ -79,7 +83,7 @@ spec:
             failureThreshold: 6
           livenessProbe:
             httpGet:
-              path: /almirah/up
+              path: /up
               port: 3000
             initialDelaySeconds: 30
             periodSeconds: 15
@@ -96,14 +100,14 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: almirah-rails
+  name: landing-rails
   namespace: sastaspace
   labels:
-    app: almirah-rails
+    app: landing-rails
 spec:
   type: ClusterIP
   selector:
-    app: almirah-rails
+    app: landing-rails
   ports:
     - name: http
       port: 3000

@@ -1,60 +1,59 @@
-# __NAME__
+Template. Copy, rename, deploy.
 
-Project scaffold generated from the SastaSpace project-bank template.
+## How to use
 
-Deploys to `https://__NAME__.sastaspace.com`.
+```bash
+# Copy the template to a new project
+rsync -a --exclude node_modules projects/_rails_template/ projects/<name>/
 
-## What's included
+# Replace the __NAME__ placeholder throughout
+find projects/<name> -type f \
+  -exec sed -i.bak "s/__NAME__/<name>/g" {} \; && \
+  find projects/<name> -name "*.bak" -delete
 
-- **web/** — Next.js 16 + TypeScript + Tailwind v4 + shadcn/ui
-  - Layout shell (Topbar / Sidebar / Footer)
-  - Dark mode via `next-themes` with a Light / Dark / System toggle
-  - Full shadcn component set (button, input, label, card, form, dialog, dropdown-menu, sheet, tabs, navigation-menu, toast (sonner), skeleton, badge, avatar, separator, table, data-table)
-  - Supabase auth wired via `@supabase/ssr` (sign-in, sign-up, forgot-password, OAuth callback, sign-out route)
-  - Gated `/admin` area (checks `public.admins` allowlist)
-  - `motion` available for tasteful animations
-  - Contact form with optional Cloudflare Turnstile + Resend
-- **api/** — Go + chi + pgx + sqlc starter (optional; remove if the project is frontend-only)
-- **db/migrations/** — per-project schema bootstrap (`0001_init.sql`)
-- **Dockerfile.web / Dockerfile.api** — multi-stage production images
-- **k8s.yaml** — Deployment + Service + Ingress (`__NAME__.sastaspace.com`)
+# Install gems
+cd projects/<name>
+bundle install
 
-## Local development
+# Start the dev server (requires POSTGRES_URL or local Postgres)
+bin/dev
+```
 
-1. From repo root, bring up shared services:
-   ```bash
-   docker compose -f infra/docker-compose.yml up -d
-   ```
-2. Apply project migrations (once):
-   ```bash
-   docker exec -i sastaspace-postgres psql -U postgres -d sastaspace \
-     < projects/__NAME__/db/migrations/0001_init.sql
-   ```
-3. Run the web app:
-   ```bash
-   cd projects/__NAME__/web && npm install && npm run dev
-   ```
+## Stack
 
-## Environment
+- Rails 8.1 + Propshaft + import maps + Turbo + Stimulus
+- Tailwind v4 with sastaspace brand tokens baked into CSS variables
+- PostgreSQL (shared Supabase/Postgres instance, schema_search_path configurable)
+- Solid Queue (Postgres-backed, no Redis)
+- Kamal 2 deployment to 192.168.0.37
 
-Copy the project's `.env.example` to `.env.local` and set at least:
+## Auth
 
-- `NEXT_PUBLIC_SUPABASE_URL` — usually `http://localhost:9999` in dev, `https://auth.sastaspace.com` in prod
-- `NEXT_PUBLIC_SUPABASE_ANON_KEY` — signed anon JWT (see design-log/002)
+- Rails 8 built-in session auth (signed HttpOnly cookie, `_sastaspace_session`)
+- Google OAuth via `omniauth-google-oauth2` + `omniauth-rails_csrf_protection`
+- Single callback URL: `https://sastaspace.com/auth/google/callback`
 
-## Customising the look
+## AI client
 
-The design tokens live in `web/src/app/globals.css`. Override `--primary`, `--accent`, etc. to brand the project without touching the template-shared shadcn components.
+`lib/anthropic_client.rb` wraps the `anthropic` gem pointed at the
+cluster-local LiteLLM gateway (`LITELLM_BASE_URL`). Supports text and vision.
 
-## Removing the admin area
+## Path routing
 
-If this project doesn't need auth, delete:
+For sub-path projects (e.g. `/almirah`), set in `config/application.rb`:
 
-- `web/src/app/(auth)/`
-- `web/src/app/(admin)/`
-- `web/src/app/auth/`
-- `web/src/components/auth/`
-- `web/src/lib/supabase/`
-- `web/src/proxy.ts`
+```ruby
+config.relative_url_root = "/almirah"
+```
 
-...and drop `@supabase/ssr` + `@supabase/supabase-js` from `package.json`.
+Landing mounts at root — no prefix needed.
+
+## Deploy
+
+```bash
+# Update config/deploy.yml — replace <NAME>, <HOST>, <PATH_PREFIX>
+kamal setup   # first deploy (provisions server, installs kamal-proxy)
+kamal deploy  # subsequent deploys
+```
+
+See `design-log/006-rails-kamal-migration.md` for the full migration plan.

@@ -1,7 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80" role="img" aria-label="SastaSpace mark">
-  <rect x="4" y="4" width="72" height="72" rx="12" fill="#1a1917"/>
-  <!-- price-tag outline with notch -->
-  <path d="M22 16 L58 16 L62 20 L62 64 L18 64 L18 20 Z" fill="none" stroke="#c05621" stroke-width="3" stroke-linejoin="round"/>
-  <!-- bilingual monogram -->
-  <text x="40" y="49" text-anchor="middle" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="24" font-weight="500" fill="#f5f1e8" letter-spacing="-0.02em">स/S</text>
-</svg>

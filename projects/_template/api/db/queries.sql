@@ -1,1 +1,0 @@
--- SQLC query placeholders for __NAME__

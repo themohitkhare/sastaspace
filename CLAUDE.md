@@ -6,12 +6,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 SastaSpace is a project-bank monorepo for building and showcasing multiple small projects on the `sastaspace.com` domain.
 
-- Root portfolio: `projects/landing` (served at `sastaspace.com`)
-- Per-project deploy target: `<name>.sastaspace.com`
-- Shared database: `supabase/postgres` with 50+ extensions
-- Shared auth: Supabase GoTrue at `auth.sastaspace.com`
-- Shared DB admin: Supabase Studio at `studio.sastaspace.com` (gated by Cloudflare Access)
-- Optional API accelerator: shared PostgREST
+- Root portfolio: `projects/landing` (Rails 8, served at `sastaspace.com/`)
+- Per-project deploy target: `sastaspace.com/<name>` (path-routed — design-log 006)
+- Shared database: `supabase/postgres` (MicroK8s pod) with 50+ extensions
+- Rails native sessions handle auth (OmniAuth Google OAuth2, Rails 8 authenticate generator); GoTrue / PostgREST / Studio pods from the old Next.js era are idle pending removal.
 
 ## Build & Dev Commands
 
@@ -28,23 +26,31 @@ make down          # stop containers (keep data)
 make reset         # stop + wipe volumes
 ```
 
-### Per-project development
+### Per-project development (Rails 8)
 
 ```bash
-make dev p=<name>                        # run a project via scripts/dev.sh
-cd projects/<name>/web && npm run dev    # Next.js dev server directly
-cd projects/<name>/web && npm run build  # production build
-cd projects/<name>/web && npx eslint .   # lint (or: npm run lint)
+cd projects/<name>
+bundle install                  # first time
+bin/rails server                # dev at http://localhost:3000 (landing) or /<name> for path-prefixed apps
+bin/rails test                  # unit tests
+bin/rails test:system           # Capybara system tests
+bin/rubocop                     # lint (omakase preset)
+bin/brakeman --no-pager         # static security scan
 ```
 
-### Go API (per-project)
-
-Each project has a Go API at `projects/<name>/api/` with its own `go.mod` (Go 1.23).
+Database config lives in `config/database.yml` and reads `POSTGRES_URL` in production / `DATABASE_URL` or the default `postgres://postgres:postgres@localhost:5432/sastaspace` locally. Each app is a fresh `rails new` scaffold with Tailwind-Rails, Propshaft, Solid Queue, Solid Cache and OmniAuth preconfigured.
 
 ### Scaffold a new project
 
 ```bash
-make new p=my-project     # or: scripts/new-project.sh my-project
+# Copy the _template with a name substitution. scripts/new-project.sh is
+# out of date post-Rails migration — prefer the manual rsync form below.
+rsync -a --exclude 'vendor/bundle' --exclude 'tmp/' --exclude 'log/' \
+  projects/_template/ projects/<name>/
+( cd projects/<name> && \
+  find . -type f \( -name '*.rb' -o -name '*.yml' -o -name '*.erb' -o -name 'Dockerfile' -o -name 'Gemfile*' \) \
+    -exec sed -i.bak "s/__NAME__/<name>/g" {} \; && \
+  find . -name '*.bak' -delete )
 ```
 
 ### Remote / production host (192.168.0.37)
@@ -73,27 +79,25 @@ New projects need one manual edit to the workflow — a `Build <name> image` + `
 - Feature branches — named after what they do. Merge `--ff-only` into `develop` when ready, then fast-forward into `main` when you want the canonical tip to move. Don't rebase shared branches; don't force-push `main` or `develop`.
 - When in doubt, develop → main is the safer path than feature → main directly, so the CI run on develop catches problems before they touch production-tagged history.
 
-### Deploying a feature branch manually
+### Deploying a Rails app manually
 
-Sometimes you need a subdomain live before the branch is ready to merge. The CI path (push to `develop` or `main`) handles everything; this manual recipe is the escape hatch when you can't or don't want to push. Three pieces:
+CI wires the automatic path on push to `main`/`develop`. This is the direct recipe — identical shape for all Rails apps, rsync-then-build on the host to avoid cross-arch pain:
 
 ```bash
-# 1. Image — rsync only what's needed, then build + push on the host
 ssh 192.168.0.37 "mkdir -p /tmp/<name>-deploy"
-rsync -az --exclude node_modules --exclude .next \
-  projects/<name>/web/ 192.168.0.37:/tmp/<name>-deploy/web/
-scp projects/_template/Dockerfile.web 192.168.0.37:/tmp/<name>-deploy/Dockerfile.web
-scp projects/<name>/k8s.yaml        192.168.0.37:/tmp/<name>-deploy/
+rsync -az --exclude 'vendor/bundle' --exclude 'tmp/' --exclude 'log/' \
+  projects/<name>/ 192.168.0.37:/tmp/<name>-deploy/
 
 ssh 192.168.0.37 'cd /tmp/<name>-deploy && \
   TAG=$(date -u +%Y%m%d-%H%M%S) && \
-  docker build -f Dockerfile.web \
+  docker build \
     -t localhost:32000/sastaspace-<name>:$TAG \
-    -t localhost:32000/sastaspace-<name>:latest web && \
+    -t localhost:32000/sastaspace-<name>:latest . && \
   docker push localhost:32000/sastaspace-<name>:$TAG && \
   docker push localhost:32000/sastaspace-<name>:latest && \
-  microk8s kubectl apply -f k8s.yaml && \
-  microk8s kubectl -n sastaspace rollout status deploy/<name> --timeout=180s'
+  sudo microk8s kubectl apply -f k8s.yaml && \
+  sudo microk8s kubectl -n sastaspace rollout restart deploy/<name>-rails && \
+  sudo microk8s kubectl -n sastaspace rollout status   deploy/<name>-rails --timeout=180s'
 
 # 2. DNS + tunnel public hostname — same keychain token (it has both scopes)
 CF_TOKEN=$(security find-generic-password -a sastaspace -s cloudflare-api-token -w)
@@ -146,147 +150,117 @@ Gotchas that cost real time on this repo:
 - Without a matching public-hostname row on the tunnel, a new subdomain returns **HTTP 404 from Cloudflare** even with a correct CNAME and a healthy ingress on the node. `server: cloudflare`, empty body — the tunnel drops the request before it reaches ingress-nginx.
 - The `ingress` array is **ordered**. Always insert new hostnames before the trailing catch-all (the entry with no `hostname` field), never after.
 
-### Scaffolding into a pre-existing project directory
-
-`scripts/new-project.sh` (and therefore `make new p=<name>`) refuses to run if `projects/<name>/` already exists — even if only sibling directories like `data-audit/` or `design/` are present. Two ways forward:
-
-```bash
-# (a) do it manually — same effect as the script's guts
-rsync -a --exclude node_modules --exclude .next \
-  projects/_template/web/ projects/<name>/web/
-find projects/<name>/web -type f \
-  -exec sed -i.bak "s/__NAME__/<name>/g" {} \; && \
-  find projects/<name>/web -name "*.bak" -delete
-
-# (b) or move the pre-existing subdir out, scaffold, move it back.
-```
-
-The scaffold assumes a Next.js + Go split. For a web-only project (no API, no auth, no DB) the Supabase machinery in `src/lib/supabase/`, `src/app/(auth)/`, `src/app/(admin)/`, and `proxy.ts` is inherited but unused; either leave it be (routes work but aren't linked) or prune in a follow-up pass.
-
 ### New project — end-to-end checklist
 
-The one-stop list for bringing a new subdomain online. Every step links to the relevant detail above.
+Path-routed — every project mounts at `sastaspace.com/<name>`. No new subdomain, no new Cloudflare hostname, no DNS change.
 
-1. **Design log first.** `design-log/NNN-<name>.md` — scope, what shared infra you opt in to (auth? DB? neither?), what data you need. This is the decision record.
+1. **Design log first.** `design-log/NNN-<name>.md` — scope, what shared infra you opt in to (users table? LiteLLM?), what data you need.
 2. **Brand compliance.** Read `brand/BRAND_GUIDE.md` before writing any UI. Invariants that have bitten recent projects: no gradients/shadows/glows, only 400/500 font weights, paper (`#f5f1e8`) not white as the page bg, sasta orange used in ≤4 accent places (never body text). Code review rejects violations.
-3. **Scaffold.** `make new p=<name>`, or the manual rsync + sed fallback above if `projects/<name>/` already exists.
-4. **Build the project.** `projects/<name>/web` is the Next.js app; `projects/<name>/api` is the optional Go API. Static-data projects can drop a `projects/<name>/data/` ETL that writes JSON into `web/public/data/`.
-5. **Verify locally.** `npm run build && npm test && npx eslint .` in `projects/<name>/web/` before committing. Keep pure cores pure (see "Testing conventions").
-6. **Per-project manifest.** `projects/<name>/k8s.yaml` — Deployment + Service + Ingress. Model it on `infra/k8s/landing.yaml` for the shapes; strip the Supabase envFrom if the project doesn't need DB or auth. Image name convention: `localhost:32000/sastaspace-<name>:latest`.
-7. **Wire the CI build.** Add a `Build <name> image` + `Push <name> image` step pair in `.github/workflows/deploy.yml`. Use `projects/<name>/Dockerfile.web` if it exists, otherwise `projects/_template/Dockerfile.web` with `projects/<name>/web` as the build context.
-8. **DNS + tunnel hostname.** The two curls in "Deploying a feature branch manually" above. CI doesn't handle this today; it's a one-shot per project and both calls use the same keychain token.
-9. **Land on `develop`** via a fast-forward merge; CI deploys automatically; smoke-test `https://<name>.sastaspace.com/`. Fast-forward `develop` → `main` when you're ready to mark it shipped.
+3. **Scaffold.** Rsync `projects/_template/` → `projects/<name>/` and substitute `__NAME__` (see "Scaffold a new project" above).
+4. **Build the project.** Pure Rails 8. Scope routes under `/<name>` so incoming requests match without `SCRIPT_NAME` trickery. Point `RAILS_RELATIVE_URL_ROOT=/<name>` so asset URLs and redirects prepend correctly.
+5. **Verify locally.** `bin/rails test && bin/rails test:system && bin/rubocop` before committing.
+6. **Per-project manifest.** `projects/<name>/k8s.yaml` — Deployment + Service. Model it on `projects/landing/k8s.yaml` (for a root-path app) or `projects/almirah/k8s.yaml` (for `/name`-scoped). Image: `localhost:32000/sastaspace-<name>:latest`.
+7. **Create the runtime Secret.** Per-app secret named `sastaspace-rails-<name>-runtime` holding `RAILS_MASTER_KEY`, `SECRET_KEY_BASE`, and any third-party keys; `POSTGRES_PASSWORD` comes from the shared `postgres-credentials` secret via `secretKeyRef`.
+8. **Ingress path.** Add a new path rule to `infra/k8s/ingress.yaml` under the `sastaspace.com` host — `/<name>` → `<name>-rails:3000` — *before* the catch-all `/` rule. Re-apply: `kubectl apply -f infra/k8s/ingress.yaml`.
+9. **Wire the CI build.** Add a `Build <name> image` step in `.github/workflows/deploy.yml`. The `apply` + `rollout` steps glob `projects/*/k8s.yaml` already.
+10. **Land on `develop`** via fast-forward; CI deploys; smoke-test `https://sastaspace.com/<name>`. FF `develop` → `main` when you're confident.
 
 ### Known fragile spots
 
-Writing these down so they stop wasting re-discovery time:
-
-- Account ID typos read like permission errors (Cloudflare 7003). See the tunnel section above — always pull the account ID from `/zones/{zone}/.result.account.id`, never hand-decode the base64 tunnel token.
+- Account ID typos read like permission errors (Cloudflare 7003). Always pull the account ID from `/zones/{zone}/.result.account.id`, never hand-decode the base64 tunnel token.
 - `~/sastaspace` on the prod host is a separate clone and is often on a different branch from your local tip. `scripts/k8s-deploy.sh` and `scripts/remote.sh` do some rsyncs that assume the remote matches local — don't use them mid-flight if you're on a feature branch. Build out of `/tmp/<name>-deploy/` for feature-branch deploys.
-- `next-env.d.ts` gets rewritten by `next build` and `next dev` slightly differently (the internal routes path changes between `.next/dev/types/` and `.next/types/`). If git shows it dirty right after running dev, don't commit the churn — revert and let build settle it.
-- The `_template` re-uses `Noto Sans Devanagari` via `next/font`, not IBM Plex Sans Devanagari as the brand guide originally specified. The mockup and the runtime both use Noto; updating the brand guide is cleaner than fighting it.
+- The Rails image's Dockerfile `ENTRYPOINT` runs Puma through [thruster](https://github.com/basecamp/thruster); thruster binds its HTTP port from `HTTP_PORT` (default 80 — fails under non-root k8s user 1000 with "permission denied"). Set `HTTP_PORT=3000`, `TARGET_PORT=3001`, `PORT=3001` in the k8s env (Rails listens on 3001 behind thruster on 3000). The k8s Service uses port 3000 to hit thruster.
+- Rails `config.relative_url_root = "/name"` only rewrites **generated** URLs; it does *not* strip the path from incoming requests. Route matching requires `scope path: "/name"` in `config/routes.rb` — otherwise `/name/up` 404s even though the route table shows `get "up"`.
+- Asset precompile needs `SECRET_KEY_BASE_DUMMY=1` in the Dockerfile's `RUN bin/rails assets:precompile` step so it can boot without the real master key. The runtime container receives `RAILS_MASTER_KEY` via the runtime Secret.
 
 ## Tech Stack
 
-- Frontend: Next.js 16 (App Router) + TypeScript + Tailwind v4 + shadcn/ui
-- Backend default: Go 1.23 (`chi`, `pgx`, `sqlc`)
-- Database: Postgres (`supabase/postgres`) with pgvector, PostGIS, pg_cron, pg_graphql, etc.
-- Auth: Supabase GoTrue (email+password, magic link, Google, GitHub) with `@supabase/ssr` in Next
-- Admin UI: Supabase Studio (DB browser + SQL + user management)
-- Deployment: MicroK8s on 192.168.0.37, fronted by `cloudflared` tunnel (no public IP)
-- CI/CD: GitHub Actions self-hosted runner on the same production host
+- Framework: Rails 8 (ERB + Turbo + Tailwind-Rails + Propshaft + Solid Queue + Solid Cache)
+- Ruby: 4.0.3
+- Database: Postgres (`supabase/postgres`) with pgvector, PostGIS, pg_cron, pg_graphql, etc. Still runs in MicroK8s.
+- Auth: Rails 8 `authenticate` generator (HttpOnly signed+encrypted session cookie) + OmniAuth Google OAuth2
+- Deployment: MicroK8s on 192.168.0.37 (`taxila`), fronted by `cloudflared` tunnel. Nginx-ingress does path-based routing so `sastaspace.com/<name>` hits `<name>-rails:3000`. No public IP, no open ports.
+- LLM: LiteLLM (in-cluster) in front of Ollama / Gemma 4, reachable at `http://litellm.sastaspace.svc.cluster.local:4000`
+- CI/CD: `.github/workflows/deploy.yml` via a self-hosted runner on taxila. Builds Rails images, pushes to `localhost:32000`, applies `projects/*/k8s.yaml` + `infra/k8s/*.yaml`, rolling-restart on each Deployment.
 
 ## Repository Layout
 
-- `infra/k8s/` - shared Postgres, PostgREST, GoTrue, pg-meta, ingresses
+- `infra/k8s/` - shared Postgres, PostgREST, GoTrue (legacy), pg-meta (legacy), ingresses, almirah-subdomain-redirect
 - `infra/docker-compose.yml` - local mirror of shared services
-- `db/migrations/` - extensions, shared schema, auth roles, admin allowlist, RLS helpers
-- `db/seed/` - seed data scripts
-- `projects/_template/` - default scaffold (Next.js + shadcn + Supabase auth + Go API)
-- `projects/landing/` - `sastaspace.com` portfolio app
-- `projects/<name>/data/` - optional: per-project ETL (Node/Python) that writes
-  JSON bundles into both `data/out/` and `<name>/web/public/data/`. Keeps the
-  ETL script in the repo and the generated JSONs out of `data/out/` (gitignored)
-  while the copy under `web/public/data/` ships in the image.
-- `scripts/` - key-gen, migrations, scaffolder, remote helpers, verify
+- `db/migrations/` - legacy SQL migrations (extensions, admin allowlist, RLS helpers). Rails apps now own their own ActiveRecord migrations under `projects/<name>/db/migrate/`.
+- `projects/_template/` - Rails 8 scaffold with auth, Tailwind, Propshaft, Kamal configs stripped
+- `projects/landing/` - Rails 8 app at `sastaspace.com/`
+- `projects/almirah/` - Rails 8 app at `sastaspace.com/almirah`
+- `scripts/` - key-gen, migrations, verify, scaffolder (needs Rails-era rewrite)
 - `design-log/` - design decisions and implementation history
 
 ## Conventions
 
 - Project folders use kebab-case: `projects/my-project`.
-- Project schema naming (when using shared Postgres): `project_<name>`.
-- Web app code in `projects/<name>/web`, Go API in `projects/<name>/api`, data pipeline (if any) in `projects/<name>/data/` with generated JSON copied into `<name>/web/public/data/`.
-- Shared services in `infra/k8s`, per-project manifests in `projects/<name>/k8s.yaml`.
+- Per-project Rails schema (when using shared Postgres): `project_<name>` (Rails migrations create it; AR models set `self.table_name = "project_<name>.<table>"`).
+- Per-project manifests in `projects/<name>/k8s.yaml` (Deployment + Service); shared ingress + legacy pods in `infra/k8s/`.
 - Image tag convention: `localhost:32000/sastaspace-<name>:latest` (plus `<sha>` or `<timestamp>` for immutable pins).
-- No secrets in git: only `.env.example` and `infra/k8s/secrets.yaml.template`. Secrets live in macOS Keychain locally and in `infra/k8s/secrets.yaml` (gitignored) on the cluster.
+- No secrets in git: Rails `config/master.key` is gitignored and lives in macOS Keychain (`rails-master-key-<name>`). Per-app k8s runtime secrets are `sastaspace-rails-<name>-runtime`. Postgres password comes from the shared `postgres-credentials` secret.
 - Design log first for significant changes (see `design-log/`).
 - Commit message format for task-structured work: `<project>: task <n> — <short>`.
 - Branch commits granularly, one commit per task; fast-forward merge feature branches into `develop`.
 
 ## Architecture
 
-Everything lives in the single `sastaspace` namespace on MicroK8s. Per-project deployments opt in to shared Postgres / GoTrue only if they need them — a static-data project can skip both entirely.
+Single `sastaspace` namespace on MicroK8s. Rails apps are Deployments on the shared cluster; nginx-ingress does path-based routing.
 
 ```mermaid
 graph TD
     CF[Cloudflare Tunnel]
     subgraph mk8s [MicroK8s · namespace sastaspace]
         ING[nginx-ingress]
-        subgraph shared [shared services]
-            PG[(Postgres)]
-            PGR[PostgREST]
-            GT[GoTrue]
-            ST[Studio]
-            PM[pg-meta]
-        end
-        subgraph proj [project deployments]
-            LAND[landing]
-            APPn[... future]
-        end
+        PG[(Postgres)]
+        LLM[LiteLLM]
+        LAND[landing-rails]
+        ALM[almirah-rails]
+        APPn[... future Rails apps]
     end
-    CF -->|*.sastaspace.com| ING
-    ING -->|sastaspace.com| LAND
-    ING -->|auth.sastaspace.com| GT
-    ING -->|studio.sastaspace.com| ST
-    ING -->|name.sastaspace.com| APPn
+    CF -->|sastaspace.com :80| ING
+    ING -->|/ | LAND
+    ING -->|/almirah | ALM
+    ING -->|/<name> | APPn
     LAND --> PG
+    ALM --> PG
+    ALM --> LLM
     APPn -.optional.-> PG
-    LAND -->|JWT| GT
-    APPn -.optional.-> GT
-    ST --> PM --> PG
 ```
 
 ## Auth Model
 
-- GoTrue signs JWTs with `JWT_SECRET`; PostgREST validates with the same secret -> RLS works end to end.
-- Roles in Postgres: `anon` (unauthenticated), `authenticated` (signed in), `service_role` (bypasses RLS), `authenticator` (PostgREST login role that SET ROLEs based on JWT).
-- `public.admins(email)` table is the app-level admin allowlist. `public.is_admin()` returns true if the current user's email is in that list.
-- `auth.uid()`, `auth.role()`, `auth.email()`, `auth.jwt()` helpers are available for RLS policies.
-- Next.js projects use `@supabase/ssr` with a `proxy.ts` (renamed from `middleware.ts` in Next 16) to refresh auth cookies.
+- Rails 8 `authenticate` generator: HttpOnly signed+encrypted session cookies scoped to `sastaspace.com` (same-origin for all apps, no `Domain=` dance needed).
+- Google sign-in via `omniauth-google-oauth2` with a single redirect URI: `https://sastaspace.com/auth/google/callback`.
+- Shared `public.users` table. Admin status is defined by presence in the `public.admins(email)` allowlist.
+- Legacy Supabase GoTrue/PostgREST/Studio pods are idle — delete once nothing in the repo or in Cloudflare references them.
 
 ## Workflow
 
-For a substantive change (new project, new subsystem, architectural shift): follow the **New project end-to-end checklist** in the Build & Dev Commands section above.
+For a substantive change (new project, architectural shift): follow the **New project end-to-end checklist** in Build & Dev Commands.
 
 For an incremental change to an existing project:
 
 1. Work on a feature branch, not on `develop` or `main` directly.
 2. Keep commits small and task-scoped (`<project>: task <n> — <short>`).
-3. Validate locally — `npm run build`, `npm test` (if wired), `npx eslint .` — before pushing.
+3. Validate locally — `bin/rails test`, `bin/rails test:system`, `bin/rubocop` — before pushing.
 4. Fast-forward merge into `develop`; CI deploys automatically. Fast-forward `develop` into `main` once you're confident.
 5. Update the design log in `design-log/` when the change is significant enough that a future agent would benefit from the context.
 
 ## Testing conventions
 
-No test runner is wired in by default. Projects that need unit coverage should:
+Each Rails app ships with Minitest + Capybara (system tests). No extra test runner needed. Conventions:
 
-- Add `vitest` (+ `@vitest/coverage-v8`) as a devDependency and expose `test` / `test:watch` scripts. This is the minimum footprint for a Next.js 16 TS app.
-- Put tests next to the code they exercise (`foo.test.ts` beside `foo.ts`), not in a top-level `tests/` tree.
-- Keep pure-function cores pure. A risk/score/price function that reaches for `fetch`, `Date.now()`, or `Math.random()` is hard to test deterministically — push side effects out to the caller.
+- Put unit tests in `projects/<name>/test/models/`, system tests in `projects/<name>/test/system/`. The Rails defaults.
+- Keep pure-function cores pure. A risk/score/price function that reaches for `Net::HTTP`, `Time.current`, or `SecureRandom` is hard to test deterministically — inject dependencies at the caller.
+- System tests run Chrome headless via Selenium. They need a working Postgres — either the Compose one (`make up`) or a local Postgres with `postgres/postgres` creds.
 
 ## References
 
 - Foundation design: `design-log/001-project-bank-foundations.md`
 - Auth + UI upgrade: `design-log/002-auth-admin-ui-upgrade.md`
 - Brand rollout: `design-log/003-brand-rollout.md`
+- Rails + MicroK8s migration: `design-log/006-rails-kamal-migration.md` (the "Kamal" name in the title is retained for history — the final deploy target is MicroK8s, not Kamal)
 - Root quickstart: `README.md`
