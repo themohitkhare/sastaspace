@@ -31,22 +31,9 @@ servers:
   web:
     hosts:
       - 192.168.0.37
-    labels:
-      # kamal-proxy reads traefik-style labels to decide which container
-      # handles which requests.
-      #
-      # Landing (root): comment out path_prefix entirely.
-      # Every other app: uncomment and set to "/<name>".
-      #
-      # traefik.http.routers.sastaspace-almirah.rule:
-      #   "Host(`sastaspace.com`) && PathPrefix(`/almirah`)"
-      #
-      # kamal-proxy v0.9+ reads kamal-proxy.path_prefix directly:
-      kamal-proxy.path_prefix: /almirah
-      # Remove the line above and uncomment the one below for the landing app:
-      # (no path_prefix label → kamal-proxy routes all unmatched requests here)
-    # Health-check config lives under the top-level `proxy:` block below
-    # (Kamal 2.x moved it out of servers.web).
+    # Path-prefix routing is configured under the top-level proxy: block
+    # via proxy.path_prefix (Kamal 2.x). Labels are no longer used.
+    # Health-check config likewise moved to proxy.healthcheck.
 
 # --------------------------------------------------------------------------
 # Registry
@@ -132,6 +119,11 @@ env:
 proxy:
   ssl: false                 # TLS is terminated at Cloudflare, not here
   host: sastaspace.com
+  # Almirah handles /almirah/*. Rails routes are scoped to match the full
+  # prefixed path directly (see config/routes.rb), so strip_path_prefix is
+  # false — kamal-proxy forwards /almirah/whatever verbatim.
+  path_prefix: /almirah
+  strip_path_prefix: false
   # app_port is the container-internal port Rails/thruster listens on.
   app_port: 3000
   buffering:
