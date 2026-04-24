@@ -1,10 +1,11 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { getSafeNext } from "@/lib/safe-next";
 
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
-  const next = searchParams.get("next") || "/";
+  const next = getSafeNext(searchParams.get("next"), origin);
 
   if (!code) {
     return NextResponse.redirect(`${origin}/signin?error=missing_code`);
@@ -18,7 +19,6 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  // Prevent open-redirect: only allow same-origin next paths.
-  const safeNext = next.startsWith("/") && !next.startsWith("//") ? next : "/";
-  return NextResponse.redirect(`${origin}${safeNext}`);
+  const destination = next.startsWith("http") ? next : `${origin}${next}`;
+  return NextResponse.redirect(destination);
 }

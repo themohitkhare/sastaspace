@@ -20,7 +20,12 @@ jobs:
       # --- landing (sastaspace.com) ---
       - name: Build landing image
         run: |
+          # NEXT_PUBLIC_* vars are baked into the client bundle at build time.
+          SUPABASE_URL=$(sudo microk8s kubectl -n sastaspace get secret landing-runtime -o jsonpath='{.data.NEXT_PUBLIC_SUPABASE_URL}' | base64 -d)
+          SUPABASE_ANON_KEY=$(sudo microk8s kubectl -n sastaspace get secret landing-runtime -o jsonpath='{.data.NEXT_PUBLIC_SUPABASE_ANON_KEY}' | base64 -d)
           docker build \
+            --build-arg NEXT_PUBLIC_SUPABASE_URL="$SUPABASE_URL" \
+            --build-arg NEXT_PUBLIC_SUPABASE_ANON_KEY="$SUPABASE_ANON_KEY" \
             -t localhost:32000/sastaspace-landing:latest \
             -t localhost:32000/sastaspace-landing:${{ github.sha }} \
             -f projects/landing/Dockerfile.web projects/landing/web

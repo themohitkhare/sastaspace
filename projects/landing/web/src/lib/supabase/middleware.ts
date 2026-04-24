@@ -1,6 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
-import { AUTH_COOKIE_NAME } from "./cookies";
+import { authCookieOptions, AUTH_COOKIE_DOMAIN } from "./cookies";
 
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
@@ -14,7 +14,7 @@ export async function updateSession(request: NextRequest) {
   }
 
   const supabase = createServerClient(url, anonKey, {
-    cookieOptions: { name: AUTH_COOKIE_NAME },
+    cookieOptions: authCookieOptions(),
     cookies: {
       getAll() {
         return request.cookies.getAll();
@@ -23,7 +23,7 @@ export async function updateSession(request: NextRequest) {
         cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
         supabaseResponse = NextResponse.next({ request });
         cookiesToSet.forEach(({ name, value, options }) =>
-          supabaseResponse.cookies.set(name, value, options),
+          supabaseResponse.cookies.set(name, value, { ...options, domain: AUTH_COOKIE_DOMAIN }),
         );
       },
     },

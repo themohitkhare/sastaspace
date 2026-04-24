@@ -6,7 +6,7 @@ export const runtime = "nodejs";
 export const maxDuration = 60;
 
 const ALLOWED_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "image/gif"]);
-const MAX_BYTES = 8 * 1024 * 1024; // 8 MB — Anthropic vision limit is 5MB per image post-b64, stay safely under
+const MAX_BYTES = 8 * 1024 * 1024; // 8 MB
 
 export async function POST(request: NextRequest) {
   const user = await getSessionUser();
@@ -53,8 +53,10 @@ export async function POST(request: NextRequest) {
     );
     return NextResponse.json({ ok: true, result });
   } catch (err) {
-    const message = err instanceof Error ? err.message : "tagging failed";
-    console.error("[tag-image]", message);
-    return NextResponse.json({ error: message }, { status: 502 });
+    // Log full context server-side; never leak upstream SDK / LiteLLM error
+    // messages to the client — those include the internal cluster DNS
+    // (litellm.litellm.svc.cluster.local:4000) and raw model output.
+    console.error("[tag-image]", err);
+    return NextResponse.json({ error: "tagging failed" }, { status: 502 });
   }
 }

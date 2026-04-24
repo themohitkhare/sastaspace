@@ -1,12 +1,21 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
-import { AUTH_COOKIE_NAME } from "@/lib/supabase/cookies";
+import { authCookieOptions, AUTH_COOKIE_DOMAIN } from "@/lib/supabase/cookies";
 
 // Paths reachable without a session
 const PUBLIC_PATHS = [/^\/signin$/, /^\/auth\//, /^\/api\/health$/];
 
 function isPublic(pathname: string): boolean {
   return PUBLIC_PATHS.some((re) => re.test(pathname));
+}
+
+function redirectToSignin(request: NextRequest) {
+  const signin = request.nextUrl.clone();
+  signin.pathname = "/signin";
+  signin.search = `?next=${encodeURIComponent(
+    request.nextUrl.pathname + (request.nextUrl.search || ""),
+  )}`;
+  return NextResponse.redirect(signin);
 }
 
 export async function proxy(request: NextRequest) {
@@ -16,14 +25,15 @@ export async function proxy(request: NextRequest) {
     process.env.SUPABASE_INTERNAL_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-  // If Supabase isn't configured (local dev without env), pass through.
-  // The server layout still enforces auth before rendering protected routes.
+  // Fail closed if Supabase isn't configured — treat missing env as
+  // unauthenticated instead of silently serving every route.
   if (!url || !anonKey) {
-    return supabaseResponse;
+    if (isPublic(request.nextUrl.pathname)) return supabaseResponse;
+    return redirectToSignin(request);
   }
 
   const supabase = createServerClient(url, anonKey, {
-    cookieOptions: { name: AUTH_COOKIE_NAME },
+    cookieOptions: authCookieOptions(),
     cookies: {
       getAll() {
         return request.cookies.getAll();
@@ -32,7 +42,7 @@ export async function proxy(request: NextRequest) {
         cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
         supabaseResponse = NextResponse.next({ request });
         cookiesToSet.forEach(({ name, value, options }) =>
-          supabaseResponse.cookies.set(name, value, options),
+          supabaseResponse.cookies.set(name, value, { ...options, domain: AUTH_COOKIE_DOMAIN }),
         );
       },
     },
@@ -42,12 +52,9 @@ export async function proxy(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const { pathname, search } = request.nextUrl;
+  const { pathname } = request.nextUrl;
   if (!user && !isPublic(pathname)) {
-    const signin = request.nextUrl.clone();
-    signin.pathname = "/signin";
-    signin.searchParams.set("next", pathname + (search || ""));
-    return NextResponse.redirect(signin);
+    return redirectToSignin(request);
   }
 
   if (user && pathname === "/signin") {

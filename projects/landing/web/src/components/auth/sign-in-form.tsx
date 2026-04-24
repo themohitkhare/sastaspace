@@ -5,16 +5,37 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
+import { getSafeNext } from "@/lib/safe-next";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 
+type LoadingKind = "password" | "google" | "github" | null;
+
 export function SignInForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const nextPath = searchParams.get("next") ?? "/";
-  const [loading, setLoading] = useState<"password" | "magic" | "google" | "github" | null>(null);
+  const [loading, setLoading] = useState<LoadingKind>(null);
+
+  // `next` can be a same-origin path ("/dashboard") or an absolute URL on a
+  // *.sastaspace.com subdomain (e.g. "https://almirah.sastaspace.com/today").
+  // getSafeNext collapses anything else to "/" to prevent open-redirects.
+  const rawNext = searchParams.get("next");
+  const nextTarget =
+    typeof window !== "undefined" ? getSafeNext(rawNext, window.location.origin) : "/";
+
+  function redirectToOptions() {
+    // Always route the OAuth callback through landing's /auth/callback — it's
+    // the one place that exchanges the code and sets the shared-domain cookie.
+    // After exchange, the callback redirects onwards to `next` (which can be a
+    // same-origin path or a cross-subdomain absolute URL, re-validated there).
+    const origin =
+      typeof window !== "undefined" ? window.location.origin : "https://sastaspace.com";
+    return {
+      redirectTo: `${origin}/auth/callback?next=${encodeURIComponent(nextTarget)}`,
+    };
+  }
 
   async function signInWithPassword(formData: FormData) {
     setLoading("password");
@@ -25,25 +46,12 @@ export function SignInForm() {
         password: String(formData.get("password") || ""),
       });
       if (error) throw error;
-      router.push(nextPath);
-      router.refresh();
-    } catch (err) {
-      toast.error((err as Error).message);
-    } finally {
-      setLoading(null);
-    }
-  }
-
-  async function signInWithMagicLink(formData: FormData) {
-    setLoading("magic");
-    try {
-      const supabase = createClient();
-      const { error } = await supabase.auth.signInWithOtp({
-        email: String(formData.get("email") || ""),
-        options: { emailRedirectTo: `${window.location.origin}/auth/callback?next=${nextPath}` },
-      });
-      if (error) throw error;
-      toast.success("Check your email for a login link");
+      if (nextTarget.startsWith("http")) {
+        window.location.href = nextTarget;
+      } else {
+        router.push(nextTarget);
+        router.refresh();
+      }
     } catch (err) {
       toast.error((err as Error).message);
     } finally {
@@ -57,7 +65,7 @@ export function SignInForm() {
       const supabase = createClient();
       const { error } = await supabase.auth.signInWithOAuth({
         provider,
-        options: { redirectTo: `${window.location.origin}/auth/callback?next=${nextPath}` },
+        options: redirectToOptions(),
       });
       if (error) throw error;
     } catch (err) {
@@ -68,6 +76,25 @@ export function SignInForm() {
 
   return (
     <div className="grid gap-6">
+      <div className="grid gap-2">
+        <Button
+          variant="default"
+          onClick={() => signInWithProvider("google")}
+          disabled={loading === "google"}
+        >
+          {loading === "google" ? "Redirecting..." : "Continue with Google"}
+        </Button>
+        <Button
+          variant="outline"
+          onClick={() => signInWithProvider("github")}
+          disabled={loading === "github"}
+        >
+          {loading === "github" ? "Redirecting..." : "Continue with GitHub"}
+        </Button>
+      </div>
+
+      <Separator />
+
       <form action={signInWithPassword} className="grid gap-4">
         <div className="grid gap-2">
           <Label htmlFor="email">Email</Label>
@@ -91,41 +118,10 @@ export function SignInForm() {
             autoComplete="current-password"
           />
         </div>
-        <Button type="submit" disabled={loading === "password"}>
-          {loading === "password" ? "Signing in..." : "Sign in"}
+        <Button type="submit" variant="outline" disabled={loading === "password"}>
+          {loading === "password" ? "Signing in..." : "Sign in with password"}
         </Button>
       </form>
-
-      <Separator />
-
-      <form action={signInWithMagicLink} className="grid gap-2">
-        <Label htmlFor="magic-email" className="text-xs text-muted-foreground">
-          Or email me a magic link
-        </Label>
-        <div className="flex gap-2">
-          <Input id="magic-email" name="email" type="email" required placeholder="you@example.com" />
-          <Button type="submit" variant="outline" disabled={loading === "magic"}>
-            {loading === "magic" ? "Sending" : "Send link"}
-          </Button>
-        </div>
-      </form>
-
-      <div className="grid gap-2">
-        <Button
-          variant="outline"
-          onClick={() => signInWithProvider("google")}
-          disabled={loading === "google"}
-        >
-          {loading === "google" ? "Redirecting..." : "Continue with Google"}
-        </Button>
-        <Button
-          variant="outline"
-          onClick={() => signInWithProvider("github")}
-          disabled={loading === "github"}
-        >
-          {loading === "github" ? "Redirecting..." : "Continue with GitHub"}
-        </Button>
-      </div>
 
       <p className="text-center text-sm text-muted-foreground">
         New here?{" "}
