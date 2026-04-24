@@ -1,0 +1,41 @@
+# PostgreSQL — shared Supabase/Postgres instance.
+#
+# Connection is driven entirely by POSTGRES_URL so that each deployed
+# project only needs one environment variable.
+#
+# schema_search_path controls which schema(s) ActiveRecord sees.
+# Convention: "project_<name>,public" — shared tables (users, sessions,
+# admins, projects) live in `public`; project-local tables live in
+# `project_<name>`.
+#
+# Copy this file, replace __NAME__ with your project's kebab-case name.
+
+default: &default
+  adapter: postgresql
+  encoding: unicode
+  pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
+
+development:
+  <<: *default
+  # Set POSTGRES_URL or fall back to a local DB named __NAME___development.
+  url: <%= ENV.fetch("POSTGRES_URL") { "postgres://localhost/__NAME___development" } %>
+  schema_search_path: "public"
+
+test:
+  <<: *default
+  url: <%= ENV.fetch("POSTGRES_URL") { "postgres://localhost/__NAME___test" } %>
+  schema_search_path: "public"
+
+production:
+  primary: &primary_production
+    <<: *default
+    # POSTGRES_URL must be set in .kamal/secrets for production.
+    url: <%= ENV["POSTGRES_URL"] %>
+    # Override per project: "project_almirah,public" for almirah, etc.
+    schema_search_path: <%= ENV.fetch("DB_SCHEMA_SEARCH_PATH") { "public" } %>
+  cache:
+    <<: *primary_production
+    migrations_paths: db/cache_migrate
+  queue:
+    <<: *primary_production
+    migrations_paths: db/queue_migrate

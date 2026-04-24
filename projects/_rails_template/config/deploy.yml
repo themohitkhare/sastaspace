@@ -1,0 +1,79 @@
+# Kamal 2 deploy configuration — templated.
+#
+# Copy-script replacements (scripts/new-rails-project.sh does this):
+#   <NAME>        → kebab-case project name, e.g. "landing" or "almirah"
+#   <HOST>        → public hostname, e.g. "sastaspace.com"
+#   <PATH_PREFIX> → kamal-proxy path prefix, e.g. "/" for landing, "/almirah" for almirah
+#
+# NEVER enable proxy.ssl — Cloudflare terminates TLS at the edge.
+# kamal-proxy serves plain HTTP behind cloudflared on port 80.
+
+service: <NAME>
+image: localhost:32000/sastaspace-<NAME>
+
+servers:
+  web:
+    - 192.168.0.37
+  # Uncomment to run Solid Queue in a dedicated process (multi-server setups):
+  # job:
+  #   hosts:
+  #     - 192.168.0.37
+  #   cmd: bin/jobs
+
+proxy:
+  # ssl: false is the correct setting behind a Cloudflare tunnel.
+  # The Kamal default is no SSL; this makes it explicit.
+  ssl: false
+  host: <HOST>
+  path_prefix: <PATH_PREFIX>
+  # Health check — kamal-proxy probes /up before routing traffic.
+  healthcheck:
+    path: /up
+    interval: 10
+    timeout: 5
+
+registry:
+  # Local MicroK8s registry (no external registry needed for this setup).
+  server: localhost:32000
+  # No password needed for localhost:32000.
+  # username:
+  # password:
+
+env:
+  secret:
+    - SECRET_KEY_BASE
+    - POSTGRES_URL
+    - GOOGLE_CLIENT_ID
+    - GOOGLE_CLIENT_SECRET
+    - LITELLM_API_KEY
+  clear:
+    RAILS_LOG_TO_STDOUT: true
+    RAILS_SERVE_STATIC_FILES: true
+    SOLID_QUEUE_IN_PUMA: true
+    # Override per project if the DB schema differs from the default "public".
+    # DB_SCHEMA_SEARCH_PATH: "project_<NAME>,public"
+    LITELLM_BASE_URL: "http://llm.sastaspace.com"
+
+builder:
+  # The prod host is arm64 (Apple Silicon M-series).
+  arch: arm64
+  # Pass RAILS_MASTER_KEY as a build arg so assets:precompile can decrypt
+  # credentials. The value comes from .kamal/secrets (reads config/master.key).
+  args:
+    RAILS_MASTER_KEY: RAILS_MASTER_KEY
+
+# Persistent storage volume — Active Storage uploads, SQLite caches.
+# Change to a mounted NFS/S3 path when disk fills up.
+volumes:
+  - "<NAME>_storage:/rails/storage"
+
+# Bridge fingerprinted assets between rolling deploys (avoids 404 on in-flight reqs).
+asset_path: /rails/public/assets
+
+# Convenient aliases — run via: kamal <alias>
+aliases:
+  console: app exec --interactive --reuse "bin/rails console"
+  shell:   app exec --interactive --reuse "bash"
+  logs:    app logs -f
+  dbc:     app exec --interactive --reuse "bin/rails dbconsole --include-password"
+  migrate: app exec "bin/rails db:migrate"
