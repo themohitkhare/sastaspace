@@ -1,0 +1,42 @@
+<% content_for :title, "Plan — Almirah" %>
+<div class="app">
+  <%= render "shared/appbar" %>
+
+  <div class="scroll--pad scroll">
+    <div style="padding-top:24px;">
+      <p class="eyebrow" style="margin-bottom:8px;">occasion planner</p>
+      <h1 style="font-size:26px;font-weight:500;letter-spacing:-0.015em;margin:0 0 6px;">
+        Plan an outfit
+      </h1>
+      <p style="font-size:15px;color:var(--brand-muted);margin:0 0 24px;line-height:1.5;">
+        AI ranks your wardrobe for the event, flags repeat-risk with named attendees.
+      </p>
+
+      <%# Coming soon placeholder %>
+      <div style="background:var(--brand-paper-lifted);border:1px solid var(--brand-dust-40);border-radius:16px;padding:24px;text-align:center;">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" style="color:var(--brand-dust);margin:0 auto 12px;display:block;" aria-hidden="true">
+          <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+        </svg>
+        <div style="font-size:15px;font-weight:500;margin-bottom:6px;">AI occasion planner</div>
+        <div style="font-size:13px;color:var(--brand-muted);line-height:1.5;">
+          Enter event name, date, type, formality, and attendees. Opus 4 vision picks your top 3 outfits with reasoning and flags repeat-risk.
+        </div>
+        <div class="meta-mono" style="margin-top:12px;">coming in v2</div>
+      </div>
+
+      <% if @outfits.any? %>
+        <div style="margin-top:28px;">
+          <div class="eyebrow" style="margin-bottom:12px;">saved outfits</div>
+          <% @outfits.each do |outfit| %>
+            <div class="row">
+              <span style="font-size:15px;font-weight:500;"><%= outfit.name %></span>
+              <span class="meta"><%= outfit.items.count %> items</span>
+            </div>
+          <% end %>
+        </div>
+      <% end %>
+    </div>
+  </div>
+
+  <%= render "shared/tabbar", active: "plan" %>
+</div>

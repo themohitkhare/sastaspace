@@ -1,0 +1,32 @@
+# PostgreSQL — shared Supabase/Postgres instance.
+#
+# Almirah owns the project_almirah schema; shared tables (users, sessions)
+# live in public. schema_search_path makes both schemas visible so cross-schema
+# FK references in migrations work transparently.
+
+default: &default
+  adapter: postgresql
+  encoding: unicode
+  pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
+
+development:
+  <<: *default
+  url: <%= ENV.fetch("POSTGRES_URL") { "postgres://localhost/almirah_development" } %>
+  schema_search_path: "project_almirah,public,pg_catalog"
+
+test:
+  <<: *default
+  url: <%= ENV.fetch("POSTGRES_URL") { "postgres://localhost/almirah_test" } %>
+  schema_search_path: "project_almirah,public,pg_catalog"
+
+production:
+  primary: &primary_production
+    <<: *default
+    url: <%= ENV["POSTGRES_URL"] %>
+    schema_search_path: <%= ENV.fetch("DB_SCHEMA_SEARCH_PATH") { "project_almirah,public,pg_catalog" } %>
+  cache:
+    <<: *primary_production
+    migrations_paths: db/cache_migrate
+  queue:
+    <<: *primary_production
+    migrations_paths: db/queue_migrate

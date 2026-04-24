@@ -1,0 +1,16 @@
+<%# Tab bar partial. local_assigns: active (string matching tab key) %>
+<% active_tab = local_assigns[:active].to_s %>
+<nav class="tabbar" aria-label="app navigation">
+  <% [
+    { key: "rack",     label: "rack",  icon: "rack",   path: root_path },
+    { key: "today",    label: "today", icon: "star",   path: today_path },
+    { key: "plan",     label: "plan",  icon: "plan",   path: plan_path },
+    { key: "discover", label: "find",  icon: "shop",   path: discover_path },
+    { key: "me",       label: "me",    icon: "person", path: profile_path },
+  ].each do |tab| %>
+    <%= link_to tab[:path], class: "tab#{' active' if active_tab == tab[:key]}" do %>
+      <span class="ico"><%= raw tab_icon_svg(tab[:icon]) %></span>
+      <%= tab[:label] %>
+    <% end %>
+  <% end %>
+</nav>

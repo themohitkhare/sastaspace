@@ -1,0 +1,50 @@
+<% content_for :title, "Processing — Almirah" %>
+<%# Auto-refresh every 2s while job is still running via Turbo or meta-refresh %>
+<% unless @job.done? || @job.error? %>
+  <meta http-equiv="refresh" content="2">
+<% end %>
+
+<div class="app">
+  <%= render "shared/appbar" %>
+
+  <div class="scroll--pad scroll">
+    <div style="padding-top:24px;">
+      <p class="eyebrow" style="margin-bottom:8px;">ingest</p>
+      <h1 style="font-size:22px;font-weight:500;letter-spacing:-0.015em;margin:0 0 20px;">
+        <% if @job.done? %>
+          Done.
+        <% elsif @job.error? %>
+          Something went wrong.
+        <% else %>
+          Processing <%= @job.photo_count %> photos...
+        <% end %>
+      </h1>
+
+      <%# Progress bar %>
+      <div class="progress" style="margin-bottom:20px;">
+        <span style="width:<%= @job.done? ? 100 : (@job.processing? ? 50 : 5) %>%;"></span>
+      </div>
+
+      <div class="meta-mono" style="margin-bottom:24px;">
+        Status: <strong><%= @job.status %></strong>
+        <% if @job.finished_at %>
+          · finished <%= time_ago_in_words(@job.finished_at) %> ago
+        <% end %>
+      </div>
+
+      <% if @job.error? && @job.error_message %>
+        <div style="background:var(--brand-paper-lifted);border:1px solid var(--brand-rust);border-radius:10px;padding:12px 14px;font-size:13px;margin-bottom:20px;">
+          <%= @job.error_message %>
+        </div>
+      <% end %>
+
+      <% if @job.done? %>
+        <%= link_to "View your rack →", root_path, class: "btn btn--primary btn--block" %>
+      <% else %>
+        <p style="font-size:14px;color:var(--brand-muted);text-align:center;">
+          This page refreshes automatically. You can also <%= link_to "check later", root_path, style: "color:var(--brand-rust);border-bottom:1px solid currentColor;" %>.
+        </p>
+      <% end %>
+    </div>
+  </div>
+</div>

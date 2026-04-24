@@ -1,0 +1,11 @@
+test_user:
+  email_address: test@sastaspace.com
+  password_digest: <%= BCrypt::Password.create("password123") %>
+  name: Test User
+  admin: false
+
+admin_user:
+  email_address: admin@sastaspace.com
+  password_digest: <%= BCrypt::Password.create("admin123") %>
+  name: Admin User
+  admin: true

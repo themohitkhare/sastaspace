@@ -1,0 +1,23 @@
+<%# Renders the app header bar.
+    local_assigns: left (html), right (html), terminal (string) %>
+<header class="appbar">
+  <div style="display:flex;align-items:center;gap:8px;">
+    <% if local_assigns[:left] %>
+      <%= left %>
+    <% else %>
+      <div class="brand">
+        almirah<span class="brand-dot"></span>
+      </div>
+    <% end %>
+  </div>
+  <% if local_assigns[:right] %>
+    <div style="display:flex;align-items:center;gap:8px;">
+      <%= right %>
+    </div>
+  <% end %>
+</header>
+<% if local_assigns[:terminal] %>
+  <div class="terminal-anchor" style="font-family:var(--font-mono);font-size:11px;color:var(--brand-muted);letter-spacing:0.05em;padding:2px 20px 10px;">
+    <%= terminal %>
+  </div>
+<% end %>

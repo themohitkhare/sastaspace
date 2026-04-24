@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title><%= content_for?(:title) ? yield(:title) : "Almirah — sastaspace" %></title>
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <%= csrf_meta_tags %>
+    <%= csp_meta_tag %>
+
+    <%# Inter + JetBrains Mono — two weights each, no more. %>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+    <%= yield :head %>
+
+    <link rel="icon" href="/icon.png" type="image/png">
+    <link rel="icon" href="/icon.svg" type="image/svg+xml">
+
+    <%# Tailwind + application CSS (brand tokens + almirah rack styles) %>
+    <%= stylesheet_link_tag :app, "data-turbo-track": "reload" %>
+    <%= javascript_importmap_tags %>
+  </head>
+
+  <body style="background: #f5f1e8; color: #1a1917; font-family: var(--font-sans); margin: 0;">
+    <%# Flash messages — shown above content when present %>
+    <% if notice = flash[:notice] %>
+      <div class="flash-notice" role="status" style="background:#1a1917;color:#f5f1e8;padding:10px 20px;font-family:monospace;font-size:13px;letter-spacing:0.04em;"><%= notice %></div>
+    <% end %>
+    <% if alert = flash[:alert] %>
+      <div class="flash-alert" role="alert" style="background:#8a3d14;color:#f5f1e8;padding:10px 20px;font-family:monospace;font-size:13px;letter-spacing:0.04em;"><%= alert %></div>
+    <% end %>
+
+    <%= yield %>
+  </body>
+</html>
