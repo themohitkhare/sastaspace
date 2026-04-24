@@ -20,8 +20,8 @@ dist/
 coverage/
 *.tsbuildinfo
 
-# Go build outputs
-bin/
+# Go build outputs (scoped to per-project api/ subdirs so Rails bin/ dirs aren't hidden)
+projects/*/api/bin/
 *.test
 *.out
 
@@ -30,6 +30,17 @@ bin/
 tmp/
 .cache/
 .DS_Store
+
+# Ruby / Rails per-project artifacts
+projects/*/vendor/bundle/
+projects/*/.bundle/
+projects/*/log/
+projects/*/tmp/
+projects/*/storage/
+projects/*/public/assets/
+projects/*/app/assets/builds/*
+!projects/*/app/assets/builds/.keep
+projects/*/config/master.key
 
 # Docker/local artifacts
 *.pid
