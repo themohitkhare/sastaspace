@@ -22,7 +22,7 @@ service: sastaspace-almirah
 # We reuse the MicroK8s-local registry (localhost:32000) because it is already
 # running on the prod host. Switch to ghcr.io or Docker Hub if you want
 # to deploy from a machine other than the dev laptop.
-image: localhost:32000/sastaspace-almirah
+image: sastaspace-almirah
 
 # --------------------------------------------------------------------------
 # Servers
@@ -45,14 +45,8 @@ servers:
       kamal-proxy.path_prefix: /almirah
       # Remove the line above and uncomment the one below for the landing app:
       # (no path_prefix label → kamal-proxy routes all unmatched requests here)
-
-    # Health-check path. For path-prefixed apps kamal-proxy checks the prefixed
-    # URL. For landing use "/" directly.
-    healthcheck:
-      path: /almirah/up
-      port: 3002
-      max_attempts: 10
-      interval: 3s
+    # Health-check config lives under the top-level `proxy:` block below
+    # (Kamal 2.x moved it out of servers.web).
 
 # --------------------------------------------------------------------------
 # Registry
@@ -76,15 +70,14 @@ builder:
   arch: amd64
   # Build on the remote host via SSH. This avoids cross-arch emulation on
   # a dev laptop and keeps the image local to the push target.
-  remote:
-    host: ssh://192.168.0.37
+  remote: ssh://192.168.0.37
   # Build context is the Rails app root (directory containing Dockerfile).
   # Kamal defaults to the directory containing deploy.yml's parent — correct
   # for projects/<name>/config/deploy.yml → projects/<name>/ as the build root.
   cache:
     type: registry
     options: mode=max
-    image: localhost:32000/sastaspace-almirah-build-cache
+    image: sastaspace-almirah-build-cache
 
 # --------------------------------------------------------------------------
 # Environment variables

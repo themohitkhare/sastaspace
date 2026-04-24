@@ -11,10 +11,9 @@
 #
 # Target arch: amd64 (Ubuntu x86_64 prod host 192.168.0.37 / taxila).
 #
-# Build command:
-#   docker build \
-#     --build-arg RAILS_MASTER_KEY=$(cat config/master.key) \
-#     -t localhost:32000/sastaspace-<NAME>:latest .
+# RAILS_MASTER_KEY is NOT needed at build time — we precompile assets with
+# SECRET_KEY_BASE_DUMMY=1 so Rails skips the credentials check. The real
+# master key is injected at runtime via Kamal's env.secret mechanism.
 
 ARG RUBY_VERSION=4.0.3
 FROM docker.io/library/ruby:${RUBY_VERSION}-slim AS base
@@ -31,15 +30,6 @@ RUN apt-get update -qq && \
 
 # --- Build stage ---
 FROM base AS build
-
-# RAILS_MASTER_KEY is passed as a build arg so Rails can decrypt credentials
-# for the assets:precompile step. It does NOT appear in the final (runtime)
-# image — the ARG scope ends at the build stage.
-#
-# Build with: docker build --build-arg RAILS_MASTER_KEY=$(cat config/master.key) …
-# Kamal supplies this automatically via config/deploy.yml builder.secrets.
-ARG RAILS_MASTER_KEY
-ENV RAILS_MASTER_KEY=${RAILS_MASTER_KEY}
 
 ENV RAILS_ENV="production" \
     BUNDLE_DEPLOYMENT="1" \
@@ -64,9 +54,11 @@ RUN bundle install && \
 # Copy application code.
 COPY . .
 
-# Compile Tailwind + Propshaft assets.
-RUN bin/rails tailwindcss:build && \
-    bin/rails assets:precompile
+# Compile Tailwind + Propshaft assets. SECRET_KEY_BASE_DUMMY=1 is the Rails 8
+# convention that lets assets:precompile boot the app without a real master
+# key — the runtime image receives RAILS_MASTER_KEY via Kamal env.secret.
+RUN SECRET_KEY_BASE_DUMMY=1 bin/rails tailwindcss:build && \
+    SECRET_KEY_BASE_DUMMY=1 bin/rails assets:precompile
 
 # Precompile bootsnap cache to reduce boot times.
 RUN bundle exec bootsnap precompile app/ lib/
