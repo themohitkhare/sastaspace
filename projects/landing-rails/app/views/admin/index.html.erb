@@ -1,0 +1,21 @@
+<% content_for :title, "Admin — sastaspace" %>
+
+<div class="max-w-2xl mx-auto py-16 px-6">
+  <p class="font-mono text-xs tracking-[0.05em] text-dust mb-8">~/admin · sastaspace.com</p>
+
+  <h1 class="text-3xl font-medium tracking-tight text-ink mb-4">Admin</h1>
+
+  <p class="text-muted leading-7 mb-6">
+    Signed in as <span class="font-mono text-ink"><%= Current.user.email_address %></span>.
+  </p>
+
+  <div class="rounded border border-border bg-paper-lifted px-6 py-8 text-center">
+    <p class="font-mono text-xs tracking-[0.05em] text-dust mb-2">coming soon</p>
+    <p class="text-lg font-medium text-ink">Admin dashboard is under construction.</p>
+    <p class="mt-2 text-sm text-muted">Project management, analytics, and settings will live here.</p>
+  </div>
+
+  <div class="mt-8">
+    <%= link_to "← Back to home", root_path, class: "text-sm text-rust hover:text-ink" %>
+  </div>
+</div>
