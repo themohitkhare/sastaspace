@@ -1,0 +1,28 @@
+# Development artefacts
+/.bundle
+/.git
+/.gitignore
+/log/*
+/tmp/*
+/test/*
+/spec/*
+
+# Build outputs that get regenerated in the image
+/public/assets
+/public/packs
+
+# Keep storage path but not its content
+/storage/*
+!/storage/.keep
+
+# Local config and secrets — NEVER in the image
+/.env*
+/config/master.key
+/config/credentials/*.key
+/.kamal/secrets
+
+# Node / Tailwind local installs (Tailwind CLI is bundled with tailwindcss-rails gem)
+/node_modules
+
+# macOS noise
+.DS_Store

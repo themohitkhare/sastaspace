@@ -1,0 +1,28 @@
+<% content_for :title, "__NAME__ — sastaspace" %>
+
+<div class="max-w-2xl mx-auto py-16 px-4">
+  <%# Terminal-prompt anchor — brand convention %>
+  <p class="font-mono text-sm text-dust mb-8 tracking-wide">sastaspace.com/<%= Rails.application.config.relative_url_root&.delete_prefix("/") || "" %> —</p>
+
+  <h1 class="text-4xl font-medium tracking-tight text-ink mb-6">
+    __NAME__
+  </h1>
+
+  <p class="text-body text-muted leading-7 mb-10">
+    Replace this placeholder with your project's hero copy.
+    Sentence case. No hype. Let the working thing speak.
+  </p>
+
+  <% if authenticated? %>
+    <p class="text-sm text-muted mb-6">
+      Signed in as <span class="font-mono text-ink"><%= Current.user.email_address %></span>.
+      <%= button_to "Sign out", session_path, method: :delete,
+            class: "text-sm text-rust border-b border-rust hover:text-ink hover:border-ink bg-transparent cursor-pointer" %>
+    </p>
+  <% else %>
+    <div class="flex gap-4 items-center">
+      <%= link_to "Sign in", new_session_path,
+            class: "inline-block px-4 py-2 bg-sasta text-paper rounded text-sm font-medium hover:bg-rust transition-colors" %>
+    </div>
+  <% end %>
+</div>
