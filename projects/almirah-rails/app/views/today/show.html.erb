@@ -1,0 +1,39 @@
+<% content_for :title, "Today's pick — Almirah" %>
+<div class="app">
+  <%= render "shared/appbar" %>
+
+  <div class="scroll--pad scroll">
+    <div style="padding-top:24px;">
+      <p class="eyebrow" style="margin-bottom:8px;">today</p>
+      <h1 style="font-size:26px;font-weight:500;letter-spacing:-0.015em;margin:0 0 6px;">
+        Due for a wear
+      </h1>
+      <p style="font-size:15px;color:var(--brand-muted);margin:0 0 24px;line-height:1.5;">
+        Items you haven&#8217;t touched in the longest time.
+      </p>
+
+      <% @picks.each_with_index do |item, i| %>
+        <%= link_to item_path(item), style: "display:block;text-decoration:none;margin-bottom:12px;" do %>
+          <div class="card" style="display:flex;gap:14px;align-items:center;padding:14px;">
+            <div style="width:72px;height:96px;flex-shrink:0;">
+              <%= render "shared/item_card", item: item, size: :sm, show_name: false %>
+            </div>
+            <div>
+              <div style="font-size:16px;font-weight:500;color:var(--brand-ink);margin-bottom:4px;">
+                <%= item.name.capitalize %>
+              </div>
+              <div class="meta-mono">last worn: <%= item.last_worn_ago %> ago</div>
+              <div class="meta-mono"><%= item.rack %> rack · <%= item.wears_count %> wears</div>
+            </div>
+          </div>
+        <% end %>
+      <% end %>
+
+      <% if @picks.empty? %>
+        <p style="text-align:center;color:var(--brand-muted);padding:40px 0;">No items yet — <%= link_to "add some", onboarding_path, style: "color:var(--brand-rust);border-bottom:1px solid currentColor;" %>.</p>
+      <% end %>
+    </div>
+  </div>
+
+  <%= render "shared/tabbar", active: "today" %>
+</div>

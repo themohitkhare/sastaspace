@@ -1,0 +1,100 @@
+<% content_for :title, "Almirah — rack" %>
+<div class="app">
+  <%= render "shared/appbar",
+        terminal: "~/mk · #{@total_items} items · 3 racks",
+        right: capture do %>
+          <%= link_to search_path, class: "iconbtn", "aria-label": "search" do %>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <% end %>
+          <%= link_to onboarding_path, class: "iconbtn", "aria-label": "add items" do %>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          <% end %>
+        <% end %>
+
+  <div class="scroll" style="padding:0;">
+    <%# ETHNIC RACK %>
+    <section class="rack">
+      <div class="rack-head">
+        <h3>Ethnic</h3>
+        <span class="count"><%= @ethnic_items.count %> items</span>
+      </div>
+      <div class="rail">
+        <div class="rail-rod"></div>
+        <div class="rail-scroll">
+          <% @ethnic_items.each do |item| %>
+            <%= link_to item_path(item), class: "rail-item rail-item--lg" do %>
+              <%= render "shared/item_card", item: item, size: :sm, show_name: true %>
+            <% end %>
+          <% end %>
+        </div>
+      </div>
+    </section>
+
+    <%# OFFICE RACK %>
+    <section class="rack">
+      <div class="rack-head">
+        <h3>Office</h3>
+        <span class="count"><%= @office_items.count %> items</span>
+      </div>
+      <div class="rail">
+        <div class="rail-rod"></div>
+        <div class="rail-scroll">
+          <% @office_items.each do |item| %>
+            <%= link_to item_path(item), class: "rail-item" do %>
+              <%= render "shared/item_card", item: item, size: :sm, show_name: true %>
+            <% end %>
+          <% end %>
+        </div>
+      </div>
+    </section>
+
+    <%# WEEKEND RACK %>
+    <section class="rack">
+      <div class="rack-head">
+        <h3>Weekend</h3>
+        <span class="count"><%= @weekend_items.count %> items</span>
+      </div>
+      <div class="rail">
+        <div class="rail-rod"></div>
+        <div class="rail-scroll">
+          <% @weekend_items.each do |item| %>
+            <%= link_to item_path(item), class: "rail-item" do %>
+              <%= render "shared/item_card", item: item, size: :sm, show_name: true %>
+            <% end %>
+          <% end %>
+        </div>
+      </div>
+    </section>
+
+    <%# GAP RIBBON — missing items %>
+    <% if @gap_suggestions.any? %>
+      <section class="rack" style="border-bottom:none;">
+        <div class="rack-head">
+          <h3>Rack&#8217;s missing &#8212;</h3>
+          <%= link_to "shop the gap →", discover_path, class: "count", style: "color:var(--brand-rust);text-decoration:none;border:none;" %>
+        </div>
+        <div style="padding:4px 20px;display:flex;gap:10px;overflow-x:auto;scrollbar-width:none;">
+          <% @gap_suggestions.each do |gs| %>
+            <div class="gap-card">
+              <div style="aspect-ratio:3/4;">
+                <%= render "shared/item_card", item: { kind: gs.kind, tone: gs.tone, name: gs.name }, size: :md, show_name: false %>
+              </div>
+              <div style="font-size:12px;font-weight:500;line-height:1.3;letter-spacing:-0.005em;"><%= gs.name %></div>
+              <div style="font-size:11px;color:var(--brand-muted);line-height:1.4;"><%= gs.reason %></div>
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-top:2px;">
+                <span style="font-family:var(--font-mono);font-size:11px;color:var(--brand-ink);"><%= gs.formatted_price %></span>
+                <%= link_to gs.url, target: "_blank", rel: "noreferrer nofollow sponsored",
+                      style: "font-family:var(--font-mono);font-size:10px;letter-spacing:0.04em;color:var(--brand-rust);border-bottom:1px solid currentColor;text-decoration:none;" do %>
+                  <%= gs.source %>
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" style="display:inline;vertical-align:middle;"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                <% end %>
+              </div>
+            </div>
+          <% end %>
+        </div>
+      </section>
+    <% end %>
+  </div>
+
+  <%= render "shared/tabbar", active: "rack" %>
+</div>

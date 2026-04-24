@@ -1,0 +1,28 @@
+<%# Renders an item card (tonal bg + SVG silhouette + name label).
+    local_assigns: item (Item or hash-like), size (:sm|:md|:lg), show_name (bool), note (string) %>
+<% _item     = local_assigns[:item]
+   _size      = local_assigns.fetch(:size, :md)
+   _show_name = local_assigns.fetch(:show_name, true)
+   _note      = local_assigns[:note]
+   _tone_bg   = _item.respond_to?(:tone_bg) ? _item.tone_bg : Item::TONE_BG.fetch((_item[:tone] || _item["tone"] || "warm"), "#f5f1e8")
+   _kind      = _item.respond_to?(:kind)     ? _item.kind    : (_item[:kind] || _item["kind"] || "shirt")
+   _name      = _item.respond_to?(:name)     ? _item.name.split.first(2).join(" ") : (_item[:name] || _item["name"] || "")
+   _pad       = { sm: "8px", md: "12px", lg: "18px" }.fetch(_size, "12px")
+   _sil_maxh  = { sm: 80,    md: 130,    lg: 180    }.fetch(_size, 130)
+   _name_fs   = { sm: 9,     md: 10,     lg: 10     }.fetch(_size, 10)
+%>
+<div class="item-card" style="background:<%= _tone_bg %>;padding:<%= _pad %>;">
+  <div class="item-card__silhouette">
+    <svg viewBox="0 0 100 100" width="100%" height="100%"
+         preserveAspectRatio="xMidYMid meet"
+         style="max-height:<%= _sil_maxh %>px;" aria-hidden="true">
+      <%= raw AlmirahHelper::SILHOUETTE_PATHS.fetch(_kind.to_s, AlmirahHelper::SILHOUETTE_PATHS["shirt"]) %>
+    </svg>
+  </div>
+  <% if _show_name && _name.present? %>
+    <div class="item-card__name" style="font-size:<%= _name_fs %>px;"><%= _name %></div>
+  <% end %>
+  <% if _note.present? %>
+    <div class="item-card__note"><%= _note %></div>
+  <% end %>
+</div>

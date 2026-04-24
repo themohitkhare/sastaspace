@@ -1,0 +1,63 @@
+<% content_for :title, "Discover — Almirah" %>
+<div class="app">
+  <%= render "shared/appbar" %>
+
+  <div class="scroll" style="padding:0;">
+    <%# Gap suggestions %>
+    <% if @gap_suggestions.any? %>
+      <section class="rack">
+        <div class="rack-head">
+          <h3>Rack&#8217;s missing &#8212;</h3>
+          <span class="count"><%= @gap_suggestions.count %> suggestions</span>
+        </div>
+        <div style="padding:4px 20px;display:flex;gap:10px;overflow-x:auto;scrollbar-width:none;">
+          <% @gap_suggestions.each do |gs| %>
+            <div class="gap-card">
+              <div style="aspect-ratio:3/4;">
+                <%= render "shared/item_card", item: { kind: gs.kind, tone: gs.tone, name: gs.name }, size: :md, show_name: false %>
+              </div>
+              <div style="font-size:12px;font-weight:500;line-height:1.3;"><%= gs.name %></div>
+              <div style="font-size:11px;color:var(--brand-muted);line-height:1.4;"><%= gs.reason %></div>
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-top:2px;">
+                <span style="font-family:var(--font-mono);font-size:11px;"><%= gs.formatted_price %></span>
+                <%= link_to gs.url, target: "_blank", rel: "noreferrer nofollow sponsored",
+                      style: "font-family:var(--font-mono);font-size:10px;color:var(--brand-rust);border-bottom:1px solid currentColor;text-decoration:none;" do %>
+                  <%= gs.source %>
+                <% end %>
+              </div>
+            </div>
+          <% end %>
+        </div>
+      </section>
+    <% end %>
+
+    <%# Unworn items — revival candidates %>
+    <% if @unworn.any? %>
+      <section class="rack" style="border-bottom:none;">
+        <div class="rack-head">
+          <h3>Unworn in 90 days</h3>
+          <span class="count"><%= @unworn.count %> items</span>
+        </div>
+        <div class="rail">
+          <div class="rail-rod"></div>
+          <div class="rail-scroll">
+            <% @unworn.each do |item| %>
+              <%= link_to item_path(item), class: "rail-item" do %>
+                <%= render "shared/item_card", item: item, size: :sm, show_name: true,
+                      note: item.last_worn_at ? "#{item.last_worn_ago} ago" : "never" %>
+              <% end %>
+            <% end %>
+          </div>
+        </div>
+      </section>
+    <% end %>
+
+    <% if @gap_suggestions.empty? && @unworn.empty? %>
+      <div style="padding:40px 20px;text-align:center;color:var(--brand-muted);">
+        Nothing to show yet. <%= link_to "Add items to your rack", onboarding_path, style: "color:var(--brand-rust);border-bottom:1px solid currentColor;" %>.
+      </div>
+    <% end %>
+  </div>
+
+  <%= render "shared/tabbar", active: "discover" %>
+</div>

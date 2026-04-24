@@ -1,0 +1,67 @@
+<% content_for :title, "Me — Almirah" %>
+<div class="app">
+  <%= render "shared/appbar",
+        terminal: "@#{@user&.name || @user&.email_address || 'you'}" %>
+
+  <div class="scroll--pad scroll">
+    <%# Avatar + identity %>
+    <div style="padding-top:24px;text-align:center;margin-bottom:28px;">
+      <div style="width:64px;height:64px;border-radius:50%;background:var(--brand-ink);color:var(--brand-paper);display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-size:22px;font-weight:500;margin:0 auto 12px;border:1px solid var(--brand-ink);">
+        <%= (@user&.name || @user&.email_address || "?").first.upcase %>
+      </div>
+      <div style="font-size:17px;font-weight:500;"><%= @user&.name || @user&.email_address %></div>
+      <% if @user&.name.present? %>
+        <div class="meta-mono"><%= @user.email_address %></div>
+      <% end %>
+    </div>
+
+    <%# Stats %>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:28px;">
+      <div class="statbox">
+        <span class="lbl">ITEMS</span>
+        <span class="val"><%= @total_items %></span>
+      </div>
+      <div class="statbox statbox--ghost">
+        <span class="lbl">WEARS</span>
+        <span class="val"><%= @wears_total %></span>
+      </div>
+      <div class="statbox statbox--ghost">
+        <span class="lbl">RACKS</span>
+        <span class="val">3</span>
+      </div>
+    </div>
+
+    <%# Rack breakdown %>
+    <div style="margin-bottom:28px;">
+      <div class="eyebrow" style="margin-bottom:12px;">rack breakdown</div>
+      <div class="row">
+        <span>Ethnic</span>
+        <span class="meta"><%= @ethnic_count %> items</span>
+      </div>
+      <div class="row">
+        <span>Office</span>
+        <span class="meta"><%= @office_count %> items</span>
+      </div>
+      <div class="row">
+        <span>Weekend</span>
+        <span class="meta"><%= @weekend_count %> items</span>
+      </div>
+    </div>
+
+    <%# Plan with a friend placeholder %>
+    <div style="background:var(--brand-paper-lifted);border:1px solid var(--brand-dust-40);border-radius:12px;padding:16px;margin-bottom:24px;">
+      <div style="font-size:15px;font-weight:500;margin-bottom:4px;">Plan with a friend</div>
+      <div style="font-size:13px;color:var(--brand-muted);line-height:1.5;">Coordinate outfits for a wedding, Diwali, or any occasion. Share access with one person.</div>
+      <div style="margin-top:10px;" class="meta-mono" style="color:var(--brand-dust);">coming in v2 ·</div>
+    </div>
+
+    <%# Sign out %>
+    <%= button_to session_path, method: :delete,
+          class: "btn btn--ghost btn--block",
+          style: "margin-top:8px;", "data-confirm": "Sign out?" do %>
+      Sign out
+    <% end %>
+  </div>
+
+  <%= render "shared/tabbar", active: "me" %>
+</div>
