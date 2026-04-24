@@ -1,0 +1,1 @@
+-- SQLC query placeholders for almirah

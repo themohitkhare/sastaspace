@@ -1,0 +1,107 @@
+# Almirah — personal ethnic-aware wardrobe on almirah.sastaspace.com.
+# Mobile-first PWA. Auth via shared Supabase GoTrue. Vision/tagging via
+# cluster-local LiteLLM → Ollama (Gemma 4 31B).
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: almirah
+  namespace: sastaspace
+  labels:
+    app: almirah
+spec:
+  replicas: 1
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: almirah
+  template:
+    metadata:
+      labels:
+        app: almirah
+    spec:
+      containers:
+        - name: almirah
+          image: localhost:32000/sastaspace-almirah:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 3000
+              name: http
+          env:
+            - name: NODE_ENV
+              value: production
+            - name: PORT
+              value: "3000"
+            - name: HOSTNAME
+              value: "0.0.0.0"
+            # Server-side Supabase calls prefer the internal gateway URL so they
+            # don't round-trip through the Cloudflare tunnel. Browser-side calls
+            # still use NEXT_PUBLIC_SUPABASE_URL from the secret.
+            - name: SUPABASE_INTERNAL_URL
+              value: "http://gateway.sastaspace.svc.cluster.local:8000"
+            # LiteLLM exposes an Anthropic-compatible proxy at :4000. Cluster
+            # DNS avoids the public network; the master key still gates access.
+            - name: LITELLM_BASE_URL
+              value: "http://litellm.litellm.svc.cluster.local:4000"
+          envFrom:
+            - secretRef:
+                name: almirah-runtime
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: 3000
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /api/health
+              port: 3000
+            initialDelaySeconds: 30
+            periodSeconds: 30
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 1000m
+              memory: 512Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: almirah
+  namespace: sastaspace
+  labels:
+    app: almirah
+spec:
+  selector:
+    app: almirah
+  ports:
+    - port: 3000
+      targetPort: 3000
+      name: http
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: almirah
+  namespace: sastaspace
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    nginx.ingress.kubernetes.io/proxy-body-size: "12m"
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: almirah.sastaspace.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: almirah
+                port:
+                  number: 3000
