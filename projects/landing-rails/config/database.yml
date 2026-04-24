@@ -1,0 +1,36 @@
+# PostgreSQL — shared Supabase/Postgres instance.
+#
+# Landing owns public.users and public.sessions (Rails migrations).
+# The four legacy shared tables (projects, admins, visits, contact_messages)
+# are queried via unmanaged AR models — Rails never issues DDL against them.
+#
+# DATABASE_URL / POSTGRES_URL format:
+#   postgresql://postgres:<password>@<host>:5432/postgres
+# (supabase/postgres default database is named "postgres")
+
+default: &default
+  adapter: postgresql
+  encoding: unicode
+  pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
+  schema_search_path: "public,pg_catalog"
+
+development:
+  <<: *default
+  # Set POSTGRES_URL for local dev, or fall back to local postgres.
+  url: <%= ENV.fetch("POSTGRES_URL") { "postgres://postgres:postgres@localhost:5432/postgres" } %>
+
+test:
+  <<: *default
+  url: <%= ENV.fetch("POSTGRES_URL_TEST") { ENV.fetch("POSTGRES_URL") { "postgres://postgres:postgres@localhost:5432/postgres_test" } } %>
+
+production:
+  primary: &primary_production
+    <<: *default
+    # POSTGRES_URL must be set in .kamal/secrets for production.
+    url: <%= ENV["POSTGRES_URL"] %>
+  cache:
+    <<: *primary_production
+    migrations_paths: db/cache_migrate
+  queue:
+    <<: *primary_production
+    migrations_paths: db/queue_migrate

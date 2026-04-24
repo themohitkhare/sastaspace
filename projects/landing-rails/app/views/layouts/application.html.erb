@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title><%= content_for?(:title) ? yield(:title) : "sastaspace.com — a sasta lab" %></title>
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <%= csrf_meta_tags %>
+    <%= csp_meta_tag %>
+
+    <%# Inter + JetBrains Mono — two weights each, no more. %>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+    <%= yield :head %>
+
+    <link rel="icon" href="/icon.png" type="image/png">
+    <link rel="icon" href="/icon.svg" type="image/svg+xml">
+
+    <%# Tailwind + application CSS (brand tokens live here) %>
+    <%= stylesheet_link_tag :app, "data-turbo-track": "reload" %>
+    <%= javascript_importmap_tags %>
+  </head>
+
+  <body class="bg-paper text-ink font-sans antialiased">
+    <%# Flash messages — shown once and cleared %>
+    <% if notice = flash[:notice] %>
+      <div class="fixed top-4 right-4 z-50 rounded px-4 py-2 bg-ink text-paper text-sm font-mono shadow" role="status"><%= notice %></div>
+    <% end %>
+    <% if alert = flash[:alert] %>
+      <div class="fixed top-4 right-4 z-50 rounded px-4 py-2 border border-rust bg-paper text-rust text-sm font-mono" role="alert"><%= alert %></div>
+    <% end %>
+    <%= yield %>
+  </body>
+</html>
