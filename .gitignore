@@ -43,3 +43,4 @@ ruvector.db
 
 # Superpowers brainstorming companion
 .superpowers/
+.claude/worktrees/

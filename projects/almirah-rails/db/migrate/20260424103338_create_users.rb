@@ -1,6 +1,8 @@
 class CreateUsers < ActiveRecord::Migration[8.1]
   def change
-    create_table :users do |t|
+    # if_not_exists so both landing-rails and almirah-rails can carry this
+    # migration without colliding — they share the same public.users table.
+    create_table :users, if_not_exists: true do |t|
       t.string :email_address, null: false
       # password_digest is nullable to support Google-auth-only users.
       t.string :password_digest
@@ -17,7 +19,9 @@ class CreateUsers < ActiveRecord::Migration[8.1]
       t.timestamps
     end
 
-    add_index :users, :email_address, unique: true
-    add_index :users, [ :provider, :uid ], unique: true, where: "provider IS NOT NULL"
+    add_index :users, :email_address, unique: true, if_not_exists: true
+    add_index :users, [ :provider, :uid ], unique: true,
+                                           where: "provider IS NOT NULL",
+                                           if_not_exists: true
   end
 end
