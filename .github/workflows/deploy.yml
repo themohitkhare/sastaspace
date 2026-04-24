@@ -113,6 +113,12 @@ jobs:
           EXIT=0
           for cfg in projects/*/config/deploy.yml; do
             PROJECT=$(echo "$cfg" | cut -d/ -f2)
+            # Skip template directories — they carry __NAME__ placeholders
+            # that are expected to fail validation.
+            if [[ "$PROJECT" == _* ]]; then
+              echo "--- Skipping template: $cfg ---"
+              continue
+            fi
             echo "--- Validating $cfg ---"
             # kamal config prints the resolved config; non-zero exit = invalid YAML
             # We run with --skip-push so it doesn't try to connect to the registry.
