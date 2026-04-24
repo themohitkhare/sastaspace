@@ -90,9 +90,8 @@ env:
     # helpers all emit the correct absolute path.
     # Landing: omit or set to "".
     RAILS_RELATIVE_URL_ROOT: /__NAME__
-    # Puma listens on __PORT__. Each app gets its own port so they can all run
-    # simultaneously on the same host without fighting kamal-proxy.
-    PORT: "__PORT__"
+    # Puma + thruster listen on Rails 8 default 3000 inside the container.
+    # Docker network isolation lets multiple apps share port 3000 internally.
     # LiteLLM (Anthropic-compatible proxy for Gemma 4)
     LITELLM_BASE_URL: "http://192.168.0.37:4000"
   secret:
@@ -133,8 +132,8 @@ env:
 proxy:
   ssl: false                 # TLS is terminated at Cloudflare, not here
   host: sastaspace.com
-  # app_port must match the PORT env var above.
-  app_port: __PORT__
+  # app_port is the container-internal port Rails/thruster listens on.
+  app_port: 3000
   buffering:
     requests: false
     responses: false
