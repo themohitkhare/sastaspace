@@ -70,7 +70,7 @@ New projects need one manual edit to the workflow — a `Build <name> image` + `
 
 - `main` — production. Anything here should have been deployed and verified.
 - `develop` — integration. Both branches deploy to the same cluster via the CI/CD workflow above; there is no separate staging environment today, so "land on develop" and "land on main" are effectively the same blast radius.
-- Feature branches — named after what they do (`udaan-v1`, `espocrm-migration`, …). Merge `--ff-only` into `develop` when ready, then fast-forward into `main` when you want the canonical tip to move. Don't rebase shared branches; don't force-push `main` or `develop`.
+- Feature branches — named after what they do. Merge `--ff-only` into `develop` when ready, then fast-forward into `main` when you want the canonical tip to move. Don't rebase shared branches; don't force-push `main` or `develop`.
 - When in doubt, develop → main is the safer path than feature → main directly, so the CI run on develop catches problems before they touch production-tagged history.
 
 ### Deploying a feature branch manually
@@ -168,11 +168,11 @@ The scaffold assumes a Next.js + Go split. For a web-only project (no API, no au
 The one-stop list for bringing a new subdomain online. Every step links to the relevant detail above.
 
 1. **Design log first.** `design-log/NNN-<name>.md` — scope, what shared infra you opt in to (auth? DB? neither?), what data you need. This is the decision record.
-2. **Brand compliance.** Read `brand/BRAND_GUIDE.md` before writing any UI. Invariants that have bitten recent projects: no gradients/shadows/glows, only 400/500 font weights, paper (`#f5f1e8`) not white as the page bg, sasta orange used in ≤4 accent places (never body text), Hindi only where the design calls for it. Code review rejects violations.
+2. **Brand compliance.** Read `brand/BRAND_GUIDE.md` before writing any UI. Invariants that have bitten recent projects: no gradients/shadows/glows, only 400/500 font weights, paper (`#f5f1e8`) not white as the page bg, sasta orange used in ≤4 accent places (never body text). Code review rejects violations.
 3. **Scaffold.** `make new p=<name>`, or the manual rsync + sed fallback above if `projects/<name>/` already exists.
-4. **Build the project.** `projects/<name>/web` is the Next.js app; `projects/<name>/api` is the optional Go API. Static-data projects can drop a `projects/<name>/data/` ETL that writes JSON into `web/public/data/` (udaan established this pattern).
+4. **Build the project.** `projects/<name>/web` is the Next.js app; `projects/<name>/api` is the optional Go API. Static-data projects can drop a `projects/<name>/data/` ETL that writes JSON into `web/public/data/`.
 5. **Verify locally.** `npm run build && npm test && npx eslint .` in `projects/<name>/web/` before committing. Keep pure cores pure (see "Testing conventions").
-6. **Per-project manifest.** `projects/<name>/k8s.yaml` — Deployment + Service + Ingress. Model it on `infra/k8s/landing.yaml` for the shapes and on `projects/udaan/k8s.yaml` if you don't need DB/auth/Supabase envs. Image name convention: `localhost:32000/sastaspace-<name>:latest`.
+6. **Per-project manifest.** `projects/<name>/k8s.yaml` — Deployment + Service + Ingress. Model it on `infra/k8s/landing.yaml` for the shapes; strip the Supabase envFrom if the project doesn't need DB or auth. Image name convention: `localhost:32000/sastaspace-<name>:latest`.
 7. **Wire the CI build.** Add a `Build <name> image` + `Push <name> image` step pair in `.github/workflows/deploy.yml`. Use `projects/<name>/Dockerfile.web` if it exists, otherwise `projects/_template/Dockerfile.web` with `projects/<name>/web` as the build context.
 8. **DNS + tunnel hostname.** The two curls in "Deploying a feature branch manually" above. CI doesn't handle this today; it's a one-shot per project and both calls use the same keychain token.
 9. **Land on `develop`** via a fast-forward merge; CI deploys automatically; smoke-test `https://<name>.sastaspace.com/`. Fast-forward `develop` → `main` when you're ready to mark it shipped.
@@ -205,10 +205,9 @@ Writing these down so they stop wasting re-discovery time:
 - `projects/_template/` - default scaffold (Next.js + shadcn + Supabase auth + Go API)
 - `projects/landing/` - `sastaspace.com` portfolio app
 - `projects/<name>/data/` - optional: per-project ETL (Node/Python) that writes
-  JSON bundles into both `data/out/` and `<name>/web/public/data/`. Pattern
-  established by udaan; keeps the ETL script in the repo and the generated
-  JSONs out of `data/out/` (gitignored) while the copy under `web/public/data/`
-  ships in the image. See `projects/udaan/data/README.md`.
+  JSON bundles into both `data/out/` and `<name>/web/public/data/`. Keeps the
+  ETL script in the repo and the generated JSONs out of `data/out/` (gitignored)
+  while the copy under `web/public/data/` ships in the image.
 - `scripts/` - key-gen, migrations, scaffolder, remote helpers, verify
 - `design-log/` - design decisions and implementation history
 
@@ -221,12 +220,12 @@ Writing these down so they stop wasting re-discovery time:
 - Image tag convention: `localhost:32000/sastaspace-<name>:latest` (plus `<sha>` or `<timestamp>` for immutable pins).
 - No secrets in git: only `.env.example` and `infra/k8s/secrets.yaml.template`. Secrets live in macOS Keychain locally and in `infra/k8s/secrets.yaml` (gitignored) on the cluster.
 - Design log first for significant changes (see `design-log/`).
-- Commit message format for task-structured work: `<project>: task <n> — <short>` (see the udaan-v1 branch).
+- Commit message format for task-structured work: `<project>: task <n> — <short>`.
 - Branch commits granularly, one commit per task; fast-forward merge feature branches into `develop`.
 
 ## Architecture
 
-Everything lives in the single `sastaspace` namespace on MicroK8s. Per-project deployments opt in to shared Postgres / GoTrue only if they need them — udaan, for example, has no DB or auth dependencies at all.
+Everything lives in the single `sastaspace` namespace on MicroK8s. Per-project deployments opt in to shared Postgres / GoTrue only if they need them — a static-data project can skip both entirely.
 
 ```mermaid
 graph TD
@@ -242,7 +241,6 @@ graph TD
         end
         subgraph proj [project deployments]
             LAND[landing]
-            UD[udaan]
             APPn[... future]
         end
     end
@@ -250,7 +248,6 @@ graph TD
     ING -->|sastaspace.com| LAND
     ING -->|auth.sastaspace.com| GT
     ING -->|studio.sastaspace.com| ST
-    ING -->|udaan.sastaspace.com| UD
     ING -->|name.sastaspace.com| APPn
     LAND --> PG
     APPn -.optional.-> PG
@@ -283,7 +280,7 @@ For an incremental change to an existing project:
 
 No test runner is wired in by default. Projects that need unit coverage should:
 
-- Add `vitest` (+ `@vitest/coverage-v8`) as a devDependency and expose `test` / `test:watch` scripts. This is the minimum footprint for a Next.js 16 TS app and matches what udaan uses (`src/lib/*/compute-risk.test.ts`).
+- Add `vitest` (+ `@vitest/coverage-v8`) as a devDependency and expose `test` / `test:watch` scripts. This is the minimum footprint for a Next.js 16 TS app.
 - Put tests next to the code they exercise (`foo.test.ts` beside `foo.ts`), not in a top-level `tests/` tree.
 - Keep pure-function cores pure. A risk/score/price function that reaches for `fetch`, `Date.now()`, or `Math.random()` is hard to test deterministically — push side effects out to the caller.
 
@@ -292,5 +289,4 @@ No test runner is wired in by default. Projects that need unit coverage should:
 - Foundation design: `design-log/001-project-bank-foundations.md`
 - Auth + UI upgrade: `design-log/002-auth-admin-ui-upgrade.md`
 - Brand rollout: `design-log/003-brand-rollout.md`
-- udaan v1 (first post-brand project + deploy learnings): `design-log/004-udaan-v1.md`
 - Root quickstart: `README.md`

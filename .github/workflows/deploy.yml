@@ -30,21 +30,6 @@ jobs:
           docker push localhost:32000/sastaspace-landing:latest
           docker push localhost:32000/sastaspace-landing:${{ github.sha }}
 
-      # --- udaan (udaan.sastaspace.com) ---
-      # Uses the _template Dockerfile because udaan inherits the web scaffold
-      # verbatim (no project-specific Dockerfile.web).
-      - name: Build udaan image
-        run: |
-          docker build \
-            -t localhost:32000/sastaspace-udaan:latest \
-            -t localhost:32000/sastaspace-udaan:${{ github.sha }} \
-            -f projects/_template/Dockerfile.web projects/udaan/web
-
-      - name: Push udaan image
-        run: |
-          docker push localhost:32000/sastaspace-udaan:latest
-          docker push localhost:32000/sastaspace-udaan:${{ github.sha }}
-
       # --- apply shared + per-project manifests ---
       - name: Apply shared manifests
         run: |
