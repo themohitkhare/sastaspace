@@ -78,16 +78,18 @@ class SeedAlmirahItems < ActiveRecord::Migration[8.0]
 
   def up
     # Resolve the admin user who should own the seed items.
+    # Admin is defined by presence in public.admins allowlist (email_address match).
     result = execute(<<~SQL).first
-      SELECT id FROM public.users
-       WHERE admin = true
-       ORDER BY created_at
+      SELECT u.id
+        FROM public.users u
+        JOIN public.admins a ON a.email = u.email_address
+       ORDER BY u.created_at
        LIMIT 1;
     SQL
 
     unless result
-      say "WARNING: No admin user found in public.users — skipping item seed."
-      say "Re-run this migration after the first Google sign-in creates a user row."
+      say "WARNING: No admin user found (public.users joined on public.admins) — skipping item seed."
+      say "Re-run this migration after the first Google sign-in creates a user row that matches public.admins."
       return
     end
 
