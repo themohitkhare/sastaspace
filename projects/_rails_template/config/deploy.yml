@@ -1,79 +1,173 @@
-# Kamal 2 deploy configuration — templated.
+# Kamal deploy config template for sastaspace path-routed Rails apps.
 #
-# Copy-script replacements (scripts/new-rails-project.sh does this):
-#   <NAME>        → kebab-case project name, e.g. "landing" or "almirah"
-#   <HOST>        → public hostname, e.g. "sastaspace.com"
-#   <PATH_PREFIX> → kamal-proxy path prefix, e.g. "/" for landing, "/almirah" for almirah
+# Usage: copy this file into projects/<name>/config/deploy.yml and replace
+# every occurrence of __NAME__ with your project slug (e.g. "almirah") and
+# __PORT__ with the app's internal Puma port (landing=3001, almirah=3002, etc).
 #
-# NEVER enable proxy.ssl — Cloudflare terminates TLS at the edge.
-# kamal-proxy serves plain HTTP behind cloudflared on port 80.
+# Landing app (root path "/") does NOT set path_prefix.
+# Every other app sets path_prefix to "/<name>".
+#
+# Run `kamal deploy` from projects/<name>/ after filling in secrets in
+# .kamal/secrets (see the documented template at the bottom of this file).
+#
+# Architecture recap:
+#   Cloudflare tunnel → cloudflared → kamal-proxy:80 → Puma container
+#   TLS is terminated at Cloudflare. kamal-proxy serves plain HTTP.
 
-service: <NAME>
-image: localhost:32000/sastaspace-<NAME>
+service: sastaspace-__NAME__
 
+# --------------------------------------------------------------------------
+# Image
+# --------------------------------------------------------------------------
+# We reuse the MicroK8s-local registry (localhost:32000) because it is already
+# running on the prod host. Switch to ghcr.io or Docker Hub if you want
+# to deploy from a machine other than the dev laptop.
+image: localhost:32000/sastaspace-__NAME__
+
+# --------------------------------------------------------------------------
+# Servers
+# --------------------------------------------------------------------------
 servers:
   web:
-    - 192.168.0.37
-  # Uncomment to run Solid Queue in a dedicated process (multi-server setups):
-  # job:
-  #   hosts:
-  #     - 192.168.0.37
-  #   cmd: bin/jobs
+    hosts:
+      - 192.168.0.37
+    labels:
+      # kamal-proxy reads traefik-style labels to decide which container
+      # handles which requests.
+      #
+      # Landing (root): comment out path_prefix entirely.
+      # Every other app: uncomment and set to "/<name>".
+      #
+      # traefik.http.routers.sastaspace-__NAME__.rule:
+      #   "Host(`sastaspace.com`) && PathPrefix(`/__NAME__`)"
+      #
+      # kamal-proxy v0.9+ reads kamal-proxy.path_prefix directly:
+      kamal-proxy.path_prefix: /__NAME__
+      # Remove the line above and uncomment the one below for the landing app:
+      # (no path_prefix label → kamal-proxy routes all unmatched requests here)
 
-proxy:
-  # ssl: false is the correct setting behind a Cloudflare tunnel.
-  # The Kamal default is no SSL; this makes it explicit.
-  ssl: false
-  host: <HOST>
-  path_prefix: <PATH_PREFIX>
-  # Health check — kamal-proxy probes /up before routing traffic.
-  healthcheck:
-    path: /up
-    interval: 10
-    timeout: 5
+    # Health-check path. For path-prefixed apps kamal-proxy checks the prefixed
+    # URL. For landing use "/" directly.
+    healthcheck:
+      path: /__NAME__/up
+      port: __PORT__
+      max_attempts: 10
+      interval: 3s
 
+# --------------------------------------------------------------------------
+# Registry
+# --------------------------------------------------------------------------
+# localhost:32000 accepts plain HTTP — no credentials needed from the
+# deploy machine as long as the push happens *on* the host (builder=remote)
+# or the registry is reachable from the builder.
 registry:
-  # Local MicroK8s registry (no external registry needed for this setup).
   server: localhost:32000
-  # No password needed for localhost:32000.
-  # username:
-  # password:
+  username:
+    - REGISTRY_USERNAME        # set to "unused" in .kamal/secrets if no auth
+  password:
+    - REGISTRY_PASSWORD        # set to "unused" in .kamal/secrets if no auth
 
+# --------------------------------------------------------------------------
+# Builder
+# --------------------------------------------------------------------------
+# The prod host is Apple Silicon (arm64). Build there so the image arch
+# matches without emulation overhead.
+builder:
+  arch: arm64
+  # Build on the remote host via SSH. This avoids cross-arch emulation on
+  # a dev laptop and keeps the image local to the push target.
+  remote:
+    host: ssh://192.168.0.37
+  # Build context is the Rails app root (directory containing Dockerfile).
+  # Kamal defaults to the directory containing deploy.yml's parent — correct
+  # for projects/<name>/config/deploy.yml → projects/<name>/ as the build root.
+  cache:
+    type: registry
+    options: mode=max
+    image: localhost:32000/sastaspace-__NAME__-build-cache
+
+# --------------------------------------------------------------------------
+# Environment variables
+# --------------------------------------------------------------------------
 env:
+  clear:
+    # Rails mandatory settings
+    RAILS_ENV: production
+    # Path-prefix apps must set this so asset URLs, redirect URLs, and route
+    # helpers all emit the correct absolute path.
+    # Landing: omit or set to "".
+    RAILS_RELATIVE_URL_ROOT: /__NAME__
+    # Puma listens on __PORT__. Each app gets its own port so they can all run
+    # simultaneously on the same host without fighting kamal-proxy.
+    PORT: "__PORT__"
+    # Postgres connection (shared instance, per-app schema)
+    DATABASE_HOST: "192.168.0.37"
+    DATABASE_PORT: "5432"
+    DATABASE_NAME: "postgres"   # supabase/postgres default DB
+    DATABASE_SCHEMA: "project___NAME__"
+    # LiteLLM (Anthropic-compatible proxy for Gemma 4)
+    LITELLM_BASE_URL: "http://192.168.0.37:4000"
   secret:
-    - SECRET_KEY_BASE
-    - POSTGRES_URL
+    # Sourced from .kamal/secrets at deploy time. Never commit .kamal/secrets.
+    - RAILS_MASTER_KEY
+    - DATABASE_USERNAME
+    - DATABASE_PASSWORD
     - GOOGLE_CLIENT_ID
     - GOOGLE_CLIENT_SECRET
-    - LITELLM_API_KEY
-  clear:
-    RAILS_LOG_TO_STDOUT: true
-    RAILS_SERVE_STATIC_FILES: true
-    SOLID_QUEUE_IN_PUMA: true
-    # Override per project if the DB schema differs from the default "public".
-    # DB_SCHEMA_SEARCH_PATH: "project_<NAME>,public"
-    LITELLM_BASE_URL: "http://llm.sastaspace.com"
+    - REGISTRY_USERNAME
+    - REGISTRY_PASSWORD
 
-builder:
-  # The prod host is arm64 (Apple Silicon M-series).
-  arch: arm64
-  # Pass RAILS_MASTER_KEY as a build arg so assets:precompile can decrypt
-  # credentials. The value comes from .kamal/secrets (reads config/master.key).
-  args:
-    RAILS_MASTER_KEY: RAILS_MASTER_KEY
+# --------------------------------------------------------------------------
+# Accessories (shared infrastructure not managed by this app's Kamal config)
+# --------------------------------------------------------------------------
+# Postgres is already running as a MicroK8s pod. Do NOT declare it here —
+# Kamal accessories would try to create a second instance.
+# If you migrate Postgres out of k8s, add an accessory block like:
+#
+# accessories:
+#   db:
+#     image: supabase/postgres:17.4.1.042
+#     host: 192.168.0.37
+#     port: 5432
+#     volumes:
+#       - /data/postgres:/var/lib/postgresql/data
+#     env:
+#       secret:
+#         - POSTGRES_PASSWORD
 
-# Persistent storage volume — Active Storage uploads, SQLite caches.
-# Change to a mounted NFS/S3 path when disk fills up.
-volumes:
-  - "<NAME>_storage:/rails/storage"
+# --------------------------------------------------------------------------
+# kamal-proxy settings
+# --------------------------------------------------------------------------
+# kamal-proxy is a shared singleton on the host — it is NOT re-deployed per
+# app. Run `kamal proxy boot` once (see scripts/bootstrap-kamal.sh).
+# The settings below tune per-app behaviour on the proxy.
+proxy:
+  ssl: false                 # TLS is terminated at Cloudflare, not here
+  host: sastaspace.com
+  # app_port must match the PORT env var above.
+  app_port: __PORT__
+  buffering:
+    requests: false
+    responses: false
+  response_timeout: 30
+  healthcheck:
+    interval: 3
+    path: /__NAME__/up
+    timeout: 5
 
-# Bridge fingerprinted assets between rolling deploys (avoids 404 on in-flight reqs).
-asset_path: /rails/public/assets
+# --------------------------------------------------------------------------
+# SSH
+# --------------------------------------------------------------------------
+ssh:
+  user: ubuntu               # adjust if the prod host uses a different user
+  # The deploy key must be in ~/.ssh/known_hosts on the dev machine.
+  # First-time setup: `ssh-keyscan 192.168.0.37 >> ~/.ssh/known_hosts`
 
-# Convenient aliases — run via: kamal <alias>
-aliases:
-  console: app exec --interactive --reuse "bin/rails console"
-  shell:   app exec --interactive --reuse "bash"
-  logs:    app logs -f
-  dbc:     app exec --interactive --reuse "bin/rails dbconsole --include-password"
-  migrate: app exec "bin/rails db:migrate"
+# --------------------------------------------------------------------------
+# Logging
+# --------------------------------------------------------------------------
+logging:
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"

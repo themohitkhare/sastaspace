@@ -1,7 +1,30 @@
-name: Deploy Project Bank
+# Deploy workflow — sastaspace project bank
+#
+# Strategy: D4a (design-log 006) — Kamal deploys from the dev machine.
+#
+# This workflow is intentionally minimal. After the MicroK8s → Kamal
+# migration, deployment is done by running `kamal deploy` from the developer's
+# laptop inside each project directory:
+#
+#   cd projects/landing-rails && kamal deploy
+#   cd projects/almirah-rails  && kamal deploy
+#
+# This workflow now only runs linting and a build smoke-test on push to
+# main or develop. It does NOT push images or restart containers.
+# If you want CI-driven deploys (D4b), see docs/deploy/cutover.md Appendix C.
+#
+# To trigger a manual kamal deploy from any branch:
+#   kamal deploy --destination production --version=$(git rev-parse --short HEAD)
+#
+# Self-hosted runner (192.168.0.37) is no longer required for deploys.
+# Jobs below use ubuntu-latest (GitHub-hosted) for isolation.
+
+name: CI
 
 on:
   push:
+    branches: [main, develop]
+  pull_request:
     branches: [main, develop]
   workflow_dispatch:
 
@@ -9,70 +32,109 @@ permissions:
   contents: read
 
 jobs:
-  deploy:
-    runs-on: [self-hosted, linux, amd64]
-    timeout-minutes: 30
+  # --------------------------------------------------------------------------
+  # Lint and type-check any remaining Next.js projects (landing, almirah legacy)
+  # during the migration window. Remove this job once those projects are deleted.
+  # --------------------------------------------------------------------------
+  lint-nextjs:
+    name: Lint Next.js (migration window)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # Skip if no Next.js projects remain (after cutover this job becomes a no-op)
+    continue-on-error: true
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      # --- landing (sastaspace.com) ---
-      - name: Build landing image
+      - name: Check for Next.js projects
+        id: check
         run: |
-          # NEXT_PUBLIC_* vars are baked into the client bundle at build time.
-          SUPABASE_URL=$(sudo microk8s kubectl -n sastaspace get secret landing-runtime -o jsonpath='{.data.NEXT_PUBLIC_SUPABASE_URL}' | base64 -d)
-          SUPABASE_ANON_KEY=$(sudo microk8s kubectl -n sastaspace get secret landing-runtime -o jsonpath='{.data.NEXT_PUBLIC_SUPABASE_ANON_KEY}' | base64 -d)
-          docker build \
-            --build-arg NEXT_PUBLIC_SUPABASE_URL="$SUPABASE_URL" \
-            --build-arg NEXT_PUBLIC_SUPABASE_ANON_KEY="$SUPABASE_ANON_KEY" \
-            -t localhost:32000/sastaspace-landing:latest \
-            -t localhost:32000/sastaspace-landing:${{ github.sha }} \
-            -f projects/landing/Dockerfile.web projects/landing/web
-
-      - name: Push landing image
-        run: |
-          docker push localhost:32000/sastaspace-landing:latest
-          docker push localhost:32000/sastaspace-landing:${{ github.sha }}
-
-      # --- almirah (almirah.sastaspace.com) ---
-      - name: Build almirah image
-        run: |
-          # NEXT_PUBLIC_* vars are baked into the client bundle at build time.
-          # Source them from the cluster secret so they stay in sync without
-          # duplicating into GitHub Actions config.
-          SUPABASE_URL=$(sudo microk8s kubectl -n sastaspace get secret almirah-runtime -o jsonpath='{.data.NEXT_PUBLIC_SUPABASE_URL}' | base64 -d)
-          SUPABASE_ANON_KEY=$(sudo microk8s kubectl -n sastaspace get secret almirah-runtime -o jsonpath='{.data.NEXT_PUBLIC_SUPABASE_ANON_KEY}' | base64 -d)
-          docker build \
-            --build-arg NEXT_PUBLIC_SUPABASE_URL="$SUPABASE_URL" \
-            --build-arg NEXT_PUBLIC_SUPABASE_ANON_KEY="$SUPABASE_ANON_KEY" \
-            -t localhost:32000/sastaspace-almirah:latest \
-            -t localhost:32000/sastaspace-almirah:${{ github.sha }} \
-            -f projects/_template/Dockerfile.web projects/almirah/web
-
-      - name: Push almirah image
-        run: |
-          docker push localhost:32000/sastaspace-almirah:latest
-          docker push localhost:32000/sastaspace-almirah:${{ github.sha }}
-
-      # --- apply shared + per-project manifests ---
-      - name: Apply shared manifests
-        run: |
-          sudo microk8s kubectl apply -f infra/k8s/namespace.yaml
-          sudo microk8s kubectl apply -f infra/k8s/ --recursive
-
-      - name: Apply project manifests
-        run: |
-          shopt -s nullglob
-          for manifest in projects/*/k8s.yaml; do
-            echo "applying $manifest"
-            sudo microk8s kubectl apply -f "$manifest"
-          done
-
-      - name: Rolling restart and rollout status
-        run: |
-          DEPLOYMENTS=$(sudo microk8s kubectl -n sastaspace get deploy -o name)
-          if [ -n "$DEPLOYMENTS" ]; then
-            echo "$DEPLOYMENTS" | xargs -n1 sudo microk8s kubectl -n sastaspace rollout restart
-            echo "$DEPLOYMENTS" | xargs -n1 sudo microk8s kubectl -n sastaspace rollout status --timeout=300s
+          if ls projects/*/web/package.json 2>/dev/null | grep -q .; then
+            echo "found=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "found=false" >> "$GITHUB_OUTPUT"
+            echo "No Next.js projects found — skipping lint."
           fi
+
+      - name: Setup Node.js
+        if: steps.check.outputs.found == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: |
+            projects/landing/web/package-lock.json
+            projects/almirah/web/package-lock.json
+
+      - name: Lint landing (if present)
+        if: steps.check.outputs.found == 'true'
+        working-directory: projects/landing/web
+        continue-on-error: true
+        run: |
+          if [ -f package.json ]; then
+            npm ci --prefer-offline
+            npx eslint . --max-warnings=0 || echo "::warning::landing lint warnings"
+          fi
+
+      - name: Lint almirah (if present)
+        if: steps.check.outputs.found == 'true'
+        working-directory: projects/almirah/web
+        continue-on-error: true
+        run: |
+          if [ -f package.json ]; then
+            npm ci --prefer-offline
+            npx eslint . --max-warnings=0 || echo "::warning::almirah lint warnings"
+          fi
+
+  # --------------------------------------------------------------------------
+  # Validate Kamal deploy configs for all Rails projects that have a
+  # config/deploy.yml. Catches YAML syntax errors and missing required keys
+  # before they blow up at deploy time.
+  # --------------------------------------------------------------------------
+  validate-kamal-configs:
+    name: Validate Kamal configs
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.3'
+          bundler-cache: false
+
+      - name: Install Kamal
+        run: gem install kamal --no-document
+
+      - name: Validate each deploy.yml
+        run: |
+          EXIT=0
+          for cfg in projects/*/config/deploy.yml; do
+            PROJECT=$(echo "$cfg" | cut -d/ -f2)
+            echo "--- Validating $cfg ---"
+            # kamal config prints the resolved config; non-zero exit = invalid YAML
+            # We run with --skip-push so it doesn't try to connect to the registry.
+            # The RAILS_MASTER_KEY and other secrets are stubbed for validation only.
+            RAILS_MASTER_KEY=stub \
+            DATABASE_PASSWORD=stub \
+            GOOGLE_CLIENT_ID=stub \
+            GOOGLE_CLIENT_SECRET=stub \
+            REGISTRY_USERNAME=unused \
+            REGISTRY_PASSWORD=unused \
+              kamal config --config-file "$cfg" 2>&1 | head -20 || {
+                echo "::error::$cfg failed validation"
+                EXIT=1
+              }
+          done
+          exit $EXIT
+
+  # --------------------------------------------------------------------------
+  # Placeholder for Rails test suite. Wire in `bundle exec rails test` here
+  # once the Rails apps are scaffolded (Phase 0/1 of design-log 006).
+  # --------------------------------------------------------------------------
+  # rails-tests:
+  #   name: Rails tests
+  #   runs-on: ubuntu-latest
+  #   ...
