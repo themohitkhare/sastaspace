@@ -11,9 +11,10 @@ class Project < ApplicationRecord
   # Available status values, matching the status-chip brand component.
   STATUS_VALUES = %w[live wip paused archived open-source].freeze
 
-  # Derive display status — prefer the status column, fall back to live_at presence.
+  # Derive display status from live_at. The legacy public.projects table
+  # (owned by SQL migrations, not Rails) has no status column, so this is
+  # a pure live_at-based derivation. "wip" when not yet live, "live" once set.
   def derived_status
-    return status if status.present? && STATUS_VALUES.include?(status)
     live_at.present? ? "live" : "wip"
   end
 
