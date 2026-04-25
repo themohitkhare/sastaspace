@@ -7,7 +7,7 @@ pub const WORDS: &[&str] = &[
     "rush", "bane", "echo", "lock", "cast", "dusk", "dawn",
     "gate", "vex", "foe", "ruin", "arc", "step", "rock",
     "blaze", "clash", "crush", "drive", "earth", "faith", "forge",
-    "ghost", "guard", "heart", "ignite", "lance", "march", "oath",
+    "ghost", "guard", "heart", "blitz", "lance", "march", "oath",
     "pact", "raise", "ridge", "rift", "siege", "skies", "slay",
     "smite", "storm", "surge", "swear", "sword", "titan", "torch",
     "trace", "trail", "tribe", "unity", "valor", "vault", "vigil",
