@@ -6,9 +6,11 @@
 import { type Infer as __Infer } from "spacetimedb";
 
 // Import all reducer arg schemas
+import DeleteProjectReducer from "../delete_project_reducer";
 import HeartbeatReducer from "../heartbeat_reducer";
 import UpsertProjectReducer from "../upsert_project_reducer";
 
+export type DeleteProjectParams = __Infer<typeof DeleteProjectReducer>;
 export type HeartbeatParams = __Infer<typeof HeartbeatReducer>;
 export type UpsertProjectParams = __Infer<typeof UpsertProjectReducer>;
 

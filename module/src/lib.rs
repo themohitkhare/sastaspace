@@ -19,9 +19,21 @@ pub struct Presence {
     pub last_seen: Timestamp,
 }
 
-/// Called once when the module is first published. Intentionally a no-op —
-/// projects are added via the `upsert_project` reducer when there's something
-/// real to ship. The lab starts quiet.
+/// The hex-encoded Identity of the database owner. Only this identity can
+/// call write reducers on the `project` table. Sourced from
+/// `GET /v1/database/sastaspace -> owner_identity.__identity__` after the
+/// initial publish. If the owner ever rotates, update this constant and
+/// re-publish (see SECURITY_AUDIT.md finding #1 for rationale).
+const OWNER_HEX: &str = "c20086b8ce1d18ec9c564044615071677620eafad99c922edbb3e3463b6f79ba";
+
+fn assert_owner(ctx: &ReducerContext) -> Result<(), String> {
+    let owner = Identity::from_hex(OWNER_HEX).map_err(|e| format!("invalid OWNER_HEX: {e}"))?;
+    if ctx.sender() != owner {
+        return Err("not authorized".into());
+    }
+    Ok(())
+}
+
 #[reducer(init)]
 pub fn init(_ctx: &ReducerContext) {}
 
@@ -45,6 +57,8 @@ pub fn client_disconnected(ctx: &ReducerContext) {
     ctx.db.presence().identity().delete(ctx.sender());
 }
 
+/// Heartbeat is intentionally callable by any connected client — it only
+/// touches the caller's own Presence row, so there's no spoof risk.
 #[reducer]
 pub fn heartbeat(ctx: &ReducerContext) -> Result<(), String> {
     let mut row = ctx
@@ -67,7 +81,8 @@ pub fn upsert_project(
     status: String,
     tags: Vec<String>,
     url: String,
-) {
+) -> Result<(), String> {
+    assert_owner(ctx)?;
     let row = Project {
         slug: slug.clone(),
         title,
@@ -81,10 +96,12 @@ pub fn upsert_project(
     } else {
         ctx.db.project().insert(row);
     }
+    Ok(())
 }
 
 #[reducer]
 pub fn delete_project(ctx: &ReducerContext, slug: String) -> Result<(), String> {
+    assert_owner(ctx)?;
     if ctx.db.project().slug().find(&slug).is_none() {
         return Err(format!("no project with slug `{slug}`"));
     }
@@ -94,12 +111,6 @@ pub fn delete_project(ctx: &ReducerContext, slug: String) -> Result<(), String> 
 
 #[cfg(test)]
 mod tests {
-    //! Pure logic tests — exercise plain Rust paths that don't need a live
-    //! ReducerContext. The macro-generated table accessors require the
-    //! spacetimedb runtime, which isn't available under `cargo test` (these
-    //! would belong in a SpacetimeDB integration test suite). We at least
-    //! lock down the shapes and the trivial helpers here.
-
     use super::*;
 
     #[test]
@@ -132,9 +143,13 @@ mod tests {
 
     #[test]
     fn delete_project_error_message_includes_slug() {
-        // Validates the error string format without needing a real ctx.
         let slug = "nope";
         let msg = format!("no project with slug `{slug}`");
         assert_eq!(msg, "no project with slug `nope`");
+    }
+
+    #[test]
+    fn owner_hex_parses_to_identity() {
+        Identity::from_hex(OWNER_HEX).expect("OWNER_HEX must be a valid 64-char hex identity");
     }
 }
