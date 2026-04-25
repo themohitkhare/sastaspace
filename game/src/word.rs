@@ -56,7 +56,7 @@ pub fn spawn_words(
             (4u8, 100u64)
         } else {
             let d = difficulty_for_slot(slot);
-            let dmg = match d { 1 => 10, 2 => 25, 3 => 50, _ => 10 };
+            let dmg = match d { 1 => 10, 2 => 25, 3 => 50, 4 => 100, _ => 10 };
             (d, dmg)
         };
 
