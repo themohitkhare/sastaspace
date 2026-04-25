@@ -1,0 +1,93 @@
+name: landing
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "apps/landing/**"
+      - "packages/**"
+      - ".github/workflows/landing.yml"
+  pull_request:
+    paths:
+      - "apps/landing/**"
+      - "packages/**"
+  workflow_dispatch:
+    inputs:
+      bindings_run_id:
+        description: "module workflow run id whose bindings artifact to download (optional)"
+        required: false
+        type: string
+
+concurrency:
+  group: landing-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NEXT_PUBLIC_STDB_URI: wss://stdb.sastaspace.com
+  NEXT_PUBLIC_STDB_MODULE: sastaspace
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.12.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: install
+        run: pnpm install --frozen-lockfile
+
+      - name: download bindings (from triggering module run)
+        if: inputs.bindings_run_id != ''
+        uses: actions/download-artifact@v4
+        with:
+          name: stdb-bindings
+          path: packages/stdb-bindings/src/generated
+          run-id: ${{ inputs.bindings_run_id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: typecheck
+        run: pnpm --filter @sastaspace/landing typecheck
+
+      - name: lint
+        run: pnpm --filter @sastaspace/landing lint
+
+      - name: build
+        run: pnpm --filter @sastaspace/landing build
+
+      - name: upload static site
+        uses: actions/upload-artifact@v4
+        with:
+          name: landing-out
+          path: apps/landing/out
+          retention-days: 7
+
+  deploy:
+    needs: build
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      deployments: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: download static site
+        uses: actions/download-artifact@v4
+        with:
+          name: landing-out
+          path: apps/landing/out
+
+      - name: deploy to cloudflare pages
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CF_API_TOKEN }}
+          accountId: ${{ secrets.CF_ACCOUNT_ID }}
+          command: pages deploy apps/landing/out --project-name=sastaspace --branch=${{ github.ref_name == 'main' && 'main' || github.ref_name }}

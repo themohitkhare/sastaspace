@@ -1,0 +1,43 @@
+.chip {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  padding: 3px 10px;
+  border-radius: var(--radius-pill);
+  letter-spacing: 0.05em;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: none;
+}
+.chip::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  display: inline-block;
+}
+.live { background: var(--brand-ink); color: var(--brand-paper); }
+.live::before { background: var(--brand-status-live); }
+.wip { background: var(--brand-sasta); color: var(--brand-paper); }
+.wip::before { background: var(--brand-paper); }
+.paused {
+  background: transparent;
+  color: var(--brand-muted);
+  border: 1px solid var(--brand-dust-40);
+}
+.paused::before { background: var(--brand-dust); }
+.oss {
+  background: transparent;
+  color: var(--brand-ink);
+  border: 1px solid var(--brand-ink);
+}
+.oss::before { background: var(--brand-ink); }
+.archived {
+  background: transparent;
+  color: var(--brand-muted);
+  border: 1px dashed var(--brand-dust-40);
+}
+.archived::before {
+  background: transparent;
+  border: 1px solid var(--brand-dust);
+}

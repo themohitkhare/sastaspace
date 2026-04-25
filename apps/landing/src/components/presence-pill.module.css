@@ -1,0 +1,27 @@
+/* Live-presence pill — chrome-tier element, mono text, dust border on paper.
+   Brand-strict: no shadow, no gradient, sasta orange used only on the dot
+   (chrome) — text is ink. */
+
+.pill {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--brand-ink);
+  border: 1px solid var(--brand-dust-40);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: border-color var(--dur-std) var(--ease-std);
+}
+.pill:hover { border-color: var(--brand-ink); }
+
+.dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--brand-status-live);
+  display: inline-block;
+}

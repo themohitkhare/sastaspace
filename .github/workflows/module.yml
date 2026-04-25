@@ -1,0 +1,113 @@
+name: module
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "module/**"
+      - ".github/workflows/module.yml"
+  pull_request:
+    paths:
+      - "module/**"
+  workflow_dispatch:
+
+concurrency:
+  group: module-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  STDB_SERVER_URL: https://stdb.sastaspace.com
+  STDB_MODULE_NAME: sastaspace
+
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: install rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+          components: clippy, rustfmt
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: module
+
+      - name: fmt
+        working-directory: module
+        run: cargo fmt --all --check
+
+      - name: clippy
+        working-directory: module
+        run: cargo clippy --target wasm32-unknown-unknown --all-targets -- -D warnings
+
+      - name: test
+        working-directory: module
+        run: cargo test --all
+
+  publish:
+    needs: test
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: install rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: module
+
+      - name: install spacetime cli
+        run: |
+          curl -sSf https://install.spacetimedb.com | sh -s -- --yes
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+      - name: register prod server
+        run: spacetime server add prod --url "$STDB_SERVER_URL" --no-fingerprint
+
+      - name: configure auth token
+        env:
+          SPACETIME_TOKEN: ${{ secrets.SPACETIME_TOKEN }}
+        run: |
+          if [[ -z "$SPACETIME_TOKEN" ]]; then
+            echo "::warning::SPACETIME_TOKEN not set — publish will be attempted anonymously"
+          else
+            mkdir -p "$HOME/.config/spacetime"
+            spacetime login --token "$SPACETIME_TOKEN"
+          fi
+
+      - name: publish module
+        run: |
+          spacetime publish \
+            --server prod \
+            --project-path module \
+            "$STDB_MODULE_NAME" \
+            -y
+
+      - name: generate ts bindings
+        run: |
+          spacetime generate \
+            --lang typescript \
+            --out-dir packages/stdb-bindings/src/generated \
+            --project-path module
+
+      - name: upload bindings artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: stdb-bindings
+          path: packages/stdb-bindings/src/generated
+          retention-days: 7
+
+      - name: trigger landing rebuild
+        if: success()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh workflow run landing.yml --ref ${{ github.ref_name }} \
+            -f bindings_run_id=${{ github.run_id }} || true

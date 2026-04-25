@@ -1,0 +1,15 @@
+{
+  "name": "@sastaspace/design-tokens",
+  "version": "0.1.0",
+  "private": true,
+  "description": "sastaspace brand tokens — colours, type, assets. Source of truth.",
+  "type": "module",
+  "exports": {
+    "./colors-and-type.css": "./src/colors-and-type.css",
+    "./assets/*": "./assets/*"
+  },
+  "files": [
+    "src",
+    "assets"
+  ]
+}
