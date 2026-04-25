@@ -100,24 +100,36 @@ jobs:
           name: landing-out
           path: out/
 
-      - name: rsync site + sync nginx config (landing + notes share security_headers.conf)
+      - name: rsync site
         run: |
           mkdir -p "$LANDING_OUT_DIR"
           rsync -a --delete out/ "$LANDING_OUT_DIR/"
 
-          # Docker file-bind-mounts pin the inode at mount time. `install`
-          # and `cp` replace the file (new inode) so the container keeps
-          # serving the OLD file forever. Use shell redirect to overwrite
-          # in-place — same inode, container sees the new bytes immediately.
-          cat infra/landing/security_headers.conf > \
-            /home/mkhare/sastaspace/infra/landing/security_headers.conf
-          cat infra/landing/nginx.conf > \
-            /home/mkhare/sastaspace/infra/landing/nginx.conf
+      - name: sync nginx config + restart (in-place inode)
+        run: |
+          # Docker file-bind-mounts pin the inode at mount time. `install`,
+          # `cp`, and `mv` all replace the file (new inode) so the container
+          # keeps serving the OLD bytes. Shell redirect overwrites in place.
+          NGINX_DIR=/home/mkhare/sastaspace/infra/landing
+          NEW_HEADERS=$(sha256sum infra/landing/security_headers.conf | cut -d' ' -f1)
+          NEW_NGINX=$(sha256sum infra/landing/nginx.conf | cut -d' ' -f1)
+          OLD_HEADERS=$(sha256sum "$NGINX_DIR/security_headers.conf" 2>/dev/null | cut -d' ' -f1)
+          OLD_NGINX=$(sha256sum "$NGINX_DIR/nginx.conf" 2>/dev/null | cut -d' ' -f1)
 
-          docker exec sastaspace-landing nginx -s reload
-          # notes also bind-mounts the same security_headers.conf — reload it
-          # so any CSP / cache header change lands across both surfaces.
-          docker exec sastaspace-notes nginx -s reload
+          cat infra/landing/security_headers.conf > "$NGINX_DIR/security_headers.conf"
+          cat infra/landing/nginx.conf > "$NGINX_DIR/nginx.conf"
+
+          # Only restart when something actually changed. `nginx -s reload`
+          # was unreliable for our bind-mount setup; restart is ~2s and
+          # catches all cases.
+          if [[ "$NEW_HEADERS" != "$OLD_HEADERS" || "$NEW_NGINX" != "$OLD_NGINX" ]]; then
+            echo "nginx config changed — restarting both containers"
+            docker restart sastaspace-landing sastaspace-notes
+          else
+            echo "nginx config unchanged — reloading is enough"
+            docker exec sastaspace-landing nginx -s reload
+            docker exec sastaspace-notes nginx -s reload
+          fi
 
       - name: smoke test
         run: |
