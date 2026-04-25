@@ -209,8 +209,35 @@
 }
 
 @media (max-width: 640px) {
-  .postList li { grid-template-columns: 1fr; gap: 4px; }
-  .postDate { margin-bottom: 4px; }
-  .indexHeader h1 { font-size: 32px; }
-  .article h1 { font-size: 28px; }
+  .wrap { padding: 0 16px; }
+  .nav {
+    padding: 16px 0;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: flex-start;
+  }
+  .brand { font-size: 12px; line-height: 1.4; }
+  .navHome { font-size: 12px; }
+  .indexHeader { padding: 20px 0; }
+  .indexHeader h1 { font-size: 28px; line-height: 1.1; }
+  .indexLede { font-size: 15px; }
+  .postList li {
+    grid-template-columns: 1fr;
+    gap: 4px;
+    padding: 14px 0;
+  }
+  .postDate { margin-bottom: 2px; }
+  .postTitle { font-size: 17px; }
+  .article { padding: 8px 0 32px; }
+  .article h1 { font-size: 26px; line-height: 1.1; }
+  .prose { font-size: 16px; line-height: 1.6; }
+  .prose h2 { font-size: 22px; }
+  .prose h3 { font-size: 18px; }
+  .prose pre { font-size: 13px; padding: 12px 14px; }
+  .foot {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 24px 0 36px;
+    margin-top: 32px;
+  }
 }

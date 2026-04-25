@@ -173,3 +173,14 @@
   padding: 0;
 }
 .queuedReset:hover { color: var(--brand-rust); }
+
+@media (max-width: 640px) {
+  .section { margin-top: 40px; padding-top: 24px; }
+  .header h2 { font-size: 22px; }
+  .form { padding: 18px 16px; }
+  .formActions { flex-direction: column-reverse; align-items: stretch; gap: 10px; }
+  .submit { width: 100%; padding: 12px 18px; }
+  .empty { padding: 24px 18px; }
+  .commentBody { font-size: 14px; }
+  .signedInNote { font-size: 11px; padding: 8px 10px; }
+}
