@@ -1,6 +1,5 @@
 use spacetimedb::{table, Identity, Timestamp};
 
-#[derive(Clone)]
 #[table(accessor = battle_session, public)]
 pub struct BattleSession {
     #[primary_key]
@@ -100,8 +99,8 @@ pub fn end_battle_core(ctx: &ReducerContext, session: BattleSession) {
             }
         }
         let word_ids: Vec<u64> = ctx.db.word()
-            .iter()
-            .filter(|w| w.session_id == session.id)
+            .session_id()
+            .filter(&session.id)
             .map(|w| w.id)
             .collect();
         for wid in word_ids {

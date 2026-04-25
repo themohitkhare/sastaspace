@@ -1,4 +1,5 @@
 use spacetimedb::{table, Timestamp, ReducerContext, Table, reducer, ScheduleAt};
+use std::collections::HashSet;
 use crate::words;
 use crate::legion;
 use crate::session::battle_session;
@@ -261,7 +262,7 @@ pub fn expire_words_tick(ctx: &ReducerContext, _arg: WordExpireSchedule) -> Resu
         .filter(|w| w.expires_at.to_micros_since_unix_epoch() <= ts_now)
         .collect();
 
-    let mut affected: std::collections::HashSet<u64> = std::collections::HashSet::new();
+    let mut affected: HashSet<u64> = HashSet::new();
     for w in expired {
         affected.insert(w.session_id);
         ctx.db.word().id().delete(w.id);
@@ -285,14 +286,16 @@ pub fn expire_words_tick(ctx: &ReducerContext, _arg: WordExpireSchedule) -> Resu
         .collect();
 
     for s in active {
-        let word_count = ctx.db.word().iter().filter(|w| w.session_id == s.id).count();
+        let word_count = ctx.db.word().session_id().filter(&s.id).count();
         if word_count < 4 {
-            let needed = (8 - word_count) as u32;
+            let needed = 8usize.saturating_sub(word_count) as u32;
+            if needed == 0 { continue; }
+            let session_id = s.id;
             let spawn_start = s.words_spawned;
-            let mut updated_s = s.clone();
+            let mut updated_s = s;
             updated_s.words_spawned += needed;
             ctx.db.battle_session().id().update(updated_s);
-            spawn_words(ctx, s.id, spawn_start, needed, false);
+            spawn_words(ctx, session_id, spawn_start, needed, false);
         }
     }
 
