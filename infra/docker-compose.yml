@@ -88,9 +88,40 @@ services:
       retries: 3
       start_period: 20s
 
-  # Comment moderator: Agno + Ollama llama-guard3:1b. Polls SpacetimeDB on the
-  # host loopback, calls Ollama on the host loopback. Needs SPACETIME_TOKEN
-  # in /etc/sastaspace/moderator.env on the host (gitignored).
+  # Magic-link auth FastAPI service. Tunnel routes auth.sastaspace.com →
+  # 127.0.0.1:3130. Needs SPACETIME_TOKEN + RESEND_API_KEY in
+  # ./agents/auth/.env on the host (gitignored).
+  auth:
+    build:
+      context: ./agents/auth
+      dockerfile: Dockerfile
+    image: sastaspace-auth:local
+    container_name: sastaspace-auth
+    restart: unless-stopped
+    read_only: true
+    tmpfs: [/tmp]
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    pids_limit: 256
+    mem_limit: 256m
+    user: "1000:1000"
+    ports:
+      - "127.0.0.1:3130:8080"
+    env_file:
+      - ./agents/auth/.env
+    environment:
+      - STDB_HTTP_URL=http://host.docker.internal:3100
+      - STDB_MODULE=sastaspace
+      - PUBLIC_BASE=https://auth.sastaspace.com
+      - NOTES_CALLBACK=https://notes.sastaspace.com/auth/callback
+      - ALLOWED_ORIGINS=https://sastaspace.com,https://www.sastaspace.com,https://notes.sastaspace.com
+    extra_hosts:
+      # Ports 3100 (stdb) lives on host loopback; reach via host.docker.internal.
+      - "host.docker.internal:host-gateway"
+
+  # Comment moderator: Agno + Ollama. Polls SpacetimeDB on the host loopback,
+  # calls Ollama on the host loopback. Needs SPACETIME_TOKEN in
+  # ./agents/moderator/.env on the host (gitignored).
   moderator:
     build:
       context: ./agents/moderator

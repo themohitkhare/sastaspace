@@ -81,3 +81,59 @@ jobs:
             docker compose logs --tail=30 moderator
             exit 1
           fi
+
+  auth:
+    runs-on: [self-hosted, Linux]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: lint + test
+        working-directory: infra/agents/auth
+        run: |
+          if [[ ! -d .venv ]] || [[ pyproject.toml -nt .venv/pyvenv.cfg ]]; then
+            rm -rf .venv
+            python3.12 -m venv .venv
+            . .venv/bin/activate
+            pip install -q --upgrade pip
+            pip install -q -e '.[dev]'
+          fi
+          . .venv/bin/activate
+          ruff check src tests
+          pytest
+
+      - name: build container
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+        working-directory: infra
+        run: docker compose build auth
+
+      - name: deploy
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+        working-directory: infra
+        env:
+          SPACETIME_TOKEN: ${{ secrets.SPACETIME_TOKEN }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+        run: |
+          if [[ -z "$SPACETIME_TOKEN" || -z "$RESEND_API_KEY" ]]; then
+            echo "::error::SPACETIME_TOKEN or RESEND_API_KEY missing"
+            exit 1
+          fi
+          install -m 600 /dev/null agents/auth/.env
+          {
+            echo "SPACETIME_TOKEN=$SPACETIME_TOKEN"
+            echo "RESEND_API_KEY=$RESEND_API_KEY"
+          } > agents/auth/.env
+          docker compose up -d --no-deps --force-recreate auth
+          sleep 6
+          docker compose ps auth
+
+      - name: smoke — /healthz responds
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+        run: |
+          for i in 1 2 3 4 5; do
+            code=$(curl -sS -o /dev/null -w "%{http_code}" http://127.0.0.1:3130/healthz)
+            echo "attempt $i: HTTP $code"
+            [[ "$code" == "200" ]] && exit 0
+            sleep 3
+          done
+          docker compose -f infra/docker-compose.yml logs auth --tail=30
+          exit 1

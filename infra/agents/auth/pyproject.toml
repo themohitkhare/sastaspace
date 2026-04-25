@@ -1,0 +1,46 @@
+[project]
+name = "sastaspace-auth"
+version = "0.1.0"
+description = "Magic-link auth for sastaspace. Resend send + SpacetimeDB-backed token store + identity issue."
+requires-python = ">=3.12,<3.14"
+dependencies = [
+    "fastapi>=0.118",
+    "uvicorn[standard]>=0.34",
+    "httpx>=0.28",
+    "tenacity>=9.0",
+    "pydantic[email]>=2.9",
+    "email-validator>=2.2",
+    "resend>=2.5",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.3",
+    "pytest-asyncio>=0.24",
+    "pytest-cov>=6.0",
+    "respx>=0.21",
+    "ruff>=0.8",
+]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+addopts = "-q --cov=src --cov-report=term-missing --cov-fail-under=70"
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "N"]
+ignore = ["E501"]
