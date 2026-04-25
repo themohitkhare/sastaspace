@@ -14,6 +14,7 @@ pub fn init(ctx: &ReducerContext) {
     war::init_global_war(ctx);
     word::init_word_expire_schedule(ctx);
     region::init_region_tick_schedule(ctx);
+    war::init_war_tick_schedule(ctx);
 }
 
 #[reducer(client_connected)]
