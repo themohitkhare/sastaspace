@@ -9,6 +9,10 @@ dist
 build
 target
 coverage
+.coverage
+.pytest_cache
+__pycache__
+.venv
 *.wasm
 lcov.info
 
