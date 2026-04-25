@@ -58,7 +58,10 @@ jobs:
             install -m 600 /dev/null agents/moderator/.env
             echo "SPACETIME_TOKEN=$SPACETIME_TOKEN" > agents/moderator/.env
           fi
-          docker compose up -d --force-recreate moderator
+          # --no-deps so we don't restart stdb just because moderator changed.
+          # stdb's healthcheck takes ~20s on cold-start; touching it here would
+          # force the deploy to wait that long for no reason.
+          docker compose up -d --no-deps --force-recreate moderator
           sleep 6
           docker compose ps moderator
         env:
