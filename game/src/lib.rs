@@ -1,5 +1,4 @@
-use spacetimedb::{reducer, ReducerContext, Table};
-use word::word_expire_schedule;
+use spacetimedb::{reducer, ReducerContext};
 
 mod legion;
 mod player;
@@ -13,10 +12,7 @@ mod words;
 pub fn init(ctx: &ReducerContext) {
     region::seed_regions(ctx);
     war::init_global_war(ctx);
-    ctx.db.word_expire_schedule().insert(word::WordExpireSchedule {
-        scheduled_id: 0,
-        scheduled_at: spacetimedb::ScheduleAt::from(std::time::Duration::from_secs(2)),
-    });
+    word::init_word_expire_schedule(ctx);
     region::init_region_tick_schedule(ctx);
 }
 

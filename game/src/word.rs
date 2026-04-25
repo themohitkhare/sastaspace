@@ -243,6 +243,13 @@ mod tests {
 
 // ── Scheduled reducer: expire words every 2 seconds ──────────────────────────
 
+pub fn init_word_expire_schedule(ctx: &ReducerContext) {
+    ctx.db.word_expire_schedule().insert(WordExpireSchedule {
+        scheduled_id: 0,
+        scheduled_at: ScheduleAt::from(std::time::Duration::from_secs(2)),
+    });
+}
+
 #[table(accessor = word_expire_schedule, scheduled(expire_words_tick))]
 pub struct WordExpireSchedule {
     #[primary_key]
