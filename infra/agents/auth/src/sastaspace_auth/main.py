@@ -129,7 +129,11 @@ def verify_magic_link(t: str = "") -> HTMLResponse:
     try:
         app.state.stdb.consume_auth_token(t)
     except Exception as exc:  # noqa: BLE001
-        return _html_error(f"This link is no longer valid. ({exc})", status=400)
+        # ReducerError: the reducer said no (token expired/used/unknown).
+        # TransientError: network blip, retried already, still no luck.
+        # Either way we surface a friendly version of the actual reason.
+        msg = _friendly_token_error(exc)
+        return _html_error(msg, status=400)
 
     # Step 2: figure out who this token was for
     # We need the email — the consume_auth_token reducer doesn't return it
@@ -217,6 +221,22 @@ def _verify_success_html(callback: str, jwt: str, email: str) -> str:
     }})();
   </script>
 </body></html>"""
+
+
+_REDUCER_FRIENDLY = {
+    "token expired": "This sign-in link has expired. Links are good for 15 minutes — request a new one.",
+    "token already used": "This sign-in link has already been used. Request a fresh one to sign in again.",
+    "unknown token": "This sign-in link doesn't match anything we issued. Request a new one.",
+}
+
+
+def _friendly_token_error(exc: BaseException) -> str:
+    """Map raw reducer error strings to copy a human can act on."""
+    raw = str(exc).strip().lower()
+    for needle, friendly in _REDUCER_FRIENDLY.items():
+        if needle in raw:
+            return friendly
+    return f"This sign-in link is no longer valid. ({exc})"
 
 
 def _html_error(message: str, status: int = 400) -> HTMLResponse:

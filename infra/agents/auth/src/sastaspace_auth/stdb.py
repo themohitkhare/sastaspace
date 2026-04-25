@@ -15,7 +15,25 @@ import json
 from dataclasses import dataclass
 
 import httpx
-from tenacity import retry, stop_after_attempt, wait_exponential
+from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_exponential
+
+
+class ReducerError(RuntimeError):
+    """Terminal failure from a SpacetimeDB reducer (Result::Err string).
+
+    Distinct from TransientError so tenacity can refuse to retry these —
+    a token that's expired stays expired no matter how many times we ask.
+    """
+
+    def __init__(self, reducer: str, status: int, body: str) -> None:
+        super().__init__(body or f"{reducer} failed (HTTP {status})")
+        self.reducer = reducer
+        self.status = status
+        self.body = body
+
+
+class TransientError(RuntimeError):
+    """Network/5xx-without-body errors. Worth retrying."""
 
 
 @dataclass(frozen=True)
@@ -50,25 +68,45 @@ class SpacetimeClient:
 
     def _call_reducer(self, name: str, args: list) -> None:
         url = f"{self._base}/v1/database/{self._database}/call/{name}"
-        r = self._client.post(
-            url,
-            content=json.dumps(args),
-            headers={"Content-Type": "application/json"},
-        )
-        # Reducers return text on error (the Result::Err string); raise so
-        # callers see the actual reason.
-        if r.status_code >= 400:
-            raise RuntimeError(f"reducer {name} failed: {r.status_code} {r.text}")
+        try:
+            r = self._client.post(
+                url,
+                content=json.dumps(args),
+                headers={"Content-Type": "application/json"},
+            )
+        except httpx.RequestError as exc:
+            # Connection refused, timeout, DNS failure — worth retrying.
+            raise TransientError(f"network error calling {name}: {exc}") from exc
 
-    @retry(stop=stop_after_attempt(3), wait=wait_exponential(min=0.5, max=4))
+        if r.status_code < 400:
+            return
+
+        # SpacetimeDB returns reducer Result::Err strings as the response body.
+        # 530 with a non-empty body is a terminal "the reducer said no" — no
+        # amount of retrying changes the answer. Surface the body verbatim.
+        body = (r.text or "").strip()
+        if r.status_code in (400, 401, 403, 404, 530) and body:
+            raise ReducerError(name, r.status_code, body)
+        # 5xx without a body, 502/503/504 etc — transient.
+        raise TransientError(f"{name} failed: HTTP {r.status_code} {body or '<empty>'}")
+
+    # Retry only on TransientError. ReducerError fails fast.
+    _RETRY = dict(
+        stop=stop_after_attempt(3),
+        wait=wait_exponential(min=0.5, max=4),
+        retry=retry_if_exception_type(TransientError),
+        reraise=True,
+    )
+
+    @retry(**_RETRY)
     def issue_auth_token(self, token: str, email: str) -> None:
         self._call_reducer("issue_auth_token", [token, email])
 
-    @retry(stop=stop_after_attempt(3), wait=wait_exponential(min=0.5, max=4))
+    @retry(**_RETRY)
     def consume_auth_token(self, token: str) -> None:
         self._call_reducer("consume_auth_token", [token])
 
-    @retry(stop=stop_after_attempt(3), wait=wait_exponential(min=0.5, max=4))
+    @retry(**_RETRY)
     def register_user(self, identity_hex: str, email: str, display_name: str) -> None:
         # SpacetimeDB Identity is serialised as hex string in REST args.
         self._call_reducer("register_user", [identity_hex, email, display_name])

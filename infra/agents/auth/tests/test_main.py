@@ -133,4 +133,14 @@ def test_verify_400s_when_token_lookup_fails(client, monkeypatch):
     stdb.consume_auth_token.side_effect = RuntimeError("token already used")
     r = c.get("/auth/verify?t=" + "a" * 64)
     assert r.status_code == 400
-    assert "no longer valid" in r.text
+    # The friendly mapper rewrites the raw reducer error
+    assert "already been used" in r.text
+
+
+def test_verify_friendly_message_for_expired(client):
+    c, stdb, _ = client
+    stdb.consume_auth_token.side_effect = RuntimeError("token expired")
+    r = c.get("/auth/verify?t=" + "a" * 64)
+    assert r.status_code == 400
+    assert "expired" in r.text
+    assert "request a new one" in r.text.lower()
