@@ -22,6 +22,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
   NEXT_PUBLIC_STDB_URI: wss://stdb.sastaspace.com
   NEXT_PUBLIC_STDB_MODULE: sastaspace
   NOTES_OUT_DIR: /home/mkhare/sastaspace/infra/notes/out

@@ -16,6 +16,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
   STDB_SERVER_URL: https://stdb.sastaspace.com
   STDB_MODULE_NAME: sastaspace
   STDB_CLI_VERSION: "2.1.0"
