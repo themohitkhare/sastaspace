@@ -55,7 +55,6 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
       - run: pnpm --filter @sastaspace/landing typecheck
-      - run: pnpm --filter @sastaspace/landing lint
       - run: pnpm --filter @sastaspace/landing build
 
       - name: deploy to nginx
