@@ -12,9 +12,11 @@ if [[ -f keys/id_ecdsa && -f keys/id_ecdsa.pub ]]; then
   exit 1
 fi
 
-openssl ecparam -name prime256v1 -genkey -noout -out keys/id_ecdsa
+# SpacetimeDB uses the `jsonwebtoken` crate, which requires PKCS#8 PEM for ES256.
+# `openssl genpkey` writes PKCS#8 by default; `openssl ecparam -genkey` writes
+# SEC1, which jsonwebtoken rejects with `InvalidKeyFormat`.
+openssl genpkey -algorithm EC -pkeyopt ec_paramgen_curve:P-256 -out keys/id_ecdsa
 openssl ec -in keys/id_ecdsa -pubout -out keys/id_ecdsa.pub
-chmod 600 keys/id_ecdsa
-chmod 644 keys/id_ecdsa.pub
+chmod 644 keys/id_ecdsa keys/id_ecdsa.pub  # readable by container uid 1000
 
 echo "wrote keys/id_ecdsa{,.pub}. back these up — losing them invalidates every existing identity."

@@ -8,7 +8,8 @@ services:
     image: clockworklabs/spacetime:latest
     container_name: sastaspace-stdb
     restart: unless-stopped
-    user: spacetime
+    # Image already runs as user `spacetime` (uid 1000 inside container).
+    # Bind mounts ./data and ./keys must be owned/readable by uid 1000 on host.
     command:
       - start
       - --data-dir=/stdb/data
@@ -16,10 +17,10 @@ services:
       - --jwt-priv-key-path=/etc/spacetimedb/id_ecdsa
       - --listen-addr=0.0.0.0:3000
     volumes:
-      - stdb_data:/stdb/data
+      - ./data:/stdb/data
       - ./keys:/etc/spacetimedb:ro
     ports:
-      # bind to loopback only — Cloudflare Tunnel reaches it via host networking
+      # loopback only — cloudflared reaches it via host network
       - "127.0.0.1:3100:3000"
     healthcheck:
       test: ["CMD", "curl", "-fsS", "http://127.0.0.1:3000/v1/identity"]
@@ -31,7 +32,3 @@ services:
       resources:
         limits:
           memory: 2G
-
-volumes:
-  stdb_data:
-    driver: local
