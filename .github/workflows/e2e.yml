@@ -45,7 +45,7 @@ jobs:
     env:
       E2E_TEST_SECRET: ${{ secrets.E2E_TEST_SECRET }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - uses: actions/setup-node@v4
         with:
