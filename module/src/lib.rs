@@ -223,7 +223,7 @@ pub fn delete_comment(ctx: &ReducerContext, id: u64) -> Result<(), String> {
     if ctx.db.comment().id().find(id).is_none() {
         return Err(format!("no comment with id {id}"));
     }
-    ctx.db.comment().id().delete(&id);
+    ctx.db.comment().id().delete(id);
     Ok(())
 }
 
