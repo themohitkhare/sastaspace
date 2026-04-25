@@ -1,4 +1,4 @@
-use spacetimedb::{table, Timestamp, ReducerContext, Table, reducer};
+use spacetimedb::{table, Timestamp, ReducerContext, Table, reducer, ScheduleAt};
 use crate::words;
 use crate::legion;
 use crate::session::battle_session;
@@ -238,4 +238,63 @@ mod tests {
         assert_eq!(s, 13);
         assert!((m - 3.0).abs() < 0.001);
     }
+}
+
+// ── Scheduled reducer: expire words every 2 seconds ──────────────────────────
+
+#[table(accessor = word_expire_schedule, scheduled(expire_words_tick))]
+pub struct WordExpireSchedule {
+    #[primary_key]
+    #[auto_inc]
+    pub scheduled_id: u64,
+    pub scheduled_at: ScheduleAt,
+}
+
+#[reducer]
+pub fn expire_words_tick(ctx: &ReducerContext, _arg: WordExpireSchedule) -> Result<(), String> {
+    let ts_now = ctx.timestamp.to_micros_since_unix_epoch();
+
+    let expired: Vec<Word> = ctx
+        .db
+        .word()
+        .iter()
+        .filter(|w| w.expires_at.to_micros_since_unix_epoch() <= ts_now)
+        .collect();
+
+    let mut affected: std::collections::HashSet<u64> = std::collections::HashSet::new();
+    for w in expired {
+        affected.insert(w.session_id);
+        ctx.db.word().id().delete(w.id);
+    }
+
+    for sid in &affected {
+        if let Some(mut s) = ctx.db.battle_session().id().find(*sid) {
+            if s.active {
+                s.streak = 0;
+                s.multiplier = 1.0;
+                ctx.db.battle_session().id().update(s);
+            }
+        }
+    }
+
+    let active: Vec<crate::session::BattleSession> = ctx
+        .db
+        .battle_session()
+        .iter()
+        .filter(|s| s.active)
+        .collect();
+
+    for s in active {
+        let word_count = ctx.db.word().iter().filter(|w| w.session_id == s.id).count();
+        if word_count < 4 {
+            let needed = (8 - word_count) as u32;
+            let spawn_start = s.words_spawned;
+            let mut updated_s = s.clone();
+            updated_s.words_spawned += needed;
+            ctx.db.battle_session().id().update(updated_s);
+            spawn_words(ctx, s.id, spawn_start, needed, false);
+        }
+    }
+
+    Ok(())
 }

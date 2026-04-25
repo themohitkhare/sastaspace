@@ -1,5 +1,6 @@
 use spacetimedb::{table, Identity, Timestamp};
 
+#[derive(Clone)]
 #[table(accessor = battle_session, public)]
 pub struct BattleSession {
     #[primary_key]
