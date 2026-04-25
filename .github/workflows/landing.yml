@@ -5,13 +5,15 @@ on:
     branches: [main]
     paths:
       - "apps/landing/**"
-      - "packages/**"
+      - "packages/design-tokens/**"
+      - "packages/stdb-bindings/**"
       - "infra/landing/nginx.conf"
       - ".github/workflows/landing.yml"
   pull_request:
     paths:
       - "apps/landing/**"
-      - "packages/**"
+      - "packages/design-tokens/**"
+      - "packages/stdb-bindings/**"
   workflow_dispatch:
     inputs:
       bindings_run_id:

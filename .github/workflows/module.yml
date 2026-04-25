@@ -33,7 +33,11 @@ jobs:
           components: clippy, rustfmt, llvm-tools-preview
 
       - uses: Swatinem/rust-cache@v2
-        with: { workspaces: module }
+        with:
+          workspaces: module
+          # save-if true only on main pushes — skips the ~50s cache pack
+          # on PR runs and on no-op pushes that didn't change Cargo.lock.
+          save-if: ${{ github.ref == 'refs/heads/main' && hashFiles('module/Cargo.lock') != '' }}
 
       - name: install cargo extras
         run: |
@@ -52,13 +56,11 @@ jobs:
         working-directory: module
         run: cargo audit --deny warnings
 
+      # `cargo llvm-cov` already builds + runs the tests, so a separate
+      # `cargo test` step would be redundant. The threshold gates failure.
       - name: test + coverage
         working-directory: module
-        run: cargo llvm-cov --summary-only --fail-under-lines $COVERAGE_MIN_LINES
-
-      - name: coverage report (lcov)
-        working-directory: module
-        run: cargo llvm-cov report --lcov --output-path lcov.info
+        run: cargo llvm-cov --summary-only --fail-under-lines $COVERAGE_MIN_LINES --lcov --output-path lcov.info
 
       - uses: actions/upload-artifact@v4
         with:
@@ -77,7 +79,11 @@ jobs:
         with: { targets: wasm32-unknown-unknown }
 
       - uses: Swatinem/rust-cache@v2
-        with: { workspaces: module }
+        with:
+          workspaces: module
+          # save-if true only on main pushes — skips the ~50s cache pack
+          # on PR runs and on no-op pushes that didn't change Cargo.lock.
+          save-if: ${{ github.ref == 'refs/heads/main' && hashFiles('module/Cargo.lock') != '' }}
 
       - name: install spacetime cli
         run: |

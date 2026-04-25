@@ -1,0 +1,19 @@
+---
+title: Why everything here shares one database.
+date: 2026-04-25
+summary: Per-project databases are how startups end up. One shared database is how a lab stays a lab.
+---
+
+The first thing most people do when starting a side project is provision its own database. A new Postgres instance on Neon, a new SQLite file on the laptop, a new Firebase project. It feels right. The project is its own thing.
+
+It's the wrong move for a lab.
+
+Each new database is a new thing to back up. A new auth boundary. A new schema migration toolchain. A new user record duplicated across surfaces. By the third project you're not building experiments any more — you're maintaining infrastructure.
+
+Sastaspace runs on one SpacetimeDB instance. Every project on a sub-domain reads and writes the same module. The `User` table is the same `User` table whether you're on `notes.sastaspace.com` writing a comment or on whatever ships next. Sign in once, persist everywhere. Schema lives in one Rust file in one repo.
+
+The trade-off is honest: a bad migration takes the whole lab down. So I don't ship bad migrations. The CI gate won't let me publish a module that doesn't compile clean and pass the schema-shape tests. Worst case there's a five-minute window between push and rollback.
+
+The other trade-off is conceptual: I can't pretend a new project is a fresh start. Every new table sits next to every old one. The lab gets to keep its memory.
+
+Which is the point. Things I built six months ago should know the things I'm building today exist. They share a workspace, not a wall.

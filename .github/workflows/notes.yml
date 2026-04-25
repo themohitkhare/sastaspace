@@ -5,14 +5,16 @@ on:
     branches: [main]
     paths:
       - "apps/notes/**"
-      - "packages/**"
+      - "packages/design-tokens/**"
+      - "packages/stdb-bindings/**"
       - "infra/notes/nginx.conf"
       - "infra/landing/security_headers.conf"
       - ".github/workflows/notes.yml"
   pull_request:
     paths:
       - "apps/notes/**"
-      - "packages/**"
+      - "packages/design-tokens/**"
+      - "packages/stdb-bindings/**"
   workflow_dispatch:
 
 concurrency:
