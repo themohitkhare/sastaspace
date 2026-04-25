@@ -1,4 +1,9 @@
-use spacetimedb::{table, Timestamp, ReducerContext, Table};
+use spacetimedb::{table, Timestamp, ReducerContext, Table, reducer};
+use crate::words;
+use crate::legion;
+use crate::session::battle_session;
+use crate::player::player;
+use crate::region::region;
 
 #[table(accessor = word, public)]
 pub struct Word {
@@ -14,7 +19,104 @@ pub struct Word {
     pub expires_at: Timestamp,
 }
 
-use crate::words;
+pub fn apply_miss(_streak: u32, _multiplier: f32) -> (u32, f32) {
+    (0, 1.0)
+}
+
+pub fn apply_hit(streak: u32, cap: f32) -> (u32, f32) {
+    let new_streak = streak + 1;
+    (new_streak, legion::compute_multiplier(new_streak, cap))
+}
+
+#[reducer]
+pub fn submit_word(
+    ctx: &ReducerContext,
+    session_id: u64,
+    word: String,
+) -> Result<(), String> {
+    let mut session = ctx.db.battle_session().id().find(session_id)
+        .ok_or_else(|| "session not found".to_string())?;
+    if session.player_identity != ctx.sender() {
+        return Err("not your session".into());
+    }
+    if !session.active {
+        return Err("session ended".into());
+    }
+
+    let player = ctx.db.player().identity().find(ctx.sender())
+        .ok_or_else(|| "player not found".to_string())?;
+
+    let ts_now = ctx.timestamp.to_micros_since_unix_epoch();
+
+    // Find matching live word in this session
+    let hit: Option<Word> = ctx.db.word()
+        .iter()
+        .find(|w| {
+            w.session_id == session_id
+                && w.text == word
+                && w.expires_at.to_micros_since_unix_epoch() > ts_now
+        });
+
+    if hit.is_none() {
+        // Miss path: reset streak
+        session.accuracy_misses += 1;
+        let (s, m) = apply_miss(session.streak, session.multiplier);
+        session.streak = s;
+        session.multiplier = m;
+        ctx.db.battle_session().id().update(session);
+        return Ok(());
+    }
+
+    let hit_word = hit.unwrap();
+    session.accuracy_hits += 1;
+
+    let cap = legion::multiplier_cap(player.legion);
+    let (new_streak, new_mult) = apply_hit(session.streak, cap);
+    session.streak = new_streak;
+    session.multiplier = new_mult;
+
+    let damage = legion::compute_damage(hit_word.base_damage, new_mult, new_streak, player.legion);
+
+    // Ashborn burst resets streak after the bonus is applied
+    if legion::ashborn_burst_active(player.legion, new_streak) {
+        session.streak = 0;
+        session.multiplier = 1.0;
+    }
+
+    session.damage_dealt += damage;
+    session.words_spawned += 1;
+
+    // Apply damage to region
+    if let Some(mut reg) = ctx.db.region().id().find(session.region_id) {
+        reg.enemy_hp = reg.enemy_hp.saturating_sub(damage);
+        crate::region::add_legion_damage(&mut reg, player.legion, damage);
+        ctx.db.region().id().update(reg);
+    } else {
+        // Region not found - this shouldn't happen, but we'll allow the word match
+    }
+
+    // Delete matched word
+    ctx.db.word().id().delete(hit_word.id);
+
+    // Codex rare word injection check (~14% when accuracy >= 90%)
+    let ts_secs = ctx.timestamp.to_micros_since_unix_epoch() as u64 / 1_000_000;
+    let inject_rare = legion::codex_can_inject_rare(
+        player.legion,
+        session.accuracy_hits,
+        session.accuracy_misses,
+        ts_secs,
+    );
+
+    // Capture values before session is moved into update()
+    let sid = session.id;
+    let spawn_start = session.words_spawned;
+    ctx.db.battle_session().id().update(session);
+
+    // Spawn 1 replacement word
+    spawn_words(ctx, sid, spawn_start, 1, inject_rare);
+
+    Ok(())
+}
 
 pub fn difficulty_for_slot(slot: u32) -> u8 {
     match slot % 8 {
@@ -114,5 +216,26 @@ mod tests {
             .map(|n| select_word(1, 1, 0, n))
             .collect();
         assert!(words.len() > 1);
+    }
+
+    #[test]
+    fn miss_resets_streak_and_multiplier() {
+        let (s, m) = apply_miss(8, 3.0);
+        assert_eq!(s, 0);
+        assert!((m - 1.0).abs() < 0.001);
+    }
+
+    #[test]
+    fn hit_increments_streak_and_raises_multiplier() {
+        let (s, m) = apply_hit(0, 3.0);
+        assert_eq!(s, 1);
+        assert!((m - 1.25).abs() < 0.001);
+    }
+
+    #[test]
+    fn hit_at_cap_stays_capped() {
+        let (s, m) = apply_hit(12, 3.0);
+        assert_eq!(s, 13);
+        assert!((m - 3.0).abs() < 0.001);
     }
 }
