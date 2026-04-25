@@ -13,8 +13,7 @@ project — same data, same auth, same connection.
 | Database + business logic | SpacetimeDB 2.1, Rust module |
 | Client framework | Next.js 16 (App Router, static export) + Tailwind v4 |
 | Brand layer | `@sastaspace/design-tokens` — single CSS file, five logos |
-| Hosting (DB) | Self-hosted Docker on prod box behind Cloudflare Tunnel |
-| Hosting (web) | Cloudflare Pages |
+| Hosting | Both run as docker containers on `taxila` (prod box, 192.168.0.37) behind the existing Cloudflare Tunnel `sastaspace-prod` |
 | CI | GitHub Actions — module test → publish; landing build → Pages deploy |
 
 ## Layout
@@ -28,12 +27,13 @@ sastaspace/
 │   ├── design-tokens/              # colours, type, logos
 │   └── stdb-bindings/              # generated TS client bindings
 ├── infra/
-│   ├── docker-compose.yml          # SpacetimeDB on prod
-│   ├── keygen.sh                   # one-time JWT keypair generator
+│   ├── docker-compose.yml          # spacetime + landing nginx on taxila
+│   ├── keygen.sh                   # one-time PKCS#8 JWT keypair generator
+│   ├── landing/nginx.conf          # static-site nginx config
 │   └── cloudflared/                # tunnel ingress recipe
 └── .github/workflows/
     ├── module.yml                  # rust test + spacetime publish
-    └── landing.yml                 # next build + Cloudflare Pages
+    └── landing.yml                 # next build + rsync to taxila
 ```
 
 ## Local development
@@ -59,36 +59,48 @@ pnpm dev
 
 ## Deploying
 
-### One-time prod setup
+### Live URLs
+
+- `https://sastaspace.com` — landing (nginx on taxila)
+- `https://stdb.sastaspace.com` — SpacetimeDB websocket + REST endpoint
+- Both routed through the existing `sastaspace-prod` Cloudflare Tunnel
+
+### One-time prod setup (already done as of 2026-04-25)
 
 ```bash
-# from any workstation with the cloudflare-api-token in keychain
-infra/cloudflared/add-stdb-ingress.sh         # adds stdb.sastaspace.com to the existing tunnel
+# from a workstation with the cloudflare-api-token in keychain
+infra/cloudflared/add-stdb-ingress.sh         # adds stdb.sastaspace.com to the tunnel
 
-# on the prod box
-git clone <this repo>
+# on taxila
+git clone git@github.com:themohitkhare/sastaspace.git
 cd sastaspace/infra
-./keygen.sh                                   # creates JWT signing keys
-docker compose up -d                          # starts spacetimedb on 127.0.0.1:3100
+./keygen.sh                                   # creates PKCS#8 ECDSA P-256 keys
+mkdir -p data landing/out
+docker compose up -d                          # starts spacetime + landing nginx
 
 # from a workstation
-spacetime server add prod --url https://stdb.sastaspace.com --no-fingerprint
-spacetime login --server-issued-login prod
-spacetime token export --server prod          # paste into GH secret SPACETIME_TOKEN
+spacetime server add prod --url https://stdb.sastaspace.com
+spacetime publish --server prod sastaspace --module-path module -y
 ```
 
-### GitHub secrets needed
+### GitHub secrets needed (for CI)
 
-| Secret | Where it comes from |
+| Secret | What |
 |---|---|
-| `SPACETIME_TOKEN` | `spacetime token export --server prod` after `spacetime login` |
-| `CF_API_TOKEN` | Cloudflare dashboard → My Profile → API Tokens → "Cloudflare Pages — Edit" template |
-| `CF_ACCOUNT_ID` | `c207f71f99a2484494c84d95e6cb7178` (from your existing keychain note) |
+| `SPACETIME_TOKEN` | `spacetime token export --server prod` (after `spacetime login --server-issued-login prod`) |
+| `TAXILA_SSH_KEY` | private SSH key authorized to `mkhare@taxila` (deploy key, ed25519) |
+| `TAXILA_SSH_HOST` | the address GH Actions can reach — needs a tailscale-action step or public bastion (taxila is LAN-only by default) |
+| `TAXILA_SSH_USER` | `mkhare` |
+
+> **Note**: GH-hosted runners can't reach `192.168.0.37`. Use a tailscale-action
+> in the deploy job (`tailscale/github-action@v3`) and set `TAXILA_SSH_HOST` to
+> the tailscale hostname. Until then, run `pnpm build && rsync apps/landing/out/
+> 192.168.0.37:~/sastaspace/infra/landing/out/` from your workstation.
 
 ### Continuous delivery
 
 - Push to `main` touching `module/**` → CI runs `cargo fmt/clippy/test`, then publishes to `stdb.sastaspace.com` and uploads regenerated TS bindings as an artifact.
-- Push to `main` touching `apps/landing/**` or `packages/**` → CI builds the static site and `wrangler pages deploy`s to Cloudflare Pages.
+- Push to `main` touching `apps/landing/**` or `packages/**` → CI builds the static site, rsyncs to taxila, and reloads nginx.
 - After a module publish, the module workflow triggers the landing workflow to rebuild with fresh bindings.
 
 ## Brand invariants (enforce these — they're the lab's signature)

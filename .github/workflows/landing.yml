@@ -6,6 +6,7 @@ on:
     paths:
       - "apps/landing/**"
       - "packages/**"
+      - "infra/landing/nginx.conf"
       - ".github/workflows/landing.yml"
   pull_request:
     paths:
@@ -41,8 +42,7 @@ jobs:
           node-version: 22
           cache: pnpm
 
-      - name: install
-        run: pnpm install --frozen-lockfile
+      - run: pnpm install --frozen-lockfile
 
       - name: download bindings (from triggering module run)
         if: inputs.bindings_run_id != ''
@@ -53,17 +53,11 @@ jobs:
           run-id: ${{ inputs.bindings_run_id }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: typecheck
-        run: pnpm --filter @sastaspace/landing typecheck
+      - run: pnpm --filter @sastaspace/landing typecheck
+      - run: pnpm --filter @sastaspace/landing lint
+      - run: pnpm --filter @sastaspace/landing build
 
-      - name: lint
-        run: pnpm --filter @sastaspace/landing lint
-
-      - name: build
-        run: pnpm --filter @sastaspace/landing build
-
-      - name: upload static site
-        uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v4
         with:
           name: landing-out
           path: apps/landing/out
@@ -73,21 +67,43 @@ jobs:
     needs: build
     if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-24.04
-    permissions:
-      contents: read
-      deployments: write
     steps:
       - uses: actions/checkout@v4
+        with: { sparse-checkout: infra/landing }
 
-      - name: download static site
-        uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v4
         with:
           name: landing-out
-          path: apps/landing/out
+          path: out/
 
-      - name: deploy to cloudflare pages
-        uses: cloudflare/wrangler-action@v3
-        with:
-          apiToken: ${{ secrets.CF_API_TOKEN }}
-          accountId: ${{ secrets.CF_ACCOUNT_ID }}
-          command: pages deploy apps/landing/out --project-name=sastaspace --branch=${{ github.ref_name == 'main' && 'main' || github.ref_name }}
+      - name: deploy via tailscale + rsync
+        env:
+          DEPLOY_KEY: ${{ secrets.TAXILA_SSH_KEY }}
+          DEPLOY_HOST: ${{ secrets.TAXILA_SSH_HOST }}
+          DEPLOY_USER: ${{ secrets.TAXILA_SSH_USER }}
+        run: |
+          if [[ -z "$DEPLOY_KEY" || -z "$DEPLOY_HOST" || -z "$DEPLOY_USER" ]]; then
+            echo "::error::Missing TAXILA_SSH_{KEY,HOST,USER} secrets — see infra/README.md for setup"
+            exit 1
+          fi
+          mkdir -p ~/.ssh
+          echo "$DEPLOY_KEY" > ~/.ssh/id_deploy
+          chmod 600 ~/.ssh/id_deploy
+          ssh-keyscan -H "$DEPLOY_HOST" >> ~/.ssh/known_hosts 2>/dev/null
+
+          rsync -az --delete -e "ssh -i ~/.ssh/id_deploy" \
+            out/ "$DEPLOY_USER@$DEPLOY_HOST:~/sastaspace/infra/landing/out/"
+
+          # nginx serves the directory live; reload picks up the new files
+          ssh -i ~/.ssh/id_deploy "$DEPLOY_USER@$DEPLOY_HOST" \
+            'docker exec sastaspace-landing nginx -s reload'
+
+      - name: smoke test
+        run: |
+          for i in 1 2 3 4 5; do
+            code=$(curl -sS -o /dev/null -w "%{http_code}" -L https://sastaspace.com/)
+            echo "attempt $i: HTTP $code"
+            [[ "$code" == "200" ]] && exit 0
+            sleep 5
+          done
+          exit 1

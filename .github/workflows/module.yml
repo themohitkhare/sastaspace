@@ -25,26 +25,21 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: install rust
-        uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@stable
         with:
           targets: wasm32-unknown-unknown
           components: clippy, rustfmt
 
       - uses: Swatinem/rust-cache@v2
-        with:
-          workspaces: module
+        with: { workspaces: module }
 
-      - name: fmt
-        working-directory: module
+      - working-directory: module
         run: cargo fmt --all --check
 
-      - name: clippy
-        working-directory: module
+      - working-directory: module
         run: cargo clippy --target wasm32-unknown-unknown --all-targets -- -D warnings
 
-      - name: test
-        working-directory: module
+      - working-directory: module
         run: cargo test --all
 
   publish:
@@ -54,19 +49,18 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: install rust
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: wasm32-unknown-unknown
+      - uses: dtolnay/rust-toolchain@stable
+        with: { targets: wasm32-unknown-unknown }
 
       - uses: Swatinem/rust-cache@v2
-        with:
-          workspaces: module
+        with: { workspaces: module }
 
       - name: install spacetime cli
         run: |
           curl -sSf https://install.spacetimedb.com | sh -s -- --yes
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+          "$HOME/.local/bin/spacetime" version install 2.1.0
+          "$HOME/.local/bin/spacetime" version use 2.1.0
 
       - name: register prod server
         run: spacetime server add prod --url "$STDB_SERVER_URL" --no-fingerprint
@@ -76,9 +70,8 @@ jobs:
           SPACETIME_TOKEN: ${{ secrets.SPACETIME_TOKEN }}
         run: |
           if [[ -z "$SPACETIME_TOKEN" ]]; then
-            echo "::warning::SPACETIME_TOKEN not set — publish will be attempted anonymously"
+            echo "::warning::SPACETIME_TOKEN not set — anonymous publish (works only on first publish)"
           else
-            mkdir -p "$HOME/.config/spacetime"
             spacetime login --token "$SPACETIME_TOKEN"
           fi
 
@@ -86,7 +79,7 @@ jobs:
         run: |
           spacetime publish \
             --server prod \
-            --project-path module \
+            --module-path module \
             "$STDB_MODULE_NAME" \
             -y
 
@@ -95,10 +88,9 @@ jobs:
           spacetime generate \
             --lang typescript \
             --out-dir packages/stdb-bindings/src/generated \
-            --project-path module
+            --module-path module
 
-      - name: upload bindings artifact
-        uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v4
         with:
           name: stdb-bindings
           path: packages/stdb-bindings/src/generated
