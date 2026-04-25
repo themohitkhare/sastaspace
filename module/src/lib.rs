@@ -41,7 +41,14 @@ pub fn init(ctx: &ReducerContext) {
         "live", &["rss", "markdown"]);
 }
 
-fn seed_project(ctx: &ReducerContext, slug: &str, title: &str, blurb: &str, status: &str, tags: &[&str]) {
+fn seed_project(
+    ctx: &ReducerContext,
+    slug: &str,
+    title: &str,
+    blurb: &str,
+    status: &str,
+    tags: &[&str],
+) {
     if ctx.db.project().slug().find(slug.to_string()).is_some() {
         return;
     }
@@ -98,7 +105,14 @@ pub fn upsert_project(
     tags: Vec<String>,
     url: String,
 ) {
-    let row = Project { slug: slug.clone(), title, blurb, status, tags, url };
+    let row = Project {
+        slug: slug.clone(),
+        title,
+        blurb,
+        status,
+        tags,
+        url,
+    };
     if ctx.db.project().slug().find(slug).is_some() {
         ctx.db.project().slug().update(row);
     } else {

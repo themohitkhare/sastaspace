@@ -14,8 +14,9 @@ target
 .spacetime
 spacetime-data
 
-# Generated bindings (regenerated in CI; commit on intent)
-packages/stdb-bindings/src/generated
+# Generated bindings are tracked — they're code, they unblock fresh clones,
+# and CI regenerates+commits them. Keeping the per-package .gitignore in case
+# we ever want to re-flip this.
 
 # Env / secrets
 .env
