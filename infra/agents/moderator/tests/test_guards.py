@@ -40,8 +40,10 @@ def test_check_input_fails_closed_with_no_detector_configured(monkeypatch):
 
 
 def test_guard_result_is_frozen():
+    from dataclasses import FrozenInstanceError
+
     r = GuardResult(passed=True, reason="ok")
-    with pytest.raises(Exception):
+    with pytest.raises(FrozenInstanceError):
         r.passed = False  # type: ignore[misc]
 
 
