@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { render, screen, act } from "@testing-library/react";
+import { render, screen, act, fireEvent } from "@testing-library/react";
 
 type Comment = {
   id: number;
@@ -20,6 +20,11 @@ vi.mock("@/lib/comments", () => ({
     };
   },
   submitComment: vi.fn(),
+}));
+
+vi.mock("@/lib/auth", () => ({
+  subscribe: (fn: (s: null) => void) => { fn(null); return () => {}; },
+  getSession: () => null,
 }));
 
 import { Comments } from "@/components/Comments";
@@ -66,5 +71,55 @@ describe("Comments", () => {
     act(() => emit!(sample));
     act(() => emit!([]));
     expect(screen.getByText(/be the first/i)).toBeInTheDocument();
+  });
+});
+
+describe("Comments — pagination", () => {
+  const makeComments = (n: number): Comment[] =>
+    Array.from({ length: n }, (_, i) => ({
+      id: i + 1,
+      postSlug: "x",
+      authorName: `User${i + 1}`,
+      body: `Comment ${i + 1}`,
+      createdAt: Date.parse("2026-04-25T10:00:00Z") + i * 60_000,
+      status: "approved",
+    }));
+
+  it("shows all comments and no button when count ≤ 5", () => {
+    render(<Comments slug="x" />);
+    act(() => emit!(makeComments(5)));
+    expect(screen.getByText("User1")).toBeInTheDocument();
+    expect(screen.getByText("User5")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /older comment/i })).toBeNull();
+  });
+
+  it("shows last 5 and a button when count > 5", () => {
+    render(<Comments slug="x" />);
+    act(() => emit!(makeComments(8)));
+    // last 5: User4–User8
+    expect(screen.queryByText("User1")).toBeNull();
+    expect(screen.queryByText("User3")).toBeNull();
+    expect(screen.getByText("User4")).toBeInTheDocument();
+    expect(screen.getByText("User8")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /3 older comments/i })).toBeInTheDocument();
+  });
+
+  it("clicking show-older reveals all comments", () => {
+    render(<Comments slug="x" />);
+    act(() => emit!(makeComments(8)));
+    fireEvent.click(screen.getByRole("button", { name: /older comments/i }));
+    expect(screen.getByText("User1")).toBeInTheDocument();
+    expect(screen.getByText("User8")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /older comments/i })).toBeNull();
+  });
+
+  it("new real-time comment is always visible while collapsed", () => {
+    render(<Comments slug="x" />);
+    act(() => emit!(makeComments(5)));
+    // add a 6th comment — it should appear (last 5 now includes it)
+    act(() => emit!(makeComments(6)));
+    expect(screen.getByText("User6")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /1 older comment/i })).toBeInTheDocument();
+    expect(screen.queryByText("User1")).toBeNull();
   });
 });

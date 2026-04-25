@@ -5,10 +5,20 @@ import { subscribeComments, type Comment } from "@/lib/comments";
 import { CommentForm } from "./CommentForm";
 import styles from "./comments.module.css";
 
+const VISIBLE_COUNT = 5;
+
 export function Comments({ slug }: { slug: string }) {
   const [comments, setComments] = useState<readonly Comment[] | null>(null);
+  const [expanded, setExpanded] = useState(false);
 
   useEffect(() => subscribeComments(slug, (c) => setComments(c)), [slug]);
+
+  const hiddenCount = comments && comments.length > VISIBLE_COUNT && !expanded
+    ? comments.length - VISIBLE_COUNT
+    : 0;
+  const visible = comments && hiddenCount > 0
+    ? comments.slice(-VISIBLE_COUNT)
+    : comments;
 
   return (
     <section className={styles.section} aria-label="Comments">
@@ -23,7 +33,17 @@ export function Comments({ slug }: { slug: string }) {
         </div>
       ) : (
         <ul className={styles.list}>
-          {comments.map((c) => (
+          {hiddenCount > 0 && (
+            <li className={styles.showOlderItem}>
+              <button
+                className={styles.showOlder}
+                onClick={() => setExpanded(true)}
+              >
+                ↑ {hiddenCount} older comment{hiddenCount !== 1 ? "s" : ""}
+              </button>
+            </li>
+          )}
+          {visible!.map((c) => (
             <li key={String(c.id)}>
               <div className={styles.commentMeta}>
                 <span className={styles.commentName}>{c.authorName}</span>

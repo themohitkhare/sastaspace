@@ -31,6 +31,24 @@
   padding: 16px 0;
   border-bottom: 1px solid var(--brand-dust-40);
 }
+.showOlderItem {
+  padding: 0;
+}
+.showOlder {
+  display: block;
+  width: 100%;
+  padding: 12px 0;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  text-align: center;
+  background: transparent;
+  border: none;
+  color: var(--brand-sasta-text);
+  cursor: pointer;
+  transition: color var(--dur-std) var(--ease-std);
+}
+.showOlder:hover { color: var(--brand-rust); }
 .commentMeta {
   font-family: var(--font-mono);
   font-size: 12px;
