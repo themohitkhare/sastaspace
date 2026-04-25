@@ -10,7 +10,7 @@ pub const WORDS: &[&str] = &[
     "unbind", "vortex", "wither", "expose", "zealot",
     "abrupt", "beacon", "candor", "defiant", "eclipse",
     "flicker", "granite", "hostile", "igneous", "justice",
-    "kinesis", "liberate", "monarch", "nuclear", "oblique",
+    "kinesis", "liberate", "monarch", "nuclear", "obscure",
     "phantom", "quantum", "rapture", "sanctum", "tempest",
     "unknown", "vagrant", "warfare", "xenolith", "yeoman",
     "abandon", "barrage", "crusade", "destiny", "eternal",
