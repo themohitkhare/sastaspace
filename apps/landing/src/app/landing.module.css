@@ -55,11 +55,17 @@
   font-size: 13px;
   align-items: center;
 }
-.navList a {
+.navItem {
   color: var(--brand-ink);
   border-bottom: none;
+  padding-bottom: 4px;
+  transition: color var(--dur-std) var(--ease-std), border-bottom-color var(--dur-std) var(--ease-std);
 }
-.navList a:hover { color: var(--brand-sasta-text); }
+.navItem:hover { color: var(--brand-sasta-text); }
+.navItemActive {
+  color: var(--brand-ink);
+  border-bottom: 1px solid var(--brand-ink);
+}
 
 /* hero */
 .hero { padding: 72px 0 48px; }

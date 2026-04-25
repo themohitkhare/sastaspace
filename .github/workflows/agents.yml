@@ -1,0 +1,80 @@
+name: agents
+
+# Tests + builds + deploys for the Python services in infra/agents/.
+# Runs on the self-hosted runner so docker build can write to taxila's
+# socket directly + `docker compose up -d` lands the new image.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "infra/agents/**"
+      - "infra/docker-compose.yml"
+      - ".github/workflows/agents.yml"
+  pull_request:
+    paths:
+      - "infra/agents/**"
+  workflow_dispatch:
+
+concurrency:
+  group: agents-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  moderator:
+    runs-on: [self-hosted, Linux]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: lint + test
+        working-directory: infra/agents/moderator
+        run: |
+          # Reuse the venv between runs to skip pip install when nothing
+          # changed in pyproject.toml. Self-hosted runners persist FS,
+          # so this is just a directory cache.
+          if [[ ! -d .venv ]] || [[ pyproject.toml -nt .venv/pyvenv.cfg ]]; then
+            rm -rf .venv
+            python3.12 -m venv .venv
+            . .venv/bin/activate
+            pip install -q --upgrade pip
+            pip install -q -e '.[dev]'
+          fi
+          . .venv/bin/activate
+          ruff check src tests
+          pytest
+
+      - name: build container
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+        working-directory: infra
+        run: docker compose build moderator
+
+      - name: deploy
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+        working-directory: infra
+        run: |
+          # Refresh the .env if the SPACETIME_TOKEN secret has rotated
+          # (no-op when unchanged — tokenStateChanges only on rotation).
+          if [[ -n "$SPACETIME_TOKEN" ]]; then
+            install -m 600 /dev/null agents/moderator/.env
+            echo "SPACETIME_TOKEN=$SPACETIME_TOKEN" > agents/moderator/.env
+          fi
+          docker compose up -d --force-recreate moderator
+          sleep 6
+          docker compose ps moderator
+        env:
+          SPACETIME_TOKEN: ${{ secrets.SPACETIME_TOKEN }}
+
+      - name: smoke — moderator is polling
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+        working-directory: infra
+        run: |
+          # The moderator logs an HTTP request to /v1/database/.../sql every
+          # POLL_SECONDS. If we see at least one in 10s, it's running cleanly.
+          sleep 4
+          if docker compose logs --tail=20 moderator 2>&1 | grep -q "POST.*sql.*200"; then
+            echo "moderator is alive and polling"
+          else
+            echo "::error::moderator is not polling — recent logs:"
+            docker compose logs --tail=30 moderator
+            exit 1
+          fi

@@ -10,6 +10,7 @@ import time
 from collections.abc import Iterator
 
 from .classifier import LlamaGuardClassifier, Verdict
+from .guards import configure_default_detector
 from .stdb import PendingComment, SpacetimeClient
 
 log = logging.getLogger("sastaspace.moderator")
@@ -107,6 +108,10 @@ def main() -> None:
         model,
         sleep_seconds,
     )
+
+    # Set up the injection detector (Layer 2 — see GUARDRAILS.md). Same
+    # Ollama instance, same model — one inference engine to operate.
+    configure_default_detector(host=ollama_host, model=model)
 
     classifier = LlamaGuardClassifier(model_id=model, ollama_host=ollama_host)
     with SpacetimeClient(base_url, database, owner_token) as client:

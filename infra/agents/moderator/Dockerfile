@@ -1,5 +1,7 @@
-# Slim image. Agno + httpx + ollama-py — no native compilation needed.
-FROM python:3.13-slim
+# Pinned to 3.12 because llm-guard's prompt-injection scanner currently
+# tops out at <3.13 (transformers + tokenizers compat). Revisit when the
+# upstream catches up.
+FROM python:3.12-slim
 
 WORKDIR /app
 

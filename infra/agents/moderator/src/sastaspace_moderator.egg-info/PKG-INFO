@@ -2,7 +2,7 @@ Metadata-Version: 2.4
 Name: sastaspace-moderator
 Version: 0.1.0
 Summary: Comment moderator: Agno + Ollama llama-guard3:1b. Polls SpacetimeDB for pending comments and classifies them.
-Requires-Python: >=3.13
+Requires-Python: <3.13,>=3.12
 Requires-Dist: agno<3.0,>=2.5.0
 Requires-Dist: openai>=1.50
 Requires-Dist: httpx>=0.28
