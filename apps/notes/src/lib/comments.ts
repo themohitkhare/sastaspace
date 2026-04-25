@@ -2,8 +2,9 @@
 // rows surface to readers; pending/flagged/rejected stay invisible until
 // the moderator (or owner override) flips them.
 //
-// submitComment dispatches to either anon or signed-in flow based on
-// whether a session JWT is present in localStorage.
+// submitComment requires a session — anonymous posting was removed to
+// cut spam. The only reducer is `submit_user_comment`, which the module
+// rejects unless the caller has a User row.
 
 import { getSession } from "./auth";
 import { getConnection, STDB_MODULE, STDB_URI } from "./spacetime";
@@ -99,32 +100,14 @@ function escapeSql(s: string): string {
   return s.replace(/['\\]/g, "");
 }
 
-/** Submit a comment. If signed in, uses submit_user_comment under the
- *  user's own Identity (their JWT); otherwise falls back to anon flow.
- *
- *  Note: the signed-in flow opens a SECOND stdb connection authenticated
- *  with the user's JWT, leaving the page's primary anonymous connection
- *  alone for read subscriptions. The token is short-lived and used once
- *  per submit; we don't keep it open after.
- */
-export async function submitComment(
-  slug: string,
-  name: string,
-  body: string,
-): Promise<void> {
+/** Submit a comment. Sign-in is required — the signed-in flow opens a
+ *  short-lived stdb connection authenticated with the user's JWT and
+ *  calls submit_user_comment, leaving the page's anon connection alone
+ *  for read subscriptions. */
+export async function submitComment(slug: string, body: string): Promise<void> {
   const session = getSession();
-  if (session) {
-    await submitAsUser(slug, body, session.token);
-    return;
-  }
-  const conn = await getConnection();
-  if (!conn) throw new Error("not connected");
-  const fn =
-    conn.reducers.submitAnonComment ?? conn.reducers.submit_anon_comment;
-  if (!fn) throw new Error("submit_anon_comment reducer missing");
-  // SpacetimeDB SDK 2.1: reducers take a single object of named params.
-  // Reducer schema is {postSlug, authorName, body}.
-  fn({ postSlug: slug, authorName: name, body });
+  if (!session) throw new Error("sign in to comment");
+  await submitAsUser(slug, body, session.token);
 }
 
 async function submitAsUser(slug: string, body: string, token: string): Promise<void> {

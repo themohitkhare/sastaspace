@@ -21,7 +21,7 @@ pub struct Presence {
 
 /// Comments on workshop notes (notes.sastaspace.com posts).
 ///
-/// Anyone can `submit_anon_comment`; new rows land with `status="pending"`.
+/// Comments are signed-in only — the submitter must have a User row.
 /// The Agno+Ollama moderator (infra/agents/moderator) subscribes to pending
 /// rows and calls `set_comment_status` with the owner identity.
 ///
@@ -45,8 +45,6 @@ pub struct Comment {
 }
 
 const COMMENT_STATUSES: &[&str] = &["pending", "approved", "flagged", "rejected"];
-const RATE_LIMIT_WINDOW_MICROS: i64 = 5 * 60 * 1_000_000; // 5 min
-const RATE_LIMIT_MAX: usize = 5;
 /// Magic-link tokens are valid for 15 minutes after issue.
 const AUTH_TOKEN_TTL_MICROS: i64 = 15 * 60 * 1_000_000;
 
@@ -176,61 +174,6 @@ pub fn delete_project(ctx: &ReducerContext, slug: String) -> Result<(), String> 
     Ok(())
 }
 
-/// Public reducer: anyone can submit a comment. Lands as `pending`; the
-/// moderator agent transitions it to `approved` or `flagged` within a few
-/// seconds. Rate-limited per Identity (5 per 5 minutes).
-#[reducer]
-pub fn submit_anon_comment(
-    ctx: &ReducerContext,
-    post_slug: String,
-    author_name: String,
-    body: String,
-) -> Result<(), String> {
-    let name = author_name.trim();
-    let body = body.trim();
-    if post_slug.is_empty() {
-        return Err("post_slug required".into());
-    }
-    if name.len() > 64 {
-        return Err("author_name too long (max 64 chars)".into());
-    }
-    if body.len() < 4 {
-        return Err("body too short (min 4 chars)".into());
-    }
-    if body.len() > 4000 {
-        return Err("body too long (max 4000 chars)".into());
-    }
-
-    let now = ctx.timestamp;
-    let cutoff_micros = now
-        .to_micros_since_unix_epoch()
-        .saturating_sub(RATE_LIMIT_WINDOW_MICROS);
-    let recent = ctx
-        .db
-        .comment()
-        .submitter()
-        .filter(ctx.sender())
-        .filter(|c| c.created_at.to_micros_since_unix_epoch() >= cutoff_micros)
-        .count();
-    if recent >= RATE_LIMIT_MAX {
-        return Err(format!(
-            "rate limit: max {RATE_LIMIT_MAX} comments per 5min"
-        ));
-    }
-
-    let display = if name.is_empty() { "visitor" } else { name };
-    ctx.db.comment().insert(Comment {
-        id: 0, // auto_inc
-        post_slug,
-        author_name: display.to_string(),
-        body: body.to_string(),
-        created_at: now,
-        status: "pending".to_string(),
-        submitter: ctx.sender(),
-    });
-    Ok(())
-}
-
 /// Owner-only: transition a comment's status. Used by the moderator agent
 /// to flip pending → approved/flagged, and by the admin queue to override.
 #[reducer]
@@ -265,14 +208,10 @@ pub fn delete_comment(ctx: &ReducerContext, id: u64) -> Result<(), String> {
     Ok(())
 }
 
-/// Public reducer: signed-in user posts a comment. Same body validation
-/// as anon, but skips author_name (looked up from User row) and skips
-/// the rate limit (logged-in users are already cost-controlled by the
-/// magic-link friction).
-///
-/// The caller's Identity must match a `User` row — anonymous calls and
-/// strangers fail closed. The display_name comes from the User table,
-/// so a logged-in user can't impersonate someone else's name.
+/// Sole comment-submit reducer: caller must be a registered user.
+/// Anonymous identities and strangers fail closed. The display_name
+/// comes from the User table, so users can't impersonate each other.
+/// Magic-link friction (15-min token, real email) handles rate-limiting.
 #[reducer]
 pub fn submit_user_comment(
     ctx: &ReducerContext,
@@ -444,12 +383,6 @@ mod tests {
         assert!(COMMENT_STATUSES.contains(&"approved"));
         assert!(COMMENT_STATUSES.contains(&"flagged"));
         assert!(COMMENT_STATUSES.contains(&"rejected"));
-    }
-
-    #[test]
-    fn rate_limit_window_is_five_minutes() {
-        assert_eq!(RATE_LIMIT_WINDOW_MICROS, 5 * 60 * 1_000_000);
-        assert_eq!(RATE_LIMIT_MAX, 5);
     }
 
     #[test]

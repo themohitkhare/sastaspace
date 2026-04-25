@@ -5,6 +5,11 @@ import { subscribe, type Session } from "@/lib/auth";
 import { submitComment } from "@/lib/comments";
 import styles from "./comments.module.css";
 
+function openSignInModal() {
+  // AuthMenu listens for this event and pops its modal.
+  window.dispatchEvent(new CustomEvent("sastaspace:open-signin"));
+}
+
 type State =
   | { kind: "idle" }
   | { kind: "submitting" }
@@ -13,7 +18,6 @@ type State =
 
 export function CommentForm({ slug }: { slug: string }) {
   const [session, setSession] = useState<Session | null>(null);
-  const [name, setName] = useState("");
   const [body, setBody] = useState("");
   const [state, setState] = useState<State>({ kind: "idle" });
 
@@ -34,9 +38,7 @@ export function CommentForm({ slug }: { slug: string }) {
     }
     setState({ kind: "submitting" });
     try {
-      // For signed-in users, name is ignored — author_name is sourced from
-      // the User row server-side, so signed-in users can't impersonate.
-      await submitComment(slug, name.trim(), trimmed);
+      await submitComment(slug, trimmed);
       setBody("");
       setState({ kind: "queued" });
     } catch (err) {
@@ -62,29 +64,30 @@ export function CommentForm({ slug }: { slug: string }) {
     );
   }
 
+  if (!session) {
+    return (
+      <div className={styles.gate}>
+        <p>
+          Sign in to leave a comment. We use a one-click email link — no
+          password — so the moderator queue stays clean and you keep your
+          name across visits.
+        </p>
+        <button
+          type="button"
+          className={styles.submit}
+          onClick={openSignInModal}
+        >
+          sign in to comment →
+        </button>
+      </div>
+    );
+  }
+
   return (
     <form className={styles.form} onSubmit={onSubmit}>
-      {session ? (
-        <div className={styles.signedInNote}>
-          posting as <strong>{session.display_name}</strong>
-        </div>
-      ) : (
-        <div className={styles.formRow}>
-          <label className={styles.label} htmlFor="cf-name">
-            name <span className={styles.optional}>(optional · sign in for a persistent name)</span>
-          </label>
-          <input
-            id="cf-name"
-            className={styles.input}
-            type="text"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            maxLength={64}
-            placeholder="visitor"
-            autoComplete="off"
-          />
-        </div>
-      )}
+      <div className={styles.signedInNote}>
+        posting as <strong>{session.display_name}</strong>
+      </div>
       <div className={styles.formRow}>
         <label className={styles.label} htmlFor="cf-body">
           comment

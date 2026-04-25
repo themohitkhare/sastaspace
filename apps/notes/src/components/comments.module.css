@@ -65,6 +65,23 @@
   letter-spacing: 0.04em;
 }
 
+.gate {
+  background: var(--brand-paper-lifted);
+  border: 1px solid var(--brand-dust-40);
+  border-radius: var(--radius-lg);
+  padding: 22px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  align-items: flex-start;
+}
+.gate p {
+  margin: 0;
+  font-size: 14px;
+  color: var(--brand-muted);
+  line-height: 1.5;
+}
+
 .signedInNote {
   font-family: var(--font-mono);
   font-size: 12px;

@@ -57,10 +57,7 @@ export type StdbConn = {
       onUpdate?: (fn: () => void) => void;
     };
   };
-  reducers: {
-    submitAnonComment?: (params: { postSlug: string; authorName: string; body: string }) => void;
-    submit_anon_comment?: (params: { postSlug: string; authorName: string; body: string }) => void;
-  };
+  reducers: Record<string, unknown>;
   subscriptionBuilder: () => {
     onApplied: (fn: () => void) => any;
     subscribe: (q: string) => unknown;

@@ -36,6 +36,15 @@ export function AuthMenu() {
     return () => window.removeEventListener("keydown", onKey);
   }, [modal.kind]);
 
+  // Other components (e.g. CommentForm) can pop the sign-in modal by
+  // dispatching a `sastaspace:open-signin` event — avoids prop-drilling
+  // a global opener through unrelated layout components.
+  useEffect(() => {
+    function open() { setModal({ kind: "open" }); }
+    window.addEventListener("sastaspace:open-signin", open);
+    return () => window.removeEventListener("sastaspace:open-signin", open);
+  }, []);
+
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     const value = email.trim().toLowerCase();
