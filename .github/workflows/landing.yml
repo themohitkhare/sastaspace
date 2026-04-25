@@ -100,11 +100,25 @@ jobs:
           name: landing-out
           path: out/
 
-      - name: rsync + nginx reload
+      - name: rsync site + sync nginx config (landing + notes share security_headers.conf)
         run: |
           mkdir -p "$LANDING_OUT_DIR"
           rsync -a --delete out/ "$LANDING_OUT_DIR/"
+
+          # Both nginx containers bind-mount infra/landing/security_headers.conf
+          # and infra/landing/nginx.conf as :ro from the host. We update those
+          # in-place so a `nginx -s reload` picks them up. Without this, CSP /
+          # nginx.conf changes in the repo never reach prod even though the
+          # containers will happily reload the (unchanged) config.
+          install -m 644 infra/landing/security_headers.conf \
+            /home/mkhare/sastaspace/infra/landing/security_headers.conf
+          install -m 644 infra/landing/nginx.conf \
+            /home/mkhare/sastaspace/infra/landing/nginx.conf
+
           docker exec sastaspace-landing nginx -s reload
+          # The notes container also includes security_headers.conf; reload it
+          # too so any CSP / cache header change lands across both surfaces.
+          docker exec sastaspace-notes nginx -s reload
 
       - name: smoke test
         run: |
