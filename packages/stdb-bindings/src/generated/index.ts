@@ -34,13 +34,17 @@ import {
 } from "spacetimedb";
 
 // Import all reducer arg schemas
+import DeleteCommentReducer from "./delete_comment_reducer";
 import DeleteProjectReducer from "./delete_project_reducer";
 import HeartbeatReducer from "./heartbeat_reducer";
+import SetCommentStatusReducer from "./set_comment_status_reducer";
+import SubmitAnonCommentReducer from "./submit_anon_comment_reducer";
 import UpsertProjectReducer from "./upsert_project_reducer";
 
 // Import all procedure arg schemas
 
 // Import all table schema definitions
+import CommentRow from "./comment_table";
 import PresenceRow from "./presence_table";
 import ProjectRow from "./project_table";
 
@@ -48,6 +52,23 @@ import ProjectRow from "./project_table";
 
 /** The schema information for all tables in this module. This is defined the same was as the tables would have been defined in the server. */
 const tablesSchema = __schema({
+  comment: __table({
+    name: 'comment',
+    indexes: [
+      { accessor: 'id', name: 'comment_id_idx_btree', algorithm: 'btree', columns: [
+        'id',
+      ] },
+      { accessor: 'post_slug', name: 'comment_post_slug_idx_btree', algorithm: 'btree', columns: [
+        'postSlug',
+      ] },
+      { accessor: 'submitter', name: 'comment_submitter_idx_btree', algorithm: 'btree', columns: [
+        'submitter',
+      ] },
+    ],
+    constraints: [
+      { name: 'comment_id_key', constraint: 'unique', columns: ['id'] },
+    ],
+  }, CommentRow),
   presence: __table({
     name: 'presence',
     indexes: [
@@ -74,8 +95,11 @@ const tablesSchema = __schema({
 
 /** The schema information for all reducers in this module. This is defined the same way as the reducers would have been defined in the server, except the body of the reducer is omitted in code generation. */
 const reducersSchema = __reducers(
+  __reducerSchema("delete_comment", DeleteCommentReducer),
   __reducerSchema("delete_project", DeleteProjectReducer),
   __reducerSchema("heartbeat", HeartbeatReducer),
+  __reducerSchema("set_comment_status", SetCommentStatusReducer),
+  __reducerSchema("submit_anon_comment", SubmitAnonCommentReducer),
   __reducerSchema("upsert_project", UpsertProjectReducer),
 );
 

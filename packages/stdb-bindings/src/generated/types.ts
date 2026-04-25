@@ -10,6 +10,17 @@ import {
   type Infer as __Infer,
 } from "spacetimedb";
 
+export const Comment = __t.object("Comment", {
+  id: __t.u64(),
+  postSlug: __t.string(),
+  authorName: __t.string(),
+  body: __t.string(),
+  createdAt: __t.timestamp(),
+  status: __t.string(),
+  submitter: __t.identity(),
+});
+export type Comment = __Infer<typeof Comment>;
+
 export const Presence = __t.object("Presence", {
   identity: __t.identity(),
   joinedAt: __t.timestamp(),

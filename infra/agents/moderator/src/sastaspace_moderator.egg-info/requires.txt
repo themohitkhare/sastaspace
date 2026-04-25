@@ -1,0 +1,12 @@
+agno<3.0,>=2.5.0
+openai>=1.50
+httpx>=0.28
+ollama>=0.5
+tenacity>=9.0
+
+[dev]
+pytest>=8.3
+pytest-asyncio>=0.24
+pytest-cov>=6.0
+respx>=0.21
+ruff>=0.8

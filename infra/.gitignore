@@ -1,3 +1,6 @@
 keys/
 data/
 landing/out/
+notes/out/
+agents/moderator/.env
+agents/moderator/.venv/

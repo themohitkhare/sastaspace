@@ -1,0 +1,14 @@
+README.md
+pyproject.toml
+src/sastaspace_moderator/__init__.py
+src/sastaspace_moderator/classifier.py
+src/sastaspace_moderator/main.py
+src/sastaspace_moderator/stdb.py
+src/sastaspace_moderator.egg-info/PKG-INFO
+src/sastaspace_moderator.egg-info/SOURCES.txt
+src/sastaspace_moderator.egg-info/dependency_links.txt
+src/sastaspace_moderator.egg-info/requires.txt
+src/sastaspace_moderator.egg-info/top_level.txt
+tests/test_classifier.py
+tests/test_main.py
+tests/test_stdb.py

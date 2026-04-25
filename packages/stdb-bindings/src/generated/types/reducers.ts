@@ -6,11 +6,17 @@
 import { type Infer as __Infer } from "spacetimedb";
 
 // Import all reducer arg schemas
+import DeleteCommentReducer from "../delete_comment_reducer";
 import DeleteProjectReducer from "../delete_project_reducer";
 import HeartbeatReducer from "../heartbeat_reducer";
+import SetCommentStatusReducer from "../set_comment_status_reducer";
+import SubmitAnonCommentReducer from "../submit_anon_comment_reducer";
 import UpsertProjectReducer from "../upsert_project_reducer";
 
+export type DeleteCommentParams = __Infer<typeof DeleteCommentReducer>;
 export type DeleteProjectParams = __Infer<typeof DeleteProjectReducer>;
 export type HeartbeatParams = __Infer<typeof HeartbeatReducer>;
+export type SetCommentStatusParams = __Infer<typeof SetCommentStatusReducer>;
+export type SubmitAnonCommentParams = __Infer<typeof SubmitAnonCommentReducer>;
 export type UpsertProjectParams = __Infer<typeof UpsertProjectReducer>;
 
