@@ -108,8 +108,10 @@ class SpacetimeClient:
 
     @retry(**_RETRY)
     def register_user(self, identity_hex: str, email: str, display_name: str) -> None:
-        # SpacetimeDB Identity is serialised as hex string in REST args.
-        self._call_reducer("register_user", [identity_hex, email, display_name])
+        # SpacetimeDB REST encodes Identity args as {"__identity__": "0x<hex>"}.
+        # Verified by probing the live reducer; plain strings get rejected.
+        ident = identity_hex if identity_hex.startswith("0x") else f"0x{identity_hex}"
+        self._call_reducer("register_user", [{"__identity__": ident}, email, display_name])
 
     @retry(stop=stop_after_attempt(3), wait=wait_exponential(min=0.5, max=4))
     def issue_identity(self) -> IssuedIdentity:

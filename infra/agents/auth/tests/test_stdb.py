@@ -45,9 +45,30 @@ def test_register_user_passes_identity_email_displayname(monkeypatch):
     )
     c = SpacetimeClient("http://stub", "sastaspace", "tok")
     c.register_user("c20deadbeef", "u@e.com", "User Name")
-    assert "c20deadbeef" in captured["content"]
+    # Identity is wrapped in {"__identity__":"0x..."} per SpacetimeDB REST format
+    assert "__identity__" in captured["content"]
+    assert "0xc20deadbeef" in captured["content"]
     assert "u@e.com" in captured["content"]
     assert "User Name" in captured["content"]
+
+
+def test_register_user_adds_0x_prefix_when_missing(monkeypatch):
+    captured = {}
+    monkeypatch.setattr(
+        httpx.Client,
+        "post",
+        lambda self, url, content=None, **_kw: (captured.update(content=content) or
+            httpx.Response(200, request=httpx.Request("POST", url))),
+    )
+    c = SpacetimeClient("http://stub", "sastaspace", "tok")
+    # Without 0x prefix
+    c.register_user("c20abc123", "x@y.com", "x")
+    assert "0xc20abc123" in captured["content"]
+    # With 0x prefix already (no double-prefix)
+    captured.clear()
+    c.register_user("0xc20abc456", "x@y.com", "x")
+    assert "0x0xc20abc" not in captured["content"]
+    assert "0xc20abc456" in captured["content"]
 
 
 def test_issue_identity_parses_response(monkeypatch):
