@@ -46,3 +46,5 @@ pnpm-debug.log*
 *.egg-info/
 *.tsbuildinfo
 *.pyc
+graphify-out/
+.claude/

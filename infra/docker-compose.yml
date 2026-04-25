@@ -90,10 +90,10 @@ services:
 
   # Magic-link auth FastAPI service. Tunnel routes auth.sastaspace.com →
   # 127.0.0.1:3130. Needs SPACETIME_TOKEN + RESEND_API_KEY in
-  # ./agents/auth/.env on the host (gitignored).
+  # ../services/auth/.env on the host (gitignored).
   auth:
     build:
-      context: ./agents/auth
+      context: ../services/auth
       dockerfile: Dockerfile
     image: sastaspace-auth:local
     container_name: sastaspace-auth
@@ -107,7 +107,7 @@ services:
     user: "1000:1000"
     network_mode: host  # so 127.0.0.1:3100 (stdb) reaches the host loopback
     env_file:
-      - ./agents/auth/.env
+      - ../services/auth/.env
     environment:
       - PORT=3130  # bind directly on the host's loopback at the public-facing port
       - STDB_HTTP_URL=http://127.0.0.1:3100
