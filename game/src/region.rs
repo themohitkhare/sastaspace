@@ -1,4 +1,7 @@
-use spacetimedb::{table, ReducerContext, Table};
+use spacetimedb::{reducer, table, ReducerContext, ScheduleAt, Table};
+use std::time::Duration;
+use crate::war::global_war;
+use crate::player::player;
 
 #[table(accessor = region, public)]
 pub struct Region {
@@ -80,6 +83,84 @@ pub fn reset_legion_damage(region: &mut Region) {
 
 pub fn effective_regen(base_regen: u64, active_wardens: u32) -> u64 {
     if active_wardens >= 3 { base_regen / 2 } else { base_regen }
+}
+
+#[table(accessor = region_tick_schedule, scheduled(region_tick))]
+pub struct RegionTickSchedule {
+    #[primary_key]
+    #[auto_inc]
+    pub scheduled_id: u64,
+    pub scheduled_at: ScheduleAt,
+}
+
+#[reducer]
+pub fn region_tick(ctx: &ReducerContext, _arg: RegionTickSchedule) -> Result<(), String> {
+    let regions: Vec<Region> = ctx.db.region().iter().collect();
+
+    for mut region in regions {
+        if region.controlling_legion != -1 {
+            continue;
+        }
+
+        if region.enemy_hp == 0 {
+            let Some(winner) = winning_legion(&region) else {
+                continue;
+            };
+            region.controlling_legion = winner as i8;
+            reset_legion_damage(&mut region);
+            ctx.db.region().id().update(region);
+
+            if let Some(mut war) = ctx.db.global_war().id().find(1) {
+                war.liberated_territories += 1;
+                war.enemy_territories = war.enemy_territories.saturating_sub(1);
+                let liberated = war.liberated_territories;
+                ctx.db.global_war().id().update(war);
+
+                if liberated >= 20 {
+                    end_season(ctx);
+                    return Ok(());
+                }
+            }
+        } else {
+            let regen = effective_regen(region.regen_rate, region.active_wardens);
+            region.enemy_hp = (region.enemy_hp + regen).min(region.enemy_max_hp);
+            ctx.db.region().id().update(region);
+        }
+    }
+
+    Ok(())
+}
+
+pub fn end_season(ctx: &ReducerContext) {
+    if let Some(mut war) = ctx.db.global_war().id().find(1) {
+        war.season += 1;
+        war.liberated_territories = 0;
+        war.enemy_territories = 25;
+        war.season_start = ctx.timestamp;
+        ctx.db.global_war().id().update(war);
+    }
+
+    let regions: Vec<Region> = ctx.db.region().iter().collect();
+    for mut region in regions {
+        region.controlling_legion = -1;
+        region.enemy_hp = region.enemy_max_hp;
+        reset_legion_damage(&mut region);
+        ctx.db.region().id().update(region);
+    }
+
+    let players: Vec<crate::player::Player> = ctx.db.player().iter().collect();
+    for mut player in players {
+        player.season_damage = 0;
+        ctx.db.player().identity().update(player);
+    }
+}
+
+// Initialise the region_tick schedule (called from lib.rs init).
+pub fn init_region_tick_schedule(ctx: &ReducerContext) {
+    ctx.db.region_tick_schedule().insert(RegionTickSchedule {
+        scheduled_id: 0,
+        scheduled_at: ScheduleAt::from(Duration::from_secs(60)),
+    });
 }
 
 #[cfg(test)]
