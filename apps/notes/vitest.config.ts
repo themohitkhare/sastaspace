@@ -13,9 +13,11 @@ export default defineConfig({
       include: ["src/**/*.{ts,tsx}"],
       exclude: [
         "src/app/layout.tsx",
-        "src/lib/spacetime.ts",
-        "src/lib/comments.ts",
-        "src/lib/posts.ts", // node fs read at build, not unit-tested
+        "src/app/page.tsx", // server component — fs read at build, asserted by build success
+        "src/app/[slug]/page.tsx", // server component — MDX render at build
+        "src/lib/spacetime.ts", // dynamic SDK glue
+        "src/lib/comments.ts", // dynamic SDK glue
+        "src/lib/posts.ts", // node fs read at build
       ],
       thresholds: {
         lines: 60,
