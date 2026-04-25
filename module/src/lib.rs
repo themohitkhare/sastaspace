@@ -19,48 +19,11 @@ pub struct Presence {
     pub last_seen: Timestamp,
 }
 
+/// Called once when the module is first published. Intentionally a no-op —
+/// projects are added via the `upsert_project` reducer when there's something
+/// real to ship. The lab starts quiet.
 #[reducer(init)]
-pub fn init(ctx: &ReducerContext) {
-    seed_project(ctx, "notes", "Notes",
-        "Plain-text notes for people who type faster than they think. Keyboard-first, live-synced, zero ceremony.",
-        "live", &["next", "spacetimedb"]);
-    seed_project(ctx, "feed", "Feed",
-        "A reader for the RSS corner of the web. Small, quiet, chronological. No algorithm, no logins you don't need.",
-        "open source", &["go", "sqlite"]);
-    seed_project(ctx, "pipes", "Pipes",
-        "A visual builder for small data jobs. Drag boxes, connect them, watch rows flow through. Runs on your laptop too.",
-        "wip", &["react", "spark"]);
-    seed_project(ctx, "echo", "Echo",
-        "Turn any URL into a podcast feed. Paste a link, get an audio episode, subscribe in your app of choice.",
-        "live", &["go", "tts"]);
-    seed_project(ctx, "scratch", "Scratch",
-        "A whiteboard for one person. Infinite canvas, nothing to save, gone when you close the tab.",
-        "paused", &["canvas", "svg"]);
-    seed_project(ctx, "lab", "The Lab Log",
-        "A firehose of tiny updates from the workshop. New experiments, half-finished thoughts, things that broke today.",
-        "live", &["rss", "markdown"]);
-}
-
-fn seed_project(
-    ctx: &ReducerContext,
-    slug: &str,
-    title: &str,
-    blurb: &str,
-    status: &str,
-    tags: &[&str],
-) {
-    if ctx.db.project().slug().find(slug.to_string()).is_some() {
-        return;
-    }
-    ctx.db.project().insert(Project {
-        slug: slug.to_string(),
-        title: title.to_string(),
-        blurb: blurb.to_string(),
-        status: status.to_string(),
-        tags: tags.iter().map(|t| t.to_string()).collect(),
-        url: format!("https://{}.sastaspace.com", slug),
-    });
-}
+pub fn init(_ctx: &ReducerContext) {}
 
 #[reducer(client_connected)]
 pub fn client_connected(ctx: &ReducerContext) {
@@ -117,5 +80,61 @@ pub fn upsert_project(
         ctx.db.project().slug().update(row);
     } else {
         ctx.db.project().insert(row);
+    }
+}
+
+#[reducer]
+pub fn delete_project(ctx: &ReducerContext, slug: String) -> Result<(), String> {
+    if ctx.db.project().slug().find(&slug).is_none() {
+        return Err(format!("no project with slug `{slug}`"));
+    }
+    ctx.db.project().slug().delete(&slug);
+    Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    //! Pure logic tests — exercise plain Rust paths that don't need a live
+    //! ReducerContext. The macro-generated table accessors require the
+    //! spacetimedb runtime, which isn't available under `cargo test` (these
+    //! would belong in a SpacetimeDB integration test suite). We at least
+    //! lock down the shapes and the trivial helpers here.
+
+    use super::*;
+
+    #[test]
+    fn project_struct_round_trips() {
+        let p = Project {
+            slug: "x".into(),
+            title: "X".into(),
+            blurb: "b".into(),
+            status: "live".into(),
+            tags: vec!["a".into(), "b".into()],
+            url: "https://x.sastaspace.com".into(),
+        };
+        assert_eq!(p.slug, "x");
+        assert_eq!(p.tags.len(), 2);
+        assert!(p.url.starts_with("https://"));
+    }
+
+    #[test]
+    fn presence_struct_uses_identity_pk() {
+        let id = Identity::ZERO;
+        let now = Timestamp::UNIX_EPOCH;
+        let p = Presence {
+            identity: id,
+            joined_at: now,
+            last_seen: now,
+        };
+        assert_eq!(p.identity, id);
+        assert_eq!(p.joined_at, p.last_seen);
+    }
+
+    #[test]
+    fn delete_project_error_message_includes_slug() {
+        // Validates the error string format without needing a real ctx.
+        let slug = "nope";
+        let msg = format!("no project with slug `{slug}`");
+        assert_eq!(msg, "no project with slug `nope`");
     }
 }

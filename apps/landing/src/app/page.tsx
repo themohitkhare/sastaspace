@@ -1,66 +1,7 @@
 import { BrandMark } from "@/components/BrandMark";
-import { Chip, type ChipVariant } from "@/components/Chip";
 import { PresencePill } from "@/components/PresencePill";
+import { ProjectsList } from "@/components/ProjectsList";
 import styles from "./landing.module.css";
-
-type Project = {
-  slug: string;
-  title: string;
-  blurb: string;
-  status: ChipVariant;
-  tags: string[];
-};
-
-const PROJECTS: Project[] = [
-  {
-    slug: "notes.sastaspace.com",
-    title: "Notes",
-    blurb:
-      "Plain-text notes for people who type faster than they think. Keyboard-first, live-synced, zero ceremony.",
-    status: "live",
-    tags: ["next", "spacetimedb"],
-  },
-  {
-    slug: "feed.sastaspace.com",
-    title: "Feed",
-    blurb:
-      "A reader for the RSS corner of the web. Small, quiet, chronological. No algorithm, no logins you don't need.",
-    status: "open source",
-    tags: ["go", "sqlite"],
-  },
-  {
-    slug: "pipes.sastaspace.com",
-    title: "Pipes",
-    blurb:
-      "A visual builder for small data jobs. Drag boxes, connect them, watch rows flow through. Runs on your laptop too.",
-    status: "wip",
-    tags: ["react", "spark"],
-  },
-  {
-    slug: "echo.sastaspace.com",
-    title: "Echo",
-    blurb:
-      "Turn any URL into a podcast feed. Paste a link, get an audio episode, subscribe in your app of choice.",
-    status: "live",
-    tags: ["go", "tts"],
-  },
-  {
-    slug: "scratch.sastaspace.com",
-    title: "Scratch",
-    blurb:
-      "A whiteboard for one person. Infinite canvas, nothing to save, gone when you close the tab.",
-    status: "paused",
-    tags: ["canvas", "svg"],
-  },
-  {
-    slug: "lab.sastaspace.com",
-    title: "The Lab Log",
-    blurb:
-      "A firehose of tiny updates from the workshop. New experiments, half-finished thoughts, things that broke today.",
-    status: "live",
-    tags: ["rss", "markdown"],
-  },
-];
 
 export default function HomePage() {
   return (
@@ -146,25 +87,8 @@ export default function HomePage() {
             <div className={styles.eyebrow}>projects</div>
             <h2>What's on the bench.</h2>
           </div>
-          <div className={styles.projectsCount}>six on display · more in the drawer</div>
         </div>
-        <div className={styles.grid}>
-          {PROJECTS.map((p) => (
-            <a key={p.slug} className={styles.card} href={`https://${p.slug}`}>
-              <div className={styles.cardSlug}>{p.slug}</div>
-              <h3>{p.title}</h3>
-              <p>{p.blurb}</p>
-              <div className={styles.cardMeta}>
-                <Chip variant={p.status} />
-                <div className={styles.tags}>
-                  {p.tags.map((t) => (
-                    <span key={t} className={styles.tag}>{t}</span>
-                  ))}
-                </div>
-              </div>
-            </a>
-          ))}
-        </div>
+        <ProjectsList />
       </section>
 
       <section className={styles.section} id="notes">

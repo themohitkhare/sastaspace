@@ -19,9 +19,10 @@ env:
   STDB_SERVER_URL: https://stdb.sastaspace.com
   STDB_MODULE_NAME: sastaspace
   STDB_CLI_VERSION: "2.1.0"
+  COVERAGE_MIN_LINES: "30"
 
 jobs:
-  test-and-publish:
+  gate:
     runs-on: [self-hosted, Linux]
     steps:
       - uses: actions/checkout@v4
@@ -29,10 +30,15 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: wasm32-unknown-unknown
-          components: clippy, rustfmt
+          components: clippy, rustfmt, llvm-tools-preview
 
       - uses: Swatinem/rust-cache@v2
         with: { workspaces: module }
+
+      - name: install cargo extras
+        run: |
+          which cargo-audit >/dev/null 2>&1 || cargo install cargo-audit --locked
+          which cargo-llvm-cov >/dev/null 2>&1 || cargo install cargo-llvm-cov --locked
 
       - name: fmt
         working-directory: module
@@ -42,12 +48,38 @@ jobs:
         working-directory: module
         run: cargo clippy --target wasm32-unknown-unknown --all-targets -- -D warnings
 
-      - name: test
+      - name: cargo audit
         working-directory: module
-        run: cargo test --all
+        run: cargo audit --deny warnings
+
+      - name: test + coverage
+        working-directory: module
+        run: cargo llvm-cov --summary-only --fail-under-lines $COVERAGE_MIN_LINES
+
+      - name: coverage report (lcov)
+        working-directory: module
+        run: cargo llvm-cov report --lcov --output-path lcov.info
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: module-coverage
+          path: module/lcov.info
+          retention-days: 7
+
+  publish:
+    needs: gate
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    runs-on: [self-hosted, Linux]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+        with: { targets: wasm32-unknown-unknown }
+
+      - uses: Swatinem/rust-cache@v2
+        with: { workspaces: module }
 
       - name: install spacetime cli
-        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
         run: |
           if ! command -v spacetime >/dev/null 2>&1; then
             curl -sSf https://install.spacetimedb.com | sh -s -- --yes
@@ -55,36 +87,27 @@ jobs:
           fi
           "$HOME/.local/bin/spacetime" version install "$STDB_CLI_VERSION" || true
           "$HOME/.local/bin/spacetime" version use "$STDB_CLI_VERSION"
-          "$HOME/.local/bin/spacetime" --version
 
-      - name: register prod server (idempotent)
-        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+      - name: register prod server
         run: |
           spacetime server add prod --url "$STDB_SERVER_URL" --no-fingerprint || \
             spacetime server set-default prod
 
       - name: configure auth (owner identity)
-        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
         env:
           SPACETIME_TOKEN: ${{ secrets.SPACETIME_TOKEN }}
         run: |
           if [[ -z "$SPACETIME_TOKEN" ]]; then
-            echo "::error::SPACETIME_TOKEN unset — publish will fail with permission denied because the module already has an owner. Set the secret to the value of spacetimedb_token from your local ~/.config/spacetime/cli.toml."
+            echo "::error::SPACETIME_TOKEN unset — publish would create a stranger identity that the server rejects as non-owner."
             exit 1
           fi
           spacetime login --token "$SPACETIME_TOKEN"
 
       - name: publish module
-        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
         run: |
-          spacetime publish \
-            --server prod \
-            --module-path module \
-            "$STDB_MODULE_NAME" \
-            -y
+          spacetime publish --server prod --module-path module "$STDB_MODULE_NAME" -y
 
-      - name: generate ts bindings
-        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+      - name: regenerate ts bindings
         run: |
           spacetime generate \
             --lang typescript \
@@ -92,14 +115,13 @@ jobs:
             --module-path module
 
       - uses: actions/upload-artifact@v4
-        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
         with:
           name: stdb-bindings
           path: packages/stdb-bindings/src/generated
           retention-days: 7
 
       - name: trigger landing rebuild
-        if: success() && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+        if: success()
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |

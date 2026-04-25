@@ -8,7 +8,9 @@ out
 dist
 build
 target
+coverage
 *.wasm
+lcov.info
 
 # SpacetimeDB local data
 .spacetime

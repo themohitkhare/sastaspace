@@ -1,2 +1,4 @@
 target/
-Cargo.lock
+# Cargo.lock IS tracked so `cargo audit` in CI sees the same dependency
+# graph that ships to prod. The module is built as cdylib, so locking
+# transitive versions matters.

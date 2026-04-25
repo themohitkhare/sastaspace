@@ -197,6 +197,22 @@
 }
 .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
 
+/* Empty state — quiet workshop, no fake hype */
+.emptyState {
+  padding: 48px 22px;
+  background: var(--brand-paper-lifted);
+  border: 1px dashed var(--brand-dust-40);
+  border-radius: var(--radius-lg);
+  text-align: center;
+}
+.emptyState p {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 14px;
+  letter-spacing: 0.04em;
+  color: var(--brand-muted);
+}
+
 .card {
   background: var(--brand-paper-lifted);
   border: 1px solid var(--brand-dust-40);

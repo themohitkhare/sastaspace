@@ -7,6 +7,11 @@
   "engines": {
     "node": ">=22"
   },
+  "pnpm": {
+    "overrides": {
+      "postcss": ">=8.5.10"
+    }
+  },
   "scripts": {
     "dev": "pnpm --filter @sastaspace/landing dev",
     "build": "pnpm -r build",

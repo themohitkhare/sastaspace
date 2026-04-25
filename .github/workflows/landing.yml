@@ -29,8 +29,10 @@ env:
   LANDING_OUT_DIR: /home/mkhare/sastaspace/infra/landing/out
 
 jobs:
-  build-and-deploy:
+  gate:
     runs-on: [self-hosted, Linux]
+    outputs:
+      built: ${{ steps.build.outcome }}
     steps:
       - uses: actions/checkout@v4
 
@@ -54,18 +56,54 @@ jobs:
           run-id: ${{ inputs.bindings_run_id }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
-      - run: pnpm --filter @sastaspace/landing typecheck
-      - run: pnpm --filter @sastaspace/landing build
+      - name: pnpm audit (prod deps only)
+        run: pnpm audit --prod --audit-level moderate
 
-      - name: deploy to nginx
-        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+      - name: typecheck
+        run: pnpm --filter @sastaspace/landing typecheck
+
+      - name: lint
+        run: pnpm --filter @sastaspace/landing lint --max-warnings 0
+
+      - name: test + coverage (vitest gates on threshold via vitest.config.ts)
+        run: pnpm --filter @sastaspace/landing coverage
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: landing-coverage
+          path: apps/landing/coverage
+          retention-days: 7
+
+      - id: build
+        name: build static export
+        run: pnpm --filter @sastaspace/landing build
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: landing-out
+          path: apps/landing/out
+          retention-days: 7
+
+  deploy:
+    needs: gate
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    runs-on: [self-hosted, Linux]
+    steps:
+      - uses: actions/checkout@v4
+        with: { sparse-checkout: infra/landing }
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: landing-out
+          path: out/
+
+      - name: rsync + nginx reload
         run: |
           mkdir -p "$LANDING_OUT_DIR"
-          rsync -a --delete apps/landing/out/ "$LANDING_OUT_DIR/"
+          rsync -a --delete out/ "$LANDING_OUT_DIR/"
           docker exec sastaspace-landing nginx -s reload
 
       - name: smoke test
-        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
         run: |
           for i in 1 2 3 4 5; do
             code=$(curl -sS -o /dev/null -w "%{http_code}" -L https://sastaspace.com/)
