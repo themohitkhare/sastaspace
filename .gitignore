@@ -43,3 +43,6 @@ pnpm-debug.log*
 
 # Cloudflare
 .wrangler
+*.egg-info/
+*.tsbuildinfo
+*.pyc
