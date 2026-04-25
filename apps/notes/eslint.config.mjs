@@ -3,7 +3,7 @@ import nextConfig from "eslint-config-next";
 const config = [
   ...nextConfig,
   {
-    ignores: [".next/**", "out/**", "build/**", "next-env.d.ts", "test/**"],
+    ignores: [".next/**", "out/**", "build/**", "coverage/**", "next-env.d.ts", "test/**"],
   },
   {
     rules: {

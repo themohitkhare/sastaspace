@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getSession, subscribe, type Session } from "@/lib/auth";
+import { subscribe, type Session } from "@/lib/auth";
 import { submitComment } from "@/lib/comments";
 import styles from "./comments.module.css";
 
@@ -17,10 +17,9 @@ export function CommentForm({ slug }: { slug: string }) {
   const [body, setBody] = useState("");
   const [state, setState] = useState<State>({ kind: "idle" });
 
+  // subscribe() also fires the callback immediately with the current
+  // session, so we don't need a separate getSession() effect.
   useEffect(() => subscribe((s) => setSession(s)), []);
-  useEffect(() => {
-    if (typeof window !== "undefined") setSession(getSession());
-  }, []);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();

@@ -23,7 +23,9 @@ export default function AdminCommentsPage() {
 
   useEffect(() => {
     if (!isOwnerSignedIn()) {
-      setRows(null);
+      // Don't subscribe; the gate UI handles the not-owner branch.
+      // (Setting state directly here would trigger a cascading render
+      // and tripped the React 19 set-state-in-effect lint.)
       return;
     }
     return subscribeAdminComments((r) => setRows(r));
