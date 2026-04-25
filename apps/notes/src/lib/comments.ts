@@ -122,7 +122,9 @@ export async function submitComment(
   const fn =
     conn.reducers.submitAnonComment ?? conn.reducers.submit_anon_comment;
   if (!fn) throw new Error("submit_anon_comment reducer missing");
-  fn(slug, name, body);
+  // SpacetimeDB SDK 2.1: reducers take a single object of named params.
+  // Reducer schema is {postSlug, authorName, body}.
+  fn({ postSlug: slug, authorName: name, body });
 }
 
 async function submitAsUser(slug: string, body: string, token: string): Promise<void> {
@@ -147,22 +149,24 @@ async function submitAsUser(slug: string, body: string, token: string): Promise<
       .withToken(token)
       .withLightMode(true)
       .onConnect(() => {
-        const fn =
-          (userConn.reducers as { submitUserComment?: (slug: string, body: string) => void; submit_user_comment?: (slug: string, body: string) => void })
-            .submitUserComment ??
-          (userConn.reducers as { submit_user_comment?: (slug: string, body: string) => void }).submit_user_comment;
+        type UserReducerFn = (params: { postSlug: string; body: string }) => void;
+        const reducers = userConn.reducers as {
+          submitUserComment?: UserReducerFn;
+          submit_user_comment?: UserReducerFn;
+        };
+        const fn = reducers.submitUserComment ?? reducers.submit_user_comment;
         if (!fn) {
           reject(new Error("submit_user_comment reducer missing"));
           userConn.disconnect();
           return;
         }
         try {
-          fn(slug, body);
+          // SDK 2.1 reducer call: single named-params object.
+          fn({ postSlug: slug, body });
           resolve();
         } catch (e) {
           reject(e instanceof Error ? e : new Error(String(e)));
         } finally {
-          // Give the call a moment to flush before disconnecting.
           setTimeout(() => userConn.disconnect(), 500);
         }
       })

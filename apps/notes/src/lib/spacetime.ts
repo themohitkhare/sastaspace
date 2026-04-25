@@ -58,8 +58,8 @@ export type StdbConn = {
     };
   };
   reducers: {
-    submitAnonComment?: (slug: string, name: string, body: string) => void;
-    submit_anon_comment?: (slug: string, name: string, body: string) => void;
+    submitAnonComment?: (params: { postSlug: string; authorName: string; body: string }) => void;
+    submit_anon_comment?: (params: { postSlug: string; authorName: string; body: string }) => void;
   };
   subscriptionBuilder: () => {
     onApplied: (fn: () => void) => any;

@@ -12,14 +12,18 @@
 import type { Page } from "@playwright/test";
 
 export async function gotoAndHydrate(page: Page, url: string): Promise<void> {
-  await page.goto(url, { waitUntil: "networkidle" });
-  // Hydration completes in microtasks AFTER networkidle. Give it a bit.
-  await page.waitForFunction(() => document.readyState === "complete");
-  await page.waitForTimeout(150);
+  // domcontentloaded (not networkidle) — Cloudflare auto-injects an
+  // analytics beacon (static.cloudflareinsights.com/beacon.min.js) that
+  // our CSP blocks, so networkidle never fires (the failed beacon keeps
+  // retrying). DOMContentLoaded + a short hydration wait is enough for
+  // React to finish wiring up event handlers.
+  await page.goto(url, { waitUntil: "domcontentloaded" });
+  await page.waitForFunction(() => document.readyState === "interactive" || document.readyState === "complete");
+  await page.waitForTimeout(400);
 }
 
 /** After clicking a link that navigates within the same SPA. */
 export async function waitForHydrate(page: Page): Promise<void> {
-  await page.waitForLoadState("networkidle");
-  await page.waitForTimeout(150);
+  await page.waitForLoadState("domcontentloaded");
+  await page.waitForTimeout(400);
 }

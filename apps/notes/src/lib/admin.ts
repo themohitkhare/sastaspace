@@ -126,14 +126,15 @@ export async function setStatus(
   id: number | bigint,
   status: AdminComment["status"],
 ): Promise<void> {
-  await callOwnerReducer("set_comment_status", [Number(id), status]);
+  // SDK 2.1: reducers take a single named-params object.
+  await callOwnerReducer("set_comment_status", { id: Number(id), status });
 }
 
 export async function deleteComment(id: number | bigint): Promise<void> {
-  await callOwnerReducer("delete_comment", [Number(id)]);
+  await callOwnerReducer("delete_comment", { id: Number(id) });
 }
 
-async function callOwnerReducer(name: string, args: unknown[]): Promise<void> {
+async function callOwnerReducer(name: string, params: object): Promise<void> {
   const session = getSession();
   if (!session) throw new Error("not signed in");
 
@@ -157,14 +158,14 @@ async function callOwnerReducer(name: string, args: unknown[]): Promise<void> {
       .withLightMode(true)
       .onConnect(() => {
         try {
-          const reducers = conn.reducers as Record<string, (...args: unknown[]) => void>;
+          const reducers = conn.reducers as Record<string, (params: object) => void>;
           const camel = name.replace(/_(\w)/g, (_m, c) => c.toUpperCase());
           const fn = reducers[camel] ?? reducers[name];
           if (!fn) {
             reject(new Error(`reducer ${name} missing in bindings`));
             return;
           }
-          fn(...args);
+          fn(params);
           resolve();
         } catch (e) {
           reject(e instanceof Error ? e : new Error(String(e)));
