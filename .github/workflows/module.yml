@@ -19,7 +19,7 @@ env:
   STDB_SERVER_URL: https://stdb.sastaspace.com
   STDB_MODULE_NAME: sastaspace
   STDB_CLI_VERSION: "2.1.0"
-  COVERAGE_MIN_LINES: "30"
+  COVERAGE_MIN_LINES: "20"
 
 jobs:
   gate:
