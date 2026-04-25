@@ -105,19 +105,16 @@ services:
     pids_limit: 256
     mem_limit: 256m
     user: "1000:1000"
-    ports:
-      - "127.0.0.1:3130:8080"
+    network_mode: host  # so 127.0.0.1:3100 (stdb) reaches the host loopback
     env_file:
       - ./agents/auth/.env
     environment:
-      - STDB_HTTP_URL=http://host.docker.internal:3100
+      - PORT=3130  # bind directly on the host's loopback at the public-facing port
+      - STDB_HTTP_URL=http://127.0.0.1:3100
       - STDB_MODULE=sastaspace
       - PUBLIC_BASE=https://auth.sastaspace.com
       - NOTES_CALLBACK=https://notes.sastaspace.com/auth/callback
       - ALLOWED_ORIGINS=https://sastaspace.com,https://www.sastaspace.com,https://notes.sastaspace.com
-    extra_hosts:
-      # Ports 3100 (stdb) lives on host loopback; reach via host.docker.internal.
-      - "host.docker.internal:host-gateway"
 
   # Comment moderator: Agno + Ollama. Polls SpacetimeDB on the host loopback,
   # calls Ollama on the host loopback. Needs SPACETIME_TOKEN in

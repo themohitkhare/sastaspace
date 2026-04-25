@@ -20,7 +20,9 @@ ENV PYTHONUNBUFFERED=1 \
 
 EXPOSE 8080
 
+# In compose, network_mode: host overrides the bind port via $PORT env.
+# Healthcheck targets that env so it works in both default + host mode.
 HEALTHCHECK --interval=30s --timeout=5s --retries=3 --start-period=10s \
-    CMD curl -fsS "http://127.0.0.1:8080/healthz" >/dev/null || exit 1
+    CMD curl -fsS "http://127.0.0.1:${PORT:-8080}/healthz" >/dev/null || exit 1
 
 CMD ["python", "-m", "sastaspace_auth.main"]
