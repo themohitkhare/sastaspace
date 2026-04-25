@@ -47,6 +47,44 @@ pub struct Comment {
 const COMMENT_STATUSES: &[&str] = &["pending", "approved", "flagged", "rejected"];
 const RATE_LIMIT_WINDOW_MICROS: i64 = 5 * 60 * 1_000_000; // 5 min
 const RATE_LIMIT_MAX: usize = 5;
+/// Magic-link tokens are valid for 15 minutes after issue.
+const AUTH_TOKEN_TTL_MICROS: i64 = 15 * 60 * 1_000_000;
+
+/// Registered users — anyone who has clicked through a magic link from
+/// auth.sastaspace.com. The `identity` is the SpacetimeDB Identity that
+/// the auth service issues to that email; from that point on the user
+/// can post signed-in comments under their `display_name`.
+///
+/// Email is stored for: (a) future re-issue of identity if the user
+/// loses their token, (b) eventual unsubscribe / deletion. It is NEVER
+/// surfaced to other clients via the public schema — the only attribution
+/// shown publicly is `display_name`.
+#[table(accessor = user, public)]
+pub struct User {
+    #[primary_key]
+    pub identity: Identity,
+    #[unique]
+    pub email: String,
+    pub display_name: String,
+    pub created_at: Timestamp,
+}
+
+/// Pending magic-link tokens. Created by the auth service when a user
+/// requests a sign-in email; consumed by the auth service when the user
+/// clicks the link. Single-use (once `used_at` is set, the token is dead)
+/// and time-limited (`expires_at`).
+///
+/// Private table — clients can't see it. Auth service reads/writes via
+/// owner-only reducers.
+#[table(accessor = auth_token)]
+pub struct AuthToken {
+    #[primary_key]
+    pub token: String,
+    pub email: String,
+    pub created_at: Timestamp,
+    pub expires_at: Timestamp,
+    pub used_at: Option<Timestamp>,
+}
 
 /// The hex-encoded Identity of the database owner. Only this identity can
 /// call write reducers on the `project` table. Sourced from
@@ -227,6 +265,135 @@ pub fn delete_comment(ctx: &ReducerContext, id: u64) -> Result<(), String> {
     Ok(())
 }
 
+/// Public reducer: signed-in user posts a comment. Same body validation
+/// as anon, but skips author_name (looked up from User row) and skips
+/// the rate limit (logged-in users are already cost-controlled by the
+/// magic-link friction).
+///
+/// The caller's Identity must match a `User` row — anonymous calls and
+/// strangers fail closed. The display_name comes from the User table,
+/// so a logged-in user can't impersonate someone else's name.
+#[reducer]
+pub fn submit_user_comment(
+    ctx: &ReducerContext,
+    post_slug: String,
+    body: String,
+) -> Result<(), String> {
+    let body = body.trim();
+    if post_slug.is_empty() {
+        return Err("post_slug required".into());
+    }
+    if body.len() < 4 {
+        return Err("body too short (min 4 chars)".into());
+    }
+    if body.len() > 4000 {
+        return Err("body too long (max 4000 chars)".into());
+    }
+
+    let user = ctx
+        .db
+        .user()
+        .identity()
+        .find(ctx.sender())
+        .ok_or_else(|| "not signed in".to_string())?;
+
+    ctx.db.comment().insert(Comment {
+        id: 0,
+        post_slug,
+        author_name: user.display_name,
+        body: body.to_string(),
+        created_at: ctx.timestamp,
+        status: "pending".to_string(),
+        submitter: ctx.sender(),
+    });
+    Ok(())
+}
+
+/// Owner-only: register a new user (called by the auth service after
+/// magic-link verification). Idempotent on email — re-registering the
+/// same email updates the display_name + identity rather than failing.
+#[reducer]
+pub fn register_user(
+    ctx: &ReducerContext,
+    user_identity: Identity,
+    email: String,
+    display_name: String,
+) -> Result<(), String> {
+    assert_owner(ctx)?;
+    let email = email.trim().to_lowercase();
+    let display_name = display_name.trim().to_string();
+    if email.is_empty() || !email.contains('@') {
+        return Err(format!("invalid email `{email}`"));
+    }
+    if display_name.is_empty() || display_name.len() > 64 {
+        return Err("display_name must be 1..=64 chars".into());
+    }
+
+    let row = User {
+        identity: user_identity,
+        email: email.clone(),
+        display_name,
+        created_at: ctx.timestamp,
+    };
+
+    if let Some(existing) = ctx.db.user().email().find(&email) {
+        // Re-register: drop the old identity row, replace with the new one
+        ctx.db.user().identity().delete(existing.identity);
+    }
+    ctx.db.user().insert(row);
+    Ok(())
+}
+
+/// Owner-only: store a magic-link token for an email (called by the
+/// auth service when the user requests sign-in).
+#[reducer]
+pub fn issue_auth_token(ctx: &ReducerContext, token: String, email: String) -> Result<(), String> {
+    assert_owner(ctx)?;
+    let email = email.trim().to_lowercase();
+    if email.is_empty() || !email.contains('@') {
+        return Err(format!("invalid email `{email}`"));
+    }
+    if token.len() < 32 {
+        return Err("token too short (must be ≥32 chars of entropy)".into());
+    }
+    let now = ctx.timestamp;
+    let expires = Timestamp::from_micros_since_unix_epoch(
+        now.to_micros_since_unix_epoch() + AUTH_TOKEN_TTL_MICROS,
+    );
+    ctx.db.auth_token().insert(AuthToken {
+        token,
+        email,
+        created_at: now,
+        expires_at: expires,
+        used_at: None,
+    });
+    Ok(())
+}
+
+/// Owner-only: mark a magic-link token as used (called by the auth
+/// service on /auth/verify). Returns the email associated with the
+/// token. Fails if the token is unknown, expired, or already used.
+#[reducer]
+pub fn consume_auth_token(ctx: &ReducerContext, token: String) -> Result<(), String> {
+    assert_owner(ctx)?;
+    let mut row = ctx
+        .db
+        .auth_token()
+        .token()
+        .find(&token)
+        .ok_or_else(|| "unknown token".to_string())?;
+    if row.used_at.is_some() {
+        return Err("token already used".into());
+    }
+    let now = ctx.timestamp;
+    if now.to_micros_since_unix_epoch() > row.expires_at.to_micros_since_unix_epoch() {
+        return Err("token expired".into());
+    }
+    row.used_at = Some(now);
+    ctx.db.auth_token().token().update(row);
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -283,5 +450,35 @@ mod tests {
     fn rate_limit_window_is_five_minutes() {
         assert_eq!(RATE_LIMIT_WINDOW_MICROS, 5 * 60 * 1_000_000);
         assert_eq!(RATE_LIMIT_MAX, 5);
+    }
+
+    #[test]
+    fn auth_token_ttl_is_fifteen_minutes() {
+        assert_eq!(AUTH_TOKEN_TTL_MICROS, 15 * 60 * 1_000_000);
+    }
+
+    #[test]
+    fn user_struct_round_trips() {
+        let u = User {
+            identity: Identity::ZERO,
+            email: "test@example.com".into(),
+            display_name: "Tester".into(),
+            created_at: Timestamp::UNIX_EPOCH,
+        };
+        assert_eq!(u.email, "test@example.com");
+        assert_eq!(u.display_name, "Tester");
+    }
+
+    #[test]
+    fn auth_token_struct_round_trips() {
+        let t = AuthToken {
+            token: "abc123".into(),
+            email: "test@example.com".into(),
+            created_at: Timestamp::UNIX_EPOCH,
+            expires_at: Timestamp::UNIX_EPOCH,
+            used_at: None,
+        };
+        assert_eq!(t.token, "abc123");
+        assert!(t.used_at.is_none());
     }
 }
