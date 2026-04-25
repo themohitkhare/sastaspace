@@ -10,6 +10,15 @@ import {
   type Infer as __Infer,
 } from "spacetimedb";
 
+export const AuthToken = __t.object("AuthToken", {
+  token: __t.string(),
+  email: __t.string(),
+  createdAt: __t.timestamp(),
+  expiresAt: __t.timestamp(),
+  usedAt: __t.option(__t.timestamp()),
+});
+export type AuthToken = __Infer<typeof AuthToken>;
+
 export const Comment = __t.object("Comment", {
   id: __t.u64(),
   postSlug: __t.string(),
@@ -37,4 +46,12 @@ export const Project = __t.object("Project", {
   url: __t.string(),
 });
 export type Project = __Infer<typeof Project>;
+
+export const User = __t.object("User", {
+  identity: __t.identity(),
+  email: __t.string(),
+  displayName: __t.string(),
+  createdAt: __t.timestamp(),
+});
+export type User = __Infer<typeof User>;
 

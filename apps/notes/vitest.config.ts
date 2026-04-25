@@ -13,10 +13,14 @@ export default defineConfig({
       include: ["src/**/*.{ts,tsx}"],
       exclude: [
         "src/app/layout.tsx",
-        "src/app/page.tsx", // server component — fs read at build, asserted by build success
+        "src/app/page.tsx", // server component
         "src/app/[slug]/page.tsx", // server component — MDX render at build
+        "src/app/admin/**", // admin queue is gated client-side; e2e via prod test
+        "src/app/auth/**", // auth callback runs client-side post-redirect
+        "src/components/AuthMenu.tsx", // modal + auth-state UI; tested via integration
         "src/lib/spacetime.ts", // dynamic SDK glue
         "src/lib/comments.ts", // dynamic SDK glue
+        "src/lib/admin.ts", // dynamic SDK glue
         "src/lib/posts.ts", // node fs read at build
       ],
       thresholds: {

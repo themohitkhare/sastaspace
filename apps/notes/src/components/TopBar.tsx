@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { AuthMenu } from "@/components/AuthMenu";
 import styles from "@/app/notes.module.css";
 
 export function TopBar() {
@@ -9,6 +10,8 @@ export function TopBar() {
         <Link href="/">notes</Link>
       </div>
       <div className={styles.navHome}>
+        <AuthMenu />
+        <span style={{ color: "var(--brand-dust)", margin: "0 10px" }}>·</span>
         <a href="https://sastaspace.com">home →</a>
       </div>
     </nav>

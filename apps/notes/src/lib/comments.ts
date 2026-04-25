@@ -1,8 +1,12 @@
 // Live subscription to comments for a given post slug. Only `approved`
 // rows surface to readers; pending/flagged/rejected stay invisible until
 // the moderator (or owner override) flips them.
+//
+// submitComment dispatches to either anon or signed-in flow based on
+// whether a session JWT is present in localStorage.
 
-import { getConnection } from "./spacetime";
+import { getSession } from "./auth";
+import { getConnection, STDB_MODULE, STDB_URI } from "./spacetime";
 
 export type Comment = {
   id: number | bigint;
@@ -71,7 +75,7 @@ function snapshot(
       status: row.status,
     });
   }
-  out.sort((a, b) => a.createdAt - b.createdAt); // oldest first
+  out.sort((a, b) => a.createdAt - b.createdAt);
   return out;
 }
 
@@ -91,23 +95,93 @@ function timestampToMs(ts: RawCommentRow["createdAt"]): number {
   return 0;
 }
 
-// Comments don't go through string-templated SQL in production — the
-// subscriptionBuilder uses parameterized internals — but defensively
-// strip anything that looks like a single quote.
 function escapeSql(s: string): string {
   return s.replace(/['\\]/g, "");
 }
 
+/** Submit a comment. If signed in, uses submit_user_comment under the
+ *  user's own Identity (their JWT); otherwise falls back to anon flow.
+ *
+ *  Note: the signed-in flow opens a SECOND stdb connection authenticated
+ *  with the user's JWT, leaving the page's primary anonymous connection
+ *  alone for read subscriptions. The token is short-lived and used once
+ *  per submit; we don't keep it open after.
+ */
 export async function submitComment(
   slug: string,
   name: string,
   body: string,
 ): Promise<void> {
+  const session = getSession();
+  if (session) {
+    await submitAsUser(slug, body, session.token);
+    return;
+  }
   const conn = await getConnection();
   if (!conn) throw new Error("not connected");
-  // Generated bindings expose camelCase reducer methods.
   const fn =
     conn.reducers.submitAnonComment ?? conn.reducers.submit_anon_comment;
-  if (!fn) throw new Error("submit_anon_comment reducer missing in bindings");
+  if (!fn) throw new Error("submit_anon_comment reducer missing");
   fn(slug, name, body);
 }
+
+async function submitAsUser(slug: string, body: string, token: string): Promise<void> {
+  // Open a dedicated authenticated connection just for this call, then
+  // disconnect. We don't pollute the long-lived shared connection with
+  // user-specific auth state (the read subscription works fine anonymously).
+  let bindings: Record<string, unknown>;
+  try {
+    bindings = (await import("@sastaspace/stdb-bindings")) as Record<string, unknown>;
+  } catch {
+    throw new Error("stdb bindings not loaded");
+  }
+  const DbConnection = bindings.DbConnection as
+    | { builder: () => UserConnBuilder }
+    | undefined;
+  if (!DbConnection) throw new Error("DbConnection missing");
+
+  await new Promise<void>((resolve, reject) => {
+    const userConn = DbConnection.builder()
+      .withUri(STDB_URI)
+      .withDatabaseName(STDB_MODULE)
+      .withToken(token)
+      .withLightMode(true)
+      .onConnect(() => {
+        const fn =
+          (userConn.reducers as { submitUserComment?: (slug: string, body: string) => void; submit_user_comment?: (slug: string, body: string) => void })
+            .submitUserComment ??
+          (userConn.reducers as { submit_user_comment?: (slug: string, body: string) => void }).submit_user_comment;
+        if (!fn) {
+          reject(new Error("submit_user_comment reducer missing"));
+          userConn.disconnect();
+          return;
+        }
+        try {
+          fn(slug, body);
+          resolve();
+        } catch (e) {
+          reject(e instanceof Error ? e : new Error(String(e)));
+        } finally {
+          // Give the call a moment to flush before disconnecting.
+          setTimeout(() => userConn.disconnect(), 500);
+        }
+      })
+      .onConnectError((_ctx: unknown, err: Error) => reject(err))
+      .build();
+  });
+}
+
+type UserConnBuilder = {
+  withUri: (uri: string) => UserConnBuilder;
+  withDatabaseName: (name: string) => UserConnBuilder;
+  withToken: (t: string) => UserConnBuilder;
+  withLightMode: (on: boolean) => UserConnBuilder;
+  onConnect: (fn: () => void) => UserConnBuilder;
+  onConnectError: (fn: (ctx: unknown, err: Error) => void) => UserConnBuilder;
+  build: { reducers: Record<string, unknown>; disconnect: () => void } & ((() => UserConn));
+};
+
+type UserConn = {
+  reducers: Record<string, unknown>;
+  disconnect: () => void;
+};

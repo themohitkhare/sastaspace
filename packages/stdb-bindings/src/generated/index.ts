@@ -34,11 +34,15 @@ import {
 } from "spacetimedb";
 
 // Import all reducer arg schemas
+import ConsumeAuthTokenReducer from "./consume_auth_token_reducer";
 import DeleteCommentReducer from "./delete_comment_reducer";
 import DeleteProjectReducer from "./delete_project_reducer";
 import HeartbeatReducer from "./heartbeat_reducer";
+import IssueAuthTokenReducer from "./issue_auth_token_reducer";
+import RegisterUserReducer from "./register_user_reducer";
 import SetCommentStatusReducer from "./set_comment_status_reducer";
 import SubmitAnonCommentReducer from "./submit_anon_comment_reducer";
+import SubmitUserCommentReducer from "./submit_user_comment_reducer";
 import UpsertProjectReducer from "./upsert_project_reducer";
 
 // Import all procedure arg schemas
@@ -47,6 +51,7 @@ import UpsertProjectReducer from "./upsert_project_reducer";
 import CommentRow from "./comment_table";
 import PresenceRow from "./presence_table";
 import ProjectRow from "./project_table";
+import UserRow from "./user_table";
 
 /** Type-only namespace exports for generated type groups. */
 
@@ -91,15 +96,34 @@ const tablesSchema = __schema({
       { name: 'project_slug_key', constraint: 'unique', columns: ['slug'] },
     ],
   }, ProjectRow),
+  user: __table({
+    name: 'user',
+    indexes: [
+      { accessor: 'email', name: 'user_email_idx_btree', algorithm: 'btree', columns: [
+        'email',
+      ] },
+      { accessor: 'identity', name: 'user_identity_idx_btree', algorithm: 'btree', columns: [
+        'identity',
+      ] },
+    ],
+    constraints: [
+      { name: 'user_email_key', constraint: 'unique', columns: ['email'] },
+      { name: 'user_identity_key', constraint: 'unique', columns: ['identity'] },
+    ],
+  }, UserRow),
 });
 
 /** The schema information for all reducers in this module. This is defined the same way as the reducers would have been defined in the server, except the body of the reducer is omitted in code generation. */
 const reducersSchema = __reducers(
+  __reducerSchema("consume_auth_token", ConsumeAuthTokenReducer),
   __reducerSchema("delete_comment", DeleteCommentReducer),
   __reducerSchema("delete_project", DeleteProjectReducer),
   __reducerSchema("heartbeat", HeartbeatReducer),
+  __reducerSchema("issue_auth_token", IssueAuthTokenReducer),
+  __reducerSchema("register_user", RegisterUserReducer),
   __reducerSchema("set_comment_status", SetCommentStatusReducer),
   __reducerSchema("submit_anon_comment", SubmitAnonCommentReducer),
+  __reducerSchema("submit_user_comment", SubmitUserCommentReducer),
   __reducerSchema("upsert_project", UpsertProjectReducer),
 );
 

@@ -1,0 +1,114 @@
+.main {
+  padding: 32px 0 56px;
+}
+.eyebrow {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  color: var(--brand-sasta-text);
+  margin-bottom: 12px;
+}
+.heading {
+  font-size: 36px;
+  font-weight: 500;
+  letter-spacing: -0.015em;
+  margin: 0 0 24px;
+}
+
+.gate, .empty {
+  padding: 32px 22px;
+  background: var(--brand-paper-lifted);
+  border: 1px dashed var(--brand-dust-40);
+  border-radius: var(--radius-lg);
+  text-align: center;
+}
+.gate p, .empty p {
+  margin: 0;
+  font-size: 14px;
+  color: var(--brand-muted);
+  line-height: 1.5;
+}
+.gate strong { color: var(--brand-ink); font-weight: 500; }
+
+.placeholder {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--brand-muted);
+  text-align: center;
+  padding: 32px 0;
+}
+
+.list { list-style: none; margin: 0; padding: 0; }
+.row {
+  border-top: 1px solid var(--brand-dust-40);
+  padding: 18px 0;
+}
+.row:last-child { border-bottom: 1px solid var(--brand-dust-40); }
+
+.meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--brand-muted);
+  margin-bottom: 8px;
+  letter-spacing: 0.04em;
+}
+.badge {
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+  font-size: 11px;
+  text-transform: lowercase;
+}
+.status_pending {
+  background: var(--brand-sasta);
+  color: var(--brand-paper);
+}
+.status_approved {
+  background: var(--brand-ink);
+  color: var(--brand-paper);
+}
+.status_flagged {
+  background: transparent;
+  color: var(--brand-rust);
+  border: 1px solid var(--brand-rust);
+}
+.status_rejected {
+  background: transparent;
+  color: var(--brand-muted);
+  border: 1px dashed var(--brand-dust-40);
+}
+.author { color: var(--brand-ink); font-weight: 500; }
+.dot { color: var(--brand-dust); }
+.slug, .time {}
+
+.body {
+  margin: 0 0 12px;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--brand-ink);
+  white-space: pre-wrap;
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+}
+.actions button {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  padding: 6px 12px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--brand-dust-40);
+  background: transparent;
+  color: var(--brand-ink);
+  cursor: pointer;
+  transition: border-color var(--dur-std) var(--ease-std), color var(--dur-std) var(--ease-std);
+}
+.actions button:hover { border-color: var(--brand-ink); }
+.actions button:disabled { opacity: 0.5; cursor: wait; }
+.btnApprove:hover { color: var(--brand-ink); }
+.btnFlag:hover { color: var(--brand-rust); border-color: var(--brand-rust); }
+.btnDelete:hover { color: var(--brand-rust); border-color: var(--brand-rust); }

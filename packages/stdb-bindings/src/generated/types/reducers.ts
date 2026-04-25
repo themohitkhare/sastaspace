@@ -6,17 +6,25 @@
 import { type Infer as __Infer } from "spacetimedb";
 
 // Import all reducer arg schemas
+import ConsumeAuthTokenReducer from "../consume_auth_token_reducer";
 import DeleteCommentReducer from "../delete_comment_reducer";
 import DeleteProjectReducer from "../delete_project_reducer";
 import HeartbeatReducer from "../heartbeat_reducer";
+import IssueAuthTokenReducer from "../issue_auth_token_reducer";
+import RegisterUserReducer from "../register_user_reducer";
 import SetCommentStatusReducer from "../set_comment_status_reducer";
 import SubmitAnonCommentReducer from "../submit_anon_comment_reducer";
+import SubmitUserCommentReducer from "../submit_user_comment_reducer";
 import UpsertProjectReducer from "../upsert_project_reducer";
 
+export type ConsumeAuthTokenParams = __Infer<typeof ConsumeAuthTokenReducer>;
 export type DeleteCommentParams = __Infer<typeof DeleteCommentReducer>;
 export type DeleteProjectParams = __Infer<typeof DeleteProjectReducer>;
 export type HeartbeatParams = __Infer<typeof HeartbeatReducer>;
+export type IssueAuthTokenParams = __Infer<typeof IssueAuthTokenReducer>;
+export type RegisterUserParams = __Infer<typeof RegisterUserReducer>;
 export type SetCommentStatusParams = __Infer<typeof SetCommentStatusReducer>;
 export type SubmitAnonCommentParams = __Infer<typeof SubmitAnonCommentReducer>;
+export type SubmitUserCommentParams = __Infer<typeof SubmitUserCommentReducer>;
 export type UpsertProjectParams = __Infer<typeof UpsertProjectReducer>;
 

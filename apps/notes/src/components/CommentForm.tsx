@@ -1,19 +1,26 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { getSession, subscribe, type Session } from "@/lib/auth";
 import { submitComment } from "@/lib/comments";
 import styles from "./comments.module.css";
 
 type State =
   | { kind: "idle" }
   | { kind: "submitting" }
-  | { kind: "queued" } // sent, waiting for moderator
+  | { kind: "queued" }
   | { kind: "error"; message: string };
 
 export function CommentForm({ slug }: { slug: string }) {
+  const [session, setSession] = useState<Session | null>(null);
   const [name, setName] = useState("");
   const [body, setBody] = useState("");
   const [state, setState] = useState<State>({ kind: "idle" });
+
+  useEffect(() => subscribe((s) => setSession(s)), []);
+  useEffect(() => {
+    if (typeof window !== "undefined") setSession(getSession());
+  }, []);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -28,6 +35,8 @@ export function CommentForm({ slug }: { slug: string }) {
     }
     setState({ kind: "submitting" });
     try {
+      // For signed-in users, name is ignored — author_name is sourced from
+      // the User row server-side, so signed-in users can't impersonate.
       await submitComment(slug, name.trim(), trimmed);
       setBody("");
       setState({ kind: "queued" });
@@ -43,7 +52,11 @@ export function CommentForm({ slug }: { slug: string }) {
         <p>
           Sent. The moderator's looking it over — if it's fine it'll show up here in a few seconds.
         </p>
-        <button type="button" className={styles.queuedReset} onClick={() => setState({ kind: "idle" })}>
+        <button
+          type="button"
+          className={styles.queuedReset}
+          onClick={() => setState({ kind: "idle" })}
+        >
           write another →
         </button>
       </div>
@@ -52,21 +65,27 @@ export function CommentForm({ slug }: { slug: string }) {
 
   return (
     <form className={styles.form} onSubmit={onSubmit}>
-      <div className={styles.formRow}>
-        <label className={styles.label} htmlFor="cf-name">
-          name <span className={styles.optional}>(optional)</span>
-        </label>
-        <input
-          id="cf-name"
-          className={styles.input}
-          type="text"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          maxLength={64}
-          placeholder="visitor"
-          autoComplete="off"
-        />
-      </div>
+      {session ? (
+        <div className={styles.signedInNote}>
+          posting as <strong>{session.display_name}</strong>
+        </div>
+      ) : (
+        <div className={styles.formRow}>
+          <label className={styles.label} htmlFor="cf-name">
+            name <span className={styles.optional}>(optional · sign in for a persistent name)</span>
+          </label>
+          <input
+            id="cf-name"
+            className={styles.input}
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            maxLength={64}
+            placeholder="visitor"
+            autoComplete="off"
+          />
+        </div>
+      )}
       <div className={styles.formRow}>
         <label className={styles.label} htmlFor="cf-body">
           comment
