@@ -13,7 +13,12 @@ def client(monkeypatch):
     monkeypatch.setenv("RESEND_API_KEY", "re_test_x")
     monkeypatch.setenv("PUBLIC_BASE", "https://auth.test")
     monkeypatch.setenv("NOTES_CALLBACK", "https://notes.test/auth/callback")
+    # Default: no test-mode side door active
+    monkeypatch.delenv("E2E_TEST_SECRET", raising=False)
 
+    # Drop any cached app instance so the env vars take effect
+    import sys
+    sys.modules.pop("sastaspace_auth.main", None)
     from sastaspace_auth.main import app
 
     fake_stdb = MagicMock()
@@ -144,3 +149,80 @@ def test_verify_friendly_message_for_expired(client):
     assert r.status_code == 400
     assert "expired" in r.text
     assert "request a new one" in r.text.lower()
+
+
+# ---------------- test-mode side door ----------------
+
+
+@pytest.fixture()
+def test_mode_client(monkeypatch):
+    """Same as `client` but with E2E_TEST_SECRET set so the side door opens."""
+    monkeypatch.setenv("SPACETIME_TOKEN", "test-token")
+    monkeypatch.setenv("RESEND_API_KEY", "re_test_x")
+    monkeypatch.setenv("PUBLIC_BASE", "https://auth.test")
+    monkeypatch.setenv("NOTES_CALLBACK", "https://notes.test/auth/callback")
+    monkeypatch.setenv("E2E_TEST_SECRET", "shibboleth-xyz")
+
+    import sys
+    sys.modules.pop("sastaspace_auth.main", None)
+    from sastaspace_auth.main import app
+
+    fake_stdb = MagicMock()
+    fake_stdb.issue_auth_token.return_value = None
+    fake_sender = MagicMock()
+    fake_sender.send_magic_link.return_value = MagicMock(sent=True, detail="msg")
+    app.state.stdb = fake_stdb
+    app.state.sender = fake_sender
+    yield TestClient(app), fake_stdb, fake_sender
+
+
+def test_test_mode_returns_token_when_secret_matches(test_mode_client):
+    c, stdb, sender = test_mode_client
+    r = c.post(
+        "/auth/request",
+        json={"email": "e2e@example.com"},
+        headers={"X-Test-Secret": "shibboleth-xyz"},
+    )
+    assert r.status_code == 200
+    body = r.json()
+    assert body["sent"] is True
+    assert body["detail"] == "test mode"
+    assert body["test_token"]
+    assert len(body["test_token"]) >= 32
+    # Token was still stored
+    stdb.issue_auth_token.assert_called_once()
+    # But no email send happened
+    sender.send_magic_link.assert_not_called()
+
+
+def test_test_mode_ignored_when_secret_wrong(test_mode_client):
+    c, stdb, sender = test_mode_client
+    r = c.post(
+        "/auth/request",
+        json={"email": "e2e@example.com"},
+        headers={"X-Test-Secret": "wrong-value"},
+    )
+    assert r.status_code == 200
+    assert r.json().get("test_token") is None
+    sender.send_magic_link.assert_called_once()
+
+
+def test_test_mode_ignored_when_no_header_provided(test_mode_client):
+    c, _, sender = test_mode_client
+    r = c.post("/auth/request", json={"email": "e2e@example.com"})
+    assert r.status_code == 200
+    assert r.json().get("test_token") is None
+    sender.send_magic_link.assert_called_once()
+
+
+def test_test_mode_disabled_when_env_secret_empty(client):
+    """Default `client` fixture has E2E_TEST_SECRET unset — door is shut."""
+    c, _, sender = client
+    r = c.post(
+        "/auth/request",
+        json={"email": "e2e@example.com"},
+        headers={"X-Test-Secret": "anything"},
+    )
+    assert r.status_code == 200
+    assert r.json().get("test_token") is None
+    sender.send_magic_link.assert_called_once()

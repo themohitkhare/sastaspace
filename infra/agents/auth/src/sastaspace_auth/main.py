@@ -18,7 +18,7 @@ import sys
 from contextlib import asynccontextmanager
 from html import escape
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, Header, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, JSONResponse
 from pydantic import BaseModel, EmailStr, Field
@@ -45,6 +45,12 @@ RESEND_API_KEY = env("RESEND_API_KEY")
 FROM_ADDRESS = env("AUTH_FROM_ADDRESS", "hi@sastaspace.com", required=False)
 PUBLIC_BASE = env("PUBLIC_BASE", "https://auth.sastaspace.com", required=False)
 NOTES_CALLBACK = env("NOTES_CALLBACK", "https://notes.sastaspace.com/auth/callback", required=False)
+# E2E_TEST_SECRET enables the test-mode side door on /auth/request: when a
+# request arrives with `X-Test-Secret: <value>` matching this env var, the
+# response includes the issued token instead of sending it via email. Lets
+# Playwright drive the magic-link flow without a real inbox. Empty/unset
+# disables the side door entirely.
+E2E_TEST_SECRET = env("E2E_TEST_SECRET", "", required=False)
 ALLOWED_ORIGINS = [o.strip() for o in env(
     "ALLOWED_ORIGINS",
     "https://sastaspace.com,https://notes.sastaspace.com",
@@ -62,6 +68,9 @@ class RequestBody(BaseModel):
 class RequestResponse(BaseModel):
     sent: bool
     detail: str = ""
+    # Only populated in test mode (when X-Test-Secret matches). Lets E2E
+    # tests skip the email roundtrip and drive /auth/verify directly.
+    test_token: str | None = None
 
 
 # ---------- app + lifecycle ----------
@@ -91,8 +100,17 @@ def healthz() -> dict:
 
 
 @app.post("/auth/request", response_model=RequestResponse)
-def request_magic_link(body: RequestBody) -> RequestResponse:
-    """Generate a single-use token, store it, and email the magic link."""
+def request_magic_link(
+    body: RequestBody,
+    x_test_secret: str | None = Header(default=None, alias="X-Test-Secret"),
+) -> RequestResponse:
+    """Generate a single-use token, store it, and email the magic link.
+
+    When `X-Test-Secret` matches `E2E_TEST_SECRET`, the response includes
+    the issued token directly so an E2E test can complete the auth flow
+    without needing to retrieve the email. The token still goes through
+    the same `issue_auth_token` reducer — we only skip the Resend send.
+    """
     email = body.email.strip().lower()
     if not EMAIL_RE.match(email):
         raise HTTPException(status_code=400, detail="invalid email")
@@ -105,6 +123,13 @@ def request_magic_link(body: RequestBody) -> RequestResponse:
     except Exception as exc:  # noqa: BLE001
         log.exception("issue_auth_token failed")
         raise HTTPException(status_code=502, detail=f"stdb error: {exc}") from exc
+
+    # Test-mode side door: skip the email send and hand the token back.
+    # Only triggers when the request header matches a non-empty server-side
+    # secret — empty E2E_TEST_SECRET means the door is permanently shut.
+    if E2E_TEST_SECRET and x_test_secret == E2E_TEST_SECRET:
+        log.info("test-mode auth/request for %s — skipping email send", email)
+        return RequestResponse(sent=True, detail="test mode", test_token=token)
 
     magic_link = f"{PUBLIC_BASE.rstrip('/')}/auth/verify?t={token}"
     result = app.state.sender.send_magic_link(email, magic_link)
