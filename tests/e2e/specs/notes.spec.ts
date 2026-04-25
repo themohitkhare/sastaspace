@@ -20,13 +20,14 @@ test.describe("notes — index + posts", () => {
     await expect(page.getByRole("heading", { level: 1 })).toContainText(linkText);
   });
 
-  test("article page shows comments section with form", async ({ page }) => {
+  test("article page shows comments section with sign-in gate for anon users", async ({ page }) => {
     await gotoAndHydrate(page, NOTES);
     await page.locator('a[href^="/2026-"]').first().click();
     await waitForHydrate(page);
     await expect(page.getByRole("heading", { name: /what people said/i })).toBeVisible();
-    await expect(page.getByRole("textbox", { name: /^comment$/i })).toBeVisible();
-    await expect(page.getByRole("button", { name: /post comment/i })).toBeVisible();
+    // Unauthenticated: form shows sign-in gate, not the textarea.
+    // Signed-in comment form is covered in comments-signed-in.spec.ts.
+    await expect(page.getByRole("button", { name: /sign in to comment/i })).toBeVisible();
   });
 });
 

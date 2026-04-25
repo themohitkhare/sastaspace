@@ -1,10 +1,15 @@
 import { expect, test } from "@playwright/test";
 import { signIn } from "../helpers/auth.js";
+import { sql } from "../helpers/stdb.js";
 import { NOTES } from "../helpers/urls.js";
 
 const OWNER_EMAIL = process.env.E2E_OWNER_EMAIL ?? "mohitkhare582@gmail.com";
 
 test.describe("admin queue — owner gating", () => {
+  test.afterEach(async ({ request }) => {
+    await sql(request, `DELETE FROM comment WHERE author_name LIKE 'e2e-probe-%'`).catch(() => {});
+  });
+
   test("not signed in → admin page shows the gate, not the queue", async ({ page }) => {
     await page.goto(`${NOTES}/admin/comments`);
     await expect(page.getByRole("heading", { name: /comment queue/i })).toBeVisible();

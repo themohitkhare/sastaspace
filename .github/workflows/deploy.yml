@@ -1,0 +1,438 @@
+name: deploy
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    - cron: "0 4 * * *"
+  workflow_dispatch:
+    inputs:
+      bindings_run_id:
+        description: "module run ID to pull stdb-bindings from (optional, for manual landing rebuild)"
+        required: false
+        type: string
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+  NEXT_PUBLIC_STDB_URI: wss://stdb.sastaspace.com
+  NEXT_PUBLIC_STDB_MODULE: sastaspace
+  STDB_SERVER_URL: https://stdb.sastaspace.com
+  STDB_MODULE_NAME: sastaspace
+  STDB_CLI_VERSION: "2.1.0"
+  COVERAGE_MIN_LINES: "20"
+  LANDING_OUT_DIR: /home/mkhare/sastaspace/infra/landing/out
+  NOTES_OUT_DIR: /home/mkhare/sastaspace/infra/notes/out
+
+jobs:
+
+  # ── 0. detect which areas changed ─────────────────────────────────────────
+  changes:
+    runs-on: [self-hosted, Linux]
+    outputs:
+      module:  ${{ steps.diff.outputs.module }}
+      landing: ${{ steps.diff.outputs.landing }}
+      notes:   ${{ steps.diff.outputs.notes }}
+      agents:  ${{ steps.diff.outputs.agents }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - id: diff
+        run: |
+          # Schedule and manual dispatch always rebuild everything.
+          if [[ "$GITHUB_EVENT_NAME" == "schedule" || "$GITHUB_EVENT_NAME" == "workflow_dispatch" ]]; then
+            printf 'module=true\nlanding=true\nnotes=true\nagents=true\n' >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if [[ "$GITHUB_EVENT_NAME" == "pull_request" ]]; then
+            BASE="${{ github.event.pull_request.base.sha }}"
+          else
+            BASE="$(git rev-parse HEAD~1)"
+          fi
+          changed=$(git diff --name-only "$BASE" HEAD)
+          detect() { echo "$changed" | grep -qE "$1" && echo true || echo false; }
+          echo "module=$(detect   '^module/')"                                                        >> "$GITHUB_OUTPUT"
+          echo "landing=$(detect  '^(apps/landing|packages|infra/landing)/')"                        >> "$GITHUB_OUTPUT"
+          echo "notes=$(detect    '^(apps/notes|packages|infra/notes/|infra/landing/security_headers)')" >> "$GITHUB_OUTPUT"
+          echo "agents=$(detect   '^(infra/agents|infra/docker-compose)')"                           >> "$GITHUB_OUTPUT"
+
+  # ── 1. SpacetimeDB Rust module ────────────────────────────────────────────
+  module-gate:
+    needs: changes
+    if: needs.changes.outputs.module == 'true'
+    runs-on: [self-hosted, Linux]
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+          components: clippy, rustfmt, llvm-tools-preview
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: module
+          save-if: ${{ github.ref == 'refs/heads/main' && hashFiles('module/Cargo.lock') != '' }}
+      - name: install cargo extras
+        run: |
+          which cargo-audit >/dev/null 2>&1 || cargo install cargo-audit --locked
+          which cargo-llvm-cov >/dev/null 2>&1 || cargo install cargo-llvm-cov --locked
+      - name: fmt
+        working-directory: module
+        run: cargo fmt --all --check
+      - name: clippy
+        working-directory: module
+        run: cargo clippy --target wasm32-unknown-unknown --all-targets -- -D warnings
+      - name: cargo audit
+        working-directory: module
+        run: cargo audit --deny warnings
+      - name: test + coverage
+        working-directory: module
+        run: cargo llvm-cov --summary-only --fail-under-lines $COVERAGE_MIN_LINES --lcov --output-path lcov.info
+      - uses: actions/upload-artifact@v7
+        with:
+          name: module-coverage
+          path: module/lcov.info
+          retention-days: 7
+
+  module-publish:
+    needs: module-gate
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    runs-on: [self-hosted, Linux]
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dtolnay/rust-toolchain@stable
+        with: { targets: wasm32-unknown-unknown }
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: module
+          save-if: ${{ github.ref == 'refs/heads/main' && hashFiles('module/Cargo.lock') != '' }}
+      - name: install spacetime cli
+        run: |
+          if ! command -v spacetime >/dev/null 2>&1; then
+            curl -sSf https://install.spacetimedb.com | sh -s -- --yes
+            echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+          fi
+          "$HOME/.local/bin/spacetime" version install "$STDB_CLI_VERSION" || true
+          "$HOME/.local/bin/spacetime" version use "$STDB_CLI_VERSION"
+      - name: register prod server
+        run: |
+          spacetime server add prod --url "$STDB_SERVER_URL" --no-fingerprint || \
+            spacetime server set-default prod
+      - name: configure auth
+        env:
+          SPACETIME_TOKEN: ${{ secrets.SPACETIME_TOKEN }}
+        run: |
+          [[ -z "$SPACETIME_TOKEN" ]] && { echo "::error::SPACETIME_TOKEN unset — publish would create a stranger identity"; exit 1; }
+          spacetime login --token "$SPACETIME_TOKEN"
+      - name: publish module
+        run: spacetime publish --server prod --module-path module "$STDB_MODULE_NAME" -y
+      - name: regenerate ts bindings
+        run: |
+          spacetime generate \
+            --lang typescript \
+            --out-dir packages/stdb-bindings/src/generated \
+            --module-path module
+      - uses: actions/upload-artifact@v7
+        with:
+          name: stdb-bindings
+          path: packages/stdb-bindings/src/generated
+          retention-days: 7
+
+  # ── 2. landing app ────────────────────────────────────────────────────────
+  landing-gate:
+    needs: [changes, module-publish]
+    if: >-
+      always() && !cancelled() &&
+      (needs.changes.outputs.landing == 'true' || needs.module-publish.result == 'success')
+    runs-on: [self-hosted, Linux]
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with: { node-version: 22 }
+      - name: enable pnpm
+        run: corepack enable && corepack prepare pnpm@9.12.0 --activate
+      - run: pnpm install --frozen-lockfile
+      - name: download fresh bindings (module just published)
+        if: needs.module-publish.result == 'success'
+        uses: actions/download-artifact@v8
+        with:
+          name: stdb-bindings
+          path: packages/stdb-bindings/src/generated
+      - name: download bindings from explicit run (manual dispatch)
+        if: inputs.bindings_run_id != ''
+        uses: actions/download-artifact@v8
+        with:
+          name: stdb-bindings
+          path: packages/stdb-bindings/src/generated
+          run-id: ${{ inputs.bindings_run_id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+      - run: pnpm audit --prod --audit-level moderate
+      - run: pnpm --filter @sastaspace/landing typecheck
+      - run: pnpm --filter @sastaspace/landing lint --max-warnings 0
+      - run: pnpm --filter @sastaspace/landing coverage
+      - uses: actions/upload-artifact@v7
+        with:
+          name: landing-coverage
+          path: apps/landing/coverage
+          retention-days: 7
+      - run: pnpm --filter @sastaspace/landing build
+      - uses: actions/upload-artifact@v7
+        with:
+          name: landing-out
+          path: apps/landing/out
+          retention-days: 7
+
+  landing-deploy:
+    needs: landing-gate
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    runs-on: [self-hosted, Linux]
+    steps:
+      - uses: actions/checkout@v6
+        with: { sparse-checkout: infra/landing }
+      - uses: actions/download-artifact@v8
+        with:
+          name: landing-out
+          path: out/
+      - name: rsync site
+        run: |
+          mkdir -p "$LANDING_OUT_DIR"
+          rsync -a --delete out/ "$LANDING_OUT_DIR/"
+      - name: sync nginx config + restart if changed
+        run: |
+          NGINX_DIR=/home/mkhare/sastaspace/infra/landing
+          NEW_HEADERS=$(sha256sum infra/landing/security_headers.conf | cut -d' ' -f1)
+          NEW_NGINX=$(sha256sum infra/landing/nginx.conf | cut -d' ' -f1)
+          OLD_HEADERS=$(sha256sum "$NGINX_DIR/security_headers.conf" 2>/dev/null | cut -d' ' -f1)
+          OLD_NGINX=$(sha256sum "$NGINX_DIR/nginx.conf" 2>/dev/null | cut -d' ' -f1)
+          cat infra/landing/security_headers.conf > "$NGINX_DIR/security_headers.conf"
+          cat infra/landing/nginx.conf > "$NGINX_DIR/nginx.conf"
+          if [[ "$NEW_HEADERS" != "$OLD_HEADERS" || "$NEW_NGINX" != "$OLD_NGINX" ]]; then
+            echo "nginx config changed — restarting both containers"
+            docker restart sastaspace-landing sastaspace-notes
+          else
+            echo "nginx config unchanged — reloading"
+            docker exec sastaspace-landing nginx -s reload
+            docker exec sastaspace-notes nginx -s reload
+          fi
+      - name: smoke test
+        run: |
+          for i in 1 2 3 4 5; do
+            code=$(curl -sS -o /dev/null -w "%{http_code}" -L https://sastaspace.com/)
+            echo "attempt $i: HTTP $code"
+            [[ "$code" == "200" ]] && exit 0
+            sleep 4
+          done
+          exit 1
+
+  # ── 3. notes app ─────────────────────────────────────────────────────────
+  notes:
+    needs: [changes, module-publish]
+    if: >-
+      always() && !cancelled() &&
+      (needs.changes.outputs.notes == 'true' || needs.module-publish.result == 'success')
+    runs-on: [self-hosted, Linux]
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with: { node-version: 22 }
+      - name: enable pnpm
+        run: corepack enable && corepack prepare pnpm@9.12.0 --activate
+      - run: pnpm install --frozen-lockfile
+      - name: download fresh bindings (module just published)
+        if: needs.module-publish.result == 'success'
+        uses: actions/download-artifact@v8
+        with:
+          name: stdb-bindings
+          path: packages/stdb-bindings/src/generated
+      - run: pnpm audit --prod --audit-level moderate
+      - run: pnpm --filter @sastaspace/notes typecheck
+      - run: pnpm --filter @sastaspace/notes lint --max-warnings 0
+      - run: pnpm --filter @sastaspace/notes coverage
+      - uses: actions/upload-artifact@v7
+        with:
+          name: notes-coverage
+          path: apps/notes/coverage
+          retention-days: 7
+      - run: pnpm --filter @sastaspace/notes build
+      - name: deploy to nginx
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+        run: |
+          mkdir -p "$NOTES_OUT_DIR"
+          rsync -a --delete apps/notes/out/ "$NOTES_OUT_DIR/"
+          docker exec sastaspace-notes nginx -s reload
+      - name: smoke test
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+        run: |
+          for i in 1 2 3 4 5; do
+            code=$(curl -sS -o /dev/null -w "%{http_code}" -L https://notes.sastaspace.com/)
+            echo "attempt $i: HTTP $code"
+            [[ "$code" == "200" ]] && exit 0
+            sleep 4
+          done
+          exit 1
+
+  # ── 4. Python agent services ──────────────────────────────────────────────
+  moderator:
+    needs: changes
+    if: needs.changes.outputs.agents == 'true'
+    runs-on: [self-hosted, Linux]
+    steps:
+      - uses: actions/checkout@v6
+      - name: lint + test
+        working-directory: infra/agents/moderator
+        run: |
+          if [[ ! -d .venv ]] || [[ pyproject.toml -nt .venv/pyvenv.cfg ]]; then
+            rm -rf .venv
+            python3.12 -m venv .venv
+            . .venv/bin/activate
+            pip install -q --upgrade pip
+            pip install -q -e '.[dev]'
+          fi
+          . .venv/bin/activate
+          ruff check src tests
+          pytest
+      - name: build container
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+        working-directory: infra
+        run: docker compose build moderator
+      - name: deploy
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+        working-directory: infra
+        env:
+          SPACETIME_TOKEN: ${{ secrets.SPACETIME_TOKEN }}
+        run: |
+          if [[ -n "$SPACETIME_TOKEN" ]]; then
+            install -m 600 /dev/null agents/moderator/.env
+            echo "SPACETIME_TOKEN=$SPACETIME_TOKEN" > agents/moderator/.env
+          fi
+          docker compose up -d --no-deps --force-recreate moderator
+          sleep 6
+          docker compose ps moderator
+      - name: smoke — moderator is polling
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+        working-directory: infra
+        run: |
+          sleep 4
+          if docker compose logs --tail=20 moderator 2>&1 | grep -q "POST.*sql.*200"; then
+            echo "moderator is alive and polling"
+          else
+            echo "::error::moderator is not polling — recent logs:"
+            docker compose logs --tail=30 moderator
+            exit 1
+          fi
+
+  auth:
+    needs: changes
+    if: needs.changes.outputs.agents == 'true'
+    runs-on: [self-hosted, Linux]
+    steps:
+      - uses: actions/checkout@v6
+      - name: lint + test
+        working-directory: infra/agents/auth
+        run: |
+          if [[ ! -d .venv ]] || [[ pyproject.toml -nt .venv/pyvenv.cfg ]]; then
+            rm -rf .venv
+            python3.12 -m venv .venv
+            . .venv/bin/activate
+            pip install -q --upgrade pip
+            pip install -q -e '.[dev]'
+          fi
+          . .venv/bin/activate
+          ruff check src tests
+          pytest
+      - name: build container
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+        working-directory: infra
+        run: docker compose build auth
+      - name: deploy
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+        working-directory: infra
+        env:
+          SPACETIME_TOKEN: ${{ secrets.SPACETIME_TOKEN }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          E2E_TEST_SECRET: ${{ secrets.E2E_TEST_SECRET }}
+        run: |
+          if [[ -z "$SPACETIME_TOKEN" || -z "$RESEND_API_KEY" ]]; then
+            echo "::error::SPACETIME_TOKEN or RESEND_API_KEY missing"
+            exit 1
+          fi
+          install -m 600 /dev/null agents/auth/.env
+          {
+            echo "SPACETIME_TOKEN=$SPACETIME_TOKEN"
+            echo "RESEND_API_KEY=$RESEND_API_KEY"
+            echo "E2E_TEST_SECRET=$E2E_TEST_SECRET"
+          } > agents/auth/.env
+          docker compose up -d --no-deps --force-recreate auth
+          sleep 6
+          docker compose ps auth
+      - name: smoke — /healthz responds
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+        run: |
+          for i in 1 2 3 4 5; do
+            code=$(curl -sS -o /dev/null -w "%{http_code}" http://127.0.0.1:3130/healthz)
+            echo "attempt $i: HTTP $code"
+            [[ "$code" == "200" ]] && exit 0
+            sleep 3
+          done
+          docker compose -f infra/docker-compose.yml logs auth --tail=30
+          exit 1
+
+  # ── 5. e2e against live prod (runs AFTER all deploys) ─────────────────────
+  e2e:
+    needs: [landing-deploy, notes, moderator, auth]
+    if: >-
+      always() && !cancelled() &&
+      (github.event_name == 'push' || github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') &&
+      needs.landing-deploy.result != 'failure' &&
+      needs.notes.result != 'failure' &&
+      needs.moderator.result != 'failure' &&
+      needs.auth.result != 'failure'
+    runs-on: [self-hosted, Linux]
+    timeout-minutes: 15
+    env:
+      E2E_TEST_SECRET: ${{ secrets.E2E_TEST_SECRET }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with: { node-version: 22 }
+      - name: enable pnpm
+        run: corepack enable && corepack prepare pnpm@9.12.0 --activate
+      - run: pnpm install --frozen-lockfile
+      - name: install playwright browsers
+        run: pnpm --filter @sastaspace/e2e exec playwright install chromium --with-deps
+      - name: typecheck
+        run: pnpm --filter @sastaspace/e2e exec tsc --noEmit
+      - name: gate — required env present
+        run: |
+          [[ -z "$E2E_TEST_SECRET" ]] && { echo "::error::E2E_TEST_SECRET must be set as a GH Actions secret"; exit 1; }
+      - name: smoke — live prod URLs reachable
+        run: |
+          for url in https://sastaspace.com/ https://notes.sastaspace.com/ \
+                     https://auth.sastaspace.com/healthz \
+                     https://stdb.sastaspace.com/v1/ping; do
+            code=$(curl -sS -o /dev/null -w "%{http_code}" "$url")
+            echo "  $url → $code"
+            [[ "$code" == "200" ]] || { echo "::error::$url returned $code, refusing to run e2e on a broken stack"; exit 1; }
+          done
+      - name: run playwright
+        run: pnpm --filter @sastaspace/e2e test
+        env:
+          CI: "1"
+      - name: upload playwright report on failure
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-report-${{ github.run_id }}
+          path: tests/e2e/playwright-report/
+          retention-days: 14
+      - name: upload trace + video on failure
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-traces-${{ github.run_id }}
+          path: tests/e2e/test-results/
+          retention-days: 14

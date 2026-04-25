@@ -127,11 +127,11 @@ export async function setStatus(
   status: AdminComment["status"],
 ): Promise<void> {
   // SDK 2.1: reducers take a single named-params object.
-  await callOwnerReducer("set_comment_status", { id: Number(id), status });
+  await callOwnerReducer("set_comment_status", { id: BigInt(id), status });
 }
 
 export async function deleteComment(id: number | bigint): Promise<void> {
-  await callOwnerReducer("delete_comment", { id: Number(id) });
+  await callOwnerReducer("delete_comment", { id: BigInt(id) });
 }
 
 async function callOwnerReducer(name: string, params: object): Promise<void> {
