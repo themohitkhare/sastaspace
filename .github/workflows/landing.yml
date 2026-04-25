@@ -8,6 +8,7 @@ on:
       - "packages/design-tokens/**"
       - "packages/stdb-bindings/**"
       - "infra/landing/nginx.conf"
+      - "infra/landing/security_headers.conf"
       - ".github/workflows/landing.yml"
   pull_request:
     paths:
