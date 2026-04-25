@@ -67,9 +67,10 @@ pub fn add_legion_damage(region: &mut Region, legion: u8, amount: u64) {
     }
 }
 
-pub fn winning_legion(region: &Region) -> u8 {
+pub fn winning_legion(region: &Region) -> Option<u8> {
     let damages = [region.damage_0, region.damage_1, region.damage_2, region.damage_3, region.damage_4];
-    damages.iter().enumerate().max_by_key(|(_, &d)| d).map(|(i, _)| i as u8).unwrap_or(0)
+    let (idx, &max_dmg) = damages.iter().enumerate().max_by_key(|(_, &d)| d)?;
+    if max_dmg == 0 { None } else { Some(idx as u8) }
 }
 
 pub fn reset_legion_damage(region: &mut Region) {
@@ -97,7 +98,7 @@ mod tests {
     #[test]
     fn winning_legion_picks_highest_damage() {
         let r = make_region(100, 500, 50, 200, 10);
-        assert_eq!(winning_legion(&r), 1);
+        assert_eq!(winning_legion(&r), Some(1));
     }
 
     #[test]

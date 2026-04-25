@@ -11,6 +11,9 @@ pub struct GlobalWar {
 }
 
 pub fn init_global_war(ctx: &ReducerContext) {
+    if ctx.db.global_war().id().find(1).is_some() {
+        return;
+    }
     ctx.db.global_war().insert(GlobalWar {
         id: 1,
         season: 1,
