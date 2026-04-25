@@ -26,10 +26,11 @@ concurrency:
 env:
   NEXT_PUBLIC_STDB_URI: wss://stdb.sastaspace.com
   NEXT_PUBLIC_STDB_MODULE: sastaspace
+  LANDING_OUT_DIR: /home/mkhare/sastaspace/infra/landing/out
 
 jobs:
-  build:
-    runs-on: ubuntu-24.04
+  build-and-deploy:
+    runs-on: [self-hosted, Linux]
     steps:
       - uses: actions/checkout@v4
 
@@ -57,53 +58,20 @@ jobs:
       - run: pnpm --filter @sastaspace/landing lint
       - run: pnpm --filter @sastaspace/landing build
 
-      - uses: actions/upload-artifact@v4
-        with:
-          name: landing-out
-          path: apps/landing/out
-          retention-days: 7
-
-  deploy:
-    needs: build
-    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
-    runs-on: ubuntu-24.04
-    steps:
-      - uses: actions/checkout@v4
-        with: { sparse-checkout: infra/landing }
-
-      - uses: actions/download-artifact@v4
-        with:
-          name: landing-out
-          path: out/
-
-      - name: deploy via tailscale + rsync
-        env:
-          DEPLOY_KEY: ${{ secrets.TAXILA_SSH_KEY }}
-          DEPLOY_HOST: ${{ secrets.TAXILA_SSH_HOST }}
-          DEPLOY_USER: ${{ secrets.TAXILA_SSH_USER }}
+      - name: deploy to nginx
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
         run: |
-          if [[ -z "$DEPLOY_KEY" || -z "$DEPLOY_HOST" || -z "$DEPLOY_USER" ]]; then
-            echo "::error::Missing TAXILA_SSH_{KEY,HOST,USER} secrets — see infra/README.md for setup"
-            exit 1
-          fi
-          mkdir -p ~/.ssh
-          echo "$DEPLOY_KEY" > ~/.ssh/id_deploy
-          chmod 600 ~/.ssh/id_deploy
-          ssh-keyscan -H "$DEPLOY_HOST" >> ~/.ssh/known_hosts 2>/dev/null
-
-          rsync -az --delete -e "ssh -i ~/.ssh/id_deploy" \
-            out/ "$DEPLOY_USER@$DEPLOY_HOST:~/sastaspace/infra/landing/out/"
-
-          # nginx serves the directory live; reload picks up the new files
-          ssh -i ~/.ssh/id_deploy "$DEPLOY_USER@$DEPLOY_HOST" \
-            'docker exec sastaspace-landing nginx -s reload'
+          mkdir -p "$LANDING_OUT_DIR"
+          rsync -a --delete apps/landing/out/ "$LANDING_OUT_DIR/"
+          docker exec sastaspace-landing nginx -s reload
 
       - name: smoke test
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
         run: |
           for i in 1 2 3 4 5; do
             code=$(curl -sS -o /dev/null -w "%{http_code}" -L https://sastaspace.com/)
             echo "attempt $i: HTTP $code"
             [[ "$code" == "200" ]] && exit 0
-            sleep 5
+            sleep 4
           done
           exit 1

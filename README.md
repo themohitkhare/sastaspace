@@ -87,15 +87,13 @@ spacetime publish --server prod sastaspace --module-path module -y
 
 | Secret | What |
 |---|---|
-| `SPACETIME_TOKEN` | `spacetime token export --server prod` (after `spacetime login --server-issued-login prod`) |
-| `TAXILA_SSH_KEY` | private SSH key authorized to `mkhare@taxila` (deploy key, ed25519) |
-| `TAXILA_SSH_HOST` | the address GH Actions can reach — needs a tailscale-action step or public bastion (taxila is LAN-only by default) |
-| `TAXILA_SSH_USER` | `mkhare` |
+| `SPACETIME_TOKEN` | The `spacetimedb_token` value from your local `~/.config/spacetime/cli.toml`. CI uses it to publish as the same identity that owns the module — without it, the server treats the runner as a stranger and rejects publish. |
 
-> **Note**: GH-hosted runners can't reach `192.168.0.37`. Use a tailscale-action
-> in the deploy job (`tailscale/github-action@v3`) and set `TAXILA_SSH_HOST` to
-> the tailscale hostname. Until then, run `pnpm build && rsync apps/landing/out/
-> 192.168.0.37:~/sastaspace/infra/landing/out/` from your workstation.
+That's the only secret. GH workflows run on **self-hosted runners on taxila itself** (`runs-on: [self-hosted, Linux]`), so deploy is a local `rsync` + `docker exec nginx -s reload` — no SSH, no tailscale, no Cloudflare creds.
+
+### About SpacetimeDB "auth" on self-hosted
+
+There's no OAuth-style login. Identities are anonymous JWTs — the first time you `spacetime publish`, the CLI POSTs to `/v1/identity` and the server issues an identity bound to its own JWT signer. That identity becomes the database's `owner_identity`. From that moment on, only requests carrying a token for the same identity can re-publish or `--delete-data`. CI needs the same token, hence `SPACETIME_TOKEN`. There is no "registration" — the JWT is the identity.
 
 ### Continuous delivery
 
