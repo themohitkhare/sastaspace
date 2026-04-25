@@ -157,6 +157,7 @@ pub fn end_season(ctx: &ReducerContext) {
 
 // Initialise the region_tick schedule (called from lib.rs init).
 pub fn init_region_tick_schedule(ctx: &ReducerContext) {
+    if ctx.db.region_tick_schedule().iter().next().is_some() { return; }
     ctx.db.region_tick_schedule().insert(RegionTickSchedule {
         scheduled_id: 0,
         scheduled_at: ScheduleAt::from(Duration::from_secs(60)),

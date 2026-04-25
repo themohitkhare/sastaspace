@@ -244,6 +244,7 @@ mod tests {
 // ── Scheduled reducer: expire words every 2 seconds ──────────────────────────
 
 pub fn init_word_expire_schedule(ctx: &ReducerContext) {
+    if ctx.db.word_expire_schedule().iter().next().is_some() { return; }
     ctx.db.word_expire_schedule().insert(WordExpireSchedule {
         scheduled_id: 0,
         scheduled_at: ScheduleAt::from(std::time::Duration::from_secs(2)),

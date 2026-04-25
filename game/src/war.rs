@@ -1,6 +1,6 @@
 use spacetimedb::{reducer, table, ReducerContext, ScheduleAt, Table, Timestamp};
 use std::time::Duration;
-use crate::region::region;
+use crate::region::{region, end_season, reset_legion_damage};
 
 #[table(accessor = global_war, public)]
 pub struct GlobalWar {
@@ -46,27 +46,28 @@ pub fn global_war_tick(ctx: &ReducerContext, _arg: WarTickSchedule) -> Result<()
         .filter(|r| r.controlling_legion >= 0)
         .min_by_key(|r| r.active_wardens);
 
-    let Some(mut region) = target else { return Ok(()); };
+    let Some(mut victim) = target else { return Ok(()); };
 
-    region.controlling_legion = -1;
-    region.enemy_hp = region.enemy_max_hp / 4;
-    crate::region::reset_legion_damage(&mut region);
-    ctx.db.region().id().update(region);
+    victim.controlling_legion = -1;
+    victim.enemy_hp = victim.enemy_max_hp / 4;
+    reset_legion_damage(&mut victim);
+    ctx.db.region().id().update(victim);
 
     let mut w = war;
     w.liberated_territories = w.liberated_territories.saturating_sub(1);
-    w.enemy_territories += 1;
+    w.enemy_territories = w.enemy_territories.saturating_add(1);
     let liberated_after = w.liberated_territories;
     ctx.db.global_war().id().update(w);
 
     if liberated_after == 0 {
-        crate::region::end_season(ctx);
+        end_season(ctx);
     }
 
     Ok(())
 }
 
 pub fn init_war_tick_schedule(ctx: &ReducerContext) {
+    if ctx.db.war_tick_schedule().iter().next().is_some() { return; }
     ctx.db.war_tick_schedule().insert(WarTickSchedule {
         scheduled_id: 0,
         scheduled_at: ScheduleAt::from(Duration::from_secs(300)),
