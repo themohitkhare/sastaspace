@@ -105,35 +105,30 @@ pub fn plan_claim(
     }
 }
 
-// SECURITY: prev_identity is caller-supplied. The above guards block the most
-// direct theft attacks (self-claim and verified-row-takeover), but a malicious
-// client can still claim any *guest* row whose identity it can observe. The
-// long-term mitigation is to have services/auth/ mint a signed claim token
-// bound to (prev_identity, email_identity) that this reducer verifies. Until
-// then, the frontend orchestrates the call from the same browser as the
-// magic-link redirect, so prev_identity is the legitimate guest identity in
-// the common case.
+// SECURITY: Owner-only reducer. The auth service (services/auth/) is the
+// only caller — it mints a fresh new_identity via STDB and passes both
+// the prev_identity (the user's previous browser/guest identity) and
+// new_identity (the freshly-minted email-bound one) explicitly. Gating
+// on owner blocks any malicious client from forging claim_progress calls.
 #[reducer]
 pub fn claim_progress(
     ctx: &ReducerContext,
     prev_identity: Identity,
+    new_identity: Identity,
     email: String,
 ) -> Result<(), String> {
+    crate::assert_owner(ctx)?;
     if email.is_empty() || email.len() > 254 {
         return Err("invalid email".into());
     }
-    let me = ctx.sender();
-    if prev_identity == me {
-        return Err("prev_identity must differ from caller".into());
-    }
     let guest = ctx.db.player().identity().find(prev_identity);
-    let existing = ctx.db.player().identity().find(me);
     if let Some(g) = &guest {
         if g.email.is_some() {
             return Err("target row is already verified".into());
         }
     }
-    match plan_claim(guest, existing, me, email) {
+    let existing = ctx.db.player().identity().find(new_identity);
+    match plan_claim(guest, existing, new_identity, email) {
         ClaimAction::Rekey { delete_id, insert } => {
             ctx.db.player().identity().delete(delete_id);
             ctx.db.player().insert(insert);
