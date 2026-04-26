@@ -624,6 +624,151 @@ fn render_magic_link_text(link: &str) -> String {
     format!("Sign in to sastaspace.\n\nClick this link (good for 15 minutes, works once):\n\n  {link}\n\nIf you didn't ask for this, ignore.\n\n—\nsastaspace.com\n")
 }
 
+// --- test-mode side door (Phase 3 prep, audit findings N4 + N5) ---
+//
+// SpacetimeDB 2.1 WASM modules cannot read process env at runtime. To gate
+// the `mint_test_token` reducer without baking a secret into the source we
+// store the secret in a private single-row table that the owner populates
+// post-publish via `set_e2e_test_secret`. Production leaves the row absent
+// (or the secret as None) so the reducer fails closed with
+// "test mode disabled". Dev/CI compose runs `set_e2e_test_secret` once on
+// boot to enable it.
+
+/// Private holder for the E2E test secret. `id` is always 0 (singleton).
+/// The secret is `None` when test mode is disabled; otherwise it must
+/// match the `secret` arg supplied to `mint_test_token`. Not public — only
+/// the owner identity (which already has the secret in their compose env)
+/// can read it via SQL.
+#[table(accessor = app_config_secret)]
+pub struct AppConfigSecret {
+    #[primary_key]
+    pub id: u64,
+    pub e2e_test_secret: Option<String>,
+}
+
+/// Private one-row stash for the most recently minted test token. The
+/// reducer can't return values to the caller in STDB 2.1, so the E2E
+/// helper reads this row via SQL (using the owner JWT) immediately after
+/// invoking `mint_test_token`. `id` is always 0 (singleton). Not public.
+#[table(accessor = last_test_token)]
+pub struct LastTestToken {
+    #[primary_key]
+    pub id: u64,
+    pub email: String,
+    pub token: String,
+    pub created_at: Timestamp,
+}
+
+/// Owner-only: set or clear the E2E test secret. Pass `None` (or omit the
+/// secret in compose) to lock the side door. In CI/dev compose, run once
+/// after `spacetime publish`:
+///   spacetime call sastaspace set_e2e_test_secret '["<random-hex>"]'
+#[reducer]
+pub fn set_e2e_test_secret(
+    ctx: &ReducerContext,
+    secret: Option<String>,
+) -> Result<(), String> {
+    assert_owner(ctx)?;
+    let row = AppConfigSecret {
+        id: 0,
+        e2e_test_secret: secret,
+    };
+    if ctx.db.app_config_secret().id().find(0).is_some() {
+        ctx.db.app_config_secret().id().update(row);
+    } else {
+        ctx.db.app_config_secret().insert(row);
+    }
+    Ok(())
+}
+
+/// Test-only: mint an `auth_token` directly without queueing an email.
+/// The E2E helper reads the minted token from `last_test_token` via SQL
+/// (the STDB 2.1 reducer ABI doesn't surface return values to clients).
+///
+/// Defense in depth: the caller MUST be the owner identity (assert_owner)
+/// AND the supplied `secret` MUST match the value previously installed via
+/// `set_e2e_test_secret`. In production neither holds — the owner JWT is
+/// owner-only, and the secret row is absent so the reducer fails closed
+/// with "test mode disabled".
+///
+/// Inserts the same shape of `auth_token` row that `request_magic_link`
+/// does (15 minute TTL, `used_at = None`) so the existing `verify_token`
+/// reducer can consume it unchanged.
+#[reducer]
+pub fn mint_test_token(
+    ctx: &ReducerContext,
+    email: String,
+    secret: String,
+) -> Result<(), String> {
+    assert_owner(ctx)?;
+    let email = email.trim().to_lowercase();
+    validate_mint_test_args(&email, &secret)?;
+    let stored = ctx
+        .db
+        .app_config_secret()
+        .id()
+        .find(0)
+        .and_then(|row| row.e2e_test_secret);
+    let expected = match stored {
+        Some(s) if !s.is_empty() => s,
+        _ => return Err("test mode disabled".into()),
+    };
+    if secret != expected {
+        return Err("invalid test secret".into());
+    }
+    let token: String = (0..32)
+        .map(|_| {
+            let n: u32 = ctx.rng().gen_range(0..62);
+            let c = if n < 26 {
+                b'a' + n as u8
+            } else if n < 52 {
+                b'A' + (n - 26) as u8
+            } else {
+                b'0' + (n - 52) as u8
+            };
+            c as char
+        })
+        .collect();
+    let now = ctx.timestamp;
+    let expires = Timestamp::from_micros_since_unix_epoch(
+        now.to_micros_since_unix_epoch() + AUTH_TOKEN_TTL_MICROS,
+    );
+    ctx.db.auth_token().insert(AuthToken {
+        token: token.clone(),
+        email: email.clone(),
+        created_at: now,
+        expires_at: expires,
+        used_at: None,
+    });
+    let stash = LastTestToken {
+        id: 0,
+        email,
+        token,
+        created_at: now,
+    };
+    if ctx.db.last_test_token().id().find(0).is_some() {
+        ctx.db.last_test_token().id().update(stash);
+    } else {
+        ctx.db.last_test_token().insert(stash);
+    }
+    Ok(())
+}
+
+/// Pure helper: validates the inputs to `mint_test_token`. Pulled out so
+/// it can be unit-tested on the host without a `ReducerContext`.
+fn validate_mint_test_args(email: &str, secret: &str) -> Result<(), String> {
+    if !email.contains('@') || email.len() > 200 {
+        return Err("invalid email".into());
+    }
+    if secret.is_empty() {
+        return Err("missing secret".into());
+    }
+    if secret.len() < 16 || secret.len() > 200 {
+        return Err("invalid secret length".into());
+    }
+    Ok(())
+}
+
 // === end auth-mailer (Phase 1 W1) ===
 
 // === admin-collector (Phase 1 W2) ===
@@ -1934,6 +2079,93 @@ mod auth_mailer_tests {
         assert_eq!(e.status, "queued");
         assert!(e.provider_msg_id.is_none());
         assert!(e.error.is_none());
+    }
+
+    // --- mint_test_token validation (audit findings N4 + N5) ---
+    //
+    // The reducer body itself can't be invoked without a `ReducerContext`,
+    // but the pure validation helper carries the meaningful logic for
+    // rejecting malformed args before we hit the assert_owner / secret
+    // check. The owner+secret gating is exercised in the live STDB smoke
+    // covered by the E2E `signInViaStdb` helper.
+
+    #[test]
+    fn validate_mint_test_args_accepts_well_formed() {
+        assert!(validate_mint_test_args(
+            "user@example.com",
+            "0123456789abcdef0123456789abcdef",
+        )
+        .is_ok());
+        assert!(validate_mint_test_args(
+            "ops@sastaspace.com",
+            "thisisalongenoughsecret",
+        )
+        .is_ok());
+    }
+
+    #[test]
+    fn validate_mint_test_args_rejects_bad_email() {
+        let r = validate_mint_test_args("notanemail", "0123456789abcdef");
+        assert!(r.is_err());
+        assert_eq!(r.unwrap_err(), "invalid email");
+        let too_long = format!("{}@example.com", "a".repeat(250));
+        assert!(validate_mint_test_args(&too_long, "0123456789abcdef").is_err());
+    }
+
+    #[test]
+    fn validate_mint_test_args_rejects_empty_secret() {
+        let r = validate_mint_test_args("user@example.com", "");
+        assert!(r.is_err());
+        assert_eq!(r.unwrap_err(), "missing secret");
+    }
+
+    #[test]
+    fn validate_mint_test_args_rejects_short_secret() {
+        // < 16 chars — too easy to brute force even with assert_owner gating.
+        let r = validate_mint_test_args("user@example.com", "tooshort");
+        assert!(r.is_err());
+        assert_eq!(r.unwrap_err(), "invalid secret length");
+    }
+
+    #[test]
+    fn validate_mint_test_args_rejects_overlong_secret() {
+        let huge = "x".repeat(250);
+        let r = validate_mint_test_args("user@example.com", &huge);
+        assert!(r.is_err());
+        assert_eq!(r.unwrap_err(), "invalid secret length");
+    }
+
+    #[test]
+    fn app_config_secret_struct_round_trips_with_some() {
+        let row = AppConfigSecret {
+            id: 0,
+            e2e_test_secret: Some("0123456789abcdef".into()),
+        };
+        assert_eq!(row.id, 0);
+        assert_eq!(row.e2e_test_secret.as_deref(), Some("0123456789abcdef"));
+    }
+
+    #[test]
+    fn app_config_secret_struct_round_trips_with_none() {
+        let row = AppConfigSecret {
+            id: 0,
+            e2e_test_secret: None,
+        };
+        assert_eq!(row.id, 0);
+        assert!(row.e2e_test_secret.is_none());
+    }
+
+    #[test]
+    fn last_test_token_struct_round_trips() {
+        let row = LastTestToken {
+            id: 0,
+            email: "user@example.com".into(),
+            token: "tok_abc_123".into(),
+            created_at: Timestamp::UNIX_EPOCH,
+        };
+        assert_eq!(row.id, 0);
+        assert_eq!(row.email, "user@example.com");
+        assert_eq!(row.token, "tok_abc_123");
     }
 }
 
