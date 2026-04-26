@@ -56,6 +56,35 @@ pub fn is_guest_already_verified(guest: Option<&Player>) -> bool {
     matches!(guest, Some(p) if p.email.is_some())
 }
 
+/// Swap the calling player's legion to `new_legion`. Caller must be a
+/// registered player. Idempotent: if the new legion equals the current
+/// one, returns Ok(()) without writing.
+///
+/// Frontend pairs with apps/typewars/src/components/LegionSwapModal: the
+/// modal's "Confirm switch" button now calls this reducer; before this
+/// reducer existed, the modal closed without persisting the change.
+#[reducer]
+pub fn swap_legion(ctx: &ReducerContext, new_legion: u8) -> Result<(), String> {
+    if new_legion >= LEGION_COUNT {
+        return Err(format!(
+            "invalid legion {new_legion} (max {})",
+            LEGION_COUNT - 1
+        ));
+    }
+    let mut player = ctx
+        .db
+        .player()
+        .identity()
+        .find(ctx.sender())
+        .ok_or_else(|| "player not found — register first".to_string())?;
+    if player.legion == new_legion {
+        return Ok(());
+    }
+    player.legion = new_legion;
+    ctx.db.player().identity().update(player);
+    Ok(())
+}
+
 #[reducer]
 pub fn register_player(ctx: &ReducerContext, username: String, legion: u8) -> Result<(), String> {
     if ctx.db.player().identity().find(ctx.sender()).is_some() {
@@ -213,6 +242,13 @@ mod tests {
     fn legion_0_to_4_are_valid() {
         assert!(validate_registration("alice", 0, &[]).is_ok());
         assert!(validate_registration("alice", 4, &[]).is_ok());
+    }
+
+    #[test]
+    fn swap_legion_signature_compiles() {
+        // Compile-time assertion that swap_legion has the expected
+        // signature: fn(&ReducerContext, u8) -> Result<(), String>.
+        let _: fn(&ReducerContext, u8) -> Result<(), String> = swap_legion;
     }
 
     #[test]

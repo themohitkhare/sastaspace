@@ -12,6 +12,7 @@ import EndBattleReducer from "../end_battle_reducer";
 import RegisterPlayerReducer from "../register_player_reducer";
 import StartBattleReducer from "../start_battle_reducer";
 import SubmitWordReducer from "../submit_word_reducer";
+import SwapLegionReducer from "../swap_legion_reducer";
 
 export type ClaimProgressParams = __Infer<typeof ClaimProgressReducer>;
 export type ClaimProgressSelfParams = __Infer<typeof ClaimProgressSelfReducer>;
@@ -19,4 +20,5 @@ export type EndBattleParams = __Infer<typeof EndBattleReducer>;
 export type RegisterPlayerParams = __Infer<typeof RegisterPlayerReducer>;
 export type StartBattleParams = __Infer<typeof StartBattleReducer>;
 export type SubmitWordParams = __Infer<typeof SubmitWordReducer>;
+export type SwapLegionParams = __Infer<typeof SwapLegionReducer>;
 

@@ -40,6 +40,7 @@ import EndBattleReducer from "./end_battle_reducer";
 import RegisterPlayerReducer from "./register_player_reducer";
 import StartBattleReducer from "./start_battle_reducer";
 import SubmitWordReducer from "./submit_word_reducer";
+import SwapLegionReducer from "./swap_legion_reducer";
 
 // Import all procedure arg schemas
 
@@ -85,6 +86,9 @@ const tablesSchema = __schema({
       { accessor: 'identity', name: 'player_identity_idx_btree', algorithm: 'btree', columns: [
         'identity',
       ] },
+      { accessor: 'username', name: 'player_username_idx_btree', algorithm: 'btree', columns: [
+        'username',
+      ] },
     ],
     constraints: [
       { name: 'player_identity_key', constraint: 'unique', columns: ['identity'] },
@@ -125,6 +129,7 @@ const reducersSchema = __reducers(
   __reducerSchema("register_player", RegisterPlayerReducer),
   __reducerSchema("start_battle", StartBattleReducer),
   __reducerSchema("submit_word", SubmitWordReducer),
+  __reducerSchema("swap_legion", SwapLegionReducer),
 );
 
 /** The schema information for all procedures in this module. This is defined the same way as the procedures would have been defined in the server. */

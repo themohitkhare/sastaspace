@@ -23,6 +23,7 @@ export default function App() {
   const playerRow = playerRows[0];
 
   const registerPlayer = useReducer(reducers.registerPlayer);
+  const swapLegionReducer = useReducer(reducers.swapLegion);
 
   const [regionRows] = useTable(tables.region);
   const regions: Region[] = useMemo(
@@ -65,16 +66,10 @@ export default function App() {
     setActiveRegion(null);
   }, [activeRegion, player, regions]);
 
-  const swapLegion = useCallback(async (_legion: LegionId): Promise<void> => {
-    // TODO: reducer doesn't exist yet — see audit-fix/typewars-perf
-    // A `change_legion` (or equivalent) reducer needs to be added to the
-    // typewars SpacetimeDB module before this can be wired up.
-    // Once the reducer is generated into @sastaspace/typewars-bindings, replace
-    // this no-op with:
-    //   await changePlayerLegion({ legion: _legion });
-    //   setSwapOpen(false);
+  const swapLegion = useCallback(async (legion: LegionId): Promise<void> => {
+    await swapLegionReducer({ newLegion: legion });
     setSwapOpen(false);
-  }, []);
+  }, [swapLegionReducer]);
 
   let screenContent: React.ReactNode;
 
