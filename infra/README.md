@@ -39,6 +39,31 @@ docker compose pull spacetime
 docker compose up -d
 ```
 
+## STDB-native cutover (Phase 3)
+
+The compose file ships a `stdb-native` profile (currently: `deck-static`) for services
+that replace the legacy Python services without colliding on host ports. Both old
+and new can sit in the same file but only one set may run at a time.
+
+```bash
+# on a workstation with keychain access
+./cloudflared/add-deck-ingress.sh                        # adds deck.sastaspace.com to the tunnel
+
+# on the prod box (taxila), at cutover time
+docker compose stop deck && docker compose rm -f deck    # legacy Python deck-API
+docker compose --profile stdb-native up -d deck-static   # static nginx for workers' MusicGen zips
+curl -I https://deck.sastaspace.com/                     # 200 (autoindex) — verifies tunnel + nginx
+```
+
+After Phase 3 cutover, `auth.sastaspace.com` continues to resolve but serves a
+`410 Gone` page (see `landing/auth-410.conf` + the `auth-410` compose service).
+Phase 4 — at least 7 days post-cutover — runs:
+
+```bash
+./cloudflared/remove-auth-ingress.sh                     # drops the auth.sastaspace.com tunnel rule
+docker compose stop auth-410 && docker compose rm -f auth-410
+```
+
 ## Adding a publish token for CI
 
 ```bash
