@@ -8,7 +8,9 @@ import Chip from '@/components/Chip';
 import Icon from '@/components/Icon';
 import { USE_STDB_ADMIN, useOwnerToken } from '@/hooks/useStdb';
 
-const ADMIN_API_URL = process.env.NEXT_PUBLIC_ADMIN_API_URL ?? 'https://api.sastaspace.com';
+// Phase 3: default-empty after N6. The legacy code path below (USE_STDB_ADMIN
+// false branch) fails loud on missing URL rather than calling a dead host.
+const ADMIN_API_URL = process.env.NEXT_PUBLIC_ADMIN_API_URL ?? '';
 
 type CommentsProps = { initialFilter?: string; view?: string };
 
@@ -91,6 +93,9 @@ function CommentsInner({ initialFilter = 'pending', view = 'cards' }: CommentsPr
       if (USE_STDB_ADMIN) {
         await setStatusWithReason({ id, status, reason });
       } else {
+        if (!ADMIN_API_URL) {
+          throw new Error('NEXT_PUBLIC_ADMIN_API_URL not set; cannot use legacy admin path. Set NEXT_PUBLIC_USE_STDB_ADMIN=true.');
+        }
         const token = localStorage.getItem('admin_token') ?? '';
         const res = await fetch(`${ADMIN_API_URL}/stdb/comments/${id}/status`, {
           method: 'POST',
@@ -114,6 +119,9 @@ function CommentsInner({ initialFilter = 'pending', view = 'cards' }: CommentsPr
     if (USE_STDB_ADMIN) {
       try { await deleteCommentReducer({ id }); } catch { /* row stays; subscription would reflect a successful delete */ }
     } else {
+      if (!ADMIN_API_URL) {
+        throw new Error('NEXT_PUBLIC_ADMIN_API_URL not set; cannot use legacy admin path. Set NEXT_PUBLIC_USE_STDB_ADMIN=true.');
+      }
       const token = localStorage.getItem('admin_token') ?? '';
       await fetch(`${ADMIN_API_URL}/stdb/comments/${id}`, {
         method: 'DELETE',

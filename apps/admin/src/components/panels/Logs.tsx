@@ -8,7 +8,9 @@ import { USE_STDB_ADMIN, useOwnerToken } from '@/hooks/useStdb';
 import { adaptContainers, type ContainerStatusRow } from '@/lib/stdb-adapters';
 import type { ContainerRow, LogLine } from '@/lib/types';
 
-const ADMIN_API_URL = process.env.NEXT_PUBLIC_ADMIN_API_URL ?? 'https://api.sastaspace.com';
+// Phase 3: default-empty after N6. The Logs legacy path skips the EventSource
+// when this is empty so the panel doesn't probe a dead host.
+const ADMIN_API_URL = process.env.NEXT_PUBLIC_ADMIN_API_URL ?? '';
 const MAX_LINES = 500;
 const RECONNECT_MS = 600_000; // 10 min
 
@@ -116,6 +118,9 @@ function LogsLegacy({ initialService, theme = 'dark' }: LogsProps) {
   // Establish/reset the EventSource on epoch change and route incoming lines
   // into the matching epoch's buffer (drop stragglers from old epochs).
   useEffect(() => {
+    // After Phase 3 N6, legacy ADMIN_API_URL defaults to '' so a misconfigured
+    // build doesn't probe a dead host. Bail cleanly — STDB path replaces this.
+    if (!ADMIN_API_URL) return;
     const url = `${ADMIN_API_URL}/logs/${encodeURIComponent(active)}?tail=${tail}`;
     const es = new EventSource(url);
     const reconnectId = setTimeout(() => { es.close(); }, RECONNECT_MS);

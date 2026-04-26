@@ -373,6 +373,12 @@ const MODERATION_REASONS: &[&str] = &[
     "injection",
     "classifier-rejected",
     "classifier-error",
+    // Manual moderator-action reasons emitted by the admin Comments panel.
+    // The panel passes the verb-specific reason (approve / flag / reject)
+    // so the moderation_event audit trail records the operator's intent.
+    "manual-approve",
+    "manual-flag",
+    "manual-reject",
 ];
 
 /// Owner-only: same effect as `set_comment_status` plus a `moderation_event`
@@ -1888,10 +1894,40 @@ mod tests {
 
     #[test]
     fn moderation_reasons_are_known() {
+        // Worker-emitted reasons (moderator-agent classifier verdicts).
         assert!(MODERATION_REASONS.contains(&"approved"));
         assert!(MODERATION_REASONS.contains(&"injection"));
         assert!(MODERATION_REASONS.contains(&"classifier-rejected"));
         assert!(MODERATION_REASONS.contains(&"classifier-error"));
+        // Manual reasons emitted by the admin Comments panel.
+        assert!(MODERATION_REASONS.contains(&"manual-approve"));
+        assert!(MODERATION_REASONS.contains(&"manual-flag"));
+        assert!(MODERATION_REASONS.contains(&"manual-reject"));
+    }
+
+    #[test]
+    fn moderation_reasons_round_trip_through_validation() {
+        // All 7 known reasons must pass the same allow-list check the
+        // reducer performs at lib.rs:396 — no reason should be silently
+        // accepted by the constant but rejected by the reducer (or vice
+        // versa). Mirrors the reducer's check shape exactly.
+        let all = [
+            "approved",
+            "injection",
+            "classifier-rejected",
+            "classifier-error",
+            "manual-approve",
+            "manual-flag",
+            "manual-reject",
+        ];
+        for r in all {
+            assert!(
+                MODERATION_REASONS.contains(&r),
+                "reason `{r}` missing from MODERATION_REASONS"
+            );
+        }
+        // Sanity: the array length matches the allow-list (no drift).
+        assert_eq!(MODERATION_REASONS.len(), all.len());
     }
 
     #[test]

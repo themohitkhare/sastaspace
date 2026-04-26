@@ -2,10 +2,15 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-const ADMIN_API_URL = process.env.NEXT_PUBLIC_ADMIN_API_URL ?? 'https://api.sastaspace.com';
+// Phase 3: default-empty after N6. usePoll skips its fetch when empty so the
+// hook stays dormant in builds where the legacy admin-api URL isn't set
+// (e.g. post-cutover prod with USE_STDB_ADMIN=true).
+const ADMIN_API_URL = process.env.NEXT_PUBLIC_ADMIN_API_URL ?? '';
 
 export function usePoll<T>(path: string, intervalMs: number): { data: T | null; loading: boolean; error: string | null } {
-  const skip = path.startsWith('__skip__');
+  // Skip when the caller explicitly opts out OR when the legacy admin-api URL
+  // is unset (post-N6 default). Either way the hook stays dormant.
+  const skip = path.startsWith('__skip__') || !ADMIN_API_URL;
   const [data, setData] = useState<T | null>(null);
   // When skipping, the hook is dormant — start with loading=false so the
   // panels' "loading…" placeholders don't briefly flash before the STDB
