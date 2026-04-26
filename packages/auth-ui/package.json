@@ -1,0 +1,17 @@
+{
+  "name": "@sastaspace/auth-ui",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Shared magic-link sign-in modal driving services/auth.",
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "files": ["src"],
+  "peerDependencies": {
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  }
+}
