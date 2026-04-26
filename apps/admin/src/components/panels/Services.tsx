@@ -1,7 +1,11 @@
 'use client';
 
+import { useTable } from 'spacetimedb/react';
+import { tables } from '@sastaspace/stdb-bindings';
 import { usePoll } from '@/hooks/usePoll';
+import { USE_STDB_ADMIN } from '@/hooks/useStdb';
 import { formatUptime, type ContainerRow } from '@/lib/data';
+import { adaptContainers, type ContainerStatusRow } from '@/lib/stdb-adapters';
 import Chip from '@/components/Chip';
 import Icon from '@/components/Icon';
 
@@ -19,17 +23,7 @@ function friendlyName(containerName: string): string {
     .replace(/\b\w/g, c => c.toUpperCase());
 }
 
-export default function Services({ navigate }: { navigate: (path: string) => void }) {
-  const { data: containers, loading, error } = usePoll<ContainerRow[]>('/containers', 15000);
-
-  if (loading && !containers) {
-    return <div style={{ padding: 40, color: 'var(--color-fg-muted)', textAlign: 'center' }}>Loading containers…</div>;
-  }
-  if (error && !containers) {
-    return <div className="banner banner--warn" style={{ margin: 0 }}>Failed to reach admin-api: {error}</div>;
-  }
-  if (!containers) return null;
-
+function renderServicesView(containers: ContainerRow[], navigate: (path: string) => void): React.ReactNode {
   const anyDown = containers.some(c => toServiceStatus(c.status) !== 'running');
   const downCount = containers.filter(c => toServiceStatus(c.status) !== 'running').length;
 
@@ -77,4 +71,34 @@ export default function Services({ navigate }: { navigate: (path: string) => voi
       </div>
     </div>
   );
+}
+
+function ServicesLegacy({ navigate }: { navigate: (path: string) => void }) {
+  const { data: containers, loading, error } = usePoll<ContainerRow[]>('/containers', 15000);
+
+  if (loading && !containers) {
+    return <div style={{ padding: 40, color: 'var(--color-fg-muted)', textAlign: 'center' }}>Loading containers…</div>;
+  }
+  if (error && !containers) {
+    return <div className="banner banner--warn" style={{ margin: 0 }}>Failed to reach admin-api: {error}</div>;
+  }
+  if (!containers) return null;
+
+  return renderServicesView(containers, navigate);
+}
+
+function ServicesStdb({ navigate }: { navigate: (path: string) => void }) {
+  const [statusRows] = useTable(tables.container_status);
+  const containers = adaptContainers(statusRows as readonly ContainerStatusRow[]);
+
+  if (statusRows.length === 0) {
+    return <div style={{ padding: 40, color: 'var(--color-fg-muted)', textAlign: 'center' }}>Waiting for the admin-collector worker to publish container_status…</div>;
+  }
+
+  return renderServicesView(containers, navigate);
+}
+
+export default function Services({ navigate }: { navigate: (path: string) => void }) {
+  if (USE_STDB_ADMIN) return <ServicesStdb navigate={navigate}/>;
+  return <ServicesLegacy navigate={navigate}/>;
 }
