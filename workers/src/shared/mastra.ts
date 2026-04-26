@@ -1,8 +1,28 @@
-// Mastra setup. Phase 1 W3/W4 flesh this out once we know the exact
-// provider package names the version we install settles on.
+// Mastra setup. Shared by Phase 1 W3 (deck-agent) and W4 (moderator-agent).
+//
+// Exports:
+//  - `ollama`: an `ollama-ai-provider` instance pointing at env.OLLAMA_URL.
+//    Use `ollama(modelId)` to get a LanguageModelV1 you can hand to a
+//    Mastra `Agent`.
+//  - `oneShotAgent({name, modelId, instructions})`: convenience factory for
+//    a single-turn classifier-style Agent. Both detector + classifier in
+//    moderator-agent use this shape; deck-agent can use it for short
+//    one-shot prompts too. The shared `ollama` provider means HTTP keep-alive
+//    + connection pooling are reused across agents.
+
+import { Agent } from "@mastra/core/agent";
+import { createOllama } from "ollama-ai-provider";
 
 import { env } from "./env.js";
 
+// `ollama-ai-provider` expects the Ollama base URL with `/api` appended.
+// `env.OLLAMA_URL` is the bare host (default http://127.0.0.1:11434), so
+// strip a trailing slash and append `/api`.
+export const ollama = createOllama({
+  baseURL: `${env.OLLAMA_URL.replace(/\/$/, "")}/api`,
+});
+
+// Kept for backwards-compat with anything still reading the old config map.
 export const ollamaConfig = {
   baseURL: env.OLLAMA_URL,
   defaultModel: env.OLLAMA_MODEL,
@@ -12,5 +32,21 @@ export const localaiConfig = {
   baseURL: env.LOCALAI_URL,
 };
 
-// Mastra instance is created lazily by each agent that needs it, so agents
-// that aren't enabled don't pay the import cost.
+export interface OneShotAgentOpts {
+  name: string;
+  modelId: string;
+  instructions: string;
+}
+
+/** Spawns a single-turn Mastra Agent. The detector + classifier in
+ *  moderator-agent.ts both call `.generate(...)` on the returned Agent
+ *  with `temperature: 0` + `maxTokens: 5` to mimic the Python
+ *  Agno+Ollama call shape.
+ */
+export function oneShotAgent(opts: OneShotAgentOpts): Agent {
+  return new Agent({
+    name: opts.name,
+    instructions: opts.instructions,
+    model: ollama(opts.modelId),
+  });
+}
