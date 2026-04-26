@@ -115,25 +115,33 @@ pub fn init(ctx: &ReducerContext) {
             });
     }
 
-    // C1/C3/P1: auto-register the module owner as a User row on first init.
-    // Idempotent — skips if the owner identity is already present.
-    //
-    // Synthetic email `owner@sastaspace.local` (NOT mohitkhare582@gmail.com)
-    // because the User table has `#[unique]` on email, and the operator's
-    // real Gmail address is already registered to a separate identity from
-    // their real magic-link sign-in. The owner identity (from OWNER_HEX,
-    // used by CI to publish + by submit_user_comment for assert_owner) is a
-    // different STDB identity than the user's signed-in identity, so it
-    // needs its own User row with a non-colliding email.
-    let owner = Identity::from_hex(OWNER_HEX).expect("OWNER_HEX must be valid");
-    if ctx.db.user().identity().find(owner).is_none() {
-        ctx.db.user().insert(User {
-            identity: owner,
-            email: "owner@sastaspace.local".to_string(),
-            display_name: "owner".to_string(),
-            created_at: ctx.timestamp,
-        });
+    // Owner User-row insert moved out of init: STDB v2.1 init runs ONCE per
+    // module lifetime, NOT on republish. The dedicated `register_owner_self`
+    // reducer below is owner-gated, idempotent, and is invoked once after
+    // each module-publish from a CI bootstrap step.
+}
+
+/// Owner-only, idempotent: ensure the owner identity has a User row so that
+/// reducers gated on `ctx.sender()` ∈ user table (e.g. submit_user_comment)
+/// accept owner-issued calls. Called from CI after every module-publish so
+/// the row is present even on republishes (init runs only on first publish).
+///
+/// The synthetic email `owner@sastaspace.local` avoids colliding with the
+/// operator's real Gmail row (User.email is `#[unique]`).
+#[reducer]
+pub fn register_owner_self(ctx: &ReducerContext) -> Result<(), String> {
+    assert_owner(ctx)?;
+    let owner = ctx.sender();
+    if ctx.db.user().identity().find(owner).is_some() {
+        return Ok(()); // idempotent
     }
+    ctx.db.user().insert(User {
+        identity: owner,
+        email: "owner@sastaspace.local".to_string(),
+        display_name: "owner".to_string(),
+        created_at: ctx.timestamp,
+    });
+    Ok(())
 }
 
 #[reducer(client_connected)]

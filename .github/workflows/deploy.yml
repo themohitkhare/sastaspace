@@ -143,6 +143,22 @@ jobs:
           spacetime login --token "$SPACETIME_TOKEN"
       - name: publish module
         run: spacetime publish --server prod --module-path modules/sastaspace "$STDB_MODULE_NAME" -y
+      - name: ensure owner User row (idempotent — register_owner_self)
+        # init only runs on first publish; this reducer keeps the owner
+        # identity registered in the User table on every republish so
+        # submit_user_comment + similar accept owner-issued e2e calls.
+        env:
+          SPACETIME_TOKEN: ${{ secrets.SPACETIME_TOKEN }}
+        run: |
+          status=$(curl -sS -o /tmp/regowner.out -w "%{http_code}" \
+            -X POST \
+            -H "Authorization: Bearer $SPACETIME_TOKEN" \
+            -H "Content-Type: application/json" \
+            --data '[]' \
+            "https://stdb.sastaspace.com/v1/database/sastaspace/call/register_owner_self")
+          echo "register_owner_self returned HTTP $status"
+          head -3 /tmp/regowner.out 2>/dev/null
+          [[ "$status" == "200" || "$status" == "204" ]] || exit 1
       - name: regenerate ts bindings
         run: |
           spacetime generate \
