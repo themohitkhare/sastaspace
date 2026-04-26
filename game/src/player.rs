@@ -105,6 +105,14 @@ pub fn plan_claim(
     }
 }
 
+// SECURITY: prev_identity is caller-supplied. The above guards block the most
+// direct theft attacks (self-claim and verified-row-takeover), but a malicious
+// client can still claim any *guest* row whose identity it can observe. The
+// long-term mitigation is to have services/auth/ mint a signed claim token
+// bound to (prev_identity, email_identity) that this reducer verifies. Until
+// then, the frontend orchestrates the call from the same browser as the
+// magic-link redirect, so prev_identity is the legitimate guest identity in
+// the common case.
 #[reducer]
 pub fn claim_progress(
     ctx: &ReducerContext,
@@ -115,8 +123,16 @@ pub fn claim_progress(
         return Err("invalid email".into());
     }
     let me = ctx.sender();
+    if prev_identity == me {
+        return Err("prev_identity must differ from caller".into());
+    }
     let guest = ctx.db.player().identity().find(prev_identity);
     let existing = ctx.db.player().identity().find(me);
+    if let Some(g) = &guest {
+        if g.email.is_some() {
+            return Err("target row is already verified".into());
+        }
+    }
     match plan_claim(guest, existing, me, email) {
         ClaimAction::Rekey { delete_id, insert } => {
             ctx.db.player().identity().delete(delete_id);
