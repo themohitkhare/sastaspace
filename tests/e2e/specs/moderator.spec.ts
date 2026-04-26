@@ -40,11 +40,11 @@ const OWNER_TOKEN = process.env.E2E_STDB_OWNER_TOKEN ?? "";
 // if a parallel run is also writing test rows.
 const TAG = `e2e-moderator-${Date.now()}`;
 
-// PHASE 4 FOLLOW-UP: spec needs owner-as-user bootstrap so the
-// submit_user_comment reducer can find ctx.sender() in the user table.
-// register_user's HTTP API encoding for Identity (u256) is undocumented in
-// our setup — see admin-panels.spec.ts for the same skip + follow-up plan.
-const SKIP_PENDING_BOOTSTRAP_FIX = true;
+// Owner is auto-registered by sastaspace module init (audit fix C1/C3/P1,
+// 2026-04-26): the #[reducer(init)] body now inserts the owner identity as a
+// User row if absent, eliminating the need for a separate register_owner_e2e
+// call. SKIP_PENDING_BOOTSTRAP_FIX is now false — these tests are unblocked.
+const SKIP_PENDING_BOOTSTRAP_FIX = false;
 
 test.describe("moderator-agent E2E (gated on E2E_MODERATOR_ENABLED)", () => {
   test.skip(

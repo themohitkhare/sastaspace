@@ -401,4 +401,75 @@ mod tests {
             other => panic!("expected Merge, got {:?}", other),
         }
     }
+
+    // === claim_progress_self: shape / validation layer tests (audit C2, M6) ===
+    //
+    // SpacetimeDB 2.1 has no host-runnable TestContext so we cannot invoke
+    // the reducer body. We verify: (a) function signature compiles, (b) the
+    // validation helpers it calls (validate_claim_email, is_guest_already_verified,
+    // plan_claim) produce the expected results for the inputs claim_progress_self
+    // would supply. End-to-end behaviour lives in the E2E typewars-auth spec.
+
+    #[test]
+    fn claim_progress_self_signature_compiles() {
+        // Compile-time assertion: fn(&ReducerContext, Identity, String) -> Result<(), String>.
+        let _: fn(&ReducerContext, Identity, String) -> Result<(), String> = claim_progress_self;
+    }
+
+    #[test]
+    fn claim_progress_self_happy_path_no_guest_row_is_noop() {
+        // claim_progress_self calls plan_claim(guest=None, existing=None, ...).
+        // When there is no guest row and no existing verified row the action is Noop.
+        let new_id = Identity::from_byte_array([0x10; 32]);
+        let action = plan_claim(None, None, new_id, "user@example.com".into());
+        assert_eq!(action, ClaimAction::Noop);
+    }
+
+    #[test]
+    fn claim_progress_self_happy_path_guest_row_rekeys() {
+        // When ctx.sender() (the new identity) has no row, and a guest row
+        // exists for prev_identity, plan_claim returns Rekey.
+        let guest = mk_player(0x05, "guest", 2, 500, 200, 60, None);
+        let new_id = Identity::from_byte_array([0x10; 32]);
+        let action = plan_claim(Some(guest.clone()), None, new_id, "user@example.com".into());
+        match action {
+            ClaimAction::Rekey { delete_id, insert } => {
+                assert_eq!(delete_id, guest.identity);
+                assert_eq!(insert.identity, new_id);
+                assert_eq!(insert.email, Some("user@example.com".into()));
+                assert_eq!(insert.total_damage, 500);
+                assert_eq!(insert.username, "guest");
+            }
+            other => panic!("expected Rekey, got {:?}", other),
+        }
+    }
+
+    #[test]
+    fn claim_progress_self_sad_path_already_verified_guest_is_error() {
+        // claim_progress_self checks is_guest_already_verified before plan_claim.
+        // An already-verified guest row (email=Some) causes the reducer to return
+        // Err("target row is already verified"). Test the guard directly.
+        let verified_guest = mk_player(0x05, "guest", 2, 500, 200, 60, Some("prev@b.com"));
+        assert!(
+            is_guest_already_verified(Some(&verified_guest)),
+            "verified guest must be rejected by claim_progress_self"
+        );
+    }
+
+    #[test]
+    fn claim_progress_self_sad_path_invalid_email_rejected() {
+        // validate_claim_email is the first check in claim_progress_self.
+        // Empty email must fail before any DB lookup.
+        assert!(validate_claim_email("").is_err());
+        // Overlong email must also fail.
+        let huge = "a".repeat(255);
+        assert!(validate_claim_email(&huge).is_err());
+    }
+
+    #[test]
+    fn claim_progress_self_sad_path_valid_email_accepted() {
+        // A well-formed short email passes the entry guard.
+        assert!(validate_claim_email("user@example.com").is_ok());
+        assert!(validate_claim_email("ops@sastaspace.com").is_ok());
+    }
 }

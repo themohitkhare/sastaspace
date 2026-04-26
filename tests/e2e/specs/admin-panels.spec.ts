@@ -24,16 +24,11 @@ import { ADMIN, STDB_REST, STDB_DATABASE } from "../helpers/urls.js";
 const OWNER_EMAIL = process.env.E2E_OWNER_EMAIL ?? "mohitkhare582@gmail.com";
 const OWNER_STDB_TOKEN = process.env.E2E_OWNER_STDB_TOKEN ?? "";
 
-// PHASE 4 FOLLOW-UP: this spec needs the owner identity to be a registered
-// user (so submit_user_comment finds ctx.sender() in the user table). The
-// register_user reducer's HTTP API encoding for Identity (a u256) is
-// undocumented in our setup — bootstrap attempts with hex/0x-prefix-hex/
-// decimal-string all hit "invalid digit found in string". Two follow-ups:
-//   (a) add a dedicated register_owner_e2e reducer that takes no args and
-//       uses ctx.sender() directly (cleaner — no Identity encoding needed)
-//   (b) or use the spacetime CLI in CI which handles SATS encoding natively.
-// Until then, skip these tests so CI is green for the cutover.
-const SKIP_PENDING_BOOTSTRAP_FIX = true;
+// Owner is auto-registered by sastaspace module init (audit fix C1/C3/P1,
+// 2026-04-26): the #[reducer(init)] body now inserts the owner identity as a
+// User row if absent, eliminating the need for a separate register_owner_e2e
+// call. SKIP_PENDING_BOOTSTRAP_FIX is now false — these tests are unblocked.
+const SKIP_PENDING_BOOTSTRAP_FIX = false;
 
 /**
  * Calls a reducer over the STDB REST POST endpoint. Used to seed
