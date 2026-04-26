@@ -47,6 +47,9 @@ importers:
       '@sastaspace/design-tokens':
         specifier: workspace:*
         version: link:../../packages/design-tokens
+      '@sastaspace/stdb-bindings':
+        specifier: workspace:*
+        version: link:../../packages/stdb-bindings
       next:
         specifier: ^16.0.0
         version: 16.2.4(@babel/core@7.29.0)(@playwright/test@1.59.1)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
