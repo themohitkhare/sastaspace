@@ -931,16 +931,15 @@ jobs:
         env:
           OWNER_HEX: c20086b8ce1d18ec9c564044615071677620eafad99c922edbb3e3463b6f79ba
         run: |
-          # Try a few SATS encodings of Identity; STDB rejected the
-          # {"__identity__": "<hex>"} form ("invalid digit found in string"
-          # — it parsed as a number type). Plain hex string is the next
-          # likely shape per the SDK's Identity.fromString.
+          # STDB Identity SATS encoding is a 1-element tuple containing
+          # the hex string (per the error 'expected a 1-element tuple').
+          # Payload shape: [<identity-tuple>, email, name] where
+          # identity-tuple is [hex_string].
           payload=$(jq -nc \
             --arg id "$OWNER_HEX" \
             --arg email "e2e-owner@sastaspace.com" \
             --arg name "E2E_Owner" \
-            '[$id, $email, $name]')
-          echo "trying payload: $payload"
+            '[[$id], $email, $name]')
           status=$(curl -sS -o /tmp/regowner.out -w "%{http_code}" \
             -X POST \
             -H "Authorization: Bearer $E2E_STDB_OWNER_TOKEN" \
@@ -950,28 +949,7 @@ jobs:
           echo "register_user returned HTTP $status"
           head -3 /tmp/regowner.out 2>/dev/null
           if [[ "$status" != "200" && "$status" != "204" ]]; then
-            echo "::warning::register_user bootstrap failed; trying tagged-sum encoding"
-            # SATS encodes some "newtype-style" structs as {"<field>": value};
-            # for Identity the field is typically __identity__ — but with the
-            # hex *as a string* not parsed as number. The earlier failure
-            # suggests STDB tried to parse it as u256. Try with explicit hex
-            # prefix.
-            payload2=$(jq -nc \
-              --arg id "0x$OWNER_HEX" \
-              --arg email "e2e-owner@sastaspace.com" \
-              --arg name "E2E_Owner" \
-              '[$id, $email, $name]')
-            status=$(curl -sS -o /tmp/regowner.out -w "%{http_code}" \
-              -X POST \
-              -H "Authorization: Bearer $E2E_STDB_OWNER_TOKEN" \
-              -H "Content-Type: application/json" \
-              --data "$payload2" \
-              "https://stdb.sastaspace.com/v1/database/sastaspace/call/register_user")
-            echo "register_user (0x prefix) returned HTTP $status"
-            head -3 /tmp/regowner.out 2>/dev/null
-          fi
-          if [[ "$status" != "200" && "$status" != "204" ]]; then
-            echo "::error::register_user bootstrap failed after both encoding attempts"
+            echo "::error::register_user bootstrap failed; admin-panels + moderator specs will fail at submit_user_comment"
             exit 1
           fi
       - name: bootstrap — install E2E test secret on prod STDB
