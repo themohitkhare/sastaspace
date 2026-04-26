@@ -161,7 +161,7 @@ function readEmailFromUserRow(
             /* noop */
           }
         })
-        .subscribe(["SELECT * FROM user"]);
+        .subscribe([`SELECT * FROM user WHERE identity = X'${identityHex}'`]);
     } catch {
       clearTimeout(timer);
       finish(undefined);

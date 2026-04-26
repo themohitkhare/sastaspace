@@ -6,11 +6,27 @@ import { LEGION_INFO } from '@/lib/legions';
 interface Props {
   player: Player;
   onClose: () => void;
-  onSwap: (legion: LegionId) => void;
+  /** Returns a Promise — if it rejects, the modal stays open and surfaces the error. */
+  onSwap: (legion: LegionId) => Promise<void>;
 }
 
 export default function LegionSwapModal({ player, onClose, onSwap }: Props) {
   const [picked, setPicked] = useState<LegionId>(player.legion);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleConfirm = async () => {
+    if (picked === player.legion || loading) return;
+    setLoading(true);
+    setError(null);
+    try {
+      await onSwap(picked);
+      // onSwap is responsible for closing the modal on success
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'swap failed — please try again');
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="modal-backdrop" onClick={onClose}>
@@ -32,6 +48,12 @@ export default function LegionSwapModal({ player, onClose, onSwap }: Props) {
           You can switch legions at any time. Your damage history stays with you.
         </p>
 
+        {error && (
+          <p className="ss-small" style={{ color: 'var(--brand-sasta-text)', marginTop: 10 }}>
+            {error}
+          </p>
+        )}
+
         <div className="legion-grid" style={{ marginTop: 24 }}>
           {([0, 1, 2, 3, 4] as LegionId[]).map((id) => {
             const info = LEGION_INFO[id];
@@ -41,7 +63,7 @@ export default function LegionSwapModal({ player, onClose, onSwap }: Props) {
                 key={id}
                 className={`legion-card${picked === id ? ' picked' : ''}${isCurrent ? ' current' : ''}`}
                 style={{ ['--lc' as string]: info.color }}
-                onClick={() => setPicked(id)}
+                onClick={() => !loading && setPicked(id)}
               >
                 <div className="legion-card-top">
                   <span className="ss-label legion-num">0{id + 1}</span>
@@ -61,13 +83,13 @@ export default function LegionSwapModal({ player, onClose, onSwap }: Props) {
         </div>
 
         <div className="modal-foot">
-          <button className="link-btn" onClick={onClose}>cancel</button>
+          <button className="link-btn" onClick={onClose} disabled={loading}>cancel</button>
           <button
             className="enlist-btn"
-            disabled={picked === player.legion}
-            onClick={() => onSwap(picked)}
+            disabled={picked === player.legion || loading}
+            onClick={handleConfirm}
           >
-            CONFIRM SWITCH →
+            {loading ? 'switching…' : 'Confirm switch →'}
           </button>
         </div>
       </div>

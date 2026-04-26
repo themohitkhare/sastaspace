@@ -2,6 +2,19 @@
 
 * { box-sizing: border-box; }
 
+/* ============ FOCUS-VISIBLE RINGS (a11y) ============ */
+/* Ensure all interactive elements in TypeWars have a visible keyboard focus
+   indicator. Covers native buttons, links, and custom interactive cards/rows. */
+button:focus-visible,
+a:focus-visible,
+.legion-card:focus-visible,
+.word-card:focus-visible,
+.lb-trow:focus-visible,
+.rql-row:focus-visible {
+  outline: 2px solid var(--brand-ink);
+  outline-offset: 2px;
+}
+
 /* ============ TOPBAR ============ */
 .topbar {
   display: flex; align-items: center; gap: 14px;
@@ -48,7 +61,7 @@
   min-height: 240px; position: relative; font-family: inherit;
 }
 .legion-card:hover { border-color: var(--brand-ink); transform: translateY(-1px); }
-.legion-card.picked { border-color: var(--lc); box-shadow: inset 0 0 0 1px var(--lc); }
+.legion-card.picked { border-color: var(--lc); outline: 1px solid var(--lc); outline-offset: -2px; }
 .legion-card.picked::before {
   content: ""; position: absolute; inset: -1px; border-radius: 16px;
   border: 1px solid var(--lc); pointer-events: none;
@@ -278,7 +291,7 @@
 .word-card.diff-4 .word-meta { color: var(--brand-dust); }
 .word-card.diff-4 .word-typed { color: var(--brand-sasta); }
 .word-card.diff-4 .word-rest { color: var(--brand-paper); }
-.word-card.matching { border-color: var(--legion-color); box-shadow: inset 0 0 0 1px var(--legion-color); }
+.word-card.matching { border-color: var(--legion-color); outline: 1px solid var(--legion-color); outline-offset: -2px; }
 .word-card.urgent { border-color: var(--brand-sasta); }
 .word-card.hit {
   background: var(--legion-color); border-color: var(--legion-color); transform: translateY(-2px);
@@ -478,22 +491,32 @@
   .hp-current { font-size: 18px; }
   .contrib-legend { gap: 10px; font-size: 11px; }
 
-  /* Words grid: 2 cols × 4 rows instead of 4 × 2. Words still readable. */
+  /* Words grid: 2 cols × 4 rows instead of 4 × 2. Words still readable.
+     overflow-y: auto allows scrolling under the sticky input row when the
+     soft keyboard is raised and the viewport shrinks. */
   .words-grid {
     grid-template-columns: repeat(2, 1fr);
     grid-template-rows: repeat(4, 1fr);
     gap: 10px;
     padding: 16px;
     min-height: 0;
+    overflow-y: auto;
   }
   .word-text { font-size: 22px; }
   .word-card { padding: 12px 14px 10px; }
 
-  /* Battle input row: stack streak/mult above input. */
+  /* Battle input row: sticky above the soft keyboard so it stays visible
+     while typing. Words grid above will scroll independently. */
   .battle-input-row {
     grid-template-columns: 1fr 1fr;
     gap: 10px;
-    padding: 10px 16px 24px;
+    padding: 10px 16px;
+    padding-bottom: calc(16px + env(safe-area-inset-bottom));
+    position: sticky;
+    bottom: 0;
+    background: var(--brand-paper);
+    border-top: 1px solid var(--brand-dust-40);
+    z-index: 10;
   }
   .input-wrap {
     grid-column: 1 / -1;

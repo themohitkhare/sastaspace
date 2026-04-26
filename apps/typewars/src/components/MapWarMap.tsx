@@ -101,7 +101,7 @@ export default function MapWarMap({ regions, player, onEnter, onOpenBoard, onSwa
   return (
     <div className="page" style={{ background: 'var(--brand-paper)' }}>
       <header className="topbar">
-        <span className="ss-mono" style={{ fontWeight: 600 }}>typewars.sastaspace.com</span>
+        <span className="ss-mono" style={{ fontWeight: 500 }}>typewars.sastaspace.com</span>
         <span className="ss-small" style={{ color: 'var(--brand-muted)' }}>season 1 · day 12 / 30</span>
         <span style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 12 }}>
           <button

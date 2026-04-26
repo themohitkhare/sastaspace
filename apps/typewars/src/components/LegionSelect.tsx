@@ -18,7 +18,7 @@ export default function LegionSelect({ onChoose }: Props) {
   return (
     <div className="page">
       <header className="topbar">
-        <span className="ss-mono" style={{ fontWeight: 600 }}>typewars.sastaspace.com</span>
+        <span className="ss-mono" style={{ fontWeight: 500 }}>typewars.sastaspace.com</span>
         <span className="ss-small" style={{ color: 'var(--brand-muted)' }}>— a sasta lab project</span>
         <span style={{ marginLeft: 'auto', color: 'var(--brand-muted)' }} className="ss-small ss-mono">season 1 · day 12 / 30</span>
       </header>
@@ -83,7 +83,7 @@ export default function LegionSelect({ onChoose }: Props) {
               }
             }}
           >
-            {submitting ? 'enlisting…' : 'ENLIST →'}
+            {submitting ? 'enlisting…' : 'Enlist →'}
           </button>
         </div>
 

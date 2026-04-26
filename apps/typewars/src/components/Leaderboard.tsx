@@ -67,7 +67,7 @@ export default function Leaderboard({ regions, player, onBack, onOpenProfile }: 
     <div className="page" style={{ background: 'var(--brand-paper)' }}>
       <header className="topbar">
         <button className="link-btn" onClick={onBack}>← war map</button>
-        <span className="ss-mono" style={{ fontWeight: 600, marginLeft: 8 }}>typewars.sastaspace.com</span>
+        <span className="ss-mono" style={{ fontWeight: 500, marginLeft: 8 }}>typewars.sastaspace.com</span>
         <span style={{ marginLeft: 'auto' }}>
           <div className="player-pill">
             <span className="player-dot" style={{ background: myLegion.color }} />
@@ -142,10 +142,10 @@ export default function Leaderboard({ regions, player, onBack, onOpenProfile }: 
                     style={{ cursor: 'pointer' }}
                   >
                     <span className="ss-mono" style={{ color: 'var(--brand-muted)' }}>{i + 1}</span>
-                    <span style={{ display: 'flex', alignItems: 'center', gap: 8, fontWeight: isMe ? 600 : 400 }}>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                       <Avatar callsign={p.username} legion={p.legion} verified={!!p.email} size={20} />
                       {p.username}
-                      {isMe && <span className="lb-you-tag">YOU</span>}
+                      {isMe && <span className="lb-you-tag">you</span>}
                     </span>
                     <div className="lb-leg-cell">
                       <div className="lb-legion-pip small" style={{ background: pInfo.color }} />
