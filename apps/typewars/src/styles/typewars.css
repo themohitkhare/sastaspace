@@ -104,7 +104,7 @@ a:focus-visible,
 .ls-warning { margin-top: 24px; color: var(--brand-muted); max-width: 600px; }
 
 /* ============ MAP WAR MAP ============ */
-.swap-pill { cursor: pointer; transition: border-color 120ms; }
+.swap-pill { cursor: pointer; transition: border-color 120ms var(--ease-std); }
 .swap-pill:hover { border-color: var(--brand-ink); }
 
 .map-layout {
@@ -190,7 +190,7 @@ a:focus-visible,
 .rql-row {
   display: grid; grid-template-columns: 28px 1fr 30px 50px; gap: 8px;
   align-items: center; padding: 7px 8px; border-radius: 6px;
-  text-align: left; transition: background 120ms; background: none; border: none; cursor: pointer; width: 100%; font-family: inherit;
+  text-align: left; transition: background 120ms var(--ease-std); background: none; border: none; cursor: pointer; width: 100%; font-family: inherit;
 }
 .rql-row:hover { background: var(--brand-paper-sunken); }
 .rql-row.sel { background: var(--brand-ink); color: var(--brand-paper); }
