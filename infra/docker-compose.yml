@@ -205,3 +205,42 @@ services:
     depends_on:
       spacetime:
         condition: service_healthy
+
+  # Mastra workers process. Single Node container running multiple agents
+  # behind per-agent feature flags (default off — boots and idles).
+  # Phase 1 workstreams flesh out each agent and the shared STDB connection.
+  workers:
+    build:
+      context: ../workers
+      dockerfile: Dockerfile
+    image: sastaspace-workers:local
+    container_name: sastaspace-workers
+    restart: unless-stopped
+    read_only: true
+    tmpfs: [/tmp]
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    pids_limit: 256
+    mem_limit: 512m
+    user: "1000:1000"
+    network_mode: host
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./deck-out:/app/deck-out:rw
+    env_file:
+      - ../workers/.env
+    environment:
+      - STDB_URL=http://127.0.0.1:3100
+      - STDB_MODULE=sastaspace
+      # Placeholder so env.ts zod parse succeeds while all agent flags are off.
+      # Phase 1 W1+ replaces this with the real owner JWT via ../workers/.env.
+      - STDB_TOKEN=phase0-placeholder-no-agents-enabled
+      - OLLAMA_URL=http://127.0.0.1:11434
+      - LOCALAI_URL=http://127.0.0.1:8080
+      - WORKER_AUTH_MAILER_ENABLED=false
+      - WORKER_ADMIN_COLLECTOR_ENABLED=false
+      - WORKER_DECK_AGENT_ENABLED=false
+      - WORKER_MODERATOR_AGENT_ENABLED=false
+    depends_on:
+      spacetime:
+        condition: service_healthy
