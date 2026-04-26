@@ -105,6 +105,35 @@ pub fn plan_claim(
     }
 }
 
+#[reducer]
+pub fn claim_progress(
+    ctx: &ReducerContext,
+    prev_identity: Identity,
+    email: String,
+) -> Result<(), String> {
+    if email.is_empty() || email.len() > 254 {
+        return Err("invalid email".into());
+    }
+    let me = ctx.sender();
+    let guest = ctx.db.player().identity().find(prev_identity);
+    let existing = ctx.db.player().identity().find(me);
+    match plan_claim(guest, existing, me, email) {
+        ClaimAction::Rekey { delete_id, insert } => {
+            ctx.db.player().identity().delete(delete_id);
+            ctx.db.player().insert(insert);
+        }
+        ClaimAction::Merge { delete_id, update } => {
+            ctx.db.player().identity().delete(delete_id);
+            ctx.db.player().identity().update(update);
+        }
+        ClaimAction::StampEmail { update } => {
+            ctx.db.player().identity().update(update);
+        }
+        ClaimAction::Noop => {}
+    }
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
