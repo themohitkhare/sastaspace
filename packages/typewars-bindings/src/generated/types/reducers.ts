@@ -7,12 +7,14 @@ import { type Infer as __Infer } from "spacetimedb";
 
 // Import all reducer arg schemas
 import ClaimProgressReducer from "../claim_progress_reducer";
+import ClaimProgressSelfReducer from "../claim_progress_self_reducer";
 import EndBattleReducer from "../end_battle_reducer";
 import RegisterPlayerReducer from "../register_player_reducer";
 import StartBattleReducer from "../start_battle_reducer";
 import SubmitWordReducer from "../submit_word_reducer";
 
 export type ClaimProgressParams = __Infer<typeof ClaimProgressReducer>;
+export type ClaimProgressSelfParams = __Infer<typeof ClaimProgressSelfReducer>;
 export type EndBattleParams = __Infer<typeof EndBattleReducer>;
 export type RegisterPlayerParams = __Infer<typeof RegisterPlayerReducer>;
 export type StartBattleParams = __Infer<typeof StartBattleReducer>;

@@ -145,6 +145,49 @@ pub fn claim_progress(
     Ok(())
 }
 
+/// Self-service variant of claim_progress for the SpacetimeDB-native auth
+/// flow. The caller's own identity (`ctx.sender()`) becomes the new_identity,
+/// so a malicious caller can only ever claim a guest's progress *into their
+/// own account* — not into someone else's. Same threat model as the legacy
+/// auth service path, where the prev_identity arrived in the magic-link URL
+/// the user themselves clicked.
+///
+/// Used by apps/typewars/src/app/auth/verify/page.tsx after the sastaspace
+/// `verify_token` reducer has registered the new identity as a User.
+#[reducer]
+pub fn claim_progress_self(
+    ctx: &ReducerContext,
+    prev_identity: Identity,
+    email: String,
+) -> Result<(), String> {
+    let new_identity = ctx.sender();
+    if email.is_empty() || email.len() > 254 {
+        return Err("invalid email".into());
+    }
+    let guest = ctx.db.player().identity().find(prev_identity);
+    if let Some(g) = &guest {
+        if g.email.is_some() {
+            return Err("target row is already verified".into());
+        }
+    }
+    let existing = ctx.db.player().identity().find(new_identity);
+    match plan_claim(guest, existing, new_identity, email) {
+        ClaimAction::Rekey { delete_id, insert } => {
+            ctx.db.player().identity().delete(delete_id);
+            ctx.db.player().insert(insert);
+        }
+        ClaimAction::Merge { delete_id, update } => {
+            ctx.db.player().identity().delete(delete_id);
+            ctx.db.player().identity().update(update);
+        }
+        ClaimAction::StampEmail { update } => {
+            ctx.db.player().identity().update(update);
+        }
+        ClaimAction::Noop => {}
+    }
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
