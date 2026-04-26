@@ -84,10 +84,11 @@ pub fn plan_claim(
 ) -> ClaimAction {
     match (guest, existing) {
         (Some(g), None) => {
-            let mut row = g.clone();
+            let delete_id = g.identity;
+            let mut row = g;
             row.identity = new_id;
             row.email = Some(email);
-            ClaimAction::Rekey { delete_id: g.identity, insert: row }
+            ClaimAction::Rekey { delete_id, insert: row }
         }
         (Some(g), Some(mut e)) => {
             e.total_damage = e.total_damage.saturating_add(g.total_damage);
