@@ -88,14 +88,24 @@ test.describe("admin panels — STDB live updates", () => {
   test("Comments — pending row appears within 5s; Approve flips status via reducer", async ({ page, request }) => {
     const probeBody = `e2e-probe-${Date.now()} hello world`;
     const slug = "2026-04-25-hello";
-    // Seed a pending comment via owner-token reducer call. Using
-    // submit_user_comment so the row lands as a normal pending comment.
-    await callReducer(
-      request,
-      "submit_user_comment",
-      [slug, probeBody],
-      OWNER_STDB_TOKEN,
+    // Seed a pending comment via raw SQL INSERT. submit_user_comment
+    // requires the caller's identity to exist in the user table (real
+    // sign-in flow), but the e2e owner JWT isn't a registered user.
+    // Owner SQL bypass is the right shape for setup-only fixtures.
+    const ZERO_IDENT_HEX = "00".repeat(32);
+    const escaped = probeBody.replace(/'/g, "''");
+    const nowMicros = Date.now() * 1000;
+    const insert = `INSERT INTO comment (post_slug, author_name, body, created_at, status, submitter) VALUES ('${slug}', 'e2e-probe', '${escaped}', ${nowMicros}, 'pending', X'${ZERO_IDENT_HEX}')`;
+    const insertRes = await request.post(
+      `${STDB_REST}/v1/database/${STDB_DATABASE}/sql`,
+      {
+        headers: { "Content-Type": "text/plain", Authorization: `Bearer ${OWNER_STDB_TOKEN}` },
+        data: insert,
+      },
     );
+    if (insertRes.status() >= 400) {
+      throw new Error(`comment INSERT failed: HTTP ${insertRes.status()} ${await insertRes.text()}`);
+    }
 
     await page.locator('button, a', { hasText: /^Comments$/ }).first().click();
     await expect(page.locator(`text=${probeBody}`)).toBeVisible({
