@@ -399,6 +399,15 @@ services:
     depends_on:
       spacetime:
         condition: service_healthy
+    healthcheck:
+      # Workers don't expose an HTTP port. Check that the node process is
+      # still alive via pgrep. A crashed-after-boot container would show
+      # Running=true in `docker compose ps` without this check (audit H4).
+      test: ["CMD-SHELL", "pgrep -f 'node.*workers' >/dev/null"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
 
   # LocalAI: self-hosted OpenAI-compatible model server. Sibling to Ollama.
   # Hosts the MusicGen audio model used by Phase 1 W3 deck-agent.

@@ -56,6 +56,11 @@ jobs:
           fi
           if [[ "$GITHUB_EVENT_NAME" == "pull_request" ]]; then
             BASE="${{ github.event.pull_request.base.sha }}"
+          elif [[ "$GITHUB_EVENT_NAME" == "push" ]]; then
+            BASE="${{ github.event.before }}"
+            if [[ "$BASE" == "0000000000000000000000000000000000000000" ]]; then
+              BASE="$(git rev-parse HEAD~1)"  # new branch fallback
+            fi
           else
             BASE="$(git rev-parse HEAD~1)"
           fi
@@ -164,7 +169,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        build_variant: [legacy, stdb]
+        # On push events only build `stdb` (the active production variant).
+        # `legacy` is a rollback artifact — only rebuild it on workflow_dispatch
+        # (manual) so normal pushes don't pay double Next.js build time.
+        # Phase 4 will drop `legacy` from the matrix entirely.
+        build_variant: ${{ github.event_name == 'workflow_dispatch' && fromJSON('["legacy","stdb"]') || fromJSON('["stdb"]') }}
     env:
       # Defaults to "false" for the legacy variant; the stdb variant overrides
       # via the step-level env below. Static export bakes this into the bundle.
@@ -287,7 +296,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        build_variant: [legacy, stdb]
+        # On push events only build `stdb` (the active production variant).
+        # `legacy` is a rollback artifact — only rebuild it on workflow_dispatch.
+        # Phase 4 will drop `legacy` from the matrix entirely.
+        build_variant: ${{ github.event_name == 'workflow_dispatch' && fromJSON('["legacy","stdb"]') || fromJSON('["stdb"]') }}
     env:
       NEXT_PUBLIC_USE_STDB_AUTH: ${{ matrix.build_variant == 'stdb' && 'true' || 'false' }}
     steps:
@@ -363,7 +375,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        build_variant: [legacy, stdb]
+        # On push events only build `stdb` (the active production variant).
+        # `legacy` is a rollback artifact — only rebuild it on workflow_dispatch.
+        # Phase 4 will drop `legacy` from the matrix entirely.
+        build_variant: ${{ github.event_name == 'workflow_dispatch' && fromJSON('["legacy","stdb"]') || fromJSON('["stdb"]') }}
     env:
       NEXT_PUBLIC_TYPEWARS_MODULE: typewars
       NEXT_PUBLIC_USE_STDB_AUTH: ${{ matrix.build_variant == 'stdb' && 'true' || 'false' }}
@@ -442,7 +457,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        build_variant: [legacy, stdb]
+        # On push events only build `stdb` (the active production variant).
+        # `legacy` is a rollback artifact — only rebuild it on workflow_dispatch.
+        # Phase 4 will drop `legacy` from the matrix entirely.
+        build_variant: ${{ github.event_name == 'workflow_dispatch' && fromJSON('["legacy","stdb"]') || fromJSON('["stdb"]') }}
     env:
       NEXT_PUBLIC_OWNER_EMAIL: mohitkhare582@gmail.com
       NEXT_PUBLIC_USE_STDB_ADMIN: ${{ matrix.build_variant == 'stdb' && 'true' || 'false' }}
@@ -887,15 +905,12 @@ jobs:
       # Owner JWT for the new admin.sastaspace.com STDB-backed panels.
       # When unset, tests/e2e/specs/admin-panels.spec.ts skips its describe
       # block (the legacy admin.spec.ts still runs against notes/admin).
-      # Two names because admin-panels.spec.ts and helpers/auth.ts converged
-      # on different conventions; both populated from the same secret.
-      # Use SPACETIME_TOKEN — the maincloud-issued owner JWT for HTTP-only
-      # endpoints (publish, SQL, /v1/database/.../call/<reducer>). The
-      # workers-deploy job comment at line 673-677 explains the split:
-      # WORKERS_STDB_TOKEN is prod-server-signed for /v1/identity/websocket-
-      # token (SDK handshake), while SPACETIME_TOKEN is what assert_owner
-      # checks behind reducer HTTP calls. The older E2E_OWNER_STDB_TOKEN
-      # was rejected with TokenError(InvalidSignature) post-cutover.
+      # Canonical name is E2E_STDB_OWNER_TOKEN (used by helpers/auth.ts,
+      # moderator.spec.ts, notes-auth-stdb.spec.ts). E2E_OWNER_STDB_TOKEN is
+      # kept as an alias because admin-panels.spec.ts still reads it directly;
+      # removing it would break that spec (Group 1 owns the SKIP_PENDING_BOOTSTRAP_FIX
+      # flip — unify to a single name when that lands in Phase 4).
+      # Both map to secrets.SPACETIME_TOKEN — the maincloud-issued owner JWT.
       E2E_OWNER_STDB_TOKEN: ${{ secrets.SPACETIME_TOKEN }}
       E2E_STDB_OWNER_TOKEN: ${{ secrets.SPACETIME_TOKEN }}
     steps:
@@ -916,7 +931,7 @@ jobs:
             exit 1
           fi
           if [[ -z "$E2E_STDB_OWNER_TOKEN" ]]; then
-            echo "::error::E2E_STDB_OWNER_TOKEN must be set (sourced from secrets.WORKERS_STDB_TOKEN)"
+            echo "::error::E2E_STDB_OWNER_TOKEN must be set (sourced from secrets.SPACETIME_TOKEN)"
             exit 1
           fi
           echo "E2E_TEST_SECRET present"
@@ -930,6 +945,13 @@ jobs:
       # uses ctx.sender() — no Identity encoding needed. Both specs are
       # currently `test.skip()` pending that change.
       - name: bootstrap — install E2E test secret on prod STDB
+        # continue-on-error: STDB HTTP API encoding for reducer args can break
+        # on STDB version bumps (Identity/u256 SATS format changes caused 10
+        # consecutive red runs on 2026-04-26). admin-panels.spec.ts and
+        # moderator.spec.ts are already `test.skip()`'d pending a dedicated
+        # register_owner_e2e() reducer (Phase 4 follow-up), so a bootstrap
+        # failure must never block the rest of the e2e suite.
+        continue-on-error: true
         # The mint_test_token reducer requires (ctx, email, secret) where
         # `secret` matches a row in app_config_secret installed via
         # set_e_2_e_test_secret (owner-only). Without this row, the side
