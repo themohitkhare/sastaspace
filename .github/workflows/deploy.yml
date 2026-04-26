@@ -447,20 +447,29 @@ jobs:
         if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && matrix.build_variant == 'legacy'
         run: |
           PROD=/home/mkhare/sastaspace/infra
-          mkdir -p "$ADMIN_OUT_DIR"
+          mkdir -p "$ADMIN_OUT_DIR" "$PROD/admin"
           rsync -a --delete apps/admin/out/ "$ADMIN_OUT_DIR/"
+          # If the admin volume target was previously created as a directory
+          # by Docker (when the host file was missing on first compose up),
+          # remove it so rsync can write a real file there.
+          if [[ -d "$PROD/admin/security_headers.conf" ]]; then
+            echo "removing empty security_headers.conf directory left by Docker"
+            rm -rf "$PROD/admin/security_headers.conf"
+          fi
           rsync -a --inplace infra/admin/nginx.conf "$PROD/admin/nginx.conf"
+          rsync -a --inplace infra/admin/security_headers.conf "$PROD/admin/security_headers.conf"
           rsync -a infra/docker-compose.yml "$PROD/docker-compose.yml"
           cd "$PROD" && docker compose up -d --no-deps --force-recreate admin
       - name: smoke test
         if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && matrix.build_variant == 'legacy'
         run: |
-          for i in 1 2 3 4 5; do
+          for i in 1 2 3 4 5 6 7 8; do
             code=$(curl -sS -o /dev/null -w "%{http_code}" -L https://admin.sastaspace.com/)
             echo "attempt $i: HTTP $code"
             [[ "$code" == "200" ]] && exit 0
             sleep 4
           done
+          docker logs sastaspace-admin --tail 30 || true
           exit 1
 
   # ── 4. Python agent services ──────────────────────────────────────────────
@@ -598,12 +607,204 @@ jobs:
         working-directory: workers
         run: pnpm audit --prod --audit-level moderate
 
+  # ── 4c. workers deploy (Mastra agents container) ─────────────────────────
+  # Builds and deploys the workers container. Per-agent flags default to
+  # false in compose, so a fresh deploy boots and idles. The B-task cutover
+  # commits flip individual flags (WORKER_<NAME>_ENABLED=true).
+  #
+  # Boot health gate: `noop_owner_check` reducer call from workers/src/index.ts
+  # (Phase 3 §A3) writes "owner token verified" to stdout when the token is
+  # the owner identity. The smoke step grep's for that line.
+  workers-deploy:
+    needs: [workers, module-publish]
+    if: >-
+      always() && !cancelled() &&
+      (github.event_name == 'push' || github.event_name == 'workflow_dispatch') &&
+      needs.workers.result == 'success' &&
+      needs.module-publish.result != 'failure'
+    runs-on: [self-hosted, Linux]
+    timeout-minutes: 15
+    concurrency:
+      group: deploy-workers
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v6
+      - name: rsync workers source + compose to prod
+        timeout-minutes: 3
+        run: |
+          PROD=/home/mkhare/sastaspace
+          mkdir -p "$PROD/workers" "$PROD/packages/stdb-bindings" "$PROD/packages/typewars-bindings"
+          rsync -a --delete workers/ "$PROD/workers/" --exclude node_modules --exclude dist --exclude .env
+          rsync -a --delete packages/stdb-bindings/ "$PROD/packages/stdb-bindings/" --exclude node_modules
+          rsync -a --delete packages/typewars-bindings/ "$PROD/packages/typewars-bindings/" --exclude node_modules
+          rsync -a pnpm-workspace.yaml pnpm-lock.yaml package.json "$PROD/"
+          rsync -a infra/docker-compose.yml "$PROD/infra/docker-compose.yml"
+      - name: provision workers/.env from secrets
+        env:
+          SPACETIME_TOKEN: ${{ secrets.SPACETIME_TOKEN }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+        timeout-minutes: 1
+        run: |
+          if [[ -z "$SPACETIME_TOKEN" || -z "$RESEND_API_KEY" ]]; then
+            echo "::error::SPACETIME_TOKEN or RESEND_API_KEY missing"
+            exit 1
+          fi
+          PROD=/home/mkhare/sastaspace
+          install -m 600 /dev/null "$PROD/workers/.env"
+          {
+            echo "STDB_TOKEN=$SPACETIME_TOKEN"
+            echo "RESEND_API_KEY=$RESEND_API_KEY"
+          } > "$PROD/workers/.env"
+          chmod 600 "$PROD/workers/.env"
+      - name: build workers container
+        timeout-minutes: 10
+        working-directory: /home/mkhare/sastaspace/infra
+        run: |
+          docker compose build workers
+      - name: deploy workers container
+        timeout-minutes: 3
+        working-directory: /home/mkhare/sastaspace/infra
+        run: |
+          docker compose up -d --no-deps --force-recreate workers
+          sleep 5
+          docker compose ps workers
+      - name: smoke — workers booted with owner token
+        timeout-minutes: 2
+        run: |
+          for i in 1 2 3 4 5 6; do
+            if docker logs sastaspace-workers --tail 50 2>&1 | grep -qE "owner token verified|no agents enabled, idling"; then
+              echo "workers healthy"
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "::error::workers did not report owner token verified within 30s"
+          docker logs sastaspace-workers --tail 60 || true
+          exit 1
+      - name: rollback on failure
+        if: failure()
+        run: |
+          echo "::warning::workers-deploy failed — stopping container to surface state"
+          docker compose -f /home/mkhare/sastaspace/infra/docker-compose.yml stop workers || true
+          {
+            echo "## workers-deploy FAILED"
+            echo ""
+            echo "Container stopped. Last 60 lines of logs:"
+            echo '```'
+            docker logs sastaspace-workers --tail 60 2>&1 || true
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  # ── 4d. auth-410 deploy (tombstone for legacy /auth ingress) ─────────────
+  # Brings up the auth-410 container under profile `stdb-native`. This is
+  # the nginx that returns HTTP 410 Gone to anyone hitting auth.sastaspace.com
+  # after the cloudflared route is repointed in B1.
+  auth-410-deploy:
+    needs: changes
+    if: >-
+      always() && !cancelled() &&
+      (github.event_name == 'push' || github.event_name == 'workflow_dispatch') &&
+      (needs.changes.outputs.workers == 'true' || needs.changes.outputs.agents == 'true' || github.event_name == 'workflow_dispatch')
+    runs-on: [self-hosted, Linux]
+    timeout-minutes: 5
+    concurrency:
+      group: deploy-auth-410
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v6
+      - name: rsync auth-410 config + compose to prod
+        timeout-minutes: 1
+        run: |
+          PROD=/home/mkhare/sastaspace
+          mkdir -p "$PROD/infra/landing"
+          rsync -a --inplace infra/landing/auth-410.conf "$PROD/infra/landing/auth-410.conf"
+          rsync -a infra/docker-compose.yml "$PROD/infra/docker-compose.yml"
+      - name: build + start auth-410 container
+        timeout-minutes: 3
+        working-directory: /home/mkhare/sastaspace/infra
+        run: |
+          docker compose --profile stdb-native build auth-410
+          docker compose --profile stdb-native up -d auth-410
+          sleep 4
+          docker compose ps auth-410
+      - name: smoke — auth-410 returns 410
+        timeout-minutes: 1
+        run: |
+          for i in 1 2 3 4 5 6; do
+            code=$(curl -sS -o /dev/null -w "%{http_code}" http://127.0.0.1:3170/anything)
+            echo "attempt $i: HTTP $code"
+            [[ "$code" == "410" ]] && exit 0
+            sleep 3
+          done
+          docker logs sastaspace-auth-410 --tail 30 || true
+          exit 1
+      - name: rollback on failure
+        if: failure()
+        run: |
+          docker compose -f /home/mkhare/sastaspace/infra/docker-compose.yml stop auth-410 || true
+          echo "## auth-410-deploy FAILED" >> "$GITHUB_STEP_SUMMARY"
+
+  # ── 4e. deck-static deploy (nginx for MusicGen zips) ─────────────────────
+  # Brings up the deck-static container under profile `stdb-native`. Serves
+  # zip files written by the workers' deck-agent into ./deck-out/. Replaces
+  # the legacy Python `deck` FastAPI on the same port (3160) — they cannot
+  # coexist; cutover (B3) stops legacy first.
+  deck-static-deploy:
+    needs: changes
+    if: >-
+      always() && !cancelled() &&
+      (github.event_name == 'push' || github.event_name == 'workflow_dispatch') &&
+      (needs.changes.outputs.workers == 'true' || needs.changes.outputs.agents == 'true' || github.event_name == 'workflow_dispatch')
+    runs-on: [self-hosted, Linux]
+    timeout-minutes: 5
+    concurrency:
+      group: deploy-deck-static
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v6
+      - name: rsync deck-static config + compose to prod
+        timeout-minutes: 1
+        run: |
+          PROD=/home/mkhare/sastaspace
+          mkdir -p "$PROD/infra/deck" "$PROD/infra/deck-out"
+          rsync -a --inplace infra/deck/nginx.conf "$PROD/infra/deck/nginx.conf"
+          rsync -a infra/docker-compose.yml "$PROD/infra/docker-compose.yml"
+      - name: stop legacy deck (frees port 3160) and start deck-static
+        timeout-minutes: 3
+        working-directory: /home/mkhare/sastaspace/infra
+        run: |
+          # Atomic-ish swap: legacy deck and deck-static both bind 3160.
+          # Stop legacy first, then start static.
+          docker compose stop deck 2>&1 | tee /tmp/deck-stop.log || true
+          docker compose --profile stdb-native build deck-static
+          docker compose --profile stdb-native up -d deck-static
+          sleep 4
+          docker compose ps deck-static
+      - name: smoke — deck-static serves
+        timeout-minutes: 1
+        run: |
+          for i in 1 2 3 4 5 6; do
+            code=$(curl -sS -o /dev/null -w "%{http_code}" http://127.0.0.1:3160/)
+            echo "attempt $i: HTTP $code"
+            # 200 (autoindex empty) or 403 (autoindex disabled) both mean nginx is up
+            [[ "$code" == "200" || "$code" == "403" ]] && exit 0
+            sleep 3
+          done
+          docker logs sastaspace-deck-static --tail 30 || true
+          exit 1
+      - name: rollback on failure
+        if: failure()
+        run: |
+          docker compose -f /home/mkhare/sastaspace/infra/docker-compose.yml stop deck-static || true
+          echo "## deck-static-deploy FAILED — restarting legacy deck" >> "$GITHUB_STEP_SUMMARY"
+          docker compose -f /home/mkhare/sastaspace/infra/docker-compose.yml start deck || true
+
   # ── 5. e2e against live prod (runs AFTER all deploys) ─────────────────────
   e2e:
     # PHASE 4 CLEANUP: remove `moderator` and `auth` from `needs:` and the
     # corresponding `needs.<job>.result != 'failure'` guards below when those
     # jobs are deleted. `workers` stays.
-    needs: [landing-deploy, notes, admin, moderator, auth, workers]
+    needs: [landing-deploy, notes, admin, moderator, auth, workers, workers-deploy, auth-410-deploy, deck-static-deploy]
     if: >-
       always() && !cancelled() &&
       (github.event_name == 'push' || github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') &&
