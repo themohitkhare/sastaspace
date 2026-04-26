@@ -4,7 +4,7 @@ import { useMemo } from 'react';
 import { useSpacetimeDB, useTable } from 'spacetimedb/react';
 import { tables } from '@sastaspace/typewars-bindings';
 import { TypewarsProvider } from '@/hooks/useStdb';
-import { relTime, LEGION_COLORS, LEGION_NAMES } from '@/lib/data';
+import { relTime, LEGION_COLORS, LEGION_NAMES } from '@/lib/types';
 
 function TypeWarsInner() {
   const { isActive } = useSpacetimeDB();

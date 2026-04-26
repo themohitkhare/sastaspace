@@ -2,7 +2,7 @@
 // while the underlying data source flips between HTTP poll and STDB
 // subscriptions during the Phase 2/3 cutover.
 
-import type { SystemMetrics, ContainerRow } from '@/lib/data';
+import type { SystemMetrics, ContainerRow } from '@/lib/types';
 
 // Shape of one row of the `system_metrics` table (id=0 single-row).
 export type SystemMetricsRow = {

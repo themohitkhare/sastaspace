@@ -3,7 +3,7 @@
 import { useMemo, useState } from 'react';
 import { useSpacetimeDB, useTable, useReducer } from 'spacetimedb/react';
 import { tables, reducers } from '@sastaspace/stdb-bindings';
-import { relTime, type CommentStatus } from '@/lib/data';
+import { relTime, type CommentStatus } from '@/lib/types';
 import Chip from '@/components/Chip';
 import Icon from '@/components/Icon';
 import { USE_STDB_ADMIN, useOwnerToken } from '@/hooks/useStdb';

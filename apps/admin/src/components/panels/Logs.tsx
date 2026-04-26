@@ -6,7 +6,7 @@ import { tables, reducers } from '@sastaspace/stdb-bindings';
 import { usePoll } from '@/hooks/usePoll';
 import { USE_STDB_ADMIN, useOwnerToken } from '@/hooks/useStdb';
 import { adaptContainers, type ContainerStatusRow } from '@/lib/stdb-adapters';
-import type { ContainerRow, LogLine } from '@/lib/data';
+import type { ContainerRow, LogLine } from '@/lib/types';
 
 const ADMIN_API_URL = process.env.NEXT_PUBLIC_ADMIN_API_URL ?? 'https://api.sastaspace.com';
 const MAX_LINES = 500;

@@ -5,7 +5,7 @@ import { useTable } from 'spacetimedb/react';
 import { tables } from '@sastaspace/stdb-bindings';
 import { usePoll } from '@/hooks/usePoll';
 import { USE_STDB_ADMIN } from '@/hooks/useStdb';
-import type { SystemMetrics } from '@/lib/data';
+import type { SystemMetrics } from '@/lib/types';
 import { adaptMetrics, type SystemMetricsRow } from '@/lib/stdb-adapters';
 import LineChart from '@/components/charts/LineChart';
 import AreaChart from '@/components/charts/AreaChart';

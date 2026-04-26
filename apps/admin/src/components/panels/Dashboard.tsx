@@ -6,7 +6,7 @@ import { tables } from '@sastaspace/stdb-bindings';
 import { usePoll } from '@/hooks/usePoll';
 import { USE_STDB_ADMIN } from '@/hooks/useStdb';
 import { adaptMetrics, adaptContainers, type SystemMetricsRow, type ContainerStatusRow } from '@/lib/stdb-adapters';
-import { relTime, formatUptime, type SystemMetrics, type ContainerRow } from '@/lib/data';
+import { relTime, formatUptime, type SystemMetrics, type ContainerRow } from '@/lib/types';
 import Chip from '@/components/Chip';
 import Sparkline from '@/components/charts/Sparkline';
 import Icon from '@/components/Icon';

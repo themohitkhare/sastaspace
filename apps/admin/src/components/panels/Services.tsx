@@ -4,7 +4,7 @@ import { useTable } from 'spacetimedb/react';
 import { tables } from '@sastaspace/stdb-bindings';
 import { usePoll } from '@/hooks/usePoll';
 import { USE_STDB_ADMIN } from '@/hooks/useStdb';
-import { formatUptime, type ContainerRow } from '@/lib/data';
+import { formatUptime, type ContainerRow } from '@/lib/types';
 import { adaptContainers, type ContainerStatusRow } from '@/lib/stdb-adapters';
 import Chip from '@/components/Chip';
 import Icon from '@/components/Icon';

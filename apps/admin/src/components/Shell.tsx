@@ -15,7 +15,7 @@ import AuthSignIn from '@/components/auth/AuthSignIn';
 import AuthDenied from '@/components/auth/AuthDenied';
 import OwnerTokenSettings from '@/components/auth/OwnerTokenSettings';
 import { USE_STDB_ADMIN, useOwnerToken } from '@/hooks/useStdb';
-import type { ContainerRow } from '@/lib/data';
+import type { ContainerRow } from '@/lib/types';
 
 const OWNER_EMAIL = process.env.NEXT_PUBLIC_OWNER_EMAIL ?? '';
 
