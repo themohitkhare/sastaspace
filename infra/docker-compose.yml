@@ -380,9 +380,10 @@ services:
       # The cloudflared overhead is ~10ms per call, fine for the agent loop.
       - STDB_URL=https://stdb.sastaspace.com
       - STDB_MODULE=sastaspace
-      # Placeholder so env.ts zod parse succeeds while all agent flags are off.
-      # Phase 1 W1+ replaces this with the real owner JWT via ../workers/.env.
-      - STDB_TOKEN=phase0-placeholder-no-agents-enabled
+      # STDB_TOKEN is supplied via ../workers/.env (env_file above). Do NOT
+      # set a placeholder here: docker compose's `environment:` overrides
+      # `env_file:` for the same key, which silently shadows the real token
+      # and breaks STDB auth at boot.
       - OLLAMA_URL=http://127.0.0.1:11434
       - LOCALAI_URL=http://127.0.0.1:8080
       # PHASE 3 CUTOVER: all four worker agents enabled. Each agent subscribes
