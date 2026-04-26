@@ -1,3 +1,4 @@
+use spacetimedb::rand::Rng;
 use spacetimedb::{reducer, table, Identity, ReducerContext, Table, Timestamp};
 
 #[table(accessor = project, public)]
@@ -405,6 +406,214 @@ pub fn set_comment_status_with_reason(
 
 // === end moderator (Phase 1 W4) ===
 
+// === auth-mailer (Phase 1 W1) ===
+
+/// Outbound emails the auth-mailer worker drains.
+/// status: "queued" | "sent" | "failed"
+#[table(accessor = pending_email)]
+pub struct PendingEmail {
+    #[primary_key]
+    #[auto_inc]
+    pub id: u64,
+    pub to_email: String,
+    pub subject: String,
+    pub body_html: String,
+    pub body_text: String,
+    pub created_at: Timestamp,
+    pub status: String,
+    pub provider_msg_id: Option<String>,
+    pub error: Option<String>,
+}
+
+/// Frontend-callable reducer. Validates email, mints a token, queues the email.
+/// callback_url is the app's /auth/callback URL (notes/typewars/admin) — the
+/// worker stitches it into the magic-link.
+#[reducer]
+pub fn request_magic_link(
+    ctx: &ReducerContext,
+    email: String,
+    app: String,
+    prev_identity_hex: Option<String>,
+    callback_url: String,
+) -> Result<(), String> {
+    let email = email.trim().to_lowercase();
+    validate_magic_link_args(&email, &app, &callback_url)?;
+    let token: String = (0..32)
+        .map(|_| {
+            let n: u32 = ctx.rng().gen_range(0..62);
+            let c = if n < 26 {
+                b'a' + n as u8
+            } else if n < 52 {
+                b'A' + (n - 26) as u8
+            } else {
+                b'0' + (n - 52) as u8
+            };
+            c as char
+        })
+        .collect();
+    let now = ctx.timestamp;
+    let expires = Timestamp::from_micros_since_unix_epoch(
+        now.to_micros_since_unix_epoch() + AUTH_TOKEN_TTL_MICROS,
+    );
+    ctx.db.auth_token().insert(AuthToken {
+        token: token.clone(),
+        email: email.clone(),
+        created_at: now,
+        expires_at: expires,
+        used_at: None,
+    });
+    let magic_link = build_magic_link(&callback_url, &token, &app, prev_identity_hex.as_deref());
+    ctx.db.pending_email().insert(PendingEmail {
+        id: 0,
+        to_email: email.clone(),
+        subject: "Your sign-in link to sastaspace".into(),
+        body_html: render_magic_link_html(&magic_link),
+        body_text: render_magic_link_text(&magic_link),
+        created_at: now,
+        status: "queued".into(),
+        provider_msg_id: None,
+        error: None,
+    });
+    Ok(())
+}
+
+/// Worker-only: marks an email as sent. assert_owner enforces.
+#[reducer]
+pub fn mark_email_sent(
+    ctx: &ReducerContext,
+    id: u64,
+    provider_msg_id: String,
+) -> Result<(), String> {
+    assert_owner(ctx)?;
+    let mut row = ctx
+        .db
+        .pending_email()
+        .id()
+        .find(id)
+        .ok_or("unknown email id")?;
+    row.status = "sent".into();
+    row.provider_msg_id = Some(provider_msg_id);
+    ctx.db.pending_email().id().update(row);
+    Ok(())
+}
+
+/// Worker-only: records a send failure for retry/observability.
+#[reducer]
+pub fn mark_email_failed(ctx: &ReducerContext, id: u64, error: String) -> Result<(), String> {
+    assert_owner(ctx)?;
+    let mut row = ctx
+        .db
+        .pending_email()
+        .id()
+        .find(id)
+        .ok_or("unknown email id")?;
+    row.status = "failed".into();
+    row.error = Some(error);
+    ctx.db.pending_email().id().update(row);
+    Ok(())
+}
+
+/// Atomic verify: consume token + register user under ctx.sender() identity.
+/// The frontend mints a fresh identity via POST /v1/identity, reconnects with
+/// that JWT, then calls this reducer. ctx.sender() is therefore the new identity.
+#[reducer]
+pub fn verify_token(
+    ctx: &ReducerContext,
+    token: String,
+    display_name: String,
+) -> Result<(), String> {
+    let now = ctx.timestamp;
+    let mut tok = ctx
+        .db
+        .auth_token()
+        .token()
+        .find(token.clone())
+        .ok_or("unknown token")?;
+    if tok.used_at.is_some() {
+        return Err("token already used".into());
+    }
+    if tok.expires_at.to_micros_since_unix_epoch() < now.to_micros_since_unix_epoch() {
+        return Err("token expired".into());
+    }
+    let email = tok.email.clone();
+    tok.used_at = Some(now);
+    ctx.db.auth_token().token().update(tok);
+
+    let display_name = if display_name.trim().is_empty() {
+        email.split('@').next().unwrap_or("user").to_string()
+    } else {
+        display_name.trim().chars().take(60).collect()
+    };
+
+    if let Some(existing) = ctx.db.user().email().find(email.clone()) {
+        // Re-bind: drop the old identity row, re-insert under the new identity
+        // so the User table's identity primary key stays consistent.
+        ctx.db.user().identity().delete(existing.identity);
+        ctx.db.user().insert(User {
+            identity: ctx.sender(),
+            email,
+            display_name,
+            created_at: existing.created_at,
+        });
+    } else {
+        ctx.db.user().insert(User {
+            identity: ctx.sender(),
+            email,
+            display_name,
+            created_at: now,
+        });
+    }
+    Ok(())
+}
+
+/// Pure helper: validates the inputs to `request_magic_link`. Pulled out so
+/// it can be unit-tested on the host without a `ReducerContext`.
+fn validate_magic_link_args(email: &str, app: &str, callback_url: &str) -> Result<(), String> {
+    if !email.contains('@') || email.len() > 200 {
+        return Err("invalid email".into());
+    }
+    if !matches!(app, "notes" | "typewars" | "admin") {
+        return Err("unknown app".into());
+    }
+    if !callback_url.starts_with("https://") || callback_url.len() > 400 {
+        return Err("invalid callback_url".into());
+    }
+    Ok(())
+}
+
+/// Pure helper: builds the magic-link URL given the validated inputs and a
+/// freshly-minted token. Extracted for host-side testing.
+fn build_magic_link(
+    callback_url: &str,
+    token: &str,
+    app: &str,
+    prev_identity_hex: Option<&str>,
+) -> String {
+    let prev_qs = prev_identity_hex
+        .map(|p| format!("&prev={}", p.trim_start_matches("0x")))
+        .unwrap_or_default();
+    format!(
+        "{}?t={}&app={}{}",
+        callback_url.trim_end_matches('/'),
+        token,
+        app,
+        prev_qs,
+    )
+}
+
+fn render_magic_link_html(link: &str) -> String {
+    format!(
+        r#"<!doctype html><html><body style="margin:0;padding:32px;background:#f5f1e8;color:#1a1917;font-family:-apple-system,system-ui,sans-serif"><div style="max-width:520px;margin:0 auto;background:#fbf8f0;border:1px solid rgba(168,161,150,0.4);border-radius:16px;padding:28px 32px"><h1 style="font-size:24px;font-weight:500;margin:0 0 14px">Sign in to sastaspace.</h1><p style="font-size:15px;line-height:1.55;margin:0 0 20px">Click below to sign in. Good for 15 minutes, works once.</p><p style="margin:0 0 24px"><a href="{link}" style="display:inline-block;background:#1a1917;color:#f5f1e8;padding:12px 22px;border-radius:10px;text-decoration:none;font-size:15px;font-weight:500">sign in &rarr;</a></p><p style="font-size:13px;color:#6b6458;margin:0 0 8px">If the button doesn't work, paste this URL:</p><p style="font-family:ui-monospace,Menlo,monospace;font-size:12px;color:#6b6458;word-break:break-all;margin:0 0 24px">{link}</p><p style="font-size:12px;color:#a8a196;margin:0">If you didn't ask for this, ignore.</p></div></body></html>"#
+    )
+}
+
+fn render_magic_link_text(link: &str) -> String {
+    format!("Sign in to sastaspace.\n\nClick this link (good for 15 minutes, works once):\n\n  {link}\n\nIf you didn't ask for this, ignore.\n\n—\nsastaspace.com\n")
+}
+
+// === end auth-mailer (Phase 1 W1) ===
+
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -558,5 +767,155 @@ mod tests {
         );
         assert!(msg.contains("approve"));
         assert!(msg.contains("approved"));
+    }
+}
+
+// === auth-mailer (Phase 1 W1) tests ===
+//
+// SpacetimeDB 2.1 ships no `TestContext`/`TestDb` harness, so we cannot drive
+// reducers in-process here (the plan acknowledged this — see Task 1 Step 2's
+// API-discovery note). Instead the integration paths are covered by:
+//   - the worker Vitest suite (`workers/src/agents/auth-mailer.test.ts`),
+//   - the Step 6 smoke test against a real local STDB.
+//
+// What we *can* unit-test on host: the pure helpers we extracted and the
+// `PendingEmail` row's struct shape.
+#[cfg(test)]
+mod auth_mailer_tests {
+    use super::*;
+
+    #[test]
+    fn validate_magic_link_args_accepts_well_formed() {
+        assert!(validate_magic_link_args(
+            "user@example.com",
+            "notes",
+            "https://notes.sastaspace.com/auth/callback",
+        )
+        .is_ok());
+        assert!(validate_magic_link_args(
+            "x@y.io",
+            "typewars",
+            "https://typewars.sastaspace.com/auth/callback",
+        )
+        .is_ok());
+        assert!(validate_magic_link_args(
+            "ops@sastaspace.com",
+            "admin",
+            "https://admin.sastaspace.com/auth/callback",
+        )
+        .is_ok());
+    }
+
+    #[test]
+    fn validate_magic_link_args_rejects_bad_email() {
+        assert!(validate_magic_link_args(
+            "notanemail",
+            "notes",
+            "https://notes.sastaspace.com/auth/callback",
+        )
+        .is_err());
+        let too_long = format!("{}@example.com", "a".repeat(250));
+        assert!(validate_magic_link_args(
+            &too_long,
+            "notes",
+            "https://notes.sastaspace.com/auth/callback",
+        )
+        .is_err());
+    }
+
+    #[test]
+    fn validate_magic_link_args_rejects_unknown_app() {
+        let r = validate_magic_link_args(
+            "user@example.com",
+            "wat",
+            "https://notes.sastaspace.com/auth/callback",
+        );
+        assert!(r.is_err());
+        assert_eq!(r.unwrap_err(), "unknown app");
+    }
+
+    #[test]
+    fn validate_magic_link_args_rejects_non_https_callback() {
+        assert!(validate_magic_link_args(
+            "user@example.com",
+            "notes",
+            "http://notes.sastaspace.com/auth/callback",
+        )
+        .is_err());
+        assert!(validate_magic_link_args("user@example.com", "notes", "javascript:evil").is_err());
+    }
+
+    #[test]
+    fn build_magic_link_basic() {
+        let link = build_magic_link(
+            "https://notes.sastaspace.com/auth/callback",
+            "tok123",
+            "notes",
+            None,
+        );
+        assert_eq!(
+            link,
+            "https://notes.sastaspace.com/auth/callback?t=tok123&app=notes"
+        );
+    }
+
+    #[test]
+    fn build_magic_link_includes_prev_when_supplied() {
+        let link = build_magic_link(
+            "https://typewars.sastaspace.com/auth/callback",
+            "tok456",
+            "typewars",
+            Some("0xabcdef0123"),
+        );
+        assert_eq!(
+            link,
+            "https://typewars.sastaspace.com/auth/callback?t=tok456&app=typewars&prev=abcdef0123"
+        );
+    }
+
+    #[test]
+    fn build_magic_link_strips_trailing_slash() {
+        let link = build_magic_link(
+            "https://notes.sastaspace.com/auth/callback/",
+            "tok",
+            "notes",
+            None,
+        );
+        assert!(!link.contains("//?"));
+        assert!(link.starts_with("https://notes.sastaspace.com/auth/callback?"));
+    }
+
+    #[test]
+    fn render_magic_link_html_contains_link() {
+        let html = render_magic_link_html("https://example.com/auth?t=abc&app=notes");
+        assert!(html.contains("https://example.com/auth?t=abc&app=notes"));
+        assert!(html.contains("Sign in to sastaspace"));
+        assert!(html.starts_with("<!doctype html>"));
+    }
+
+    #[test]
+    fn render_magic_link_text_contains_link() {
+        let text = render_magic_link_text("https://example.com/auth?t=abc&app=notes");
+        assert!(text.contains("https://example.com/auth?t=abc&app=notes"));
+        assert!(text.contains("good for 15 minutes"));
+    }
+
+    #[test]
+    fn pending_email_struct_round_trips() {
+        let e = PendingEmail {
+            id: 7,
+            to_email: "x@y.com".into(),
+            subject: "s".into(),
+            body_html: "<p>h</p>".into(),
+            body_text: "h".into(),
+            created_at: Timestamp::UNIX_EPOCH,
+            status: "queued".into(),
+            provider_msg_id: None,
+            error: None,
+        };
+        assert_eq!(e.id, 7);
+        assert_eq!(e.status, "queued");
+        assert!(e.provider_msg_id.is_none());
+        assert!(e.error.is_none());
     }
 }
