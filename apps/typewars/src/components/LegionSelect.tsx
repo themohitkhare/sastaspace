@@ -60,8 +60,18 @@ export default function LegionSelect({ onChoose }: Props) {
 
         <div className="ls-finalize">
           <div className="callsign-row">
-            <label className="ss-label" style={{ color: 'var(--brand-muted)' }}>callsign</label>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+              <label htmlFor="callsign-input" className="ss-label" style={{ color: 'var(--brand-muted)' }}>callsign</label>
+              <span
+                className="ss-small ss-mono"
+                style={{ color: callsign.length >= 24 ? 'var(--brand-sasta-text)' : 'var(--brand-muted)' }}
+                aria-live="polite"
+              >
+                {callsign.length} / 24
+              </span>
+            </div>
             <input
+              id="callsign-input"
               className="callsign-input"
               placeholder="enter your callsign"
               value={callsign}
