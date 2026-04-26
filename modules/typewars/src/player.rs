@@ -6,6 +6,7 @@ use spacetimedb::{reducer, table, Identity, ReducerContext, Table, Timestamp};
 pub struct Player {
     #[primary_key]
     pub identity: Identity,
+    #[index(btree)]
     pub username: String,
     pub legion: u8,
     pub total_damage: u64,
@@ -60,16 +61,17 @@ pub fn register_player(ctx: &ReducerContext, username: String, legion: u8) -> Re
     if ctx.db.player().identity().find(ctx.sender()).is_some() {
         return Err("already registered".into());
     }
-    let existing: Vec<String> = ctx
-        .db
-        .player()
-        .iter()
-        .map(|p| p.username.to_lowercase())
-        .collect();
-    validate_registration(&username, legion, &existing)?;
+    // Validate length/legion before any DB work (pass empty slice; dup check is below).
+    validate_registration(&username, legion, &[])?;
+    // Case-insensitive uniqueness check via username btree index — O(log N) not O(N).
+    // Usernames are stored lowercase so a single indexed scan is sufficient.
+    let lower = username.to_lowercase();
+    if ctx.db.player().username().filter(&lower).next().is_some() {
+        return Err("username taken".into());
+    }
     ctx.db.player().insert(Player {
         identity: ctx.sender(),
-        username,
+        username: lower,
         legion,
         total_damage: 0,
         season_damage: 0,

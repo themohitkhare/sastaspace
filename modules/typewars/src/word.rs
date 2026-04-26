@@ -4,7 +4,6 @@ use crate::region::region;
 use crate::session::battle_session;
 use crate::words;
 use spacetimedb::{reducer, table, ReducerContext, ScheduleAt, Table, Timestamp};
-use std::collections::HashSet;
 
 #[table(accessor = word, public)]
 pub struct Word {
@@ -115,17 +114,22 @@ pub fn submit_word(ctx: &ReducerContext, session_id: u64, word: String) -> Resul
 
     let ts_now = ctx.timestamp.to_micros_since_unix_epoch();
 
-    // Find matching live word in this session
-    let hit: Option<Word> = ctx.db.word().iter().find(|w| {
-        is_word_match(
-            w.session_id,
-            &w.text,
-            w.expires_at.to_micros_since_unix_epoch(),
-            session_id,
-            &word,
-            ts_now,
-        )
-    });
+    // Find matching live word in this session — use session_id btree index (O(8) not O(8N))
+    let hit: Option<Word> = ctx
+        .db
+        .word()
+        .session_id()
+        .filter(&session_id)
+        .find(|w| {
+            is_word_match(
+                w.session_id,
+                &w.text,
+                w.expires_at.to_micros_since_unix_epoch(),
+                session_id,
+                &word,
+                ts_now,
+            )
+        });
 
     if hit.is_none() {
         // Miss path: reset streak
@@ -467,29 +471,9 @@ pub struct WordExpireSchedule {
 pub fn expire_words_tick(ctx: &ReducerContext, _arg: WordExpireSchedule) -> Result<(), String> {
     let ts_now = ctx.timestamp.to_micros_since_unix_epoch();
 
-    let expired: Vec<Word> = ctx
-        .db
-        .word()
-        .iter()
-        .filter(|w| w.expires_at.to_micros_since_unix_epoch() <= ts_now)
-        .collect();
-
-    let mut affected: HashSet<u64> = HashSet::new();
-    for w in expired {
-        affected.insert(w.session_id);
-        ctx.db.word().id().delete(w.id);
-    }
-
-    for sid in &affected {
-        if let Some(mut s) = ctx.db.battle_session().id().find(*sid) {
-            if s.active {
-                s.streak = 0;
-                s.multiplier = 1.0;
-                ctx.db.battle_session().id().update(s);
-            }
-        }
-    }
-
+    // Iterate active sessions once (unavoidable — no index on `active` bool).
+    // For each session use the session_id btree index to scan only that session's
+    // words (O(8) per session) rather than doing a global word table scan (O(8N)).
     let active: Vec<crate::session::BattleSession> = ctx
         .db
         .battle_session()
@@ -498,17 +482,45 @@ pub fn expire_words_tick(ctx: &ReducerContext, _arg: WordExpireSchedule) -> Resu
         .collect();
 
     for s in active {
-        let word_count = ctx.db.word().session_id().filter(&s.id).count();
+        // Collect expired words for this session via indexed lookup.
+        let expired_ids: Vec<u64> = ctx
+            .db
+            .word()
+            .session_id()
+            .filter(&s.id)
+            .filter(|w| w.expires_at.to_micros_since_unix_epoch() <= ts_now)
+            .map(|w| w.id)
+            .collect();
+
+        let had_expiry = !expired_ids.is_empty();
+        for wid in expired_ids {
+            ctx.db.word().id().delete(wid);
+        }
+
+        // Reset streak on expiry (re-fetch to get fresh state after word deletes).
+        let sid = s.id;
+        if had_expiry {
+            if let Some(mut fresh) = ctx.db.battle_session().id().find(sid) {
+                fresh.streak = 0;
+                fresh.multiplier = 1.0;
+                ctx.db.battle_session().id().update(fresh);
+            } else {
+                continue;
+            }
+        }
+
+        // Refill words to keep 8 visible — use indexed word count for this session.
+        let word_count = ctx.db.word().session_id().filter(&sid).count();
         let needed = refill_count(word_count);
         if needed == 0 {
             continue;
         }
-        let session_id = s.id;
-        let spawn_start = s.words_spawned;
-        let mut updated_s = s;
-        updated_s.words_spawned += needed;
-        ctx.db.battle_session().id().update(updated_s);
-        spawn_words(ctx, session_id, spawn_start, needed, false);
+        if let Some(mut sess) = ctx.db.battle_session().id().find(sid) {
+            let spawn_start = sess.words_spawned;
+            sess.words_spawned += needed;
+            ctx.db.battle_session().id().update(sess);
+            spawn_words(ctx, sid, spawn_start, needed, false);
+        }
     }
 
     Ok(())

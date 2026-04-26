@@ -34,11 +34,13 @@ pub fn start_battle(ctx: &ReducerContext, region_id: u32) -> Result<(), String> 
         .find(ctx.sender())
         .ok_or_else(|| "not registered".to_string())?;
 
+    // Use player_identity btree index: O(sessions_per_player) not O(total_sessions)
     let already_active = ctx
         .db
         .battle_session()
-        .iter()
-        .any(|s| s.player_identity == ctx.sender() && s.active);
+        .player_identity()
+        .filter(ctx.sender())
+        .any(|s| s.active);
     if already_active {
         return Err("already in a battle".into());
     }
@@ -86,11 +88,13 @@ pub fn end_battle(ctx: &ReducerContext, session_id: u64) -> Result<(), String> {
 
 /// Called from client_disconnected to clean up any dangling active sessions.
 pub fn auto_end_battle(ctx: &ReducerContext) {
+    // Use player_identity btree index: O(sessions_per_player) not O(total_sessions)
     let sessions: Vec<BattleSession> = ctx
         .db
         .battle_session()
-        .iter()
-        .filter(|s| s.player_identity == ctx.sender() && s.active)
+        .player_identity()
+        .filter(ctx.sender())
+        .filter(|s| s.active)
         .collect();
     for session in sessions {
         end_battle_core(ctx, session);
