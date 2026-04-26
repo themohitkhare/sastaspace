@@ -83,15 +83,34 @@ test.describe("admin panels — STDB live updates", () => {
 
   test.beforeEach(async ({ page }) => {
     await signIn(page, OWNER_EMAIL);
-    // Inject the owner STDB token into BOTH session and localStorage before
-    // navigation so the SastaspaceProvider builds an authed connection on
-    // first paint regardless of which storage the app currently reads from
-    // (Group 5/7 audit-fix migrated admin to sessionStorage; legacy reads
-    // localStorage as a one-shot migration fallback).
-    await page.addInitScript((tok) => {
-      sessionStorage.setItem("admin_stdb_owner_token", tok as string);
-      localStorage.setItem("admin_stdb_owner_token", tok as string);
-    }, OWNER_STDB_TOKEN);
+    // Admin Shell.resolveAuth reads TWO things, both must be present:
+    //   1. localStorage.admin_token  — Google OAuth ID JWT (we decode the
+    //      payload to confirm email matches OWNER_EMAIL)
+    //   2. admin_stdb_owner_token   — STDB owner JWT for reducer calls
+    //      (Group 5/7 audit-fix moved this to sessionStorage; localStorage
+    //      stays as a migration fallback)
+    // Without admin_token Shell shows the AuthSignIn screen instead of the
+    // panels, so the Comments-button click times out. The Google JWT
+    // doesn't need to be cryptographically valid — readToken just decodes
+    // the payload and checks email + exp.
+    await page.addInitScript(
+      ([stdbToken, ownerEmail]) => {
+        // Fake-but-valid-shape Google ID JWT.
+        const header = btoa(JSON.stringify({ alg: "none", typ: "JWT" }));
+        const payload = btoa(
+          JSON.stringify({
+            email: ownerEmail,
+            sub: ownerEmail,
+            exp: Math.floor(Date.now() / 1000) + 86400, // +1d
+          }),
+        );
+        localStorage.setItem("admin_token", `${header}.${payload}.test-sig`);
+
+        sessionStorage.setItem("admin_stdb_owner_token", stdbToken);
+        localStorage.setItem("admin_stdb_owner_token", stdbToken);
+      },
+      [OWNER_STDB_TOKEN, OWNER_EMAIL] as const,
+    );
     await page.goto(ADMIN);
   });
 

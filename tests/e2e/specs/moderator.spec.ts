@@ -107,23 +107,28 @@ test.describe("moderator-agent E2E (gated on E2E_MODERATOR_ENABLED)", () => {
         `submit_user_comment failed: HTTP ${callRes.status()} ${await callRes.text()}`,
       );
     }
-    // Read back the row to grab its auto-inc id. STDB SQL only supports
-    // WHERE on a single indexed column at a time — `post_slug` is btree-
-    // indexed, but `body` is not, so we can't combine them. Filter on
-    // post_slug only and pick the newest row; tests run serially
-    // (playwright fullyParallel=false, workers=1) and afterEach deletes
-    // the row, so there's no race for the same post_slug at any moment.
-    void escaped; // body match happens via the read-back assertion in the caller
+    // Read back the row to grab its auto-inc id. STDB SQL is strict:
+    // multi-column WHERE is unsupported, AND `ORDER BY ... LIMIT` on the
+    // primary key is also rejected. So we fetch all rows for this
+    // post_slug (post_slug is btree-indexed, so the query plan is
+    // bounded) and pick the max id client-side. afterEach deletes the
+    // row, so at any moment there's just one matching row when running
+    // serially (playwright fullyParallel=false, workers=1).
+    void escaped; // body match would go here if STDB SQL supported it; verified via the caller's status poll instead
     const rows = await sql(
       request,
-      `SELECT id FROM comment WHERE post_slug = 'e2e-mod-test' ORDER BY id DESC LIMIT 1`,
+      `SELECT id FROM comment WHERE post_slug = 'e2e-mod-test'`,
       OWNER_TOKEN,
     );
-    const id = rows[0]?.[0];
-    if (id == null) {
+    if (rows.length === 0) {
       throw new Error(`no comment row found after submit_user_comment (TAG=${TAG})`);
     }
-    return BigInt(String(id));
+    let max = BigInt(String(rows[0][0]));
+    for (const r of rows) {
+      const v = BigInt(String(r[0]));
+      if (v > max) max = v;
+    }
+    return max;
   }
 
   test("benign comment → status='approved' within 10s", async ({ request }) => {
