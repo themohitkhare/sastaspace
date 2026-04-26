@@ -98,33 +98,31 @@ function renderServerView(data: SystemMetrics, h: Histories): React.ReactNode {
   );
 }
 
-function useHistories(data: SystemMetrics | null) {
-  const cpu = useRef<number[]>([]);
-  const mem = useRef<number[]>([]);
-  const netTx = useRef<number[]>([]);
-  const netRx = useRef<number[]>([]);
+function useHistories(data: SystemMetrics | null): Histories {
+  const [histories, setHistories] = useState<Histories>({ cpu: [], mem: [], netTx: [], netRx: [] });
   const prevNet = useRef<{ tx: number; rx: number } | null>(null);
-  const [, forceRender] = useState(0);
 
   useEffect(() => {
     if (!data) return;
-    const push = (arr: number[], val: number) => {
-      arr.push(val);
-      if (arr.length > HISTORY_LEN) arr.shift();
-    };
-    push(cpu.current, data.cpu.pct);
-    push(mem.current, data.mem.used_gb);
-
     const prev = prevNet.current;
-    if (prev) {
-      push(netTx.current, Math.max(0, (data.net.tx_bytes - prev.tx) / 1e6));
-      push(netRx.current, Math.max(0, (data.net.rx_bytes - prev.rx) / 1e6));
-    }
+    const txMb = prev ? Math.max(0, (data.net.tx_bytes - prev.tx) / 1e6) : null;
+    const rxMb = prev ? Math.max(0, (data.net.rx_bytes - prev.rx) / 1e6) : null;
     prevNet.current = { tx: data.net.tx_bytes, rx: data.net.rx_bytes };
-    forceRender(n => n + 1);
+    setHistories(h => {
+      const push = (arr: number[], val: number) => {
+        const next = [...arr, val];
+        return next.length > HISTORY_LEN ? next.slice(-HISTORY_LEN) : next;
+      };
+      return {
+        cpu: push(h.cpu, data.cpu.pct),
+        mem: push(h.mem, data.mem.used_gb),
+        netTx: txMb != null ? push(h.netTx, txMb) : h.netTx,
+        netRx: rxMb != null ? push(h.netRx, rxMb) : h.netRx,
+      };
+    });
   }, [data]);
 
-  return { cpu: cpu.current, mem: mem.current, netTx: netTx.current, netRx: netRx.current };
+  return histories;
 }
 
 function ServerLegacy() {

@@ -15,7 +15,7 @@ const RECONNECT_MS = 600_000; // 10 min
 type LogsProps = { initialService?: string; theme?: string };
 type ServiceListEntry = { name: string; container: string; status: string };
 
-function renderLogsView(opts: {
+type LogsViewProps = {
   serviceList: ServiceListEntry[];
   active: string;
   setActive: (s: string) => void;
@@ -27,16 +27,23 @@ function renderLogsView(opts: {
   setAutoScroll: (b: boolean) => void;
   cleared: boolean;
   setCleared: (b: boolean) => void;
-  outputRef: React.RefObject<HTMLDivElement | null>;
   displayLines: LogLine[];
   theme: string;
   banner?: React.ReactNode;
-}): React.ReactNode {
-  const {
-    serviceList, active, setActive, tail, setTail, filter, setFilter,
-    autoScroll, setAutoScroll, cleared, setCleared, outputRef, displayLines, theme,
-    banner,
-  } = opts;
+};
+
+function LogsView({
+  serviceList, active, setActive, tail, setTail, filter, setFilter,
+  autoScroll, setAutoScroll, cleared, setCleared, displayLines, theme, banner,
+}: LogsViewProps) {
+  const outputRef = useRef<HTMLDivElement>(null);
+
+  // Auto-scroll on new lines.
+  useEffect(() => {
+    if (autoScroll && outputRef.current) {
+      outputRef.current.scrollTop = outputRef.current.scrollHeight;
+    }
+  }, [displayLines.length, autoScroll]);
 
   const renderLine = (text: string): React.ReactNode => {
     if (!filter) return text;
@@ -101,44 +108,37 @@ function LogsLegacy({ initialService, theme = 'dark' }: LogsProps) {
   const [tail, setTail] = useState(200);
   const [filter, setFilter] = useState('');
   const [autoScroll, setAutoScroll] = useState(true);
-  const [lines, setLines] = useState<LogLine[]>([]);
-  const [cleared, setCleared] = useState(false);
-  const outputRef = useRef<HTMLDivElement>(null);
-  const esRef = useRef<EventSource | null>(null);
+  // Keyed by `${active}:${tail}` so a switch re-mounts the buffer instead of
+  // requiring a setState-in-effect reset.
+  const epoch = `${active}:${tail}`;
+  const [linesByEpoch, setLinesByEpoch] = useState<{ epoch: string; lines: LogLine[]; cleared: boolean }>({ epoch, lines: [], cleared: false });
 
+  // Establish/reset the EventSource on epoch change and route incoming lines
+  // into the matching epoch's buffer (drop stragglers from old epochs).
   useEffect(() => {
-    esRef.current?.close();
-    setLines([]);
-    setCleared(false);
-
     const url = `${ADMIN_API_URL}/logs/${encodeURIComponent(active)}?tail=${tail}`;
     const es = new EventSource(url);
-    esRef.current = es;
-
     const reconnectId = setTimeout(() => { es.close(); }, RECONNECT_MS);
-
+    // Buffer reset on epoch change is the whole point of this effect.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setLinesByEpoch({ epoch, lines: [], cleared: false });
     es.onmessage = (e) => {
       try {
         const line = JSON.parse(e.data) as LogLine;
-        setLines(prev => {
-          const next = [...prev, line];
-          return next.length > MAX_LINES ? next.slice(-MAX_LINES) : next;
+        setLinesByEpoch(prev => prev.epoch !== epoch ? prev : {
+          epoch,
+          cleared: prev.cleared,
+          lines: prev.lines.length >= MAX_LINES
+            ? [...prev.lines.slice(-(MAX_LINES - 1)), line]
+            : [...prev.lines, line],
         });
       } catch { /* ignore malformed */ }
     };
+    return () => { clearTimeout(reconnectId); es.close(); };
+  }, [epoch, active, tail]);
 
-    return () => {
-      clearTimeout(reconnectId);
-      es.close();
-    };
-  }, [active, tail]);
-
-  useEffect(() => {
-    if (autoScroll && outputRef.current) {
-      outputRef.current.scrollTop = outputRef.current.scrollHeight;
-    }
-  }, [lines.length, autoScroll]);
-
+  const setCleared = (cleared: boolean) => setLinesByEpoch(prev => ({ ...prev, cleared }));
+  const { lines, cleared } = linesByEpoch;
   const displayLines = cleared
     ? []
     : filter
@@ -153,10 +153,15 @@ function LogsLegacy({ initialService, theme = 'dark' }: LogsProps) {
       }))
     : [{ name: active, container: active, status: 'unknown' }];
 
-  return renderLogsView({
-    serviceList, active, setActive, tail, setTail, filter, setFilter,
-    autoScroll, setAutoScroll, cleared, setCleared, outputRef, displayLines, theme,
-  });
+  return (
+    <LogsView
+      serviceList={serviceList} active={active} setActive={setActive}
+      tail={tail} setTail={setTail} filter={filter} setFilter={setFilter}
+      autoScroll={autoScroll} setAutoScroll={setAutoScroll}
+      cleared={cleared} setCleared={setCleared}
+      displayLines={displayLines} theme={theme}
+    />
+  );
 }
 
 function LogsStdb({ initialService, theme = 'dark' }: LogsProps) {
@@ -166,14 +171,11 @@ function LogsStdb({ initialService, theme = 'dark' }: LogsProps) {
   const [tail, setTail] = useState(200);
   const [filter, setFilter] = useState('');
   const [autoScroll, setAutoScroll] = useState(true);
-  const [cleared, setCleared] = useState(false);
-  const outputRef = useRef<HTMLDivElement>(null);
-
-  // Reset cleared flag when the active container changes (so a switch always
-  // shows fresh lines instead of staying blank).
-  useEffect(() => {
-    setCleared(false);
-  }, [active]);
+  // `cleared` is keyed by active container so a container switch resets
+  // it without needing a setState-in-effect.
+  const [clearedFor, setClearedFor] = useState<string | null>(null);
+  const cleared = clearedFor === active;
+  const setCleared = (b: boolean) => setClearedFor(b ? active : null);
 
   // log_event subscription filtered server-side by container.
   const logQuery = useMemo(() => tables.log_event.where(r => r.container.eq(active)), [active]);
@@ -196,7 +198,6 @@ function LogsStdb({ initialService, theme = 'dark' }: LogsProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [active, ownerToken]);
 
-  // Auto-scroll on new lines
   const lines: LogLine[] = useMemo(() => {
     return [...logRows]
       .sort((a, b) => Number(a.tsMicros - b.tsMicros))
@@ -211,12 +212,6 @@ function LogsStdb({ initialService, theme = 'dark' }: LogsProps) {
         return { ts: `${hh}:${mm}:${ss}.${msStr}`, text: r.text, level: r.level };
       });
   }, [logRows, tail]);
-
-  useEffect(() => {
-    if (autoScroll && outputRef.current) {
-      outputRef.current.scrollTop = outputRef.current.scrollHeight;
-    }
-  }, [lines.length, autoScroll]);
 
   const displayLines = cleared
     ? []
@@ -242,11 +237,15 @@ function LogsStdb({ initialService, theme = 'dark' }: LogsProps) {
     </div>
   ) : undefined;
 
-  return renderLogsView({
-    serviceList, active, setActive, tail, setTail, filter, setFilter,
-    autoScroll, setAutoScroll, cleared, setCleared, outputRef, displayLines, theme,
-    banner,
-  });
+  return (
+    <LogsView
+      serviceList={serviceList} active={active} setActive={setActive}
+      tail={tail} setTail={setTail} filter={filter} setFilter={setFilter}
+      autoScroll={autoScroll} setAutoScroll={setAutoScroll}
+      cleared={cleared} setCleared={setCleared}
+      displayLines={displayLines} theme={theme} banner={banner}
+    />
+  );
 }
 
 export default function Logs(props: LogsProps) {

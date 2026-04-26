@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useSpacetimeDB, useTable } from 'spacetimedb/react';
 import { tables } from '@sastaspace/stdb-bindings';
 import { usePoll } from '@/hooks/usePoll';
@@ -39,15 +39,23 @@ function DashboardInner({ navigate }: { navigate: (path: string) => void }) {
     () => commentRows.filter(c => c.status === 'pending' || c.status === 'flagged').length,
     [commentRows],
   );
+  // Use a slowly-ticking "now" so the computation stays pure inside useMemo.
+  // Re-evaluated every 30s (sub-second precision isn't meaningful for an
+  // "in the last hour" count).
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 30_000);
+    return () => clearInterval(id);
+  }, []);
   const lastHourCount = useMemo(() => {
-    const cutoff = Date.now() - 3_600_000;
+    const cutoff = now - 3_600_000;
     return commentRows.filter(c => {
       const ms = c.createdAt instanceof Date ? c.createdAt.getTime()
         : typeof c.createdAt === 'bigint' ? Number(c.createdAt / 1000n)
         : new Date(String(c.createdAt)).getTime();
       return ms >= cutoff;
     }).length;
-  }, [commentRows]);
+  }, [commentRows, now]);
 
   const recentComments = useMemo(() => {
     return [...commentRows]

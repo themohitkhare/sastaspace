@@ -132,6 +132,17 @@ export default function Shell() {
     setAuthState(state);
   };
 
+  // Hooks must run unconditionally — derive nav-badge values before the
+  // auth gate early-returns below.
+  const pendingCount = useMemo(
+    () => isActive ? commentRows.filter(c => c.status === 'pending' || c.status === 'flagged').length : 0,
+    [isActive, commentRows],
+  );
+  const anyDown = useMemo(
+    () => containers ? containers.some(c => c.status !== 'running') : false,
+    [containers],
+  );
+
   if (authState === 'loading') {
     return <div className="auth-shell"><div className="spinner"/></div>;
   }
@@ -144,14 +155,6 @@ export default function Shell() {
     return <AuthDenied email={userEmail} onSignOut={signOut}/>;
   }
 
-  const pendingCount = useMemo(
-    () => isActive ? commentRows.filter(c => c.status === 'pending' || c.status === 'flagged').length : 0,
-    [isActive, commentRows],
-  );
-  const anyDown = useMemo(
-    () => containers ? containers.some(c => c.status !== 'running') : false,
-    [containers],
-  );
   const isLogs = route.path === '/logs';
 
   let panel: React.ReactNode;
