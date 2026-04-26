@@ -837,7 +837,11 @@ jobs:
         run: pnpm --filter @sastaspace/e2e exec tsc --noEmit
       - name: gate — required env present
         run: |
-          [[ -z "$E2E_TEST_SECRET" ]] && { echo "::error::E2E_TEST_SECRET must be set as a GH Actions secret"; exit 1; }
+          if [[ -z "$E2E_TEST_SECRET" ]]; then
+            echo "::error::E2E_TEST_SECRET must be set as a GH Actions secret"
+            exit 1
+          fi
+          echo "E2E_TEST_SECRET present"
       - name: smoke — live prod URLs reachable
         run: |
           for url in https://sastaspace.com/ https://notes.sastaspace.com/ \
