@@ -40,6 +40,7 @@ jobs:
       landing:  ${{ steps.diff.outputs.landing }}
       notes:    ${{ steps.diff.outputs.notes }}
       agents:   ${{ steps.diff.outputs.agents }}
+      workers:  ${{ steps.diff.outputs.workers }}
       typewars: ${{ steps.diff.outputs.typewars }}
       admin:    ${{ steps.diff.outputs.admin }}
     steps:
@@ -50,7 +51,7 @@ jobs:
         run: |
           # Schedule and manual dispatch always rebuild everything.
           if [[ "$GITHUB_EVENT_NAME" == "schedule" || "$GITHUB_EVENT_NAME" == "workflow_dispatch" ]]; then
-            printf 'module=true\nlanding=true\nnotes=true\nagents=true\ntypewars=true\nadmin=true\n' >> "$GITHUB_OUTPUT"
+            printf 'module=true\nlanding=true\nnotes=true\nagents=true\nworkers=true\ntypewars=true\nadmin=true\n' >> "$GITHUB_OUTPUT"
             exit 0
           fi
           if [[ "$GITHUB_EVENT_NAME" == "pull_request" ]]; then
@@ -64,6 +65,7 @@ jobs:
           echo "landing=$(detect   '^(apps/landing|packages|infra/landing)/')"                           >> "$GITHUB_OUTPUT"
           echo "notes=$(detect     '^(apps/notes|packages|infra/notes/|infra/landing/security_headers)')" >> "$GITHUB_OUTPUT"
           echo "agents=$(detect    '^(services/auth|infra/agents|infra/docker-compose)')"                >> "$GITHUB_OUTPUT"
+          echo "workers=$(detect   '^(workers/|packages/stdb-bindings/|infra/docker-compose)')"          >> "$GITHUB_OUTPUT"
           echo "typewars=$(detect  '^(apps/typewars|packages/typewars-bindings|packages/design-tokens|infra/typewars/|infra/landing/security_headers|infra/docker-compose)')" >> "$GITHUB_OUTPUT"
           echo "admin=$(detect     '^(apps/admin|infra/admin/|infra/docker-compose)')"                    >> "$GITHUB_OUTPUT"
 
@@ -496,9 +498,42 @@ jobs:
           docker compose -f infra/docker-compose.yml logs auth --tail=30
           exit 1
 
+  # ── 4b. typescript workers (lint + vitest) ───────────────────────────────
+  # Phase 3 prep: this job lives alongside `auth` and `moderator` through Phase 3.
+  # Phase 4 deletes those Python jobs; this `workers` job survives as the gate
+  # for the rewired agent code under workers/.
+  workers:
+    needs: changes
+    if: needs.changes.outputs.workers == 'true'
+    runs-on: [self-hosted, Linux]
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with: { node-version: 22 }
+      - name: enable pnpm
+        run: corepack enable && corepack prepare pnpm@9.12.0 --activate
+      - name: install workers deps
+        working-directory: workers
+        # NOTE: Workers' lockfile lives at the repo root, not under workers/.
+        # Audit N8 tracks switching this to `pnpm deploy --filter` from root +
+        # --frozen-lockfile. Until then mirror the Dockerfile's --no-frozen-lockfile.
+        run: pnpm install --no-frozen-lockfile
+      - name: lint (tsc --noEmit)
+        working-directory: workers
+        run: pnpm lint
+      - name: test (vitest)
+        working-directory: workers
+        run: pnpm test
+      - name: pnpm audit
+        working-directory: workers
+        run: pnpm audit --prod --audit-level moderate
+
   # ── 5. e2e against live prod (runs AFTER all deploys) ─────────────────────
   e2e:
-    needs: [landing-deploy, notes, admin, moderator, auth]
+    # PHASE 4 CLEANUP: remove `moderator` and `auth` from `needs:` and the
+    # corresponding `needs.<job>.result != 'failure'` guards below when those
+    # jobs are deleted. `workers` stays.
+    needs: [landing-deploy, notes, admin, moderator, auth, workers]
     if: >-
       always() && !cancelled() &&
       (github.event_name == 'push' || github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') &&
@@ -506,7 +541,8 @@ jobs:
       needs.notes.result != 'failure' &&
       needs.admin.result != 'failure' &&
       needs.moderator.result != 'failure' &&
-      needs.auth.result != 'failure'
+      needs.auth.result != 'failure' &&
+      needs.workers.result != 'failure'
     runs-on: [self-hosted, Linux]
     timeout-minutes: 15
     env:
