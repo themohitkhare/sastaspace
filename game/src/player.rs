@@ -19,8 +19,11 @@ pub fn validate_registration(
     legion: u8,
     existing_usernames_lower: &[String],
 ) -> Result<(), String> {
-    if username.is_empty() || username.len() > 32 {
-        return Err("username must be 1-32 chars".into());
+    if username.is_empty() {
+        return Err("username required".into());
+    }
+    if username.len() > 32 {
+        return Err("username too long (max 32 chars)".into());
     }
     if legion >= LEGION_COUNT {
         return Err(format!("invalid legion {legion} (max {})", LEGION_COUNT - 1));
@@ -90,6 +93,7 @@ mod tests {
         let existing = vec!["ash_q".to_string(), "smoketest".to_string()];
         assert!(validate_registration("ASH_Q", 0, &existing).is_err());
         assert!(validate_registration("Smoketest", 1, &existing).is_err());
+        assert!(validate_registration("ash_q", 0, &existing).is_err());
         assert!(validate_registration("new_recruit", 2, &existing).is_ok());
     }
 }
