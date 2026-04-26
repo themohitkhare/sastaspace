@@ -1,49 +1,25 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { useTable } from 'spacetimedb/react';
+import { tables } from '@sastaspace/stdb-bindings';
 import { usePoll } from '@/hooks/usePoll';
+import { USE_STDB_ADMIN } from '@/hooks/useStdb';
 import type { SystemMetrics } from '@/lib/data';
+import { adaptMetrics, type SystemMetricsRow } from '@/lib/stdb-adapters';
 import LineChart from '@/components/charts/LineChart';
 import AreaChart from '@/components/charts/AreaChart';
 
 const HISTORY_LEN = 60;
 
-export default function Server() {
-  const { data, loading, error } = usePoll<SystemMetrics>('/system', 3000);
+type Histories = {
+  cpu: number[];
+  mem: number[];
+  netTx: number[];
+  netRx: number[];
+};
 
-  const cpuHistory = useRef<number[]>([]);
-  const memHistory = useRef<number[]>([]);
-  const netTxHistory = useRef<number[]>([]);
-  const netRxHistory = useRef<number[]>([]);
-  const prevNet = useRef<{ tx: number; rx: number } | null>(null);
-  const [, forceRender] = useState(0);
-
-  useEffect(() => {
-    if (!data) return;
-    const push = (arr: number[], val: number) => {
-      arr.push(val);
-      if (arr.length > HISTORY_LEN) arr.shift();
-    };
-    push(cpuHistory.current, data.cpu.pct);
-    push(memHistory.current, data.mem.used_gb);
-
-    const prev = prevNet.current;
-    if (prev) {
-      push(netTxHistory.current, Math.max(0, (data.net.tx_bytes - prev.tx) / 1e6));
-      push(netRxHistory.current, Math.max(0, (data.net.rx_bytes - prev.rx) / 1e6));
-    }
-    prevNet.current = { tx: data.net.tx_bytes, rx: data.net.rx_bytes };
-    forceRender(n => n + 1);
-  }, [data]);
-
-  if (loading && !data) {
-    return <div style={{ padding: 40, color: 'var(--color-fg-muted)', textAlign: 'center' }}>Connecting to admin-api…</div>;
-  }
-  if (error && !data) {
-    return <div className="banner banner--warn" style={{ margin: 0 }}>Failed to reach admin-api: {error}</div>;
-  }
-  if (!data) return null;
-
+function renderServerView(data: SystemMetrics, h: Histories): React.ReactNode {
   const colorVar = (c: string) => c === 'green' ? '#4a7c3f' : c === 'yellow' ? '#a86a17' : '#b8412c';
   const cpuColor = data.cpu.pct < 50 ? 'green' : data.cpu.pct < 80 ? 'yellow' : 'red';
   const memPct = (data.mem.used_gb / data.mem.total_gb) * 100;
@@ -91,9 +67,9 @@ export default function Server() {
       <div className="chart-card">
         <div className="chart-card__head">
           <div className="chart-card__title">CPU %</div>
-          <div className="chart-card__sub">live · 3s resolution · last {cpuHistory.current.length} samples</div>
+          <div className="chart-card__sub">live · 3s resolution · last {h.cpu.length} samples</div>
         </div>
-        <LineChart data={cpuHistory.current.length ? cpuHistory.current : [0]} color="var(--brand-ink)" yMax={100} yLabel="%" fill/>
+        <LineChart data={h.cpu.length ? h.cpu : [0]} color="var(--brand-ink)" yMax={100} yLabel="%" fill/>
       </div>
 
       <div className="chart-card">
@@ -101,7 +77,7 @@ export default function Server() {
           <div className="chart-card__title">Memory (GB)</div>
           <div className="chart-card__sub">live · ceiling {data.mem.total_gb.toFixed(0)} GB</div>
         </div>
-        <LineChart data={memHistory.current.length ? memHistory.current : [0]} color="var(--brand-rust)" yMax={data.mem.total_gb} fill/>
+        <LineChart data={h.mem.length ? h.mem : [0]} color="var(--brand-rust)" yMax={data.mem.total_gb} fill/>
       </div>
 
       <div className="chart-card">
@@ -116,8 +92,71 @@ export default function Server() {
             </span>
           </div>
         </div>
-        <AreaChart tx={netTxHistory.current.length ? netTxHistory.current : [0]} rx={netRxHistory.current.length ? netRxHistory.current : [0]}/>
+        <AreaChart tx={h.netTx.length ? h.netTx : [0]} rx={h.netRx.length ? h.netRx : [0]}/>
       </div>
     </div>
   );
+}
+
+function useHistories(data: SystemMetrics | null) {
+  const cpu = useRef<number[]>([]);
+  const mem = useRef<number[]>([]);
+  const netTx = useRef<number[]>([]);
+  const netRx = useRef<number[]>([]);
+  const prevNet = useRef<{ tx: number; rx: number } | null>(null);
+  const [, forceRender] = useState(0);
+
+  useEffect(() => {
+    if (!data) return;
+    const push = (arr: number[], val: number) => {
+      arr.push(val);
+      if (arr.length > HISTORY_LEN) arr.shift();
+    };
+    push(cpu.current, data.cpu.pct);
+    push(mem.current, data.mem.used_gb);
+
+    const prev = prevNet.current;
+    if (prev) {
+      push(netTx.current, Math.max(0, (data.net.tx_bytes - prev.tx) / 1e6));
+      push(netRx.current, Math.max(0, (data.net.rx_bytes - prev.rx) / 1e6));
+    }
+    prevNet.current = { tx: data.net.tx_bytes, rx: data.net.rx_bytes };
+    forceRender(n => n + 1);
+  }, [data]);
+
+  return { cpu: cpu.current, mem: mem.current, netTx: netTx.current, netRx: netRx.current };
+}
+
+function ServerLegacy() {
+  const { data, loading, error } = usePoll<SystemMetrics>('/system', 3000);
+  const histories = useHistories(data);
+
+  if (loading && !data) {
+    return <div style={{ padding: 40, color: 'var(--color-fg-muted)', textAlign: 'center' }}>Connecting to admin-api…</div>;
+  }
+  if (error && !data) {
+    return <div className="banner banner--warn" style={{ margin: 0 }}>Failed to reach admin-api: {error}</div>;
+  }
+  if (!data) return null;
+
+  return renderServerView(data, histories);
+}
+
+function ServerStdb() {
+  const [metricsRows] = useTable(tables.system_metrics);
+  const row = metricsRows[0] as SystemMetricsRow | undefined;
+  const data = adaptMetrics(row);
+  const histories = useHistories(data);
+
+  if (!row) {
+    return <div style={{ padding: 40, color: 'var(--color-fg-muted)', textAlign: 'center' }}>Waiting for the admin-collector worker to publish system_metrics…</div>;
+  }
+  if (!data) return null;
+
+  return renderServerView(data, histories);
+}
+
+export default function Server() {
+  if (USE_STDB_ADMIN) return <ServerStdb/>;
+  return <ServerLegacy/>;
 }
