@@ -1,0 +1,32 @@
+{
+  "name": "@sastaspace/workers",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "start": "node --enable-source-maps dist/index.js",
+    "build": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@clockworklabs/spacetimedb-sdk": "^1.0.0",
+    "@mastra/core": "^0.10.0",
+    "@ai-sdk/openai": "^1.0.0",
+    "ollama-ai-provider": "^1.0.0",
+    "resend": "^4.0.0",
+    "dockerode": "^4.0.0",
+    "systeminformation": "^5.21.0",
+    "jszip": "^3.10.0",
+    "zod": "^3.23.0"
+  },
+  "devDependencies": {
+    "tsx": "^4.7.0",
+    "typescript": "^5.4.0",
+    "vitest": "^1.5.0",
+    "@types/node": "^22.0.0",
+    "@types/dockerode": "^3.3.0"
+  }
+}
