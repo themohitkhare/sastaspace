@@ -27,7 +27,14 @@ export function Comments({ slug }: { slug: string }) {
         <h2>What people said.</h2>
       </div>
 
-      {comments === null || comments.length === 0 ? (
+      {comments === null ? (
+        // Connecting state — distinguished from empty so users don't read
+        // "No comments yet" before the WebSocket subscription has applied.
+        // UX audit M1.
+        <div className={styles.empty} aria-busy="true" aria-live="polite">
+          <p>Loading comments…</p>
+        </div>
+      ) : comments.length === 0 ? (
         <div className={styles.empty}>
           <p>No comments yet. Be the first to break the silence.</p>
         </div>
