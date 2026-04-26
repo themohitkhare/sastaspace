@@ -12,5 +12,6 @@ import {
 
 export default {
   prevIdentity: __t.identity(),
+  newIdentity: __t.identity(),
   email: __t.string(),
 };
