@@ -54,8 +54,18 @@ async function main(): Promise<void> {
     await db.callReducer("noop_owner_check");
     log("info", "owner token verified (noop_owner_check ok)");
   } catch (e) {
-    log("error", "noop_owner_check failed — STDB_TOKEN is not the owner identity (or STDB unreachable)", String(e));
-    process.exit(2);
+    const msg = String(e);
+    // "unknown reducer" means the deployed module is older than the source —
+    // the prod STDB module hasn't been republished since the reducer was
+    // added (Phase 3 §A3 / N13). Don't restart-loop on that; just log and
+    // continue. The agents themselves will fail closed at their own owner-
+    // gated reducer calls if the token is genuinely non-owner.
+    if (msg.includes("unknown reducer") || msg.includes("No such procedure")) {
+      log("warn", "noop_owner_check absent on deployed module — proceeding without owner sanity check", msg);
+    } else {
+      log("error", "noop_owner_check failed — STDB_TOKEN is not the owner identity (or STDB unreachable)", msg);
+      process.exit(2);
+    }
   }
 
   const stops: Array<() => Promise<void>> = [];
