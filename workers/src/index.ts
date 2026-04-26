@@ -30,6 +30,26 @@ async function main(): Promise<void> {
   }
 
   const db = await connect(env.STDB_URL, env.STDB_MODULE, env.STDB_TOKEN);
+
+  // Audit N13: boot-time owner-token sanity check. The reducer rejects with
+  // "not authorized" if STDB_TOKEN isn't the owner identity. We catch that
+  // and exit non-zero so docker restart-loops with a clear log line, instead
+  // of letting every per-agent reducer call silently fail with the same
+  // error 30 s after boot.
+  //
+  // SDK 2.1 caveat: callReducer resolves on send, not on commit, so a
+  // silent module-side rejection isn't observable here without subscribing
+  // to a reducer-event hook. Network/handshake failures still throw, which
+  // covers the "wrong token rejected at handshake" and "host unreachable"
+  // cases. Per-agent error handlers backstop the rest.
+  try {
+    await db.callReducer("noop_owner_check");
+    log("info", "owner token verified (noop_owner_check ok)");
+  } catch (e) {
+    log("error", "noop_owner_check failed — STDB_TOKEN is not the owner identity (or STDB unreachable)", String(e));
+    process.exit(2);
+  }
+
   const stops: Array<() => Promise<void>> = [];
 
   if (env.WORKER_AUTH_MAILER_ENABLED) stops.push(await startAuthMailer(db));

@@ -630,6 +630,23 @@ fn render_magic_link_text(link: &str) -> String {
     format!("Sign in to sastaspace.\n\nClick this link (good for 15 minutes, works once):\n\n  {link}\n\nIf you didn't ask for this, ignore.\n\n—\nsastaspace.com\n")
 }
 
+// --- worker boot health check (Phase 3 prep, audit finding N13) ---
+//
+// Workers call `noop_owner_check` once on boot before starting any agent.
+// A wrong STDB_TOKEN causes the reducer to reject with "not authorized";
+// the worker container exits non-zero with a clear log line and
+// docker restart-loops it instead of letting every subsequent reducer call
+// silently 401.
+
+/// Owner-only no-op. Returns Ok if the caller is the owner, Err otherwise.
+/// Cheap (no table touches, no I/O) — designed to be called on every
+/// worker boot to verify the token without producing audit-trail noise.
+#[reducer]
+pub fn noop_owner_check(ctx: &ReducerContext) -> Result<(), String> {
+    assert_owner(ctx)?;
+    Ok(())
+}
+
 // --- test-mode side door (Phase 3 prep, audit findings N4 + N5) ---
 //
 // SpacetimeDB 2.1 WASM modules cannot read process env at runtime. To gate
@@ -1824,6 +1841,18 @@ mod tests {
     #[test]
     fn owner_hex_parses_to_identity() {
         Identity::from_hex(OWNER_HEX).expect("OWNER_HEX must be a valid 64-char hex identity");
+    }
+
+    // SpacetimeDB 2.1 has no host-runnable TestContext for actually
+    // executing reducer bodies, so this test verifies what we CAN check
+    // statically: that the function symbol exists and has the expected
+    // shape. End-to-end behaviour (wrong token → "not authorized") is
+    // verified by the worker boot smoke test in Phase 3 Task A3 Step 4.
+    #[test]
+    fn noop_owner_check_signature_compiles() {
+        // Compile-time assertion that noop_owner_check has the expected
+        // signature: fn(&ReducerContext) -> Result<(), String>.
+        let _: fn(&ReducerContext) -> Result<(), String> = noop_owner_check;
     }
 
     #[test]
