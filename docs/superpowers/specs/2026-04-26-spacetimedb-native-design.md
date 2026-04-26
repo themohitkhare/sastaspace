@@ -405,3 +405,41 @@ The rewire is "done" when:
 - [ ] No `api.sastaspace.com` route exists in cloudflared config
 - [ ] `STRUCTURE.md` exists and accurately describes the new layout
 - [ ] `graphify-out/GRAPH_REPORT.md` is regenerated; god-node count is reduced (no more `Sender`, `LlamaGuardClassifier` god-nodes — they were Python types)
+
+---
+
+## Appendix A — SDK 2.1 errata (added post-Phase-1 from implementer reports)
+
+Phase 1/2 implementer subagents converged on these SDK shapes after the original spec/plans encoded older or assumed-API patterns. Recorded here as the source of truth for any subsequent work.
+
+### Reducer calls
+- **Shape:** `await conn.reducers.<reducerName>({...})` returns `Promise<void>`. The promise resolves when the call is *sent*, not when the reducer's commit succeeds.
+- **Outcome:** observe via subscription event (`conn.db.<table>.onInsert/onUpdate`) OR via `conn.onReducer<Name>` if the SDK exposes per-call event hooks.
+- **Argument shape:** single object literal, NOT positional args. Reducer params are camelCased even though Rust source is snake_case.
+- **Return values:** Rust `Result<u64, String>` does NOT surface to TS clients in v2.1. Use auto_inc + subscription pattern to observe the inserted row's id.
+
+### Table accessors
+- **Path:** `conn.db.<tableName>` — camelCased even though Rust source is snake_case.
+- **Subscription:** `conn.db.<table>.onInsert(cb)` returns `void`. To unsubscribe, use the symmetric `conn.db.<table>.removeOnInsert(cb)`.
+- **Iteration:** `conn.db.<table>.iter()` for one-shot reads of currently-loaded rows.
+
+### Timestamps
+- **Getter, not method:** `row.<x>.microsSinceUnixEpoch` (NOT `.toMicrosSinceUnixEpoch()`).
+
+### Connection builder
+- **Method name:** `.withDatabaseName(...)` (NOT `.withModuleName(...)`).
+- **Identity minting:** `POST {STDB_HTTP_URL}/v1/identity` returns `{identity, token}` JSON. No auth required.
+- **Reconnection with new JWT:** rebuild the connection via the builder; the old connection's identity is bound at handshake time.
+
+### Reducer error semantics
+- **Owner-only reducers** raise `SenderError` on the client when called by a non-owner identity. Catch and surface a friendly message rather than letting it bubble.
+- **Reducer `Err(...)` returns** propagate as the rejection reason of the call promise. Match by error string fragments (`"token expired"`, `"token already used"`, `"unknown token"`, etc.) to map to user-facing copy.
+
+### Test harness
+- **No host-runnable `TestContext`/`TestDb`** exists in v2.1. Reducer body coverage requires either:
+  - Extracting validation/computation logic into pure helpers and unit-testing those (the pattern Phase 1 W1-W4 used), OR
+  - Live integration tests against a running spacetime container.
+
+### Worker subscription patterns
+- **Race-free observation:** subscribe FIRST, then call the reducer. The row insert event fires after the call commits; if you call before subscribing, the event can be missed.
+- **Long-lived subscriptions:** workers don't unsubscribe (process lifetime); frontends MUST unsubscribe in cleanup effects.
