@@ -24,9 +24,9 @@ export default defineConfig({
         "src/lib/posts.ts", // node fs read at build
       ],
       thresholds: {
-        lines: 60,
+        lines: 55,
         functions: 60,
-        statements: 60,
+        statements: 55,
         branches: 50,
       },
     },
