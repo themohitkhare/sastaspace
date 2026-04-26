@@ -54,6 +54,15 @@ export function AuthMenu() {
     }
     setModal({ kind: "submitting" });
     try {
+      // Phase 2 F1: stash the email so /auth/verify can populate Session.email
+      // when the magic link comes back. Harmless for the legacy /auth/callback
+      // flow (it pulls email from the URL fragment and ignores sessionStorage).
+      // If the user opens the link in a different browser, sessionStorage is
+      // empty → verify page falls back to a placeholder and the user-table
+      // subscription corrects it on next mount.
+      if (typeof window !== "undefined") {
+        window.sessionStorage.setItem("sastaspace.pendingEmail", value);
+      }
       await requestMagicLink(value);
       setModal({ kind: "sent", email: value });
     } catch (err) {

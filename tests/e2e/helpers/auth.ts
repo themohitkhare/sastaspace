@@ -8,7 +8,8 @@
  */
 
 import { expect, type APIRequestContext, type Page } from "@playwright/test";
-import { AUTH, NOTES } from "./urls.js";
+import { AUTH, NOTES, STDB_REST, STDB_DATABASE } from "./urls.js";
+import { sql } from "./stdb.js";
 
 const TEST_SECRET = process.env.E2E_TEST_SECRET ?? "";
 
@@ -69,5 +70,61 @@ export async function readSession(page: Page): Promise<{
   return page.evaluate(() => {
     const raw = window.localStorage.getItem("sastaspace.auth.v1");
     return raw ? (JSON.parse(raw) as never) : null;
+  });
+}
+
+/**
+ * STDB-native sign-in path. Calls request_magic_link via the STDB HTTP
+ * /v1/call endpoint, then reads the issued token straight out of the
+ * auth_token table via SQL (test-only side door — production users get the
+ * token by email). Then drives /auth/verify in the browser as a real user
+ * would after clicking the email link.
+ *
+ * Requires the worker (auth-mailer) to NOT be running in test mode that would
+ * actually email, OR the test secret to be configured to suppress real Resend
+ * calls. The test reads the token directly from STDB so it doesn't depend on
+ * email arrival.
+ */
+export async function signInViaStdb(page: Page, email: string): Promise<void> {
+  const ownerToken = process.env.E2E_STDB_OWNER_TOKEN ?? "";
+  // Step 1: call request_magic_link via the STDB HTTP API. An anonymous
+  // identity is fine — the reducer just inserts rows; auth.sastaspace.com
+  // is bypassed entirely.
+  const callRes = await page.request.post(
+    `${STDB_REST}/v1/database/${STDB_DATABASE}/call/request_magic_link`,
+    {
+      headers: { "Content-Type": "application/json" },
+      data: JSON.stringify([
+        email,
+        "notes",
+        null,
+        `${NOTES}/auth/verify`,
+      ]),
+    },
+  );
+  if (callRes.status() >= 400) {
+    throw new Error(
+      `request_magic_link failed: HTTP ${callRes.status()} ${await callRes.text()}`,
+    );
+  }
+  // Step 2: read the issued token from the auth_token table.
+  const rows = await sql(
+    page.request,
+    `SELECT token FROM auth_token WHERE email = '${email}' ORDER BY created_at DESC LIMIT 1`,
+    ownerToken,
+  );
+  const token = rows[0]?.[0] as string | undefined;
+  if (!token) throw new Error(`no auth_token row for ${email}`);
+  // Step 3: drive the verify page like a real user clicking the email link.
+  // Pre-stash the email in sessionStorage like AuthMenu does so the verify
+  // page can populate Session.email correctly.
+  await page.goto(`${NOTES}/`);
+  await page.evaluate(
+    (e) => window.sessionStorage.setItem("sastaspace.pendingEmail", e),
+    email,
+  );
+  await page.goto(`${NOTES}/auth/verify?t=${encodeURIComponent(token)}`);
+  await page.waitForURL((url) => url.toString() === `${NOTES}/`, {
+    timeout: 15_000,
   });
 }

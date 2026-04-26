@@ -16,6 +16,11 @@ const STORAGE_KEY = "sastaspace.auth.v1";
 const AUTH_BASE =
   process.env.NEXT_PUBLIC_AUTH_BASE ?? "https://auth.sastaspace.com";
 
+// Phase 2 F1: when true, requestMagicLink calls the STDB reducer instead of
+// POSTing to the legacy FastAPI auth service. Default is false so the legacy
+// path keeps working until the Phase 3 cutover flips it in production.
+const USE_STDB_AUTH = process.env.NEXT_PUBLIC_USE_STDB_AUTH === "true";
+
 export type Session = {
   token: string;
   email: string;
@@ -85,8 +90,19 @@ function notify(s: Session | null) {
   for (const fn of listeners) fn(s);
 }
 
-/** Ask the auth service to email the user a magic link. Throws on HTTP error. */
+/** Ask the auth service to email the user a magic link. Throws on HTTP error.
+ *
+ *  When NEXT_PUBLIC_USE_STDB_AUTH=true, this dispatches to the STDB
+ *  request_magic_link reducer instead. Dynamic import keeps the bindings
+ *  out of the legacy bundle.
+ */
 export async function requestMagicLink(email: string): Promise<void> {
+  if (USE_STDB_AUTH) {
+    const { requestMagicLinkViaStdb } = await import("./stdbAuth");
+    await requestMagicLinkViaStdb(email);
+    return;
+  }
+  // Legacy FastAPI path — unchanged.
   const r = await fetch(`${AUTH_BASE}/auth/request`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -102,4 +118,36 @@ export async function requestMagicLink(email: string): Promise<void> {
     }
     throw new Error(detail || `request failed (HTTP ${r.status})`);
   }
+}
+
+/**
+ * Persist a session built by the STDB-native verify flow. Unlike saveSession,
+ * this trusts the caller's display_name and (optional) identity rather than
+ * deriving from the email. The legacy Session shape is preserved so existing
+ * readers (e.g. the FastAPI callback page) keep working byte-identically.
+ *
+ * Identity is stored alongside the session for future use (e.g. profile
+ * screens) but is intentionally not part of the typed Session shape — readers
+ * that need it can re-parse the JSON blob themselves.
+ */
+export function saveFullSession(args: {
+  token: string;
+  email: string;
+  display_name: string;
+  identity?: string;
+}): Session {
+  const session: Session = {
+    token: args.token,
+    email: args.email,
+    display_name: args.display_name,
+    saved_at: Date.now(),
+  };
+  if (typeof window !== "undefined") {
+    const payload = args.identity
+      ? { ...session, identity: args.identity }
+      : session;
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+  }
+  notify(session);
+  return session;
 }
