@@ -115,21 +115,16 @@ pub fn submit_word(ctx: &ReducerContext, session_id: u64, word: String) -> Resul
     let ts_now = ctx.timestamp.to_micros_since_unix_epoch();
 
     // Find matching live word in this session — use session_id btree index (O(8) not O(8N))
-    let hit: Option<Word> = ctx
-        .db
-        .word()
-        .session_id()
-        .filter(&session_id)
-        .find(|w| {
-            is_word_match(
-                w.session_id,
-                &w.text,
-                w.expires_at.to_micros_since_unix_epoch(),
-                session_id,
-                &word,
-                ts_now,
-            )
-        });
+    let hit: Option<Word> = ctx.db.word().session_id().filter(&session_id).find(|w| {
+        is_word_match(
+            w.session_id,
+            &w.text,
+            w.expires_at.to_micros_since_unix_epoch(),
+            session_id,
+            &word,
+            ts_now,
+        )
+    });
 
     if hit.is_none() {
         // Miss path: reset streak
