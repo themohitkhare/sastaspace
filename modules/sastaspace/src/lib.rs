@@ -232,16 +232,7 @@ pub fn submit_user_comment(
     post_slug: String,
     body: String,
 ) -> Result<(), String> {
-    let body = body.trim();
-    if post_slug.is_empty() {
-        return Err("post_slug required".into());
-    }
-    if body.len() < 4 {
-        return Err("body too short (min 4 chars)".into());
-    }
-    if body.len() > 4000 {
-        return Err("body too long (max 4000 chars)".into());
-    }
+    let body = validate_submit_comment_inputs(&post_slug, &body)?;
 
     let user = ctx
         .db
@@ -254,12 +245,28 @@ pub fn submit_user_comment(
         id: 0,
         post_slug,
         author_name: user.display_name,
-        body: body.to_string(),
+        body,
         created_at: ctx.timestamp,
         status: "pending".to_string(),
         submitter: ctx.sender(),
     });
     Ok(())
+}
+
+/// Pure helper: validates the inputs to `submit_user_comment` and returns
+/// the trimmed body. Pulled out for unit tests.
+fn validate_submit_comment_inputs(post_slug: &str, body: &str) -> Result<String, String> {
+    let body = body.trim();
+    if post_slug.is_empty() {
+        return Err("post_slug required".into());
+    }
+    if body.len() < 4 {
+        return Err("body too short (min 4 chars)".into());
+    }
+    if body.len() > 4000 {
+        return Err("body too long (max 4000 chars)".into());
+    }
+    Ok(body.to_string())
 }
 
 /// Owner-only: register a new user (called by the auth service after
@@ -273,14 +280,7 @@ pub fn register_user(
     display_name: String,
 ) -> Result<(), String> {
     assert_owner(ctx)?;
-    let email = email.trim().to_lowercase();
-    let display_name = display_name.trim().to_string();
-    if email.is_empty() || !email.contains('@') {
-        return Err(format!("invalid email `{email}`"));
-    }
-    if display_name.is_empty() || display_name.len() > 64 {
-        return Err("display_name must be 1..=64 chars".into());
-    }
+    let (email, display_name) = validate_register_user_inputs(&email, &display_name)?;
 
     let row = User {
         identity: user_identity,
@@ -297,11 +297,27 @@ pub fn register_user(
     Ok(())
 }
 
-/// Owner-only: store a magic-link token for an email (called by the
-/// auth service when the user requests sign-in).
-#[reducer]
-pub fn issue_auth_token(ctx: &ReducerContext, token: String, email: String) -> Result<(), String> {
-    assert_owner(ctx)?;
+/// Pure helper: normalizes and validates the inputs to `register_user`.
+/// Returns `(normalized_email, normalized_display_name)`. Pulled out for
+/// unit tests.
+fn validate_register_user_inputs(
+    email: &str,
+    display_name: &str,
+) -> Result<(String, String), String> {
+    let email = email.trim().to_lowercase();
+    let display_name = display_name.trim().to_string();
+    if email.is_empty() || !email.contains('@') {
+        return Err(format!("invalid email `{email}`"));
+    }
+    if display_name.is_empty() || display_name.len() > 64 {
+        return Err("display_name must be 1..=64 chars".into());
+    }
+    Ok((email, display_name))
+}
+
+/// Pure helper: validates `issue_auth_token` inputs and returns the
+/// lower-cased trimmed email on success. Pulled out for unit tests.
+fn validate_issue_auth_token_inputs(email: &str, token: &str) -> Result<String, String> {
     let email = email.trim().to_lowercase();
     if email.is_empty() || !email.contains('@') {
         return Err(format!("invalid email `{email}`"));
@@ -309,6 +325,41 @@ pub fn issue_auth_token(ctx: &ReducerContext, token: String, email: String) -> R
     if token.len() < 32 {
         return Err("token too short (must be ≥32 chars of entropy)".into());
     }
+    Ok(email)
+}
+
+/// Pure helper: returns true if `now_micros` is past `expires_at_micros`.
+/// Used by `consume_auth_token` (strict greater-than) and `verify_token`
+/// (less-than against now). Centralizes the comparison so the two paths
+/// can't drift.
+fn is_token_expired(now_micros: i64, expires_at_micros: i64) -> bool {
+    now_micros > expires_at_micros
+}
+
+/// Pure helper: returns Ok if a token row is consumable (not yet used and
+/// not yet expired), else returns the matching reducer-visible error. Used
+/// by `consume_auth_token` and `verify_token` so both paths surface the
+/// same error strings for the same conditions.
+fn check_token_consumable(
+    now_micros: i64,
+    used_at_micros: Option<i64>,
+    expires_at_micros: i64,
+) -> Result<(), String> {
+    if used_at_micros.is_some() {
+        return Err("token already used".into());
+    }
+    if is_token_expired(now_micros, expires_at_micros) {
+        return Err("token expired".into());
+    }
+    Ok(())
+}
+
+/// Owner-only: store a magic-link token for an email (called by the
+/// auth service when the user requests sign-in).
+#[reducer]
+pub fn issue_auth_token(ctx: &ReducerContext, token: String, email: String) -> Result<(), String> {
+    assert_owner(ctx)?;
+    let email = validate_issue_auth_token_inputs(&email, &token)?;
     let now = ctx.timestamp;
     let expires = Timestamp::from_micros_since_unix_epoch(
         now.to_micros_since_unix_epoch() + AUTH_TOKEN_TTL_MICROS,
@@ -335,13 +386,12 @@ pub fn consume_auth_token(ctx: &ReducerContext, token: String) -> Result<(), Str
         .token()
         .find(&token)
         .ok_or_else(|| "unknown token".to_string())?;
-    if row.used_at.is_some() {
-        return Err("token already used".into());
-    }
     let now = ctx.timestamp;
-    if now.to_micros_since_unix_epoch() > row.expires_at.to_micros_since_unix_epoch() {
-        return Err("token expired".into());
-    }
+    check_token_consumable(
+        now.to_micros_since_unix_epoch(),
+        row.used_at.map(|t| t.to_micros_since_unix_epoch()),
+        row.expires_at.to_micros_since_unix_epoch(),
+    )?;
     row.used_at = Some(now);
     ctx.db.auth_token().token().update(row);
     Ok(())
@@ -548,21 +598,16 @@ pub fn verify_token(
         .token()
         .find(token.clone())
         .ok_or("unknown token")?;
-    if tok.used_at.is_some() {
-        return Err("token already used".into());
-    }
-    if tok.expires_at.to_micros_since_unix_epoch() < now.to_micros_since_unix_epoch() {
-        return Err("token expired".into());
-    }
+    check_token_consumable(
+        now.to_micros_since_unix_epoch(),
+        tok.used_at.map(|t| t.to_micros_since_unix_epoch()),
+        tok.expires_at.to_micros_since_unix_epoch(),
+    )?;
     let email = tok.email.clone();
     tok.used_at = Some(now);
     ctx.db.auth_token().token().update(tok);
 
-    let display_name = if display_name.trim().is_empty() {
-        email.split('@').next().unwrap_or("user").to_string()
-    } else {
-        display_name.trim().chars().take(60).collect()
-    };
+    let display_name = derive_display_name(&display_name, &email);
 
     if let Some(existing) = ctx.db.user().email().find(email.clone()) {
         // Re-bind: drop the old identity row, re-insert under the new identity
@@ -583,6 +628,18 @@ pub fn verify_token(
         });
     }
     Ok(())
+}
+
+/// Pure helper: produces the User display name for `verify_token`. If the
+/// user-supplied input trims to empty we fall back to the local-part of the
+/// email (or "user" if the email is somehow malformed). Otherwise we trim
+/// and clamp to 60 chars. Pulled out for unit tests.
+fn derive_display_name(input: &str, email: &str) -> String {
+    if input.trim().is_empty() {
+        email.split('@').next().unwrap_or("user").to_string()
+    } else {
+        input.trim().chars().take(60).collect()
+    }
 }
 
 /// Pure helper: validates the inputs to `request_magic_link`. Pulled out so
@@ -981,9 +1038,7 @@ pub fn upsert_container_status(
     restart_count: u32,
 ) -> Result<(), String> {
     assert_owner(ctx)?;
-    if !ALLOWED_CONTAINERS.contains(&name.as_str()) {
-        return Err(format!("container `{name}` not in allow-list"));
-    }
+    validate_container_name(&name)?;
     let row = ContainerStatus {
         name: name.clone(),
         status,
@@ -1002,6 +1057,28 @@ pub fn upsert_container_status(
     Ok(())
 }
 
+/// Cap on per-row log text to keep individual `log_event` rows bounded
+/// regardless of how chatty a container is. Char-aware (multi-byte safe).
+const LOG_EVENT_TEXT_CAP: usize = 4000;
+fn cap_log_event_text(text: String) -> String {
+    if text.len() > LOG_EVENT_TEXT_CAP {
+        text.chars().take(LOG_EVENT_TEXT_CAP).collect()
+    } else {
+        text
+    }
+}
+
+/// Pure helper: validates that `name` is in the `ALLOWED_CONTAINERS`
+/// allow-list, returning the same error string the reducers use. Pulled
+/// out so the three call sites (`upsert_container_status`,
+/// `append_log_event`, `add_log_interest`) stay consistent.
+fn validate_container_name(name: &str) -> Result<(), String> {
+    if !ALLOWED_CONTAINERS.contains(&name) {
+        return Err(format!("container `{name}` not in allow-list"));
+    }
+    Ok(())
+}
+
 /// Owner-only: collector loop 3 — append one log line.
 #[reducer]
 pub fn append_log_event(
@@ -1012,15 +1089,8 @@ pub fn append_log_event(
     text: String,
 ) -> Result<(), String> {
     assert_owner(ctx)?;
-    if !ALLOWED_CONTAINERS.contains(&container.as_str()) {
-        return Err(format!("container `{container}` not in allow-list"));
-    }
-    // Defensive cap on text size to keep individual rows bounded.
-    let text = if text.len() > 4000 {
-        text.chars().take(4000).collect()
-    } else {
-        text
-    };
+    validate_container_name(&container)?;
+    let text = cap_log_event_text(text);
     ctx.db.log_event().insert(LogEvent {
         id: 0,
         container,
@@ -1037,9 +1107,7 @@ pub fn append_log_event(
 /// (container, sender).
 #[reducer]
 pub fn add_log_interest(ctx: &ReducerContext, container: String) -> Result<(), String> {
-    if !ALLOWED_CONTAINERS.contains(&container.as_str()) {
-        return Err(format!("container `{container}` not in allow-list"));
-    }
+    validate_container_name(&container)?;
     let already = ctx
         .db
         .log_interest()
@@ -1265,6 +1333,15 @@ fn validate_zip_url(url: &str) -> Result<(), String> {
     Ok(())
 }
 
+/// Pure helper: truncates a worker-supplied error string to a fixed
+/// character cap before storing it in a `*_failed` row. Char-aware (not
+/// byte-aware) so multi-byte UTF-8 sequences don't get sliced mid-codepoint.
+/// Used by both `set_plan_failed` and `set_generate_failed`.
+const ERROR_MESSAGE_CAP: usize = 400;
+fn truncate_error_message(error: &str) -> String {
+    error.chars().take(ERROR_MESSAGE_CAP).collect()
+}
+
 /// Frontend-callable: insert a pending plan_request, return its id. Caller
 /// is whoever is signed in (any identity — the deck is open to anonymous
 /// signed-in identities, same as the unauthed prototype). Validation matches
@@ -1342,7 +1419,7 @@ pub fn set_plan_failed(ctx: &ReducerContext, request_id: u64, error: String) -> 
         .find(request_id)
         .ok_or_else(|| format!("no plan_request with id {request_id}"))?;
     row.status = "failed".into();
-    row.error = Some(error.chars().take(400).collect());
+    row.error = Some(truncate_error_message(&error));
     row.completed_at = Some(ctx.timestamp);
     ctx.db.plan_request().id().update(row);
     Ok(())
@@ -1411,7 +1488,7 @@ pub fn set_generate_failed(ctx: &ReducerContext, job_id: u64, error: String) -> 
         .find(job_id)
         .ok_or_else(|| format!("no generate_job with id {job_id}"))?;
     row.status = "failed".into();
-    row.error = Some(error.chars().take(400).collect());
+    row.error = Some(truncate_error_message(&error));
     row.completed_at = Some(ctx.timestamp);
     ctx.db.generate_job().id().update(row);
     Ok(())
@@ -2054,6 +2131,47 @@ mod deck_tests {
         assert!(validate_zip_url(&too_long).is_err());
     }
 
+    // === truncate_error_message (used by set_plan_failed + set_generate_failed) ===
+
+    #[test]
+    fn truncate_error_message_caps_at_400() {
+        let huge = "e".repeat(2000);
+        let out = truncate_error_message(&huge);
+        assert_eq!(out.chars().count(), ERROR_MESSAGE_CAP);
+        assert_eq!(out.len(), ERROR_MESSAGE_CAP); // ASCII so bytes == chars
+    }
+
+    #[test]
+    fn truncate_error_message_passes_through_short_messages() {
+        let small = "real quick failure";
+        let out = truncate_error_message(small);
+        assert_eq!(out, small);
+    }
+
+    #[test]
+    fn truncate_error_message_at_exact_cap_passes_through() {
+        let at_cap = "x".repeat(ERROR_MESSAGE_CAP);
+        let out = truncate_error_message(&at_cap);
+        assert_eq!(out.chars().count(), ERROR_MESSAGE_CAP);
+        assert_eq!(out, at_cap);
+    }
+
+    #[test]
+    fn truncate_error_message_is_utf8_safe() {
+        // 800 fire emoji, each 4 bytes — char-aware truncate must keep 400
+        // codepoints, not split mid-byte.
+        let mb = "🔥".repeat(800);
+        let out = truncate_error_message(&mb);
+        assert_eq!(out.chars().count(), ERROR_MESSAGE_CAP);
+    }
+
+    #[test]
+    fn error_message_cap_is_400() {
+        // Pin the constant — worker tests send error strings of various
+        // lengths and rely on this contract.
+        assert_eq!(ERROR_MESSAGE_CAP, 400);
+    }
+
     // ---------- type / serialization sanity ----------
 
     #[test]
@@ -2276,6 +2394,190 @@ mod tests {
         );
         assert!(msg.contains("approve"));
         assert!(msg.contains("approved"));
+    }
+
+    // === validate_submit_comment_inputs (extracted from submit_user_comment) ===
+
+    #[test]
+    fn validate_submit_comment_inputs_accepts_well_formed() {
+        let body = validate_submit_comment_inputs("hello-world", "this is fine")
+            .expect("4..=4000 char body must pass");
+        assert_eq!(body, "this is fine");
+    }
+
+    #[test]
+    fn validate_submit_comment_inputs_rejects_empty_post_slug() {
+        let r = validate_submit_comment_inputs("", "this body is long enough");
+        assert!(r.is_err());
+        assert_eq!(r.unwrap_err(), "post_slug required");
+    }
+
+    #[test]
+    fn validate_submit_comment_inputs_rejects_short_body() {
+        // 3 chars = under min.
+        let r = validate_submit_comment_inputs("post", "abc");
+        assert!(r.is_err());
+        assert_eq!(r.unwrap_err(), "body too short (min 4 chars)");
+        // 4 chars = exactly the minimum.
+        assert!(validate_submit_comment_inputs("post", "abcd").is_ok());
+    }
+
+    #[test]
+    fn validate_submit_comment_inputs_trims_then_checks_length() {
+        // Whitespace-only padding around a too-short body still fails.
+        assert!(validate_submit_comment_inputs("post", "  ab  ").is_err());
+        // Padding around a long-enough body trims and passes; the returned
+        // body is the trimmed form.
+        let body = validate_submit_comment_inputs("post", "  hello  ").expect("should accept");
+        assert_eq!(body, "hello");
+    }
+
+    #[test]
+    fn validate_submit_comment_inputs_rejects_oversize_body() {
+        let too_long = "x".repeat(4001);
+        assert!(validate_submit_comment_inputs("post", &too_long).is_err());
+        // 4000 exactly is the upper bound and accepted.
+        let max_ok = "x".repeat(4000);
+        assert!(validate_submit_comment_inputs("post", &max_ok).is_ok());
+    }
+
+    // === validate_register_user_inputs (extracted from register_user) ===
+
+    #[test]
+    fn validate_register_user_inputs_lowercases_and_trims_email() {
+        let (email, name) = validate_register_user_inputs("  USER@Example.COM  ", "Alice")
+            .expect("well-formed inputs accepted");
+        assert_eq!(email, "user@example.com");
+        assert_eq!(name, "Alice");
+    }
+
+    #[test]
+    fn validate_register_user_inputs_rejects_email_without_at() {
+        let r = validate_register_user_inputs("notanemail", "Alice");
+        assert!(r.is_err());
+        let err = r.unwrap_err();
+        assert!(err.contains("invalid email"));
+        assert!(err.contains("notanemail"));
+    }
+
+    #[test]
+    fn validate_register_user_inputs_rejects_empty_email() {
+        let r = validate_register_user_inputs("   ", "Alice");
+        assert!(r.is_err());
+        // Empty trimmed email also has no '@' — and since trim drops the
+        // whitespace the formatted error references the empty string.
+        assert!(r.unwrap_err().starts_with("invalid email "));
+    }
+
+    #[test]
+    fn validate_register_user_inputs_rejects_empty_display_name() {
+        // Display name only whitespace trims to "" and fails.
+        let r = validate_register_user_inputs("user@example.com", "    ");
+        assert!(r.is_err());
+        assert_eq!(r.unwrap_err(), "display_name must be 1..=64 chars");
+    }
+
+    #[test]
+    fn validate_register_user_inputs_rejects_overlong_display_name() {
+        let huge = "a".repeat(65);
+        let r = validate_register_user_inputs("user@example.com", &huge);
+        assert!(r.is_err());
+        // Length of exactly 64 is the inclusive upper bound.
+        let max_ok = "a".repeat(64);
+        assert!(validate_register_user_inputs("user@example.com", &max_ok).is_ok());
+    }
+
+    // === validate_issue_auth_token_inputs (extracted from issue_auth_token) ===
+
+    #[test]
+    fn validate_issue_auth_token_inputs_accepts_well_formed() {
+        let token = "a".repeat(32);
+        let email = validate_issue_auth_token_inputs("user@example.com", &token)
+            .expect("32-char token + valid email accepted");
+        assert_eq!(email, "user@example.com");
+    }
+
+    #[test]
+    fn validate_issue_auth_token_inputs_lowercases_email() {
+        let token = "a".repeat(32);
+        let email = validate_issue_auth_token_inputs("USER@EXAMPLE.COM", &token).unwrap();
+        assert_eq!(email, "user@example.com");
+    }
+
+    #[test]
+    fn validate_issue_auth_token_inputs_rejects_short_token() {
+        // 31 chars = one under the minimum.
+        let token = "a".repeat(31);
+        let r = validate_issue_auth_token_inputs("user@example.com", &token);
+        assert!(r.is_err());
+        assert!(r.unwrap_err().contains("token too short"));
+    }
+
+    #[test]
+    fn validate_issue_auth_token_inputs_rejects_empty_email() {
+        let token = "a".repeat(32);
+        let r = validate_issue_auth_token_inputs("", &token);
+        assert!(r.is_err());
+        assert!(r.unwrap_err().contains("invalid email"));
+    }
+
+    #[test]
+    fn validate_issue_auth_token_inputs_rejects_email_without_at() {
+        let token = "a".repeat(32);
+        let r = validate_issue_auth_token_inputs("notanemail", &token);
+        assert!(r.is_err());
+    }
+
+    // === is_token_expired ===
+
+    #[test]
+    fn is_token_expired_strict_inequality() {
+        // now strictly greater than expiry → expired.
+        assert!(is_token_expired(101, 100));
+        // now == expiry → still valid (exclusive boundary).
+        assert!(!is_token_expired(100, 100));
+        // now well before expiry → still valid.
+        assert!(!is_token_expired(50, 100));
+    }
+
+    // === derive_display_name (extracted from verify_token) ===
+
+    #[test]
+    fn derive_display_name_falls_back_to_email_local_part_when_input_blank() {
+        assert_eq!(derive_display_name("", "alice@example.com"), "alice");
+        assert_eq!(derive_display_name("   ", "bob@example.org"), "bob");
+    }
+
+    #[test]
+    fn derive_display_name_uses_user_input_when_present() {
+        assert_eq!(
+            derive_display_name("Alice Q", "anything@example.com"),
+            "Alice Q"
+        );
+    }
+
+    #[test]
+    fn derive_display_name_clamps_to_60_chars() {
+        let huge = "a".repeat(200);
+        let out = derive_display_name(&huge, "x@y.z");
+        // 60 chars max (chars(), not bytes — ASCII so equal here).
+        assert_eq!(out.chars().count(), 60);
+    }
+
+    #[test]
+    fn derive_display_name_trims_leading_trailing_whitespace() {
+        assert_eq!(derive_display_name("  Alice  ", "x@y.z"), "Alice");
+    }
+
+    #[test]
+    fn derive_display_name_handles_email_without_at_sign_gracefully() {
+        // Pathological input — the email shouldn't have reached this helper
+        // without an '@', but if it does the code returns the part-before-
+        // '@' (which is the whole string) rather than panicking. Pin that.
+        assert_eq!(derive_display_name("", "weird"), "weird");
+        // Empty email + empty input → empty string (split yields one empty
+        // element, never None).
+        assert_eq!(derive_display_name("", ""), "");
     }
 }
 
@@ -2509,6 +2811,42 @@ mod auth_mailer_tests {
         assert_eq!(row.email, "user@example.com");
         assert_eq!(row.token, "tok_abc_123");
     }
+
+    // === check_token_consumable (consume_auth_token + verify_token) ===
+    //
+    // Centralised token-consumability gate; both reducers funnel through
+    // this. Each test pins one branch.
+
+    #[test]
+    fn check_token_consumable_accepts_unused_unexpired() {
+        // now < expiry, used_at = None → Ok
+        assert!(check_token_consumable(100, None, 200).is_ok());
+        // now == expiry → still valid (strict greater-than).
+        assert!(check_token_consumable(200, None, 200).is_ok());
+    }
+
+    #[test]
+    fn check_token_consumable_rejects_already_used() {
+        let r = check_token_consumable(100, Some(50), 200);
+        assert!(r.is_err());
+        assert_eq!(r.unwrap_err(), "token already used");
+    }
+
+    #[test]
+    fn check_token_consumable_rejects_expired() {
+        let r = check_token_consumable(300, None, 200);
+        assert!(r.is_err());
+        assert_eq!(r.unwrap_err(), "token expired");
+    }
+
+    #[test]
+    fn check_token_consumable_used_takes_precedence_over_expired() {
+        // Both conditions true: used_at is set AND now > expiry.
+        // The "already used" branch should win — it's checked first.
+        let r = check_token_consumable(300, Some(50), 200);
+        assert!(r.is_err());
+        assert_eq!(r.unwrap_err(), "token already used");
+    }
 }
 
 #[cfg(test)]
@@ -2736,6 +3074,83 @@ mod admin_collector_tests {
         for lvl in ["info", "warn", "error", "debug"] {
             assert!(lvl.len() < 16);
         }
+    }
+
+    // === cap_log_event_text (extracted from append_log_event) ===
+
+    #[test]
+    fn cap_log_event_text_truncates_long_text() {
+        let huge = "x".repeat(8000);
+        let out = cap_log_event_text(huge);
+        assert_eq!(out.len(), LOG_EVENT_TEXT_CAP);
+        assert_eq!(out.chars().count(), LOG_EVENT_TEXT_CAP);
+    }
+
+    #[test]
+    fn cap_log_event_text_passes_through_short_text() {
+        let small = "tiny line".to_string();
+        let out = cap_log_event_text(small.clone());
+        assert_eq!(out, small);
+    }
+
+    #[test]
+    fn cap_log_event_text_at_exact_cap_passes_through() {
+        let at_cap = "x".repeat(LOG_EVENT_TEXT_CAP);
+        let out = cap_log_event_text(at_cap.clone());
+        assert_eq!(out.len(), LOG_EVENT_TEXT_CAP);
+        assert_eq!(out, at_cap);
+    }
+
+    #[test]
+    fn cap_log_event_text_handles_multibyte_chars_safely() {
+        // 5000 emoji chars (each 4 bytes UTF-8) — total bytes vastly over
+        // the 4000-byte length check. The truncated result must be a valid
+        // UTF-8 string (i.e. didn't split a codepoint mid-byte).
+        let mb = "🔥".repeat(5000);
+        let out = cap_log_event_text(mb);
+        // Valid UTF-8 implicit (String can't hold otherwise) — assert we
+        // kept exactly LOG_EVENT_TEXT_CAP chars (codepoints), not bytes.
+        assert_eq!(out.chars().count(), LOG_EVENT_TEXT_CAP);
+    }
+
+    #[test]
+    fn log_event_text_cap_is_4000() {
+        // Pin the constant so worker code (which sends pre-truncated text)
+        // can't drift below.
+        assert_eq!(LOG_EVENT_TEXT_CAP, 4000);
+    }
+
+    // === validate_container_name (used by 3 reducers) ===
+
+    #[test]
+    fn validate_container_name_accepts_allow_listed() {
+        assert!(validate_container_name("sastaspace-spacetime").is_ok());
+        assert!(validate_container_name("sastaspace-workers").is_ok());
+        assert!(validate_container_name("sastaspace-typewars").is_ok());
+    }
+
+    #[test]
+    fn validate_container_name_rejects_unknown() {
+        let r = validate_container_name("evil-container");
+        assert!(r.is_err());
+        let err = r.unwrap_err();
+        assert!(err.contains("evil-container"));
+        assert!(err.contains("not in allow-list"));
+    }
+
+    #[test]
+    fn validate_container_name_rejects_empty() {
+        let r = validate_container_name("");
+        assert!(r.is_err());
+        // Even the empty string surfaces the standard error shape.
+        assert!(r.unwrap_err().contains("not in allow-list"));
+    }
+
+    #[test]
+    fn validate_container_name_is_case_sensitive() {
+        // Allow-list uses exact-match strings; case variants must reject.
+        assert!(validate_container_name("SASTASPACE-SPACETIME").is_err());
+        assert!(validate_container_name("Sastaspace-Spacetime").is_err());
     }
 
     #[test]
