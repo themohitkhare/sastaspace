@@ -141,7 +141,7 @@ export function AuthMenu() {
                   disabled={modal.kind === "submitting"}
                 />
                 {modal.kind === "error" && (
-                  <p className={styles.error}>{modal.message}</p>
+                  <p className={styles.error} role="alert">{modal.message}</p>
                 )}
                 <div className={styles.actions}>
                   <button

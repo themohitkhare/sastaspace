@@ -964,8 +964,16 @@ function Results({
         <button
           className={`${styles.btn} ${styles.btnGhost} ${styles.btnSm}`}
           type="button"
-          onClick={() => {
-            setShareLabel("link copied");
+          onClick={async () => {
+            const url =
+              typeof window !== "undefined" ? window.location.href : "";
+            if (!url) return;
+            try {
+              await navigator.clipboard.writeText(url);
+              setShareLabel("link copied");
+            } catch {
+              setShareLabel("copy failed");
+            }
             window.setTimeout(() => setShareLabel("copy share link"), 1400);
           }}
         >

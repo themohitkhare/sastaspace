@@ -1,5 +1,44 @@
 "use client";
-import { useState, type FormEvent } from "react";
+import { useState, useEffect, useRef, useCallback, type FormEvent } from "react";
+
+/**
+ * Traps keyboard focus within `containerRef` while the modal is open.
+ * Queries all focusable elements on each Tab/Shift+Tab keystroke so that
+ * dynamically-rendered children (e.g. the error paragraph) are always included.
+ */
+function useFocusTrap(containerRef: React.RefObject<HTMLElement | null>, active: boolean) {
+  useEffect(() => {
+    if (!active) return;
+    const el = containerRef.current;
+    if (!el) return;
+
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key !== "Tab") return;
+      const focusable = Array.from(
+        el!.querySelectorAll<HTMLElement>(
+          'button, input, [href], select, textarea, [tabindex]:not([tabindex="-1"])',
+        ),
+      ).filter((n) => !n.hasAttribute("disabled") && !n.closest("[aria-hidden]"));
+      if (focusable.length === 0) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (e.shiftKey) {
+        if (document.activeElement === first) {
+          e.preventDefault();
+          last.focus();
+        }
+      } else {
+        if (document.activeElement === last) {
+          e.preventDefault();
+          first.focus();
+        }
+      }
+    }
+
+    el.addEventListener("keydown", onKeyDown);
+    return () => el.removeEventListener("keydown", onKeyDown);
+  }, [containerRef, active]);
+}
 
 export interface SignInModalProps {
   /** App identifier sent to the auth service so the right callback is used. */
@@ -30,6 +69,31 @@ export function SignInModal({ app, callback, prevIdentity, authBase, open, onClo
   const [email, setEmail] = useState("");
   const [status, setStatus] = useState<"idle" | "sending" | "sent" | "error">("idle");
   const [error, setError] = useState<string | null>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const firstInputRef = useRef<HTMLInputElement>(null);
+
+  // Focus trap
+  useFocusTrap(dialogRef, open);
+
+  // Esc closes modal
+  const handleKeyDown = useCallback(
+    (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    },
+    [onClose],
+  );
+  useEffect(() => {
+    if (!open) return;
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [open, handleKeyDown]);
+
+  // Auto-focus first input on open
+  useEffect(() => {
+    if (open && firstInputRef.current) {
+      firstInputRef.current.focus();
+    }
+  }, [open]);
 
   if (!open) return null;
 
@@ -67,8 +131,15 @@ export function SignInModal({ app, callback, prevIdentity, authBase, open, onClo
   }
 
   return (
-    <div className="modal-backdrop" onClick={onClose}>
-      <div className="modal" onClick={(e) => e.stopPropagation()}>
+    <div className="modal-backdrop" onClick={onClose} role="presentation">
+      <div
+        ref={dialogRef}
+        className="modal"
+        onClick={(e) => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Sign in"
+      >
         <div className="modal-head">
           <h2 className="ss-h3">Sign in</h2>
           <button className="link-btn" type="button" onClick={onClose}>close</button>
@@ -84,13 +155,13 @@ export function SignInModal({ app, callback, prevIdentity, authBase, open, onClo
               We&apos;ll email you a one-time link. No password.
             </p>
             <input
+              ref={firstInputRef}
               className="callsign-input"
               type="email"
               required
               placeholder="you@example.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              autoFocus
             />
             <button className="enlist-btn" type="submit" disabled={status === "sending" || !email.trim()}>
               {status === "sending" ? "sending…" : "send magic link →"}

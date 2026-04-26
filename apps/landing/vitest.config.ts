@@ -12,15 +12,15 @@ export default defineConfig({
       reporter: ["text", "lcov", "json-summary"],
       include: ["src/**/*.{ts,tsx}"],
       exclude: [
-        "src/app/layout.tsx",
+        "src/app/**",          // Next.js server/page components — not unit-testable
         "src/lib/spacetime.ts", // dynamic-loaded SDK glue, not unit-testable
         "src/lib/projects.ts", // ditto
       ],
       thresholds: {
-        lines: 4,
-        functions: 8,
-        statements: 4,
-        branches: 5,
+        lines: 50,
+        functions: 55,
+        statements: 50,
+        branches: 50,
       },
     },
   },
