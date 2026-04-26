@@ -61,9 +61,10 @@ export default function Battle({ player, region, onExit }: Props) {
 
   // --- Lifecycle: end on unmount ---
   const sessionIdRef = useRef<bigint | undefined>(undefined);
+  const sessionId = session?.id;
   useEffect(() => {
-    if (session) sessionIdRef.current = session.id;
-  }, [session?.id]);
+    if (sessionId !== undefined) sessionIdRef.current = sessionId;
+  }, [sessionId]);
 
   useEffect(() => {
     return () => {
@@ -79,9 +80,8 @@ export default function Battle({ player, region, onExit }: Props) {
   // --- Client state ---
   const [input, setInput] = useState('');
 
-  // --- WPM tick ---
-  const startMs = useMemo(() => Date.now(), [session?.id]); // resets if session changes
-  const [now, setNow] = useState(Date.now());
+  // --- WPM tick: startMs comes from server (session.startedAt), now ticks via interval ---
+  const [now, setNow] = useState<number>(0);
   useEffect(() => {
     const id = setInterval(() => setNow(Date.now()), 250);
     return () => clearInterval(id);
@@ -92,22 +92,21 @@ export default function Battle({ player, region, onExit }: Props) {
   const [ashFlash, setAshFlash] = useState(false);
   const [shaking, setShaking] = useState(false);
 
+  const sessionStreak = session?.streak;
   useEffect(() => {
-    if (!session) return;
+    if (sessionStreak === undefined) return;
     const prev = prevStreakRef.current;
-    const cur = session.streak;
-    // Streak reset (and we had progress) → miss
+    const cur = sessionStreak;
     if (cur === 0 && prev > 0) {
       setShaking(true);
       setTimeout(() => setShaking(false), 300);
     }
-    // Ashborn burst flash
     if (player.legion === 0 && cur === 0 && prev > 0 && prev % 10 === 0) {
       setAshFlash(true);
       setTimeout(() => setAshFlash(false), 400);
     }
     prevStreakRef.current = cur;
-  }, [session?.streak, player.legion]);
+  }, [sessionStreak, player.legion]);
 
   // --- Submit on Enter or Space ---
   const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -133,7 +132,8 @@ export default function Battle({ player, region, onExit }: Props) {
   const multCap = player.legion === 3 ? 5.0 : 3.0;
   const isOverdrive = player.legion === 3 && session.multiplier >= 3.0;
 
-  const elapsedMin = (now - startMs) / 60000;
+  const startMs = session?.startedAt ? Number(session.startedAt.toMillis()) : 0;
+  const elapsedMin = startMs > 0 && now > 0 ? Math.max(0, (now - startMs) / 60000) : 0;
   const hits = session.accuracyHits;
   const misses = session.accuracyMisses;
   const wpm = elapsedMin > 0 ? Math.round(hits / elapsedMin) : 0;

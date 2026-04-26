@@ -1,5 +1,5 @@
 'use client';
-import { useState, useCallback, useEffect, useMemo } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { useSpacetimeDB, useTable, useReducer } from 'spacetimedb/react';
 import { tables, reducers } from '@sastaspace/typewars-bindings';
 import type { Screen, Player, Region, LiberatedInfo, LegionId } from '@/types';
@@ -29,18 +29,16 @@ export default function App() {
     [regionRows],
   );
 
-  const [screen, setScreen] = useState<Screen>('legion-select');
+  const [postLoginScreen, setPostLoginScreen] = useState<Exclude<Screen, 'legion-select'>>('warmap');
   const [activeRegion, setActiveRegion] = useState<Region | null>(null);
   const [liberatedInfo, setLiberatedInfo] = useState<LiberatedInfo | null>(null);
   const [swapOpen, setSwapOpen] = useState(false);
 
   const player: Player | null = playerRow ? toPlayer(playerRow) : null;
-
-  useEffect(() => {
-    if (player && screen === 'legion-select') {
-      setScreen('warmap');
-    }
-  }, [player, screen]);
+  const screen: Screen = player ? postLoginScreen : 'legion-select';
+  const setScreen = (s: Screen) => {
+    if (s !== 'legion-select') setPostLoginScreen(s);
+  };
 
   const chooseLegion = useCallback(async (legion: LegionId, username: string) => {
     await registerPlayer({ username, legion });
