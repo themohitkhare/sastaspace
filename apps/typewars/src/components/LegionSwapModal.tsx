@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Player, LegionId } from '@/types';
 import { LEGION_INFO } from '@/lib/legions';
 
@@ -10,10 +10,64 @@ interface Props {
   onSwap: (legion: LegionId) => Promise<void>;
 }
 
+/**
+ * Focus trap matching ProfileModal/SignInModal pattern (UX audit C2).
+ * Auto-focuses first focusable element on mount, traps Tab/Shift+Tab.
+ */
+function useFocusTrap(containerRef: React.RefObject<HTMLElement | null>) {
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+
+    const firstFocusable = el.querySelector<HTMLElement>(
+      'button, input, [href], select, textarea, [tabindex]:not([tabindex="-1"])',
+    );
+    firstFocusable?.focus();
+
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key !== 'Tab') return;
+      const focusable = Array.from(
+        el!.querySelectorAll<HTMLElement>(
+          'button, input, [href], select, textarea, [tabindex]:not([tabindex="-1"])',
+        ),
+      ).filter((n) => !n.hasAttribute('disabled') && !n.closest('[aria-hidden]'));
+      if (focusable.length === 0) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    }
+
+    el.addEventListener('keydown', onKeyDown);
+    return () => el.removeEventListener('keydown', onKeyDown);
+  }, [containerRef]);
+}
+
 export default function LegionSwapModal({ player, onClose, onSwap }: Props) {
   const [picked, setPicked] = useState<LegionId>(player.legion);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const dialogRef = useRef<HTMLDivElement | null>(null);
+
+  useFocusTrap(dialogRef);
+
+  // Esc closes modal (matches AuthMenu/ProfileModal/SignInModal)
+  const handleKeyDown = useCallback(
+    (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && !loading) onClose();
+    },
+    [onClose, loading],
+  );
+
+  useEffect(() => {
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [handleKeyDown]);
 
   const handleConfirm = async () => {
     if (picked === player.legion || loading) return;
@@ -29,8 +83,15 @@ export default function LegionSwapModal({ player, onClose, onSwap }: Props) {
   };
 
   return (
-    <div className="modal-backdrop" onClick={onClose}>
-      <div className="modal" onClick={e => e.stopPropagation()}>
+    <div className="modal-backdrop" role="presentation" onClick={onClose}>
+      <div
+        className="modal"
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Switch legion"
+        onClick={e => e.stopPropagation()}
+      >
         <div className="modal-head">
           <div>
             <p className="ss-eyebrow" style={{ color: 'var(--brand-muted)', marginBottom: 6 }}>change allegiance</p>
