@@ -95,7 +95,7 @@ test.describe("admin panels — STDB live updates", () => {
     const ZERO_IDENT_HEX = "00".repeat(32);
     const escaped = probeBody.replace(/'/g, "''");
     const nowMicros = Date.now() * 1000;
-    const insert = `INSERT INTO comment (id, post_slug, author_name, body, created_at, status, submitter) VALUES (0, '${slug}', 'e2e-probe', '${escaped}', ${nowMicros}, 'pending', X'${ZERO_IDENT_HEX}')`;
+    const insert = `INSERT INTO comment (id, post_slug, author_name, body, created_at, status, submitter) VALUES (0, '${slug}', 'e2e-probe', '${escaped}', (${nowMicros}), 'pending', X'${ZERO_IDENT_HEX}')`;
     const insertRes = await request.post(
       `${STDB_REST}/v1/database/${STDB_DATABASE}/sql`,
       {
