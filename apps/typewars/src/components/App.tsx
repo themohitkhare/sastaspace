@@ -1,5 +1,5 @@
 'use client';
-import { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { useSpacetimeDB, useTable, useReducer } from 'spacetimedb/react';
 import { tables, reducers } from '@sastaspace/typewars-bindings';
 import type { Screen, Player, Region, LiberatedInfo, LegionId } from '@/types';
@@ -10,6 +10,7 @@ import Battle from './Battle';
 import LiberatedSplash from './LiberatedSplash';
 import Leaderboard from './Leaderboard';
 import LegionSwapModal from './LegionSwapModal';
+import { ProfileModal } from './ProfileModal';
 
 export default function App() {
   const { identity, isActive } = useSpacetimeDB();
@@ -33,6 +34,7 @@ export default function App() {
   const [activeRegion, setActiveRegion] = useState<Region | null>(null);
   const [liberatedInfo, setLiberatedInfo] = useState<LiberatedInfo | null>(null);
   const [swapOpen, setSwapOpen] = useState(false);
+  const [profileUser, setProfileUser] = useState<string | null>(null);
 
   const player: Player | null = playerRow ? toPlayer(playerRow) : null;
   const screen: Screen = player ? postLoginScreen : 'legion-select';
@@ -67,22 +69,20 @@ export default function App() {
     setSwapOpen(false);
   }, []);
 
+  let screenContent: React.ReactNode;
+
   if (!isActive) {
-    return (
+    screenContent = (
       <div className="page" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
         <span className="ss-terminal">connecting to typewars…</span>
       </div>
     );
-  }
-
-  if (screen === 'legion-select' && !player) {
-    return <LegionSelect onChoose={chooseLegion} />;
-  }
-
-  if (!player) return null;
-
-  if (screen === 'warmap') {
-    return (
+  } else if (screen === 'legion-select' && !player) {
+    screenContent = <LegionSelect onChoose={chooseLegion} />;
+  } else if (!player) {
+    screenContent = null;
+  } else if (screen === 'warmap') {
+    screenContent = (
       <>
         <MapWarMap
           regions={regions}
@@ -100,37 +100,44 @@ export default function App() {
         )}
       </>
     );
-  }
-
-  if (screen === 'battle' && activeRegion) {
-    return (
+  } else if (screen === 'battle' && activeRegion) {
+    screenContent = (
       <Battle
         player={player}
         region={activeRegion}
         onExit={exitBattle}
       />
     );
-  }
-
-  if (screen === 'liberated' && liberatedInfo) {
-    return (
+  } else if (screen === 'liberated' && liberatedInfo) {
+    screenContent = (
       <LiberatedSplash
         region={liberatedInfo.region}
         winner={liberatedInfo.winner}
         onContinue={() => { setLiberatedInfo(null); setScreen('warmap'); }}
       />
     );
-  }
-
-  if (screen === 'leaderboard') {
-    return (
+  } else if (screen === 'leaderboard') {
+    screenContent = (
       <Leaderboard
         regions={regions}
         player={player}
         onBack={() => setScreen('warmap')}
+        onOpenProfile={setProfileUser}
       />
     );
+  } else {
+    screenContent = null;
   }
 
-  return null;
+  return (
+    <>
+      {screenContent}
+      {profileUser && (
+        <ProfileModal
+          username={profileUser}
+          onClose={() => setProfileUser(null)}
+        />
+      )}
+    </>
+  );
 }

@@ -4,6 +4,7 @@ import { useSpacetimeDB, useTable, useReducer } from 'spacetimedb/react';
 import { tables, reducers } from '@sastaspace/typewars-bindings';
 import type { Player, Region, LegionId } from '@/types';
 import { LEGION_INFO } from '@/lib/legions';
+import { Avatar } from './Avatar';
 
 interface Props {
   player: Player;
@@ -170,6 +171,12 @@ export default function Battle({ player, region, onExit }: Props) {
       <div className="battle-header">
         <div className="battle-header-left">
           <button className="back-btn" onClick={onExit}>← exit</button>
+          <Avatar
+            callsign={player.username}
+            legion={player.legion}
+            verified={!!player.email}
+            size={20}
+          />
           <span className="ss-label" style={{ color: 'var(--brand-muted)' }}>
             {region.name} · T{region.tier}
           </span>

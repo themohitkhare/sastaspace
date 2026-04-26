@@ -4,11 +4,13 @@ import { useTable } from 'spacetimedb/react';
 import { tables } from '@sastaspace/typewars-bindings';
 import type { Region, Player, LegionId } from '@/types';
 import { LEGION_INFO } from '@/lib/legions';
+import { Avatar } from './Avatar';
 
 interface Props {
   regions: Region[];
   player: Player;
   onBack: () => void;
+  onOpenProfile: (username: string) => void;
 }
 
 interface PlayerEntry {
@@ -17,9 +19,10 @@ interface PlayerEntry {
   seasonDamage: number;
   totalDamage: number;
   bestWpm: number;
+  email: string | undefined;
 }
 
-export default function Leaderboard({ regions, player, onBack }: Props) {
+export default function Leaderboard({ regions, player, onBack, onOpenProfile }: Props) {
   const [playerRows] = useTable(tables.player);
 
   const allPlayers: PlayerEntry[] = useMemo(() => (
@@ -30,6 +33,7 @@ export default function Leaderboard({ regions, player, onBack }: Props) {
         seasonDamage: Number(p.seasonDamage),
         totalDamage: Number(p.totalDamage),
         bestWpm: p.bestWpm,
+        email: p.email ?? undefined,
       }))
       .sort((a, b) => b.seasonDamage - a.seasonDamage)
   ), [playerRows]);
@@ -130,9 +134,16 @@ export default function Leaderboard({ regions, player, onBack }: Props) {
                 const isMe = p.username === player.username;
                 const pInfo = LEGION_INFO[p.legion];
                 return (
-                  <div key={p.username} className={`lb-trow${isMe ? ' you' : ''}`}>
+                  <div
+                    key={p.username}
+                    className={`lb-trow${isMe ? ' you' : ''}`}
+                    onClick={() => onOpenProfile(p.username)}
+                    role="button"
+                    style={{ cursor: 'pointer' }}
+                  >
                     <span className="ss-mono" style={{ color: 'var(--brand-muted)' }}>{i + 1}</span>
-                    <span style={{ fontWeight: isMe ? 600 : 400 }}>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: 8, fontWeight: isMe ? 600 : 400 }}>
+                      <Avatar callsign={p.username} legion={p.legion} verified={!!p.email} size={20} />
                       {p.username}
                       {isMe && <span className="lb-you-tag">YOU</span>}
                     </span>
