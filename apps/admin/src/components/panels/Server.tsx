@@ -20,7 +20,7 @@ type Histories = {
 };
 
 function renderServerView(data: SystemMetrics, h: Histories): React.ReactNode {
-  const colorVar = (c: string) => c === 'green' ? '#4a7c3f' : c === 'yellow' ? '#a86a17' : '#b8412c';
+  const colorVar = (c: string) => c === 'green' ? 'var(--color-status-ok)' : c === 'yellow' ? 'var(--color-status-warn)' : 'var(--color-status-danger)';
   const cpuColor = data.cpu.pct < 50 ? 'green' : data.cpu.pct < 80 ? 'yellow' : 'red';
   const memPct = (data.mem.used_gb / data.mem.total_gb) * 100;
   const memColor = memPct < 70 ? 'green' : memPct < 85 ? 'yellow' : 'red';

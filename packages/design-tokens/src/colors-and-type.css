@@ -41,6 +41,16 @@
   /* Status indicator — the green dot inside the live chip */
   --brand-status-live:  #8cc67a;
 
+  /* ---------- Status colours (UI admin chips, cards, bars) ---------- */
+  --color-status-ok:       #4a7c3f;
+  --color-status-ok-bg:    #e6efe1;
+  --color-status-warn:     #a86a17;
+  --color-status-warn-bg:  #fdf3df;
+  --color-status-danger:   #b8412c;
+  --color-status-danger-bg: #fbe9e3;
+  --color-status-info:     #d4a13b;
+  --color-status-info-bg:  #f1e2bf;
+
   /* ---------- Semantic colour mapping ---------- */
   --color-bg:             var(--brand-paper);
   --color-surface:        #ffffff;

@@ -126,7 +126,7 @@ function TypeWarsInner() {
                 const color = controlling >= 0 ? (LEGION_COLORS[controlling] ?? '#888') : 'var(--brand-dust)';
                 const legionName = controlling >= 0 ? (LEGION_NAMES[controlling] ?? `Legion ${controlling}`) : 'unclaimed';
                 const hpPct = r.enemyMaxHp > 0n ? Number((r.enemyHp * 100n) / r.enemyMaxHp) : 0;
-                const hpColor = hpPct > 60 ? 'var(--brand-status-live)' : hpPct > 30 ? 'var(--brand-sasta)' : '#b8412c';
+                const hpColor = hpPct > 60 ? 'var(--brand-status-live)' : hpPct > 30 ? 'var(--brand-sasta)' : 'var(--color-status-danger)';
                 const contested = activeBattles.some(b => b.region === r.name);
                 return (
                   <div key={r.id} className={`region-cell ${contested ? 'contested' : ''}`}>

@@ -197,7 +197,7 @@ function DashboardInner({ navigate }: { navigate: (path: string) => void }) {
           <div className="card" style={{ padding: '4px 22px' }}>
             {!containers && <div style={{ padding: '20px 0', color: 'var(--color-fg-muted)', fontSize: 13 }}>Loading…</div>}
             {containers?.map(c => {
-              const dotColor = c.status === 'running' ? 'var(--brand-status-live)' : c.status === 'unhealthy' ? '#b8412c' : 'var(--brand-dust)';
+              const dotColor = c.status === 'running' ? 'var(--brand-status-live)' : c.status === 'unhealthy' ? 'var(--color-status-danger)' : 'var(--brand-dust)';
               const name = c.name.replace(/^sastaspace-/, '').replace(/-/g, ' ').replace(/\b\w/g, x => x.toUpperCase());
               return (
                 <div key={c.name} className="service-row" onClick={() => navigate('/services')}>

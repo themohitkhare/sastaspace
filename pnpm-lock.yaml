@@ -13,6 +13,9 @@ importers:
 
   apps/admin:
     dependencies:
+      '@sastaspace/design-tokens':
+        specifier: workspace:*
+        version: link:../../packages/design-tokens
       '@sastaspace/stdb-bindings':
         specifier: workspace:*
         version: link:../../packages/stdb-bindings

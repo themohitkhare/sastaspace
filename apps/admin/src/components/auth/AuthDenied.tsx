@@ -14,7 +14,7 @@ export default function AuthDenied({ email, onSignOut }: AuthDeniedProps) {
         </div>
         <div className="auth-card__terminal">admin.sastaspace.com —</div>
         <div style={{ display: 'inline-flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
-          <span style={{ width: 32, height: 32, borderRadius: 8, background: '#fbe9e3', color: '#b8412c', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
+          <span style={{ width: 32, height: 32, borderRadius: 8, background: 'var(--color-status-danger-bg)', color: 'var(--color-status-danger)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
             <Icon name="lock" size={16}/>
           </span>
         </div>

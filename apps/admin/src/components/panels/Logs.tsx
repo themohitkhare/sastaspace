@@ -59,7 +59,7 @@ function LogsView({
       <div className="logs-sidebar">
         <div className="logs-sidebar__title">service</div>
         {serviceList.map(s => {
-          const dot = s.status === 'running' ? 'var(--brand-status-live)' : s.status === 'unhealthy' ? '#b8412c' : 'var(--brand-dust)';
+          const dot = s.status === 'running' ? 'var(--brand-status-live)' : s.status === 'unhealthy' ? 'var(--color-status-danger)' : 'var(--brand-dust)';
           return (
             <button key={s.container} className={`logs-service-item ${active === s.container ? 'active' : ''}`} onClick={() => setActive(s.container)}>
               <span className="logs-service-item__dot" style={{ background: dot }}/>

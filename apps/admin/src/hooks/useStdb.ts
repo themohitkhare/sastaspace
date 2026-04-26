@@ -8,7 +8,7 @@
 // sastaspace connection per tab, optionally authed with the owner token. When
 // no token is present, all reads still work; reducer calls fail server-side.
 
-import { useMemo, useEffect, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { SpacetimeDBProvider } from 'spacetimedb/react';
 import { DbConnection as SastaspaceConn } from '@sastaspace/stdb-bindings';
 import { DbConnection as TypewarsConn } from '@sastaspace/typewars-bindings';
@@ -20,37 +20,37 @@ const OWNER_TOKEN_KEY = 'admin_stdb_owner_token';
 
 export function getOwnerToken(): string | null {
   if (typeof window === 'undefined') return null;
-  return localStorage.getItem(OWNER_TOKEN_KEY);
+  // sessionStorage: credential cleared on tab/window close, reducing XSS exfil
+  // window (per security audit D2). Falls back to null on private-mode restrictions.
+  return sessionStorage.getItem(OWNER_TOKEN_KEY);
 }
 
 export function setOwnerToken(t: string): void {
   if (typeof window === 'undefined') return;
-  localStorage.setItem(OWNER_TOKEN_KEY, t);
+  sessionStorage.setItem(OWNER_TOKEN_KEY, t);
 }
 
 export function clearOwnerToken(): void {
   if (typeof window === 'undefined') return;
-  localStorage.removeItem(OWNER_TOKEN_KEY);
+  sessionStorage.removeItem(OWNER_TOKEN_KEY);
 }
 
 /**
- * Subscribe to owner-token changes (e.g. saved in another tab or via the
- * settings modal). Returns the current token string or null.
+ * Subscribe to owner-token changes (via the settings modal in the same tab).
+ * Returns the current token string or null.
+ *
+ * Note: sessionStorage is tab-local so cross-tab StorageEvents are not fired.
+ * Token updates within this tab (from OwnerTokenSettings) trigger a
+ * window.location.reload() which remounts the hook anyway, so no event
+ * listener is needed.
  */
 export function useOwnerToken(): string | null {
-  const [token, setToken] = useState<string | null>(() => getOwnerToken());
-  useEffect(() => {
-    const onStorage = (e: StorageEvent) => {
-      if (e.key === OWNER_TOKEN_KEY) setToken(e.newValue);
-    };
-    window.addEventListener('storage', onStorage);
-    return () => window.removeEventListener('storage', onStorage);
-  }, []);
+  const [token] = useState<string | null>(() => getOwnerToken());
   return token;
 }
 
 /**
- * Sastaspace SpacetimeDB connection. If an owner token is in localStorage,
+ * Sastaspace SpacetimeDB connection. If an owner token is in sessionStorage,
  * the connection is authed (so set_comment_status_with_reason etc. succeed).
  * Otherwise the connection is anonymous — read subscriptions still work
  * because all admin-consumed tables are `public`.
