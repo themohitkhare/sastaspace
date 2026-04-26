@@ -151,12 +151,24 @@ jobs:
           retention-days: 7
 
   # ── 2. landing app ────────────────────────────────────────────────────────
+  # Phase 3 prep (audit N3): build_variant matrix produces both `landing-out-legacy`
+  # and `landing-out-stdb` artifacts. NEXT_PUBLIC_USE_STDB_DECK is baked into the
+  # bundle at build time (output: 'export'). The legacy artifact is what
+  # `landing-deploy` rsyncs today; Phase 3 cutover swaps to `landing-out-stdb`.
   landing-gate:
     needs: [changes, module-publish]
     if: >-
       always() && !cancelled() &&
       (needs.changes.outputs.landing == 'true' || needs.module-publish.result == 'success')
     runs-on: [self-hosted, Linux]
+    strategy:
+      fail-fast: false
+      matrix:
+        build_variant: [legacy, stdb]
+    env:
+      # Defaults to "false" for the legacy variant; the stdb variant overrides
+      # via the step-level env below. Static export bakes this into the bundle.
+      NEXT_PUBLIC_USE_STDB_DECK: ${{ matrix.build_variant == 'stdb' && 'true' || 'false' }}
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-node@v6
@@ -178,11 +190,18 @@ jobs:
           path: packages/stdb-bindings/src/generated
           run-id: ${{ inputs.bindings_run_id }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
-      - run: pnpm audit --prod --audit-level moderate
-      - run: pnpm --filter @sastaspace/landing typecheck
-      - run: pnpm --filter @sastaspace/landing lint --max-warnings 0
-      - run: pnpm --filter @sastaspace/landing coverage
-      - uses: actions/upload-artifact@v7
+      # Audit/lint/test/coverage are flag-independent — only run on the legacy
+      # variant to avoid double work (the stdb variant just builds).
+      - if: matrix.build_variant == 'legacy'
+        run: pnpm audit --prod --audit-level moderate
+      - if: matrix.build_variant == 'legacy'
+        run: pnpm --filter @sastaspace/landing typecheck
+      - if: matrix.build_variant == 'legacy'
+        run: pnpm --filter @sastaspace/landing lint --max-warnings 0
+      - if: matrix.build_variant == 'legacy'
+        run: pnpm --filter @sastaspace/landing coverage
+      - if: matrix.build_variant == 'legacy'
+        uses: actions/upload-artifact@v7
         with:
           name: landing-coverage
           path: apps/landing/coverage
@@ -190,7 +209,7 @@ jobs:
       - run: pnpm --filter @sastaspace/landing build
       - uses: actions/upload-artifact@v7
         with:
-          name: landing-out
+          name: landing-out-${{ matrix.build_variant }}
           path: apps/landing/out
           retention-days: 7
 
@@ -203,7 +222,8 @@ jobs:
         with: { sparse-checkout: infra/landing }
       - uses: actions/download-artifact@v8
         with:
-          name: landing-out
+          # PHASE 3 CUTOVER: change to landing-out-stdb
+          name: landing-out-legacy
           path: out/
       - name: rsync site
         run: |
@@ -237,12 +257,22 @@ jobs:
           exit 1
 
   # ── 3. notes app ─────────────────────────────────────────────────────────
+  # Phase 3 prep (audit N3): build_variant matrix produces both `notes-out-legacy`
+  # and `notes-out-stdb` artifacts. NEXT_PUBLIC_USE_STDB_AUTH is baked into the
+  # bundle at build time. Through Phase 3 the legacy variant is what deploys;
+  # cutover swaps to the stdb variant.
   notes:
     needs: [changes, module-publish]
     if: >-
       always() && !cancelled() &&
       (needs.changes.outputs.notes == 'true' || needs.module-publish.result == 'success')
     runs-on: [self-hosted, Linux]
+    strategy:
+      fail-fast: false
+      matrix:
+        build_variant: [legacy, stdb]
+    env:
+      NEXT_PUBLIC_USE_STDB_AUTH: ${{ matrix.build_variant == 'stdb' && 'true' || 'false' }}
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-node@v6
@@ -256,24 +286,39 @@ jobs:
         with:
           name: stdb-bindings
           path: packages/stdb-bindings/src/generated
-      - run: pnpm audit --prod --audit-level moderate
-      - run: pnpm --filter @sastaspace/notes typecheck
-      - run: pnpm --filter @sastaspace/notes lint --max-warnings 0
-      - run: pnpm --filter @sastaspace/notes coverage
-      - uses: actions/upload-artifact@v7
+      # Audit/lint/test/coverage are flag-independent — only run on the legacy
+      # variant to avoid double work (the stdb variant just builds).
+      - if: matrix.build_variant == 'legacy'
+        run: pnpm audit --prod --audit-level moderate
+      - if: matrix.build_variant == 'legacy'
+        run: pnpm --filter @sastaspace/notes typecheck
+      - if: matrix.build_variant == 'legacy'
+        run: pnpm --filter @sastaspace/notes lint --max-warnings 0
+      - if: matrix.build_variant == 'legacy'
+        run: pnpm --filter @sastaspace/notes coverage
+      - if: matrix.build_variant == 'legacy'
+        uses: actions/upload-artifact@v7
         with:
           name: notes-coverage
           path: apps/notes/coverage
           retention-days: 7
       - run: pnpm --filter @sastaspace/notes build
+      - uses: actions/upload-artifact@v7
+        with:
+          name: notes-out-${{ matrix.build_variant }}
+          path: apps/notes/out
+          retention-days: 7
+      # PHASE 3 CUTOVER: change `matrix.build_variant == 'legacy'` to `'stdb'` to
+      # deploy the rewired build instead. The legacy variant remains buildable as
+      # a rollback target until Phase 4 removes it.
       - name: deploy to nginx
-        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+        if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && matrix.build_variant == 'legacy'
         run: |
           mkdir -p "$NOTES_OUT_DIR"
           rsync -a --delete apps/notes/out/ "$NOTES_OUT_DIR/"
           docker exec sastaspace-notes nginx -s reload
       - name: smoke test
-        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+        if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && matrix.build_variant == 'legacy'
         run: |
           for i in 1 2 3 4 5; do
             code=$(curl -sS -o /dev/null -w "%{http_code}" -L https://notes.sastaspace.com/)
@@ -284,14 +329,22 @@ jobs:
           exit 1
 
   # ── 3b. typewars game UI ──────────────────────────────────────────────────
+  # Phase 3 prep (audit N3): build_variant matrix produces both `typewars-out-legacy`
+  # and `typewars-out-stdb` artifacts. NEXT_PUBLIC_USE_STDB_AUTH is baked in at
+  # build time. Through Phase 3 the legacy variant is what deploys; cutover swaps.
   typewars:
     needs: changes
     if: >-
       always() && !cancelled() &&
       needs.changes.outputs.typewars == 'true'
     runs-on: [self-hosted, Linux]
+    strategy:
+      fail-fast: false
+      matrix:
+        build_variant: [legacy, stdb]
     env:
       NEXT_PUBLIC_TYPEWARS_MODULE: typewars
+      NEXT_PUBLIC_USE_STDB_AUTH: ${{ matrix.build_variant == 'stdb' && 'true' || 'false' }}
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-node@v6
@@ -299,16 +352,20 @@ jobs:
       - name: enable pnpm
         run: corepack enable && corepack prepare pnpm@9.12.0 --activate
       - run: pnpm install --frozen-lockfile
-      - run: pnpm --filter @sastaspace/typewars typecheck
-      - run: pnpm --filter @sastaspace/typewars lint --max-warnings 0
+      # Typecheck/lint are flag-independent — only on legacy to avoid duplication.
+      - if: matrix.build_variant == 'legacy'
+        run: pnpm --filter @sastaspace/typewars typecheck
+      - if: matrix.build_variant == 'legacy'
+        run: pnpm --filter @sastaspace/typewars lint --max-warnings 0
       - run: pnpm --filter @sastaspace/typewars build
       - uses: actions/upload-artifact@v7
         with:
-          name: typewars-out
+          name: typewars-out-${{ matrix.build_variant }}
           path: apps/typewars/out
           retention-days: 7
+      # PHASE 3 CUTOVER: change `matrix.build_variant == 'legacy'` to `'stdb'`.
       - name: deploy to nginx
-        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+        if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && matrix.build_variant == 'legacy'
         run: |
           PROD=/home/mkhare/sastaspace/infra
           mkdir -p "$TYPEWARS_OUT_DIR"
@@ -338,7 +395,7 @@ jobs:
             done
           fi
       - name: smoke test
-        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+        if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && matrix.build_variant == 'legacy'
         run: |
           for i in 1 2 3 4 5; do
             code=$(curl -sS -o /dev/null -w "%{http_code}" -L https://typewars.sastaspace.com/)
@@ -349,14 +406,24 @@ jobs:
           exit 1
 
   # ── 3c. admin panel ───────────────────────────────────────────────────────
+  # Phase 3 prep (audit N3): build_variant matrix produces both `admin-out-legacy`
+  # and `admin-out-stdb` artifacts. NEXT_PUBLIC_USE_STDB_ADMIN and
+  # NEXT_PUBLIC_USE_STDB_AUTH (shared with auth-ui) are baked in at build time.
+  # Through Phase 3 the legacy variant deploys; cutover swaps to stdb.
   admin:
     needs: changes
     if: >-
       always() && !cancelled() &&
       needs.changes.outputs.admin == 'true'
     runs-on: [self-hosted, Linux]
+    strategy:
+      fail-fast: false
+      matrix:
+        build_variant: [legacy, stdb]
     env:
       NEXT_PUBLIC_OWNER_EMAIL: mohitkhare582@gmail.com
+      NEXT_PUBLIC_USE_STDB_ADMIN: ${{ matrix.build_variant == 'stdb' && 'true' || 'false' }}
+      NEXT_PUBLIC_USE_STDB_AUTH: ${{ matrix.build_variant == 'stdb' && 'true' || 'false' }}
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-node@v6
@@ -364,16 +431,20 @@ jobs:
       - name: enable pnpm
         run: corepack enable && corepack prepare pnpm@9.12.0 --activate
       - run: pnpm install --frozen-lockfile
-      - run: pnpm --filter @sastaspace/admin typecheck
-      - run: pnpm --filter @sastaspace/admin lint --max-warnings 0
+      # Typecheck/lint are flag-independent — only on legacy to avoid duplication.
+      - if: matrix.build_variant == 'legacy'
+        run: pnpm --filter @sastaspace/admin typecheck
+      - if: matrix.build_variant == 'legacy'
+        run: pnpm --filter @sastaspace/admin lint --max-warnings 0
       - run: pnpm --filter @sastaspace/admin build
       - uses: actions/upload-artifact@v7
         with:
-          name: admin-out
+          name: admin-out-${{ matrix.build_variant }}
           path: apps/admin/out
           retention-days: 7
+      # PHASE 3 CUTOVER: change `matrix.build_variant == 'legacy'` to `'stdb'`.
       - name: deploy to nginx
-        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+        if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && matrix.build_variant == 'legacy'
         run: |
           PROD=/home/mkhare/sastaspace/infra
           mkdir -p "$ADMIN_OUT_DIR"
@@ -382,7 +453,7 @@ jobs:
           rsync -a infra/docker-compose.yml "$PROD/docker-compose.yml"
           cd "$PROD" && docker compose up -d --no-deps --force-recreate admin
       - name: smoke test
-        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+        if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && matrix.build_variant == 'legacy'
         run: |
           for i in 1 2 3 4 5; do
             code=$(curl -sS -o /dev/null -w "%{http_code}" -L https://admin.sastaspace.com/)
