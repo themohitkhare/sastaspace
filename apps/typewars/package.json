@@ -11,6 +11,7 @@
     "lint": "eslint ."
   },
   "dependencies": {
+    "@sastaspace/auth-ui": "workspace:*",
     "@sastaspace/design-tokens": "workspace:*",
     "@sastaspace/typewars-bindings": "workspace:*",
     "next": "^16.0.0",

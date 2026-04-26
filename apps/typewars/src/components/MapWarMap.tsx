@@ -4,6 +4,8 @@ import type { Region, Player, LegionId } from '@/types';
 import { LEGION_INFO } from '@/lib/legions';
 import { MAP_REGIONS, CONTINENTS } from '@/lib/regions';
 import RegionDetail from './RegionDetail';
+import { Avatar } from './Avatar';
+import { SignInTrigger } from './SignInTrigger';
 
 interface Props {
   regions: Region[];
@@ -105,12 +107,23 @@ export default function MapWarMap({ regions, player, onEnter, onOpenBoard, onSwa
           <button
             className="player-pill swap-pill"
             onClick={onSwapLegion}
-            style={{ cursor: 'pointer' }}
+            style={{ borderColor: myLegion.color }}
           >
-            <span className="player-dot" style={{ background: myLegion.color }} />
-            <span className="ss-label">{player.username}</span>
-            <span className="ss-small ss-mono" style={{ color: 'var(--brand-muted)' }}>· {myLegion.short}</span>
+            <Avatar
+              callsign={player.username}
+              legion={player.legion}
+              verified={!!player.email}
+              size={20}
+            />
+            <span className="ss-mono" style={{ fontSize: 12 }}>{player.username}</span>
+            <span className="ss-mono" style={{ fontSize: 11, color: 'var(--brand-muted)' }}>
+              · {myLegion.name}
+            </span>
+            <span className="ss-mono" style={{ fontSize: 10, color: 'var(--brand-muted)', marginLeft: 6 }}>
+              swap ↺
+            </span>
           </button>
+          {!player.email && <SignInTrigger />}
           <button className="link-btn" onClick={onOpenBoard}>leaderboard</button>
         </span>
       </header>

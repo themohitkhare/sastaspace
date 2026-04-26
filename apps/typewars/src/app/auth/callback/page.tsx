@@ -11,30 +11,34 @@ export default function AuthCallbackPage() {
 
   useEffect(() => {
     // Token + email travel in the URL fragment so they never hit our server.
-    const hash = typeof window !== "undefined" ? window.location.hash : "";
-    if (!hash || !hash.startsWith("#")) {
-      setStatus("error");
-      setMessage("Missing sign-in details. Please request a new magic link.");
-      return;
+    function processCallback() {
+      const hash = typeof window !== "undefined" ? window.location.hash : "";
+      if (!hash || !hash.startsWith("#")) {
+        setStatus("error");
+        setMessage("Missing sign-in details. Please request a new magic link.");
+        return;
+      }
+      const params = new URLSearchParams(hash.slice(1));
+      const jwt = params.get("token");
+      const email = params.get("email");
+      if (!jwt || !email) {
+        setStatus("error");
+        setMessage("Sign-in details are incomplete. Please request a new magic link.");
+        return;
+      }
+      try {
+        window.localStorage.setItem(TOKEN_KEY, jwt);
+      } catch {
+        setStatus("error");
+        setMessage("Could not store sign-in token (localStorage blocked?). Please try a different browser.");
+        return;
+      }
+      // Strip the fragment so back-button doesn't re-trigger and so the JWT
+      // doesn't sit in URL history.
+      router.replace("/");
     }
-    const params = new URLSearchParams(hash.slice(1));
-    const jwt = params.get("token");
-    const email = params.get("email");
-    if (!jwt || !email) {
-      setStatus("error");
-      setMessage("Sign-in details are incomplete. Please request a new magic link.");
-      return;
-    }
-    try {
-      window.localStorage.setItem(TOKEN_KEY, jwt);
-    } catch {
-      setStatus("error");
-      setMessage("Could not store sign-in token (localStorage blocked?). Please try a different browser.");
-      return;
-    }
-    // Strip the fragment so back-button doesn't re-trigger and so the JWT
-    // doesn't sit in URL history.
-    router.replace("/");
+    const timer = setTimeout(processCallback, 0);
+    return () => clearTimeout(timer);
   }, [router]);
 
   return (

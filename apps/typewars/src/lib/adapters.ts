@@ -43,6 +43,7 @@ type PlayerRow = {
   totalDamage: bigint;
   seasonDamage: bigint;
   bestWpm: number;
+  email: string | undefined;
 };
 
 export function toPlayer(row: PlayerRow): Player {
@@ -52,5 +53,6 @@ export function toPlayer(row: PlayerRow): Player {
     total_damage: Number(row.totalDamage),
     season_damage: Number(row.seasonDamage),
     best_wpm: row.bestWpm,
+    email: row.email,
   };
 }
