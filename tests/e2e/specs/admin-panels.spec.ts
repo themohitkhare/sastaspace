@@ -83,9 +83,13 @@ test.describe("admin panels — STDB live updates", () => {
 
   test.beforeEach(async ({ page }) => {
     await signIn(page, OWNER_EMAIL);
-    // Inject the owner STDB token into localStorage before navigation so the
-    // SastaspaceProvider builds an authed connection on first paint.
+    // Inject the owner STDB token into BOTH session and localStorage before
+    // navigation so the SastaspaceProvider builds an authed connection on
+    // first paint regardless of which storage the app currently reads from
+    // (Group 5/7 audit-fix migrated admin to sessionStorage; legacy reads
+    // localStorage as a one-shot migration fallback).
     await page.addInitScript((tok) => {
+      sessionStorage.setItem("admin_stdb_owner_token", tok as string);
       localStorage.setItem("admin_stdb_owner_token", tok as string);
     }, OWNER_STDB_TOKEN);
     await page.goto(ADMIN);

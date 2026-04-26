@@ -107,12 +107,16 @@ test.describe("moderator-agent E2E (gated on E2E_MODERATOR_ENABLED)", () => {
         `submit_user_comment failed: HTTP ${callRes.status()} ${await callRes.text()}`,
       );
     }
-    // Read back the row to grab its auto-inc id. Owner-as-author rows can
-    // collide on body uniqueness within a fast test run, so we filter on
-    // both body match and recency to recover *our* row.
+    // Read back the row to grab its auto-inc id. STDB SQL only supports
+    // WHERE on a single indexed column at a time — `post_slug` is btree-
+    // indexed, but `body` is not, so we can't combine them. Filter on
+    // post_slug only and pick the newest row; tests run serially
+    // (playwright fullyParallel=false, workers=1) and afterEach deletes
+    // the row, so there's no race for the same post_slug at any moment.
+    void escaped; // body match happens via the read-back assertion in the caller
     const rows = await sql(
       request,
-      `SELECT id FROM comment WHERE post_slug = 'e2e-mod-test' AND body = '${escaped}' ORDER BY id DESC LIMIT 1`,
+      `SELECT id FROM comment WHERE post_slug = 'e2e-mod-test' ORDER BY id DESC LIMIT 1`,
       OWNER_TOKEN,
     );
     const id = rows[0]?.[0];
