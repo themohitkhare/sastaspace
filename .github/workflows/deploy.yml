@@ -222,8 +222,11 @@ jobs:
         with: { sparse-checkout: infra/landing }
       - uses: actions/download-artifact@v8
         with:
-          # PHASE 3 CUTOVER: change to landing-out-stdb
-          name: landing-out-legacy
+          # PHASE 3 CUTOVER: switched from landing-out-legacy to landing-out-stdb.
+          # NEXT_PUBLIC_USE_STDB_DECK is baked into the bundle at build time;
+          # the stdb variant routes /lab/deck through STDB plan_request +
+          # generate_job reducers instead of POSTing to deck.sastaspace.com.
+          name: landing-out-stdb
           path: out/
       - name: rsync site
         run: |
@@ -308,17 +311,18 @@ jobs:
           name: notes-out-${{ matrix.build_variant }}
           path: apps/notes/out
           retention-days: 7
-      # PHASE 3 CUTOVER: change `matrix.build_variant == 'legacy'` to `'stdb'` to
-      # deploy the rewired build instead. The legacy variant remains buildable as
-      # a rollback target until Phase 4 removes it.
+      # PHASE 3 CUTOVER: switched from `legacy` to `stdb`. The stdb variant
+      # bundles NEXT_PUBLIC_USE_STDB_AUTH=true, so the SignInModal calls
+      # request_magic_link on STDB instead of POSTing to auth.sastaspace.com.
+      # The legacy variant still builds as a rollback target until Phase 4.
       - name: deploy to nginx
-        if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && matrix.build_variant == 'legacy'
+        if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && matrix.build_variant == 'stdb'
         run: |
           mkdir -p "$NOTES_OUT_DIR"
           rsync -a --delete apps/notes/out/ "$NOTES_OUT_DIR/"
           docker exec sastaspace-notes nginx -s reload
       - name: smoke test
-        if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && matrix.build_variant == 'legacy'
+        if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && matrix.build_variant == 'stdb'
         run: |
           for i in 1 2 3 4 5; do
             code=$(curl -sS -o /dev/null -w "%{http_code}" -L https://notes.sastaspace.com/)
@@ -363,9 +367,10 @@ jobs:
           name: typewars-out-${{ matrix.build_variant }}
           path: apps/typewars/out
           retention-days: 7
-      # PHASE 3 CUTOVER: change `matrix.build_variant == 'legacy'` to `'stdb'`.
+      # PHASE 3 CUTOVER: switched from `legacy` to `stdb`. The stdb variant
+      # bundles NEXT_PUBLIC_USE_STDB_AUTH=true.
       - name: deploy to nginx
-        if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && matrix.build_variant == 'legacy'
+        if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && matrix.build_variant == 'stdb'
         run: |
           PROD=/home/mkhare/sastaspace/infra
           mkdir -p "$TYPEWARS_OUT_DIR"
@@ -395,7 +400,7 @@ jobs:
             done
           fi
       - name: smoke test
-        if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && matrix.build_variant == 'legacy'
+        if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && matrix.build_variant == 'stdb'
         run: |
           for i in 1 2 3 4 5; do
             code=$(curl -sS -o /dev/null -w "%{http_code}" -L https://typewars.sastaspace.com/)
@@ -442,9 +447,10 @@ jobs:
           name: admin-out-${{ matrix.build_variant }}
           path: apps/admin/out
           retention-days: 7
-      # PHASE 3 CUTOVER: change `matrix.build_variant == 'legacy'` to `'stdb'`.
+      # PHASE 3 CUTOVER: switched from `legacy` to `stdb`. The stdb variant
+      # bundles NEXT_PUBLIC_USE_STDB_ADMIN=true and NEXT_PUBLIC_USE_STDB_AUTH=true.
       - name: deploy to nginx
-        if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && matrix.build_variant == 'legacy'
+        if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && matrix.build_variant == 'stdb'
         run: |
           PROD=/home/mkhare/sastaspace/infra
           mkdir -p "$ADMIN_OUT_DIR" "$PROD/admin"
@@ -461,7 +467,7 @@ jobs:
           rsync -a infra/docker-compose.yml "$PROD/docker-compose.yml"
           cd "$PROD" && docker compose up -d --no-deps --force-recreate admin
       - name: smoke test
-        if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && matrix.build_variant == 'legacy'
+        if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && matrix.build_variant == 'stdb'
         run: |
           for i in 1 2 3 4 5 6 7 8; do
             code=$(curl -sS -o /dev/null -w "%{http_code}" -L https://admin.sastaspace.com/)
@@ -671,16 +677,30 @@ jobs:
       - name: smoke — workers booted with owner token
         timeout-minutes: 2
         run: |
-          for i in 1 2 3 4 5 6; do
+          for i in 1 2 3 4 5 6 7 8; do
             if docker logs sastaspace-workers --tail 50 2>&1 | grep -qE "owner token verified|no agents enabled, idling"; then
               echo "workers healthy"
               exit 0
             fi
             sleep 5
           done
-          echo "::error::workers did not report owner token verified within 30s"
+          echo "::error::workers did not report owner token verified within 40s"
           docker logs sastaspace-workers --tail 60 || true
           exit 1
+      - name: stop legacy services replaced by workers (idempotent)
+        # After the workers container is confirmed healthy, retire the four
+        # Python services it replaces. Each `stop` is a no-op if the
+        # container is already down or absent. The legacy services stay
+        # in compose (Phase 4 deletes them) so a fast revert via
+        # `docker compose start <name>` is still possible.
+        timeout-minutes: 2
+        working-directory: /home/mkhare/sastaspace/infra
+        run: |
+          docker compose stop moderator 2>&1 || true
+          docker compose stop admin-api 2>&1 || true
+          docker compose stop auth 2>&1 || true
+          docker compose stop deck 2>&1 || true
+          docker compose ps -a 2>&1 | head -40
       - name: rollback on failure
         if: failure()
         run: |
@@ -719,6 +739,15 @@ jobs:
           mkdir -p "$PROD/infra/landing"
           rsync -a --inplace infra/landing/auth-410.conf "$PROD/infra/landing/auth-410.conf"
           rsync -a infra/docker-compose.yml "$PROD/infra/docker-compose.yml"
+      - name: stop legacy services binding port 3170 (admin-api) and port 3130 (auth)
+        timeout-minutes: 2
+        working-directory: /home/mkhare/sastaspace/infra
+        run: |
+          # admin-api binds 127.0.0.1:3170 — same port auth-410 needs.
+          # auth (FastAPI) binds 127.0.0.1:3130 — freed for the cutover.
+          # `docker compose stop` is a no-op if the container isn't running.
+          docker compose stop admin-api 2>&1 | tee /tmp/stop-admin-api.log || true
+          docker compose stop auth 2>&1 | tee /tmp/stop-auth.log || true
       - name: build + start auth-410 container
         timeout-minutes: 3
         working-directory: /home/mkhare/sastaspace/infra

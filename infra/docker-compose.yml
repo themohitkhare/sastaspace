@@ -381,10 +381,16 @@ services:
       - STDB_TOKEN=phase0-placeholder-no-agents-enabled
       - OLLAMA_URL=http://127.0.0.1:11434
       - LOCALAI_URL=http://127.0.0.1:8080
-      - WORKER_AUTH_MAILER_ENABLED=false
-      - WORKER_ADMIN_COLLECTOR_ENABLED=false
-      - WORKER_DECK_AGENT_ENABLED=false
-      - WORKER_MODERATOR_AGENT_ENABLED=false
+      # PHASE 3 CUTOVER: all four worker agents enabled. Each agent subscribes
+      # to its own STDB intent table (pending_email / system_metrics / plan_request
+      # / comment) and processes rows reactively. The legacy Python services
+      # (auth, admin-api, deck, moderator) are stopped by the cutover commit
+      # to free their respective ports. Revert: flip these back to false +
+      # docker compose start <legacy-service>.
+      - WORKER_AUTH_MAILER_ENABLED=true
+      - WORKER_ADMIN_COLLECTOR_ENABLED=true
+      - WORKER_DECK_AGENT_ENABLED=true
+      - WORKER_MODERATOR_AGENT_ENABLED=true
     depends_on:
       spacetime:
         condition: service_healthy
