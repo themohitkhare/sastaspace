@@ -76,44 +76,38 @@ test.describe("moderator-agent E2E (gated on E2E_MODERATOR_ENABLED)", () => {
     request: import("@playwright/test").APIRequestContext,
     body: string,
   ): Promise<bigint> {
-    // The Comment table requires `submitter` to be a valid Identity.
-    // We use the all-zeros identity (X'0000…0000') for synthetic rows so
-    // the moderator can still classify body content. Per the
-    // moderator-agent design the only reads are status='pending' filter
-    // + body content; submitter is not used by the classifier.
-    const ZERO_IDENT_HEX = "00".repeat(32);
+    // Seed via submit_user_comment reducer. The e2e bootstrap registers
+    // the owner identity as a user (E2E_Owner) so the reducer's user-row
+    // lookup succeeds; ctx.sender() = owner. submitter on the row is the
+    // owner identity, not the zero identity, but the moderator classifier
+    // only reads body content (per moderator-agent design).
     const escaped = body.replace(/'/g, "''");
-    // STDB SQL doesn't support NOW(); pass micros-since-epoch as i64 literal.
-    // Timestamp is a tuple-struct (__timestamp_micros_since_unix_epoch__: I64),
-    // STDB SQL accepts the inner literal in parens.
-    const nowMicros = Date.now() * 1000;
-    // id=0 so STDB's auto_inc assigns the real id.
-    const insert = `INSERT INTO comment (id, post_slug, author_name, body, created_at, status, submitter) VALUES (0, 'e2e-mod-test', '${TAG}', '${escaped}', (${nowMicros}), 'pending', X'${ZERO_IDENT_HEX}')`;
-    const res = await request.post(
-      `${STDB_REST}/v1/database/${STDB_DATABASE}/sql`,
+    const callRes = await request.post(
+      `${STDB_REST}/v1/database/${STDB_DATABASE}/call/submit_user_comment`,
       {
         headers: {
-          "Content-Type": "text/plain",
+          "Content-Type": "application/json",
           Authorization: `Bearer ${OWNER_TOKEN}`,
         },
-        data: insert,
+        data: JSON.stringify(["e2e-mod-test", body]),
       },
     );
-    if (res.status() >= 400) {
+    if (callRes.status() >= 400) {
       throw new Error(
-        `comment INSERT failed: HTTP ${res.status()} ${await res.text()}`,
+        `submit_user_comment failed: HTTP ${callRes.status()} ${await callRes.text()}`,
       );
     }
-    // Read back the row we just wrote to grab its auto-inc id. Filter by
-    // the unique TAG + body so a parallel run isn't picked up.
+    // Read back the row to grab its auto-inc id. Owner-as-author rows can
+    // collide on body uniqueness within a fast test run, so we filter on
+    // both body match and recency to recover *our* row.
     const rows = await sql(
       request,
-      `SELECT id FROM comment WHERE author_name = '${TAG}' AND body = '${escaped}' ORDER BY id DESC LIMIT 1`,
+      `SELECT id FROM comment WHERE post_slug = 'e2e-mod-test' AND body = '${escaped}' ORDER BY id DESC LIMIT 1`,
       OWNER_TOKEN,
     );
     const id = rows[0]?.[0];
     if (id == null) {
-      throw new Error(`no comment row found after INSERT (tag=${TAG})`);
+      throw new Error(`no comment row found after submit_user_comment (TAG=${TAG})`);
     }
     return BigInt(String(id));
   }

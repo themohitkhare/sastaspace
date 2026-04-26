@@ -921,6 +921,33 @@ jobs:
           fi
           echo "E2E_TEST_SECRET present"
           echo "E2E_STDB_OWNER_TOKEN present"
+      - name: bootstrap — register owner as a user on prod
+        # submit_user_comment requires ctx.sender() to exist in the user
+        # table. The owner identity isn't normally registered (regular users
+        # land via magic-link flow). Register the owner once so admin-panels
+        # and moderator specs can seed pending comments via the proper
+        # reducer instead of raw SQL (which doesn't support Timestamp
+        # literals in INSERT). Idempotent on email.
+        env:
+          OWNER_HEX: c20086b8ce1d18ec9c564044615071677620eafad99c922edbb3e3463b6f79ba
+        run: |
+          payload=$(jq -nc \
+            --arg id "$OWNER_HEX" \
+            --arg email "e2e-owner@sastaspace.com" \
+            --arg name "E2E_Owner" \
+            '[{"__identity__": $id}, $email, $name]')
+          status=$(curl -sS -o /tmp/regowner.out -w "%{http_code}" \
+            -X POST \
+            -H "Authorization: Bearer $E2E_STDB_OWNER_TOKEN" \
+            -H "Content-Type: application/json" \
+            --data "$payload" \
+            "https://stdb.sastaspace.com/v1/database/sastaspace/call/register_user")
+          echo "register_user returned HTTP $status"
+          head -3 /tmp/regowner.out 2>/dev/null
+          if [[ "$status" != "200" && "$status" != "204" ]]; then
+            echo "::error::register_user bootstrap failed; admin-panels + moderator specs will fail at submit_user_comment"
+            exit 1
+          fi
       - name: bootstrap — install E2E test secret on prod STDB
         # The mint_test_token reducer requires (ctx, email, secret) where
         # `secret` matches a row in app_config_secret installed via
