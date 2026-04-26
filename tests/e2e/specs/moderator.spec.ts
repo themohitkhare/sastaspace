@@ -85,7 +85,8 @@ test.describe("moderator-agent E2E (gated on E2E_MODERATOR_ENABLED)", () => {
     const escaped = body.replace(/'/g, "''");
     // STDB SQL doesn't support NOW(); pass micros-since-epoch as i64 literal.
     const nowMicros = Date.now() * 1000;
-    const insert = `INSERT INTO comment (post_slug, author_name, body, created_at, status, submitter) VALUES ('e2e-mod-test', '${TAG}', '${escaped}', ${nowMicros}, 'pending', X'${ZERO_IDENT_HEX}')`;
+    // id=0 so STDB's auto_inc assigns the real id.
+    const insert = `INSERT INTO comment (id, post_slug, author_name, body, created_at, status, submitter) VALUES (0, 'e2e-mod-test', '${TAG}', '${escaped}', ${nowMicros}, 'pending', X'${ZERO_IDENT_HEX}')`;
     const res = await request.post(
       `${STDB_REST}/v1/database/${STDB_DATABASE}/sql`,
       {
