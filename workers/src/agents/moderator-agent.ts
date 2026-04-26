@@ -114,11 +114,15 @@ interface CommentRow {
 interface ConnLike {
   subscriptionBuilder: () => { subscribe: (queries: string[]) => unknown };
   reducers: {
-    setCommentStatusWithReason: (
-      id: bigint,
-      status: string,
-      reason: string,
-    ) => void;
+    // SDK 2.1 takes a single object literal whose keys are the camelCased
+    // Rust parameter names (id, status, reason). Positional args silently
+    // drop everything past [0] — same bug fixed in auth-mailer + admin-
+    // collector.
+    setCommentStatusWithReason: (args: {
+      id: bigint;
+      status: string;
+      reason: string;
+    }) => void;
   };
   db: {
     comment: {
@@ -170,7 +174,7 @@ export async function start(db: StdbConn): Promise<() => Promise<void>> {
     reason: string,
   ): void => {
     try {
-      conn.reducers.setCommentStatusWithReason(id, status, reason);
+      conn.reducers.setCommentStatusWithReason({ id, status, reason });
     } catch (e) {
       log("error", "set_comment_status_with_reason failed", {
         id: id.toString(),

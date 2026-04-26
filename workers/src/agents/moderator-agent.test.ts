@@ -115,11 +115,11 @@ describe("moderator-agent", () => {
     await settle();
     expect(detectorGenerate).toHaveBeenCalledTimes(1);
     expect(classifierGenerate).toHaveBeenCalledTimes(1);
-    expect(reducers.setCommentStatusWithReason).toHaveBeenCalledWith(
-      7n,
-      "approved",
-      "approved",
-    );
+    expect(reducers.setCommentStatusWithReason).toHaveBeenCalledWith({
+      id: 7n,
+      status: "approved",
+      reason: "approved",
+    });
     await stop();
   });
 
@@ -132,11 +132,11 @@ describe("moderator-agent", () => {
     await settle();
     expect(detectorGenerate).toHaveBeenCalledTimes(1);
     expect(classifierGenerate).toHaveBeenCalledTimes(0); // hard requirement
-    expect(reducers.setCommentStatusWithReason).toHaveBeenCalledWith(
-      7n,
-      "flagged",
-      "injection",
-    );
+    expect(reducers.setCommentStatusWithReason).toHaveBeenCalledWith({
+      id: 7n,
+      status: "flagged",
+      reason: "injection",
+    });
     await stop();
   });
 
@@ -147,11 +147,11 @@ describe("moderator-agent", () => {
     const { reducers, arg } = makeDb();
     const stop = await start(arg as unknown as Parameters<typeof start>[0]);
     await settle();
-    expect(reducers.setCommentStatusWithReason).toHaveBeenCalledWith(
-      7n,
-      "flagged",
-      "classifier-rejected",
-    );
+    expect(reducers.setCommentStatusWithReason).toHaveBeenCalledWith({
+      id: 7n,
+      status: "flagged",
+      reason: "classifier-rejected",
+    });
     await stop();
   });
 
@@ -162,11 +162,11 @@ describe("moderator-agent", () => {
     const { reducers, arg } = makeDb();
     const stop = await start(arg as unknown as Parameters<typeof start>[0]);
     await settle();
-    expect(reducers.setCommentStatusWithReason).toHaveBeenCalledWith(
-      7n,
-      "flagged",
-      "classifier-error",
-    );
+    expect(reducers.setCommentStatusWithReason).toHaveBeenCalledWith({
+      id: 7n,
+      status: "flagged",
+      reason: "classifier-error",
+    });
     await stop();
   });
 
@@ -177,11 +177,11 @@ describe("moderator-agent", () => {
     const stop = await start(arg as unknown as Parameters<typeof start>[0]);
     await settle();
     expect(classifierGenerate).toHaveBeenCalledTimes(0);
-    expect(reducers.setCommentStatusWithReason).toHaveBeenCalledWith(
-      7n,
-      "flagged",
-      "classifier-error",
-    );
+    expect(reducers.setCommentStatusWithReason).toHaveBeenCalledWith({
+      id: 7n,
+      status: "flagged",
+      reason: "classifier-error",
+    });
     await stop();
   });
 
@@ -193,11 +193,11 @@ describe("moderator-agent", () => {
     await settle();
     expect(detectorGenerate).toHaveBeenCalledTimes(0); // short-circuit before model
     expect(classifierGenerate).toHaveBeenCalledTimes(0);
-    expect(reducers.setCommentStatusWithReason).toHaveBeenCalledWith(
-      7n,
-      "flagged",
-      "injection",
-    );
+    expect(reducers.setCommentStatusWithReason).toHaveBeenCalledWith({
+      id: 7n,
+      status: "flagged",
+      reason: "injection",
+    });
     await stop();
   });
 
@@ -210,11 +210,11 @@ describe("moderator-agent", () => {
     const stop = await start(arg as unknown as Parameters<typeof start>[0]);
     await settle();
     expect(classifierGenerate).toHaveBeenCalledTimes(0);
-    expect(reducers.setCommentStatusWithReason).toHaveBeenCalledWith(
-      7n,
-      "flagged",
-      "injection",
-    );
+    expect(reducers.setCommentStatusWithReason).toHaveBeenCalledWith({
+      id: 7n,
+      status: "flagged",
+      reason: "injection",
+    });
     await stop();
   });
 });
