@@ -18,6 +18,10 @@ async function main(): Promise<void> {
     admin_collector: env.WORKER_ADMIN_COLLECTOR_ENABLED,
     deck_agent: env.WORKER_DECK_AGENT_ENABLED,
     moderator_agent: env.WORKER_MODERATOR_AGENT_ENABLED,
+    stdb_url: env.STDB_URL,
+    stdb_module: env.STDB_MODULE,
+    token_prefix: env.STDB_TOKEN.slice(0, 24),
+    token_len: env.STDB_TOKEN.length,
   });
 
   const enabledAny =
