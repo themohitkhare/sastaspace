@@ -1,7 +1,7 @@
+use crate::player::player;
+use crate::war::global_war;
 use spacetimedb::{reducer, table, ReducerContext, ScheduleAt, Table};
 use std::time::Duration;
-use crate::war::global_war;
-use crate::player::player;
 
 #[table(accessor = region, public)]
 pub struct Region {
@@ -9,7 +9,7 @@ pub struct Region {
     pub id: u32,
     pub name: String,
     pub tier: u8,
-    pub controlling_legion: i8,   // -1 = enemy-held
+    pub controlling_legion: i8, // -1 = enemy-held
     pub enemy_hp: u64,
     pub enemy_max_hp: u64,
     pub regen_rate: u64,
@@ -22,24 +22,49 @@ pub struct Region {
 }
 
 const REGION_SEED: &[(&str, u8)] = &[
-    ("Ashfall Reach", 1), ("Bone Wastes", 1), ("Cinder Plains", 1),
-    ("Dusk Hollow", 1),   ("Ember Ridge", 1), ("Frost Gate", 1),
-    ("Gloom Marches", 1), ("Haze Fields", 1), ("Iron Strand", 1),
+    ("Ashfall Reach", 1),
+    ("Bone Wastes", 1),
+    ("Cinder Plains", 1),
+    ("Dusk Hollow", 1),
+    ("Ember Ridge", 1),
+    ("Frost Gate", 1),
+    ("Gloom Marches", 1),
+    ("Haze Fields", 1),
+    ("Iron Strand", 1),
     ("Jade Crossing", 1),
-    ("Krell Depths", 2),  ("Lava Run", 2),    ("Murk Basin", 2),
-    ("Null Shore", 2),    ("Obsidian Shelf", 2), ("Pale Summit", 2),
-    ("Quake Line", 2),    ("Rift Corridor", 2),  ("Scorch Trail", 2),
+    ("Krell Depths", 2),
+    ("Lava Run", 2),
+    ("Murk Basin", 2),
+    ("Null Shore", 2),
+    ("Obsidian Shelf", 2),
+    ("Pale Summit", 2),
+    ("Quake Line", 2),
+    ("Rift Corridor", 2),
+    ("Scorch Trail", 2),
     ("Tide Lock", 2),
-    ("Umbral Spire", 3),  ("Void Cradle", 3), ("War Engine", 3),
-    ("Xen Bastion", 3),   ("Zero Point", 3),
+    ("Umbral Spire", 3),
+    ("Void Cradle", 3),
+    ("War Engine", 3),
+    ("Xen Bastion", 3),
+    ("Zero Point", 3),
 ];
 
 fn hp_for_tier(tier: u8) -> u64 {
-    match tier { 1 => 50_000, 2 => 100_000, 3 => 250_000, _ => 50_000 }
+    match tier {
+        1 => 50_000,
+        2 => 100_000,
+        3 => 250_000,
+        _ => 50_000,
+    }
 }
 
 fn regen_for_tier(tier: u8) -> u64 {
-    match tier { 1 => 200, 2 => 500, 3 => 1_500, _ => 200 }
+    match tier {
+        1 => 200,
+        2 => 500,
+        3 => 1_500,
+        _ => 200,
+    }
 }
 
 pub fn seed_regions(ctx: &ReducerContext) {
@@ -53,7 +78,11 @@ pub fn seed_regions(ctx: &ReducerContext) {
             enemy_hp: max_hp,
             enemy_max_hp: max_hp,
             regen_rate: regen_for_tier(*tier),
-            damage_0: 0, damage_1: 0, damage_2: 0, damage_3: 0, damage_4: 0,
+            damage_0: 0,
+            damage_1: 0,
+            damage_2: 0,
+            damage_3: 0,
+            damage_4: 0,
             active_wardens: 0,
         });
     }
@@ -71,18 +100,35 @@ pub fn add_legion_damage(region: &mut Region, legion: u8, amount: u64) {
 }
 
 pub fn winning_legion(region: &Region) -> Option<u8> {
-    let damages = [region.damage_0, region.damage_1, region.damage_2, region.damage_3, region.damage_4];
+    let damages = [
+        region.damage_0,
+        region.damage_1,
+        region.damage_2,
+        region.damage_3,
+        region.damage_4,
+    ];
     let (idx, &max_dmg) = damages.iter().enumerate().max_by_key(|(_, &d)| d)?;
-    if max_dmg == 0 { None } else { Some(idx as u8) }
+    if max_dmg == 0 {
+        None
+    } else {
+        Some(idx as u8)
+    }
 }
 
 pub fn reset_legion_damage(region: &mut Region) {
-    region.damage_0 = 0; region.damage_1 = 0; region.damage_2 = 0;
-    region.damage_3 = 0; region.damage_4 = 0;
+    region.damage_0 = 0;
+    region.damage_1 = 0;
+    region.damage_2 = 0;
+    region.damage_3 = 0;
+    region.damage_4 = 0;
 }
 
 pub fn effective_regen(base_regen: u64, active_wardens: u32) -> u64 {
-    if active_wardens >= 3 { base_regen / 2 } else { base_regen }
+    if active_wardens >= 3 {
+        base_regen / 2
+    } else {
+        base_regen
+    }
 }
 
 /// Pure helper: applies a regen tick to an enemy-controlled region, capped
@@ -164,7 +210,9 @@ pub fn end_season(ctx: &ReducerContext) {
 
 // Initialise the region_tick schedule (called from lib.rs init).
 pub fn init_region_tick_schedule(ctx: &ReducerContext) {
-    if ctx.db.region_tick_schedule().iter().next().is_some() { return; }
+    if ctx.db.region_tick_schedule().iter().next().is_some() {
+        return;
+    }
     ctx.db.region_tick_schedule().insert(RegionTickSchedule {
         scheduled_id: 0,
         scheduled_at: ScheduleAt::from(Duration::from_secs(60)),
@@ -177,10 +225,19 @@ mod tests {
 
     fn make_region(d0: u64, d1: u64, d2: u64, d3: u64, d4: u64) -> Region {
         Region {
-            id: 0, name: "Test".into(), tier: 1,
-            controlling_legion: -1, enemy_hp: 0, enemy_max_hp: 50_000,
-            regen_rate: 200, damage_0: d0, damage_1: d1, damage_2: d2,
-            damage_3: d3, damage_4: d4, active_wardens: 0,
+            id: 0,
+            name: "Test".into(),
+            tier: 1,
+            controlling_legion: -1,
+            enemy_hp: 0,
+            enemy_max_hp: 50_000,
+            regen_rate: 200,
+            damage_0: d0,
+            damage_1: d1,
+            damage_2: d2,
+            damage_3: d3,
+            damage_4: d4,
+            active_wardens: 0,
         }
     }
 

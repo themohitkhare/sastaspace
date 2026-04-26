@@ -1,5 +1,5 @@
-use spacetimedb::{table, Identity, Timestamp, reducer, ReducerContext, Table};
 use crate::legion::LEGION_COUNT;
+use spacetimedb::{reducer, table, Identity, ReducerContext, Table, Timestamp};
 
 #[derive(Clone, Debug, PartialEq)]
 #[table(accessor = player, public)]
@@ -27,7 +27,10 @@ pub fn validate_registration(
         return Err("username too long (max 32 chars)".into());
     }
     if legion >= LEGION_COUNT {
-        return Err(format!("invalid legion {legion} (max {})", LEGION_COUNT - 1));
+        return Err(format!(
+            "invalid legion {legion} (max {})",
+            LEGION_COUNT - 1
+        ));
     }
     let lower = username.to_lowercase();
     if existing_usernames_lower.iter().any(|u| u == &lower) {
@@ -53,15 +56,13 @@ pub fn is_guest_already_verified(guest: Option<&Player>) -> bool {
 }
 
 #[reducer]
-pub fn register_player(
-    ctx: &ReducerContext,
-    username: String,
-    legion: u8,
-) -> Result<(), String> {
+pub fn register_player(ctx: &ReducerContext, username: String, legion: u8) -> Result<(), String> {
     if ctx.db.player().identity().find(ctx.sender()).is_some() {
         return Err("already registered".into());
     }
-    let existing: Vec<String> = ctx.db.player()
+    let existing: Vec<String> = ctx
+        .db
+        .player()
         .iter()
         .map(|p| p.username.to_lowercase())
         .collect();
@@ -104,14 +105,20 @@ pub fn plan_claim(
             let mut row = g;
             row.identity = new_id;
             row.email = Some(email);
-            ClaimAction::Rekey { delete_id, insert: row }
+            ClaimAction::Rekey {
+                delete_id,
+                insert: row,
+            }
         }
         (Some(g), Some(mut e)) => {
             e.total_damage = e.total_damage.saturating_add(g.total_damage);
             e.season_damage = e.season_damage.saturating_add(g.season_damage);
             e.best_wpm = e.best_wpm.max(g.best_wpm);
             e.email = Some(email);
-            ClaimAction::Merge { delete_id: g.identity, update: e }
+            ClaimAction::Merge {
+                delete_id: g.identity,
+                update: e,
+            }
         }
         (None, Some(mut e)) => {
             e.email = Some(email);
@@ -275,7 +282,12 @@ mod tests {
     fn plan_claim_merge_sums_damages_takes_max_wpm_keeps_email_row_legion() {
         let guest = mk_player(0x01, "guest_one", 3, 1000, 500, 80, None);
         let existing = mk_player(0x02, "real_name", 0, 5000, 2000, 100, Some("a@b.com"));
-        let action = plan_claim(Some(guest.clone()), Some(existing.clone()), existing.identity, "a@b.com".into());
+        let action = plan_claim(
+            Some(guest.clone()),
+            Some(existing.clone()),
+            existing.identity,
+            "a@b.com".into(),
+        );
         match action {
             ClaimAction::Merge { delete_id, update } => {
                 assert_eq!(delete_id, guest.identity);
@@ -294,7 +306,12 @@ mod tests {
     #[test]
     fn plan_claim_stamp_email_when_only_existing() {
         let existing = mk_player(0x02, "real_name", 0, 5000, 2000, 100, None);
-        let action = plan_claim(None, Some(existing.clone()), existing.identity, "a@b.com".into());
+        let action = plan_claim(
+            None,
+            Some(existing.clone()),
+            existing.identity,
+            "a@b.com".into(),
+        );
         match action {
             ClaimAction::StampEmail { update } => {
                 assert_eq!(update.email, Some("a@b.com".into()));

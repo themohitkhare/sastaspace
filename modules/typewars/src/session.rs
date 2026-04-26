@@ -19,25 +19,34 @@ pub struct BattleSession {
     pub active: bool,
 }
 
-use spacetimedb::{reducer, ReducerContext, Table};
-use crate::word::spawn_words;
 use crate::player::player;
 use crate::region::region;
+use crate::word::spawn_words;
 use crate::word::word;
+use spacetimedb::{reducer, ReducerContext, Table};
 
 #[reducer]
 pub fn start_battle(ctx: &ReducerContext, region_id: u32) -> Result<(), String> {
-    let player = ctx.db.player().identity().find(ctx.sender())
+    let player = ctx
+        .db
+        .player()
+        .identity()
+        .find(ctx.sender())
         .ok_or_else(|| "not registered".to_string())?;
 
-    let already_active = ctx.db.battle_session()
+    let already_active = ctx
+        .db
+        .battle_session()
         .iter()
         .any(|s| s.player_identity == ctx.sender() && s.active);
     if already_active {
         return Err("already in a battle".into());
     }
 
-    ctx.db.region().id().find(region_id)
+    ctx.db
+        .region()
+        .id()
+        .find(region_id)
         .ok_or_else(|| format!("region {region_id} not found"))?;
 
     let session = ctx.db.battle_session().insert(make_initial_session(
@@ -59,7 +68,11 @@ pub fn start_battle(ctx: &ReducerContext, region_id: u32) -> Result<(), String> 
 
 #[reducer]
 pub fn end_battle(ctx: &ReducerContext, session_id: u64) -> Result<(), String> {
-    let session = ctx.db.battle_session().id().find(session_id)
+    let session = ctx
+        .db
+        .battle_session()
+        .id()
+        .find(session_id)
         .ok_or_else(|| "session not found".to_string())?;
     if session.player_identity != ctx.sender() {
         return Err("not your session".into());
@@ -73,7 +86,9 @@ pub fn end_battle(ctx: &ReducerContext, session_id: u64) -> Result<(), String> {
 
 /// Called from client_disconnected to clean up any dangling active sessions.
 pub fn auto_end_battle(ctx: &ReducerContext) {
-    let sessions: Vec<BattleSession> = ctx.db.battle_session()
+    let sessions: Vec<BattleSession> = ctx
+        .db
+        .battle_session()
         .iter()
         .filter(|s| s.player_identity == ctx.sender() && s.active)
         .collect();
@@ -90,7 +105,9 @@ pub fn end_battle_core(ctx: &ReducerContext, session: BattleSession) {
                 ctx.db.region().id().update(region);
             }
         }
-        let word_ids: Vec<u64> = ctx.db.word()
+        let word_ids: Vec<u64> = ctx
+            .db
+            .word()
             .session_id()
             .filter(&session.id)
             .map(|w| w.id)
@@ -120,11 +137,7 @@ pub fn is_warden_legion(legion: u8) -> bool {
 /// Pure helper: derives the post-battle player stats given the session's
 /// damage_dealt. Returns `(new_total_damage, new_season_damage)`. Mirrors
 /// the saturating-add pattern from `end_battle_core`.
-pub fn apply_battle_damage(
-    total_damage: u64,
-    season_damage: u64,
-    damage_dealt: u64,
-) -> (u64, u64) {
+pub fn apply_battle_damage(total_damage: u64, season_damage: u64, damage_dealt: u64) -> (u64, u64) {
     (
         total_damage.saturating_add(damage_dealt),
         season_damage.saturating_add(damage_dealt),

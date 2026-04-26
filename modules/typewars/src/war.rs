@@ -1,6 +1,6 @@
+use crate::region::{end_season, region, reset_legion_damage};
 use spacetimedb::{reducer, table, ReducerContext, ScheduleAt, Table, Timestamp};
 use std::time::Duration;
-use crate::region::{region, end_season, reset_legion_damage};
 
 #[table(accessor = global_war, public)]
 pub struct GlobalWar {
@@ -35,18 +35,24 @@ pub struct WarTickSchedule {
 
 #[reducer]
 pub fn global_war_tick(ctx: &ReducerContext, _arg: WarTickSchedule) -> Result<(), String> {
-    let Some(war) = ctx.db.global_war().id().find(1) else { return Ok(()); };
+    let Some(war) = ctx.db.global_war().id().find(1) else {
+        return Ok(());
+    };
 
     if war.liberated_territories == 0 {
         return Ok(());
     }
 
-    let target = ctx.db.region()
+    let target = ctx
+        .db
+        .region()
         .iter()
         .filter(|r| r.controlling_legion >= 0)
         .min_by_key(|r| r.active_wardens);
 
-    let Some(mut victim) = target else { return Ok(()); };
+    let Some(mut victim) = target else {
+        return Ok(());
+    };
 
     victim.controlling_legion = -1;
     victim.enemy_hp = fallen_region_hp(victim.enemy_max_hp);
@@ -68,7 +74,9 @@ pub fn global_war_tick(ctx: &ReducerContext, _arg: WarTickSchedule) -> Result<()
 }
 
 pub fn init_war_tick_schedule(ctx: &ReducerContext) {
-    if ctx.db.war_tick_schedule().iter().next().is_some() { return; }
+    if ctx.db.war_tick_schedule().iter().next().is_some() {
+        return;
+    }
     ctx.db.war_tick_schedule().insert(WarTickSchedule {
         scheduled_id: 0,
         scheduled_at: ScheduleAt::from(Duration::from_secs(300)),
@@ -79,10 +87,7 @@ pub fn init_war_tick_schedule(ctx: &ReducerContext) {
 /// pair given the before-tick values. The war tick decrements liberated by
 /// 1 (saturating) and increments enemy by 1 (saturating). Pulled out for
 /// unit tests.
-pub fn apply_war_tick(
-    liberated_before: u32,
-    enemy_before: u32,
-) -> (u32, u32) {
+pub fn apply_war_tick(liberated_before: u32, enemy_before: u32) -> (u32, u32) {
     (
         liberated_before.saturating_sub(1),
         enemy_before.saturating_add(1),
