@@ -889,13 +889,15 @@ jobs:
       # block (the legacy admin.spec.ts still runs against notes/admin).
       # Two names because admin-panels.spec.ts and helpers/auth.ts converged
       # on different conventions; both populated from the same secret.
-      # Pointing both at WORKERS_STDB_TOKEN: the older E2E_OWNER_STDB_TOKEN
-      # was minted before the post-cutover STDB redeploy and now fails with
-      # TokenError(InvalidSignature) against prod's current keypair. The
-      # workers token is freshly owner-signed against the current prod STDB
-      # and is the correct caller for assert_owner-gated reducers.
-      E2E_OWNER_STDB_TOKEN: ${{ secrets.WORKERS_STDB_TOKEN }}
-      E2E_STDB_OWNER_TOKEN: ${{ secrets.WORKERS_STDB_TOKEN }}
+      # Use SPACETIME_TOKEN — the maincloud-issued owner JWT for HTTP-only
+      # endpoints (publish, SQL, /v1/database/.../call/<reducer>). The
+      # workers-deploy job comment at line 673-677 explains the split:
+      # WORKERS_STDB_TOKEN is prod-server-signed for /v1/identity/websocket-
+      # token (SDK handshake), while SPACETIME_TOKEN is what assert_owner
+      # checks behind reducer HTTP calls. The older E2E_OWNER_STDB_TOKEN
+      # was rejected with TokenError(InvalidSignature) post-cutover.
+      E2E_OWNER_STDB_TOKEN: ${{ secrets.SPACETIME_TOKEN }}
+      E2E_STDB_OWNER_TOKEN: ${{ secrets.SPACETIME_TOKEN }}
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-node@v6
