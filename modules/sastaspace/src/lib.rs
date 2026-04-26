@@ -903,6 +903,9 @@ const ALLOWED_CONTAINERS: &[&str] = &[
     "sastaspace-admin",
     "sastaspace-typewars",
     "sastaspace-cloudflared",
+    // Phase 3 cutover replacements:
+    "sastaspace-auth-410",
+    "sastaspace-deck-static",
     // Legacy Python services — kept here so the panel still surfaces them
     // through Phase 1–3. Removed in Phase 4 cleanup.
     "sastaspace-auth",

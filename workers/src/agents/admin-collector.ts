@@ -35,6 +35,9 @@ const ALLOWED_CONTAINERS = [
   "sastaspace-admin",
   "sastaspace-typewars",
   "sastaspace-cloudflared",
+  // Phase 3 cutover replacements:
+  "sastaspace-auth-410",
+  "sastaspace-deck-static",
   // Legacy Python services (stopped post-Phase 3, kept for panel visibility):
   "sastaspace-auth",
   "sastaspace-admin-api",
