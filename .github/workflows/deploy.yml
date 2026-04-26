@@ -878,17 +878,37 @@ jobs:
           echo "E2E_TEST_SECRET present"
       - name: smoke — live prod URLs reachable
         run: |
-          for url in https://sastaspace.com/ https://notes.sastaspace.com/ \
-                     https://auth.sastaspace.com/healthz \
-                     https://stdb.sastaspace.com/v1/ping; do
-            code=$(curl -sS -o /dev/null -w "%{http_code}" "$url")
-            echo "  $url → $code"
-            [[ "$code" == "200" ]] || { echo "::error::$url returned $code, refusing to run e2e on a broken stack"; exit 1; }
+          # Phase 3 post-cutover: auth.sastaspace.com is the 410 tombstone now,
+          # so check it explicitly returns 410 (not 200). The /healthz endpoint
+          # is gone with the FastAPI service.
+          fail=0
+          for spec in \
+              "https://sastaspace.com/=200" \
+              "https://notes.sastaspace.com/=200" \
+              "https://typewars.sastaspace.com/=200" \
+              "https://admin.sastaspace.com/=200" \
+              "https://auth.sastaspace.com/=410" \
+              "https://stdb.sastaspace.com/v1/ping=200"; do
+            url="${spec%=*}"
+            want="${spec##*=}"
+            code=$(curl -sS -o /dev/null -w "%{http_code}" "$url" || echo 000)
+            echo "  $url -> $code (want $want)"
+            if [[ "$code" != "$want" ]]; then
+              echo "::error::$url returned $code, want $want"
+              fail=1
+            fi
           done
+          [[ $fail -eq 0 ]] || exit 1
       - name: run playwright
         run: pnpm --filter @sastaspace/e2e test
         env:
           CI: "1"
+          # Phase 3 post-cutover: STDB-native auth is the production path.
+          # signIn helper dispatches via E2E_AUTH_BACKEND=stdb to call
+          # request_magic_link + verify_token reducers instead of POSTing
+          # to auth.sastaspace.com (now a 410 tombstone).
+          E2E_AUTH_BACKEND: stdb
+          E2E_MODERATOR_ENABLED: "true"
       - name: upload playwright report on failure
         if: failure()
         uses: actions/upload-artifact@v7
