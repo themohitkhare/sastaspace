@@ -1,83 +1,104 @@
 'use client';
 
-import { useState } from 'react';
-import { SERVICES, Service } from '@/lib/data';
+import { useTable } from 'spacetimedb/react';
+import { tables } from '@sastaspace/stdb-bindings';
+import { usePoll } from '@/hooks/usePoll';
+import { USE_STDB_ADMIN } from '@/hooks/useStdb';
+import { formatUptime, type ContainerRow } from '@/lib/types';
+import { adaptContainers, type ContainerStatusRow } from '@/lib/stdb-adapters';
 import Chip from '@/components/Chip';
 import Icon from '@/components/Icon';
 
-export default function Services({ navigate }: { navigate: (path: string) => void }) {
-  const [confirmRestart, setConfirmRestart] = useState<Service | null>(null);
-  const [restarting, setRestarting] = useState<string | null>(null);
-  const [services, setServices] = useState<Service[]>(SERVICES);
-  const anyDown = services.some(s => s.status !== 'running');
+function toServiceStatus(dockerStatus: string): 'running' | 'unhealthy' | 'stopped' | 'starting' {
+  if (dockerStatus === 'running') return 'running';
+  if (dockerStatus === 'restarting' || dockerStatus === 'created') return 'starting';
+  if (dockerStatus === 'paused' || dockerStatus === 'exited' || dockerStatus === 'dead') return 'stopped';
+  return 'unhealthy';
+}
 
-  const doRestart = () => {
-    const target = confirmRestart;
-    if (!target) return;
-    setConfirmRestart(null);
-    setRestarting(target.container);
-    setServices(prev => prev.map(s => s.container === target.container ? { ...s, status: 'starting' as const } : s));
-    setTimeout(() => {
-      setServices(prev => prev.map(s => s.container === target.container ? { ...s, status: 'running' as const, uptime: '0m', uptimeMin: 0 } : s));
-      setRestarting(null);
-    }, 1800);
-  };
+function friendlyName(containerName: string): string {
+  return containerName
+    .replace(/^sastaspace-/, '')
+    .replace(/-/g, ' ')
+    .replace(/\b\w/g, c => c.toUpperCase());
+}
 
-  const downCount = services.filter(s => s.status !== 'running').length;
+function renderServicesView(containers: ContainerRow[], navigate: (path: string) => void): React.ReactNode {
+  const anyDown = containers.some(c => toServiceStatus(c.status) !== 'running');
+  const downCount = containers.filter(c => toServiceStatus(c.status) !== 'running').length;
 
   return (
     <div>
       {anyDown && (
         <div className="banner banner--warn">
           <Icon name="shield-x" size={16}/>
-          <span><strong>{downCount}</strong> service{downCount === 1 ? '' : 's'} need{downCount === 1 ? 's' : ''} attention. Restart or check logs.</span>
+          <span><strong>{downCount}</strong> service{downCount === 1 ? '' : 's'} need{downCount === 1 ? 's' : ''} attention.</span>
         </div>
       )}
       <div className="grid-3">
-        {services.map(s => (
-          <div key={s.container} className="service-card">
-            <div className="service-card__head">
-              <div className="service-card__name">{s.name}</div>
-              <Chip status={s.status}/>
+        {containers.map(c => {
+          const status = toServiceStatus(c.status);
+          const uptime = status === 'running' ? formatUptime(c.uptime_s) : null;
+          const memMb = c.mem_usage_mb;
+          const memDisplay = memMb >= 1024 ? `${(memMb / 1024).toFixed(1)} GB` : `${memMb} MB`;
+          return (
+            <div key={c.name} className="service-card">
+              <div className="service-card__head">
+                <div className="service-card__name">{friendlyName(c.name)}</div>
+                <Chip status={status}/>
+              </div>
+              <div className="service-card__row">
+                <span>uptime</span>
+                <strong>{uptime ? `up ${uptime}` : status === 'starting' ? 'starting…' : 'stopped'}</strong>
+              </div>
+              <div className="service-card__row">
+                <span>memory</span>
+                <strong>{memDisplay}</strong>
+              </div>
+              <div className="service-card__row">
+                <span>container</span>
+                <strong style={{ fontFamily: 'var(--font-mono)', fontSize: 11 }}>{c.name}</strong>
+              </div>
+              <div className="service-card__image">{c.image}</div>
+              <div className="service-card__footer">
+                <button className="btn btn--sm" onClick={() => navigate(`/logs?service=${c.name}`)}>
+                  <Icon name="logs" size={12}/> Logs <Icon name="arrow-right" size={11}/>
+                </button>
+              </div>
             </div>
-            <div className="service-card__row">
-              <span>uptime</span>
-              <strong>{s.status === 'running' ? `up ${s.uptime}` : s.status === 'starting' ? 'starting…' : 'stopped'}</strong>
-            </div>
-            <div className="service-card__row">
-              <span>memory</span>
-              <strong>{s.mem}</strong>
-            </div>
-            <div className="service-card__row">
-              <span>container</span>
-              <strong style={{ fontFamily: 'var(--font-mono)', fontSize: 11 }}>{s.container}</strong>
-            </div>
-            <div className="service-card__image">{s.image}</div>
-            <div className="service-card__footer">
-              <button className="btn btn--sm" onClick={() => navigate(`/logs?service=${s.container}`)}>
-                <Icon name="logs" size={12}/> Logs <Icon name="arrow-right" size={11}/>
-              </button>
-              <span style={{ flex: 1 }}/>
-              <button className="btn btn--sm btn--danger" disabled={restarting === s.container} onClick={() => setConfirmRestart(s)}>
-                <Icon name="restart" size={12}/> {restarting === s.container ? 'Restarting…' : 'Restart'}
-              </button>
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
-
-      {confirmRestart && (
-        <div className="modal-overlay" onClick={() => setConfirmRestart(null)}>
-          <div className="modal" onClick={e => e.stopPropagation()}>
-            <div className="modal__title">Restart {confirmRestart.name}?</div>
-            <div className="modal__body">The service will be briefly unavailable.</div>
-            <div className="modal__actions">
-              <button className="btn btn--ghost" onClick={() => setConfirmRestart(null)}>Cancel</button>
-              <button className="btn btn--danger-solid" onClick={doRestart}><Icon name="restart" size={13}/> Restart</button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
+}
+
+function ServicesLegacy({ navigate }: { navigate: (path: string) => void }) {
+  const { data: containers, loading, error } = usePoll<ContainerRow[]>('/containers', 15000);
+
+  if (loading && !containers) {
+    return <div style={{ padding: 40, color: 'var(--color-fg-muted)', textAlign: 'center' }}>Loading containers…</div>;
+  }
+  if (error && !containers) {
+    return <div className="banner banner--warn" style={{ margin: 0 }}>Failed to reach admin-api: {error}</div>;
+  }
+  if (!containers) return null;
+
+  return renderServicesView(containers, navigate);
+}
+
+function ServicesStdb({ navigate }: { navigate: (path: string) => void }) {
+  const [statusRows] = useTable(tables.container_status);
+  const containers = adaptContainers(statusRows as readonly ContainerStatusRow[]);
+
+  if (statusRows.length === 0) {
+    return <div style={{ padding: 40, color: 'var(--color-fg-muted)', textAlign: 'center' }}>Waiting for the admin-collector worker to publish container_status…</div>;
+  }
+
+  return renderServicesView(containers, navigate);
+}
+
+export default function Services({ navigate }: { navigate: (path: string) => void }) {
+  if (USE_STDB_ADMIN) return <ServicesStdb navigate={navigate}/>;
+  return <ServicesLegacy navigate={navigate}/>;
 }

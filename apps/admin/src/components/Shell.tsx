@@ -1,6 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useMemo, useState, useEffect } from 'react';
+import { useSpacetimeDB, useTable } from 'spacetimedb/react';
+import { tables } from '@sastaspace/stdb-bindings';
+import { usePoll } from '@/hooks/usePoll';
 import Icon from '@/components/Icon';
 import Dashboard from '@/components/panels/Dashboard';
 import Comments from '@/components/panels/Comments';
@@ -10,7 +13,9 @@ import TypeWars from '@/components/panels/TypeWars';
 import Logs from '@/components/panels/Logs';
 import AuthSignIn from '@/components/auth/AuthSignIn';
 import AuthDenied from '@/components/auth/AuthDenied';
-import { COMMENTS, SERVICES } from '@/lib/data';
+import OwnerTokenSettings from '@/components/auth/OwnerTokenSettings';
+import { USE_STDB_ADMIN, useOwnerToken } from '@/hooks/useStdb';
+import type { ContainerRow } from '@/lib/types';
 
 const OWNER_EMAIL = process.env.NEXT_PUBLIC_OWNER_EMAIL ?? '';
 
@@ -70,6 +75,30 @@ export default function Shell() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [secondsSince, setSecondsSince] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const ownerToken = useOwnerToken();
+
+  // Live data for nav badges
+  const { isActive } = useSpacetimeDB();
+  const [commentRows] = useTable(tables.comment);
+  // Containers source: STDB table when flag on, /containers HTTP poll when off
+  const [containerStatusRows] = useTable(tables.container_status);
+  const { data: containersPolled } = usePoll<ContainerRow[]>(
+    USE_STDB_ADMIN ? '__skip__' : '/containers',
+    30000,
+  );
+  const containers: ContainerRow[] | null = USE_STDB_ADMIN
+    ? containerStatusRows.map(r => ({
+        name: r.name,
+        status: r.status,
+        image: r.image,
+        started_at: '',
+        uptime_s: Number(r.uptimeS),
+        mem_usage_mb: r.memUsedMb,
+        mem_limit_mb: r.memLimitMb,
+        restart_count: r.restartCount,
+      }))
+    : (containersPolled ?? null);
 
   // Hash routing — only register the listener, initial state is set via lazy initializer
   useEffect(() => {
@@ -103,6 +132,17 @@ export default function Shell() {
     setAuthState(state);
   };
 
+  // Hooks must run unconditionally — derive nav-badge values before the
+  // auth gate early-returns below.
+  const pendingCount = useMemo(
+    () => isActive ? commentRows.filter(c => c.status === 'pending' || c.status === 'flagged').length : 0,
+    [isActive, commentRows],
+  );
+  const anyDown = useMemo(
+    () => containers ? containers.some(c => c.status !== 'running') : false,
+    [containers],
+  );
+
   if (authState === 'loading') {
     return <div className="auth-shell"><div className="spinner"/></div>;
   }
@@ -115,8 +155,6 @@ export default function Shell() {
     return <AuthDenied email={userEmail} onSignOut={signOut}/>;
   }
 
-  const pendingCount = COMMENTS.filter(c => c.status === 'pending' || c.status === 'flagged').length;
-  const anyDown = SERVICES.some(s => s.status !== 'running');
   const isLogs = route.path === '/logs';
 
   let panel: React.ReactNode;
@@ -162,6 +200,17 @@ export default function Shell() {
         </nav>
         <div className="sidebar__footer">
           {!sidebarCollapsed && <div className="footer__email">{userEmail || OWNER_EMAIL || 'admin'}</div>}
+          {USE_STDB_ADMIN && (
+            <button
+              className="footer__signout"
+              onClick={() => setSettingsOpen(true)}
+              title={ownerToken ? 'Owner STDB token: configured' : 'Owner STDB token: not set — paste to enable moderation'}
+              style={{ color: ownerToken ? undefined : 'var(--brand-sasta, #a86a17)' }}
+            >
+              <Icon name="key" size={16}/>
+              <span>{ownerToken ? 'STDB token' : 'Set STDB token'}</span>
+            </button>
+          )}
           <button className="footer__signout" onClick={signOut} title="Sign out">
             <Icon name="signout" size={16}/>
             <span>Sign out</span>
@@ -186,6 +235,7 @@ export default function Shell() {
           {panel}
         </div>
       </main>
+      <OwnerTokenSettings open={settingsOpen} onClose={() => setSettingsOpen(false)}/>
     </div>
   );
 }

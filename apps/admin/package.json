@@ -11,9 +11,12 @@
     "lint": "eslint ."
   },
   "dependencies": {
+    "@sastaspace/stdb-bindings": "workspace:*",
+    "@sastaspace/typewars-bindings": "workspace:*",
     "next": "^16.0.0",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "spacetimedb": "^2.1.0"
   },
   "devDependencies": {
     "@types/node": "^22.7.0",

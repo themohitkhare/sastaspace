@@ -1,23 +1,76 @@
 'use client';
 
-import { useState, useMemo } from 'react';
-import { COMMENTS, relTime, Comment, CommentStatus } from '@/lib/data';
+import { useMemo, useState } from 'react';
+import { useSpacetimeDB, useTable, useReducer } from 'spacetimedb/react';
+import { tables, reducers } from '@sastaspace/stdb-bindings';
+import { relTime, type CommentStatus } from '@/lib/types';
 import Chip from '@/components/Chip';
 import Icon from '@/components/Icon';
+import { USE_STDB_ADMIN, useOwnerToken } from '@/hooks/useStdb';
+
+const ADMIN_API_URL = process.env.NEXT_PUBLIC_ADMIN_API_URL ?? 'https://api.sastaspace.com';
 
 type CommentsProps = { initialFilter?: string; view?: string };
 
-export default function Comments({ initialFilter = 'pending', view = 'cards' }: CommentsProps) {
+function CommentsInner({ initialFilter = 'pending', view = 'cards' }: CommentsProps) {
+  const { isActive } = useSpacetimeDB();
+  const [commentRows] = useTable(tables.comment);
+  const [userRows] = useTable(tables.user);
+  const [moderationRows] = useTable(tables.moderation_event);
+  const ownerToken = useOwnerToken();
   const [filter, setFilter] = useState(initialFilter);
   const [postFilter, setPostFilter] = useState('all');
   const [search, setSearch] = useState('');
-  const [comments, setComments] = useState<Comment[]>(COMMENTS);
-  const [confirmDelete, setConfirmDelete] = useState<Comment | null>(null);
-  const [actioning, setActioning] = useState<string | null>(null);
+  const [optimistic, setOptimistic] = useState<Map<bigint, CommentStatus>>(new Map());
+  const [confirmDelete, setConfirmDelete] = useState<bigint | null>(null);
+  const [actioning, setActioning] = useState<bigint | null>(null);
+
+  // Reducer hooks (no-op when no connection, throw when no auth on the wire).
+  const setStatusWithReason = useReducer(reducers.setCommentStatusWithReason);
+  const deleteCommentReducer = useReducer(reducers.deleteComment);
+
+  const userMap = useMemo(() => {
+    const m = new Map<string, string>();
+    for (const u of userRows) {
+      m.set(u.identity.toHexString(), u.displayName);
+    }
+    return m;
+  }, [userRows]);
+
+  // Latest verdict per comment — surfaces the moderator-agent's reason on flagged rows.
+  const verdictMap = useMemo(() => {
+    const toMs = (v: unknown) =>
+      v instanceof Date ? v.getTime()
+        : typeof v === 'bigint' ? Number(v / 1000n)
+        : new Date(String(v)).getTime();
+    const m = new Map<bigint, string>();
+    const sorted = [...moderationRows].sort((a, b) => toMs(a.createdAt) - toMs(b.createdAt));
+    for (const ev of sorted) m.set(ev.commentId, ev.reason);
+    return m;
+  }, [moderationRows]);
+
+  const comments = useMemo(() => {
+    return [...commentRows].map(c => {
+      const submitterId = c.submitter.toHexString();
+      const status = (optimistic.get(c.id) ?? c.status) as CommentStatus;
+      const createdAt = c.createdAt instanceof Date ? c.createdAt.toISOString()
+        : typeof c.createdAt === 'bigint' ? new Date(Number(c.createdAt / 1000n)).toISOString()
+        : String(c.createdAt);
+      return {
+        id: c.id,
+        status,
+        author: c.authorName || userMap.get(submitterId) || 'anonymous',
+        post: c.postSlug,
+        body: c.body,
+        createdAt,
+        reason: verdictMap.get(c.id) ?? null,
+      };
+    }).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  }, [commentRows, userMap, optimistic, verdictMap]);
 
   const counts = useMemo(() => {
-    const c = { all: comments.length, pending: 0, flagged: 0, approved: 0, rejected: 0 } as Record<string, number>;
-    comments.forEach(x => { c[x.status]++; });
+    const c: Record<string, number> = { all: comments.length, pending: 0, flagged: 0, approved: 0, rejected: 0 };
+    comments.forEach(x => { if (c[x.status] !== undefined) c[x.status]++; });
     return c;
   }, [comments]);
 
@@ -28,21 +81,54 @@ export default function Comments({ initialFilter = 'pending', view = 'cards' }: 
   if (postFilter !== 'all') filtered = filtered.filter(c => c.post === postFilter);
   if (search) filtered = filtered.filter(c => c.body.toLowerCase().includes(search.toLowerCase()));
 
+  const writeDisabled = USE_STDB_ADMIN && !ownerToken;
+
+  const setStatus = async (id: bigint, status: CommentStatus, reason: string) => {
+    if (writeDisabled) return;
+    setActioning(id);
+    setOptimistic(prev => new Map(prev).set(id, status));
+    try {
+      if (USE_STDB_ADMIN) {
+        await setStatusWithReason({ id, status, reason });
+      } else {
+        const token = localStorage.getItem('admin_token') ?? '';
+        const res = await fetch(`${ADMIN_API_URL}/stdb/comments/${id}/status`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ status }),
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      }
+    } catch {
+      setOptimistic(prev => { const n = new Map(prev); n.delete(id); return n; });
+    } finally {
+      setActioning(null);
+    }
+  };
+
+  const doDelete = async () => {
+    if (confirmDelete == null) return;
+    const id = confirmDelete;
+    setConfirmDelete(null);
+    if (writeDisabled) return;
+    if (USE_STDB_ADMIN) {
+      try { await deleteCommentReducer({ id }); } catch { /* row stays; subscription would reflect a successful delete */ }
+    } else {
+      const token = localStorage.getItem('admin_token') ?? '';
+      await fetch(`${ADMIN_API_URL}/stdb/comments/${id}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      }).catch(() => {});
+    }
+  };
+
   const tabs: CommentStatus[] = ['pending', 'flagged', 'approved', 'rejected'];
 
-  const setStatus = (id: string, status: CommentStatus) => {
-    setActioning(id);
-    setTimeout(() => {
-      setComments(cs => cs.map(c => c.id === id ? { ...c, status } : c));
-      setActioning(null);
-    }, 350);
-  };
+  if (!isActive) {
+    return <div style={{ padding: 40, color: 'var(--color-fg-muted)', textAlign: 'center' }}>Connecting to SpacetimeDB…</div>;
+  }
 
-  const doDelete = () => {
-    if (!confirmDelete) return;
-    setComments(cs => cs.filter(c => c.id !== confirmDelete.id));
-    setConfirmDelete(null);
-  };
+  const confirmComment = confirmDelete != null ? comments.find(c => c.id === confirmDelete) : null;
 
   return (
     <div>
@@ -70,6 +156,13 @@ export default function Comments({ initialFilter = 'pending', view = 'cards' }: 
         </div>
       </div>
 
+      {writeDisabled && (
+        <div className="banner banner--warn" style={{ marginBottom: 14 }}>
+          <Icon name="shield-x" size={16}/>
+          <span>Moderation actions disabled — paste your STDB owner token in the sidebar settings.</span>
+        </div>
+      )}
+
       {filtered.length === 0 && (
         <div className="card" style={{ textAlign: 'center', padding: 40, color: 'var(--color-fg-muted)' }}>
           {search ? `No comments matching "${search}"` :
@@ -80,7 +173,7 @@ export default function Comments({ initialFilter = 'pending', view = 'cards' }: 
       )}
 
       {view === 'cards' && filtered.map(c => (
-        <div key={c.id} className="comment-card">
+        <div key={String(c.id)} className="comment-card">
           <div className="comment-card__top">
             <Chip status={c.status}/>
             <span className="comment-card__author">{c.author}</span>
@@ -89,13 +182,18 @@ export default function Comments({ initialFilter = 'pending', view = 'cards' }: 
             <span className="comment-card__time" title={c.createdAt}>{relTime(c.createdAt)}</span>
           </div>
           <div className="comment-card__body">{c.body}</div>
+          {c.status === 'flagged' && (
+            <div className="comment-card__reason" style={{ marginTop: 6, color: 'var(--color-fg-muted)', fontSize: 11, fontFamily: 'var(--font-mono)' }}>
+              verdict: {c.reason ?? 'unknown'}
+            </div>
+          )}
           <div className="comment-card__actions">
             {actioning === c.id && <span className="spinner"/>}
-            <button className="btn btn--approve" disabled={c.status === 'approved' || actioning === c.id} onClick={() => setStatus(c.id, 'approved')}><Icon name="check" size={13}/> Approve</button>
-            <button className="btn btn--flag" disabled={c.status === 'flagged' || actioning === c.id} onClick={() => setStatus(c.id, 'flagged')}><Icon name="flag" size={13}/> Flag</button>
-            <button className="btn btn--reject" disabled={c.status === 'rejected' || actioning === c.id} onClick={() => setStatus(c.id, 'rejected')}><Icon name="x" size={13}/> Reject</button>
+            <button className="btn btn--approve" disabled={c.status === 'approved' || actioning === c.id || writeDisabled} onClick={() => void setStatus(c.id, 'approved', 'manual-approve')}><Icon name="check" size={13}/> Approve</button>
+            <button className="btn btn--flag" disabled={c.status === 'flagged' || actioning === c.id || writeDisabled} onClick={() => void setStatus(c.id, 'flagged', 'manual-flag')}><Icon name="flag" size={13}/> Flag</button>
+            <button className="btn btn--reject" disabled={c.status === 'rejected' || actioning === c.id || writeDisabled} onClick={() => void setStatus(c.id, 'rejected', 'manual-reject')}><Icon name="x" size={13}/> Reject</button>
             <span style={{ flex: 1 }}/>
-            <button className="btn btn--danger" disabled={actioning === c.id} onClick={() => setConfirmDelete(c)}><Icon name="trash" size={13}/> Delete</button>
+            <button className="btn btn--danger" disabled={actioning === c.id || writeDisabled} onClick={() => setConfirmDelete(c.id)}><Icon name="trash" size={13}/> Delete</button>
           </div>
         </div>
       ))}
@@ -103,7 +201,7 @@ export default function Comments({ initialFilter = 'pending', view = 'cards' }: 
       {view === 'rows' && filtered.length > 0 && (
         <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
           {filtered.map((c, i) => (
-            <div key={c.id} style={{ display: 'flex', gap: 14, padding: '14px 18px', borderBottom: i === filtered.length - 1 ? 'none' : '1px solid var(--color-border)', alignItems: 'center' }}>
+            <div key={String(c.id)} style={{ display: 'flex', gap: 14, padding: '14px 18px', borderBottom: i === filtered.length - 1 ? 'none' : '1px solid var(--color-border)', alignItems: 'center' }}>
               <Chip status={c.status}/>
               <div style={{ minWidth: 0, flex: 1 }}>
                 <div style={{ display: 'flex', gap: 8, alignItems: 'baseline', marginBottom: 3 }}>
@@ -115,30 +213,34 @@ export default function Comments({ initialFilter = 'pending', view = 'cards' }: 
                 <div style={{ fontSize: 13, color: 'var(--color-fg-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.body}</div>
               </div>
               <div style={{ display: 'flex', gap: 6 }}>
-                <button className="btn btn--sm btn--approve" disabled={c.status === 'approved'} onClick={() => setStatus(c.id, 'approved')}>Approve</button>
-                <button className="btn btn--sm btn--flag" disabled={c.status === 'flagged'} onClick={() => setStatus(c.id, 'flagged')}>Flag</button>
-                <button className="btn btn--sm btn--danger" onClick={() => setConfirmDelete(c)}><Icon name="trash" size={12}/></button>
+                <button className="btn btn--sm btn--approve" disabled={c.status === 'approved' || writeDisabled} onClick={() => void setStatus(c.id, 'approved', 'manual-approve')}>Approve</button>
+                <button className="btn btn--sm btn--flag" disabled={c.status === 'flagged' || writeDisabled} onClick={() => void setStatus(c.id, 'flagged', 'manual-flag')}>Flag</button>
+                <button className="btn btn--sm btn--danger" disabled={writeDisabled} onClick={() => setConfirmDelete(c.id)}><Icon name="trash" size={12}/></button>
               </div>
             </div>
           ))}
         </div>
       )}
 
-      {confirmDelete && (
+      {confirmComment && (
         <div className="modal-overlay" onClick={() => setConfirmDelete(null)}>
           <div className="modal" onClick={e => e.stopPropagation()}>
             <div className="modal__title">Delete this comment?</div>
             <div className="modal__body">
-              From <strong style={{ color: 'var(--color-fg)' }}>{confirmDelete.author}</strong>. This cannot be undone.
-              <div className="modal__quote">{confirmDelete.body.slice(0, 80)}{confirmDelete.body.length > 80 ? '…' : ''}</div>
+              From <strong style={{ color: 'var(--color-fg)' }}>{confirmComment.author}</strong>. This cannot be undone.
+              <div className="modal__quote">{confirmComment.body.slice(0, 80)}{confirmComment.body.length > 80 ? '…' : ''}</div>
             </div>
             <div className="modal__actions">
               <button className="btn btn--ghost" onClick={() => setConfirmDelete(null)}>Cancel</button>
-              <button className="btn btn--danger-solid" onClick={doDelete}><Icon name="trash" size={13}/> Delete</button>
+              <button className="btn btn--danger-solid" onClick={() => void doDelete()}><Icon name="trash" size={13}/> Delete</button>
             </div>
           </div>
         </div>
       )}
     </div>
   );
+}
+
+export default function Comments(props: CommentsProps) {
+  return <CommentsInner {...props}/>;
 }
