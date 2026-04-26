@@ -17,8 +17,9 @@ import secrets
 import sys
 from contextlib import asynccontextmanager
 from html import escape
+from typing import Literal
 
-from fastapi import FastAPI, Header, HTTPException
+from fastapi import FastAPI, Header, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, JSONResponse
 from pydantic import BaseModel, EmailStr, Field
@@ -45,6 +46,12 @@ RESEND_API_KEY = env("RESEND_API_KEY")
 FROM_ADDRESS = env("AUTH_FROM_ADDRESS", "hi@sastaspace.com", required=False)
 PUBLIC_BASE = env("PUBLIC_BASE", "https://auth.sastaspace.com", required=False)
 NOTES_CALLBACK = env("NOTES_CALLBACK", "https://notes.sastaspace.com/auth/callback", required=False)
+TYPEWARS_CALLBACK = env(
+    "TYPEWARS_CALLBACK",
+    "https://typewars.sastaspace.com/auth/callback",
+    required=False,
+)
+TYPEWARS_MODULE = env("TYPEWARS_MODULE", "typewars", required=False)
 # E2E_TEST_SECRET enables the test-mode side door on /auth/request: when a
 # request arrives with `X-Test-Secret: <value>` matching this env var, the
 # response includes the issued token instead of sending it via email. Lets
@@ -63,6 +70,8 @@ EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 # ---------- request/response shapes ----------
 class RequestBody(BaseModel):
     email: EmailStr = Field(..., max_length=200)
+    app: Literal["notes", "typewars"] = "notes"
+    prev_identity: str | None = Field(None, pattern=r"^(0x)?[0-9a-fA-F]{64}$")
 
 
 class RequestResponse(BaseModel):
@@ -131,7 +140,12 @@ def request_magic_link(
         log.info("test-mode auth/request for %s — skipping email send", email)
         return RequestResponse(sent=True, detail="test mode", test_token=token)
 
-    magic_link = f"{PUBLIC_BASE.rstrip('/')}/auth/verify?t={token}"
+    mlink_qs = [f"t={token}", f"app={body.app}"]
+    if body.prev_identity:
+        # Strip optional 0x prefix; downstream reducer expects plain hex.
+        prev = body.prev_identity[2:] if body.prev_identity.startswith("0x") else body.prev_identity
+        mlink_qs.append(f"prev={prev}")
+    magic_link = f"{PUBLIC_BASE.rstrip('/')}/auth/verify?" + "&".join(mlink_qs)
     result = app.state.sender.send_magic_link(email, magic_link)
     if not result.sent:
         # Token's already stored; not a hard failure for the user — they can
@@ -143,9 +157,17 @@ def request_magic_link(
 
 
 @app.get("/auth/verify")
-def verify_magic_link(t: str = "") -> HTMLResponse:
+def verify_magic_link(
+    t: str = "",
+    app_name: str = Query("notes", alias="app"),
+    prev: str = "",
+) -> HTMLResponse:
     """Exchange the magic-link token for an stdb identity+JWT and hand it
-    back to the notes app via URL fragment.
+    back to the app via URL fragment.
+
+    For app=notes: calls register_user on the sastaspace module (existing path).
+    For app=typewars: calls claim_progress on the typewars module, using the
+    prev_identity hex from the 'prev' query param to transfer guest progress.
     """
     if not t or len(t) < 32:
         return _html_error("Invalid sign-in link.", status=400)
@@ -167,32 +189,51 @@ def verify_magic_link(t: str = "") -> HTMLResponse:
     if not email:
         return _html_error("Could not match this link to an email.", status=400)
 
-    # Step 3: Re-use the user's identity if they've signed in before, else
-    # mint a fresh one. Either way, also (re)register them with the latest
-    # display_name so the public attribution stays in sync.
-    existing_identity = app.state.stdb.find_user_identity(email)
-    if existing_identity:
-        # We can't recover the original token without storing it (we don't),
-        # so the user gets a fresh anon token bound to the same Identity is
-        # NOT possible — stdb's anon issue gives a NEW identity each call.
-        # So we mint a new identity anyway, and register_user replaces the
-        # User row's identity with the new one (idempotent on email).
-        pass
+    # Step 3: Mint a fresh identity for the user.
     issued = app.state.stdb.issue_identity()
-    display_name = email.split("@")[0]
-    try:
-        app.state.stdb.register_user(issued.identity_hex, email, display_name)
-    except Exception as exc:  # noqa: BLE001
-        return _html_error(f"Could not register: {exc}", status=502)
 
-    # Step 4: render an HTML page that puts the JWT in the URL fragment of
-    # the notes callback (fragments don't traverse the network, so the
-    # token never hits the notes server).
-    redirect_url = NOTES_CALLBACK
+    # Step 4: Dispatch on the app that initiated this sign-in flow.
+    if app_name == "typewars":
+        if not prev or not _is_hex_identity(prev):
+            return _html_error("Missing or invalid prev_identity in callback URL.", status=400)
+        try:
+            app.state.stdb.claim_progress_typewars(
+                prev, issued.identity_hex, email, TYPEWARS_MODULE
+            )
+        except Exception as exc:  # noqa: BLE001
+            return _html_error(f"Could not claim progress: {exc}", status=502)
+        redirect_url = TYPEWARS_CALLBACK
+    else:
+        # Existing notes flow: (re)register user with latest display_name so
+        # public attribution stays in sync. Also handles returning users whose
+        # identity changes between sign-ins (stdb anon issue always mints fresh).
+        existing_identity = app.state.stdb.find_user_identity(email)
+        if existing_identity:
+            # We can't recover the original token without storing it (we don't),
+            # so the user gets a fresh anon token bound to the same Identity is
+            # NOT possible — stdb's anon issue gives a NEW identity each call.
+            # So we mint a new identity anyway, and register_user replaces the
+            # User row's identity with the new one (idempotent on email).
+            pass
+        display_name = email.split("@")[0]
+        try:
+            app.state.stdb.register_user(issued.identity_hex, email, display_name)
+        except Exception as exc:  # noqa: BLE001
+            return _html_error(f"Could not register: {exc}", status=502)
+        redirect_url = NOTES_CALLBACK
+
+    # Step 5: render an HTML page that puts the JWT in the URL fragment of
+    # the callback URL (fragments don't traverse the network, so the
+    # token never hits the app server).
     return HTMLResponse(_verify_success_html(redirect_url, issued.token, email))
 
 
 # ---------- internals ----------
+def _is_hex_identity(s: str) -> bool:
+    """Return True iff s is exactly 64 lowercase/uppercase hex chars (no 0x prefix)."""
+    return bool(re.fullmatch(r"[0-9a-fA-F]{64}", s))
+
+
 def _email_for_token(stdb: SpacetimeClient, token: str) -> str | None:
     sql = f"SELECT email FROM auth_token WHERE token = '{token.replace(chr(39), '')}'"
     url = f"{stdb._base}/v1/database/{stdb._database}/sql"  # noqa: SLF001

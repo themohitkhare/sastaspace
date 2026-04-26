@@ -66,8 +66,9 @@ class SpacetimeClient:
     def __exit__(self, *_exc: object) -> None:
         self.close()
 
-    def _call_reducer(self, name: str, args: list) -> None:
-        url = f"{self._base}/v1/database/{self._database}/call/{name}"
+    def _call_reducer(self, name: str, args: list, database: str | None = None) -> None:
+        db = database or self._database
+        url = f"{self._base}/v1/database/{db}/call/{name}"
         try:
             r = self._client.post(
                 url,
@@ -112,6 +113,25 @@ class SpacetimeClient:
         # Verified by probing the live reducer; plain strings get rejected.
         ident = identity_hex if identity_hex.startswith("0x") else f"0x{identity_hex}"
         self._call_reducer("register_user", [{"__identity__": ident}, email, display_name])
+
+    @retry(**_RETRY)
+    def claim_progress_typewars(
+        self,
+        prev_identity_hex: str,
+        new_identity_hex: str,
+        email: str,
+        typewars_module: str,
+    ) -> None:
+        """Owner-only call to typewars's claim_progress reducer.
+
+        Identity hex strings are wrapped in 1-element arrays per stdb wire format
+        (verified via test invocations: spacetime call typewars claim_progress '["0x..."]' ...).
+        """
+        self._call_reducer(
+            "claim_progress",
+            [[prev_identity_hex], [new_identity_hex], email],
+            database=typewars_module,
+        )
 
     @retry(stop=stop_after_attempt(3), wait=wait_exponential(min=0.5, max=4))
     def issue_identity(self) -> IssuedIdentity:

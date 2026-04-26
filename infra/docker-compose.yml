@@ -171,7 +171,9 @@ services:
       - PUBLIC_BASE=https://auth.sastaspace.com
       - NOTES_CALLBACK=https://notes.sastaspace.com/auth/callback
       - ADMIN_CALLBACK=https://admin.sastaspace.com/auth/callback
-      - ALLOWED_ORIGINS=https://sastaspace.com,https://www.sastaspace.com,https://notes.sastaspace.com,https://admin.sastaspace.com
+      - TYPEWARS_CALLBACK=https://typewars.sastaspace.com/auth/callback
+      - TYPEWARS_MODULE=typewars
+      - ALLOWED_ORIGINS=https://sastaspace.com,https://www.sastaspace.com,https://notes.sastaspace.com,https://admin.sastaspace.com,https://typewars.sastaspace.com
 
   # Comment moderator: Agno + Ollama. Polls SpacetimeDB on the host loopback,
   # calls Ollama on the host loopback. Needs SPACETIME_TOKEN in
