@@ -34,6 +34,30 @@ export default defineConfig({
       name: "desktop-chromium",
       use: { ...devices["Desktop Chrome"] },
     },
+    // Phase 2 F1: matrix for the notes auth rewire. Both legs run the full
+    // suite. The legacy spec at specs/auth.spec.ts is unchanged and runs in
+    // both legs (FastAPI service stays up through Phase 3); the new spec at
+    // specs/notes-auth-stdb.spec.ts test.skip()s itself unless
+    // E2E_STDB_AUTH=true.
+    //
+    // Local invocation:
+    //   pnpm exec playwright test --project=notes-legacy
+    //   E2E_STDB_AUTH=true pnpm exec playwright test --project=notes-stdb
+    //
+    // CI: drive via a `matrix.auth-path` axis that sets E2E_STDB_AUTH and
+    // NEXT_PUBLIC_USE_STDB_AUTH together. See tests/e2e/README.md for the
+    // GH Actions snippet (Phase 3 wires this fully).
+    {
+      name: "notes-legacy",
+      use: { ...devices["Desktop Chrome"] },
+      // E2E_STDB_AUTH unset; NEXT_PUBLIC_USE_STDB_AUTH unset in deploy.
+    },
+    {
+      name: "notes-stdb",
+      use: { ...devices["Desktop Chrome"] },
+      // CI sets E2E_STDB_AUTH=true and deploys notes with
+      // NEXT_PUBLIC_USE_STDB_AUTH=true for this project.
+    },
   ],
 
   // Shared timeouts. Keep generous for the moderator pipeline (~3s poll +
