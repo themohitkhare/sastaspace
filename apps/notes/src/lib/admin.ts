@@ -32,9 +32,20 @@ export function isOwnerSignedIn(): boolean {
   return session.email.toLowerCase() === OWNER_EMAIL.toLowerCase();
 }
 
-/** Subscribe to ALL comments (every status) — only call from /admin/comments. */
+/**
+ * Subscribe to ALL comments (every status) — only call from /admin/comments.
+ *
+ * @param onRows  Called when row snapshots arrive. Empty array means subscribed
+ *                but no comments exist; only ever invoked after a successful
+ *                connect + initial onApplied.
+ * @param onError Optional. Called when the WebSocket connect fails or the
+ *                bindings module fails to load. UX audit M2: without this,
+ *                callers stayed stuck rendering "connecting…" forever even
+ *                if the connection silently dropped.
+ */
 export function subscribeAdminComments(
-  fn: (rows: readonly AdminComment[]) => void,
+  onRows: (rows: readonly AdminComment[]) => void,
+  onError?: (err: Error) => void,
 ): () => void {
   let active = true;
   let teardown: (() => void) | undefined;
@@ -43,7 +54,9 @@ export function subscribeAdminComments(
     let bindings: Record<string, unknown>;
     try {
       bindings = (await import("@sastaspace/stdb-bindings")) as Record<string, unknown>;
-    } catch {
+    } catch (e) {
+      const err = e instanceof Error ? e : new Error(String(e));
+      onError?.(err);
       return;
     }
     if (!active) return;
@@ -51,10 +64,16 @@ export function subscribeAdminComments(
     const DbConnection = bindings.DbConnection as
       | { builder: () => AdminBuilder }
       | undefined;
-    if (!DbConnection) return;
+    if (!DbConnection) {
+      onError?.(new Error("STDB bindings missing DbConnection export"));
+      return;
+    }
 
     const session = getSession();
-    if (!session) return;
+    if (!session) {
+      onError?.(new Error("not signed in — admin requires an authed session"));
+      return;
+    }
 
     const conn = DbConnection.builder()
       .withUri(STDB_URI)
@@ -64,15 +83,16 @@ export function subscribeAdminComments(
       .onConnect(() => {
         conn
           .subscriptionBuilder()
-          .onApplied(() => fn(snapshot(conn)))
+          .onApplied(() => onRows(snapshot(conn)))
           .subscribe("SELECT * FROM comment");
 
-        conn.db.comment.onInsert?.(() => fn(snapshot(conn)));
-        conn.db.comment.onDelete?.(() => fn(snapshot(conn)));
-        conn.db.comment.onUpdate?.(() => fn(snapshot(conn)));
+        conn.db.comment.onInsert?.(() => onRows(snapshot(conn)));
+        conn.db.comment.onDelete?.(() => onRows(snapshot(conn)));
+        conn.db.comment.onUpdate?.(() => onRows(snapshot(conn)));
       })
       .onConnectError((_ctx: unknown, err: Error) => {
         console.warn("[admin] connect error:", err?.message);
+        onError?.(err);
       })
       .build();
 

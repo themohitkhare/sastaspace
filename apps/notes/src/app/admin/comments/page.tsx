@@ -17,6 +17,7 @@ import styles from "./admin.module.css";
 export default function AdminCommentsPage() {
   const [session, setSession] = useState<Session | null>(null);
   const [rows, setRows] = useState<readonly AdminComment[] | null>(null);
+  const [connectError, setConnectError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
 
   useEffect(() => subscribeAuth((s) => setSession(s)), []);
@@ -28,7 +29,14 @@ export default function AdminCommentsPage() {
       // and tripped the React 19 set-state-in-effect lint.)
       return;
     }
-    return subscribeAdminComments((r) => setRows(r));
+    setConnectError(null);
+    return subscribeAdminComments(
+      (r) => {
+        setRows(r);
+        setConnectError(null);
+      },
+      (err) => setConnectError(err.message ?? "connection failed"),
+    );
   }, [session?.email]);
 
   async function action(id: number | bigint, kind: "approve" | "flag" | "delete") {
@@ -61,6 +69,16 @@ export default function AdminCommentsPage() {
             <p>
               You're signed in as <strong>{session.email}</strong>, but only the lab owner can
               moderate. The reducer will reject any action you try.
+            </p>
+          </div>
+        ) : connectError ? (
+          <div className={styles.gate} role="alert">
+            <p>
+              <strong>Connection failed.</strong> {connectError}
+            </p>
+            <p>
+              Refresh the page to retry. If the problem persists, check that
+              your STDB token is current and the spacetime endpoint is up.
             </p>
           </div>
         ) : rows === null ? (
