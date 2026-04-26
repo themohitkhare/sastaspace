@@ -3,27 +3,13 @@ import { useState, useCallback, useEffect, useMemo } from 'react';
 import { useSpacetimeDB, useTable, useReducer } from 'spacetimedb/react';
 import { tables, reducers } from '@sastaspace/typewars-bindings';
 import type { Screen, Player, Region, LiberatedInfo, LegionId } from '@/types';
-import { makeRegions } from '@/lib/regions';
-import { toPlayer } from '@/lib/adapters';
+import { toPlayer, toRegion } from '@/lib/adapters';
 import LegionSelect from './LegionSelect';
 import MapWarMap from './MapWarMap';
 import Battle from './Battle';
 import LiberatedSplash from './LiberatedSplash';
 import Leaderboard from './Leaderboard';
 import LegionSwapModal from './LegionSwapModal';
-
-function setupRegions(base: Region[]): Region[] {
-  const r = base.map(region => ({ ...region }));
-  r[0] = { ...r[0], controlling_legion: 0, enemy_hp: 0, damage_0: r[0].enemy_max_hp };
-  r[1] = { ...r[1], controlling_legion: 1, enemy_hp: 0, damage_1: r[1].enemy_max_hp };
-  r[5] = { ...r[5], controlling_legion: 2, enemy_hp: 0, damage_2: r[5].enemy_max_hp };
-  r[11] = { ...r[11], controlling_legion: 3, enemy_hp: 0, damage_3: r[11].enemy_max_hp };
-  r[2] = { ...r[2], enemy_hp: Math.round(r[2].enemy_max_hp * 0.72), damage_0: Math.round(r[2].enemy_max_hp * 0.28) };
-  r[3] = { ...r[3], enemy_hp: Math.round(r[3].enemy_max_hp * 0.55), damage_1: Math.round(r[3].enemy_max_hp * 0.45) };
-  r[12] = { ...r[12], enemy_hp: Math.round(r[12].enemy_max_hp * 0.40), damage_2: Math.round(r[12].enemy_max_hp * 0.60) };
-  r[20] = { ...r[20], enemy_hp: Math.round(r[20].enemy_max_hp * 0.85), damage_4: Math.round(r[20].enemy_max_hp * 0.15) };
-  return r;
-}
 
 export default function App() {
   const { identity, isActive } = useSpacetimeDB();
@@ -37,8 +23,13 @@ export default function App() {
 
   const registerPlayer = useReducer(reducers.registerPlayer);
 
+  const [regionRows] = useTable(tables.region);
+  const regions: Region[] = useMemo(
+    () => [...regionRows].sort((a, b) => a.id - b.id).map(r => toRegion(r)),
+    [regionRows],
+  );
+
   const [screen, setScreen] = useState<Screen>('legion-select');
-  const [regions, setRegions] = useState<Region[]>([]);
   const [activeRegion, setActiveRegion] = useState<Region | null>(null);
   const [liberatedInfo, setLiberatedInfo] = useState<LiberatedInfo | null>(null);
   const [swapOpen, setSwapOpen] = useState(false);
@@ -47,8 +38,6 @@ export default function App() {
 
   useEffect(() => {
     if (player && screen === 'legion-select') {
-      const base = makeRegions();
-      setRegions(setupRegions(base));
       setScreen('warmap');
     }
   }, [player, screen]);
@@ -62,20 +51,10 @@ export default function App() {
     setScreen('battle');
   }, []);
 
-  const dispatchDamage = useCallback((regionId: number, legion: LegionId, amount: number) => {
-    setRegions(prev => prev.map(r => {
-      if (r.id !== regionId) return r;
-      const key = `damage_${legion}` as keyof Region;
-      const newDmg = (r[key] as number) + amount;
-      const newHp = Math.max(0, r.enemy_hp - amount);
-      const updated: Region = { ...r, [key]: newDmg, enemy_hp: newHp };
-      if (newHp === 0 && r.controlling_legion === -1) {
-        const totalDamages = [updated.damage_0, updated.damage_1, updated.damage_2, updated.damage_3, updated.damage_4];
-        const winner = totalDamages.indexOf(Math.max(...totalDamages)) as LegionId;
-        updated.controlling_legion = winner;
-      }
-      return updated;
-    }));
+  const dispatchDamage = useCallback((_regionId: number, _legion: LegionId, _amount: number) => {
+    // Server-authoritative: damage is applied by the submit_word reducer and
+    // streamed back via the region subscription. Kept as a no-op for the
+    // existing Battle prop contract until step 4 finishes the hot path.
   }, []);
 
   const exitBattle = useCallback(() => {
