@@ -11,6 +11,8 @@ function TypeWarsInner() {
   const [playerRows] = useTable(tables.player);
   const [regionRows] = useTable(tables.region);
   const [battleRows] = useTable(tables.battle_session);
+  const [warRows] = useTable(tables.global_war);
+  const war = warRows[0];
 
   const legions = useMemo(() => {
     const map = new Map<number, { id: number; name: string; color: string; regions: number; damage: bigint; players: number }>();
@@ -68,6 +70,25 @@ function TypeWarsInner() {
       <div className="banner banner--success" style={{ background: warActive ? 'var(--brand-ink)' : 'var(--color-surface-2)', color: warActive ? 'var(--brand-paper)' : 'var(--color-fg-muted)', borderColor: warActive ? 'var(--brand-ink)' : 'var(--color-border)' }}>
         <span style={{ width: 8, height: 8, borderRadius: '50%', background: warActive ? 'var(--brand-status-live)' : 'var(--brand-dust)', animation: warActive ? 'live-pulse 2s ease-in-out infinite' : 'none', display: 'inline-block' }}/>
         <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12 }}>{warActive ? 'WAR ACTIVE' : 'WAR IDLE'}</span>
+        {war && (
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, opacity: 0.8 }}>
+            · season {war.season}
+            {war.seasonStart && (
+              <>
+                {' · started '}
+                {relTime(
+                  war.seasonStart instanceof Date
+                    ? war.seasonStart.toISOString()
+                    : typeof war.seasonStart === 'bigint'
+                    ? new Date(Number(war.seasonStart / 1000n)).toISOString()
+                    : String(war.seasonStart),
+                )}
+              </>
+            )}
+            {' · '}
+            <strong>{war.liberatedTerritories}</strong>/<strong>{war.enemyTerritories + war.liberatedTerritories}</strong> liberated
+          </span>
+        )}
         <span>· <strong>{activeBattles.length}</strong> active battles · <strong>{damageK}k</strong> total damage dealt · <strong>{playerRows.length}</strong> players</span>
       </div>
 
