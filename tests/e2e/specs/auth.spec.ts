@@ -3,7 +3,15 @@ import { readSession, requestTokenViaTestMode, signIn } from "../helpers/auth.js
 import { gotoAndHydrate, waitForHydrate } from "../helpers/page.js";
 import { AUTH, NOTES } from "../helpers/urls.js";
 
+const AUTH_BACKEND = (process.env.E2E_AUTH_BACKEND ?? "fastapi").toLowerCase();
+const LEGACY_ONLY = AUTH_BACKEND !== "stdb";
+
 test.describe("auth — magic-link round trip", () => {
+  test.skip(
+    !LEGACY_ONLY,
+    "/auth/request and /auth/verify on auth.sastaspace.com are 410 post-cutover; legacy-only tests are obsolete in stdb backend mode",
+  );
+
   test("/auth/request with test secret returns a token (test-mode side door)", async ({
     request,
   }) => {

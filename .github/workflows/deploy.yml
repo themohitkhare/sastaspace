@@ -889,7 +889,10 @@ jobs:
       # block (the legacy admin.spec.ts still runs against notes/admin).
       # Owner provisions this secret in repo settings before flipping
       # NEXT_PUBLIC_USE_STDB_ADMIN=true at admin build time.
+      # Two names because admin-panels.spec.ts and helpers/auth.ts converged
+      # on different conventions; both populated from the same secret.
       E2E_OWNER_STDB_TOKEN: ${{ secrets.E2E_OWNER_STDB_TOKEN }}
+      E2E_STDB_OWNER_TOKEN: ${{ secrets.E2E_OWNER_STDB_TOKEN }}
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-node@v6
