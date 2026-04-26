@@ -670,18 +670,25 @@ jobs:
           rsync -a infra/docker-compose.yml "$PROD/infra/docker-compose.yml"
       - name: provision workers/.env from secrets
         env:
+          # Prefer WORKERS_STDB_TOKEN if set — it's the prod-server-issued JWT
+          # that works on /v1/identity/websocket-token. SPACETIME_TOKEN is the
+          # maincloud-issued owner JWT used for HTTP-only endpoints (publish,
+          # SQL); the SDK's WebSocket handshake calls websocket-token-exchange,
+          # which only accepts prod-server-signed tokens.
+          WORKERS_STDB_TOKEN: ${{ secrets.WORKERS_STDB_TOKEN }}
           SPACETIME_TOKEN: ${{ secrets.SPACETIME_TOKEN }}
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
         timeout-minutes: 1
         run: |
-          if [[ -z "$SPACETIME_TOKEN" || -z "$RESEND_API_KEY" ]]; then
-            echo "::error::SPACETIME_TOKEN or RESEND_API_KEY missing"
+          STDB_TOKEN_VALUE="${WORKERS_STDB_TOKEN:-$SPACETIME_TOKEN}"
+          if [[ -z "$STDB_TOKEN_VALUE" || -z "$RESEND_API_KEY" ]]; then
+            echo "::error::Neither WORKERS_STDB_TOKEN nor SPACETIME_TOKEN set, or RESEND_API_KEY missing"
             exit 1
           fi
           PROD=/home/mkhare/sastaspace
           install -m 600 /dev/null "$PROD/workers/.env"
           {
-            echo "STDB_TOKEN=$SPACETIME_TOKEN"
+            echo "STDB_TOKEN=$STDB_TOKEN_VALUE"
             echo "RESEND_API_KEY=$RESEND_API_KEY"
           } > "$PROD/workers/.env"
           chmod 600 "$PROD/workers/.env"
