@@ -903,9 +903,17 @@ function Results({
         return;
       }
       // ────────── legacy: HTTP path ──────────
-      const blob = API_URL
-        ? await fetchGenerate(API_URL, prompt, plan)
-        : await stubZipBlob();
+      // If API_URL is unset we fall through to the offline stub which is a
+      // text file pretending to be a zip — useful for the UI flow demo but
+      // we should NOT lie about it being a real audio bundle. Surface the
+      // honest state: "demo only — no audio produced".
+      if (!API_URL) {
+        const blob = await stubZipBlob();
+        triggerDownload(blob, "deck-demo-only.txt");
+        setZipLabel("demo only — no audio (set NEXT_PUBLIC_DECK_API_URL or use STDB mode)");
+        return;
+      }
+      const blob = await fetchGenerate(API_URL, prompt, plan);
       triggerDownload(blob, "deck.zip");
       setZipLabel("downloaded ✓");
     } catch (err) {
