@@ -376,3 +376,27 @@
 .lb-leg-cell { display: flex; align-items: center; gap: 6px; }
 .lb-you-tag { margin-left: 8px; padding: 2px 8px; background: var(--brand-ink); color: var(--brand-paper); border-radius: 4px; font-size: 9px; letter-spacing: 0.1em; }
 .personal-grid { display: flex; gap: 8px; flex-wrap: wrap; }
+
+.avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  border: 1px solid var(--brand-dust-40);
+  color: #fff;
+  font-family: var(--font-mono);
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  flex-shrink: 0;
+  user-select: none;
+}
+.avatar-pip {
+  position: absolute;
+  bottom: -1px;
+  right: -1px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--brand-sasta);
+  border: 1px solid var(--brand-paper);
+}
