@@ -39,7 +39,7 @@ export async function listPosts(opts: { includeDrafts?: boolean } = {}): Promise
         return {
           slug,
           title: typeof data.title === "string" ? data.title : slug,
-          date: typeof data.date === "string" ? data.date : "",
+          date: data.date instanceof Date ? data.date.toISOString().slice(0, 10) : typeof data.date === "string" ? data.date : "",
           summary: typeof data.summary === "string" ? data.summary : undefined,
           draft: data.draft === true,
         } satisfies PostMeta;
@@ -62,7 +62,7 @@ export async function readPost(slug: string): Promise<Post | null> {
     meta: {
       slug,
       title: typeof data.title === "string" ? data.title : slug,
-      date: typeof data.date === "string" ? data.date : "",
+      date: data.date instanceof Date ? data.date.toISOString().slice(0, 10) : typeof data.date === "string" ? data.date : "",
       summary: typeof data.summary === "string" ? data.summary : undefined,
       draft: data.draft === true,
     },
