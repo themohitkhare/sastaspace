@@ -412,18 +412,23 @@ function Composer({
   return (
     <section className={styles.composer} aria-label="Describe your project">
       <div className={styles.composerLabelRow}>
-        <div className={styles.composerLabel}>describe what you&apos;re building</div>
-        <div className={styles.composerCount}>{value.length} / 600</div>
+        <label htmlFor="deck-prompt" className={styles.composerLabel}>describe what you&apos;re building</label>
+        <div className={styles.composerCount} aria-hidden="true">{value.length} / 600</div>
       </div>
       <textarea
         ref={promptRef}
+        id="deck-prompt"
         value={value}
         maxLength={600}
         onChange={(e) => onChange(e.target.value)}
         onKeyDown={onKeyDown}
         placeholder="A meditation app for stressed professionals. Calm, slow, breathing-paced. Soft pads, no percussion."
         spellCheck={false}
+        aria-describedby="deck-prompt-count"
       />
+      <span id="deck-prompt-count" className={styles.srOnly} aria-live="polite">
+        {value.length} of 600 characters used
+      </span>
       <div className={styles.composerActions}>
         <div className={styles.hint}>
           <kbd>⌘</kbd>+<kbd>↵</kbd> to plan tracks &mdash; ollama runs in ~3 s
