@@ -220,7 +220,15 @@ jobs:
 
   landing-deploy:
     needs: landing-gate
-    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    # Phase 3 cutover: landing-gate matrix runs both `legacy` and `stdb` variants.
+    # The legacy variant audit-step now returns failure (transitive @mastra/core
+    # advisories) but is non-blocking via continue-on-error; landing-gate's
+    # overall conclusion can still be `failure` depending on which step types
+    # got `failure`. Use !cancelled() + always() so landing-deploy proceeds as
+    # long as the stdb variant produced its artifact (which is what we deploy).
+    if: >-
+      always() && !cancelled() &&
+      (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     runs-on: [self-hosted, Linux]
     steps:
       - uses: actions/checkout@v6

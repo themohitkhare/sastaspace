@@ -48,11 +48,17 @@ RUN apk add --no-cache docker-cli
 # /opt/rocm/bin/rocm-smi via compose volumes (documented in
 # infra/README.md).
 RUN apk add --no-cache --repository=https://dl-cdn.alpinelinux.org/alpine/edge/testing rocm-smi-lib || true
-# Prod node_modules from the pruned tree.
+# Prod node_modules from the pruned tree (includes @sastaspace/stdb-bindings
+# + @sastaspace/typewars-bindings — both shipping .ts source via package.json
+# `main`, so we run via tsx at runtime instead of compiled .js).
 COPY --from=prune /tmp/pruned/node_modules ./node_modules
-# Compiled JS from the build stage.
-COPY --from=build /repo/workers/dist ./dist
-# Manifest (used by `node` for module resolution + diagnostics).
+# Workspace bindings + worker source (tsx compiles them on demand).
+COPY --from=workspace /repo/packages/stdb-bindings ./packages/stdb-bindings
+COPY --from=workspace /repo/packages/typewars-bindings ./packages/typewars-bindings
+COPY --from=workspace /repo/workers/src ./src
+COPY --from=workspace /repo/workers/tsconfig.json ./tsconfig.json
 COPY --from=prune /tmp/pruned/package.json ./package.json
 USER node
-CMD ["node", "--enable-source-maps", "dist/index.js"]
+# tsx handles the .ts source at runtime; @sastaspace/stdb-bindings (workspace
+# dep) exports .ts via package.json `main`, which tsx compiles on import.
+CMD ["node", "--enable-source-maps", "--import", "tsx", "src/index.ts"]
