@@ -116,15 +116,21 @@ pub fn init(ctx: &ReducerContext) {
     }
 
     // C1/C3/P1: auto-register the module owner as a User row on first init.
-    // Idempotent — skips if the owner identity is already present. Eliminates
-    // the need for a manual `register_owner_e2e` call before admin/moderator
-    // specs can run. Owner email is the static address for this deployment.
+    // Idempotent — skips if the owner identity is already present.
+    //
+    // Synthetic email `owner@sastaspace.local` (NOT mohitkhare582@gmail.com)
+    // because the User table has `#[unique]` on email, and the operator's
+    // real Gmail address is already registered to a separate identity from
+    // their real magic-link sign-in. The owner identity (from OWNER_HEX,
+    // used by CI to publish + by submit_user_comment for assert_owner) is a
+    // different STDB identity than the user's signed-in identity, so it
+    // needs its own User row with a non-colliding email.
     let owner = Identity::from_hex(OWNER_HEX).expect("OWNER_HEX must be valid");
     if ctx.db.user().identity().find(owner).is_none() {
         ctx.db.user().insert(User {
             identity: owner,
-            email: "mohitkhare582@gmail.com".to_string(),
-            display_name: "mohitkhare582".to_string(),
+            email: "owner@sastaspace.local".to_string(),
+            display_name: "owner".to_string(),
             created_at: ctx.timestamp,
         });
     }
@@ -3433,12 +3439,12 @@ mod admin_collector_tests {
         // Construct the User row that init would insert (sans db context).
         let row = User {
             identity: owner,
-            email: "mohitkhare582@gmail.com".to_string(),
-            display_name: "mohitkhare582".to_string(),
+            email: "owner@sastaspace.local".to_string(),
+            display_name: "owner".to_string(),
             created_at: Timestamp::UNIX_EPOCH,
         };
-        assert_eq!(row.email, "mohitkhare582@gmail.com");
-        assert_eq!(row.display_name, "mohitkhare582");
+        assert_eq!(row.email, "owner@sastaspace.local");
+        assert_eq!(row.display_name, "owner");
         assert_eq!(row.identity, owner);
     }
 
@@ -3447,10 +3453,9 @@ mod admin_collector_tests {
         // The owner email inserted by init must be valid per the same validator
         // used by register_user — ensures the static string won't be rejected
         // if it is later processed through that path.
-        let (email, name) =
-            validate_register_user_inputs("mohitkhare582@gmail.com", "mohitkhare582")
-                .expect("owner email and display_name must pass validation");
-        assert_eq!(email, "mohitkhare582@gmail.com");
-        assert_eq!(name, "mohitkhare582");
+        let (email, name) = validate_register_user_inputs("owner@sastaspace.local", "owner")
+            .expect("owner email and display_name must pass validation");
+        assert_eq!(email, "owner@sastaspace.local");
+        assert_eq!(name, "owner");
     }
 }
