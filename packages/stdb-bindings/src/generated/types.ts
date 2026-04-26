@@ -19,6 +19,12 @@ export const AppConfig = __t.object("AppConfig", {
 });
 export type AppConfig = __Infer<typeof AppConfig>;
 
+export const AppConfigSecret = __t.object("AppConfigSecret", {
+  id: __t.u64(),
+  e2ETestSecret: __t.option(__t.string()),
+});
+export type AppConfigSecret = __Infer<typeof AppConfigSecret>;
+
 export const AuthToken = __t.object("AuthToken", {
   token: __t.string(),
   email: __t.string(),
@@ -63,6 +69,14 @@ export const GenerateJob = __t.object("GenerateJob", {
   completedAt: __t.option(__t.timestamp()),
 });
 export type GenerateJob = __Infer<typeof GenerateJob>;
+
+export const LastTestToken = __t.object("LastTestToken", {
+  id: __t.u64(),
+  email: __t.string(),
+  token: __t.string(),
+  createdAt: __t.timestamp(),
+});
+export type LastTestToken = __Infer<typeof LastTestToken>;
 
 export const LogEvent = __t.object("LogEvent", {
   id: __t.u64(),

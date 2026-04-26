@@ -43,6 +43,7 @@ import HeartbeatReducer from "./heartbeat_reducer";
 import IssueAuthTokenReducer from "./issue_auth_token_reducer";
 import MarkEmailFailedReducer from "./mark_email_failed_reducer";
 import MarkEmailSentReducer from "./mark_email_sent_reducer";
+import MintTestTokenReducer from "./mint_test_token_reducer";
 import RegisterUserReducer from "./register_user_reducer";
 import RemoveLogInterestReducer from "./remove_log_interest_reducer";
 import RequestGenerateReducer from "./request_generate_reducer";
@@ -51,6 +52,7 @@ import RequestPlanReducer from "./request_plan_reducer";
 import SetAppConfigReducer from "./set_app_config_reducer";
 import SetCommentStatusReducer from "./set_comment_status_reducer";
 import SetCommentStatusWithReasonReducer from "./set_comment_status_with_reason_reducer";
+import SetE2ETestSecretReducer from "./set_e_2_e_test_secret_reducer";
 import SetGenerateDoneReducer from "./set_generate_done_reducer";
 import SetGenerateFailedReducer from "./set_generate_failed_reducer";
 import SetPlanReducer from "./set_plan_reducer";
@@ -237,6 +239,7 @@ const reducersSchema = __reducers(
   __reducerSchema("issue_auth_token", IssueAuthTokenReducer),
   __reducerSchema("mark_email_failed", MarkEmailFailedReducer),
   __reducerSchema("mark_email_sent", MarkEmailSentReducer),
+  __reducerSchema("mint_test_token", MintTestTokenReducer),
   __reducerSchema("register_user", RegisterUserReducer),
   __reducerSchema("remove_log_interest", RemoveLogInterestReducer),
   __reducerSchema("request_generate", RequestGenerateReducer),
@@ -245,6 +248,7 @@ const reducersSchema = __reducers(
   __reducerSchema("set_app_config", SetAppConfigReducer),
   __reducerSchema("set_comment_status", SetCommentStatusReducer),
   __reducerSchema("set_comment_status_with_reason", SetCommentStatusWithReasonReducer),
+  __reducerSchema("set_e_2_e_test_secret", SetE2ETestSecretReducer),
   __reducerSchema("set_generate_done", SetGenerateDoneReducer),
   __reducerSchema("set_generate_failed", SetGenerateFailedReducer),
   __reducerSchema("set_plan", SetPlanReducer),
