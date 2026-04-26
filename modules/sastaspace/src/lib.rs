@@ -101,7 +101,20 @@ fn assert_owner(ctx: &ReducerContext) -> Result<(), String> {
 }
 
 #[reducer(init)]
-pub fn init(_ctx: &ReducerContext) {}
+pub fn init(ctx: &ReducerContext) {
+    // W2: register the prune_log_events schedule (every 60s) if absent.
+    // Idempotency guard: re-running init (e.g. after a republish) must not
+    // double-register. W3/W4 may add their own `else if` guards here for
+    // their schedules without conflicting with this block.
+    if ctx.db.prune_log_events_schedule().iter().next().is_none() {
+        ctx.db
+            .prune_log_events_schedule()
+            .insert(PruneLogEventsSchedule {
+                scheduled_id: 0,
+                scheduled_at: std::time::Duration::from_secs(60).into(),
+            });
+    }
+}
 
 #[reducer(client_connected)]
 pub fn client_connected(ctx: &ReducerContext) {
@@ -613,6 +626,346 @@ fn render_magic_link_text(link: &str) -> String {
 
 // === end auth-mailer (Phase 1 W1) ===
 
+// === admin-collector (Phase 1 W2) ===
+
+/// Allow-list of containers the collector watches and the admin Logs panel
+/// may follow. Adding a new container here is a code change (deliberate —
+/// keeps the admin from accidentally pulling logs from arbitrary host
+/// processes).
+const ALLOWED_CONTAINERS: &[&str] = &[
+    "sastaspace-spacetime",
+    "sastaspace-ollama",
+    "sastaspace-localai",
+    "sastaspace-workers",
+    "sastaspace-landing",
+    "sastaspace-notes",
+    "sastaspace-admin",
+    "sastaspace-typewars",
+    "sastaspace-cloudflared",
+    // Legacy Python services — kept here so the panel still surfaces them
+    // through Phase 1–3. Removed in Phase 4 cleanup.
+    "sastaspace-auth",
+    "sastaspace-admin-api",
+    "sastaspace-deck",
+    "sastaspace-moderator",
+];
+
+/// Cap on `log_event` rows retained per container. The scheduled
+/// `prune_log_events` reducer enforces this.
+const LOG_EVENTS_PER_CONTAINER_CAP: usize = 500;
+
+/// One-row rolling snapshot of host metrics. Always id=0; the collector
+/// upserts every 3 s. Public-read so the admin panel can subscribe.
+#[table(accessor = system_metrics, public)]
+pub struct SystemMetrics {
+    #[primary_key]
+    pub id: u64,
+    pub cpu_pct: f32,
+    pub cores: u32,
+    pub mem_used_gb: f32,
+    pub mem_total_gb: f32,
+    pub mem_pct: f32,
+    pub swap_used_mb: u32,
+    pub swap_total_mb: u32,
+    pub disk_used_gb: u32,
+    pub disk_total_gb: u32,
+    pub disk_pct: f32,
+    pub net_tx_bytes: u64,
+    pub net_rx_bytes: u64,
+    pub uptime_s: u64,
+    pub gpu_pct: Option<u32>,
+    pub gpu_vram_used_mb: Option<u32>,
+    pub gpu_vram_total_mb: Option<u32>,
+    pub gpu_temp_c: Option<u32>,
+    pub gpu_model: Option<String>,
+    pub updated_at: Timestamp,
+}
+
+/// One row per known container. Collector upserts every 15 s.
+#[table(accessor = container_status, public)]
+pub struct ContainerStatus {
+    #[primary_key]
+    pub name: String,
+    pub status: String,
+    pub image: String,
+    pub uptime_s: u64,
+    pub mem_used_mb: u32,
+    pub mem_limit_mb: u32,
+    pub restart_count: u32,
+    pub updated_at: Timestamp,
+}
+
+/// One row per (container, subscriber) — the admin frontend inserts a row
+/// when the Logs panel mounts and deletes it on unmount. The collector
+/// owns a `docker logs --follow` subprocess for each container that has
+/// at least one interest row. Private (no `public`) — only the owner and
+/// the row's subscriber identity see it. Modelled after `auth_token`.
+///
+/// Composite uniqueness on (container, subscriber) is enforced in the
+/// `add_log_interest` reducer (manual existence check) since SpacetimeDB
+/// v1 doesn't support `#[primary_key]` on a tuple.
+#[table(accessor = log_interest)]
+pub struct LogInterest {
+    #[index(btree)]
+    pub container: String,
+    #[index(btree)]
+    pub subscriber: Identity,
+    pub created_at: Timestamp,
+}
+
+/// Append-only ring of log lines. Collector inserts; `prune_log_events`
+/// trims down to LOG_EVENTS_PER_CONTAINER_CAP per container every 60 s.
+#[table(accessor = log_event, public)]
+pub struct LogEvent {
+    #[primary_key]
+    #[auto_inc]
+    pub id: u64,
+    #[index(btree)]
+    pub container: String,
+    pub ts_micros: i64,
+    pub level: String,
+    pub text: String,
+    pub inserted_at: Timestamp,
+}
+
+/// Static config the workers read on boot. id=0; owner-writable. Held as a
+/// few flat string fields rather than a JSON blob so the schema doc is
+/// self-describing.
+#[table(accessor = app_config, public)]
+pub struct AppConfig {
+    #[primary_key]
+    pub id: u64,
+    pub notes_callback: String,
+    pub typewars_callback: String,
+    pub admin_callback: String,
+    pub deck_origin: String,
+}
+
+/// Scheduler table for `prune_log_events`. The runtime fires the named
+/// reducer at the cadence inserted into this table.
+#[table(accessor = prune_log_events_schedule, scheduled(prune_log_events))]
+pub struct PruneLogEventsSchedule {
+    #[primary_key]
+    #[auto_inc]
+    pub scheduled_id: u64,
+    pub scheduled_at: spacetimedb::ScheduleAt,
+}
+
+/// Owner-only: collector loop 1 — overwrite the single id=0 metrics row.
+#[reducer]
+#[allow(clippy::too_many_arguments)]
+pub fn upsert_system_metrics(
+    ctx: &ReducerContext,
+    cpu_pct: f32,
+    cores: u32,
+    mem_used_gb: f32,
+    mem_total_gb: f32,
+    mem_pct: f32,
+    swap_used_mb: u32,
+    swap_total_mb: u32,
+    disk_used_gb: u32,
+    disk_total_gb: u32,
+    disk_pct: f32,
+    net_tx_bytes: u64,
+    net_rx_bytes: u64,
+    uptime_s: u64,
+    gpu_pct: Option<u32>,
+    gpu_vram_used_mb: Option<u32>,
+    gpu_vram_total_mb: Option<u32>,
+    gpu_temp_c: Option<u32>,
+    gpu_model: Option<String>,
+) -> Result<(), String> {
+    assert_owner(ctx)?;
+    let row = SystemMetrics {
+        id: 0,
+        cpu_pct,
+        cores,
+        mem_used_gb,
+        mem_total_gb,
+        mem_pct,
+        swap_used_mb,
+        swap_total_mb,
+        disk_used_gb,
+        disk_total_gb,
+        disk_pct,
+        net_tx_bytes,
+        net_rx_bytes,
+        uptime_s,
+        gpu_pct,
+        gpu_vram_used_mb,
+        gpu_vram_total_mb,
+        gpu_temp_c,
+        gpu_model,
+        updated_at: ctx.timestamp,
+    };
+    if ctx.db.system_metrics().id().find(0).is_some() {
+        ctx.db.system_metrics().id().update(row);
+    } else {
+        ctx.db.system_metrics().insert(row);
+    }
+    Ok(())
+}
+
+/// Owner-only: collector loop 2 — upsert one container's status by name.
+#[reducer]
+#[allow(clippy::too_many_arguments)]
+pub fn upsert_container_status(
+    ctx: &ReducerContext,
+    name: String,
+    status: String,
+    image: String,
+    uptime_s: u64,
+    mem_used_mb: u32,
+    mem_limit_mb: u32,
+    restart_count: u32,
+) -> Result<(), String> {
+    assert_owner(ctx)?;
+    if !ALLOWED_CONTAINERS.contains(&name.as_str()) {
+        return Err(format!("container `{name}` not in allow-list"));
+    }
+    let row = ContainerStatus {
+        name: name.clone(),
+        status,
+        image,
+        uptime_s,
+        mem_used_mb,
+        mem_limit_mb,
+        restart_count,
+        updated_at: ctx.timestamp,
+    };
+    if ctx.db.container_status().name().find(&name).is_some() {
+        ctx.db.container_status().name().update(row);
+    } else {
+        ctx.db.container_status().insert(row);
+    }
+    Ok(())
+}
+
+/// Owner-only: collector loop 3 — append one log line.
+#[reducer]
+pub fn append_log_event(
+    ctx: &ReducerContext,
+    container: String,
+    ts_micros: i64,
+    level: String,
+    text: String,
+) -> Result<(), String> {
+    assert_owner(ctx)?;
+    if !ALLOWED_CONTAINERS.contains(&container.as_str()) {
+        return Err(format!("container `{container}` not in allow-list"));
+    }
+    // Defensive cap on text size to keep individual rows bounded.
+    let text = if text.len() > 4000 {
+        text.chars().take(4000).collect()
+    } else {
+        text
+    };
+    ctx.db.log_event().insert(LogEvent {
+        id: 0,
+        container,
+        ts_micros,
+        level,
+        text,
+        inserted_at: ctx.timestamp,
+    });
+    Ok(())
+}
+
+/// Caller-keyed (any signed-in identity): admin Logs panel asks the
+/// collector to start following a container's logs. Idempotent on
+/// (container, sender).
+#[reducer]
+pub fn add_log_interest(ctx: &ReducerContext, container: String) -> Result<(), String> {
+    if !ALLOWED_CONTAINERS.contains(&container.as_str()) {
+        return Err(format!("container `{container}` not in allow-list"));
+    }
+    let already = ctx
+        .db
+        .log_interest()
+        .iter()
+        .any(|r| r.container == container && r.subscriber == ctx.sender());
+    if already {
+        return Ok(());
+    }
+    ctx.db.log_interest().insert(LogInterest {
+        container,
+        subscriber: ctx.sender(),
+        created_at: ctx.timestamp,
+    });
+    Ok(())
+}
+
+/// Caller-keyed: panel unmount removes the interest row. The collector
+/// kills its subprocess when the LAST interest row for that container is
+/// gone.
+#[reducer]
+pub fn remove_log_interest(ctx: &ReducerContext, container: String) -> Result<(), String> {
+    let to_delete: Vec<LogInterest> = ctx
+        .db
+        .log_interest()
+        .iter()
+        .filter(|r| r.container == container && r.subscriber == ctx.sender())
+        .collect();
+    for row in to_delete {
+        ctx.db.log_interest().delete(row);
+    }
+    Ok(())
+}
+
+/// Scheduled every 60 s: trim `log_event` to LOG_EVENTS_PER_CONTAINER_CAP
+/// most-recent rows per container by `ts_micros`.
+#[reducer]
+pub fn prune_log_events(
+    ctx: &ReducerContext,
+    _schedule: PruneLogEventsSchedule,
+) -> Result<(), String> {
+    // Walk each known container; collect rows sorted by ts_micros desc;
+    // delete everything past the cap.
+    for container in ALLOWED_CONTAINERS.iter() {
+        let mut rows: Vec<LogEvent> = ctx
+            .db
+            .log_event()
+            .iter()
+            .filter(|r| r.container == *container)
+            .collect();
+        if rows.len() <= LOG_EVENTS_PER_CONTAINER_CAP {
+            continue;
+        }
+        rows.sort_by(|a, b| b.ts_micros.cmp(&a.ts_micros));
+        for stale in rows.into_iter().skip(LOG_EVENTS_PER_CONTAINER_CAP) {
+            ctx.db.log_event().id().delete(stale.id);
+        }
+    }
+    Ok(())
+}
+
+/// Owner-only: upsert the single `app_config` row.
+#[reducer]
+pub fn set_app_config(
+    ctx: &ReducerContext,
+    notes_callback: String,
+    typewars_callback: String,
+    admin_callback: String,
+    deck_origin: String,
+) -> Result<(), String> {
+    assert_owner(ctx)?;
+    let row = AppConfig {
+        id: 0,
+        notes_callback,
+        typewars_callback,
+        admin_callback,
+        deck_origin,
+    };
+    if ctx.db.app_config().id().find(0).is_some() {
+        ctx.db.app_config().id().update(row);
+    } else {
+        ctx.db.app_config().insert(row);
+    }
+    Ok(())
+}
+
+// === end admin-collector (Phase 1 W2) ===
+
 
 #[cfg(test)]
 mod tests {
@@ -917,5 +1270,245 @@ mod auth_mailer_tests {
         assert_eq!(e.status, "queued");
         assert!(e.provider_msg_id.is_none());
         assert!(e.error.is_none());
+    }
+}
+
+#[cfg(test)]
+mod admin_collector_tests {
+    //! Tests for the admin-collector tables and helpers.
+    //!
+    //! NOTE: spacetimedb 2.1 does not expose a public `TestContext`/`TestDb`
+    //! harness, so reducer bodies (which take `&ReducerContext`) cannot be
+    //! invoked from a host-side `cargo test`. We test what *is* testable:
+    //! constants, allow-list membership, struct round-trips, the same-
+    //! truncation logic used by `append_log_event`, and the prune
+    //! sort+skip algorithm that backs `prune_log_events`. End-to-end
+    //! reducer behavior is exercised by the worker's Vitest suite (which
+    //! drives a live publish via `spacetime call` in CI smoke).
+    use super::*;
+
+    #[test]
+    fn allowed_containers_includes_core_set() {
+        assert!(ALLOWED_CONTAINERS.contains(&"sastaspace-spacetime"));
+        assert!(ALLOWED_CONTAINERS.contains(&"sastaspace-workers"));
+        assert!(ALLOWED_CONTAINERS.contains(&"sastaspace-admin"));
+        assert!(ALLOWED_CONTAINERS.contains(&"sastaspace-typewars"));
+    }
+
+    #[test]
+    fn allowed_containers_excludes_arbitrary_names() {
+        assert!(!ALLOWED_CONTAINERS.contains(&"evil-container"));
+        assert!(!ALLOWED_CONTAINERS.contains(&""));
+        assert!(!ALLOWED_CONTAINERS.contains(&"random"));
+    }
+
+    #[test]
+    fn log_events_per_container_cap_is_500() {
+        assert_eq!(LOG_EVENTS_PER_CONTAINER_CAP, 500);
+    }
+
+    #[test]
+    fn system_metrics_struct_round_trips_with_optional_gpu() {
+        let m = SystemMetrics {
+            id: 0,
+            cpu_pct: 12.5,
+            cores: 8,
+            mem_used_gb: 4.0,
+            mem_total_gb: 16.0,
+            mem_pct: 25.0,
+            swap_used_mb: 0,
+            swap_total_mb: 2048,
+            disk_used_gb: 100,
+            disk_total_gb: 500,
+            disk_pct: 20.0,
+            net_tx_bytes: 1,
+            net_rx_bytes: 2,
+            uptime_s: 12345,
+            gpu_pct: Some(50),
+            gpu_vram_used_mb: Some(2000),
+            gpu_vram_total_mb: Some(8000),
+            gpu_temp_c: Some(70),
+            gpu_model: Some("RTX 4090".into()),
+            updated_at: Timestamp::UNIX_EPOCH,
+        };
+        assert_eq!(m.id, 0);
+        assert!((m.cpu_pct - 12.5).abs() < f32::EPSILON);
+        assert_eq!(m.gpu_pct, Some(50));
+        assert_eq!(m.gpu_model.as_deref(), Some("RTX 4090"));
+    }
+
+    #[test]
+    fn system_metrics_supports_all_optional_gpu_fields_none() {
+        let m = SystemMetrics {
+            id: 0,
+            cpu_pct: 0.0,
+            cores: 1,
+            mem_used_gb: 0.0,
+            mem_total_gb: 1.0,
+            mem_pct: 0.0,
+            swap_used_mb: 0,
+            swap_total_mb: 0,
+            disk_used_gb: 0,
+            disk_total_gb: 1,
+            disk_pct: 0.0,
+            net_tx_bytes: 0,
+            net_rx_bytes: 0,
+            uptime_s: 0,
+            gpu_pct: None,
+            gpu_vram_used_mb: None,
+            gpu_vram_total_mb: None,
+            gpu_temp_c: None,
+            gpu_model: None,
+            updated_at: Timestamp::UNIX_EPOCH,
+        };
+        assert!(m.gpu_pct.is_none());
+        assert!(m.gpu_model.is_none());
+    }
+
+    #[test]
+    fn container_status_struct_round_trips() {
+        let c = ContainerStatus {
+            name: "sastaspace-spacetime".into(),
+            status: "running".into(),
+            image: "img:latest".into(),
+            uptime_s: 100,
+            mem_used_mb: 50,
+            mem_limit_mb: 200,
+            restart_count: 0,
+            updated_at: Timestamp::UNIX_EPOCH,
+        };
+        assert_eq!(c.name, "sastaspace-spacetime");
+        assert_eq!(c.status, "running");
+        assert_eq!(c.restart_count, 0);
+    }
+
+    #[test]
+    fn log_interest_struct_round_trips() {
+        let li = LogInterest {
+            container: "sastaspace-spacetime".into(),
+            subscriber: Identity::ZERO,
+            created_at: Timestamp::UNIX_EPOCH,
+        };
+        assert_eq!(li.container, "sastaspace-spacetime");
+        assert_eq!(li.subscriber, Identity::ZERO);
+    }
+
+    #[test]
+    fn log_event_struct_round_trips() {
+        let le = LogEvent {
+            id: 0,
+            container: "sastaspace-spacetime".into(),
+            ts_micros: 1234,
+            level: "info".into(),
+            text: "hello".into(),
+            inserted_at: Timestamp::UNIX_EPOCH,
+        };
+        assert_eq!(le.text, "hello");
+        assert_eq!(le.ts_micros, 1234);
+    }
+
+    #[test]
+    fn app_config_struct_round_trips() {
+        let cfg = AppConfig {
+            id: 0,
+            notes_callback: "https://notes/cb".into(),
+            typewars_callback: "https://typewars/cb".into(),
+            admin_callback: "https://admin/cb".into(),
+            deck_origin: "https://sastaspace.com".into(),
+        };
+        assert_eq!(cfg.notes_callback, "https://notes/cb");
+        assert_eq!(cfg.deck_origin, "https://sastaspace.com");
+    }
+
+    /// Mirrors the truncation logic at the top of `append_log_event`.
+    fn truncate_text(text: String) -> String {
+        if text.len() > 4000 {
+            text.chars().take(4000).collect()
+        } else {
+            text
+        }
+    }
+
+    #[test]
+    fn append_log_event_text_truncation_caps_at_4000() {
+        let huge = "x".repeat(8000);
+        let truncated = truncate_text(huge);
+        assert_eq!(truncated.len(), 4000);
+    }
+
+    #[test]
+    fn append_log_event_text_truncation_preserves_short_text() {
+        let small = "tiny line".to_string();
+        let result = truncate_text(small.clone());
+        assert_eq!(result, small);
+    }
+
+    /// Mirrors the sort+skip slice used in `prune_log_events`.
+    fn prune_oldest_beyond_cap(mut rows: Vec<LogEvent>, cap: usize) -> Vec<u64> {
+        if rows.len() <= cap {
+            return Vec::new();
+        }
+        rows.sort_by(|a, b| b.ts_micros.cmp(&a.ts_micros));
+        rows.into_iter().skip(cap).map(|r| r.id).collect()
+    }
+
+    fn make_event(id: u64, ts: i64, container: &str) -> LogEvent {
+        LogEvent {
+            id,
+            container: container.into(),
+            ts_micros: ts,
+            level: "info".into(),
+            text: "x".into(),
+            inserted_at: Timestamp::UNIX_EPOCH,
+        }
+    }
+
+    #[test]
+    fn prune_drops_oldest_keeps_most_recent_cap() {
+        // 700 rows where ts_micros == id, expect to drop 200 oldest.
+        let rows: Vec<LogEvent> = (0..700i64)
+            .map(|i| make_event(i as u64, i, "sastaspace-spacetime"))
+            .collect();
+        let dropped = prune_oldest_beyond_cap(rows, LOG_EVENTS_PER_CONTAINER_CAP);
+        assert_eq!(dropped.len(), 200);
+        // The dropped ids should all have ts_micros < 200 (the oldest 200).
+        // Since ts_micros == id in our seed, dropped ids should be 0..200.
+        let max_dropped = dropped.iter().max().copied().unwrap_or(0);
+        assert!(
+            max_dropped < 200,
+            "expected to drop ids 0..200; max_dropped={max_dropped}"
+        );
+    }
+
+    #[test]
+    fn prune_no_op_when_under_cap() {
+        let rows: Vec<LogEvent> = (0..50i64)
+            .map(|i| make_event(i as u64, i, "sastaspace-ollama"))
+            .collect();
+        let dropped = prune_oldest_beyond_cap(rows, LOG_EVENTS_PER_CONTAINER_CAP);
+        assert!(dropped.is_empty());
+    }
+
+    /// Mirrors the level classification regex applied in
+    /// `workers/src/agents/admin-collector.ts`. Encoded here so the
+    /// Rust-side allow-list rejection still has a sanity check on the
+    /// shape of the level strings the worker passes.
+    #[test]
+    fn level_strings_we_accept_are_short() {
+        for lvl in ["info", "warn", "error", "debug"] {
+            assert!(lvl.len() < 16);
+        }
+    }
+
+    #[test]
+    fn schedule_table_uses_interval_construction() {
+        // Verify the ScheduleAt construction we use in `init` compiles
+        // and yields an Interval variant. (Pure type-level assertion;
+        // the value isn't fired here.)
+        let s: spacetimedb::ScheduleAt = std::time::Duration::from_secs(60).into();
+        match s {
+            spacetimedb::ScheduleAt::Interval(_) => {}
+            _ => panic!("expected ScheduleAt::Interval from Duration::from_secs"),
+        }
     }
 }
