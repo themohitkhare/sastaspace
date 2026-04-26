@@ -11,7 +11,5 @@ import {
 } from "spacetimedb";
 
 export default {
-  postSlug: __t.string(),
-  authorName: __t.string(),
-  body: __t.string(),
+  requestId: __t.u64(),
 };
