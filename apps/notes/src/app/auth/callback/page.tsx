@@ -1,3 +1,15 @@
+// PHASE 4 DELETE — slated for removal in Phase 4 cleanup.
+//
+// This page handles the legacy FastAPI sign-in path: auth.sastaspace.com
+// server-renders a redirect to notes.sastaspace.com/auth/callback#token=...&email=...
+// and this component parses the URL fragment to persist the session.
+//
+// The new STDB-native path lives in /auth/verify. Both pages coexist until the
+// Phase 3 cutover stops the FastAPI auth service. Stale magic-link emails
+// (sent pre-cutover, opened post-cutover) will still land here for one TTL
+// window (15 minutes), so do NOT remove until Phase 4 cleanup.
+//
+// See docs/superpowers/plans/2026-04-26-stdb-native-master.md
 "use client";
 
 import Link from "next/link";
