@@ -18,3 +18,18 @@ pub const WORDS: &[&str] = &[
 pub fn select(nonce: u64) -> &'static str {
     WORDS[nonce as usize % WORDS.len()]
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn select_wraps_at_len_boundary() {
+        assert_eq!(select(WORDS.len() as u64), WORDS[0]);
+    }
+
+    #[test]
+    fn easy_word_list_is_non_empty() {
+        assert!(!WORDS.is_empty());
+    }
+}
