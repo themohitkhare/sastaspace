@@ -11,7 +11,7 @@
 //    + connection pooling are reused across agents.
 
 import { Agent } from "@mastra/core/agent";
-import { createOllama } from "ollama-ai-provider";
+import { createOllama, type OllamaProvider } from "ollama-ai-provider";
 
 import { env } from "./env.js";
 
@@ -21,6 +21,19 @@ import { env } from "./env.js";
 export const ollama = createOllama({
   baseURL: `${env.OLLAMA_URL.replace(/\/$/, "")}/api`,
 });
+
+// Lazy variant for callers that want to defer provider construction past
+// import time (e.g. deck-agent's start() flow). Returns the same singleton
+// shape on each call so HTTP keep-alive is shared.
+let _ollamaProvider: OllamaProvider | undefined;
+export function ollamaProvider(): OllamaProvider {
+  if (!_ollamaProvider) {
+    _ollamaProvider = createOllama({
+      baseURL: `${env.OLLAMA_URL.replace(/\/$/, "")}/api`,
+    });
+  }
+  return _ollamaProvider;
+}
 
 // Kept for backwards-compat with anything still reading the old config map.
 export const ollamaConfig = {

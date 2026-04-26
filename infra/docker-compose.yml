@@ -307,9 +307,10 @@ services:
   # LocalAI: self-hosted OpenAI-compatible model server. Sibling to Ollama.
   # Hosts the MusicGen audio model used by Phase 1 W3 deck-agent.
   # Dev (this file): CPU image (`localai/localai:latest`) — no GPU mounts.
-  # Prod (taxila): swap image to a GPU variant (HIPBLAS for AMD 7900 XTX, or
-  # CUDA for NVIDIA) and add the corresponding `devices:` mounts.
-  # See infra/localai/README.md for the dev-vs-prod distinction.
+  # Prod (taxila): swap image to AIO-GPU variant (`localai/localai:latest-aio-gpu-hipblas`
+  # for AMD 7900 XTX, or `latest-aio-gpu-nvidia-cuda-12` for NVIDIA) and add the
+  # corresponding `devices:` mounts. The AIO images bundle MusicGen; the slim
+  # default image does NOT — see infra/localai/README.md "Phase 1 W3 status".
   localai:
     image: localai/localai:latest
     container_name: sastaspace-localai

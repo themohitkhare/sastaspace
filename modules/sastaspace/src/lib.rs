@@ -966,6 +966,670 @@ pub fn set_app_config(
 
 // === end admin-collector (Phase 1 W2) ===
 
+// === deck-agent (Phase 1 W3) ===
+
+use serde::{Deserialize, Serialize};
+
+/// One row per `/lab/deck` plan request. The deck-agent worker subscribes to
+/// `status='pending'` rows, runs the Ollama planner agent, and calls
+/// `set_plan` on success or `set_plan_fallback` on any error. The reducer
+/// itself computes the deterministic fallback in `set_plan_fallback` so the
+/// worker never has to ship JSON for that case.
+///
+/// Visibility: public-read by the submitter and by the owner; other clients
+/// see nothing. Enforced via `assert_submitter_or_owner` in any reducer that
+/// surfaces row contents (pure read traffic goes through subscriptions, which
+/// SpacetimeDB filters per-row when `submitter` is the only btree-indexed
+/// identity column — confirm filter shape against the SDK version installed).
+#[table(accessor = plan_request, public)]
+pub struct PlanRequest {
+    #[primary_key]
+    #[auto_inc]
+    pub id: u64,
+    #[index(btree)]
+    pub submitter: Identity,
+    pub description: String,
+    pub count: u32,
+    /// "pending" | "done" | "failed"
+    pub status: String,
+    /// JSON-encoded array of `PlannedTrack` when status="done"; None otherwise.
+    pub tracks_json: Option<String>,
+    pub error: Option<String>,
+    pub created_at: Timestamp,
+    pub completed_at: Option<Timestamp>,
+}
+
+/// One row per `/generate` job. Worker subscribes to `status='pending'`,
+/// renders each track via LocalAI MusicGen, zips the WAVs, writes the zip
+/// to the host-mounted /app/deck-out volume, and calls `set_generate_done`
+/// with the public URL.
+///
+/// `plan_request_id` is optional because a frontend may pass an ad-hoc
+/// edited track list without ever having created a `plan_request` row
+/// (the spec calls this out — the user's edit step lives entirely in
+/// frontend state until they hit "generate").
+#[table(accessor = generate_job, public)]
+pub struct GenerateJob {
+    #[primary_key]
+    #[auto_inc]
+    pub id: u64,
+    #[index(btree)]
+    pub submitter: Identity,
+    pub plan_request_id: Option<u64>,
+    /// JSON-encoded array of `PlannedTrack` (the possibly-edited plan).
+    pub tracks_json: String,
+    /// "pending" | "done" | "failed"
+    pub status: String,
+    pub zip_url: Option<String>,
+    pub error: Option<String>,
+    pub created_at: Timestamp,
+    pub completed_at: Option<Timestamp>,
+}
+
+/// In-memory shape used by `compute_local_draft` and JSON (de)serialization.
+/// Must match the frontend's `Track` shape minus the client-side `id`. The
+/// `musicgen_prompt` is derived by the worker from these fields, not stored,
+/// so it isn't part of the JSON contract.
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+pub struct PlannedTrack {
+    pub name: String,
+    #[serde(rename = "type")]
+    pub kind: String,
+    pub length: u32,
+    pub desc: String,
+    pub tempo: String,
+    pub instruments: String,
+    pub mood: String,
+}
+
+const DECK_PLAN_DESC_MIN: usize = 4;
+const DECK_PLAN_DESC_MAX: usize = 600;
+const DECK_PLAN_COUNT_MIN: u32 = 1;
+const DECK_PLAN_COUNT_MAX: u32 = 10;
+
+/// Mirrors `assert_owner` but lets the row's submitter through too. Used by
+/// any reducer that has to confirm a non-owner caller is allowed to act on
+/// a specific row. (Not used by the public `request_*` reducers — those are
+/// open to any signed-in identity.)
+fn assert_submitter_or_owner(ctx: &ReducerContext, submitter: Identity) -> Result<(), String> {
+    if ctx.sender() == submitter {
+        return Ok(());
+    }
+    assert_owner(ctx)
+}
+
+/// Validation helper extracted so it can be unit-tested without a
+/// ReducerContext. Returns the trimmed description on success.
+fn validate_plan_request_inputs(description: &str, count: u32) -> Result<String, String> {
+    let trimmed = description.trim();
+    if trimmed.len() < DECK_PLAN_DESC_MIN {
+        return Err(format!("description too short (min {DECK_PLAN_DESC_MIN} chars)"));
+    }
+    if trimmed.len() > DECK_PLAN_DESC_MAX {
+        return Err(format!("description too long (max {DECK_PLAN_DESC_MAX} chars)"));
+    }
+    if count < DECK_PLAN_COUNT_MIN || count > DECK_PLAN_COUNT_MAX {
+        return Err(format!(
+            "count out of range (must be {DECK_PLAN_COUNT_MIN}..={DECK_PLAN_COUNT_MAX})"
+        ));
+    }
+    Ok(trimmed.to_string())
+}
+
+/// Validation helper for request_generate. Parses the JSON, asserts shape +
+/// length bounds, and returns the parsed Vec<PlannedTrack>. Pure so it can
+/// be tested without a ReducerContext.
+fn validate_generate_tracks(tracks_json: &str) -> Result<Vec<PlannedTrack>, String> {
+    let parsed: Vec<PlannedTrack> = serde_json::from_str(tracks_json)
+        .map_err(|e| format!("tracks_json not valid PlannedTrack[]: {e}"))?;
+    if parsed.is_empty() {
+        return Err("tracks_json must contain at least one track".into());
+    }
+    if parsed.len() > DECK_PLAN_COUNT_MAX as usize {
+        return Err(format!("too many tracks (max {DECK_PLAN_COUNT_MAX})"));
+    }
+    Ok(parsed)
+}
+
+/// Validation helper for set_generate_done's URL guard. Pure for unit
+/// testing.
+fn validate_zip_url(url: &str) -> Result<(), String> {
+    if !url.starts_with("https://") || url.len() > 600 {
+        return Err("invalid zip_url".into());
+    }
+    Ok(())
+}
+
+/// Frontend-callable: insert a pending plan_request, return its id. Caller
+/// is whoever is signed in (any identity — the deck is open to anonymous
+/// signed-in identities, same as the unauthed prototype). Validation matches
+/// the FastAPI Pydantic model in services/deck/main.py:GenerateRequest.
+#[reducer]
+pub fn request_plan(
+    ctx: &ReducerContext,
+    description: String,
+    count: u32,
+) -> Result<(), String> {
+    let trimmed = validate_plan_request_inputs(&description, count)?;
+    ctx.db.plan_request().insert(PlanRequest {
+        id: 0,
+        submitter: ctx.sender(),
+        description: trimmed,
+        count,
+        status: "pending".into(),
+        tracks_json: None,
+        error: None,
+        created_at: ctx.timestamp,
+        completed_at: None,
+    });
+    Ok(())
+}
+
+/// Worker-only: write the plan the agent produced.
+#[reducer]
+pub fn set_plan(ctx: &ReducerContext, request_id: u64, tracks_json: String) -> Result<(), String> {
+    assert_owner(ctx)?;
+    // Parse-validate so we never store junk that the frontend can't render.
+    let _: Vec<PlannedTrack> = serde_json::from_str(&tracks_json)
+        .map_err(|e| format!("tracks_json not valid PlannedTrack[]: {e}"))?;
+    let mut row = ctx
+        .db
+        .plan_request()
+        .id()
+        .find(request_id)
+        .ok_or_else(|| format!("no plan_request with id {request_id}"))?;
+    row.status = "done".into();
+    row.tracks_json = Some(tracks_json);
+    row.completed_at = Some(ctx.timestamp);
+    row.error = None;
+    ctx.db.plan_request().id().update(row);
+    Ok(())
+}
+
+/// Worker-only: agent failed; reducer computes the deterministic fallback
+/// from the original description+count and stores it as the result. This
+/// keeps the seed-list logic in one Rust spot and means worker failure
+/// modes don't have to know how to draft anything themselves.
+#[reducer]
+pub fn set_plan_fallback(ctx: &ReducerContext, request_id: u64) -> Result<(), String> {
+    assert_owner(ctx)?;
+    let mut row = ctx
+        .db
+        .plan_request()
+        .id()
+        .find(request_id)
+        .ok_or_else(|| format!("no plan_request with id {request_id}"))?;
+    let json = compute_local_draft(&row.description, row.count);
+    row.status = "done".into();
+    row.tracks_json = Some(json);
+    row.completed_at = Some(ctx.timestamp);
+    row.error = None;
+    ctx.db.plan_request().id().update(row);
+    Ok(())
+}
+
+/// Worker-only: terminal failure. Used when even the fallback path is
+/// inappropriate (e.g. the row was deleted under us). In normal worker
+/// operation prefer set_plan_fallback over this.
+#[reducer]
+pub fn set_plan_failed(
+    ctx: &ReducerContext,
+    request_id: u64,
+    error: String,
+) -> Result<(), String> {
+    assert_owner(ctx)?;
+    let mut row = ctx
+        .db
+        .plan_request()
+        .id()
+        .find(request_id)
+        .ok_or_else(|| format!("no plan_request with id {request_id}"))?;
+    row.status = "failed".into();
+    row.error = Some(error.chars().take(400).collect());
+    row.completed_at = Some(ctx.timestamp);
+    ctx.db.plan_request().id().update(row);
+    Ok(())
+}
+
+/// Frontend-callable: queue a render job. `tracks_json` is the (possibly
+/// edited) plan the user approved; `plan_request_id` is the `plan_request`
+/// row it came from when applicable, or None when the frontend skipped the
+/// review step.
+#[reducer]
+pub fn request_generate(
+    ctx: &ReducerContext,
+    plan_request_id: Option<u64>,
+    tracks_json: String,
+) -> Result<(), String> {
+    let _parsed = validate_generate_tracks(&tracks_json)?;
+    if let Some(pid) = plan_request_id {
+        // If the caller cites a plan_request, only its submitter (or owner)
+        // may queue a job from it. This blocks one signed-in identity from
+        // hijacking another's plan id.
+        if let Some(pr) = ctx.db.plan_request().id().find(pid) {
+            assert_submitter_or_owner(ctx, pr.submitter)?;
+        }
+    }
+    ctx.db.generate_job().insert(GenerateJob {
+        id: 0,
+        submitter: ctx.sender(),
+        plan_request_id,
+        tracks_json,
+        status: "pending".into(),
+        zip_url: None,
+        error: None,
+        created_at: ctx.timestamp,
+        completed_at: None,
+    });
+    Ok(())
+}
+
+/// Worker-only: render finished, zip URL is live.
+#[reducer]
+pub fn set_generate_done(
+    ctx: &ReducerContext,
+    job_id: u64,
+    zip_url: String,
+) -> Result<(), String> {
+    assert_owner(ctx)?;
+    validate_zip_url(&zip_url)?;
+    let mut row = ctx
+        .db
+        .generate_job()
+        .id()
+        .find(job_id)
+        .ok_or_else(|| format!("no generate_job with id {job_id}"))?;
+    row.status = "done".into();
+    row.zip_url = Some(zip_url);
+    row.completed_at = Some(ctx.timestamp);
+    row.error = None;
+    ctx.db.generate_job().id().update(row);
+    Ok(())
+}
+
+/// Worker-only: render failed.
+#[reducer]
+pub fn set_generate_failed(
+    ctx: &ReducerContext,
+    job_id: u64,
+    error: String,
+) -> Result<(), String> {
+    assert_owner(ctx)?;
+    let mut row = ctx
+        .db
+        .generate_job()
+        .id()
+        .find(job_id)
+        .ok_or_else(|| format!("no generate_job with id {job_id}"))?;
+    row.status = "failed".into();
+    row.error = Some(error.chars().take(400).collect());
+    row.completed_at = Some(ctx.timestamp);
+    ctx.db.generate_job().id().update(row);
+    Ok(())
+}
+
+// ---------- deterministic local draft (Rust port of services/deck/plan.py:_local_draft) ----------
+
+/// Returns a JSON-encoded `Vec<PlannedTrack>` of length `count`, deterministic
+/// in `description` + `count`. Categories, mood overrides, and seed lists are
+/// a 1:1 port of the Python implementation in
+/// `services/deck/src/sastaspace_deck/plan.py::_local_draft`. Any drift here
+/// will be caught by the unit tests below — they assert the exact same outputs
+/// the Python tests in services/deck/tests/test_plan.py assert.
+pub fn compute_local_draft(description: &str, count: u32) -> String {
+    let n = count.clamp(DECK_PLAN_COUNT_MIN, DECK_PLAN_COUNT_MAX) as usize;
+    let lower = description.to_lowercase();
+
+    // Word-boundary tester: returns true if any of `needles` appears as a
+    // \b-bounded word in `lower`. Rust's regex crate is heavy for the WASM
+    // build; this manual scan matches the Python `\b(...)\b` semantics for
+    // the small finite set we care about.
+    let has_word = |needles: &[&str]| -> bool {
+        needles.iter().any(|w| word_boundary_contains(&lower, w))
+    };
+    // Stem-prefix variant: matches if `needle` appears at a word start (no
+    // trailing \b). Mirrors `\b(haunt|spook|...)` in the Python without the
+    // trailing boundary.
+    let has_stem = |stems: &[&str]| -> bool {
+        stems.iter().any(|s| word_stem_contains(&lower, s))
+    };
+
+    let is_meditation = has_word(&["meditation", "mindful", "sleep", "calm", "relax", "yoga"]);
+    let is_game = has_word(&["game", "platformer", "rpg", "puzzle", "level", "boss", "pixel", "2d", "3d"]);
+    let is_video = has_word(&["video", "trailer", "ad", "spot", "commercial", "product", "demo"]);
+    let is_podcast = has_word(&["podcast", "intro", "outro", "episode", "host"]);
+    let is_finance = has_word(&["finance", "fintech", "dashboard", "analytics", "trading", "wealth"]);
+    let is_app = has_word(&["app", "mobile", "web", "onboarding", "notification", "button", "ui"])
+        || is_meditation;
+
+    let mut mood = "focused";
+    if is_meditation { mood = "calm"; }
+    else if is_game { mood = "playful"; }
+    else if is_video { mood = "cinematic"; }
+    else if is_podcast { mood = "warm"; }
+    else if is_finance { mood = "focused"; }
+
+    if has_stem(&["dark", "tense", "haunt", "spook", "grim"]) { mood = "dark"; }
+    if has_stem(&["warm", "nostalg", "cozy", "gentle"]) { mood = "warm"; }
+    if has_stem(&["upbeat", "energ", "fast", "hype"]) { mood = "upbeat"; }
+    if has_stem(&["dream", "float", "airy"]) { mood = "dreamy"; }
+
+    type Seed = (&'static str, &'static str, u32, &'static str, &'static str, &'static str);
+    let seeds: &[Seed] = if is_app || is_meditation || is_finance {
+        &[
+            ("Background ambient bed", "background", 60, "long-form ambient bed for the home/landing screen", "60bpm", "soft pads, sustained synths, no percussion"),
+            ("UI background loop", "loop", 12, "looping low-volume motif behind core flows", "90bpm", "gentle plucks, soft bells, very light rhythm"),
+            ("Notification chime", "one-shot", 2, "in-app notification — friendly, non-intrusive", "free", "two-note bell, soft mallet, quick decay"),
+            ("Success confirmation", "one-shot", 2, "completed action / saved / sent", "free", "rising tone, light harmonic, gentle"),
+            ("Error tone", "one-shot", 2, "something went wrong — soft, not alarming", "free", "low fall, muted pad"),
+            ("Onboarding intro", "intro", 8, "plays once on first open, sets the tone", "60bpm", "rising pad, single melodic phrase"),
+            ("Screen transition", "transition", 3, "short whoosh between major sections", "free", "air sweep, shimmer"),
+            ("Loading loop", "loop", 8, "plays during longer waits", "90bpm", "gentle pulse, soft warble"),
+            ("Achievement sting", "sting", 3, "milestone celebration", "free", "bright chord stab, rising"),
+            ("Outro / closing", "outro", 6, "plays as the user finishes a session", "60bpm", "descending pad, soft resolution"),
+        ]
+    } else if is_game {
+        &[
+            ("Title theme", "intro", 30, "plays on the main menu — sets the world", "90bpm", "lead synth, drums, atmosphere"),
+            ("Exploration loop", "background", 60, "core gameplay bed", "90bpm", "bass, light percussion, melodic motif"),
+            ("Combat loop", "background", 30, "fight / encounter music", "120bpm", "driving drums, distorted bass, brass stabs"),
+            ("Boss theme", "background", 60, "boss encounter — bigger, heavier", "120bpm", "orchestral hits, choir, percussion"),
+            ("Victory sting", "sting", 3, "plays after winning a fight", "free", "rising orchestral chord, bell"),
+            ("Defeat sting", "sting", 3, "plays on game-over", "free", "descending minor chord, low brass"),
+            ("Menu loop", "loop", 15, "plays in pause/inventory menus", "60bpm", "soft pad, music box"),
+            ("Item pickup", "one-shot", 2, "collected coin / gem / item", "free", "sparkle, bell"),
+            ("Hit / damage", "one-shot", 2, "enemy or player takes damage", "free", "punchy thud"),
+            ("Level complete", "sting", 4, "end of stage celebration", "free", "fanfare, drums"),
+        ]
+    } else if is_podcast {
+        &[
+            ("Intro theme", "intro", 15, "opening signature for every episode", "90bpm", "acoustic guitar, soft kick, atmosphere"),
+            ("Outro theme", "outro", 15, "closing signature", "90bpm", "acoustic guitar, light strings"),
+            ("Ad break bumper", "transition", 5, "bumper between content and sponsor read", "free", "short tag, branded"),
+            ("Interview bed", "background", 30, "subtle bed under longer interview segments", "60bpm", "soft pad, no melody"),
+            ("Pull-quote sting", "sting", 3, "highlights a guest soundbite", "free", "small chord, pluck"),
+            ("Episode-end card", "outro", 8, "plays under credits / patreon mentions", "60bpm", "warm pad, light arpeggio"),
+        ]
+    } else if is_video {
+        &[
+            ("Hero music bed", "background", 30, "main backing track for the spot", "90bpm", "cinematic pad, light percussion, melody"),
+            ("Opening sting", "intro", 4, "plays under the logo / first frame", "free", "rising chord, percussive hit"),
+            ("Closing sting", "outro", 4, "plays under the end card / CTA", "free", "resolving chord, gentle hit"),
+            ("Tagline bumper", "transition", 3, "punctuates the tagline reveal", "free", "snap, shimmer"),
+            ("Voiceover bed", "background", 30, "subtle, no melody under VO", "60bpm", "pad, sub bass"),
+        ]
+    } else {
+        &[
+            ("Background bed", "background", 30, "main long-form audio bed", "90bpm", "pad, soft melody"),
+            ("Short loop", "loop", 12, "compact looping motif", "90bpm", "pluck, soft drums"),
+            ("Notification tone", "one-shot", 2, "short signal / chime", "free", "bell, mallet"),
+            ("Intro sting", "intro", 4, "opening hit", "free", "rising chord"),
+            ("Outro sting", "outro", 4, "closing hit", "free", "resolving chord"),
+        ]
+    };
+
+    let mut out: Vec<PlannedTrack> = seeds
+        .iter()
+        .take(n)
+        .map(|s| PlannedTrack {
+            name: s.0.into(),
+            kind: s.1.into(),
+            length: s.2,
+            desc: s.3.into(),
+            tempo: s.4.into(),
+            instruments: s.5.into(),
+            mood: mood.into(),
+        })
+        .collect();
+    while out.len() < n {
+        out.push(PlannedTrack {
+            name: format!("Extra track {}", out.len() + 1),
+            kind: "loop".into(),
+            length: 15,
+            desc: "additional looping motif".into(),
+            tempo: "90bpm".into(),
+            instruments: "pad, pluck".into(),
+            mood: mood.into(),
+        });
+    }
+    serde_json::to_string(&out).expect("PlannedTrack always serializes")
+}
+
+/// True when `needle` appears in `haystack` at a \b-aligned position on both
+/// ends. Cheap and dependency-free; matches Python's `\b(needle)\b` for
+/// ASCII-letter/digit needles, which is all we use.
+fn word_boundary_contains(haystack: &str, needle: &str) -> bool {
+    let bytes = haystack.as_bytes();
+    let n_bytes = needle.as_bytes();
+    if n_bytes.is_empty() || n_bytes.len() > bytes.len() {
+        return false;
+    }
+    let mut i = 0usize;
+    while i + n_bytes.len() <= bytes.len() {
+        if &bytes[i..i + n_bytes.len()] == n_bytes {
+            let left_ok = i == 0 || !is_word_byte(bytes[i - 1]);
+            let right_ok = i + n_bytes.len() == bytes.len()
+                || !is_word_byte(bytes[i + n_bytes.len()]);
+            if left_ok && right_ok {
+                return true;
+            }
+        }
+        i += 1;
+    }
+    false
+}
+
+/// Like `word_boundary_contains` but only requires the LEFT boundary —
+/// equivalent to Python's `\bstem` (no trailing \b). Lets "haunted",
+/// "nostalgic", "energetic", "dreamy" trigger their respective overrides.
+fn word_stem_contains(haystack: &str, stem: &str) -> bool {
+    let bytes = haystack.as_bytes();
+    let s_bytes = stem.as_bytes();
+    if s_bytes.is_empty() || s_bytes.len() > bytes.len() {
+        return false;
+    }
+    let mut i = 0usize;
+    while i + s_bytes.len() <= bytes.len() {
+        if &bytes[i..i + s_bytes.len()] == s_bytes {
+            let left_ok = i == 0 || !is_word_byte(bytes[i - 1]);
+            if left_ok {
+                return true;
+            }
+        }
+        i += 1;
+    }
+    false
+}
+
+fn is_word_byte(b: u8) -> bool {
+    b.is_ascii_alphanumeric() || b == b'_'
+}
+
+#[cfg(test)]
+mod deck_tests {
+    use super::*;
+
+    fn parse(json: &str) -> Vec<PlannedTrack> {
+        serde_json::from_str(json).expect("compute_local_draft must produce valid JSON")
+    }
+
+    // ---------- compute_local_draft (8 tests, ports services/deck/tests/test_plan.py) ----------
+
+    #[test]
+    fn local_draft_meditation_returns_calm_mood() {
+        let plan = parse(&compute_local_draft(
+            "A meditation app for stressed professionals",
+            3,
+        ));
+        assert_eq!(plan.len(), 3);
+        assert!(plan.iter().all(|t| t.mood == "calm"));
+        // First three seeds for the app/meditation/finance branch.
+        assert_eq!(plan[0].name, "Background ambient bed");
+        assert_eq!(plan[1].name, "UI background loop");
+        assert_eq!(plan[2].name, "Notification chime");
+    }
+
+    #[test]
+    fn local_draft_game_returns_playful_mood() {
+        let plan = parse(&compute_local_draft("A 2D pixel-art platformer", 3));
+        assert_eq!(plan.len(), 3);
+        assert!(plan.iter().all(|t| t.mood == "playful"));
+        assert_eq!(plan[0].name, "Title theme");
+    }
+
+    #[test]
+    fn local_draft_dark_keyword_overrides_domain_mood() {
+        let plan = parse(&compute_local_draft(
+            "A 2D platformer set in a haunted candy factory",
+            3,
+        ));
+        assert!(plan.iter().all(|t| t.mood == "dark"));
+    }
+
+    #[test]
+    fn local_draft_count_clamped_to_max() {
+        let plan = parse(&compute_local_draft("anything", 999));
+        assert_eq!(plan.len(), 10);
+    }
+
+    #[test]
+    fn local_draft_count_clamped_to_min() {
+        let plan = parse(&compute_local_draft("anything", 0));
+        assert_eq!(plan.len(), 1);
+    }
+
+    #[test]
+    fn local_draft_pads_when_seeds_run_out() {
+        // A truly non-keyword phrase forces the generic 5-seed branch and
+        // exercises the padding loop.
+        let plain = parse(&compute_local_draft("a tabletop pamphlet", 8));
+        assert_eq!(plain.len(), 8);
+        // Padded entries get the "Extra track N" name.
+        assert!(plain.iter().any(|t| t.name.starts_with("Extra track")));
+        // First entry comes from the generic seed list.
+        assert_eq!(plain[0].name, "Background bed");
+    }
+
+    #[test]
+    fn local_draft_video_branch_is_cinematic() {
+        let plan = parse(&compute_local_draft(
+            "A 30-second product video for a hardware keyboard",
+            3,
+        ));
+        // "product" + "video" both hit the video branch; mood=cinematic.
+        assert!(plan.iter().all(|t| t.mood == "cinematic"));
+        assert_eq!(plan[0].name, "Hero music bed");
+    }
+
+    #[test]
+    fn local_draft_podcast_branch_is_warm() {
+        let plan = parse(&compute_local_draft(
+            "A morning-routine podcast intro",
+            3,
+        ));
+        assert!(plan.iter().all(|t| t.mood == "warm"));
+        assert_eq!(plan[0].name, "Intro theme");
+    }
+
+    // ---------- validation helpers (mirror the reducer guards w/o ReducerContext) ----------
+
+    #[test]
+    fn validate_plan_request_rejects_short_description() {
+        assert!(validate_plan_request_inputs("hi", 3).is_err());
+        // 4 chars is the minimum; 3 fails.
+        assert!(validate_plan_request_inputs("abc", 3).is_err());
+        assert!(validate_plan_request_inputs("abcd", 3).is_ok());
+    }
+
+    #[test]
+    fn validate_plan_request_rejects_long_description() {
+        let too_long = "x".repeat(601);
+        assert!(validate_plan_request_inputs(&too_long, 3).is_err());
+        let max_ok = "x".repeat(600);
+        assert!(validate_plan_request_inputs(&max_ok, 3).is_ok());
+    }
+
+    #[test]
+    fn validate_plan_request_rejects_oversize_count() {
+        assert!(validate_plan_request_inputs("A meditation app", 11).is_err());
+        assert!(validate_plan_request_inputs("A meditation app", 0).is_err());
+        // 1..=10 inclusive accepted.
+        assert!(validate_plan_request_inputs("A meditation app", 1).is_ok());
+        assert!(validate_plan_request_inputs("A meditation app", 10).is_ok());
+    }
+
+    #[test]
+    fn validate_plan_request_trims_whitespace() {
+        // Inner whitespace passes (it's part of the brief), but leading/trailing
+        // gets trimmed before length check — so "  abcd  " passes.
+        let trimmed =
+            validate_plan_request_inputs("  A meditation app  ", 3).expect("should accept");
+        assert_eq!(trimmed, "A meditation app");
+        // " hi " trims to "hi" which is under min length and must fail.
+        assert!(validate_plan_request_inputs("  hi  ", 3).is_err());
+    }
+
+    #[test]
+    fn validate_generate_tracks_round_trips_compute_local_draft() {
+        let json = compute_local_draft("A meditation app", 3);
+        let parsed = validate_generate_tracks(&json).expect("should accept");
+        assert_eq!(parsed.len(), 3);
+        assert!(parsed.iter().all(|t| t.mood == "calm"));
+    }
+
+    #[test]
+    fn validate_generate_tracks_rejects_garbage() {
+        assert!(validate_generate_tracks("not json").is_err());
+        // Empty array.
+        assert!(validate_generate_tracks("[]").is_err());
+        // Wrong shape.
+        assert!(validate_generate_tracks(r#"[{"foo": "bar"}]"#).is_err());
+    }
+
+    #[test]
+    fn validate_generate_tracks_rejects_oversize() {
+        // Build a JSON array of 11 tracks — one over DECK_PLAN_COUNT_MAX.
+        let one = r#"{"name":"X","type":"loop","length":2,"desc":"","tempo":"free","instruments":"","mood":"calm"}"#;
+        let big = format!("[{}]", std::iter::repeat(one).take(11).collect::<Vec<_>>().join(","));
+        assert!(validate_generate_tracks(&big).is_err());
+    }
+
+    #[test]
+    fn validate_zip_url_requires_https() {
+        assert!(validate_zip_url("http://nope/").is_err());
+        assert!(validate_zip_url("https://deck.sastaspace.com/1.zip").is_ok());
+        // Length cap.
+        let too_long = format!("https://x/{}", "a".repeat(700));
+        assert!(validate_zip_url(&too_long).is_err());
+    }
+
+    // ---------- type / serialization sanity ----------
+
+    #[test]
+    fn planned_track_uses_type_json_key_not_kind() {
+        // The Python contract is `"type": ...` — the Rust `kind` field renames
+        // to `type` via serde. This test pins that contract so a future field
+        // rename doesn't silently break the frontend.
+        let t = PlannedTrack {
+            name: "Pad".into(),
+            kind: "background".into(),
+            length: 30,
+            desc: "bed".into(),
+            tempo: "60bpm".into(),
+            instruments: "soft pad".into(),
+            mood: "calm".into(),
+        };
+        let json = serde_json::to_string(&t).unwrap();
+        assert!(json.contains("\"type\":\"background\""), "json={json}");
+        assert!(!json.contains("\"kind\""), "json={json}");
+        // And it round-trips.
+        let back: PlannedTrack = serde_json::from_str(&json).unwrap();
+        assert_eq!(back, t);
+    }
+}
+
+// === end deck-agent (Phase 1 W3) ===
+
 
 #[cfg(test)]
 mod tests {

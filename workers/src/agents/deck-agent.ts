@@ -1,6 +1,418 @@
-// Stub — fleshed out by Phase 1 W3 (deck-agent).
+/**
+ * deck-agent — Mastra+Ollama planner + LocalAI MusicGen renderer.
+ *
+ * Subscribes to:
+ *   - plan_request WHERE status='pending'  → drafts a track plan via Ollama,
+ *     calls setPlan on success or setPlanFallback on any failure (the reducer
+ *     synthesizes the deterministic fallback from description+count).
+ *   - generate_job WHERE status='pending'  → renders each track via LocalAI's
+ *     MusicGen sound-generation endpoint, zips WAVs + a README.txt onto the
+ *     host-mounted /app/deck-out volume, calls setGenerateDone with the
+ *     public URL. On any failure calls setGenerateFailed.
+ *
+ * The worker keeps in-flight sets to avoid double-processing the same row
+ * across an `iter()` snapshot + onInsert race.
+ */
+
+import { promises as fs } from "node:fs";
+import path from "node:path";
+
+import { Agent } from "@mastra/core/agent";
+import JSZip from "jszip";
+
+import { env } from "../shared/env.js";
+import { ollamaProvider } from "../shared/mastra.js";
 import type { StdbConn } from "../shared/stdb.js";
 
-export async function start(_db: StdbConn): Promise<() => Promise<void>> {
-  throw new Error("deck-agent not implemented — Phase 1 W3 deliverable");
+const log = (level: string, msg: string, extra?: unknown): void => {
+  console.log(JSON.stringify({
+    ts: new Date().toISOString(),
+    agent: "deck-agent",
+    level,
+    msg,
+    extra,
+  }));
+};
+
+// 1:1 port of services/deck/src/sastaspace_deck/agent.py:PLANNER_INSTRUCTIONS.
+// Kept verbatim so a model swap doesn't silently change drafting behaviour.
+export const PLANNER_INSTRUCTIONS = `You are a music director for a small audio-asset tool.
+
+Given a project description and a target track count, output a JSON array of
+exactly that many tracks. Each track is an object with these exact keys:
+
+- name        (string, short title, sentence case)
+- type        (one of: background, loop, one-shot, intro, outro, transition, sting, jingle)
+- length      (integer seconds, 1..180)
+- desc        (string, one-sentence usage hint)
+- tempo       (one of: 60bpm, 90bpm, 120bpm, free)
+- instruments (string, comma-separated, e.g. "soft pads, gentle bell, no percussion")
+- mood        (one of: calm, focused, playful, cinematic, dark, upbeat, warm, tense, dreamy, nostalgic)
+
+Pick a mood that matches the project. Pick types that cover the project's
+real audio needs (e.g. an app needs a notification, a game needs combat
+music). Keep durations realistic — notifications are 2s, beds are 30-60s.
+
+Output ONLY the JSON array. No prose, no markdown, no code fences, no
+explanations. Start with \`[\` and end with \`]\`.
+`;
+
+export type Track = {
+  name: string;
+  type: string;
+  length: number;
+  desc: string;
+  tempo: string;
+  instruments: string;
+  mood: string;
+};
+
+type PlanRow = {
+  id: bigint;
+  description: string;
+  count: number;
+  status: string;
+};
+
+type GenRow = {
+  id: bigint;
+  tracks_json: string;
+  plan_request_id: bigint | null;
+  status: string;
+};
+
+// Internal seam so tests can swap the renderer / planner without touching
+// network. The real worker uses the defaults; tests override via
+// `__test_overrides`.
+type Deps = {
+  draftPlan(description: string, count: number): Promise<Track[]>;
+  renderTrack(track: Track): Promise<Buffer>;
+};
+
+export async function start(
+  db: StdbConn,
+  overrides?: Partial<Deps>,
+): Promise<() => Promise<void>> {
+  const conn = (db as unknown as { connection: StdbAccessor }).connection;
+
+  // Lazy provider so env vars resolve at start() time. Mastra+Ollama wiring
+  // matches W4's moderator-agent (shared/mastra.ts).
+  const planner = new Agent({
+    name: "deck-planner",
+    instructions: PLANNER_INSTRUCTIONS,
+    // gemma3:1b matches services/deck/agent.py default.
+    model: ollamaProvider()(env.OLLAMA_MODEL),
+  });
+
+  const deps: Deps = {
+    draftPlan:
+      overrides?.draftPlan ??
+      (async (description, count) => {
+        const resp = await planner.generate(
+          `project description:\n${description}\n\ntrack count: ${count}\n\nReturn the JSON array now.`,
+        );
+        const text = typeof resp.text === "string" ? resp.text.trim() : "";
+        return parseTracks(text, count);
+      }),
+    renderTrack: overrides?.renderTrack ?? renderViaLocalAi,
+  };
+
+  // Some SDK shapes return a builder, some return the subscription handle
+  // directly. Wrap in try so missing methods (e.g. test stubs) don't crash.
+  try {
+    const builder = conn.subscriptionBuilder?.();
+    builder?.subscribe?.([
+      "SELECT * FROM plan_request WHERE status = 'pending'",
+      "SELECT * FROM generate_job WHERE status = 'pending'",
+    ]);
+  } catch (e) {
+    log("warn", "subscriptionBuilder unavailable", { error: String(e) });
+  }
+
+  const planInFlight = new Set<string>();
+  const genInFlight = new Set<string>();
+
+  // ---------- plan handling ----------
+  const handlePlan = async (row: PlanRow): Promise<void> => {
+    const key = row.id.toString();
+    if (planInFlight.has(key)) return;
+    planInFlight.add(key);
+    try {
+      const tracks = await deps.draftPlan(row.description, row.count);
+      conn.reducers.setPlan(row.id, JSON.stringify(tracks));
+      log("info", "plan set", { id: key, count: tracks.length });
+    } catch (e) {
+      log("warn", "planner failed → fallback", { id: key, error: String(e) });
+      try {
+        conn.reducers.setPlanFallback(row.id);
+      } catch (innerErr) {
+        log("error", "setPlanFallback also failed", {
+          id: key,
+          error: String(innerErr),
+        });
+      }
+    } finally {
+      planInFlight.delete(key);
+    }
+  };
+
+  if (conn.db.planRequest?.onInsert) {
+    conn.db.planRequest.onInsert((_ctx: unknown, row: PlanRow) => {
+      if (row.status === "pending") void handlePlan(row);
+    });
+  }
+  if (conn.db.planRequest?.iter) {
+    for (const row of conn.db.planRequest.iter()) {
+      if (row.status === "pending") void handlePlan(row);
+    }
+  }
+
+  // ---------- generate handling ----------
+  const handleGenerate = async (row: GenRow): Promise<void> => {
+    const key = row.id.toString();
+    if (genInFlight.has(key)) return;
+    genInFlight.add(key);
+    try {
+      const tracks = JSON.parse(row.tracks_json) as Track[];
+      if (!Array.isArray(tracks) || tracks.length === 0) {
+        throw new Error("tracks_json empty");
+      }
+
+      const zip = new JSZip();
+      const usedNames = new Set<string>();
+
+      for (let i = 0; i < tracks.length; i++) {
+        const t = tracks[i];
+        const wav = await deps.renderTrack(t);
+        const filename = uniqueFilename(t.name, i + 1, usedNames);
+        zip.file(filename, wav);
+      }
+
+      // Pull the description back out for the README. If the row references a
+      // plan_request, use that description; otherwise use a synthetic line.
+      let description = "(ad-hoc plan, no source plan_request)";
+      if (row.plan_request_id != null && conn.db.planRequest?.id?.find) {
+        const pr = conn.db.planRequest.id.find(row.plan_request_id);
+        if (pr) description = pr.description;
+      }
+      zip.file("README.txt", buildReadme(description, tracks));
+
+      const bytes = await zip.generateAsync({
+        type: "nodebuffer",
+        compression: "DEFLATE",
+      });
+      const filename = `${row.id.toString()}.zip`;
+      const outDir = env.DECK_OUT_DIR;
+      await fs.mkdir(outDir, { recursive: true });
+      await fs.writeFile(path.join(outDir, filename), bytes);
+
+      const url = `${env.DECK_PUBLIC_BASE_URL.replace(/\/$/, "")}/${filename}`;
+      conn.reducers.setGenerateDone(row.id, url);
+      log("info", "generate done", {
+        id: key,
+        url,
+        bytes: bytes.length,
+      });
+    } catch (e) {
+      log("error", "generate failed", { id: key, error: String(e) });
+      try {
+        conn.reducers.setGenerateFailed(row.id, String(e).slice(0, 400));
+      } catch (innerErr) {
+        log("error", "setGenerateFailed also failed", {
+          id: key,
+          error: String(innerErr),
+        });
+      }
+    } finally {
+      genInFlight.delete(key);
+    }
+  };
+
+  if (conn.db.generateJob?.onInsert) {
+    conn.db.generateJob.onInsert((_ctx: unknown, row: GenRow) => {
+      if (row.status === "pending") void handleGenerate(row);
+    });
+  }
+  if (conn.db.generateJob?.iter) {
+    for (const row of conn.db.generateJob.iter()) {
+      if (row.status === "pending") void handleGenerate(row);
+    }
+  }
+
+  log("info", "deck-agent started", {
+    ollama: env.OLLAMA_URL,
+    localai: env.LOCALAI_URL,
+    deckOut: env.DECK_OUT_DIR,
+  });
+  return async () => {
+    log("info", "deck-agent stopping");
+  };
+}
+
+// ---------- helpers ----------
+
+/**
+ * Parse the agent's text into validated tracks. Tolerates ```json fences.
+ * Mirrors services/deck/src/sastaspace_deck/agent.py:_parse_tracks.
+ */
+export function parseTracks(raw: string, count: number): Track[] {
+  if (!raw) throw new Error("empty agent response");
+  let text = raw;
+  if (text.startsWith("```")) {
+    const parts = text.split("```");
+    if (parts.length >= 3) {
+      let inner = parts[1];
+      if (inner.startsWith("json")) inner = inner.slice(4);
+      text = inner;
+    }
+  }
+  text = text.trim();
+  let data: unknown;
+  try {
+    data = JSON.parse(text);
+  } catch (e) {
+    throw new Error(`agent output not valid JSON: ${String(e)}`);
+  }
+  if (!Array.isArray(data)) throw new Error("agent output not a JSON array");
+  const out: Track[] = [];
+  for (const row of data.slice(0, count)) {
+    if (!row || typeof row !== "object") continue;
+    const r = row as Record<string, unknown>;
+    if (
+      typeof r.name !== "string" ||
+      typeof r.type !== "string" ||
+      typeof r.length !== "number"
+    ) {
+      continue;
+    }
+    out.push({
+      name: String(r.name).slice(0, 80),
+      type: String(r.type).slice(0, 24),
+      length: Math.max(1, Math.min(180, Math.round(Number(r.length)))),
+      desc: typeof r.desc === "string" ? r.desc.slice(0, 240) : "",
+      tempo: typeof r.tempo === "string" ? r.tempo.slice(0, 24) : "90bpm",
+      instruments:
+        typeof r.instruments === "string" ? r.instruments.slice(0, 240) : "",
+      mood: typeof r.mood === "string" ? r.mood.slice(0, 24) : "focused",
+    });
+  }
+  if (out.length === 0) throw new Error("no parseable tracks in agent output");
+  return out;
+}
+
+/**
+ * POST one track to LocalAI's MusicGen endpoint, return raw WAV bytes.
+ *
+ * Endpoint shape verified during Phase 0 (see infra/localai/README.md):
+ *
+ *   POST {LOCALAI_URL}/v1/sound-generation
+ *   { "model": "musicgen-small", "input": "<prompt>", "duration": <s> }
+ *
+ * Response is raw audio bytes (Content-Type: audio/wav). LocalAI v4.1.3's
+ * default `localai/localai:latest` image does NOT bundle the musicgen
+ * backend — see the README for AIO image options. The worker will get a
+ * 400 from the endpoint until a musicgen-capable image is in use, which
+ * the catch in handleGenerate translates to setGenerateFailed.
+ */
+export async function renderViaLocalAi(t: Track): Promise<Buffer> {
+  const prompt = buildMusicgenPrompt(t);
+  const url = `${env.LOCALAI_URL.replace(/\/$/, "")}/v1/sound-generation`;
+  const r = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      model: "musicgen-small",
+      input: prompt,
+      duration: t.length,
+    }),
+  });
+  if (!r.ok) {
+    const body = await r.text().catch(() => "");
+    throw new Error(`localai ${r.status}: ${body.slice(0, 200)}`);
+  }
+  const ab = await r.arrayBuffer();
+  return Buffer.from(ab);
+}
+
+export function buildMusicgenPrompt(t: Track): string {
+  return `${t.mood}, ${t.type}, ${t.tempo}, ${t.length}s, ${
+    t.instruments || "pad"
+  } — for ${t.desc || "a project"}`;
+}
+
+// 1:1 port of services/deck/src/sastaspace_deck/main.py:_readme.
+export function buildReadme(description: string, plan: Track[]): string {
+  const lines = [
+    "deck — sastaspace audio designer",
+    "================================",
+    "",
+    `brief: ${description}`,
+    "",
+    "tracks:",
+  ];
+  plan.forEach((t, i) => {
+    const idx = String(i + 1).padStart(2, "0");
+    lines.push(`  ${idx}. ${t.name} — ${t.type} · ${t.mood} · ${t.length}s`);
+    lines.push(`      ${buildMusicgenPrompt(t)}`);
+  });
+  lines.push("");
+  lines.push("license: cc-by 4.0");
+  return lines.join("\n");
+}
+
+const SLUG_RE = /[^a-z0-9]+/g;
+export function slugify(s: string): string {
+  const cleaned = s
+    .toLowerCase()
+    .replace(SLUG_RE, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 30);
+  return cleaned || "track";
+}
+
+export function uniqueFilename(
+  name: string,
+  idx: number,
+  used: Set<string>,
+): string {
+  const base = slugify(name);
+  let candidate = `${String(idx).padStart(2, "0")}-${base}.wav`;
+  if (used.has(candidate)) {
+    candidate = `${String(idx).padStart(2, "0")}-${base}-${idx}.wav`;
+  }
+  used.add(candidate);
+  return candidate;
+}
+
+// ---------- StdbConn shape used by deck-agent ----------
+//
+// The W1 stdb.ts stub doesn't yet expose `connection`, `db`, `reducers` —
+// those land when W1 wires the real @clockworklabs/spacetimedb-sdk. This
+// interface documents what the deck-agent uses so a future change to
+// stdb.ts can be type-checked against it.
+//
+// We type these as `any`-ish dynamic accessors so the agent compiles before
+// W1's bindings land; the smoke test will fail fast if the real shape
+// diverges from the assumed camelCase accessors.
+
+interface StdbAccessor {
+  subscriptionBuilder?(): { subscribe?(queries: string[]): unknown } | undefined;
+  reducers: {
+    setPlan(requestId: bigint, tracksJson: string): void;
+    setPlanFallback(requestId: bigint): void;
+    setPlanFailed?(requestId: bigint, error: string): void;
+    setGenerateDone(jobId: bigint, zipUrl: string): void;
+    setGenerateFailed(jobId: bigint, error: string): void;
+  };
+  db: {
+    planRequest?: {
+      onInsert?(cb: (ctx: unknown, row: PlanRow) => void): void;
+      iter?(): Iterable<PlanRow>;
+      id?: { find(id: bigint): { description: string } | undefined };
+    };
+    generateJob?: {
+      onInsert?(cb: (ctx: unknown, row: GenRow) => void): void;
+      iter?(): Iterable<GenRow>;
+    };
+  };
 }

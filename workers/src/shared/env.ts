@@ -9,6 +9,12 @@ const Env = z.object({
   OLLAMA_MODEL: z.string().default("gemma3:1b"),
   LOCALAI_URL: z.string().url().default("http://127.0.0.1:8080"),
 
+  // Deck-agent (Phase 1 W3) — output paths for the renderer + zipper.
+  // DECK_OUT_DIR is host-mounted into the container at this path; nginx (or
+  // a sibling container) serves it at DECK_PUBLIC_BASE_URL.
+  DECK_OUT_DIR: z.string().default("/app/deck-out"),
+  DECK_PUBLIC_BASE_URL: z.string().url().default("https://deck.sastaspace.com"),
+
   RESEND_API_KEY: z.string().optional(),
   RESEND_FROM: z.string().default("hi@sastaspace.com"),
 
