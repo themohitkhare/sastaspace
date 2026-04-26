@@ -5,6 +5,7 @@ import { tables } from '@sastaspace/typewars-bindings';
 import type { Region, Player, LegionId } from '@/types';
 import { LEGION_INFO } from '@/lib/legions';
 import { Avatar } from './Avatar';
+import { FOOTER_SIGNATURE, SEASON_LABEL } from '@/lib/season';
 
 interface Props {
   regions: Region[];
@@ -77,7 +78,7 @@ export default function Leaderboard({ regions, player, onBack, onOpenProfile }: 
       </header>
 
       <main className="lb-inner">
-        <p className="ss-eyebrow" style={{ color: 'var(--brand-muted)', marginBottom: 8 }}>season 1</p>
+        <p className="ss-eyebrow" style={{ color: 'var(--brand-muted)', marginBottom: 8 }}>{SEASON_LABEL}</p>
         <h1 className="ss-h1">Leaderboard</h1>
         <p className="ss-lede" style={{ color: 'var(--brand-muted)', marginTop: 12 }}>
           Live standings across all 25 regions. Damage is the only currency.
@@ -186,7 +187,7 @@ export default function Leaderboard({ regions, player, onBack, onOpenProfile }: 
       </main>
 
       <footer className="footer-sig">
-        <span className="ss-small ss-mono">typewars · season 1 · a sasta lab project</span>
+        <span className="ss-small ss-mono">{FOOTER_SIGNATURE}</span>
       </footer>
     </div>
   );

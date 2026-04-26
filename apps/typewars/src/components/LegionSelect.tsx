@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import type { LegionId } from '@/types';
 import { LEGION_INFO } from '@/lib/legions';
+import { FOOTER_SIGNATURE, SEASON_PROGRESS_LABEL } from '@/lib/season';
 
 interface Props {
   onChoose: (legion: LegionId, username: string) => Promise<void>;
@@ -20,7 +21,7 @@ export default function LegionSelect({ onChoose }: Props) {
       <header className="topbar">
         <span className="ss-mono" style={{ fontWeight: 500 }}>typewars.sastaspace.com</span>
         <span className="ss-small" style={{ color: 'var(--brand-muted)' }}>— a sasta lab project</span>
-        <span style={{ marginLeft: 'auto', color: 'var(--brand-muted)' }} className="ss-small ss-mono">season 1 · day 12 / 30</span>
+        <span style={{ marginLeft: 'auto', color: 'var(--brand-muted)' }} className="ss-small ss-mono">{SEASON_PROGRESS_LABEL}</span>
       </header>
 
       <main className="ls-inner">
@@ -99,7 +100,7 @@ export default function LegionSelect({ onChoose }: Props) {
       </main>
 
       <footer className="footer-sig">
-        <span className="ss-small ss-mono">typewars · season 1 · a sasta lab project</span>
+        <span className="ss-small ss-mono">{FOOTER_SIGNATURE}</span>
       </footer>
     </div>
   );

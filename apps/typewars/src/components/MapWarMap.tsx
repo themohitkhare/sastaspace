@@ -3,6 +3,7 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 import type { Region, Player, LegionId } from '@/types';
 import { LEGION_INFO } from '@/lib/legions';
 import { MAP_REGIONS, CONTINENTS } from '@/lib/regions';
+import { FOOTER_SIGNATURE, SEASON_LABEL, SEASON_PROGRESS_LABEL } from '@/lib/season';
 import RegionDetail from './RegionDetail';
 import { Avatar } from './Avatar';
 import { SignInTrigger } from './SignInTrigger';
@@ -102,7 +103,7 @@ export default function MapWarMap({ regions, player, onEnter, onOpenBoard, onSwa
     <div className="page" style={{ background: 'var(--brand-paper)' }}>
       <header className="topbar">
         <span className="ss-mono" style={{ fontWeight: 500 }}>typewars.sastaspace.com</span>
-        <span className="ss-small" style={{ color: 'var(--brand-muted)' }}>season 1 · day 12 / 30</span>
+        <span className="ss-small" style={{ color: 'var(--brand-muted)' }}>{SEASON_PROGRESS_LABEL}</span>
         <span style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 12 }}>
           <button
             className="player-pill swap-pill"
@@ -132,7 +133,7 @@ export default function MapWarMap({ regions, player, onEnter, onOpenBoard, onSwa
         {/* Left: map stage */}
         <div className="map-stage">
           <div>
-            <p className="ss-eyebrow" style={{ color: 'var(--brand-muted)', marginBottom: 8 }}>war map · season 1</p>
+            <p className="ss-eyebrow" style={{ color: 'var(--brand-muted)', marginBottom: 8 }}>{`war map · ${SEASON_LABEL}`}</p>
             <h1 className="ss-h2" style={{ margin: 0 }}>The Contested Worlds</h1>
           </div>
 
@@ -314,7 +315,7 @@ export default function MapWarMap({ regions, player, onEnter, onOpenBoard, onSwa
       </div>
 
       <footer className="footer-sig">
-        <span className="ss-small ss-mono">typewars · season 1 · a sasta lab project</span>
+        <span className="ss-small ss-mono">{FOOTER_SIGNATURE}</span>
       </footer>
     </div>
   );
