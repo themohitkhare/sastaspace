@@ -16,9 +16,16 @@ export interface SignInModalProps {
   authBase?: string;
   open: boolean;
   onClose: () => void;
+  /**
+   * Phase 2 F1: optional override. When provided, the modal calls this with
+   * the trimmed email instead of POSTing to {authBase}/auth/request. Used by
+   * the STDB-native path so the modal stays presentational and the reducer
+   * call lives in the consuming app. Throw to surface an error in the modal.
+   */
+  onRequest?: (email: string) => Promise<void>;
 }
 
-export function SignInModal({ app, callback, prevIdentity, authBase, open, onClose }: SignInModalProps) {
+export function SignInModal({ app, callback, prevIdentity, authBase, open, onClose, onRequest }: SignInModalProps) {
   const base = authBase ?? "https://auth.sastaspace.com";
   const [email, setEmail] = useState("");
   const [status, setStatus] = useState<"idle" | "sending" | "sent" | "error">("idle");
@@ -31,16 +38,26 @@ export function SignInModal({ app, callback, prevIdentity, authBase, open, onClo
     setStatus("sending");
     setError(null);
     try {
-      const body: Record<string, unknown> = { email, app, callback };
-      if (prevIdentity) body.prev_identity = prevIdentity;
-      const r = await fetch(`${base}/auth/request`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      });
-      if (!r.ok) {
-        const detail = await r.text().catch(() => "");
-        throw new Error(detail || `HTTP ${r.status}`);
+      if (onRequest) {
+        // STDB-native path — caller owns the network call (typically a
+        // request_magic_link reducer dispatch). The modal stays purely
+        // presentational and only handles UI state.
+        await onRequest(email);
+      } else {
+        // Legacy FastAPI default — kept identical to pre-F1 behavior so
+        // call-sites that don't opt into STDB get byte-identical wire
+        // semantics.
+        const body: Record<string, unknown> = { email, app, callback };
+        if (prevIdentity) body.prev_identity = prevIdentity;
+        const r = await fetch(`${base}/auth/request`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        });
+        if (!r.ok) {
+          const detail = await r.text().catch(() => "");
+          throw new Error(detail || `HTTP ${r.status}`);
+        }
       }
       setStatus("sent");
     } catch (err) {
