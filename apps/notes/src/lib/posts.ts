@@ -46,7 +46,12 @@ export async function listPosts(opts: { includeDrafts?: boolean } = {}): Promise
       }),
   );
   const visible = opts.includeDrafts ? all : all.filter((p) => !p.draft);
-  return visible.sort((a, b) => (a.date < b.date ? 1 : -1));
+  return visible.sort((a, b) => {
+    if (a.date !== b.date) return a.date < b.date ? 1 : -1;
+    // Stable secondary sort for same-day posts: slug descending so the
+    // ordering is deterministic across builds.
+    return a.slug < b.slug ? 1 : -1;
+  });
 }
 
 export async function readPost(slug: string): Promise<Post | null> {

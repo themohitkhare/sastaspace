@@ -150,6 +150,45 @@ jobs:
           path: packages/stdb-bindings/src/generated
           retention-days: 7
 
+  # ── 1b. seed prod project table ──────────────────────────────────────────
+  # The landing page reads `project` rows from STDB. After every module
+  # republish the table starts empty (publish doesn't preserve user-data
+  # rows for newly-added tables in this layout). This job idempotently
+  # upserts the project list from infra/seeds/projects.json so the
+  # /projects page + the home-page chips repopulate. assert_owner-gated;
+  # uses the same SPACETIME_TOKEN as the publish step.
+  module-seed:
+    needs: module-publish
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    runs-on: [self-hosted, Linux]
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v6
+      - name: upsert each project
+        env:
+          SPACETIME_TOKEN: ${{ secrets.SPACETIME_TOKEN }}
+        run: |
+          if [[ -z "$SPACETIME_TOKEN" ]]; then
+            echo "::error::SPACETIME_TOKEN unset"; exit 1
+          fi
+          jq -c '.[]' infra/seeds/projects.json | while IFS= read -r row; do
+            slug=$(jq -r '.slug' <<<"$row")
+            payload=$(jq -nc --argjson r "$row" \
+              '[$r.slug, $r.title, $r.blurb, $r.status, $r.tags, $r.url]')
+            status=$(curl -sS -o /tmp/upsert.out -w "%{http_code}" \
+              -X POST \
+              -H "Authorization: Bearer $SPACETIME_TOKEN" \
+              -H "Content-Type: application/json" \
+              --data "$payload" \
+              "https://stdb.sastaspace.com/v1/database/sastaspace/call/upsert_project")
+            if [[ "$status" != "200" && "$status" != "204" ]]; then
+              echo "::error::upsert_project($slug) returned $status"
+              head -3 /tmp/upsert.out 2>/dev/null
+              exit 1
+            fi
+            echo "  upsert_project($slug) ok"
+          done
+
   # ── 2. landing app ────────────────────────────────────────────────────────
   # Phase 3 prep (audit N3): build_variant matrix produces both `landing-out-legacy`
   # and `landing-out-stdb` artifacts. NEXT_PUBLIC_USE_STDB_DECK is baked into the

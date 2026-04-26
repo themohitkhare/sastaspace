@@ -400,3 +400,139 @@
   background: var(--brand-sasta);
   border: 1px solid var(--brand-paper);
 }
+
+/* ============ MOBILE ============ */
+/* All breakpoints use 720px as the desktop floor — below this, every grid
+   that's >2 columns collapses to 1, side panels stack under content,
+   horizontal padding drops from 32px → 16px, and the topbar wraps. */
+@media (max-width: 720px) {
+  /* Topbar: wrap items + tighter padding so nothing overflows. */
+  .topbar {
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 10px 16px;
+  }
+  .topbar > * { font-size: 12px; }
+
+  /* Page wrappers: drop the desktop horizontal padding. */
+  .ls-inner {
+    padding: 32px 16px 48px;
+  }
+  .lb-inner {
+    padding: 24px 16px 24px;
+  }
+  .map-layout {
+    grid-template-columns: 1fr;
+    gap: 20px;
+    padding: 16px;
+  }
+  .liberated {
+    padding: 32px 16px;
+  }
+
+  /* Legion select: 1 column on phones, 2 on small tablets. */
+  .legion-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+    margin-top: 32px;
+  }
+  .legion-card { min-height: auto; padding: 18px 16px; }
+
+  /* Finalize bar: stack vertically. */
+  .ls-finalize {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 16px;
+    padding: 20px;
+    margin-top: 32px;
+  }
+  .enlist-btn { padding: 14px; }
+
+  /* Map sidebar stacks under the map and isn't sticky. */
+  .map-side {
+    position: static;
+    top: auto;
+  }
+  .region-quick-list { max-height: 280px; }
+  .rql-row {
+    grid-template-columns: 24px 1fr 24px 50px;
+    gap: 6px;
+    padding: 6px;
+  }
+
+  /* Globe legend wraps tighter. */
+  .globe-legend { gap: 12px; margin-top: 24px; }
+
+  /* Battle screen: cut header padding, drop hud-stat min-width. */
+  .battle-header {
+    padding: 10px 16px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .battle-header-right { gap: 4px; flex-wrap: wrap; }
+  .hud-stat { min-width: 0; padding: 6px 10px; }
+  .hud-val { font-size: 14px; }
+
+  /* HP wrap padding. */
+  .region-hp-wrap { padding: 16px; }
+  .hp-current { font-size: 18px; }
+  .contrib-legend { gap: 10px; font-size: 11px; }
+
+  /* Words grid: 2 cols × 4 rows instead of 4 × 2. Words still readable. */
+  .words-grid {
+    grid-template-columns: repeat(2, 1fr);
+    grid-template-rows: repeat(4, 1fr);
+    gap: 10px;
+    padding: 16px;
+    min-height: 0;
+  }
+  .word-text { font-size: 22px; }
+  .word-card { padding: 12px 14px 10px; }
+
+  /* Battle input row: stack streak/mult above input. */
+  .battle-input-row {
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    padding: 10px 16px 24px;
+  }
+  .input-wrap {
+    grid-column: 1 / -1;
+    padding: 0 12px;
+  }
+  .battle-input { font-size: 18px; padding: 12px 0; }
+  .streak-num { font-size: 22px; }
+
+  .legion-hud {
+    padding: 0 16px 16px;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  /* Liberated splash: stack the grid. */
+  .lib-grid {
+    grid-template-columns: 1fr;
+    gap: 18px;
+    margin: 32px 0 24px;
+    padding: 24px 0;
+  }
+  .liberated { padding: 32px 16px; }
+
+  /* Leaderboard: drop column 4 (tier) and tighten the rest so the
+     table fits at 343px content width. */
+  .lb-thead, .lb-trow {
+    grid-template-columns: 28px 1fr 1fr 90px;
+    gap: 8px;
+    padding: 10px 12px;
+  }
+  .lb-thead > :nth-child(4),
+  .lb-trow > :nth-child(4) { display: none; }
+  .lb-legion-row {
+    grid-template-columns: 24px 1fr 100px;
+    gap: 12px;
+    padding: 12px 14px;
+  }
+
+  /* Modal: tighter so the body still scrolls comfortably on mobile. */
+  .modal-backdrop { padding: 16px; }
+  .modal { padding: 20px; max-height: calc(100vh - 32px); }
+}
