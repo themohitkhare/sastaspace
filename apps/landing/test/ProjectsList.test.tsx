@@ -1,5 +1,5 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
-import { render, screen, act } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
+import { render, screen } from "@testing-library/react";
 
 type Project = {
   slug: string;
@@ -9,23 +9,6 @@ type Project = {
   tags: string[];
   url: string;
 };
-
-let emitter: ((rows: readonly Project[]) => void) | null = null;
-vi.mock("@/lib/projects", () => ({
-  subscribeProjects: (fn: (rows: readonly Project[]) => void) => {
-    emitter = fn;
-    fn([]);
-    return () => {
-      emitter = null;
-    };
-  },
-}));
-
-import { ProjectsList } from "@/components/ProjectsList";
-
-afterEach(() => {
-  emitter = null;
-});
 
 const sampleRows: Project[] = [
   {
@@ -46,17 +29,27 @@ const sampleRows: Project[] = [
   },
 ];
 
+const projectsMock = vi.hoisted(() => ({ rows: [] as Project[] }));
+vi.mock("@/lib/projects", () => ({
+  get PROJECTS() {
+    return projectsMock.rows;
+  },
+}));
+
+import { ProjectsList } from "@/components/ProjectsList";
+
 describe("ProjectsList", () => {
   it("renders the brand-correct empty state when no projects exist", () => {
+    projectsMock.rows = [];
     render(<ProjectsList />);
     expect(
       screen.getByText("The workshop's quiet today. Come back soon."),
     ).toBeInTheDocument();
   });
 
-  it("renders cards when rows arrive", () => {
+  it("renders cards from the static PROJECTS list", () => {
+    projectsMock.rows = sampleRows;
     render(<ProjectsList />);
-    act(() => emitter!(sampleRows));
     expect(screen.getByText("Notes")).toBeInTheDocument();
     expect(screen.getByText("Echo")).toBeInTheDocument();
     expect(screen.getByText("notes.sastaspace.com")).toBeInTheDocument();
@@ -66,21 +59,9 @@ describe("ProjectsList", () => {
   });
 
   it("links each card to its url", () => {
+    projectsMock.rows = sampleRows;
     render(<ProjectsList />);
-    act(() => emitter!(sampleRows));
-    const link = screen
-      .getByText("Notes")
-      .closest("a");
+    const link = screen.getByText("Notes").closest("a");
     expect(link?.getAttribute("href")).toBe("https://notes.sastaspace.com");
-  });
-
-  it("falls back to empty state when rows clear", () => {
-    render(<ProjectsList />);
-    act(() => emitter!(sampleRows));
-    expect(screen.getByText("Notes")).toBeInTheDocument();
-    act(() => emitter!([]));
-    expect(
-      screen.getByText("The workshop's quiet today. Come back soon."),
-    ).toBeInTheDocument();
   });
 });
