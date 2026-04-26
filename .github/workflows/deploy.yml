@@ -27,6 +27,7 @@ env:
   COVERAGE_MIN_LINES: "20"
   LANDING_OUT_DIR: /home/mkhare/sastaspace/infra/landing/out
   NOTES_OUT_DIR: /home/mkhare/sastaspace/infra/notes/out
+  TYPEWARS_OUT_DIR: /home/mkhare/sastaspace/infra/typewars/out
 
 jobs:
 
@@ -34,10 +35,11 @@ jobs:
   changes:
     runs-on: [self-hosted, Linux]
     outputs:
-      module:  ${{ steps.diff.outputs.module }}
-      landing: ${{ steps.diff.outputs.landing }}
-      notes:   ${{ steps.diff.outputs.notes }}
-      agents:  ${{ steps.diff.outputs.agents }}
+      module:   ${{ steps.diff.outputs.module }}
+      landing:  ${{ steps.diff.outputs.landing }}
+      notes:    ${{ steps.diff.outputs.notes }}
+      agents:   ${{ steps.diff.outputs.agents }}
+      typewars: ${{ steps.diff.outputs.typewars }}
     steps:
       - uses: actions/checkout@v6
         with:
@@ -46,7 +48,7 @@ jobs:
         run: |
           # Schedule and manual dispatch always rebuild everything.
           if [[ "$GITHUB_EVENT_NAME" == "schedule" || "$GITHUB_EVENT_NAME" == "workflow_dispatch" ]]; then
-            printf 'module=true\nlanding=true\nnotes=true\nagents=true\n' >> "$GITHUB_OUTPUT"
+            printf 'module=true\nlanding=true\nnotes=true\nagents=true\ntypewars=true\n' >> "$GITHUB_OUTPUT"
             exit 0
           fi
           if [[ "$GITHUB_EVENT_NAME" == "pull_request" ]]; then
@@ -56,10 +58,11 @@ jobs:
           fi
           changed=$(git diff --name-only "$BASE" HEAD)
           detect() { echo "$changed" | grep -qE "$1" && echo true || echo false; }
-          echo "module=$(detect   '^module/')"                                                        >> "$GITHUB_OUTPUT"
-          echo "landing=$(detect  '^(apps/landing|packages|infra/landing)/')"                        >> "$GITHUB_OUTPUT"
-          echo "notes=$(detect    '^(apps/notes|packages|infra/notes/|infra/landing/security_headers)')" >> "$GITHUB_OUTPUT"
-          echo "agents=$(detect   '^(services/auth|infra/agents|infra/docker-compose)')"             >> "$GITHUB_OUTPUT"
+          echo "module=$(detect    '^module/')"                                                          >> "$GITHUB_OUTPUT"
+          echo "landing=$(detect   '^(apps/landing|packages|infra/landing)/')"                           >> "$GITHUB_OUTPUT"
+          echo "notes=$(detect     '^(apps/notes|packages|infra/notes/|infra/landing/security_headers)')" >> "$GITHUB_OUTPUT"
+          echo "agents=$(detect    '^(services/auth|infra/agents|infra/docker-compose)')"                >> "$GITHUB_OUTPUT"
+          echo "typewars=$(detect  '^(apps/typewars|packages/typewars-bindings|packages/design-tokens|infra/typewars/|infra/landing/security_headers|infra/docker-compose)')" >> "$GITHUB_OUTPUT"
 
   # ── 1. SpacetimeDB Rust module ────────────────────────────────────────────
   module-gate:
@@ -269,6 +272,58 @@ jobs:
         run: |
           for i in 1 2 3 4 5; do
             code=$(curl -sS -o /dev/null -w "%{http_code}" -L https://notes.sastaspace.com/)
+            echo "attempt $i: HTTP $code"
+            [[ "$code" == "200" ]] && exit 0
+            sleep 4
+          done
+          exit 1
+
+  # ── 3b. typewars game UI ──────────────────────────────────────────────────
+  typewars:
+    needs: changes
+    if: >-
+      always() && !cancelled() &&
+      needs.changes.outputs.typewars == 'true'
+    runs-on: [self-hosted, Linux]
+    env:
+      NEXT_PUBLIC_TYPEWARS_MODULE: typewars
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with: { node-version: 22 }
+      - name: enable pnpm
+        run: corepack enable && corepack prepare pnpm@9.12.0 --activate
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @sastaspace/typewars typecheck
+      - run: pnpm --filter @sastaspace/typewars lint --max-warnings 0
+      - run: pnpm --filter @sastaspace/typewars build
+      - uses: actions/upload-artifact@v7
+        with:
+          name: typewars-out
+          path: apps/typewars/out
+          retention-days: 7
+      - name: deploy to nginx
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+        run: |
+          PROD=/home/mkhare/sastaspace/infra
+          mkdir -p "$TYPEWARS_OUT_DIR"
+          rsync -a --delete apps/typewars/out/ "$TYPEWARS_OUT_DIR/"
+          # Keep prod copies of compose + nginx + headers in sync (bind mounts
+          # are relative to docker-compose.yml's directory, so they must live
+          # alongside the prod compose file).
+          rsync -a infra/typewars/nginx.conf "$PROD/typewars/nginx.conf"
+          rsync -a infra/landing/security_headers.conf "$PROD/landing/security_headers.conf"
+          rsync -a infra/docker-compose.yml "$PROD/docker-compose.yml"
+          if ! docker ps --format '{{.Names}}' | grep -q '^sastaspace-typewars$'; then
+            cd "$PROD" && docker compose up -d --no-deps typewars
+          else
+            docker exec sastaspace-typewars nginx -s reload
+          fi
+      - name: smoke test
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+        run: |
+          for i in 1 2 3 4 5; do
+            code=$(curl -sS -o /dev/null -w "%{http_code}" -L https://typewars.sastaspace.com/)
             echo "attempt $i: HTTP $code"
             [[ "$code" == "200" ]] && exit 0
             sleep 4
