@@ -1,5 +1,16 @@
 # Phase 2 F2 — Typewars Auth Frontend Rewire Implementation Plan
 
+> **DEVIATION (2026-04-26):** Open question 1 below was resolved with option
+> (b'): instead of adding a `verify_token_typewars` wrapper reducer, the
+> typewars module gained `claim_progress_self(prev_identity, email)` (commit
+> 947c8f8a). The verify page calls it directly after `verify_token` — the
+> caller's identity (the new authenticated identity) becomes the new owner
+> of the guest's player rows. Bindings live at
+> `packages/typewars-bindings/src/generated/claim_progress_self_reducer.ts`.
+> Email is recovered via sessionStorage `typewars:pending_email` (F1 stash)
+> with a fallback to subscribing to the User row populated by `verify_token`.
+> Open question 2 is therefore also resolved.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (run as one of 4 parallel Phase 2 workstream subagents). Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Move the typewars sign-in from the FastAPI `services/auth/` round-trip into a client-side flow that calls the new STDB reducers (`request_magic_link`, `verify_token`) on the **sastaspace** module and then transfers guest progress on the **typewars** module via the existing `claim_progress` reducer. Both legacy and rewired paths coexist behind `NEXT_PUBLIC_USE_STDB_AUTH`.

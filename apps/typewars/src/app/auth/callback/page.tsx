@@ -1,4 +1,11 @@
 "use client";
+// PHASE 4 DELETE — legacy FastAPI fragment-based callback. Kept alive for
+// one release per docs/superpowers/specs/2026-04-26-spacetimedb-native-design.md
+// § "/auth/callback page (which handles JWT-from-fragment after the FastAPI
+// redirect) gets retired once /auth/verify is live". Cutover happens in
+// Phase 3; this file is git rm'd in Phase 4 cleanup. Behavior is intentionally
+// untouched in F2 so in-flight magic links from the FastAPI service keep
+// working through cutover.
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
