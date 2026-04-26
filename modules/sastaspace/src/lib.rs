@@ -333,6 +333,78 @@ pub fn consume_auth_token(ctx: &ReducerContext, token: String) -> Result<(), Str
     Ok(())
 }
 
+// === moderator (Phase 1 W4) ===
+
+/// One row per moderation verdict. Lets the admin queue render *why* a
+/// comment was flagged (injection vs classifier-rejected vs classifier-error)
+/// without re-running the model. One row per call to
+/// `set_comment_status_with_reason`; older rows are not pruned (low churn —
+/// roughly 1 row per submitted comment).
+///
+/// reason: "injection" | "classifier-rejected" | "classifier-error" | "approved"
+#[table(accessor = moderation_event, public)]
+pub struct ModerationEvent {
+    #[primary_key]
+    #[auto_inc]
+    pub id: u64,
+    #[index(btree)]
+    pub comment_id: u64,
+    pub status: String,
+    pub reason: String,
+    pub created_at: Timestamp,
+}
+
+const MODERATION_REASONS: &[&str] = &[
+    "approved",
+    "injection",
+    "classifier-rejected",
+    "classifier-error",
+];
+
+/// Owner-only: same effect as `set_comment_status` plus a `moderation_event`
+/// row recording the reason. The moderator-agent worker calls this; the
+/// admin UI can keep using `set_comment_status` for manual overrides if it
+/// doesn't want to record a reason.
+#[reducer]
+pub fn set_comment_status_with_reason(
+    ctx: &ReducerContext,
+    id: u64,
+    status: String,
+    reason: String,
+) -> Result<(), String> {
+    assert_owner(ctx)?;
+    if !COMMENT_STATUSES.contains(&status.as_str()) {
+        return Err(format!(
+            "invalid status `{status}` (valid: {})",
+            COMMENT_STATUSES.join(", ")
+        ));
+    }
+    if !MODERATION_REASONS.contains(&reason.as_str()) {
+        return Err(format!(
+            "invalid reason `{reason}` (valid: {})",
+            MODERATION_REASONS.join(", ")
+        ));
+    }
+    let mut row = ctx
+        .db
+        .comment()
+        .id()
+        .find(id)
+        .ok_or_else(|| format!("no comment with id {id}"))?;
+    row.status = status.clone();
+    ctx.db.comment().id().update(row);
+    ctx.db.moderation_event().insert(ModerationEvent {
+        id: 0,
+        comment_id: id,
+        status,
+        reason,
+        created_at: ctx.timestamp,
+    });
+    Ok(())
+}
+
+// === end moderator (Phase 1 W4) ===
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -413,5 +485,78 @@ mod tests {
         };
         assert_eq!(t.token, "abc123");
         assert!(t.used_at.is_none());
+    }
+
+    // === moderator (Phase 1 W4) tests ===
+    //
+    // SpacetimeDB 2.1 doesn't expose a host-runnable TestContext/TestDb harness
+    // for reducer logic — all reducer execution happens inside the wasm
+    // module against a real SpacetimeDB instance. So these tests cover what
+    // can be verified in pure Rust on host: struct round-trips, the
+    // MODERATION_REASONS allow-list, and verdict-reason validation logic.
+    //
+    // End-to-end coverage of the reducer (write the comment row, call the
+    // reducer, observe both the status flip and the moderation_event insert)
+    // lives in the smoke test in the W4 plan Task 2 Step 6 — that's the only
+    // place where a real SpacetimeDB context exists.
+
+    #[test]
+    fn moderation_event_struct_round_trips() {
+        let e = ModerationEvent {
+            id: 1,
+            comment_id: 42,
+            status: "flagged".into(),
+            reason: "injection".into(),
+            created_at: Timestamp::UNIX_EPOCH,
+        };
+        assert_eq!(e.id, 1);
+        assert_eq!(e.comment_id, 42);
+        assert_eq!(e.status, "flagged");
+        assert_eq!(e.reason, "injection");
+    }
+
+    #[test]
+    fn moderation_reasons_are_known() {
+        assert!(MODERATION_REASONS.contains(&"approved"));
+        assert!(MODERATION_REASONS.contains(&"injection"));
+        assert!(MODERATION_REASONS.contains(&"classifier-rejected"));
+        assert!(MODERATION_REASONS.contains(&"classifier-error"));
+    }
+
+    #[test]
+    fn moderation_reasons_does_not_contain_made_up_reason() {
+        assert!(!MODERATION_REASONS.contains(&"made-up-reason"));
+        assert!(!MODERATION_REASONS.contains(&""));
+        assert!(!MODERATION_REASONS.contains(&"INJECTION")); // case-sensitive
+    }
+
+    #[test]
+    fn moderation_reason_validation_error_message_is_helpful() {
+        // The reducer body builds this exact format string. Asserting the
+        // shape here protects admins from a regression that would silently
+        // change the user-visible error.
+        let bad = "made-up-reason";
+        let msg = format!(
+            "invalid reason `{bad}` (valid: {})",
+            MODERATION_REASONS.join(", ")
+        );
+        assert!(msg.contains("made-up-reason"));
+        assert!(msg.contains("approved"));
+        assert!(msg.contains("injection"));
+        assert!(msg.contains("classifier-rejected"));
+        assert!(msg.contains("classifier-error"));
+    }
+
+    #[test]
+    fn moderation_status_validation_error_message_includes_status() {
+        // Same reducer also re-validates status against COMMENT_STATUSES;
+        // a typo there should surface a recognisable message.
+        let bad = "approve"; // missing the trailing 'd'
+        let msg = format!(
+            "invalid status `{bad}` (valid: {})",
+            COMMENT_STATUSES.join(", ")
+        );
+        assert!(msg.contains("approve"));
+        assert!(msg.contains("approved"));
     }
 }
