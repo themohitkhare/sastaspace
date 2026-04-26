@@ -1,10 +1,24 @@
 /**
- * Magic-link helpers using the auth service's E2E side door.
+ * Magic-link helpers — two backends, switched by env:
  *
- * `requestTokenViaTestMode` calls /auth/request with the X-Test-Secret
- * header that the auth service knows about. Server-side, that bypasses
- * Resend and returns the issued token directly. Tests then drive
- * /auth/verify themselves and complete the callback.
+ *   E2E_AUTH_BACKEND=fastapi   (default, back-compat) — POST /auth/request
+ *                              on auth.sastaspace.com with X-Test-Secret;
+ *                              the FastAPI side door returns the token in
+ *                              the JSON body.
+ *
+ *   E2E_AUTH_BACKEND=stdb      — call the `mint_test_token(email, secret)`
+ *                              reducer on the sastaspace STDB module. The
+ *                              reducer is owner+secret gated; the helper
+ *                              uses E2E_STDB_OWNER_TOKEN as the bearer
+ *                              auth and E2E_TEST_SECRET as the second arg.
+ *                              The minted token is read back via SQL from
+ *                              the private `last_test_token` table.
+ *
+ * The exported `signIn(page, email)` is the new wrapper — it branches on
+ * E2E_AUTH_BACKEND and routes to either path. The legacy FastAPI flow is
+ * preserved exactly under `signInViaFastapi` so existing specs that
+ * import `signIn` keep working both before AND after Phase 3 cutover —
+ * just toggle the env.
  */
 
 import { expect, type APIRequestContext, type Page } from "@playwright/test";
@@ -12,6 +26,7 @@ import { AUTH, NOTES, TYPEWARS, STDB_REST, STDB_DATABASE } from "./urls.js";
 import { sql } from "./stdb.js";
 
 const TEST_SECRET = process.env.E2E_TEST_SECRET ?? "";
+const AUTH_BACKEND = (process.env.E2E_AUTH_BACKEND ?? "fastapi").toLowerCase();
 
 type AuthApp = "notes" | "typewars";
 
@@ -49,7 +64,8 @@ export async function requestTokenViaTestMode(
 }
 
 /**
- * Drive the full magic-link flow against the live UI:
+ * Drive the full magic-link flow against the live UI via the legacy
+ * FastAPI side door:
  *   1. POST /auth/request with the test secret → get the token
  *   2. Navigate to /auth/verify?t=<token> on auth.sastaspace.com
  *   3. The verify page does a window.location.replace to
@@ -58,8 +74,11 @@ export async function requestTokenViaTestMode(
  *
  * After this, page.context().url() will be NOTES + "/" (or close to it)
  * and localStorage will contain the session under sastaspace.auth.v1.
+ *
+ * This is the back-compat path. The dispatching `signIn` wrapper below
+ * routes here when E2E_AUTH_BACKEND is unset or "fastapi".
  */
-export async function signIn(page: Page, email: string): Promise<void> {
+export async function signInViaFastapi(page: Page, email: string): Promise<void> {
   const token = await requestTokenViaTestMode(page.request, email);
   // Navigate to the verify URL — same flow a real user would have via
   // the email link.
@@ -144,50 +163,78 @@ export async function readSession(page: Page): Promise<{
 }
 
 /**
- * STDB-native sign-in path. Calls request_magic_link via the STDB HTTP
- * /v1/call endpoint, then reads the issued token straight out of the
- * auth_token table via SQL (test-only side door — production users get the
- * token by email). Then drives /auth/verify in the browser as a real user
- * would after clicking the email link.
+ * STDB-native sign-in path. Calls the `mint_test_token(email, secret)`
+ * reducer on the sastaspace module, reads the minted token back from
+ * the private `last_test_token` table via owner-JWT SQL, then drives the
+ * app's `/auth/verify?t=<token>` page like a real user clicking the
+ * email link.
  *
- * Requires the worker (auth-mailer) to NOT be running in test mode that would
- * actually email, OR the test secret to be configured to suppress real Resend
- * calls. The test reads the token directly from STDB so it doesn't depend on
- * email arrival.
+ * The reducer is owner-AND-secret gated — see
+ * modules/sastaspace/src/lib.rs `mint_test_token` for the gating logic.
+ * In production the owner JWT is owner-only and the secret row is
+ * absent, so the side door fails closed with "test mode disabled".
+ *
+ * Required env:
+ *   - E2E_TEST_SECRET        the secret installed via
+ *                            `set_e2e_test_secret` post-publish
+ *   - E2E_STDB_OWNER_TOKEN   the owner JWT (`spacetime login show --token`)
+ *
+ * The reducer's `assert_owner` check requires the bearer to be the
+ * owner identity. The minted `auth_token` row has the same shape as
+ * one produced by `request_magic_link` (15-minute TTL), so the existing
+ * `verify_token` reducer consumes it unchanged.
  */
 export async function signInViaStdb(page: Page, email: string): Promise<void> {
+  if (!TEST_SECRET) {
+    throw new Error(
+      "E2E_TEST_SECRET env var is required for STDB sign-in tests. Set it (and run `set_e2e_test_secret` on the module) before running.",
+    );
+  }
   const ownerToken = process.env.E2E_STDB_OWNER_TOKEN ?? "";
-  // Step 1: call request_magic_link via the STDB HTTP API. An anonymous
-  // identity is fine — the reducer just inserts rows; auth.sastaspace.com
-  // is bypassed entirely.
+  if (!ownerToken) {
+    throw new Error(
+      "E2E_STDB_OWNER_TOKEN env var is required for STDB sign-in tests (the mint_test_token reducer is assert_owner-gated).",
+    );
+  }
+  // Step 1: call mint_test_token via the STDB HTTP API with the owner JWT.
+  // The reducer asserts owner AND secret-match, then upserts the minted
+  // token into the `last_test_token` singleton (because STDB 2.1 reducers
+  // can't return values to the caller).
   const callRes = await page.request.post(
-    `${STDB_REST}/v1/database/${STDB_DATABASE}/call/request_magic_link`,
+    `${STDB_REST}/v1/database/${STDB_DATABASE}/call/mint_test_token`,
     {
-      headers: { "Content-Type": "application/json" },
-      data: JSON.stringify([
-        email,
-        "notes",
-        null,
-        `${NOTES}/auth/verify`,
-      ]),
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${ownerToken}`,
+      },
+      data: JSON.stringify([email, TEST_SECRET]),
     },
   );
   if (callRes.status() >= 400) {
     throw new Error(
-      `request_magic_link failed: HTTP ${callRes.status()} ${await callRes.text()}`,
+      `mint_test_token failed: HTTP ${callRes.status()} ${await callRes.text()}`,
     );
   }
-  // Step 2: read the issued token from the auth_token table.
+  // Step 2: read the minted token from `last_test_token`. We filter by
+  // email so a racing test (different email, same instant) can't steal
+  // the row. SQL strings are owner-only here so we can use single-row
+  // table semantics safely.
   const rows = await sql(
     page.request,
-    `SELECT token FROM auth_token WHERE email = '${email}' ORDER BY created_at DESC LIMIT 1`,
+    `SELECT token FROM last_test_token WHERE email = '${email.replace(/'/g, "''")}' LIMIT 1`,
     ownerToken,
   );
   const token = rows[0]?.[0] as string | undefined;
-  if (!token) throw new Error(`no auth_token row for ${email}`);
+  if (!token) {
+    throw new Error(
+      `no last_test_token row for ${email} after mint_test_token call`,
+    );
+  }
   // Step 3: drive the verify page like a real user clicking the email link.
-  // Pre-stash the email in sessionStorage like AuthMenu does so the verify
-  // page can populate Session.email correctly.
+  // The app under test (notes / typewars / admin) is responsible for the
+  // /auth/verify route — F1's frontend work wires that up. Pre-stash the
+  // email in sessionStorage like AuthMenu does so the verify page can
+  // populate Session.email correctly.
   await page.goto(`${NOTES}/`);
   await page.evaluate(
     (e) => window.sessionStorage.setItem("sastaspace.pendingEmail", e),
@@ -197,4 +244,29 @@ export async function signInViaStdb(page: Page, email: string): Promise<void> {
   await page.waitForURL((url) => url.toString() === `${NOTES}/`, {
     timeout: 15_000,
   });
+}
+
+/**
+ * Dispatching wrapper. Routes to the legacy FastAPI helper or the
+ * STDB-native helper depending on E2E_AUTH_BACKEND. Existing specs that
+ * import `signIn` get the new path automatically once the env is set.
+ *
+ *   E2E_AUTH_BACKEND=stdb     → signInViaStdb
+ *   E2E_AUTH_BACKEND=fastapi  → signInViaFastapi (default, back-compat)
+ *
+ * Anything else throws so a typo doesn't silently fall back to the wrong
+ * backend.
+ */
+export async function signIn(page: Page, email: string): Promise<void> {
+  if (AUTH_BACKEND === "stdb") {
+    await signInViaStdb(page, email);
+    return;
+  }
+  if (AUTH_BACKEND === "fastapi") {
+    await signInViaFastapi(page, email);
+    return;
+  }
+  throw new Error(
+    `unknown E2E_AUTH_BACKEND='${AUTH_BACKEND}' (expected 'stdb' or 'fastapi')`,
+  );
 }
