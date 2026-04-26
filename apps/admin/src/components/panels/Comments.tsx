@@ -26,6 +26,7 @@ function CommentsInner({ initialFilter = 'pending', view = 'cards' }: CommentsPr
   const [optimistic, setOptimistic] = useState<Map<bigint, CommentStatus>>(new Map());
   const [confirmDelete, setConfirmDelete] = useState<bigint | null>(null);
   const [actioning, setActioning] = useState<bigint | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   // Reducer hooks (no-op when no connection, throw when no auth on the wire).
   const setStatusWithReason = useReducer(reducers.setCommentStatusWithReason);
@@ -87,6 +88,7 @@ function CommentsInner({ initialFilter = 'pending', view = 'cards' }: CommentsPr
 
   const setStatus = async (id: bigint, status: CommentStatus, reason: string) => {
     if (writeDisabled) return;
+    setActionError(null);
     setActioning(id);
     setOptimistic(prev => new Map(prev).set(id, status));
     try {
@@ -104,8 +106,13 @@ function CommentsInner({ initialFilter = 'pending', view = 'cards' }: CommentsPr
         });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
       }
-    } catch {
+    } catch (e) {
       setOptimistic(prev => { const n = new Map(prev); n.delete(id); return n; });
+      const msg = e instanceof Error ? e.message : String(e);
+      const hint = msg.toLowerCase().includes('not authorized') || msg.toLowerCase().includes('not owner')
+        ? 'Not authorized — refresh your STDB owner token in the sidebar settings.'
+        : `Action failed: ${msg}`;
+      setActionError(hint);
     } finally {
       setActioning(null);
     }
@@ -116,17 +123,35 @@ function CommentsInner({ initialFilter = 'pending', view = 'cards' }: CommentsPr
     const id = confirmDelete;
     setConfirmDelete(null);
     if (writeDisabled) return;
+    setActionError(null);
     if (USE_STDB_ADMIN) {
-      try { await deleteCommentReducer({ id }); } catch { /* row stays; subscription would reflect a successful delete */ }
+      try {
+        await deleteCommentReducer({ id });
+      } catch (e) {
+        // Row stays in the UI because the STDB subscription will not emit a
+        // delete event — surface the failure visibly instead of silently ignoring.
+        const msg = e instanceof Error ? e.message : String(e);
+        const hint = msg.toLowerCase().includes('not authorized') || msg.toLowerCase().includes('not owner')
+          ? 'Delete failed: not authorized — refresh your STDB owner token in the sidebar settings.'
+          : `Delete failed: ${msg}`;
+        setActionError(hint);
+      }
     } else {
       if (!ADMIN_API_URL) {
-        throw new Error('NEXT_PUBLIC_ADMIN_API_URL not set; cannot use legacy admin path. Set NEXT_PUBLIC_USE_STDB_ADMIN=true.');
+        setActionError('NEXT_PUBLIC_ADMIN_API_URL not set; cannot use legacy admin path. Set NEXT_PUBLIC_USE_STDB_ADMIN=true.');
+        return;
       }
       const token = localStorage.getItem('admin_token') ?? '';
-      await fetch(`${ADMIN_API_URL}/stdb/comments/${id}`, {
+      const res = await fetch(`${ADMIN_API_URL}/stdb/comments/${id}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
-      }).catch(() => {});
+      }).catch((e: unknown) => {
+        setActionError(`Delete request failed: ${String(e)}`);
+        return null;
+      });
+      if (res && !res.ok) {
+        setActionError(`Delete failed: HTTP ${res.status}`);
+      }
     }
   };
 
@@ -168,6 +193,13 @@ function CommentsInner({ initialFilter = 'pending', view = 'cards' }: CommentsPr
         <div className="banner banner--warn" style={{ marginBottom: 14 }}>
           <Icon name="shield-x" size={16}/>
           <span>Moderation actions disabled — paste your STDB owner token in the sidebar settings.</span>
+        </div>
+      )}
+      {actionError && (
+        <div className="banner banner--error" style={{ marginBottom: 14 }} role="alert">
+          <Icon name="x" size={16}/>
+          <span>{actionError}</span>
+          <button className="btn btn--ghost" style={{ marginLeft: 'auto', padding: '2px 8px', fontSize: 12 }} onClick={() => setActionError(null)}>Dismiss</button>
         </div>
       )}
 

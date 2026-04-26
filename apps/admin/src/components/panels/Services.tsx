@@ -92,7 +92,18 @@ function ServicesStdb({ navigate }: { navigate: (path: string) => void }) {
   const containers = adaptContainers(statusRows as readonly ContainerStatusRow[]);
 
   if (statusRows.length === 0) {
-    return <div style={{ padding: 40, color: 'var(--color-fg-muted)', textAlign: 'center' }}>Waiting for the admin-collector worker to publish container_status…</div>;
+    return (
+      <div style={{ padding: 40, textAlign: 'center' }}>
+        <div style={{ color: 'var(--color-fg-muted)', marginBottom: 10 }}>
+          Waiting for the admin-collector worker to publish container_status…
+        </div>
+        <div style={{ color: 'var(--color-fg-subtle)', fontSize: 12 }}>
+          Container status publishes every 15 s. If this persists, check that
+          WORKER_ADMIN_COLLECTOR_ENABLED=true in the workers container and that
+          docker.sock is mounted at /var/run/docker.sock.
+        </div>
+      </div>
+    );
   }
 
   return renderServicesView(containers, navigate);

@@ -106,7 +106,7 @@ function LogsView({
 
 function LogsLegacy({ initialService, theme = 'dark' }: LogsProps) {
   const { data: containers } = usePoll<ContainerRow[]>('/containers', 30000);
-  const [active, setActive] = useState(initialService ?? 'sastaspace-stdb');
+  const [active, setActive] = useState(initialService ?? 'sastaspace-spacetime');
   const [tail, setTail] = useState(200);
   const [filter, setFilter] = useState('');
   const [autoScroll, setAutoScroll] = useState(true);
@@ -172,7 +172,11 @@ function LogsLegacy({ initialService, theme = 'dark' }: LogsProps) {
 function LogsStdb({ initialService, theme = 'dark' }: LogsProps) {
   const ownerToken = useOwnerToken();
   const [statusRows] = useTable(tables.container_status);
-  const [active, setActive] = useState(initialService ?? 'sastaspace-stdb');
+  // Default to the SpacetimeDB container (the most useful first view).
+  // NOTE: was 'sastaspace-stdb' which does not exist — correct name is
+  // 'sastaspace-spacetime'. The mismatch caused "Waiting for log lines…"
+  // forever on first load even when the worker was active.
+  const [active, setActive] = useState(initialService ?? 'sastaspace-spacetime');
   const [tail, setTail] = useState(200);
   const [filter, setFilter] = useState('');
   const [autoScroll, setAutoScroll] = useState(true);
@@ -190,14 +194,23 @@ function LogsStdb({ initialService, theme = 'dark' }: LogsProps) {
   const addInterest = useReducer(reducers.addLogInterest);
   const removeInterest = useReducer(reducers.removeLogInterest);
 
+  const [interestError, setInterestError] = useState<string | null>(null);
+
   // Manage log_interest lifecycle: on mount + on container switch, add the
   // current container; on unmount + before next switch, remove the previous.
   useEffect(() => {
     if (!ownerToken) return;
+    setInterestError(null);
     const container = active;
-    addInterest({ container }).catch(() => { /* silent — no perms or worker absent */ });
+    addInterest({ container }).catch((e: unknown) => {
+      const msg = e instanceof Error ? e.message : String(e);
+      // Only surface if it's not a permission error (which is already shown via the read-only banner).
+      if (!msg.toLowerCase().includes('not authorized') && !msg.toLowerCase().includes('not owner')) {
+        setInterestError(`Failed to register log interest for ${container}: ${msg}`);
+      }
+    });
     return () => {
-      removeInterest({ container }).catch(() => { /* same */ });
+      removeInterest({ container }).catch(() => { /* cleanup error — not actionable */ });
     };
     // addInterest/removeInterest are stable refs from useReducer
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -239,6 +252,10 @@ function LogsStdb({ initialService, theme = 'dark' }: LogsProps) {
   const banner = !ownerToken ? (
     <div className="banner banner--warn" style={{ margin: '10px 18px 0' }}>
       Read-only mode — paste your STDB owner token in the sidebar to register log interest for this container.
+    </div>
+  ) : interestError ? (
+    <div className="banner banner--error" style={{ margin: '10px 18px 0' }} role="alert">
+      {interestError}
     </div>
   ) : undefined;
 

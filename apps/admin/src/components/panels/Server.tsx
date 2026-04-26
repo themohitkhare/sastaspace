@@ -147,7 +147,17 @@ function ServerStdb() {
   const histories = useHistories(data);
 
   if (!row) {
-    return <div style={{ padding: 40, color: 'var(--color-fg-muted)', textAlign: 'center' }}>Waiting for the admin-collector worker to publish system_metrics…</div>;
+    return (
+      <div style={{ padding: 40, textAlign: 'center' }}>
+        <div style={{ color: 'var(--color-fg-muted)', marginBottom: 10 }}>
+          Waiting for the admin-collector worker to publish system_metrics…
+        </div>
+        <div style={{ color: 'var(--color-fg-subtle)', fontSize: 12 }}>
+          Metrics publish every 3 s. If this persists, check that WORKER_ADMIN_COLLECTOR_ENABLED=true
+          in the workers container and that the workers STDB token is the owner identity.
+        </div>
+      </div>
+    );
   }
   if (!data) return null;
 

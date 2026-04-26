@@ -149,8 +149,9 @@ describe("admin-collector", () => {
     await new Promise((r) => setTimeout(r, 100));
     expect(fake.reducers.upsertSystemMetrics).toHaveBeenCalled();
     expect(fake.reducers.upsertContainerStatus).toHaveBeenCalled();
+    // SDK 2.1: reducers are called with a single object literal (not positional args).
     const args = fake.reducers.upsertSystemMetrics.mock.calls[0];
-    expect(args[1]).toBe(8); // cores
+    expect(args[0]).toMatchObject({ cores: 8 }); // object shape check
     await stop();
   });
 
@@ -186,9 +187,9 @@ describe("admin-collector", () => {
     const proc = dockerSpawns()[0].emitter;
     proc.stdout.emit("data", Buffer.from("hello world ERROR boom\n"));
     expect(fake.reducers.appendLogEvent).toHaveBeenCalled();
+    // SDK 2.1: called with a single object literal (not positional args).
     const callArgs = fake.reducers.appendLogEvent.mock.calls[0];
-    expect(callArgs[0]).toBe("sastaspace-spacetime");
-    expect(callArgs[2]).toBe("error");
+    expect(callArgs[0]).toMatchObject({ container: "sastaspace-spacetime", level: "error" });
     // Now simulate remove_log_interest deleting the only row.
     fake.interestRows.length = 0;
     fake.interestDeleteHandlers.forEach((h) =>
