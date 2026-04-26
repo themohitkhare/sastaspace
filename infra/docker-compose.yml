@@ -111,6 +111,49 @@ services:
       timeout: 5s
       retries: 3
 
+  # Static file server for MusicGen zips produced by the workers' deck-agent.
+  # Workers write to ./deck-out/<job_id>.zip (host bind via the workers
+  # service, line ~288). This container serves that same directory read-only
+  # at https://deck.sastaspace.com/<job_id>.zip. The deck-agent reports the
+  # public URL back to STDB (see workers/src/shared/env.ts DECK_PUBLIC_BASE_URL).
+  # Cloudflare Tunnel routes deck.sastaspace.com → 127.0.0.1:3160. Note the
+  # port 3160 is the same one the now-deprecated Python `deck` FastAPI used,
+  # so the two CANNOT coexist on the same host.
+  #
+  # Profile gating: this service ships under profile `stdb-native`. The
+  # legacy Python `deck` container above ships under the default profile.
+  # Phase 3 cutover removes `deck` from the active set and brings up
+  # `deck-static`:
+  #     docker compose --profile stdb-native up -d deck-static
+  #     docker compose stop deck && docker compose rm -f deck
+  # Phase 4 deletes the Python service entry from this file.
+  deck-static:
+    profiles: ["stdb-native"]
+    image: nginx:1.29-alpine
+    container_name: sastaspace-deck-static
+    restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /var/cache/nginx
+      - /var/run
+      - /tmp
+    cap_drop: [ALL]
+    cap_add: [CHOWN, SETGID, SETUID, NET_BIND_SERVICE]
+    security_opt: ["no-new-privileges:true"]
+    pids_limit: 100
+    mem_limit: 128m
+    ports:
+      - "127.0.0.1:3160:80"
+    volumes:
+      - ./deck-out:/usr/share/nginx/html:ro
+      - ./deck/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./landing/security_headers.conf:/etc/nginx/conf.d/security_headers.conf:ro
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
   spacetime:
     image: clockworklabs/spacetime:latest
     container_name: sastaspace-stdb

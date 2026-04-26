@@ -1,0 +1,6 @@
+# This directory is bind-mounted into:
+#   - workers (rw): writes <job_id>.zip files (workers/src/agents/deck-agent.ts)
+#   - deck-static (ro): serves the same files at https://deck.sastaspace.com/
+#
+# Contents are gitignored (see infra/.gitignore: deck-out/*). This file
+# exists so the bind mount has something to attach to in fresh clones.
