@@ -373,6 +373,12 @@ const MODERATION_REASONS: &[&str] = &[
     "injection",
     "classifier-rejected",
     "classifier-error",
+    // Manual moderator-action reasons emitted by the admin Comments panel.
+    // The panel passes the verb-specific reason (approve / flag / reject)
+    // so the moderation_event audit trail records the operator's intent.
+    "manual-approve",
+    "manual-flag",
+    "manual-reject",
 ];
 
 /// Owner-only: same effect as `set_comment_status` plus a `moderation_event`
@@ -622,6 +628,23 @@ fn render_magic_link_html(link: &str) -> String {
 
 fn render_magic_link_text(link: &str) -> String {
     format!("Sign in to sastaspace.\n\nClick this link (good for 15 minutes, works once):\n\n  {link}\n\nIf you didn't ask for this, ignore.\n\n—\nsastaspace.com\n")
+}
+
+// --- worker boot health check (Phase 3 prep, audit finding N13) ---
+//
+// Workers call `noop_owner_check` once on boot before starting any agent.
+// A wrong STDB_TOKEN causes the reducer to reject with "not authorized";
+// the worker container exits non-zero with a clear log line and
+// docker restart-loops it instead of letting every subsequent reducer call
+// silently 401.
+
+/// Owner-only no-op. Returns Ok if the caller is the owner, Err otherwise.
+/// Cheap (no table touches, no I/O) — designed to be called on every
+/// worker boot to verify the token without producing audit-trail noise.
+#[reducer]
+pub fn noop_owner_check(ctx: &ReducerContext) -> Result<(), String> {
+    assert_owner(ctx)?;
+    Ok(())
 }
 
 // --- test-mode side door (Phase 3 prep, audit findings N4 + N5) ---
@@ -1820,6 +1843,18 @@ mod tests {
         Identity::from_hex(OWNER_HEX).expect("OWNER_HEX must be a valid 64-char hex identity");
     }
 
+    // SpacetimeDB 2.1 has no host-runnable TestContext for actually
+    // executing reducer bodies, so this test verifies what we CAN check
+    // statically: that the function symbol exists and has the expected
+    // shape. End-to-end behaviour (wrong token → "not authorized") is
+    // verified by the worker boot smoke test in Phase 3 Task A3 Step 4.
+    #[test]
+    fn noop_owner_check_signature_compiles() {
+        // Compile-time assertion that noop_owner_check has the expected
+        // signature: fn(&ReducerContext) -> Result<(), String>.
+        let _: fn(&ReducerContext) -> Result<(), String> = noop_owner_check;
+    }
+
     #[test]
     fn comment_statuses_are_known() {
         assert!(COMMENT_STATUSES.contains(&"pending"));
@@ -1888,10 +1923,40 @@ mod tests {
 
     #[test]
     fn moderation_reasons_are_known() {
+        // Worker-emitted reasons (moderator-agent classifier verdicts).
         assert!(MODERATION_REASONS.contains(&"approved"));
         assert!(MODERATION_REASONS.contains(&"injection"));
         assert!(MODERATION_REASONS.contains(&"classifier-rejected"));
         assert!(MODERATION_REASONS.contains(&"classifier-error"));
+        // Manual reasons emitted by the admin Comments panel.
+        assert!(MODERATION_REASONS.contains(&"manual-approve"));
+        assert!(MODERATION_REASONS.contains(&"manual-flag"));
+        assert!(MODERATION_REASONS.contains(&"manual-reject"));
+    }
+
+    #[test]
+    fn moderation_reasons_round_trip_through_validation() {
+        // All 7 known reasons must pass the same allow-list check the
+        // reducer performs at lib.rs:396 — no reason should be silently
+        // accepted by the constant but rejected by the reducer (or vice
+        // versa). Mirrors the reducer's check shape exactly.
+        let all = [
+            "approved",
+            "injection",
+            "classifier-rejected",
+            "classifier-error",
+            "manual-approve",
+            "manual-flag",
+            "manual-reject",
+        ];
+        for r in all {
+            assert!(
+                MODERATION_REASONS.contains(&r),
+                "reason `{r}` missing from MODERATION_REASONS"
+            );
+        }
+        // Sanity: the array length matches the allow-list (no drift).
+        assert_eq!(MODERATION_REASONS.len(), all.len());
     }
 
     #[test]

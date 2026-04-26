@@ -44,6 +44,7 @@ import IssueAuthTokenReducer from "./issue_auth_token_reducer";
 import MarkEmailFailedReducer from "./mark_email_failed_reducer";
 import MarkEmailSentReducer from "./mark_email_sent_reducer";
 import MintTestTokenReducer from "./mint_test_token_reducer";
+import NoopOwnerCheckReducer from "./noop_owner_check_reducer";
 import RegisterUserReducer from "./register_user_reducer";
 import RemoveLogInterestReducer from "./remove_log_interest_reducer";
 import RequestGenerateReducer from "./request_generate_reducer";
@@ -240,6 +241,7 @@ const reducersSchema = __reducers(
   __reducerSchema("mark_email_failed", MarkEmailFailedReducer),
   __reducerSchema("mark_email_sent", MarkEmailSentReducer),
   __reducerSchema("mint_test_token", MintTestTokenReducer),
+  __reducerSchema("noop_owner_check", NoopOwnerCheckReducer),
   __reducerSchema("register_user", RegisterUserReducer),
   __reducerSchema("remove_log_interest", RemoveLogInterestReducer),
   __reducerSchema("request_generate", RequestGenerateReducer),

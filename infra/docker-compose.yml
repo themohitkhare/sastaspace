@@ -348,10 +348,15 @@ services:
   # Mastra workers process. Single Node container running multiple agents
   # behind per-agent feature flags (default off — boots and idles).
   # Phase 1 workstreams flesh out each agent and the shared STDB connection.
+  #
+  # Build context is the repo root (..) so the Dockerfile can `pnpm deploy
+  # --filter @sastaspace/workers --prod` from a self-contained workspace tree
+  # with the lockfile resolved (audit N8 — replaces the older
+  # --no-frozen-lockfile workaround).
   workers:
     build:
-      context: ../workers
-      dockerfile: Dockerfile
+      context: ..
+      dockerfile: workers/Dockerfile
     image: sastaspace-workers:local
     container_name: sastaspace-workers
     restart: unless-stopped
