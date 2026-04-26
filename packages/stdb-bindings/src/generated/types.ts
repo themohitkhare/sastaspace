@@ -10,6 +10,15 @@ import {
   type Infer as __Infer,
 } from "spacetimedb";
 
+export const AppConfig = __t.object("AppConfig", {
+  id: __t.u64(),
+  notesCallback: __t.string(),
+  typewarsCallback: __t.string(),
+  adminCallback: __t.string(),
+  deckOrigin: __t.string(),
+});
+export type AppConfig = __Infer<typeof AppConfig>;
+
 export const AuthToken = __t.object("AuthToken", {
   token: __t.string(),
   email: __t.string(),
@@ -30,6 +39,83 @@ export const Comment = __t.object("Comment", {
 });
 export type Comment = __Infer<typeof Comment>;
 
+export const ContainerStatus = __t.object("ContainerStatus", {
+  name: __t.string(),
+  status: __t.string(),
+  image: __t.string(),
+  uptimeS: __t.u64(),
+  memUsedMb: __t.u32(),
+  memLimitMb: __t.u32(),
+  restartCount: __t.u32(),
+  updatedAt: __t.timestamp(),
+});
+export type ContainerStatus = __Infer<typeof ContainerStatus>;
+
+export const GenerateJob = __t.object("GenerateJob", {
+  id: __t.u64(),
+  submitter: __t.identity(),
+  planRequestId: __t.option(__t.u64()),
+  tracksJson: __t.string(),
+  status: __t.string(),
+  zipUrl: __t.option(__t.string()),
+  error: __t.option(__t.string()),
+  createdAt: __t.timestamp(),
+  completedAt: __t.option(__t.timestamp()),
+});
+export type GenerateJob = __Infer<typeof GenerateJob>;
+
+export const LogEvent = __t.object("LogEvent", {
+  id: __t.u64(),
+  container: __t.string(),
+  tsMicros: __t.i64(),
+  level: __t.string(),
+  text: __t.string(),
+  insertedAt: __t.timestamp(),
+});
+export type LogEvent = __Infer<typeof LogEvent>;
+
+export const LogInterest = __t.object("LogInterest", {
+  container: __t.string(),
+  subscriber: __t.identity(),
+  createdAt: __t.timestamp(),
+});
+export type LogInterest = __Infer<typeof LogInterest>;
+
+export const ModerationEvent = __t.object("ModerationEvent", {
+  id: __t.u64(),
+  commentId: __t.u64(),
+  status: __t.string(),
+  reason: __t.string(),
+  createdAt: __t.timestamp(),
+});
+export type ModerationEvent = __Infer<typeof ModerationEvent>;
+
+export const PendingEmail = __t.object("PendingEmail", {
+  id: __t.u64(),
+  toEmail: __t.string(),
+  subject: __t.string(),
+  bodyHtml: __t.string(),
+  bodyText: __t.string(),
+  createdAt: __t.timestamp(),
+  status: __t.string(),
+  providerMsgId: __t.option(__t.string()),
+  error: __t.option(__t.string()),
+});
+export type PendingEmail = __Infer<typeof PendingEmail>;
+
+export const PlanRequest = __t.object("PlanRequest", {
+  id: __t.u64(),
+  submitter: __t.identity(),
+  description: __t.string(),
+  count: __t.u32(),
+  status: __t.string(),
+  tracksJson: __t.option(__t.string()),
+  error: __t.option(__t.string()),
+  createdAt: __t.timestamp(),
+  completedAt: __t.option(__t.timestamp()),
+});
+export type PlanRequest = __Infer<typeof PlanRequest>;
+
 export const Presence = __t.object("Presence", {
   identity: __t.identity(),
   joinedAt: __t.timestamp(),
@@ -46,6 +132,36 @@ export const Project = __t.object("Project", {
   url: __t.string(),
 });
 export type Project = __Infer<typeof Project>;
+
+export const PruneLogEventsSchedule = __t.object("PruneLogEventsSchedule", {
+  scheduledId: __t.u64(),
+  scheduledAt: __t.scheduleAt(),
+});
+export type PruneLogEventsSchedule = __Infer<typeof PruneLogEventsSchedule>;
+
+export const SystemMetrics = __t.object("SystemMetrics", {
+  id: __t.u64(),
+  cpuPct: __t.f32(),
+  cores: __t.u32(),
+  memUsedGb: __t.f32(),
+  memTotalGb: __t.f32(),
+  memPct: __t.f32(),
+  swapUsedMb: __t.u32(),
+  swapTotalMb: __t.u32(),
+  diskUsedGb: __t.u32(),
+  diskTotalGb: __t.u32(),
+  diskPct: __t.f32(),
+  netTxBytes: __t.u64(),
+  netRxBytes: __t.u64(),
+  uptimeS: __t.u64(),
+  gpuPct: __t.option(__t.u32()),
+  gpuVramUsedMb: __t.option(__t.u32()),
+  gpuVramTotalMb: __t.option(__t.u32()),
+  gpuTempC: __t.option(__t.u32()),
+  gpuModel: __t.option(__t.string()),
+  updatedAt: __t.timestamp(),
+});
+export type SystemMetrics = __Infer<typeof SystemMetrics>;
 
 export const User = __t.object("User", {
   identity: __t.identity(),

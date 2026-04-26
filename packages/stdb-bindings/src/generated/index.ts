@@ -34,29 +34,64 @@ import {
 } from "spacetimedb";
 
 // Import all reducer arg schemas
+import AddLogInterestReducer from "./add_log_interest_reducer";
+import AppendLogEventReducer from "./append_log_event_reducer";
 import ConsumeAuthTokenReducer from "./consume_auth_token_reducer";
 import DeleteCommentReducer from "./delete_comment_reducer";
 import DeleteProjectReducer from "./delete_project_reducer";
 import HeartbeatReducer from "./heartbeat_reducer";
 import IssueAuthTokenReducer from "./issue_auth_token_reducer";
+import MarkEmailFailedReducer from "./mark_email_failed_reducer";
+import MarkEmailSentReducer from "./mark_email_sent_reducer";
 import RegisterUserReducer from "./register_user_reducer";
+import RemoveLogInterestReducer from "./remove_log_interest_reducer";
+import RequestGenerateReducer from "./request_generate_reducer";
+import RequestMagicLinkReducer from "./request_magic_link_reducer";
+import RequestPlanReducer from "./request_plan_reducer";
+import SetAppConfigReducer from "./set_app_config_reducer";
 import SetCommentStatusReducer from "./set_comment_status_reducer";
-import SubmitAnonCommentReducer from "./submit_anon_comment_reducer";
+import SetCommentStatusWithReasonReducer from "./set_comment_status_with_reason_reducer";
+import SetGenerateDoneReducer from "./set_generate_done_reducer";
+import SetGenerateFailedReducer from "./set_generate_failed_reducer";
+import SetPlanReducer from "./set_plan_reducer";
+import SetPlanFailedReducer from "./set_plan_failed_reducer";
+import SetPlanFallbackReducer from "./set_plan_fallback_reducer";
 import SubmitUserCommentReducer from "./submit_user_comment_reducer";
+import UpsertContainerStatusReducer from "./upsert_container_status_reducer";
 import UpsertProjectReducer from "./upsert_project_reducer";
+import UpsertSystemMetricsReducer from "./upsert_system_metrics_reducer";
+import VerifyTokenReducer from "./verify_token_reducer";
 
 // Import all procedure arg schemas
 
 // Import all table schema definitions
+import AppConfigRow from "./app_config_table";
 import CommentRow from "./comment_table";
+import ContainerStatusRow from "./container_status_table";
+import GenerateJobRow from "./generate_job_table";
+import LogEventRow from "./log_event_table";
+import ModerationEventRow from "./moderation_event_table";
+import PlanRequestRow from "./plan_request_table";
 import PresenceRow from "./presence_table";
 import ProjectRow from "./project_table";
+import SystemMetricsRow from "./system_metrics_table";
 import UserRow from "./user_table";
 
 /** Type-only namespace exports for generated type groups. */
 
 /** The schema information for all tables in this module. This is defined the same was as the tables would have been defined in the server. */
 const tablesSchema = __schema({
+  app_config: __table({
+    name: 'app_config',
+    indexes: [
+      { accessor: 'id', name: 'app_config_id_idx_btree', algorithm: 'btree', columns: [
+        'id',
+      ] },
+    ],
+    constraints: [
+      { name: 'app_config_id_key', constraint: 'unique', columns: ['id'] },
+    ],
+  }, AppConfigRow),
   comment: __table({
     name: 'comment',
     indexes: [
@@ -74,6 +109,73 @@ const tablesSchema = __schema({
       { name: 'comment_id_key', constraint: 'unique', columns: ['id'] },
     ],
   }, CommentRow),
+  container_status: __table({
+    name: 'container_status',
+    indexes: [
+      { accessor: 'name', name: 'container_status_name_idx_btree', algorithm: 'btree', columns: [
+        'name',
+      ] },
+    ],
+    constraints: [
+      { name: 'container_status_name_key', constraint: 'unique', columns: ['name'] },
+    ],
+  }, ContainerStatusRow),
+  generate_job: __table({
+    name: 'generate_job',
+    indexes: [
+      { accessor: 'id', name: 'generate_job_id_idx_btree', algorithm: 'btree', columns: [
+        'id',
+      ] },
+      { accessor: 'submitter', name: 'generate_job_submitter_idx_btree', algorithm: 'btree', columns: [
+        'submitter',
+      ] },
+    ],
+    constraints: [
+      { name: 'generate_job_id_key', constraint: 'unique', columns: ['id'] },
+    ],
+  }, GenerateJobRow),
+  log_event: __table({
+    name: 'log_event',
+    indexes: [
+      { accessor: 'container', name: 'log_event_container_idx_btree', algorithm: 'btree', columns: [
+        'container',
+      ] },
+      { accessor: 'id', name: 'log_event_id_idx_btree', algorithm: 'btree', columns: [
+        'id',
+      ] },
+    ],
+    constraints: [
+      { name: 'log_event_id_key', constraint: 'unique', columns: ['id'] },
+    ],
+  }, LogEventRow),
+  moderation_event: __table({
+    name: 'moderation_event',
+    indexes: [
+      { accessor: 'comment_id', name: 'moderation_event_comment_id_idx_btree', algorithm: 'btree', columns: [
+        'commentId',
+      ] },
+      { accessor: 'id', name: 'moderation_event_id_idx_btree', algorithm: 'btree', columns: [
+        'id',
+      ] },
+    ],
+    constraints: [
+      { name: 'moderation_event_id_key', constraint: 'unique', columns: ['id'] },
+    ],
+  }, ModerationEventRow),
+  plan_request: __table({
+    name: 'plan_request',
+    indexes: [
+      { accessor: 'id', name: 'plan_request_id_idx_btree', algorithm: 'btree', columns: [
+        'id',
+      ] },
+      { accessor: 'submitter', name: 'plan_request_submitter_idx_btree', algorithm: 'btree', columns: [
+        'submitter',
+      ] },
+    ],
+    constraints: [
+      { name: 'plan_request_id_key', constraint: 'unique', columns: ['id'] },
+    ],
+  }, PlanRequestRow),
   presence: __table({
     name: 'presence',
     indexes: [
@@ -96,6 +198,17 @@ const tablesSchema = __schema({
       { name: 'project_slug_key', constraint: 'unique', columns: ['slug'] },
     ],
   }, ProjectRow),
+  system_metrics: __table({
+    name: 'system_metrics',
+    indexes: [
+      { accessor: 'id', name: 'system_metrics_id_idx_btree', algorithm: 'btree', columns: [
+        'id',
+      ] },
+    ],
+    constraints: [
+      { name: 'system_metrics_id_key', constraint: 'unique', columns: ['id'] },
+    ],
+  }, SystemMetricsRow),
   user: __table({
     name: 'user',
     indexes: [
@@ -115,16 +228,33 @@ const tablesSchema = __schema({
 
 /** The schema information for all reducers in this module. This is defined the same way as the reducers would have been defined in the server, except the body of the reducer is omitted in code generation. */
 const reducersSchema = __reducers(
+  __reducerSchema("add_log_interest", AddLogInterestReducer),
+  __reducerSchema("append_log_event", AppendLogEventReducer),
   __reducerSchema("consume_auth_token", ConsumeAuthTokenReducer),
   __reducerSchema("delete_comment", DeleteCommentReducer),
   __reducerSchema("delete_project", DeleteProjectReducer),
   __reducerSchema("heartbeat", HeartbeatReducer),
   __reducerSchema("issue_auth_token", IssueAuthTokenReducer),
+  __reducerSchema("mark_email_failed", MarkEmailFailedReducer),
+  __reducerSchema("mark_email_sent", MarkEmailSentReducer),
   __reducerSchema("register_user", RegisterUserReducer),
+  __reducerSchema("remove_log_interest", RemoveLogInterestReducer),
+  __reducerSchema("request_generate", RequestGenerateReducer),
+  __reducerSchema("request_magic_link", RequestMagicLinkReducer),
+  __reducerSchema("request_plan", RequestPlanReducer),
+  __reducerSchema("set_app_config", SetAppConfigReducer),
   __reducerSchema("set_comment_status", SetCommentStatusReducer),
-  __reducerSchema("submit_anon_comment", SubmitAnonCommentReducer),
+  __reducerSchema("set_comment_status_with_reason", SetCommentStatusWithReasonReducer),
+  __reducerSchema("set_generate_done", SetGenerateDoneReducer),
+  __reducerSchema("set_generate_failed", SetGenerateFailedReducer),
+  __reducerSchema("set_plan", SetPlanReducer),
+  __reducerSchema("set_plan_failed", SetPlanFailedReducer),
+  __reducerSchema("set_plan_fallback", SetPlanFallbackReducer),
   __reducerSchema("submit_user_comment", SubmitUserCommentReducer),
+  __reducerSchema("upsert_container_status", UpsertContainerStatusReducer),
   __reducerSchema("upsert_project", UpsertProjectReducer),
+  __reducerSchema("upsert_system_metrics", UpsertSystemMetricsReducer),
+  __reducerSchema("verify_token", VerifyTokenReducer),
 );
 
 /** The schema information for all procedures in this module. This is defined the same way as the procedures would have been defined in the server. */
