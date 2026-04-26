@@ -76,7 +76,7 @@ services:
     volumes:
       - ./admin/out:/usr/share/nginx/html:ro
       - ./admin/nginx.conf:/etc/nginx/conf.d/default.conf:ro
-      - ./landing/security_headers.conf:/etc/nginx/conf.d/security_headers.conf:ro
+      - ./admin/security_headers.conf:/etc/nginx/conf.d/security_headers.conf:ro
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://127.0.0.1/"]
       interval: 30s
