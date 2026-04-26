@@ -584,11 +584,10 @@ jobs:
       - name: enable pnpm
         run: corepack enable && corepack prepare pnpm@9.12.0 --activate
       - name: install workers deps
-        working-directory: workers
-        # NOTE: Workers' lockfile lives at the repo root, not under workers/.
-        # Audit N8 tracks switching this to `pnpm deploy --filter` from root +
-        # --frozen-lockfile. Until then mirror the Dockerfile's --no-frozen-lockfile.
-        run: pnpm install --no-frozen-lockfile
+        # Audit N8: lockfile lives at the repo root. Run pnpm install from
+        # there and filter to the workers package — preserves the
+        # frozen-lockfile guarantee + the workspace symlinks.
+        run: pnpm install --frozen-lockfile --filter @sastaspace/workers...
       - name: lint (tsc --noEmit)
         working-directory: workers
         run: pnpm lint
