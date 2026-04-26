@@ -24,7 +24,10 @@ env:
   STDB_SERVER_URL: https://stdb.sastaspace.com
   STDB_MODULE_NAME: sastaspace
   STDB_CLI_VERSION: "2.1.0"
-  COVERAGE_MIN_LINES: "20"
+  # Bumped 20→55 (audit coverage section). Actual sastaspace module
+  # coverage is ~65% post audit-fix; 55 gives a 10% drop-buffer while
+  # still catching meaningful regressions instead of being a noise floor.
+  COVERAGE_MIN_LINES: "55"
   LANDING_OUT_DIR: /home/mkhare/sastaspace/infra/landing/out
   NOTES_OUT_DIR: /home/mkhare/sastaspace/infra/notes/out
   TYPEWARS_OUT_DIR: /home/mkhare/sastaspace/infra/typewars/out
