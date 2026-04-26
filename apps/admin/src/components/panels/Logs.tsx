@@ -200,15 +200,16 @@ function LogsStdb({ initialService, theme = 'dark' }: LogsProps) {
   // current container; on unmount + before next switch, remove the previous.
   useEffect(() => {
     if (!ownerToken) return;
-    setInterestError(null);
     const container = active;
-    addInterest({ container }).catch((e: unknown) => {
-      const msg = e instanceof Error ? e.message : String(e);
-      // Only surface if it's not a permission error (which is already shown via the read-only banner).
-      if (!msg.toLowerCase().includes('not authorized') && !msg.toLowerCase().includes('not owner')) {
-        setInterestError(`Failed to register log interest for ${container}: ${msg}`);
-      }
-    });
+    addInterest({ container })
+      .then(() => setInterestError(null))
+      .catch((e: unknown) => {
+        const msg = e instanceof Error ? e.message : String(e);
+        // Only surface if it's not a permission error (which is already shown via the read-only banner).
+        if (!msg.toLowerCase().includes('not authorized') && !msg.toLowerCase().includes('not owner')) {
+          setInterestError(`Failed to register log interest for ${container}: ${msg}`);
+        }
+      });
     return () => {
       removeInterest({ container }).catch(() => { /* cleanup error — not actionable */ });
     };
