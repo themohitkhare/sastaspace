@@ -16,8 +16,13 @@ import path from "node:path";
 import { LANDING } from "../helpers/urls.js";
 
 const FLOW = process.env.E2E_DECK_FLOW ?? "legacy";
+const AUTH_BACKEND = (process.env.E2E_AUTH_BACKEND ?? "fastapi").toLowerCase();
 
 test.describe(`/lab/deck (${FLOW})`, () => {
+  test.skip(
+    AUTH_BACKEND === "stdb" && FLOW === "legacy",
+    "/lab/deck legacy flow depends on services/deck FastAPI which Phase 4 deletes; switch to E2E_DECK_FLOW=stdb once deck-agent worker is verified",
+  );
   test("submit brief → plan appears → generate → zip downloads", async ({
     page,
   }) => {

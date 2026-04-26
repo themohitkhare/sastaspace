@@ -887,12 +887,15 @@ jobs:
       # Owner JWT for the new admin.sastaspace.com STDB-backed panels.
       # When unset, tests/e2e/specs/admin-panels.spec.ts skips its describe
       # block (the legacy admin.spec.ts still runs against notes/admin).
-      # Owner provisions this secret in repo settings before flipping
-      # NEXT_PUBLIC_USE_STDB_ADMIN=true at admin build time.
       # Two names because admin-panels.spec.ts and helpers/auth.ts converged
       # on different conventions; both populated from the same secret.
-      E2E_OWNER_STDB_TOKEN: ${{ secrets.E2E_OWNER_STDB_TOKEN }}
-      E2E_STDB_OWNER_TOKEN: ${{ secrets.E2E_OWNER_STDB_TOKEN }}
+      # Pointing both at WORKERS_STDB_TOKEN: the older E2E_OWNER_STDB_TOKEN
+      # was minted before the post-cutover STDB redeploy and now fails with
+      # TokenError(InvalidSignature) against prod's current keypair. The
+      # workers token is freshly owner-signed against the current prod STDB
+      # and is the correct caller for assert_owner-gated reducers.
+      E2E_OWNER_STDB_TOKEN: ${{ secrets.WORKERS_STDB_TOKEN }}
+      E2E_STDB_OWNER_TOKEN: ${{ secrets.WORKERS_STDB_TOKEN }}
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-node@v6
@@ -910,7 +913,31 @@ jobs:
             echo "::error::E2E_TEST_SECRET must be set as a GH Actions secret"
             exit 1
           fi
+          if [[ -z "$E2E_STDB_OWNER_TOKEN" ]]; then
+            echo "::error::E2E_STDB_OWNER_TOKEN must be set (sourced from secrets.WORKERS_STDB_TOKEN)"
+            exit 1
+          fi
           echo "E2E_TEST_SECRET present"
+          echo "E2E_STDB_OWNER_TOKEN present"
+      - name: bootstrap — install E2E test secret on prod STDB
+        # The mint_test_token reducer requires (ctx, email, secret) where
+        # `secret` matches a row in app_config_secret installed via
+        # set_e_2_e_test_secret (owner-only). Without this row, the side
+        # door is closed and signIn helper returns "test mode disabled".
+        # Idempotent — upserts the singleton row.
+        run: |
+          status=$(curl -sS -o /tmp/bootstrap.out -w "%{http_code}" \
+            -X POST \
+            -H "Authorization: Bearer $E2E_STDB_OWNER_TOKEN" \
+            -H "Content-Type: application/json" \
+            --data "[\"$E2E_TEST_SECRET\"]" \
+            "https://stdb.sastaspace.com/v1/database/sastaspace/call/set_e_2_e_test_secret")
+          echo "set_e_2_e_test_secret returned HTTP $status"
+          cat /tmp/bootstrap.out 2>/dev/null | head -3
+          if [[ "$status" != "200" && "$status" != "204" ]]; then
+            echo "::error::bootstrap failed; mint_test_token will reject sign-in attempts"
+            exit 1
+          fi
       - name: smoke — live prod URLs reachable
         run: |
           # Phase 3 post-cutover: auth.sastaspace.com is the 410 tombstone now,
