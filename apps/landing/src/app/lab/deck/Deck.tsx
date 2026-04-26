@@ -696,26 +696,30 @@ function PlanItem({
 }
 
 function PlanEditor({ t, onUpdate }: { t: Track; onUpdate: (patch: Partial<Track>) => void }) {
+  // UX audit M6: link visible labels to their inputs via htmlFor/id so
+  // clicking the label focuses the input + screen readers announce the
+  // field name. The track's stable `id` makes the dom ids unique per row.
+  const fid = (k: string) => `track-${t.id}-${k}`;
   return (
     <div className={styles.planEditor}>
       <div className={styles.editorGrid}>
         <div className={`${styles.field} ${styles.fieldFull}`}>
-          <label className={styles.fieldLab}>name</label>
-          <input type="text" value={t.name} onChange={(e) => onUpdate({ name: e.target.value })} />
+          <label htmlFor={fid('name')} className={styles.fieldLab}>name</label>
+          <input id={fid('name')} type="text" value={t.name} onChange={(e) => onUpdate({ name: e.target.value })} />
         </div>
         <div className={`${styles.field} ${styles.fieldFull}`}>
-          <label className={styles.fieldLab}>description &amp; usage</label>
-          <textarea value={t.desc} onChange={(e) => onUpdate({ desc: e.target.value })} />
+          <label htmlFor={fid('desc')} className={styles.fieldLab}>description &amp; usage</label>
+          <textarea id={fid('desc')} value={t.desc} onChange={(e) => onUpdate({ desc: e.target.value })} />
         </div>
         <div className={styles.field}>
-          <label className={styles.fieldLab}>type</label>
-          <select value={t.type} onChange={(e) => onUpdate({ type: e.target.value })}>
+          <label htmlFor={fid('type')} className={styles.fieldLab}>type</label>
+          <select id={fid('type')} value={t.type} onChange={(e) => onUpdate({ type: e.target.value })}>
             {TYPE_OPTIONS.map((v) => <option key={v} value={v}>{v}</option>)}
           </select>
         </div>
         <div className={styles.field}>
-          <label className={styles.fieldLab}>mood</label>
-          <select value={t.mood} onChange={(e) => onUpdate({ mood: e.target.value })}>
+          <label htmlFor={fid('mood')} className={styles.fieldLab}>mood</label>
+          <select id={fid('mood')} value={t.mood} onChange={(e) => onUpdate({ mood: e.target.value })}>
             {MOOD_OPTIONS.map((v) => <option key={v} value={v}>{v}</option>)}
           </select>
         </div>
@@ -750,8 +754,9 @@ function PlanEditor({ t, onUpdate }: { t: Track; onUpdate: (patch: Partial<Track
           </div>
         </div>
         <div className={`${styles.field} ${styles.fieldFull}`}>
-          <label className={styles.fieldLab}>instruments</label>
+          <label htmlFor={fid('instruments')} className={styles.fieldLab}>instruments</label>
           <input
+            id={fid('instruments')}
             type="text"
             value={t.instruments}
             onChange={(e) => onUpdate({ instruments: e.target.value })}
