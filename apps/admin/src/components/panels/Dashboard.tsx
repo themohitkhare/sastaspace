@@ -4,6 +4,8 @@ import { useMemo } from 'react';
 import { useSpacetimeDB, useTable } from 'spacetimedb/react';
 import { tables } from '@sastaspace/stdb-bindings';
 import { usePoll } from '@/hooks/usePoll';
+import { USE_STDB_ADMIN } from '@/hooks/useStdb';
+import { adaptMetrics, adaptContainers, type SystemMetricsRow, type ContainerStatusRow } from '@/lib/stdb-adapters';
 import { relTime, formatUptime, type SystemMetrics, type ContainerRow } from '@/lib/data';
 import Chip from '@/components/Chip';
 import Sparkline from '@/components/charts/Sparkline';
@@ -12,8 +14,26 @@ import Icon from '@/components/Icon';
 function DashboardInner({ navigate }: { navigate: (path: string) => void }) {
   const { isActive } = useSpacetimeDB();
   const [commentRows] = useTable(tables.comment);
-  const { data: containers } = usePoll<ContainerRow[]>('/containers', 15000);
-  const { data: system } = usePoll<SystemMetrics>('/system', 3000);
+  const [moderationRows] = useTable(tables.moderation_event);
+  const [stdbMetrics] = useTable(tables.system_metrics);
+  const [stdbContainers] = useTable(tables.container_status);
+
+  // Polled fallbacks (skipped when STDB mode is on).
+  const { data: polledContainers } = usePoll<ContainerRow[]>(
+    USE_STDB_ADMIN ? '__skip__' : '/containers',
+    15000,
+  );
+  const { data: polledSystem } = usePoll<SystemMetrics>(
+    USE_STDB_ADMIN ? '__skip__' : '/system',
+    3000,
+  );
+
+  const system = USE_STDB_ADMIN
+    ? adaptMetrics(stdbMetrics[0] as SystemMetricsRow | undefined)
+    : polledSystem;
+  const containers: ContainerRow[] | null = USE_STDB_ADMIN
+    ? (stdbContainers.length ? adaptContainers(stdbContainers as readonly ContainerStatusRow[]) : null)
+    : polledContainers;
 
   const pendingCount = useMemo(
     () => commentRows.filter(c => c.status === 'pending' || c.status === 'flagged').length,
@@ -49,6 +69,24 @@ function DashboardInner({ navigate }: { navigate: (path: string) => void }) {
           : String(c.createdAt),
       }));
   }, [commentRows]);
+
+  const recentModeration = useMemo(() => {
+    const toMs = (v: unknown) => v instanceof Date ? v.getTime()
+      : typeof v === 'bigint' ? Number(v / 1000n)
+      : new Date(String(v)).getTime();
+    return [...moderationRows]
+      .sort((a, b) => toMs(b.createdAt) - toMs(a.createdAt))
+      .slice(0, 10)
+      .map(ev => ({
+        id: String(ev.id),
+        commentId: String(ev.commentId),
+        status: ev.status as 'approved' | 'flagged' | 'rejected',
+        reason: ev.reason,
+        createdAt: ev.createdAt instanceof Date ? ev.createdAt.toISOString()
+          : typeof ev.createdAt === 'bigint' ? new Date(Number(ev.createdAt / 1000n)).toISOString()
+          : String(ev.createdAt),
+      }));
+  }, [moderationRows]);
 
   const healthy = containers ? containers.filter(c => c.status === 'running').length : 0;
   const total = containers?.length ?? 0;
@@ -114,6 +152,33 @@ function DashboardInner({ navigate }: { navigate: (path: string) => void }) {
               </div>
             ))}
           </div>
+
+          {USE_STDB_ADMIN && (
+            <>
+              <div style={{ height: 24 }}/>
+              <div className="section__head">
+                <h2 className="section__title">Recent moderation</h2>
+              </div>
+              <div className="card" style={{ padding: '4px 22px' }}>
+                {recentModeration.length === 0 && (
+                  <div style={{ padding: '20px 0', color: 'var(--color-fg-muted)', fontSize: 13 }}>No verdicts yet.</div>
+                )}
+                {recentModeration.map(ev => (
+                  <div key={ev.id} className="recent-row">
+                    <Chip status={ev.status}/>
+                    <div className="recent-row__main">
+                      <div className="recent-row__top">
+                        <span className="recent-row__author">comment #{ev.commentId}</span>
+                        <span className="muted">·</span>
+                        <span className="recent-row__post">{ev.reason}</span>
+                      </div>
+                    </div>
+                    <span className="recent-row__time">{relTime(ev.createdAt)}</span>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
         </div>
 
         <div>
