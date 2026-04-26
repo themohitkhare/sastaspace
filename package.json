@@ -21,9 +21,9 @@
     "module:publish:local": "spacetime publish --server local sastaspace --project-path modules/sastaspace -y",
     "module:publish:prod": "spacetime publish --server prod sastaspace --project-path modules/sastaspace -y",
     "bindings:generate": "spacetime generate --lang typescript --out-dir packages/stdb-bindings/src/generated --project-path modules/sastaspace",
-    "typewars:build": "cd game && cargo build --target wasm32-unknown-unknown --release",
-    "typewars:test": "cd game && cargo test",
-    "typewars:publish:prod": "spacetime publish --server prod typewars -p game -y",
-    "typewars:bindings": "spacetime generate --lang typescript --out-dir packages/typewars-bindings/src/generated --module-path game"
+    "typewars:build": "cd modules/typewars && cargo build --target wasm32-unknown-unknown --release",
+    "typewars:test": "cd modules/typewars && cargo test",
+    "typewars:publish:prod": "spacetime publish --server prod typewars -p modules/typewars -y",
+    "typewars:bindings": "spacetime generate --lang typescript --out-dir packages/typewars-bindings/src/generated --module-path modules/typewars"
   }
 }
