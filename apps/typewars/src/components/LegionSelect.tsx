@@ -4,14 +4,16 @@ import type { LegionId } from '@/types';
 import { LEGION_INFO } from '@/lib/legions';
 
 interface Props {
-  onChoose: (legion: LegionId, username: string) => void;
+  onChoose: (legion: LegionId, username: string) => Promise<void>;
 }
 
 export default function LegionSelect({ onChoose }: Props) {
   const [picked, setPicked] = useState<LegionId | null>(null);
   const [callsign, setCallsign] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const canEnlist = picked !== null && callsign.trim().length > 0;
+  const canEnlist = picked !== null && callsign.trim().length > 0 && !submitting;
 
   return (
     <div className="page">
@@ -69,15 +71,27 @@ export default function LegionSelect({ onChoose }: Props) {
           <button
             className="enlist-btn"
             disabled={!canEnlist}
-            onClick={() => {
-              if (picked !== null && callsign.trim()) {
-                onChoose(picked, callsign.trim());
+            onClick={async () => {
+              if (picked === null || !callsign.trim()) return;
+              setSubmitting(true);
+              setError(null);
+              try {
+                await onChoose(picked, callsign.trim());
+              } catch (err) {
+                setError(err instanceof Error ? err.message : 'enlistment failed');
+                setSubmitting(false);
               }
             }}
           >
-            ENLIST →
+            {submitting ? 'enlisting…' : 'ENLIST →'}
           </button>
         </div>
+
+        {error && (
+          <p className="ss-small ls-warning" style={{ color: 'var(--brand-sasta-text)' }}>
+            {error}
+          </p>
+        )}
 
         <p className="ss-small ls-warning">
           Legion allegiance is permanent for the season. Choose carefully — your mechanic will shape every battle you fight.

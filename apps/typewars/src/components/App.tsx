@@ -1,8 +1,10 @@
 'use client';
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
+import { useSpacetimeDB, useTable, useReducer } from 'spacetimedb/react';
+import { tables, reducers } from '@sastaspace/typewars-bindings';
 import type { Screen, Player, Region, LiberatedInfo, LegionId } from '@/types';
-import { LEGION_INFO } from '@/lib/legions';
 import { makeRegions } from '@/lib/regions';
+import { toPlayer } from '@/lib/adapters';
 import LegionSelect from './LegionSelect';
 import MapWarMap from './MapWarMap';
 import Battle from './Battle';
@@ -12,12 +14,10 @@ import LegionSwapModal from './LegionSwapModal';
 
 function setupRegions(base: Region[]): Region[] {
   const r = base.map(region => ({ ...region }));
-  // Indices 0,1,5,11 liberated by various legions
   r[0] = { ...r[0], controlling_legion: 0, enemy_hp: 0, damage_0: r[0].enemy_max_hp };
   r[1] = { ...r[1], controlling_legion: 1, enemy_hp: 0, damage_1: r[1].enemy_max_hp };
   r[5] = { ...r[5], controlling_legion: 2, enemy_hp: 0, damage_2: r[5].enemy_max_hp };
   r[11] = { ...r[11], controlling_legion: 3, enemy_hp: 0, damage_3: r[11].enemy_max_hp };
-  // Indices 2,3,12,20 partially damaged
   r[2] = { ...r[2], enemy_hp: Math.round(r[2].enemy_max_hp * 0.72), damage_0: Math.round(r[2].enemy_max_hp * 0.28) };
   r[3] = { ...r[3], enemy_hp: Math.round(r[3].enemy_max_hp * 0.55), damage_1: Math.round(r[3].enemy_max_hp * 0.45) };
   r[12] = { ...r[12], enemy_hp: Math.round(r[12].enemy_max_hp * 0.40), damage_2: Math.round(r[12].enemy_max_hp * 0.60) };
@@ -26,20 +26,36 @@ function setupRegions(base: Region[]): Region[] {
 }
 
 export default function App() {
+  const { identity, isActive } = useSpacetimeDB();
+
+  const playerQuery = useMemo(
+    () => identity ? tables.player.where(p => p.identity.eq(identity)) : tables.player.where(() => false),
+    [identity],
+  );
+  const [playerRows] = useTable(playerQuery);
+  const playerRow = playerRows[0];
+
+  const registerPlayer = useReducer(reducers.registerPlayer);
+
   const [screen, setScreen] = useState<Screen>('legion-select');
-  const [player, setPlayer] = useState<Player | null>(null);
   const [regions, setRegions] = useState<Region[]>([]);
   const [activeRegion, setActiveRegion] = useState<Region | null>(null);
   const [liberatedInfo, setLiberatedInfo] = useState<LiberatedInfo | null>(null);
   const [swapOpen, setSwapOpen] = useState(false);
 
-  const chooseLegion = useCallback((legion: LegionId, username: string) => {
-    const base = makeRegions();
-    const initialized = setupRegions(base);
-    setRegions(initialized);
-    setPlayer({ legion, username, total_damage: 0, season_damage: 0, best_wpm: 0 });
-    setScreen('warmap');
-  }, []);
+  const player: Player | null = playerRow ? toPlayer(playerRow) : null;
+
+  useEffect(() => {
+    if (player && screen === 'legion-select') {
+      const base = makeRegions();
+      setRegions(setupRegions(base));
+      setScreen('warmap');
+    }
+  }, [player, screen]);
+
+  const chooseLegion = useCallback(async (legion: LegionId, username: string) => {
+    await registerPlayer({ username, legion });
+  }, [registerPlayer]);
 
   const enterBattle = useCallback((r: Region) => {
     setActiveRegion(r);
@@ -53,36 +69,19 @@ export default function App() {
       const newDmg = (r[key] as number) + amount;
       const newHp = Math.max(0, r.enemy_hp - amount);
       const updated: Region = { ...r, [key]: newDmg, enemy_hp: newHp };
-
-      // Check liberation
       if (newHp === 0 && r.controlling_legion === -1) {
-        const totalDamages = [
-          updated.damage_0,
-          updated.damage_1,
-          updated.damage_2,
-          updated.damage_3,
-          updated.damage_4,
-        ];
+        const totalDamages = [updated.damage_0, updated.damage_1, updated.damage_2, updated.damage_3, updated.damage_4];
         const winner = totalDamages.indexOf(Math.max(...totalDamages)) as LegionId;
         updated.controlling_legion = winner;
       }
-
       return updated;
     }));
-
-    setPlayer(prev => {
-      if (!prev) return prev;
-      return { ...prev, total_damage: prev.total_damage + amount, season_damage: prev.season_damage + amount };
-    });
   }, []);
 
   const exitBattle = useCallback(() => {
     if (!activeRegion || !player) { setScreen('warmap'); return; }
-
-    // Check if region was liberated while we were in battle
     const current = regions.find(r => r.id === activeRegion.id);
     if (current && current.controlling_legion !== -1 && activeRegion.controlling_legion === -1) {
-      // Region just got liberated
       const damages = [current.damage_0, current.damage_1, current.damage_2, current.damage_3, current.damage_4];
       const winner = damages.indexOf(Math.max(...damages)) as LegionId;
       const contributors = [
@@ -99,12 +98,19 @@ export default function App() {
     setActiveRegion(null);
   }, [activeRegion, player, regions]);
 
-  const swapLegion = useCallback((legion: LegionId) => {
-    setPlayer(prev => prev ? { ...prev, legion } : prev);
+  const swapLegion = useCallback((_legion: LegionId) => {
     setSwapOpen(false);
   }, []);
 
-  if (screen === 'legion-select') {
+  if (!isActive) {
+    return (
+      <div className="page" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
+        <span className="ss-terminal">connecting to typewars…</span>
+      </div>
+    );
+  }
+
+  if (screen === 'legion-select' && !player) {
     return <LegionSelect onChoose={chooseLegion} />;
   }
 
