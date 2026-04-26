@@ -28,6 +28,7 @@ env:
   LANDING_OUT_DIR: /home/mkhare/sastaspace/infra/landing/out
   NOTES_OUT_DIR: /home/mkhare/sastaspace/infra/notes/out
   TYPEWARS_OUT_DIR: /home/mkhare/sastaspace/infra/typewars/out
+  ADMIN_OUT_DIR: /home/mkhare/sastaspace/infra/admin/out
 
 jobs:
 
@@ -40,6 +41,7 @@ jobs:
       notes:    ${{ steps.diff.outputs.notes }}
       agents:   ${{ steps.diff.outputs.agents }}
       typewars: ${{ steps.diff.outputs.typewars }}
+      admin:    ${{ steps.diff.outputs.admin }}
     steps:
       - uses: actions/checkout@v6
         with:
@@ -48,7 +50,7 @@ jobs:
         run: |
           # Schedule and manual dispatch always rebuild everything.
           if [[ "$GITHUB_EVENT_NAME" == "schedule" || "$GITHUB_EVENT_NAME" == "workflow_dispatch" ]]; then
-            printf 'module=true\nlanding=true\nnotes=true\nagents=true\ntypewars=true\n' >> "$GITHUB_OUTPUT"
+            printf 'module=true\nlanding=true\nnotes=true\nagents=true\ntypewars=true\nadmin=true\n' >> "$GITHUB_OUTPUT"
             exit 0
           fi
           if [[ "$GITHUB_EVENT_NAME" == "pull_request" ]]; then
@@ -63,6 +65,7 @@ jobs:
           echo "notes=$(detect     '^(apps/notes|packages|infra/notes/|infra/landing/security_headers)')" >> "$GITHUB_OUTPUT"
           echo "agents=$(detect    '^(services/auth|infra/agents|infra/docker-compose)')"                >> "$GITHUB_OUTPUT"
           echo "typewars=$(detect  '^(apps/typewars|packages/typewars-bindings|packages/design-tokens|infra/typewars/|infra/landing/security_headers|infra/docker-compose)')" >> "$GITHUB_OUTPUT"
+          echo "admin=$(detect     '^(apps/admin|infra/admin/|infra/docker-compose)')"                    >> "$GITHUB_OUTPUT"
 
   # ── 1. SpacetimeDB Rust module ────────────────────────────────────────────
   module-gate:
@@ -343,6 +346,50 @@ jobs:
           done
           exit 1
 
+  # ── 3c. admin panel ───────────────────────────────────────────────────────
+  admin:
+    needs: changes
+    if: >-
+      always() && !cancelled() &&
+      needs.changes.outputs.admin == 'true'
+    runs-on: [self-hosted, Linux]
+    env:
+      NEXT_PUBLIC_OWNER_EMAIL: mohitkhare582@gmail.com
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with: { node-version: 22 }
+      - name: enable pnpm
+        run: corepack enable && corepack prepare pnpm@9.12.0 --activate
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @sastaspace/admin typecheck
+      - run: pnpm --filter @sastaspace/admin lint --max-warnings 0
+      - run: pnpm --filter @sastaspace/admin build
+      - uses: actions/upload-artifact@v7
+        with:
+          name: admin-out
+          path: apps/admin/out
+          retention-days: 7
+      - name: deploy to nginx
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+        run: |
+          PROD=/home/mkhare/sastaspace/infra
+          mkdir -p "$ADMIN_OUT_DIR"
+          rsync -a --delete apps/admin/out/ "$ADMIN_OUT_DIR/"
+          rsync -a --inplace infra/admin/nginx.conf "$PROD/admin/nginx.conf"
+          rsync -a infra/docker-compose.yml "$PROD/docker-compose.yml"
+          cd "$PROD" && docker compose up -d --no-deps --force-recreate admin
+      - name: smoke test
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+        run: |
+          for i in 1 2 3 4 5; do
+            code=$(curl -sS -o /dev/null -w "%{http_code}" -L https://admin.sastaspace.com/)
+            echo "attempt $i: HTTP $code"
+            [[ "$code" == "200" ]] && exit 0
+            sleep 4
+          done
+          exit 1
+
   # ── 4. Python agent services ──────────────────────────────────────────────
   moderator:
     needs: changes
@@ -451,12 +498,13 @@ jobs:
 
   # ── 5. e2e against live prod (runs AFTER all deploys) ─────────────────────
   e2e:
-    needs: [landing-deploy, notes, moderator, auth]
+    needs: [landing-deploy, notes, admin, moderator, auth]
     if: >-
       always() && !cancelled() &&
       (github.event_name == 'push' || github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') &&
       needs.landing-deploy.result != 'failure' &&
       needs.notes.result != 'failure' &&
+      needs.admin.result != 'failure' &&
       needs.moderator.result != 'failure' &&
       needs.auth.result != 'failure'
     runs-on: [self-hosted, Linux]
