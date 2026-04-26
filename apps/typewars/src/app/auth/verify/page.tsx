@@ -112,17 +112,23 @@ function readEmailFromUserRow(
       return;
     }
 
+    // The connection's `db.user` view exposes ReadonlyTableMethods (iter,
+    // count) plus onInsert, but the per-table accessor types are generated
+    // from the schema at build time. We deliberately go through `unknown`
+    // here to avoid pinning this page to internal generated types that
+    // change shape with `pnpm bindings:generate`.
+    type UserRow = { identity: Identity; email: string };
+    type UserTable = {
+      iter: () => Iterable<UserRow>;
+      onInsert?: (cb: (ctx: unknown, row: UserRow) => void) => void;
+    };
+    type ConnWithDb = { db?: { user?: UserTable } };
+    const userTable = (conn as unknown as ConnWithDb).db?.user;
+
     const checkCache = (): boolean => {
-      // The connection's `db.user` view exposes ReadonlyTableMethods (iter,
-      // count). Walk the cache for the row keyed on `target`.
+      if (!userTable?.iter) return false;
       try {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const userTable = (conn as any).db?.user;
-        if (!userTable?.iter) return false;
-        for (const row of userTable.iter() as Iterable<{
-          identity: Identity;
-          email: string;
-        }>) {
+        for (const row of userTable.iter()) {
           if (row.identity.toHexString() === target.toHexString() && row.email) {
             clearTimeout(timer);
             finish(row.email);
@@ -142,19 +148,15 @@ function readEmailFromUserRow(
           if (checkCache()) return;
           // Row may arrive on a subsequent insert; hook onInsert too.
           try {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const userTable = (conn as any).db?.user;
-            userTable?.onInsert?.(
-              (_ctx: unknown, row: { identity: Identity; email: string }) => {
-                if (
-                  row.identity.toHexString() === target.toHexString() &&
-                  row.email
-                ) {
-                  clearTimeout(timer);
-                  finish(row.email);
-                }
-              },
-            );
+            userTable?.onInsert?.((_ctx, row) => {
+              if (
+                row.identity.toHexString() === target.toHexString() &&
+                row.email
+              ) {
+                clearTimeout(timer);
+                finish(row.email);
+              }
+            });
           } catch {
             /* noop */
           }
@@ -165,6 +167,12 @@ function readEmailFromUserRow(
       finish(undefined);
     }
   });
+}
+
+interface InitParams {
+  token: string | null;
+  app: string | null;
+  prev: string | null;
 }
 
 export default function AuthVerifyPage() {
@@ -195,19 +203,27 @@ export default function AuthVerifyPage() {
 function VerifyInner() {
   const router = useRouter();
   const params = useSearchParams();
-  const [phase, setPhase] = useState<Phase>("minting");
-  const [message, setMessage] = useState("Minting fresh identity…");
+  // Read URL params synchronously so we can set the correct initial state
+  // without a setState-in-effect cascade. Validation (token + app) gates
+  // whether the effect runs at all.
+  const init: InitParams = {
+    token: params?.get("t") ?? null,
+    app: params?.get("app") ?? null,
+    prev: params?.get("prev") ?? null, // hex without 0x prefix
+  };
+  const valid = !!init.token && init.app === "typewars";
+  const [phase, setPhase] = useState<Phase>(valid ? "minting" : "error");
+  const [message, setMessage] = useState(
+    valid
+      ? "Minting fresh identity…"
+      : "Sign-in link is missing required fields.",
+  );
   const [warn, setWarn] = useState<string | null>(null);
 
   useEffect(() => {
-    const token = params?.get("t");
-    const app = params?.get("app");
-    const prev = params?.get("prev"); // hex without 0x prefix
-    if (!token || app !== "typewars") {
-      setPhase("error");
-      setMessage("Sign-in link is missing required fields.");
-      return;
-    }
+    if (!valid) return;
+    const token = init.token!;
+    const prev = init.prev;
 
     let cancelled = false;
     let sastaConn: SastaConn | null = null;
