@@ -14,7 +14,9 @@
  *  - The brand name is NOT displayed in Devanagari anywhere in the system.
  */
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500&family=JetBrains+Mono:wght@400;500&display=swap');
+/* Fonts are loaded via Next's `next/font/google` in each app's layout.tsx —
+ * downloaded at build time and served from /_next/static. No external @import
+ * here, so the CSP doesn't need to allow fonts.googleapis.com. */
 
 :root {
   /* ---------- Color primitives (five colours) ---------- */
