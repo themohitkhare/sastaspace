@@ -5,3 +5,4 @@ notes/out/
 agents/moderator/.env
 agents/moderator/.venv/
 deck-out/
+localai/models/

@@ -175,6 +175,65 @@ services:
       - TYPEWARS_MODULE=typewars
       - ALLOWED_ORIGINS=https://sastaspace.com,https://www.sastaspace.com,https://notes.sastaspace.com,https://admin.sastaspace.com,https://typewars.sastaspace.com
 
+  # Audio designer ("deck"): FastAPI + Agno + Ollama. Drafts a per-project
+  # track plan via Ollama (gemma3:1b on host loopback) and renders WAVs into
+  # a downloadable zip. Tunnel routes deck.sastaspace.com → 127.0.0.1:3160.
+  # MusicGen integration is opt-in via the [musicgen] extra; the default
+  # placeholder renderer (numpy sine voices) keeps mem under 256m.
+  deck:
+    build:
+      context: ../services/deck
+      dockerfile: Dockerfile
+    image: sastaspace-deck:local
+    container_name: sastaspace-deck
+    restart: unless-stopped
+    read_only: true
+    tmpfs: [/tmp]
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    pids_limit: 256
+    mem_limit: 256m
+    user: "1000:1000"
+    network_mode: host  # so :11434 (ollama) reaches the host loopback
+    environment:
+      - PORT=3160
+      - OLLAMA_URL=http://127.0.0.1:11434
+      - OLLAMA_MODEL=gemma3:1b
+      - PREFER_MUSICGEN=0
+      - ALLOWED_ORIGINS=https://sastaspace.com,https://www.sastaspace.com,https://deck.sastaspace.com
+
+  # Admin API: system metrics, container status, SSE logs, STDB write proxy.
+  # Cloudflare Tunnel routes api.sastaspace.com → 127.0.0.1:3170.
+  # Needs SPACETIME_TOKEN + GOOGLE_CLIENT_ID + OWNER_EMAIL in
+  # ../services/admin-api/.env on the host (gitignored).
+  admin-api:
+    build:
+      context: ../services/admin-api
+      dockerfile: Dockerfile
+    image: sastaspace-admin-api:local
+    container_name: sastaspace-admin-api
+    restart: unless-stopped
+    read_only: true
+    tmpfs: [/tmp]
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    pids_limit: 256
+    mem_limit: 256m
+    user: "1000:1000"
+    network_mode: host
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    env_file:
+      - ../services/admin-api/.env
+    environment:
+      - PORT=3170
+      - STDB_HTTP_URL=http://127.0.0.1:3100
+      - STDB_MODULE=sastaspace
+      - ALLOWED_ORIGINS=https://admin.sastaspace.com
+    depends_on:
+      spacetime:
+        condition: service_healthy
+
   # Comment moderator: Agno + Ollama. Polls SpacetimeDB on the host loopback,
   # calls Ollama on the host loopback. Needs SPACETIME_TOKEN in
   # ./agents/moderator/.env on the host (gitignored).
@@ -244,3 +303,32 @@ services:
     depends_on:
       spacetime:
         condition: service_healthy
+
+  # LocalAI: self-hosted OpenAI-compatible model server. Sibling to Ollama.
+  # Hosts the MusicGen audio model used by Phase 1 W3 deck-agent.
+  # Dev (this file): CPU image (`localai/localai:latest`) — no GPU mounts.
+  # Prod (taxila): swap image to a GPU variant (HIPBLAS for AMD 7900 XTX, or
+  # CUDA for NVIDIA) and add the corresponding `devices:` mounts.
+  # See infra/localai/README.md for the dev-vs-prod distinction.
+  localai:
+    image: localai/localai:latest
+    container_name: sastaspace-localai
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8080:8080"
+    volumes:
+      # ./localai/models contains models.yaml (copied at infra setup time —
+      # see infra/localai/README.md). Mounting the whole dir avoids the
+      # nested-mount issue Docker has when a file mount sits inside another
+      # bind mount of its parent dir.
+      - ./localai/models:/models
+    environment:
+      - MODELS_PATH=/models
+      - DEBUG=false
+    mem_limit: 16g  # MusicGen needs headroom; adjust per host's RAM
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8080/readyz"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 60s

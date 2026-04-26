@@ -1,0 +1,8 @@
+# LocalAI model registry. Phase 0 ships with one model: facebook/musicgen-small.
+# More models can be added by appending; LocalAI hot-loads on first request.
+
+- name: musicgen-small
+  backend: musicgen
+  parameters:
+    model: facebook/musicgen-small
+  description: Meta's MusicGen small model — text-to-music, 30 s clips, mono.
