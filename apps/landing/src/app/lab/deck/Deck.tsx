@@ -2,12 +2,29 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import styles from "./deck.module.css";
+// Phase 2 F4 — STDB-native plan/generate path. Both this and the legacy
+// HTTP path coexist behind NEXT_PUBLIC_USE_STDB_DECK; the flag picks one
+// at build time. TODO(Phase 4 modularization): once cutover is stable,
+// the legacy path + this flag both go away and Deck.tsx splits into
+// per-step components (audit M1).
+import { useDeckStdb, type DeckStdb } from "./useDeckStdb";
+import {
+  submitPlan,
+  submitGenerate,
+  downloadZipFromUrl,
+  type Track as StdbTrack,
+} from "./deckStdbFlows";
 
 // Set this to the deck service URL to enable real /plan + /generate calls.
 // Leave undefined to keep the page in offline-prototype mode (local draft +
 // procedural Web Audio playback) — useful in CI builds and on `next build`
 // before the service is reachable.
 const API_URL = process.env.NEXT_PUBLIC_DECK_API_URL;
+
+// When true, route /plan and /generate through SpacetimeDB reducers
+// (Phase 2 F4) instead of the deprecated services/deck HTTP API. Both
+// paths coexist until Phase 3 cutover; default false until cutover.
+const USE_STDB = process.env.NEXT_PUBLIC_USE_STDB_DECK === "true";
 
 type Phase = "idle" | "planning" | "plan" | "generating" | "results" | "error";
 
@@ -80,6 +97,13 @@ export function Deck() {
   const [openId, setOpenId] = useState<string | null>(null);
   const [planProgress, setPlanProgress] = useState(0);
 
+  // Phase 2 F4: STDB connection (mounted only when USE_STDB is true) and
+  // the plan_request id returned from the STDB plan flow so the subsequent
+  // generate flow can cite it (lets the reducer enforce "only the submitter
+  // may generate from their own plan").
+  const stdb = useDeckStdb(USE_STDB);
+  const [stdbPlanId, setStdbPlanId] = useState<bigint | null>(null);
+
   const promptRef = useRef<HTMLTextAreaElement | null>(null);
   const trimmed = prompt.trim();
   const canPlan = trimmed.length >= 4 && phase !== "planning";
@@ -95,6 +119,45 @@ export function Deck() {
     // UI doesn't jump straight to step 2. We always wait for both before
     // transitioning — the animation sets a floor on perceived latency.
     const minDur = 1700;
+
+    // ────────── F4: STDB path ──────────
+    if (USE_STDB && stdb) {
+      let stdbResolvedTracks: Track[] | null = null;
+      let stdbResolvedPlanId: bigint | null = null;
+      let stdbSettled = false;
+      void submitPlan(stdb.conn, stdb.identityHex, trimmed, desiredCount)
+        .then((res) => {
+          if (res.kind === "done") {
+            stdbResolvedTracks = res.tracks.map((t) => ({ id: nextId(), ...t }));
+            stdbResolvedPlanId = res.planRequestId;
+          } else {
+            console.warn(
+              "[deck] stdb plan failed, using local draft:",
+              res.error,
+            );
+          }
+        })
+        .catch((err) => {
+          console.warn("[deck] stdb plan threw, using local draft:", err);
+        })
+        .finally(() => {
+          stdbSettled = true;
+        });
+      const stdbTickId = window.setInterval(() => {
+        const r = Math.min((performance.now() - start) / minDur, 1);
+        setPlanProgress(r);
+        if (r >= 1 && stdbSettled) {
+          window.clearInterval(stdbTickId);
+          setPlan(stdbResolvedTracks ?? draftPlan(trimmed, desiredCount));
+          setStdbPlanId(stdbResolvedPlanId);
+          setPhase("plan");
+          setOpenId(null);
+        }
+      }, 60);
+      return;
+    }
+
+    // ────────── legacy: HTTP path ──────────
     let resolvedTracks: Track[] | null = null;
     let apiSettled = !API_URL; // when there's no API, treat the call as "done"
     if (API_URL) {
@@ -119,7 +182,7 @@ export function Deck() {
         setOpenId(null);
       }
     }, 60);
-  }, [canPlan, trimmed, desiredCount]);
+  }, [canPlan, trimmed, desiredCount, stdb]);
 
   const onKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -285,6 +348,8 @@ export function Deck() {
               prompt={trimmed}
               onEdit={() => setPhase("plan")}
               onNew={reset}
+              stdb={stdb}
+              stdbPlanId={stdbPlanId}
             />
           )}
         </section>
@@ -796,13 +861,17 @@ function GeneratingView({ plan, onDone }: { plan: Track[]; onDone: () => void })
 // results
 // ============================================================================
 function Results({
-  plan, estZipMb, prompt, onEdit, onNew,
+  plan, estZipMb, prompt, onEdit, onNew, stdb, stdbPlanId,
 }: {
   plan: Track[];
   estZipMb: string;
   prompt: string;
   onEdit: () => void;
   onNew: () => void;
+  // Phase 2 F4 — present only when USE_STDB is on; otherwise null and
+  // onDownload falls through to the legacy HTTP/stub path.
+  stdb: DeckStdb | null;
+  stdbPlanId: bigint | null;
 }) {
   const [zipLabel, setZipLabel] = useState("download .zip");
   const [shareLabel, setShareLabel] = useState("copy share link");
@@ -811,6 +880,29 @@ function Results({
   const onDownload = useCallback(async () => {
     setZipLabel("building zip…");
     try {
+      // ────────── F4: STDB path ──────────
+      if (USE_STDB && stdb) {
+        // Strip client-side ids before sending to the reducer.
+        const tracks: StdbTrack[] = plan.map(({ id, ...rest }) => {
+          void id;
+          return rest;
+        });
+        const res = await submitGenerate(
+          stdb.conn,
+          stdb.identityHex,
+          stdbPlanId,
+          tracks,
+        );
+        if (res.kind === "done") {
+          await downloadZipFromUrl(res.zipUrl, "deck.zip");
+          setZipLabel("downloaded ✓");
+        } else {
+          console.warn("[deck] stdb generate failed:", res.error);
+          setZipLabel("download failed — retry");
+        }
+        return;
+      }
+      // ────────── legacy: HTTP path ──────────
       const blob = API_URL
         ? await fetchGenerate(API_URL, prompt, plan)
         : await stubZipBlob();
@@ -820,7 +912,7 @@ function Results({
       console.warn("[deck] /generate failed:", err);
       setZipLabel("download failed — retry");
     }
-  }, [plan, prompt]);
+  }, [plan, prompt, stdb, stdbPlanId]);
 
   return (
     <div className={styles.fadeIn}>
