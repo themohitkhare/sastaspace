@@ -308,16 +308,32 @@ jobs:
           PROD=/home/mkhare/sastaspace/infra
           mkdir -p "$TYPEWARS_OUT_DIR"
           rsync -a --delete apps/typewars/out/ "$TYPEWARS_OUT_DIR/"
-          # Keep prod copies of compose + nginx + headers in sync (bind mounts
-          # are relative to docker-compose.yml's directory, so they must live
-          # alongside the prod compose file).
-          rsync -a infra/typewars/nginx.conf "$PROD/typewars/nginx.conf"
-          rsync -a infra/landing/security_headers.conf "$PROD/landing/security_headers.conf"
+          # rsync --inplace for files that are bind-mounted as single files inside
+          # containers: Docker captures the inode at container start, so an atomic
+          # rename (the rsync default) leaves the container reading the old inode.
+          # Writing in place preserves the inode so nginx reload picks up the change.
+          HEADERS_BEFORE=$(sha256sum "$PROD/landing/security_headers.conf" 2>/dev/null | awk '{print $1}')
+          rsync -a --inplace infra/typewars/nginx.conf "$PROD/typewars/nginx.conf"
+          rsync -a --inplace infra/landing/security_headers.conf "$PROD/landing/security_headers.conf"
           rsync -a infra/docker-compose.yml "$PROD/docker-compose.yml"
+          HEADERS_AFTER=$(sha256sum "$PROD/landing/security_headers.conf" | awk '{print $1}')
+          # Always create-or-reload typewars itself.
           if ! docker ps --format '{{.Names}}' | grep -q '^sastaspace-typewars$'; then
             cd "$PROD" && docker compose up -d --no-deps typewars
           else
             docker exec sastaspace-typewars nginx -s reload
+          fi
+          # The shared security_headers.conf is also bind-mounted by landing and
+          # notes. If it changed, recreate those containers so their bind mounts
+          # re-resolve to the new inode (nginx reload alone isn't enough — see above).
+          if [[ "$HEADERS_BEFORE" != "$HEADERS_AFTER" ]]; then
+            echo "security_headers.conf changed — recreating dependent containers"
+            cd "$PROD"
+            for svc in landing notes typewars; do
+              if docker ps --format '{{.Names}}' | grep -q "^sastaspace-$svc$"; then
+                docker compose up -d --no-deps --force-recreate "$svc"
+              fi
+            done
           fi
       - name: smoke test
         if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
