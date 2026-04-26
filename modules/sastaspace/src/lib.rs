@@ -1092,7 +1092,7 @@ pub fn prune_log_events(
         if rows.len() <= LOG_EVENTS_PER_CONTAINER_CAP {
             continue;
         }
-        rows.sort_by(|a, b| b.ts_micros.cmp(&a.ts_micros));
+        rows.sort_by_key(|r| std::cmp::Reverse(r.ts_micros));
         for stale in rows.into_iter().skip(LOG_EVENTS_PER_CONTAINER_CAP) {
             ctx.db.log_event().id().delete(stale.id);
         }
@@ -1233,7 +1233,7 @@ fn validate_plan_request_inputs(description: &str, count: u32) -> Result<String,
             "description too long (max {DECK_PLAN_DESC_MAX} chars)"
         ));
     }
-    if count < DECK_PLAN_COUNT_MIN || count > DECK_PLAN_COUNT_MAX {
+    if !(DECK_PLAN_COUNT_MIN..=DECK_PLAN_COUNT_MAX).contains(&count) {
         return Err(format!(
             "count out of range (must be {DECK_PLAN_COUNT_MIN}..={DECK_PLAN_COUNT_MAX})"
         ));
@@ -2040,10 +2040,7 @@ mod deck_tests {
         let one = r#"{"name":"X","type":"loop","length":2,"desc":"","tempo":"free","instruments":"","mood":"calm"}"#;
         let big = format!(
             "[{}]",
-            std::iter::repeat(one)
-                .take(11)
-                .collect::<Vec<_>>()
-                .join(",")
+            std::iter::repeat_n(one, 11).collect::<Vec<_>>().join(",")
         );
         assert!(validate_generate_tracks(&big).is_err());
     }
@@ -2689,7 +2686,7 @@ mod admin_collector_tests {
         if rows.len() <= cap {
             return Vec::new();
         }
-        rows.sort_by(|a, b| b.ts_micros.cmp(&a.ts_micros));
+        rows.sort_by_key(|r| std::cmp::Reverse(r.ts_micros));
         rows.into_iter().skip(cap).map(|r| r.id).collect()
     }
 
