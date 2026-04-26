@@ -55,54 +55,52 @@ function readToken(): { email: string } | null {
   }
 }
 
+function resolveAuth(): { state: AuthState; email: string } {
+  if (typeof window === 'undefined') return { state: 'loading', email: '' };
+  const token = readToken();
+  if (!token) return { state: 'signin', email: '' };
+  const state = OWNER_EMAIL && token.email !== OWNER_EMAIL ? 'denied' : 'app';
+  return { state, email: token.email };
+}
+
 export default function Shell() {
-  const [route, setRoute] = useState<Route>({ path: '/', params: new URLSearchParams() });
-  const [authState, setAuthState] = useState<AuthState>('loading');
-  const [userEmail, setUserEmail] = useState('');
+  const [route, setRoute] = useState<Route>(() => parsePath());
+  const [authState, setAuthState] = useState<AuthState>(() => resolveAuth().state);
+  const [userEmail, setUserEmail] = useState<string>(() => resolveAuth().email);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [updatedAt, setUpdatedAt] = useState(Date.now());
+  const [secondsSince, setSecondsSince] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
-  const [tick, setTick] = useState(0);
 
-  // Resolve auth on mount
+  // Hash routing — only register the listener, initial state is set via lazy initializer
   useEffect(() => {
-    const token = readToken();
-    if (!token) {
-      setAuthState('signin');
-      return;
-    }
-    setUserEmail(token.email);
-    if (OWNER_EMAIL && token.email !== OWNER_EMAIL) {
-      setAuthState('denied');
-    } else {
-      setAuthState('app');
-    }
-  }, []);
-
-  // Hash routing
-  useEffect(() => {
-    setRoute(parsePath());
     const onHash = () => setRoute(parsePath());
     window.addEventListener('hashchange', onHash);
     return () => window.removeEventListener('hashchange', onHash);
   }, []);
 
-  // Tick for "updated X seconds ago"
+  // "Updated X seconds ago" counter
   useEffect(() => {
-    const id = setInterval(() => setTick(t => t + 1), 1000);
+    const id = setInterval(() => setSecondsSince(s => s + 1), 1000);
     return () => clearInterval(id);
-  }, [tick]);
+  }, []);
 
   const navigate = (p: string) => { window.location.hash = p; };
 
   const refresh = () => {
     setRefreshing(true);
-    setTimeout(() => { setRefreshing(false); setUpdatedAt(Date.now()); }, 600);
+    setTimeout(() => { setRefreshing(false); setSecondsSince(0); }, 600);
   };
 
   const signOut = () => {
     localStorage.removeItem('admin_token');
     setAuthState('signin');
+    setUserEmail('');
+  };
+
+  const onSignInSuccess = () => {
+    const { state, email } = resolveAuth();
+    setUserEmail(email);
+    setAuthState(state);
   };
 
   if (authState === 'loading') {
@@ -110,16 +108,7 @@ export default function Shell() {
   }
 
   if (authState === 'signin') {
-    return <AuthSignIn onSuccess={() => {
-      const token = readToken();
-      if (!token) return;
-      setUserEmail(token.email);
-      if (OWNER_EMAIL && token.email !== OWNER_EMAIL) {
-        setAuthState('denied');
-      } else {
-        setAuthState('app');
-      }
-    }}/>;
+    return <AuthSignIn onSuccess={onSignInSuccess}/>;
   }
 
   if (authState === 'denied') {
@@ -128,7 +117,6 @@ export default function Shell() {
 
   const pendingCount = COMMENTS.filter(c => c.status === 'pending' || c.status === 'flagged').length;
   const anyDown = SERVICES.some(s => s.status !== 'running');
-  const secondsSince = Math.floor((Date.now() - updatedAt) / 1000);
   const isLogs = route.path === '/logs';
 
   let panel: React.ReactNode;

@@ -1,13 +1,13 @@
 'use client';
 
-import { COMMENTS, SERVICES, SYSTEM, CPU_HISTORY, relTime } from '@/lib/data';
+import { COMMENTS, SERVICES, SYSTEM, CPU_HISTORY, relTime, TIME_NOW } from '@/lib/data';
 import Chip from '@/components/Chip';
 import Sparkline from '@/components/charts/Sparkline';
 import Icon from '@/components/Icon';
 
 export default function Dashboard({ navigate }: { navigate: (path: string) => void }) {
   const pendingCount = COMMENTS.filter(c => c.status === 'pending' || c.status === 'flagged').length;
-  const lastHour = COMMENTS.filter(c => (Date.now() - new Date(c.createdAt).getTime()) < 3600000).length;
+  const lastHour = COMMENTS.filter(c => (TIME_NOW - new Date(c.createdAt).getTime()) < 3600000).length;
   const healthy = SERVICES.filter(s => s.status === 'running').length;
   const recentComments = [...COMMENTS].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).slice(0, 5);
 

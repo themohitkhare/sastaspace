@@ -10,10 +10,9 @@ export default function Logs({ initialService, theme = 'dark' }: LogsProps) {
   const [tail, setTail] = useState(200);
   const [filter, setFilter] = useState('');
   const [autoScroll, setAutoScroll] = useState(true);
-  const [cleared, setCleared] = useState(false);
+  const [clearedMap, setClearedMap] = useState<Record<string, boolean>>({});
+  const cleared = clearedMap[active] ?? false;
   const outputRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => { setCleared(false); }, [active]);
 
   let lines = LOG_TEMPLATES[active] ?? [];
   if (cleared) lines = [];
@@ -71,7 +70,7 @@ export default function Logs({ initialService, theme = 'dark' }: LogsProps) {
             <input type="checkbox" checked={autoScroll} onChange={e => setAutoScroll(e.target.checked)}/>
             Auto-scroll
           </label>
-          <button className="btn btn--sm btn--ghost" onClick={() => setCleared(true)}>Clear</button>
+          <button className="btn btn--sm btn--ghost" onClick={() => setClearedMap(prev => ({ ...prev, [active]: true }))}>Clear</button>
         </div>
         <div ref={outputRef} className={`logs-output ${theme === 'light' ? 'logs-output--light' : ''}`}>
           {displayLines.length === 0 && (
