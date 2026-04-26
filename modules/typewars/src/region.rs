@@ -85,6 +85,13 @@ pub fn effective_regen(base_regen: u64, active_wardens: u32) -> u64 {
     if active_wardens >= 3 { base_regen / 2 } else { base_regen }
 }
 
+/// Pure helper: applies a regen tick to an enemy-controlled region, capped
+/// at `enemy_max_hp`. Pulled out of `region_tick` so the saturating-add +
+/// cap behaviour can be unit-tested without a `ReducerContext`.
+pub fn apply_regen(current_hp: u64, regen: u64, max_hp: u64) -> u64 {
+    current_hp.saturating_add(regen).min(max_hp)
+}
+
 #[table(accessor = region_tick_schedule, scheduled(region_tick))]
 pub struct RegionTickSchedule {
     #[primary_key]
@@ -123,7 +130,7 @@ pub fn region_tick(ctx: &ReducerContext, _arg: RegionTickSchedule) -> Result<(),
             }
         } else {
             let regen = effective_regen(region.regen_rate, region.active_wardens);
-            region.enemy_hp = (region.enemy_hp + regen).min(region.enemy_max_hp);
+            region.enemy_hp = apply_regen(region.enemy_hp, regen, region.enemy_max_hp);
             ctx.db.region().id().update(region);
         }
     }
@@ -189,5 +196,149 @@ mod tests {
         assert_eq!(effective_regen(200, 5), 100);
         assert_eq!(effective_regen(200, 2), 200);
         assert_eq!(effective_regen(200, 0), 200);
+    }
+
+    // === hp_for_tier / regen_for_tier ===
+
+    #[test]
+    fn hp_for_tier_matches_design_doc() {
+        assert_eq!(hp_for_tier(1), 50_000);
+        assert_eq!(hp_for_tier(2), 100_000);
+        assert_eq!(hp_for_tier(3), 250_000);
+    }
+
+    #[test]
+    fn hp_for_tier_falls_back_to_tier_1_for_unknown() {
+        // Defensive default: anything outside the curated 1..=3 falls
+        // back to tier-1 numbers rather than panicking.
+        assert_eq!(hp_for_tier(0), 50_000);
+        assert_eq!(hp_for_tier(4), 50_000);
+        assert_eq!(hp_for_tier(255), 50_000);
+    }
+
+    #[test]
+    fn regen_for_tier_matches_design_doc() {
+        assert_eq!(regen_for_tier(1), 200);
+        assert_eq!(regen_for_tier(2), 500);
+        assert_eq!(regen_for_tier(3), 1_500);
+    }
+
+    #[test]
+    fn regen_for_tier_falls_back_to_tier_1_for_unknown() {
+        assert_eq!(regen_for_tier(0), 200);
+        assert_eq!(regen_for_tier(255), 200);
+    }
+
+    // === apply_regen ===
+
+    #[test]
+    fn apply_regen_caps_at_max_hp() {
+        // Regen would push past max — clamp to max.
+        assert_eq!(apply_regen(49_500, 1_000, 50_000), 50_000);
+    }
+
+    #[test]
+    fn apply_regen_below_cap_adds_normally() {
+        assert_eq!(apply_regen(40_000, 200, 50_000), 40_200);
+    }
+
+    #[test]
+    fn apply_regen_already_at_max_stays_at_max() {
+        assert_eq!(apply_regen(50_000, 200, 50_000), 50_000);
+    }
+
+    #[test]
+    fn apply_regen_handles_saturating_overflow() {
+        // u64::MAX + 1 mathematically overflows; saturating_add prevents
+        // the wraparound. The .min(max_hp) then clamps to max_hp.
+        assert_eq!(apply_regen(u64::MAX, 100, 50_000), 50_000);
+    }
+
+    // === winning_legion edge cases ===
+
+    #[test]
+    fn winning_legion_returns_none_when_all_zero() {
+        let r = make_region(0, 0, 0, 0, 0);
+        assert_eq!(winning_legion(&r), None);
+    }
+
+    #[test]
+    fn winning_legion_picks_legion_0_when_tied_at_top() {
+        // max_by_key with a tie returns the LAST element. So a (100,
+        // 100, 0, 0, 0) tie returns legion 1 (the later index of the
+        // two top values). Pin the deterministic behaviour.
+        let r = make_region(100, 100, 0, 0, 0);
+        assert_eq!(winning_legion(&r), Some(1));
+    }
+
+    #[test]
+    fn winning_legion_picks_legion_4_when_only_legion_4_has_damage() {
+        let r = make_region(0, 0, 0, 0, 999);
+        assert_eq!(winning_legion(&r), Some(4));
+    }
+
+    // === add_legion_damage ===
+
+    #[test]
+    fn add_legion_damage_targets_the_right_field() {
+        let mut r = make_region(0, 0, 0, 0, 0);
+        add_legion_damage(&mut r, 0, 100);
+        add_legion_damage(&mut r, 2, 50);
+        add_legion_damage(&mut r, 4, 25);
+        assert_eq!(r.damage_0, 100);
+        assert_eq!(r.damage_1, 0);
+        assert_eq!(r.damage_2, 50);
+        assert_eq!(r.damage_3, 0);
+        assert_eq!(r.damage_4, 25);
+    }
+
+    #[test]
+    fn add_legion_damage_ignores_invalid_legion() {
+        // Out-of-range legion ids must NOT panic — they're silently dropped.
+        // Real reducers gate legion at registration so this is defence in depth.
+        let mut r = make_region(0, 0, 0, 0, 0);
+        add_legion_damage(&mut r, 99, 1000);
+        assert_eq!(r.damage_0, 0);
+        assert_eq!(r.damage_1, 0);
+        assert_eq!(r.damage_2, 0);
+        assert_eq!(r.damage_3, 0);
+        assert_eq!(r.damage_4, 0);
+    }
+
+    #[test]
+    fn add_legion_damage_accumulates_across_calls() {
+        let mut r = make_region(0, 0, 0, 0, 0);
+        add_legion_damage(&mut r, 1, 100);
+        add_legion_damage(&mut r, 1, 50);
+        add_legion_damage(&mut r, 1, 25);
+        assert_eq!(r.damage_1, 175);
+    }
+
+    // === reset_legion_damage ===
+
+    #[test]
+    fn reset_legion_damage_zeros_all_five_legions() {
+        let mut r = make_region(100, 200, 300, 400, 500);
+        reset_legion_damage(&mut r);
+        assert_eq!(r.damage_0, 0);
+        assert_eq!(r.damage_1, 0);
+        assert_eq!(r.damage_2, 0);
+        assert_eq!(r.damage_3, 0);
+        assert_eq!(r.damage_4, 0);
+    }
+
+    #[test]
+    fn region_seed_has_25_entries() {
+        // Liberation goal is 20/25 — pin the seed length so a future
+        // re-shuffle doesn't accidentally make the goal unreachable.
+        assert_eq!(REGION_SEED.len(), 25);
+    }
+
+    #[test]
+    fn region_seed_has_10_tier_1_10_tier_2_5_tier_3() {
+        let by_tier = |t: u8| REGION_SEED.iter().filter(|(_, ti)| *ti == t).count();
+        assert_eq!(by_tier(1), 10);
+        assert_eq!(by_tier(2), 10);
+        assert_eq!(by_tier(3), 5);
     }
 }

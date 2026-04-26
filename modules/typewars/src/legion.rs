@@ -1,9 +1,14 @@
+#[allow(dead_code)]
 pub const LEGION_NAMES: [&str; 5] = ["Ashborn", "The Codex", "Wardens", "Surge", "Solari"];
 pub const LEGION_COUNT: u8 = 5;
 
 /// Multiplier ceiling: Surge (legion 3) gets 5.0, all others 3.0.
 pub fn multiplier_cap(legion: u8) -> f32 {
-    if legion == 3 { 5.0 } else { 3.0 }
+    if legion == 3 {
+        5.0
+    } else {
+        3.0
+    }
 }
 
 /// Streak-based damage multiplier, capped per legion.
@@ -13,7 +18,7 @@ pub fn compute_multiplier(streak: u32, cap: f32) -> f32 {
 
 /// True when Ashborn (legion 0) hits their 10-word burst trigger.
 pub fn ashborn_burst_active(legion: u8, streak: u32) -> bool {
-    legion == 0 && streak > 0 && streak % 10 == 0
+    legion == 0 && streak > 0 && streak.is_multiple_of(10)
 }
 
 /// True when a Codex (legion 1) player with ≥90% accuracy rolls the ~14% injection nonce.
@@ -25,7 +30,7 @@ pub fn codex_can_inject_rare(legion: u8, hits: u32, misses: u32, nonce: u64) -> 
     if total == 0 {
         return false;
     }
-    hits as f32 / total as f32 >= 0.90 && nonce % 7 == 0
+    hits as f32 / total as f32 >= 0.90 && nonce.is_multiple_of(7)
 }
 
 /// Final damage after multiplier and legion bonuses.

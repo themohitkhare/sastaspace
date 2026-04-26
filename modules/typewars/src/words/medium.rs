@@ -19,3 +19,39 @@ pub const WORDS: &[&str] = &[
 pub fn select(nonce: u64) -> &'static str {
     WORDS[nonce as usize % WORDS.len()]
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn select_is_deterministic() {
+        assert_eq!(select(0), select(0));
+        assert_eq!(select(42), select(42));
+    }
+
+    #[test]
+    fn select_wraps_modulo_len() {
+        // nonce equal to len returns the first word.
+        assert_eq!(select(WORDS.len() as u64), WORDS[0]);
+        // nonce one less than len returns the last word.
+        assert_eq!(select(WORDS.len() as u64 - 1), WORDS[WORDS.len() - 1]);
+    }
+
+    #[test]
+    fn word_list_is_non_empty() {
+        assert!(!WORDS.is_empty());
+    }
+
+    #[test]
+    fn medium_words_are_at_least_six_chars() {
+        // The deck is curated to medium-difficulty words; sanity check
+        // that nothing trivially-easy snuck in.
+        for w in WORDS {
+            assert!(
+                w.len() >= 6,
+                "medium word `{w}` is shorter than the curation floor",
+            );
+        }
+    }
+}

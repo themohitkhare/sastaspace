@@ -36,6 +36,22 @@ pub fn validate_registration(
     Ok(())
 }
 
+/// Pure helper: validates the email argument shared by `claim_progress` and
+/// `claim_progress_self`. Pulled out for unit tests.
+pub fn validate_claim_email(email: &str) -> Result<(), String> {
+    if email.is_empty() || email.len() > 254 {
+        return Err("invalid email".into());
+    }
+    Ok(())
+}
+
+/// Pure helper: returns true if a guest player is already verified (has
+/// an email row). Both claim flows guard against re-claiming a verified
+/// row. Pulled out for unit tests.
+pub fn is_guest_already_verified(guest: Option<&Player>) -> bool {
+    matches!(guest, Some(p) if p.email.is_some())
+}
+
 #[reducer]
 pub fn register_player(
     ctx: &ReducerContext,
@@ -118,14 +134,10 @@ pub fn claim_progress(
     email: String,
 ) -> Result<(), String> {
     crate::assert_owner(ctx)?;
-    if email.is_empty() || email.len() > 254 {
-        return Err("invalid email".into());
-    }
+    validate_claim_email(&email)?;
     let guest = ctx.db.player().identity().find(prev_identity);
-    if let Some(g) = &guest {
-        if g.email.is_some() {
-            return Err("target row is already verified".into());
-        }
+    if is_guest_already_verified(guest.as_ref()) {
+        return Err("target row is already verified".into());
     }
     let existing = ctx.db.player().identity().find(new_identity);
     match plan_claim(guest, existing, new_identity, email) {
@@ -161,14 +173,10 @@ pub fn claim_progress_self(
     email: String,
 ) -> Result<(), String> {
     let new_identity = ctx.sender();
-    if email.is_empty() || email.len() > 254 {
-        return Err("invalid email".into());
-    }
+    validate_claim_email(&email)?;
     let guest = ctx.db.player().identity().find(prev_identity);
-    if let Some(g) = &guest {
-        if g.email.is_some() {
-            return Err("target row is already verified".into());
-        }
+    if is_guest_already_verified(guest.as_ref()) {
+        return Err("target row is already verified".into());
     }
     let existing = ctx.db.player().identity().find(new_identity);
     match plan_claim(guest, existing, new_identity, email) {
@@ -301,5 +309,79 @@ mod tests {
         let new_id = Identity::from_byte_array([0x09; 32]);
         let action = plan_claim(None, None, new_id, "a@b.com".into());
         assert_eq!(action, ClaimAction::Noop);
+    }
+
+    // === validate_claim_email ===
+
+    #[test]
+    fn validate_claim_email_accepts_short_well_formed() {
+        assert!(validate_claim_email("a@b.com").is_ok());
+    }
+
+    #[test]
+    fn validate_claim_email_rejects_empty() {
+        let r = validate_claim_email("");
+        assert!(r.is_err());
+        assert_eq!(r.unwrap_err(), "invalid email");
+    }
+
+    #[test]
+    fn validate_claim_email_rejects_oversize() {
+        let huge = "a".repeat(255);
+        assert!(validate_claim_email(&huge).is_err());
+        // 254 is the inclusive max (RFC 5321).
+        let max_ok = "a".repeat(254);
+        assert!(validate_claim_email(&max_ok).is_ok());
+    }
+
+    // === is_guest_already_verified ===
+
+    #[test]
+    fn is_guest_already_verified_only_when_email_is_some() {
+        let unverified = mk_player(0x01, "guest", 0, 0, 0, 0, None);
+        let verified = mk_player(0x02, "verified", 0, 0, 0, 0, Some("a@b.com"));
+        assert!(!is_guest_already_verified(Some(&unverified)));
+        assert!(is_guest_already_verified(Some(&verified)));
+        // None means "no guest row at all" — also not already-verified.
+        assert!(!is_guest_already_verified(None));
+    }
+
+    // === plan_claim merge edge cases ===
+
+    #[test]
+    fn plan_claim_merge_saturates_total_damage_on_overflow() {
+        // u64::MAX in existing + 100 from guest must saturate, not wrap.
+        let guest = mk_player(0x01, "guest_one", 3, 100, 0, 0, None);
+        let existing = mk_player(0x02, "real", 0, u64::MAX, 0, 0, Some("a@b.com"));
+        let action = plan_claim(
+            Some(guest),
+            Some(existing.clone()),
+            existing.identity,
+            "a@b.com".into(),
+        );
+        match action {
+            ClaimAction::Merge { update, .. } => {
+                assert_eq!(update.total_damage, u64::MAX);
+            }
+            other => panic!("expected Merge, got {:?}", other),
+        }
+    }
+
+    #[test]
+    fn plan_claim_merge_takes_max_wpm_from_guest_when_higher() {
+        let guest = mk_player(0x01, "guest", 3, 0, 0, 200, None);
+        let existing = mk_player(0x02, "real", 0, 0, 0, 50, Some("a@b.com"));
+        let action = plan_claim(
+            Some(guest),
+            Some(existing.clone()),
+            existing.identity,
+            "a@b.com".into(),
+        );
+        match action {
+            ClaimAction::Merge { update, .. } => {
+                assert_eq!(update.best_wpm, 200);
+            }
+            other => panic!("expected Merge, got {:?}", other),
+        }
     }
 }
