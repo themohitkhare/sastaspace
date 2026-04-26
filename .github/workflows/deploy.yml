@@ -931,12 +931,12 @@ jobs:
         env:
           OWNER_HEX: c20086b8ce1d18ec9c564044615071677620eafad99c922edbb3e3463b6f79ba
         run: |
-          # STDB Identity SATS encoding is a 1-element tuple containing
-          # the hex string (per the error 'expected a 1-element tuple').
-          # Payload shape: [<identity-tuple>, email, name] where
-          # identity-tuple is [hex_string].
+          # STDB Identity SATS encoding is a 1-element tuple containing a
+          # u256. JSON can't represent u256 as a number, so it goes in as
+          # a decimal-digit string. python3 converts the hex to decimal.
+          OWNER_DECIMAL=$(python3 -c "print(int('$OWNER_HEX', 16))")
           payload=$(jq -nc \
-            --arg id "$OWNER_HEX" \
+            --arg id "$OWNER_DECIMAL" \
             --arg email "e2e-owner@sastaspace.com" \
             --arg name "E2E_Owner" \
             '[[$id], $email, $name]')
