@@ -827,7 +827,8 @@ jobs:
         working-directory: /home/mkhare/sastaspace/infra
         run: |
           docker compose --profile stdb-native build auth-410
-          docker compose --profile stdb-native up -d auth-410
+          # --force-recreate so bind-mounted nginx.conf changes pick up.
+          docker compose --profile stdb-native up -d --force-recreate auth-410
           sleep 4
           docker compose ps auth-410
       - name: smoke — auth-410 returns 410
@@ -880,7 +881,12 @@ jobs:
           # Stop legacy first, then start static.
           docker compose stop deck 2>&1 | tee /tmp/deck-stop.log || true
           docker compose --profile stdb-native build deck-static
-          docker compose --profile stdb-native up -d deck-static
+          # --force-recreate so bind-mounted nginx.conf changes (rsynced in
+          # the previous step) actually re-mount on container start. The
+          # plain `up -d` skips recreation when only bind-mounted files
+          # change since the image hash hasn't moved — that left the prior
+          # deploy serving the old "Index of /" config.
+          docker compose --profile stdb-native up -d --force-recreate deck-static
           sleep 4
           docker compose ps deck-static
       - name: smoke — deck-static serves
