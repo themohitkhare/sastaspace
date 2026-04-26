@@ -1,8 +1,5 @@
-"use client";
-
-import { useEffect, useState } from "react";
 import { Chip, type ChipVariant } from "@/components/Chip";
-import { subscribeProjects, type Project } from "@/lib/projects";
+import { PROJECTS, type Project } from "@/lib/projects";
 import styles from "@/app/landing.module.css";
 
 const KNOWN_STATUSES: readonly ChipVariant[] = [
@@ -20,13 +17,7 @@ function asChipVariant(status: string): ChipVariant {
 }
 
 export function ProjectsList() {
-  // null = haven't received first snapshot yet; [] = subscription applied, no rows
-  const [rows, setRows] = useState<readonly Project[] | null>(null);
-
-  useEffect(() => subscribeProjects((r) => setRows(r)), []);
-
-  // Initial render (server, and pre-subscription on client) → quiet placeholder
-  if (rows === null || rows.length === 0) {
+  if (PROJECTS.length === 0) {
     return (
       <div className={styles.emptyState}>
         <p>The workshop&apos;s quiet today. Come back soon.</p>
@@ -36,7 +27,7 @@ export function ProjectsList() {
 
   return (
     <div className={styles.grid}>
-      {rows.map((p) => (
+      {PROJECTS.map((p: Project) => (
         <a key={p.slug} className={styles.card} href={p.url}>
           <div className={styles.cardSlug}>{slugDomain(p.url)}</div>
           <h3>{p.title}</h3>
