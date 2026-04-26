@@ -317,19 +317,16 @@ jobs:
           rsync -a --inplace infra/landing/security_headers.conf "$PROD/landing/security_headers.conf"
           rsync -a infra/docker-compose.yml "$PROD/docker-compose.yml"
           HEADERS_AFTER=$(sha256sum "$PROD/landing/security_headers.conf" | awk '{print $1}')
-          # Always create-or-reload typewars itself.
-          if ! docker ps --format '{{.Names}}' | grep -q '^sastaspace-typewars$'; then
-            cd "$PROD" && docker compose up -d --no-deps typewars
-          else
-            docker exec sastaspace-typewars nginx -s reload
-          fi
-          # The shared security_headers.conf is also bind-mounted by landing and
-          # notes. If it changed, recreate those containers so their bind mounts
-          # re-resolve to the new inode (nginx reload alone isn't enough — see above).
+          # Force-recreate the typewars container. Bind-mounts of single files
+          # capture the host inode at container start, so a previously-rsynced
+          # file change won't be visible to a container that started before it.
+          # Recreation is fast (~1s) and reliable.
+          cd "$PROD" && docker compose up -d --no-deps --force-recreate typewars
+          # Same shared security_headers.conf is bind-mounted by landing and notes;
+          # recreate those whenever the file content changed in this run.
           if [[ "$HEADERS_BEFORE" != "$HEADERS_AFTER" ]]; then
-            echo "security_headers.conf changed — recreating dependent containers"
-            cd "$PROD"
-            for svc in landing notes typewars; do
+            echo "security_headers.conf changed — recreating landing + notes too"
+            for svc in landing notes; do
               if docker ps --format '{{.Names}}' | grep -q "^sastaspace-$svc$"; then
                 docker compose up -d --no-deps --force-recreate "$svc"
               fi
