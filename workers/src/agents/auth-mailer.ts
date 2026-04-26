@@ -28,7 +28,12 @@ type PendingEmailRow = {
   status: string;
 };
 
-type ReducerCallback = (...args: unknown[]) => unknown;
+// SDK 2.1 reducer accessors take a single object literal whose keys match
+// the Rust reducer parameter names in camelCase. Positional args silently
+// drop everything past arg[0] — same bug Group 7 fixed in admin-collector.
+type MarkEmailSentArgs = { id: bigint; providerMsgId: string };
+type MarkEmailFailedArgs = { id: bigint; error: string };
+type ReducerCallback<T> = (args: T) => unknown;
 
 type PendingEmailAccessor = {
   iter: () => Iterable<PendingEmailRow>;
@@ -58,8 +63,8 @@ export async function start(db: StdbConn): Promise<() => Promise<void>> {
   // generated names; until then we reach through the `unknown` cast.
   const dbView = conn.db as unknown as { pendingEmail: PendingEmailAccessor };
   const reducers = conn.reducers as unknown as {
-    markEmailSent: ReducerCallback;
-    markEmailFailed: ReducerCallback;
+    markEmailSent: ReducerCallback<MarkEmailSentArgs>;
+    markEmailFailed: ReducerCallback<MarkEmailFailedArgs>;
   };
 
   conn
@@ -86,10 +91,10 @@ export async function start(db: StdbConn): Promise<() => Promise<void>> {
           error: sendResult.error,
         });
         await Promise.resolve(
-          reducers.markEmailFailed(
-            row.id,
-            JSON.stringify(sendResult.error).slice(0, 400),
-          ),
+          reducers.markEmailFailed({
+            id: row.id,
+            error: JSON.stringify(sendResult.error).slice(0, 400),
+          }),
         );
       } else {
         log("info", "email sent", {
@@ -97,14 +102,20 @@ export async function start(db: StdbConn): Promise<() => Promise<void>> {
           msg_id: sendResult.data?.id,
         });
         await Promise.resolve(
-          reducers.markEmailSent(row.id, sendResult.data?.id ?? "unknown"),
+          reducers.markEmailSent({
+            id: row.id,
+            providerMsgId: sendResult.data?.id ?? "unknown",
+          }),
         );
       }
     } catch (e) {
       log("error", "resend threw", { id: idKey, error: String(e) });
       try {
         await Promise.resolve(
-          reducers.markEmailFailed(row.id, String(e).slice(0, 400)),
+          reducers.markEmailFailed({
+            id: row.id,
+            error: String(e).slice(0, 400),
+          }),
         );
       } catch (reportErr) {
         log("error", "mark_email_failed reducer failed", {

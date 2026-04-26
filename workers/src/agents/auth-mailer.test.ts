@@ -110,7 +110,7 @@ describe("auth-mailer", () => {
     const stop = await start(arg);
     await flush();
     expect(markEmailSent).toHaveBeenCalledTimes(1);
-    expect(markEmailSent).toHaveBeenCalledWith(1n, "msg-fake");
+    expect(markEmailSent).toHaveBeenCalledWith({ id: 1n, providerMsgId: "msg-fake" });
     expect(markEmailFailed).not.toHaveBeenCalled();
     await stop();
   });
@@ -124,7 +124,7 @@ describe("auth-mailer", () => {
     const stop = await start(arg);
     built.triggerInsert(makeRow({ id: 42n, toEmail: "later@y.com" }));
     await flush();
-    expect(markEmailSent).toHaveBeenCalledWith(42n, "msg-fake");
+    expect(markEmailSent).toHaveBeenCalledWith({ id: 42n, providerMsgId: "msg-fake" });
     await stop();
   });
 
@@ -158,8 +158,8 @@ describe("auth-mailer", () => {
     await flush();
     expect(markEmailSent).not.toHaveBeenCalled();
     expect(markEmailFailed).toHaveBeenCalledTimes(1);
-    expect(markEmailFailed.mock.calls[0]?.[0]).toBe(7n);
-    expect(String(markEmailFailed.mock.calls[0]?.[1])).toContain("boom");
+    expect(markEmailFailed.mock.calls[0]?.[0]).toMatchObject({ id: 7n });
+    expect(String((markEmailFailed.mock.calls[0]?.[0] as { error: string }).error)).toContain("boom");
     await stop();
   });
 
@@ -183,8 +183,8 @@ describe("auth-mailer", () => {
     await flush();
     expect(markEmailSent).not.toHaveBeenCalled();
     expect(markEmailFailed).toHaveBeenCalledTimes(1);
-    expect(markEmailFailed.mock.calls[0]?.[0]).toBe(11n);
-    expect(String(markEmailFailed.mock.calls[0]?.[1])).toContain("rate_limited");
+    expect(markEmailFailed.mock.calls[0]?.[0]).toMatchObject({ id: 11n });
+    expect(String((markEmailFailed.mock.calls[0]?.[0] as { error: string }).error)).toContain("rate_limited");
     await stop();
   });
 });
