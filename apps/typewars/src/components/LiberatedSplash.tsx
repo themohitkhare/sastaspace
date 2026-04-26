@@ -5,15 +5,18 @@ import { LEGION_INFO } from '@/lib/legions';
 interface Props {
   region: Region;
   winner: LegionId;
-  contributors: Array<{ name: string; legion: LegionId; damage: number }>;
   onContinue: () => void;
 }
 
-export default function LiberatedSplash({ region, winner, contributors, onContinue }: Props) {
+export default function LiberatedSplash({ region, winner, onContinue }: Props) {
   const winnerInfo = LEGION_INFO[winner];
-  const totalDmg = contributors.reduce((s, c) => s + c.damage, 0);
   const tierLabel = { 1: 'tier 1', 2: 'tier 2', 3: 'tier 3' }[region.tier];
-  const sorted = [...contributors].sort((a, b) => b.damage - a.damage);
+
+  const legionDamages = ([0, 1, 2, 3, 4] as LegionId[])
+    .map(id => ({ id, dmg: region[`damage_${id}` as keyof Region] as number, info: LEGION_INFO[id] }))
+    .sort((a, b) => b.dmg - a.dmg);
+
+  const totalDmg = legionDamages.reduce((s, l) => s + l.dmg, 0);
 
   return (
     <div className="liberated">
@@ -25,7 +28,7 @@ export default function LiberatedSplash({ region, winner, contributors, onContin
         </div>
         <h1 className="ss-h1 lib-title">{region.name}</h1>
         <p className="ss-lede" style={{ color: 'var(--brand-muted)', marginTop: 12 }}>
-          The {region.name} has been liberated. {winnerInfo.name} forces claimed the region after sustained assault. {tierLabel} regen is now suppressed.
+          The {region.name} has been liberated. {winnerInfo.name} forces dealt the most damage and now hold the region. {tierLabel} regen is suppressed.
         </p>
 
         <div className="lib-grid">
@@ -51,19 +54,16 @@ export default function LiberatedSplash({ region, winner, contributors, onContin
           </div>
 
           <div className="lib-block">
-            <p className="ss-eyebrow" style={{ color: 'var(--brand-muted)' }}>top contributors</p>
+            <p className="ss-eyebrow" style={{ color: 'var(--brand-muted)' }}>legion contribution</p>
             <ul className="lib-contrib-list">
-              {sorted.slice(0, 5).map((c, i) => {
-                const cInfo = LEGION_INFO[c.legion];
-                return (
-                  <li key={i}>
-                    <span className="lib-rank">{i + 1}</span>
-                    <span className="lib-name">{c.name}</span>
-                    <span className="lib-leg-pip" style={{ background: cInfo.color }} />
-                    <span className="lib-dmg ss-mono">{c.damage.toLocaleString()}</span>
-                  </li>
-                );
-              })}
+              {legionDamages.map((l, i) => (
+                <li key={l.id}>
+                  <span className="lib-rank">{i + 1}</span>
+                  <span className="lib-name">{l.info.name}</span>
+                  <span className="lib-leg-pip" style={{ background: l.info.color }} />
+                  <span className="lib-dmg ss-mono">{l.dmg.toLocaleString()}</span>
+                </li>
+              ))}
             </ul>
           </div>
         </div>

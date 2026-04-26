@@ -57,13 +57,7 @@ export default function App() {
     if (current && current.controlling_legion !== -1 && activeRegion.controlling_legion === -1) {
       const damages = [current.damage_0, current.damage_1, current.damage_2, current.damage_3, current.damage_4];
       const winner = damages.indexOf(Math.max(...damages)) as LegionId;
-      const contributors = [
-        { name: player.username, legion: player.legion, damage: player.season_damage },
-        { name: 'vex_prime', legion: 0 as LegionId, damage: Math.floor(Math.random() * 50000) + 10000 },
-        { name: 'cipher_9', legion: 1 as LegionId, damage: Math.floor(Math.random() * 40000) + 8000 },
-        { name: 'surge_x', legion: 3 as LegionId, damage: Math.floor(Math.random() * 30000) + 5000 },
-      ];
-      setLiberatedInfo({ region: current, winner, contributors });
+      setLiberatedInfo({ region: current, winner });
       setScreen('liberated');
     } else {
       setScreen('warmap');
@@ -125,7 +119,6 @@ export default function App() {
       <LiberatedSplash
         region={liberatedInfo.region}
         winner={liberatedInfo.winner}
-        contributors={liberatedInfo.contributors}
         onContinue={() => { setLiberatedInfo(null); setScreen('warmap'); }}
       />
     );

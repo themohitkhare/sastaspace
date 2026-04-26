@@ -28,7 +28,6 @@ export interface Player {
 export interface LiberatedInfo {
   region: Region;
   winner: LegionId;
-  contributors: Array<{ name: string; legion: LegionId; damage: number }>;
 }
 
 export type Screen = 'legion-select' | 'warmap' | 'battle' | 'liberated' | 'leaderboard';
