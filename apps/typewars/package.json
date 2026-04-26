@@ -13,6 +13,7 @@
   "dependencies": {
     "@sastaspace/auth-ui": "workspace:*",
     "@sastaspace/design-tokens": "workspace:*",
+    "@sastaspace/stdb-bindings": "workspace:*",
     "@sastaspace/typewars-bindings": "workspace:*",
     "next": "^16.0.0",
     "react": "^19.0.0",
