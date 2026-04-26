@@ -687,10 +687,7 @@ pub struct LastTestToken {
 /// after `spacetime publish`:
 ///   spacetime call sastaspace set_e2e_test_secret '["<random-hex>"]'
 #[reducer]
-pub fn set_e2e_test_secret(
-    ctx: &ReducerContext,
-    secret: Option<String>,
-) -> Result<(), String> {
+pub fn set_e2e_test_secret(ctx: &ReducerContext, secret: Option<String>) -> Result<(), String> {
     assert_owner(ctx)?;
     let row = AppConfigSecret {
         id: 0,
@@ -718,11 +715,7 @@ pub fn set_e2e_test_secret(
 /// does (15 minute TTL, `used_at = None`) so the existing `verify_token`
 /// reducer can consume it unchanged.
 #[reducer]
-pub fn mint_test_token(
-    ctx: &ReducerContext,
-    email: String,
-    secret: String,
-) -> Result<(), String> {
+pub fn mint_test_token(ctx: &ReducerContext, email: String, secret: String) -> Result<(), String> {
     assert_owner(ctx)?;
     let email = email.trim().to_lowercase();
     validate_mint_test_args(&email, &secret)?;
@@ -1231,10 +1224,14 @@ fn assert_submitter_or_owner(ctx: &ReducerContext, submitter: Identity) -> Resul
 fn validate_plan_request_inputs(description: &str, count: u32) -> Result<String, String> {
     let trimmed = description.trim();
     if trimmed.len() < DECK_PLAN_DESC_MIN {
-        return Err(format!("description too short (min {DECK_PLAN_DESC_MIN} chars)"));
+        return Err(format!(
+            "description too short (min {DECK_PLAN_DESC_MIN} chars)"
+        ));
     }
     if trimmed.len() > DECK_PLAN_DESC_MAX {
-        return Err(format!("description too long (max {DECK_PLAN_DESC_MAX} chars)"));
+        return Err(format!(
+            "description too long (max {DECK_PLAN_DESC_MAX} chars)"
+        ));
     }
     if count < DECK_PLAN_COUNT_MIN || count > DECK_PLAN_COUNT_MAX {
         return Err(format!(
@@ -1273,11 +1270,7 @@ fn validate_zip_url(url: &str) -> Result<(), String> {
 /// signed-in identities, same as the unauthed prototype). Validation matches
 /// the FastAPI Pydantic model in services/deck/main.py:GenerateRequest.
 #[reducer]
-pub fn request_plan(
-    ctx: &ReducerContext,
-    description: String,
-    count: u32,
-) -> Result<(), String> {
+pub fn request_plan(ctx: &ReducerContext, description: String, count: u32) -> Result<(), String> {
     let trimmed = validate_plan_request_inputs(&description, count)?;
     ctx.db.plan_request().insert(PlanRequest {
         id: 0,
@@ -1340,11 +1333,7 @@ pub fn set_plan_fallback(ctx: &ReducerContext, request_id: u64) -> Result<(), St
 /// inappropriate (e.g. the row was deleted under us). In normal worker
 /// operation prefer set_plan_fallback over this.
 #[reducer]
-pub fn set_plan_failed(
-    ctx: &ReducerContext,
-    request_id: u64,
-    error: String,
-) -> Result<(), String> {
+pub fn set_plan_failed(ctx: &ReducerContext, request_id: u64, error: String) -> Result<(), String> {
     assert_owner(ctx)?;
     let mut row = ctx
         .db
@@ -1394,11 +1383,7 @@ pub fn request_generate(
 
 /// Worker-only: render finished, zip URL is live.
 #[reducer]
-pub fn set_generate_done(
-    ctx: &ReducerContext,
-    job_id: u64,
-    zip_url: String,
-) -> Result<(), String> {
+pub fn set_generate_done(ctx: &ReducerContext, job_id: u64, zip_url: String) -> Result<(), String> {
     assert_owner(ctx)?;
     validate_zip_url(&zip_url)?;
     let mut row = ctx
@@ -1417,11 +1402,7 @@ pub fn set_generate_done(
 
 /// Worker-only: render failed.
 #[reducer]
-pub fn set_generate_failed(
-    ctx: &ReducerContext,
-    job_id: u64,
-    error: String,
-) -> Result<(), String> {
+pub fn set_generate_failed(ctx: &ReducerContext, job_id: u64, error: String) -> Result<(), String> {
     assert_owner(ctx)?;
     let mut row = ctx
         .db
@@ -1452,87 +1433,389 @@ pub fn compute_local_draft(description: &str, count: u32) -> String {
     // \b-bounded word in `lower`. Rust's regex crate is heavy for the WASM
     // build; this manual scan matches the Python `\b(...)\b` semantics for
     // the small finite set we care about.
-    let has_word = |needles: &[&str]| -> bool {
-        needles.iter().any(|w| word_boundary_contains(&lower, w))
-    };
+    let has_word =
+        |needles: &[&str]| -> bool { needles.iter().any(|w| word_boundary_contains(&lower, w)) };
     // Stem-prefix variant: matches if `needle` appears at a word start (no
     // trailing \b). Mirrors `\b(haunt|spook|...)` in the Python without the
     // trailing boundary.
-    let has_stem = |stems: &[&str]| -> bool {
-        stems.iter().any(|s| word_stem_contains(&lower, s))
-    };
+    let has_stem = |stems: &[&str]| -> bool { stems.iter().any(|s| word_stem_contains(&lower, s)) };
 
     let is_meditation = has_word(&["meditation", "mindful", "sleep", "calm", "relax", "yoga"]);
-    let is_game = has_word(&["game", "platformer", "rpg", "puzzle", "level", "boss", "pixel", "2d", "3d"]);
-    let is_video = has_word(&["video", "trailer", "ad", "spot", "commercial", "product", "demo"]);
+    let is_game = has_word(&[
+        "game",
+        "platformer",
+        "rpg",
+        "puzzle",
+        "level",
+        "boss",
+        "pixel",
+        "2d",
+        "3d",
+    ]);
+    let is_video = has_word(&[
+        "video",
+        "trailer",
+        "ad",
+        "spot",
+        "commercial",
+        "product",
+        "demo",
+    ]);
     let is_podcast = has_word(&["podcast", "intro", "outro", "episode", "host"]);
-    let is_finance = has_word(&["finance", "fintech", "dashboard", "analytics", "trading", "wealth"]);
-    let is_app = has_word(&["app", "mobile", "web", "onboarding", "notification", "button", "ui"])
-        || is_meditation;
+    let is_finance = has_word(&[
+        "finance",
+        "fintech",
+        "dashboard",
+        "analytics",
+        "trading",
+        "wealth",
+    ]);
+    let is_app = has_word(&[
+        "app",
+        "mobile",
+        "web",
+        "onboarding",
+        "notification",
+        "button",
+        "ui",
+    ]) || is_meditation;
 
     let mut mood = "focused";
-    if is_meditation { mood = "calm"; }
-    else if is_game { mood = "playful"; }
-    else if is_video { mood = "cinematic"; }
-    else if is_podcast { mood = "warm"; }
-    else if is_finance { mood = "focused"; }
+    if is_meditation {
+        mood = "calm";
+    } else if is_game {
+        mood = "playful";
+    } else if is_video {
+        mood = "cinematic";
+    } else if is_podcast {
+        mood = "warm";
+    } else if is_finance {
+        mood = "focused";
+    }
 
-    if has_stem(&["dark", "tense", "haunt", "spook", "grim"]) { mood = "dark"; }
-    if has_stem(&["warm", "nostalg", "cozy", "gentle"]) { mood = "warm"; }
-    if has_stem(&["upbeat", "energ", "fast", "hype"]) { mood = "upbeat"; }
-    if has_stem(&["dream", "float", "airy"]) { mood = "dreamy"; }
+    if has_stem(&["dark", "tense", "haunt", "spook", "grim"]) {
+        mood = "dark";
+    }
+    if has_stem(&["warm", "nostalg", "cozy", "gentle"]) {
+        mood = "warm";
+    }
+    if has_stem(&["upbeat", "energ", "fast", "hype"]) {
+        mood = "upbeat";
+    }
+    if has_stem(&["dream", "float", "airy"]) {
+        mood = "dreamy";
+    }
 
-    type Seed = (&'static str, &'static str, u32, &'static str, &'static str, &'static str);
+    type Seed = (
+        &'static str,
+        &'static str,
+        u32,
+        &'static str,
+        &'static str,
+        &'static str,
+    );
     let seeds: &[Seed] = if is_app || is_meditation || is_finance {
         &[
-            ("Background ambient bed", "background", 60, "long-form ambient bed for the home/landing screen", "60bpm", "soft pads, sustained synths, no percussion"),
-            ("UI background loop", "loop", 12, "looping low-volume motif behind core flows", "90bpm", "gentle plucks, soft bells, very light rhythm"),
-            ("Notification chime", "one-shot", 2, "in-app notification — friendly, non-intrusive", "free", "two-note bell, soft mallet, quick decay"),
-            ("Success confirmation", "one-shot", 2, "completed action / saved / sent", "free", "rising tone, light harmonic, gentle"),
-            ("Error tone", "one-shot", 2, "something went wrong — soft, not alarming", "free", "low fall, muted pad"),
-            ("Onboarding intro", "intro", 8, "plays once on first open, sets the tone", "60bpm", "rising pad, single melodic phrase"),
-            ("Screen transition", "transition", 3, "short whoosh between major sections", "free", "air sweep, shimmer"),
-            ("Loading loop", "loop", 8, "plays during longer waits", "90bpm", "gentle pulse, soft warble"),
-            ("Achievement sting", "sting", 3, "milestone celebration", "free", "bright chord stab, rising"),
-            ("Outro / closing", "outro", 6, "plays as the user finishes a session", "60bpm", "descending pad, soft resolution"),
+            (
+                "Background ambient bed",
+                "background",
+                60,
+                "long-form ambient bed for the home/landing screen",
+                "60bpm",
+                "soft pads, sustained synths, no percussion",
+            ),
+            (
+                "UI background loop",
+                "loop",
+                12,
+                "looping low-volume motif behind core flows",
+                "90bpm",
+                "gentle plucks, soft bells, very light rhythm",
+            ),
+            (
+                "Notification chime",
+                "one-shot",
+                2,
+                "in-app notification — friendly, non-intrusive",
+                "free",
+                "two-note bell, soft mallet, quick decay",
+            ),
+            (
+                "Success confirmation",
+                "one-shot",
+                2,
+                "completed action / saved / sent",
+                "free",
+                "rising tone, light harmonic, gentle",
+            ),
+            (
+                "Error tone",
+                "one-shot",
+                2,
+                "something went wrong — soft, not alarming",
+                "free",
+                "low fall, muted pad",
+            ),
+            (
+                "Onboarding intro",
+                "intro",
+                8,
+                "plays once on first open, sets the tone",
+                "60bpm",
+                "rising pad, single melodic phrase",
+            ),
+            (
+                "Screen transition",
+                "transition",
+                3,
+                "short whoosh between major sections",
+                "free",
+                "air sweep, shimmer",
+            ),
+            (
+                "Loading loop",
+                "loop",
+                8,
+                "plays during longer waits",
+                "90bpm",
+                "gentle pulse, soft warble",
+            ),
+            (
+                "Achievement sting",
+                "sting",
+                3,
+                "milestone celebration",
+                "free",
+                "bright chord stab, rising",
+            ),
+            (
+                "Outro / closing",
+                "outro",
+                6,
+                "plays as the user finishes a session",
+                "60bpm",
+                "descending pad, soft resolution",
+            ),
         ]
     } else if is_game {
         &[
-            ("Title theme", "intro", 30, "plays on the main menu — sets the world", "90bpm", "lead synth, drums, atmosphere"),
-            ("Exploration loop", "background", 60, "core gameplay bed", "90bpm", "bass, light percussion, melodic motif"),
-            ("Combat loop", "background", 30, "fight / encounter music", "120bpm", "driving drums, distorted bass, brass stabs"),
-            ("Boss theme", "background", 60, "boss encounter — bigger, heavier", "120bpm", "orchestral hits, choir, percussion"),
-            ("Victory sting", "sting", 3, "plays after winning a fight", "free", "rising orchestral chord, bell"),
-            ("Defeat sting", "sting", 3, "plays on game-over", "free", "descending minor chord, low brass"),
-            ("Menu loop", "loop", 15, "plays in pause/inventory menus", "60bpm", "soft pad, music box"),
-            ("Item pickup", "one-shot", 2, "collected coin / gem / item", "free", "sparkle, bell"),
-            ("Hit / damage", "one-shot", 2, "enemy or player takes damage", "free", "punchy thud"),
-            ("Level complete", "sting", 4, "end of stage celebration", "free", "fanfare, drums"),
+            (
+                "Title theme",
+                "intro",
+                30,
+                "plays on the main menu — sets the world",
+                "90bpm",
+                "lead synth, drums, atmosphere",
+            ),
+            (
+                "Exploration loop",
+                "background",
+                60,
+                "core gameplay bed",
+                "90bpm",
+                "bass, light percussion, melodic motif",
+            ),
+            (
+                "Combat loop",
+                "background",
+                30,
+                "fight / encounter music",
+                "120bpm",
+                "driving drums, distorted bass, brass stabs",
+            ),
+            (
+                "Boss theme",
+                "background",
+                60,
+                "boss encounter — bigger, heavier",
+                "120bpm",
+                "orchestral hits, choir, percussion",
+            ),
+            (
+                "Victory sting",
+                "sting",
+                3,
+                "plays after winning a fight",
+                "free",
+                "rising orchestral chord, bell",
+            ),
+            (
+                "Defeat sting",
+                "sting",
+                3,
+                "plays on game-over",
+                "free",
+                "descending minor chord, low brass",
+            ),
+            (
+                "Menu loop",
+                "loop",
+                15,
+                "plays in pause/inventory menus",
+                "60bpm",
+                "soft pad, music box",
+            ),
+            (
+                "Item pickup",
+                "one-shot",
+                2,
+                "collected coin / gem / item",
+                "free",
+                "sparkle, bell",
+            ),
+            (
+                "Hit / damage",
+                "one-shot",
+                2,
+                "enemy or player takes damage",
+                "free",
+                "punchy thud",
+            ),
+            (
+                "Level complete",
+                "sting",
+                4,
+                "end of stage celebration",
+                "free",
+                "fanfare, drums",
+            ),
         ]
     } else if is_podcast {
         &[
-            ("Intro theme", "intro", 15, "opening signature for every episode", "90bpm", "acoustic guitar, soft kick, atmosphere"),
-            ("Outro theme", "outro", 15, "closing signature", "90bpm", "acoustic guitar, light strings"),
-            ("Ad break bumper", "transition", 5, "bumper between content and sponsor read", "free", "short tag, branded"),
-            ("Interview bed", "background", 30, "subtle bed under longer interview segments", "60bpm", "soft pad, no melody"),
-            ("Pull-quote sting", "sting", 3, "highlights a guest soundbite", "free", "small chord, pluck"),
-            ("Episode-end card", "outro", 8, "plays under credits / patreon mentions", "60bpm", "warm pad, light arpeggio"),
+            (
+                "Intro theme",
+                "intro",
+                15,
+                "opening signature for every episode",
+                "90bpm",
+                "acoustic guitar, soft kick, atmosphere",
+            ),
+            (
+                "Outro theme",
+                "outro",
+                15,
+                "closing signature",
+                "90bpm",
+                "acoustic guitar, light strings",
+            ),
+            (
+                "Ad break bumper",
+                "transition",
+                5,
+                "bumper between content and sponsor read",
+                "free",
+                "short tag, branded",
+            ),
+            (
+                "Interview bed",
+                "background",
+                30,
+                "subtle bed under longer interview segments",
+                "60bpm",
+                "soft pad, no melody",
+            ),
+            (
+                "Pull-quote sting",
+                "sting",
+                3,
+                "highlights a guest soundbite",
+                "free",
+                "small chord, pluck",
+            ),
+            (
+                "Episode-end card",
+                "outro",
+                8,
+                "plays under credits / patreon mentions",
+                "60bpm",
+                "warm pad, light arpeggio",
+            ),
         ]
     } else if is_video {
         &[
-            ("Hero music bed", "background", 30, "main backing track for the spot", "90bpm", "cinematic pad, light percussion, melody"),
-            ("Opening sting", "intro", 4, "plays under the logo / first frame", "free", "rising chord, percussive hit"),
-            ("Closing sting", "outro", 4, "plays under the end card / CTA", "free", "resolving chord, gentle hit"),
-            ("Tagline bumper", "transition", 3, "punctuates the tagline reveal", "free", "snap, shimmer"),
-            ("Voiceover bed", "background", 30, "subtle, no melody under VO", "60bpm", "pad, sub bass"),
+            (
+                "Hero music bed",
+                "background",
+                30,
+                "main backing track for the spot",
+                "90bpm",
+                "cinematic pad, light percussion, melody",
+            ),
+            (
+                "Opening sting",
+                "intro",
+                4,
+                "plays under the logo / first frame",
+                "free",
+                "rising chord, percussive hit",
+            ),
+            (
+                "Closing sting",
+                "outro",
+                4,
+                "plays under the end card / CTA",
+                "free",
+                "resolving chord, gentle hit",
+            ),
+            (
+                "Tagline bumper",
+                "transition",
+                3,
+                "punctuates the tagline reveal",
+                "free",
+                "snap, shimmer",
+            ),
+            (
+                "Voiceover bed",
+                "background",
+                30,
+                "subtle, no melody under VO",
+                "60bpm",
+                "pad, sub bass",
+            ),
         ]
     } else {
         &[
-            ("Background bed", "background", 30, "main long-form audio bed", "90bpm", "pad, soft melody"),
-            ("Short loop", "loop", 12, "compact looping motif", "90bpm", "pluck, soft drums"),
-            ("Notification tone", "one-shot", 2, "short signal / chime", "free", "bell, mallet"),
-            ("Intro sting", "intro", 4, "opening hit", "free", "rising chord"),
-            ("Outro sting", "outro", 4, "closing hit", "free", "resolving chord"),
+            (
+                "Background bed",
+                "background",
+                30,
+                "main long-form audio bed",
+                "90bpm",
+                "pad, soft melody",
+            ),
+            (
+                "Short loop",
+                "loop",
+                12,
+                "compact looping motif",
+                "90bpm",
+                "pluck, soft drums",
+            ),
+            (
+                "Notification tone",
+                "one-shot",
+                2,
+                "short signal / chime",
+                "free",
+                "bell, mallet",
+            ),
+            (
+                "Intro sting",
+                "intro",
+                4,
+                "opening hit",
+                "free",
+                "rising chord",
+            ),
+            (
+                "Outro sting",
+                "outro",
+                4,
+                "closing hit",
+                "free",
+                "resolving chord",
+            ),
         ]
     };
 
@@ -1576,8 +1859,8 @@ fn word_boundary_contains(haystack: &str, needle: &str) -> bool {
     while i + n_bytes.len() <= bytes.len() {
         if &bytes[i..i + n_bytes.len()] == n_bytes {
             let left_ok = i == 0 || !is_word_byte(bytes[i - 1]);
-            let right_ok = i + n_bytes.len() == bytes.len()
-                || !is_word_byte(bytes[i + n_bytes.len()]);
+            let right_ok =
+                i + n_bytes.len() == bytes.len() || !is_word_byte(bytes[i + n_bytes.len()]);
             if left_ok && right_ok {
                 return true;
             }
@@ -1691,10 +1974,7 @@ mod deck_tests {
 
     #[test]
     fn local_draft_podcast_branch_is_warm() {
-        let plan = parse(&compute_local_draft(
-            "A morning-routine podcast intro",
-            3,
-        ));
+        let plan = parse(&compute_local_draft("A morning-routine podcast intro", 3));
         assert!(plan.iter().all(|t| t.mood == "warm"));
         assert_eq!(plan[0].name, "Intro theme");
     }
@@ -1758,7 +2038,13 @@ mod deck_tests {
     fn validate_generate_tracks_rejects_oversize() {
         // Build a JSON array of 11 tracks — one over DECK_PLAN_COUNT_MAX.
         let one = r#"{"name":"X","type":"loop","length":2,"desc":"","tempo":"free","instruments":"","mood":"calm"}"#;
-        let big = format!("[{}]", std::iter::repeat(one).take(11).collect::<Vec<_>>().join(","));
+        let big = format!(
+            "[{}]",
+            std::iter::repeat(one)
+                .take(11)
+                .collect::<Vec<_>>()
+                .join(",")
+        );
         assert!(validate_generate_tracks(&big).is_err());
     }
 
@@ -1797,7 +2083,6 @@ mod deck_tests {
 }
 
 // === end deck-agent (Phase 1 W3) ===
-
 
 #[cfg(test)]
 mod tests {
@@ -2156,16 +2441,11 @@ mod auth_mailer_tests {
 
     #[test]
     fn validate_mint_test_args_accepts_well_formed() {
-        assert!(validate_mint_test_args(
-            "user@example.com",
-            "0123456789abcdef0123456789abcdef",
-        )
-        .is_ok());
-        assert!(validate_mint_test_args(
-            "ops@sastaspace.com",
-            "thisisalongenoughsecret",
-        )
-        .is_ok());
+        assert!(
+            validate_mint_test_args("user@example.com", "0123456789abcdef0123456789abcdef",)
+                .is_ok()
+        );
+        assert!(validate_mint_test_args("ops@sastaspace.com", "thisisalongenoughsecret",).is_ok());
     }
 
     #[test]
