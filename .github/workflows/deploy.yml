@@ -60,7 +60,7 @@ jobs:
           fi
           changed=$(git diff --name-only "$BASE" HEAD)
           detect() { echo "$changed" | grep -qE "$1" && echo true || echo false; }
-          echo "module=$(detect    '^module/')"                                                          >> "$GITHUB_OUTPUT"
+          echo "module=$(detect    '^modules/sastaspace/')"                                              >> "$GITHUB_OUTPUT"
           echo "landing=$(detect   '^(apps/landing|packages|infra/landing)/')"                           >> "$GITHUB_OUTPUT"
           echo "notes=$(detect     '^(apps/notes|packages|infra/notes/|infra/landing/security_headers)')" >> "$GITHUB_OUTPUT"
           echo "agents=$(detect    '^(services/auth|infra/agents|infra/docker-compose)')"                >> "$GITHUB_OUTPUT"
@@ -80,28 +80,28 @@ jobs:
           components: clippy, rustfmt, llvm-tools-preview
       - uses: Swatinem/rust-cache@v2
         with:
-          workspaces: module
-          save-if: ${{ github.ref == 'refs/heads/main' && hashFiles('module/Cargo.lock') != '' }}
+          workspaces: modules/sastaspace
+          save-if: ${{ github.ref == 'refs/heads/main' && hashFiles('modules/sastaspace/Cargo.lock') != '' }}
       - name: install cargo extras
         run: |
           which cargo-audit >/dev/null 2>&1 || cargo install cargo-audit --locked
           which cargo-llvm-cov >/dev/null 2>&1 || cargo install cargo-llvm-cov --locked
       - name: fmt
-        working-directory: module
+        working-directory: modules/sastaspace
         run: cargo fmt --all --check
       - name: clippy
-        working-directory: module
+        working-directory: modules/sastaspace
         run: cargo clippy --target wasm32-unknown-unknown --all-targets -- -D warnings
       - name: cargo audit
-        working-directory: module
+        working-directory: modules/sastaspace
         run: cargo audit --deny warnings
       - name: test + coverage
-        working-directory: module
+        working-directory: modules/sastaspace
         run: cargo llvm-cov --summary-only --fail-under-lines $COVERAGE_MIN_LINES --lcov --output-path lcov.info
       - uses: actions/upload-artifact@v7
         with:
           name: module-coverage
-          path: module/lcov.info
+          path: modules/sastaspace/lcov.info
           retention-days: 7
 
   module-publish:
@@ -114,8 +114,8 @@ jobs:
         with: { targets: wasm32-unknown-unknown }
       - uses: Swatinem/rust-cache@v2
         with:
-          workspaces: module
-          save-if: ${{ github.ref == 'refs/heads/main' && hashFiles('module/Cargo.lock') != '' }}
+          workspaces: modules/sastaspace
+          save-if: ${{ github.ref == 'refs/heads/main' && hashFiles('modules/sastaspace/Cargo.lock') != '' }}
       - name: install spacetime cli
         run: |
           if ! command -v spacetime >/dev/null 2>&1; then
@@ -135,13 +135,13 @@ jobs:
           [[ -z "$SPACETIME_TOKEN" ]] && { echo "::error::SPACETIME_TOKEN unset — publish would create a stranger identity"; exit 1; }
           spacetime login --token "$SPACETIME_TOKEN"
       - name: publish module
-        run: spacetime publish --server prod --module-path module "$STDB_MODULE_NAME" -y
+        run: spacetime publish --server prod --module-path modules/sastaspace "$STDB_MODULE_NAME" -y
       - name: regenerate ts bindings
         run: |
           spacetime generate \
             --lang typescript \
             --out-dir packages/stdb-bindings/src/generated \
-            --module-path module
+            --module-path modules/sastaspace
       - uses: actions/upload-artifact@v7
         with:
           name: stdb-bindings

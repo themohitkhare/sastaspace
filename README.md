@@ -22,7 +22,7 @@ project — same data, same auth, same connection.
 sastaspace/
 ├── apps/
 │   └── landing/                    # Next.js 16 — sastaspace.com
-├── module/                         # Rust SpacetimeDB module (the database)
+├── modules/sastaspace/             # Rust SpacetimeDB module (the database)
 ├── packages/
 │   ├── design-tokens/              # colours, type, logos
 │   └── stdb-bindings/              # generated TS client bindings
@@ -97,7 +97,7 @@ There's no OAuth-style login. Identities are anonymous JWTs — the first time y
 
 ### Continuous delivery
 
-- Push to `main` touching `module/**` → CI runs `cargo fmt/clippy/test`, then publishes to `stdb.sastaspace.com` and uploads regenerated TS bindings as an artifact.
+- Push to `main` touching `modules/sastaspace/**` → CI runs `cargo fmt/clippy/test`, then publishes to `stdb.sastaspace.com` and uploads regenerated TS bindings as an artifact.
 - Push to `main` touching `apps/landing/**` or `packages/**` → CI builds the static site, rsyncs to taxila, and reloads nginx.
 - After a module publish, the module workflow triggers the landing workflow to rebuild with fresh bindings.
 

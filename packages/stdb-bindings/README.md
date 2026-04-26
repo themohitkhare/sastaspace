@@ -9,13 +9,13 @@ Typed TypeScript bindings for the `sastaspace` SpacetimeDB module.
 pnpm bindings:generate
 ```
 
-This runs `spacetime generate --lang typescript --out-dir packages/stdb-bindings/src/generated --project-path module`.
+This runs `spacetime generate --lang typescript --out-dir packages/stdb-bindings/src/generated --project-path modules/sastaspace`.
 
 The `src/generated/` folder is gitignored — CI regenerates it on every module publish and bundles it into the landing build.
 
 ## What this package exports
 
-Whatever `spacetime generate` produces from `module/src/lib.rs` — at the time of writing:
+Whatever `spacetime generate` produces from `modules/sastaspace/src/lib.rs` — at the time of writing:
 
 - `DbConnection` — connection builder
 - `Project`, `Presence` — typed row classes
