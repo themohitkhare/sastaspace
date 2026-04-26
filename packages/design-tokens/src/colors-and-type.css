@@ -20,7 +20,9 @@
 
 :root {
   /* ---------- Color primitives (five colours) ---------- */
-  --brand-ink:    #1a1917;   /* primary text, dark surfaces, logo fill */
+  --brand-ink:        #1a1917;   /* primary text, dark surfaces, logo fill */
+  --brand-ink-soft:   #3a3834;   /* secondary body copy — softer than ink, ~12:1 on paper */
+  --brand-ink-deep:   #2b2a28;   /* strong-emphasis prose between ink and ink-soft */
   --brand-sasta:  #c05621;   /* primary accent — chrome only (buttons, chip fills, ≥18px display) */
   --brand-rust:   #8a3d14;   /* hover / pressed state; also the body-safe orange */
   --brand-paper:  #f5f1e8;   /* page background */

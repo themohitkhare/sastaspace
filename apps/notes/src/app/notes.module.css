@@ -63,7 +63,7 @@
 .indexLede {
   font-size: 17px;
   line-height: 1.6;
-  color: #3a3834;
+  color: var(--brand-ink-soft);
   margin: 0;
   max-width: 600px;
 }

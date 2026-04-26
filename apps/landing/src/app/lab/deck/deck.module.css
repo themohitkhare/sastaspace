@@ -94,7 +94,7 @@
   font-size: 18px;
   line-height: 1.55;
   max-width: 660px;
-  color: #3a3834;
+  color: var(--brand-ink-soft);
   margin: 0 0 18px;
 }
 .metaRow { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
