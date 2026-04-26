@@ -140,6 +140,14 @@ export default function Leaderboard({ regions, player, onBack, onOpenProfile }: 
                     className={`lb-trow${isMe ? ' you' : ''}`}
                     onClick={() => onOpenProfile(p.username)}
                     role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        onOpenProfile(p.username);
+                      }
+                    }}
+                    aria-label={`Open profile for ${p.username}`}
                     style={{ cursor: 'pointer' }}
                   >
                     <span className="ss-mono" style={{ color: 'var(--brand-muted)' }}>{i + 1}</span>
