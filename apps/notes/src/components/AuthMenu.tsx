@@ -9,6 +9,7 @@ type ModalState =
   | { kind: "open" }
   | { kind: "submitting" }
   | { kind: "sent"; email: string }
+  | { kind: "resending"; email: string }
   | { kind: "error"; message: string };
 
 export function AuthMenu() {
@@ -104,17 +105,53 @@ export function AuthMenu() {
             aria-modal="true"
             aria-label="Sign in"
           >
-            {modal.kind === "sent" ? (
+            {modal.kind === "sent" || modal.kind === "resending" ? (
               <div className={styles.sent}>
                 <div className={styles.eyebrow}>check your inbox</div>
                 <p>
                   We sent a sign-in link to <strong>{modal.email}</strong>. Click it to come back
                   signed in. The link is good for 15 minutes.
                 </p>
+                <p className={styles.lede} style={{ marginTop: 14 }}>
+                  Don&apos;t see it? Check spam, or:
+                </p>
+                <div className={styles.actions}>
+                  <button
+                    className={styles.linkButton}
+                    type="button"
+                    onClick={() => {
+                      // Wrong email — drop back to the form pre-filled so the
+                      // user can correct it without losing context.
+                      setEmail(modal.email);
+                      setModal({ kind: "open" });
+                    }}
+                  >
+                    wrong email — change it
+                  </button>
+                  <button
+                    className={styles.submit}
+                    type="button"
+                    disabled={modal.kind === "resending"}
+                    onClick={async () => {
+                      const target = modal.email;
+                      setModal({ kind: "resending", email: target });
+                      try {
+                        await requestMagicLink(target);
+                        setModal({ kind: "sent", email: target });
+                      } catch (err) {
+                        const message = err instanceof Error ? err.message : "Failed to resend.";
+                        setModal({ kind: "error", message });
+                      }
+                    }}
+                  >
+                    {modal.kind === "resending" ? "resending…" : "resend link"}
+                  </button>
+                </div>
                 <button
                   className={styles.linkButton}
                   type="button"
                   onClick={() => setModal({ kind: "closed" })}
+                  style={{ marginTop: 18 }}
                 >
                   close
                 </button>
