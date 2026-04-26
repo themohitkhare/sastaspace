@@ -1,5 +1,5 @@
-@import "tailwindcss";
 @import "@sastaspace/design-tokens/colors-and-type.css";
+@import "tailwindcss";
 @import "../styles/typewars.css";
 
 :root {
