@@ -144,7 +144,12 @@ export default function Shell() {
   );
 
   if (authState === 'loading') {
-    return <div className="auth-shell"><div className="spinner"/></div>;
+    return (
+      <div className="auth-shell" role="status" aria-live="polite" aria-busy="true">
+        <div className="spinner" aria-hidden="true" />
+        <span className="sr-only">Loading admin panel — checking authentication…</span>
+      </div>
+    );
   }
 
   if (authState === 'signin') {
