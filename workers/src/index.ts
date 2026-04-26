@@ -1,3 +1,6 @@
+// Phase 3 cutover: workers container is the new home for auth-mailer,
+// admin-collector, deck-agent, and moderator-agent. This comment edit
+// triggers the workers-deploy CI job after the audit gate was relaxed.
 import { env } from "./shared/env.js";
 import { connect } from "./shared/stdb.js";
 import { start as startAuthMailer } from "./agents/auth-mailer.js";
