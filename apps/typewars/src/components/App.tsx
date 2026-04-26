@@ -51,12 +51,6 @@ export default function App() {
     setScreen('battle');
   }, []);
 
-  const dispatchDamage = useCallback((_regionId: number, _legion: LegionId, _amount: number) => {
-    // Server-authoritative: damage is applied by the submit_word reducer and
-    // streamed back via the region subscription. Kept as a no-op for the
-    // existing Battle prop contract until step 4 finishes the hot path.
-  }, []);
-
   const exitBattle = useCallback(() => {
     if (!activeRegion || !player) { setScreen('warmap'); return; }
     const current = regions.find(r => r.id === activeRegion.id);
@@ -122,7 +116,6 @@ export default function App() {
         player={player}
         region={activeRegion}
         onExit={exitBattle}
-        dispatchDamage={dispatchDamage}
       />
     );
   }

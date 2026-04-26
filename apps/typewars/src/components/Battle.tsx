@@ -1,152 +1,167 @@
 'use client';
-import { useState, useEffect, useRef, useCallback } from 'react';
-import type { Player, Region, LegionId, WordState } from '@/types';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { useSpacetimeDB, useTable, useReducer } from 'spacetimedb/react';
+import { tables, reducers } from '@sastaspace/typewars-bindings';
+import type { Player, Region, LegionId } from '@/types';
 import { LEGION_INFO } from '@/lib/legions';
-import { makeWord } from '@/lib/words';
 
 interface Props {
   player: Player;
-  region: Region;
+  region: Region;       // snapshot at battle entry; subscription provides live updates
   onExit: () => void;
-  dispatchDamage: (regionId: number, legion: LegionId, amount: number) => void;
 }
 
-const INITIAL_DIST = [1, 1, 1, 1, 1, 2, 2, 3];
+export default function Battle({ player, region, onExit }: Props) {
+  const { identity } = useSpacetimeDB();
 
-function initWords(t: number): WordState[] {
-  return INITIAL_DIST.map((diff, i) => makeWord(i, t, diff));
-}
+  // --- Subscriptions ---
+  // Subscribe to all active sessions for this player, filter active client-side
+  // (avoids .and() chaining which hits a dual-module BooleanExpr type mismatch)
+  const sessionQuery = useMemo(
+    () => identity
+      ? tables.battle_session.where(s => s.playerIdentity.eq(identity))
+      : tables.battle_session.where(() => false),
+    [identity],
+  );
+  const [sessionRows] = useTable(sessionQuery);
+  const session = sessionRows.find(s => s.active); // at most one active session per player
 
-export default function Battle({ player, region, onExit, dispatchDamage }: Props) {
-  const nowRef = useRef<number>(Date.now());
-  const [now, setNow] = useState<number>(Date.now());
-  const [words, setWords] = useState<WordState[]>(() => initWords(Date.now()));
-  const [input, setInput] = useState('');
-  const [streak, setStreak] = useState(0);
-  const [multiplier, setMultiplier] = useState(1);
-  const [totalDmg, setTotalDmg] = useState(0);
-  const [totalWords, setTotalWords] = useState(0);
-  const [totalMisses, setTotalMisses] = useState(0);
-  const [startTime] = useState(Date.now());
-  const [hitId, setHitId] = useState<number | null>(null);
-  const [ashFlash, setAshFlash] = useState(false);
-  const [shaking, setShaking] = useState(false);
-  const [regionHp, setRegionHp] = useState(region.enemy_hp);
-  const [myDamage, setMyDamage] = useState(0);
-  const idCounter = useRef(INITIAL_DIST.length);
+  // Keep a stable session id so wordQuery doesn't flip to false mid-battle
+  const activeSessionId = session?.id;
 
-  const legion = LEGION_INFO[player.legion];
-  const multCap = player.legion === 3 ? 5.0 : 3.0;
-  const isOverdrive = player.legion === 3 && multiplier >= 3.0;
+  const wordQuery = useMemo(
+    () => activeSessionId !== undefined
+      ? tables.word.where(w => w.sessionId.eq(activeSessionId))
+      : tables.word.where(() => false),
+    [activeSessionId],
+  );
+  const [serverWords] = useTable(wordQuery);
 
-  // 80ms tick for now
+  const regionQuery = useMemo(
+    () => tables.region.where(r => r.id.eq(region.id)),
+    [region.id],
+  );
+  const [regionRows] = useTable(regionQuery);
+  // fall back to prop until subscription lands; regionRows come back with bigint fields
+  const liveRegionRow = regionRows[0];
+
+  // --- Reducers ---
+  const startBattle = useReducer(reducers.startBattle);
+  const submitWordReducer = useReducer(reducers.submitWord);
+  const endBattle = useReducer(reducers.endBattle);
+
+  // --- Lifecycle: start once ---
+  const startedRef = useRef(false);
   useEffect(() => {
-    const id = setInterval(() => {
-      const t = Date.now();
-      nowRef.current = t;
-      setNow(t);
-    }, 80);
+    if (startedRef.current) return;
+    if (session) return; // don't double-start if a session already exists
+    startedRef.current = true;
+    startBattle({ regionId: region.id }).catch(err => console.error('start_battle', err));
+  }, [session, region.id, startBattle]);
+
+  // --- Lifecycle: end on unmount ---
+  const sessionIdRef = useRef<bigint | undefined>(undefined);
+  useEffect(() => {
+    if (session) sessionIdRef.current = session.id;
+  }, [session?.id]);
+
+  useEffect(() => {
+    return () => {
+      const sid = sessionIdRef.current;
+      if (sid !== undefined) {
+        endBattle({ sessionId: sid }).catch(() => { /* noop on unmount */ });
+      }
+    };
+    // endBattle is stable; only run on unmount
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // --- Client state ---
+  const [input, setInput] = useState('');
+
+  // --- WPM tick ---
+  const startMs = useMemo(() => Date.now(), [session?.id]); // resets if session changes
+  const [now, setNow] = useState(Date.now());
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 250);
     return () => clearInterval(id);
   }, []);
 
-  // Expire check
+  // --- Visuals from session diff ---
+  const prevStreakRef = useRef(0);
+  const [ashFlash, setAshFlash] = useState(false);
+  const [shaking, setShaking] = useState(false);
+
   useEffect(() => {
-    const expired = words.filter(w => now >= w.expires_at);
-    if (expired.length === 0) return;
-    setStreak(0);
-    setMultiplier(1);
-    const t = nowRef.current;
-    setWords(prev => {
-      const surviving = prev.filter(w => now < w.expires_at);
-      const needed = 8 - surviving.length;
-      const newWords: WordState[] = [];
-      for (let i = 0; i < needed; i++) {
-        newWords.push(makeWord(idCounter.current++, t));
-      }
-      return [...surviving, ...newWords];
-    });
-  }, [now, words]);
-
-  const submitWord = useCallback(() => {
-    const typed = input.trim().toLowerCase();
-    if (!typed) return;
-
-    const matchIdx = words.findIndex(w => w.text === typed);
-    if (matchIdx !== -1) {
-      const w = words[matchIdx];
-      const newStreak = streak + 1;
-      const newMult = Math.min(multCap, 1 + newStreak * 0.25);
-      const newTotalWords = totalWords + 1;
-
-      let dmg = Math.round(w.base_damage * newMult);
-
-      // Ashborn burst at streak % 10 === 0
-      let doAshFlash = false;
-      if (player.legion === 0 && newStreak % 10 === 0 && newStreak > 0) {
-        dmg = dmg * 3;
-        doAshFlash = true;
-      }
-
-      const acc = newTotalWords > 0 ? (newTotalWords / (newTotalWords + totalMisses)) * 100 : 100;
-
-      // Codex: inject rare word at 15% chance when acc >= 90
-      let injectRare = false;
-      if (player.legion === 1 && acc >= 90 && Math.random() < 0.15) {
-        injectRare = true;
-      }
-
-      setStreak(newStreak);
-      setMultiplier(newMult);
-      setTotalWords(newTotalWords);
-      setTotalDmg(prev => prev + dmg);
-      setMyDamage(prev => prev + dmg);
-      setHitId(w.id);
-      if (doAshFlash) {
-        setAshFlash(true);
-        setTimeout(() => setAshFlash(false), 400);
-      }
-      setTimeout(() => setHitId(null), 200);
-
-      dispatchDamage(region.id, player.legion, dmg);
-      setRegionHp(prev => Math.max(0, prev - dmg));
-
-      const t = nowRef.current;
-      setWords(prev => {
-        const remaining = prev.filter((_, idx) => idx !== matchIdx);
-        const newWord = injectRare
-          ? makeWord(idCounter.current++, t, 4)
-          : makeWord(idCounter.current++, t);
-        return [...remaining, newWord];
-      });
-    } else {
-      // Miss
-      setStreak(0);
-      setMultiplier(1);
-      setTotalMisses(prev => prev + 1);
+    if (!session) return;
+    const prev = prevStreakRef.current;
+    const cur = session.streak;
+    // Streak reset (and we had progress) → miss
+    if (cur === 0 && prev > 0) {
       setShaking(true);
       setTimeout(() => setShaking(false), 300);
     }
-
-    setInput('');
-  }, [input, words, streak, multiplier, multCap, totalWords, totalMisses, player, region, dispatchDamage]);
-
-  const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
-      submitWord();
+    // Ashborn burst flash
+    if (player.legion === 0 && cur === 0 && prev > 0 && prev % 10 === 0) {
+      setAshFlash(true);
+      setTimeout(() => setAshFlash(false), 400);
     }
-    // Solari backspace grace (500ms): allow backspace always
-  }, [submitWord]);
+    prevStreakRef.current = cur;
+  }, [session?.streak, player.legion]);
 
-  const elapsed = (now - startTime) / 1000 / 60; // minutes
-  const wpm = elapsed > 0 ? Math.round(totalWords / elapsed) : 0;
-  const acc = totalWords + totalMisses > 0 ? Math.round((totalWords / (totalWords + totalMisses)) * 100) : 100;
+  // --- Submit on Enter or Space ---
+  const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key !== 'Enter' && e.key !== ' ') return;
+    e.preventDefault();
+    const typed = input.trim().toLowerCase();
+    if (!typed || !session) return;
+    setInput('');
+    submitWordReducer({ sessionId: session.id, word: typed }).catch(() => { /* server errors silently */ });
+  }, [input, session, submitWordReducer]);
 
-  const hpPct = (regionHp / region.enemy_max_hp) * 100;
-  const totalContrib = region.damage_0 + region.damage_1 + region.damage_2 + region.damage_3 + region.damage_4 + myDamage;
+  // --- Loading state ---
+  if (!session) {
+    return (
+      <div className="battle-screen" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <span className="ss-terminal">engaging {region.name}…</span>
+      </div>
+    );
+  }
 
-  // Build matching word from input
+  // --- Derived display values ---
+  const legion = LEGION_INFO[player.legion];
+  const multCap = player.legion === 3 ? 5.0 : 3.0;
+  const isOverdrive = player.legion === 3 && session.multiplier >= 3.0;
+
+  const elapsedMin = (now - startMs) / 60000;
+  const hits = session.accuracyHits;
+  const misses = session.accuracyMisses;
+  const wpm = elapsedMin > 0 ? Math.round(hits / elapsedMin) : 0;
+  const acc = hits + misses > 0 ? Math.round((hits / (hits + misses)) * 100) : 100;
+
+  // Region HP — use live subscription row if available, else fall back to prop
+  const enemyHp = liveRegionRow ? Number(liveRegionRow.enemyHp) : region.enemy_hp;
+  const enemyMaxHp = liveRegionRow ? Number(liveRegionRow.enemyMaxHp) : region.enemy_max_hp;
+  const hpPct = enemyMaxHp > 0 ? (enemyHp / enemyMaxHp) * 100 : 0;
+
+  // Contribution bar — bigint fields on liveRegionRow
+  const d0 = liveRegionRow ? Number(liveRegionRow.damage0) : region.damage_0;
+  const d1 = liveRegionRow ? Number(liveRegionRow.damage1) : region.damage_1;
+  const d2 = liveRegionRow ? Number(liveRegionRow.damage2) : region.damage_2;
+  const d3 = liveRegionRow ? Number(liveRegionRow.damage3) : region.damage_3;
+  const d4 = liveRegionRow ? Number(liveRegionRow.damage4) : region.damage_4;
+  const damages = [d0, d1, d2, d3, d4];
+  const totalContrib = d0 + d1 + d2 + d3 + d4;
+
+  const damageDealt = Number(session.damageDealt ?? 0n);
+
+  // Words from server — sort by id ascending, render up to 8
+  const sortedWords = [...serverWords].sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
+  const displayWords = sortedWords.slice(0, 8);
+
+  // Match input prefix to a word for live typing feedback
   const matchingWord = input.length > 0
-    ? words.find(w => w.text.startsWith(input.toLowerCase()))
+    ? displayWords.find(w => w.text.startsWith(input.toLowerCase()))
     : null;
 
   return (
@@ -170,7 +185,7 @@ export default function Battle({ player, region, onExit, dispatchDamage }: Props
           </div>
           <div className="hud-stat">
             <span className="hud-label">DMG</span>
-            <span className="hud-val">{myDamage.toLocaleString()}</span>
+            <span className="hud-val">{damageDealt.toLocaleString()}</span>
           </div>
         </div>
       </div>
@@ -181,13 +196,13 @@ export default function Battle({ player, region, onExit, dispatchDamage }: Props
           <div>
             <p className="ss-label" style={{ color: 'var(--brand-muted)', marginBottom: 4 }}>{region.name}</p>
             <div className="hp-numbers">
-              <span className="hp-current">{regionHp.toLocaleString()}</span>
+              <span className="hp-current">{enemyHp.toLocaleString()}</span>
               <span className="hp-sep">/</span>
-              <span className="hp-max">{region.enemy_max_hp.toLocaleString()}</span>
+              <span className="hp-max">{enemyMaxHp.toLocaleString()}</span>
             </div>
           </div>
           <span className="ss-small ss-mono" style={{ color: 'var(--brand-muted)' }}>
-            {region.active_players} fighters · {region.active_wardens} wardens
+            {region.active_wardens} wardens
           </span>
         </div>
         <div className="hp-bar-outer">
@@ -197,7 +212,7 @@ export default function Battle({ player, region, onExit, dispatchDamage }: Props
         {/* Contribution bar */}
         <div className="contrib-bar">
           {([0, 1, 2, 3, 4] as LegionId[]).map(id => {
-            const dmg = (region[`damage_${id}` as keyof Region] as number) + (id === player.legion ? myDamage : 0);
+            const dmg = damages[id];
             const pct = totalContrib > 0 ? (dmg / totalContrib) * 100 : 0;
             if (pct === 0) return null;
             const info = LEGION_INFO[id];
@@ -210,7 +225,7 @@ export default function Battle({ player, region, onExit, dispatchDamage }: Props
         </div>
         <div className="contrib-legend">
           {([0, 1, 2, 3, 4] as LegionId[]).map(id => {
-            const dmg = (region[`damage_${id}` as keyof Region] as number) + (id === player.legion ? myDamage : 0);
+            const dmg = damages[id];
             if (dmg === 0) return null;
             const info = LEGION_INFO[id];
             return (
@@ -226,24 +241,23 @@ export default function Battle({ player, region, onExit, dispatchDamage }: Props
 
       {/* Word grid */}
       <div className={`words-grid${ashFlash ? ' ash-flash' : ''}`}>
-        {words.slice(0, 8).map(w => {
-          const lifeLeft = Math.max(0, w.expires_at - now);
+        {displayWords.map(w => {
+          const expiresMs = Number(w.expiresAt.toMillis());
+          const lifeLeft = Math.max(0, expiresMs - now);
           const lifePct = (lifeLeft / 5000) * 100;
           const isMatching = matchingWord?.id === w.id;
-          const isHit = hitId === w.id;
-          const isUrgent = lifeLeft < 1500 && !isHit;
+          const isUrgent = lifeLeft < 1500;
           const typed = isMatching ? input.toLowerCase() : '';
           const rest = isMatching ? w.text.slice(typed.length) : w.text;
 
           return (
             <div
-              key={w.id}
+              key={String(w.id)}
               className={[
                 'word-card',
                 `diff-${w.difficulty}`,
                 isMatching ? 'matching' : '',
                 isUrgent ? 'urgent' : '',
-                isHit ? 'hit' : '',
               ].filter(Boolean).join(' ')}
             >
               <div>
@@ -253,7 +267,7 @@ export default function Battle({ player, region, onExit, dispatchDamage }: Props
                   ) : (
                     <span className="word-diff">·</span>
                   )}
-                  <span className="word-dmg">{w.base_damage}dmg</span>
+                  <span className="word-dmg">{Number(w.baseDamage)}dmg</span>
                 </div>
                 <div className="word-text">
                   {isMatching ? (
@@ -284,7 +298,7 @@ export default function Battle({ player, region, onExit, dispatchDamage }: Props
       <div className={`battle-input-row${shaking ? ' shake' : ''}`}>
         <div className="streak-card">
           <span className="streak-label">streak</span>
-          <span className="streak-num">{streak}</span>
+          <span className="streak-num">{session.streak}</span>
         </div>
         <div className="input-wrap">
           <span className="prompt">›</span>
@@ -303,7 +317,7 @@ export default function Battle({ player, region, onExit, dispatchDamage }: Props
         </div>
         <div className={`mult-card${isOverdrive ? ' overdrive' : ''}`}>
           <span className="streak-label">mult</span>
-          <span className="streak-num">{multiplier.toFixed(2)}×</span>
+          <span className="streak-num">{session.multiplier.toFixed(2)}×</span>
           <span className="mult-cap">cap {multCap.toFixed(1)}×</span>
         </div>
       </div>
