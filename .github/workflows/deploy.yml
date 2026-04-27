@@ -572,16 +572,18 @@ jobs:
           docker compose up -d --no-deps --force-recreate moderator
           sleep 6
           docker compose ps moderator
-      - name: smoke — moderator is polling
+      - name: smoke — moderator is alive
         if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
         working-directory: infra
         run: |
           sleep 4
-          if docker compose logs --tail=20 moderator 2>&1 | grep -q "POST.*sql.*200"; then
-            echo "moderator is alive and polling"
+          # Match either the legacy SQL-poll log line or the current
+          # reducer-call path (set_comment_status, classifier outcomes).
+          if docker compose logs --tail=40 moderator 2>&1 | grep -qE "POST.*sql.*200|set_comment_status|categories=|comment .*flagged|comment .*approved"; then
+            echo "moderator is alive"
           else
-            echo "::error::moderator is not polling — recent logs:"
-            docker compose logs --tail=30 moderator
+            echo "::error::moderator shows no traffic — recent logs:"
+            docker compose logs --tail=40 moderator
             exit 1
           fi
 
