@@ -1,8 +1,14 @@
-# LocalAI model registry. Phase 0 ships with one model: facebook/musicgen-small.
-# More models can be added by appending; LocalAI hot-loads on first request.
-
-- name: musicgen-small
-  backend: musicgen
-  parameters:
-    model: facebook/musicgen-small
-  description: Meta's MusicGen small model — text-to-music, 30 s clips, mono.
+# LocalAI model registry, mirrored into ./models/models.yaml at infra setup
+# (the bind-mount target — see infra/localai/README.md). Loaded by LocalAI at
+# boot to pre-register custom models.
+#
+# Audio generation today: piper TTS via the AIO-bundled tts-1 model
+# (see /aio/gpu-8g/text-to-speech.yaml inside the container). The deck-agent
+# calls /v1/audio/speech with model=tts-1 — no extra registration needed.
+#
+# Music generation (e.g. MusicGen, ACE-Step) requires installing a backend
+# via POST /backends/apply, then registering the model. See:
+#   docs/operator-runbooks/localai-musicgen-swap.md
+#
+# Empty registry leaves only the AIO-bundled models active (gpt-4, whisper-1,
+# tts-1, stablediffusion, jina-reranker, silero-vad, etc.).

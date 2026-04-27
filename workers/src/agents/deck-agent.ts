@@ -74,10 +74,11 @@ type PlanRow = {
   status: string;
 };
 
+// SDK 2.1 generates camelCase row fields from the snake_case Rust struct.
 type GenRow = {
   id: bigint;
-  tracks_json: string;
-  plan_request_id: bigint | null;
+  tracksJson: string;
+  planRequestId: bigint | null;
   status: string;
 };
 
@@ -129,6 +130,16 @@ export async function start(
     log("warn", "subscriptionBuilder unavailable", { error: String(e) });
   }
 
+  // SDK 2.1 exposes table accessors with snake_case keys (e.g. `plan_request`)
+  // not camelCase. Rebind via Record for type-safe access.
+  const dbAny = conn.db as unknown as Record<string, {
+    onInsert?: (cb: (ctx: unknown, row: unknown) => void) => void;
+    iter?: () => Iterable<unknown>;
+    id?: { find?: (id: bigint) => { description: string } | undefined };
+  }>;
+  const planRequestTable = dbAny.plan_request;
+  const generateJobTable = dbAny.generate_job;
+
   const planInFlight = new Set<string>();
   const genInFlight = new Set<string>();
 
@@ -139,12 +150,18 @@ export async function start(
     planInFlight.add(key);
     try {
       const tracks = await deps.draftPlan(row.description, row.count);
-      conn.reducers.setPlan(row.id, JSON.stringify(tracks));
+      // SDK 2.1: reducer args are a single object literal with camelCase keys
+      // matching the Rust reducer parameter names.
+      (conn.reducers as unknown as {
+        setPlan: (a: { requestId: bigint; tracksJson: string }) => void;
+      }).setPlan({ requestId: row.id, tracksJson: JSON.stringify(tracks) });
       log("info", "plan set", { id: key, count: tracks.length });
     } catch (e) {
       log("warn", "planner failed → fallback", { id: key, error: String(e) });
       try {
-        conn.reducers.setPlanFallback(row.id);
+        (conn.reducers as unknown as {
+          setPlanFallback: (a: { requestId: bigint }) => void;
+        }).setPlanFallback({ requestId: row.id });
       } catch (innerErr) {
         log("error", "setPlanFallback also failed", {
           id: key,
@@ -156,14 +173,16 @@ export async function start(
     }
   };
 
-  if (conn.db.planRequest?.onInsert) {
-    conn.db.planRequest.onInsert((_ctx: unknown, row: PlanRow) => {
-      if (row.status === "pending") void handlePlan(row);
+  if (planRequestTable?.onInsert) {
+    planRequestTable.onInsert((_ctx, row) => {
+      const r = row as PlanRow;
+      if (r.status === "pending") void handlePlan(r);
     });
   }
-  if (conn.db.planRequest?.iter) {
-    for (const row of conn.db.planRequest.iter()) {
-      if (row.status === "pending") void handlePlan(row);
+  if (planRequestTable?.iter) {
+    for (const row of planRequestTable.iter()) {
+      const r = row as PlanRow;
+      if (r.status === "pending") void handlePlan(r);
     }
   }
 
@@ -173,9 +192,9 @@ export async function start(
     if (genInFlight.has(key)) return;
     genInFlight.add(key);
     try {
-      const tracks = JSON.parse(row.tracks_json) as Track[];
+      const tracks = JSON.parse(row.tracksJson) as Track[];
       if (!Array.isArray(tracks) || tracks.length === 0) {
-        throw new Error("tracks_json empty");
+        throw new Error("tracksJson empty");
       }
 
       const zip = new JSZip();
@@ -191,8 +210,8 @@ export async function start(
       // Pull the description back out for the README. If the row references a
       // plan_request, use that description; otherwise use a synthetic line.
       let description = "(ad-hoc plan, no source plan_request)";
-      if (row.plan_request_id != null && conn.db.planRequest?.id?.find) {
-        const pr = conn.db.planRequest.id.find(row.plan_request_id);
+      if (row.planRequestId != null && planRequestTable?.id?.find) {
+        const pr = planRequestTable.id.find(row.planRequestId);
         if (pr) description = pr.description;
       }
       zip.file("README.txt", buildReadme(description, tracks));
@@ -207,7 +226,9 @@ export async function start(
       await fs.writeFile(path.join(outDir, filename), bytes);
 
       const url = `${env.DECK_PUBLIC_BASE_URL.replace(/\/$/, "")}/${filename}`;
-      conn.reducers.setGenerateDone(row.id, url);
+      (conn.reducers as unknown as {
+        setGenerateDone: (a: { jobId: bigint; zipUrl: string }) => void;
+      }).setGenerateDone({ jobId: row.id, zipUrl: url });
       log("info", "generate done", {
         id: key,
         url,
@@ -216,7 +237,9 @@ export async function start(
     } catch (e) {
       log("error", "generate failed", { id: key, error: String(e) });
       try {
-        conn.reducers.setGenerateFailed(row.id, String(e).slice(0, 400));
+        (conn.reducers as unknown as {
+          setGenerateFailed: (a: { jobId: bigint; error: string }) => void;
+        }).setGenerateFailed({ jobId: row.id, error: String(e).slice(0, 400) });
       } catch (innerErr) {
         log("error", "setGenerateFailed also failed", {
           id: key,
@@ -228,14 +251,16 @@ export async function start(
     }
   };
 
-  if (conn.db.generateJob?.onInsert) {
-    conn.db.generateJob.onInsert((_ctx: unknown, row: GenRow) => {
-      if (row.status === "pending") void handleGenerate(row);
+  if (generateJobTable?.onInsert) {
+    generateJobTable.onInsert((_ctx, row) => {
+      const r = row as GenRow;
+      if (r.status === "pending") void handleGenerate(r);
     });
   }
-  if (conn.db.generateJob?.iter) {
-    for (const row of conn.db.generateJob.iter()) {
-      if (row.status === "pending") void handleGenerate(row);
+  if (generateJobTable?.iter) {
+    for (const row of generateJobTable.iter()) {
+      const r = row as GenRow;
+      if (r.status === "pending") void handleGenerate(r);
     }
   }
 
@@ -300,35 +325,28 @@ export function parseTracks(raw: string, count: number): Track[] {
   return out;
 }
 
-/**
- * POST one track to LocalAI's MusicGen endpoint, return raw WAV bytes.
- *
- * Endpoint shape verified during Phase 0 (see infra/localai/README.md):
- *
- *   POST {LOCALAI_URL}/v1/sound-generation
- *   { "model": "musicgen-small", "input": "<prompt>", "duration": <s> }
- *
- * Response is raw audio bytes (Content-Type: audio/wav). LocalAI v4.1.3's
- * default `localai/localai:latest` image does NOT bundle the musicgen
- * backend — see the README for AIO image options. The worker will get a
- * 400 from the endpoint until a musicgen-capable image is in use, which
- * the catch in handleGenerate translates to setGenerateFailed.
- */
+// LocalAI endpoint + model are env-driven so we can swap text-to-music
+// (ace-step / musicgen) and TTS (piper) without a code redeploy. The deck
+// pivoted to TTS-as-narration on 2026-04-27 because LocalAI v3 dropped the
+// dedicated musicgen backend and the ace-step ROCm path crashes in
+// GetCaption. Default targets piper at /v1/audio/speech which produces a
+// real WAV from a spoken track description.
 export async function renderViaLocalAi(t: Track): Promise<Buffer> {
   const prompt = buildMusicgenPrompt(t);
-  const url = `${env.LOCALAI_URL.replace(/\/$/, "")}/v1/sound-generation`;
+  const path = env.LOCALAI_AUDIO_PATH;
+  const model = env.LOCALAI_AUDIO_MODEL;
+  const url = `${env.LOCALAI_URL.replace(/\/$/, "")}${path}`;
+  const body: Record<string, unknown> = { model, input: prompt };
+  if (path === "/v1/sound-generation") body.duration = t.length;
+  if (path === "/v1/audio/speech") body.voice = env.LOCALAI_AUDIO_VOICE;
   const r = await fetch(url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      model: "musicgen-small",
-      input: prompt,
-      duration: t.length,
-    }),
+    body: JSON.stringify(body),
   });
   if (!r.ok) {
-    const body = await r.text().catch(() => "");
-    throw new Error(`localai ${r.status}: ${body.slice(0, 200)}`);
+    const detail = await r.text().catch(() => "");
+    throw new Error(`localai ${r.status}: ${detail.slice(0, 200)}`);
   }
   const ab = await r.arrayBuffer();
   return Buffer.from(ab);
