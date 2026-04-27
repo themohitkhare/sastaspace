@@ -13,7 +13,18 @@ pub struct Player {
     pub season_damage: u64,
     pub best_wpm: u32,
     pub joined_at: Timestamp,
-    pub email: Option<String>,
+    pub verified: bool,
+}
+
+/// Private table: stores the actual email address for verified players.
+/// NOT public — anonymous STDB subscribers cannot read this table.
+#[derive(Clone, Debug, PartialEq)]
+#[table(accessor = player_email)]
+pub struct PlayerEmail {
+    #[primary_key]
+    pub identity: Identity,
+    pub email: String,
+    pub verified_at: Timestamp,
 }
 
 pub fn validate_registration(
@@ -50,10 +61,10 @@ pub fn validate_claim_email(email: &str) -> Result<(), String> {
 }
 
 /// Pure helper: returns true if a guest player is already verified (has
-/// an email row). Both claim flows guard against re-claiming a verified
-/// row. Pulled out for unit tests.
+/// verified=true on their Player row). Both claim flows guard against
+/// re-claiming a verified row. Pulled out for unit tests.
 pub fn is_guest_already_verified(guest: Option<&Player>) -> bool {
-    matches!(guest, Some(p) if p.email.is_some())
+    matches!(guest, Some(p) if p.verified)
 }
 
 /// Swap the calling player's legion to `new_legion`. Caller must be a
@@ -106,20 +117,29 @@ pub fn register_player(ctx: &ReducerContext, username: String, legion: u8) -> Re
         season_damage: 0,
         best_wpm: 0,
         joined_at: ctx.timestamp,
-        email: None,
+        verified: false,
     });
     Ok(())
 }
 
 /// Result of planning a claim_progress reducer call. Pure: no DB access.
+/// The `email` field carries the verified email to write into PlayerEmail.
 #[derive(Debug, PartialEq)]
 pub enum ClaimAction {
     /// Caller has a guest row and no email row yet — rekey the guest row.
-    Rekey { delete_id: Identity, insert: Player },
+    Rekey {
+        delete_id: Identity,
+        insert: Player,
+        email: String,
+    },
     /// Caller already has a verified row and brought guest stats — merge.
-    Merge { delete_id: Identity, update: Player },
-    /// Caller has a verified row and no prior guest play — just stamp email.
-    StampEmail { update: Player },
+    Merge {
+        delete_id: Identity,
+        update: Player,
+        email: String,
+    },
+    /// Caller has a verified row and no prior guest play — just stamp verified.
+    StampEmail { update: Player, email: String },
     /// Caller has nothing on either side — nothing to do.
     Noop,
 }
@@ -135,25 +155,27 @@ pub fn plan_claim(
             let delete_id = g.identity;
             let mut row = g;
             row.identity = new_id;
-            row.email = Some(email);
+            row.verified = true;
             ClaimAction::Rekey {
                 delete_id,
                 insert: row,
+                email,
             }
         }
         (Some(g), Some(mut e)) => {
             e.total_damage = e.total_damage.saturating_add(g.total_damage);
             e.season_damage = e.season_damage.saturating_add(g.season_damage);
             e.best_wpm = e.best_wpm.max(g.best_wpm);
-            e.email = Some(email);
+            e.verified = true;
             ClaimAction::Merge {
                 delete_id: g.identity,
                 update: e,
+                email,
             }
         }
         (None, Some(mut e)) => {
-            e.email = Some(email);
-            ClaimAction::StampEmail { update: e }
+            e.verified = true;
+            ClaimAction::StampEmail { update: e, email }
         }
         (None, None) => ClaimAction::Noop,
     }
@@ -179,16 +201,49 @@ pub fn claim_progress(
     }
     let existing = ctx.db.player().identity().find(new_identity);
     match plan_claim(guest, existing, new_identity, email) {
-        ClaimAction::Rekey { delete_id, insert } => {
+        ClaimAction::Rekey {
+            delete_id,
+            insert,
+            email: verified_email,
+        } => {
+            let new_id = insert.identity;
             ctx.db.player().identity().delete(delete_id);
             ctx.db.player().insert(insert);
+            ctx.db.player_email().insert(PlayerEmail {
+                identity: new_id,
+                email: verified_email,
+                verified_at: ctx.timestamp,
+            });
         }
-        ClaimAction::Merge { delete_id, update } => {
+        ClaimAction::Merge {
+            delete_id,
+            update,
+            email: verified_email,
+        } => {
+            let new_id = update.identity;
             ctx.db.player().identity().delete(delete_id);
             ctx.db.player().identity().update(update);
+            // Insert or replace the private email row.
+            ctx.db.player_email().identity().delete(new_id);
+            ctx.db.player_email().insert(PlayerEmail {
+                identity: new_id,
+                email: verified_email,
+                verified_at: ctx.timestamp,
+            });
         }
-        ClaimAction::StampEmail { update } => {
+        ClaimAction::StampEmail {
+            update,
+            email: verified_email,
+        } => {
+            let new_id = update.identity;
             ctx.db.player().identity().update(update);
+            // Insert or replace the private email row.
+            ctx.db.player_email().identity().delete(new_id);
+            ctx.db.player_email().insert(PlayerEmail {
+                identity: new_id,
+                email: verified_email,
+                verified_at: ctx.timestamp,
+            });
         }
         ClaimAction::Noop => {}
     }
@@ -218,16 +273,49 @@ pub fn claim_progress_self(
     }
     let existing = ctx.db.player().identity().find(new_identity);
     match plan_claim(guest, existing, new_identity, email) {
-        ClaimAction::Rekey { delete_id, insert } => {
+        ClaimAction::Rekey {
+            delete_id,
+            insert,
+            email: verified_email,
+        } => {
+            let new_id = insert.identity;
             ctx.db.player().identity().delete(delete_id);
             ctx.db.player().insert(insert);
+            ctx.db.player_email().insert(PlayerEmail {
+                identity: new_id,
+                email: verified_email,
+                verified_at: ctx.timestamp,
+            });
         }
-        ClaimAction::Merge { delete_id, update } => {
+        ClaimAction::Merge {
+            delete_id,
+            update,
+            email: verified_email,
+        } => {
+            let new_id = update.identity;
             ctx.db.player().identity().delete(delete_id);
             ctx.db.player().identity().update(update);
+            // Insert or replace the private email row.
+            ctx.db.player_email().identity().delete(new_id);
+            ctx.db.player_email().insert(PlayerEmail {
+                identity: new_id,
+                email: verified_email,
+                verified_at: ctx.timestamp,
+            });
         }
-        ClaimAction::StampEmail { update } => {
+        ClaimAction::StampEmail {
+            update,
+            email: verified_email,
+        } => {
+            let new_id = update.identity;
             ctx.db.player().identity().update(update);
+            // Insert or replace the private email row.
+            ctx.db.player_email().identity().delete(new_id);
+            ctx.db.player_email().insert(PlayerEmail {
+                identity: new_id,
+                email: verified_email,
+                verified_at: ctx.timestamp,
+            });
         }
         ClaimAction::Noop => {}
     }
@@ -283,7 +371,7 @@ mod tests {
         total: u64,
         season: u64,
         wpm: u32,
-        email: Option<&str>,
+        verified: bool,
     ) -> Player {
         let mut bytes = [0u8; 32];
         bytes[0] = id_byte;
@@ -295,20 +383,25 @@ mod tests {
             season_damage: season,
             best_wpm: wpm,
             joined_at: Timestamp::from_micros_since_unix_epoch(0),
-            email: email.map(Into::into),
+            verified,
         }
     }
 
     #[test]
     fn plan_claim_rekey_when_guest_has_row_and_email_does_not() {
-        let guest = mk_player(0x01, "ash_q", 0, 1000, 500, 80, None);
+        let guest = mk_player(0x01, "ash_q", 0, 1000, 500, 80, false);
         let new_id = Identity::from_byte_array([0x02; 32]);
         let action = plan_claim(Some(guest.clone()), None, new_id, "a@b.com".into());
         match action {
-            ClaimAction::Rekey { delete_id, insert } => {
+            ClaimAction::Rekey {
+                delete_id,
+                insert,
+                email,
+            } => {
                 assert_eq!(delete_id, guest.identity);
                 assert_eq!(insert.identity, new_id);
-                assert_eq!(insert.email, Some("a@b.com".into()));
+                assert!(insert.verified);
+                assert_eq!(email, "a@b.com");
                 assert_eq!(insert.total_damage, 1000);
                 assert_eq!(insert.username, "ash_q");
             }
@@ -318,8 +411,8 @@ mod tests {
 
     #[test]
     fn plan_claim_merge_sums_damages_takes_max_wpm_keeps_email_row_legion() {
-        let guest = mk_player(0x01, "guest_one", 3, 1000, 500, 80, None);
-        let existing = mk_player(0x02, "real_name", 0, 5000, 2000, 100, Some("a@b.com"));
+        let guest = mk_player(0x01, "guest_one", 3, 1000, 500, 80, false);
+        let existing = mk_player(0x02, "real_name", 0, 5000, 2000, 100, true);
         let action = plan_claim(
             Some(guest.clone()),
             Some(existing.clone()),
@@ -327,7 +420,11 @@ mod tests {
             "a@b.com".into(),
         );
         match action {
-            ClaimAction::Merge { delete_id, update } => {
+            ClaimAction::Merge {
+                delete_id,
+                update,
+                email,
+            } => {
                 assert_eq!(delete_id, guest.identity);
                 assert_eq!(update.identity, existing.identity);
                 assert_eq!(update.username, "real_name");
@@ -335,7 +432,8 @@ mod tests {
                 assert_eq!(update.total_damage, 6000);
                 assert_eq!(update.season_damage, 2500);
                 assert_eq!(update.best_wpm, 100);
-                assert_eq!(update.email, Some("a@b.com".into()));
+                assert!(update.verified);
+                assert_eq!(email, "a@b.com");
             }
             other => panic!("expected Merge, got {:?}", other),
         }
@@ -343,7 +441,7 @@ mod tests {
 
     #[test]
     fn plan_claim_stamp_email_when_only_existing() {
-        let existing = mk_player(0x02, "real_name", 0, 5000, 2000, 100, None);
+        let existing = mk_player(0x02, "real_name", 0, 5000, 2000, 100, false);
         let action = plan_claim(
             None,
             Some(existing.clone()),
@@ -351,8 +449,9 @@ mod tests {
             "a@b.com".into(),
         );
         match action {
-            ClaimAction::StampEmail { update } => {
-                assert_eq!(update.email, Some("a@b.com".into()));
+            ClaimAction::StampEmail { update, email } => {
+                assert!(update.verified);
+                assert_eq!(email, "a@b.com");
                 assert_eq!(update.total_damage, 5000);
             }
             other => panic!("expected StampEmail, got {:?}", other),
@@ -392,9 +491,9 @@ mod tests {
     // === is_guest_already_verified ===
 
     #[test]
-    fn is_guest_already_verified_only_when_email_is_some() {
-        let unverified = mk_player(0x01, "guest", 0, 0, 0, 0, None);
-        let verified = mk_player(0x02, "verified", 0, 0, 0, 0, Some("a@b.com"));
+    fn is_guest_already_verified_only_when_verified_is_true() {
+        let unverified = mk_player(0x01, "guest", 0, 0, 0, 0, false);
+        let verified = mk_player(0x02, "verified", 0, 0, 0, 0, true);
         assert!(!is_guest_already_verified(Some(&unverified)));
         assert!(is_guest_already_verified(Some(&verified)));
         // None means "no guest row at all" — also not already-verified.
@@ -406,8 +505,8 @@ mod tests {
     #[test]
     fn plan_claim_merge_saturates_total_damage_on_overflow() {
         // u64::MAX in existing + 100 from guest must saturate, not wrap.
-        let guest = mk_player(0x01, "guest_one", 3, 100, 0, 0, None);
-        let existing = mk_player(0x02, "real", 0, u64::MAX, 0, 0, Some("a@b.com"));
+        let guest = mk_player(0x01, "guest_one", 3, 100, 0, 0, false);
+        let existing = mk_player(0x02, "real", 0, u64::MAX, 0, 0, true);
         let action = plan_claim(
             Some(guest),
             Some(existing.clone()),
@@ -424,8 +523,8 @@ mod tests {
 
     #[test]
     fn plan_claim_merge_takes_max_wpm_from_guest_when_higher() {
-        let guest = mk_player(0x01, "guest", 3, 0, 0, 200, None);
-        let existing = mk_player(0x02, "real", 0, 0, 0, 50, Some("a@b.com"));
+        let guest = mk_player(0x01, "guest", 3, 0, 0, 200, false);
+        let existing = mk_player(0x02, "real", 0, 0, 0, 50, true);
         let action = plan_claim(
             Some(guest),
             Some(existing.clone()),
@@ -467,14 +566,19 @@ mod tests {
     fn claim_progress_self_happy_path_guest_row_rekeys() {
         // When ctx.sender() (the new identity) has no row, and a guest row
         // exists for prev_identity, plan_claim returns Rekey.
-        let guest = mk_player(0x05, "guest", 2, 500, 200, 60, None);
+        let guest = mk_player(0x05, "guest", 2, 500, 200, 60, false);
         let new_id = Identity::from_byte_array([0x10; 32]);
         let action = plan_claim(Some(guest.clone()), None, new_id, "user@example.com".into());
         match action {
-            ClaimAction::Rekey { delete_id, insert } => {
+            ClaimAction::Rekey {
+                delete_id,
+                insert,
+                email,
+            } => {
                 assert_eq!(delete_id, guest.identity);
                 assert_eq!(insert.identity, new_id);
-                assert_eq!(insert.email, Some("user@example.com".into()));
+                assert!(insert.verified);
+                assert_eq!(email, "user@example.com");
                 assert_eq!(insert.total_damage, 500);
                 assert_eq!(insert.username, "guest");
             }
@@ -485,9 +589,9 @@ mod tests {
     #[test]
     fn claim_progress_self_sad_path_already_verified_guest_is_error() {
         // claim_progress_self checks is_guest_already_verified before plan_claim.
-        // An already-verified guest row (email=Some) causes the reducer to return
+        // An already-verified guest row (verified=true) causes the reducer to return
         // Err("target row is already verified"). Test the guard directly.
-        let verified_guest = mk_player(0x05, "guest", 2, 500, 200, 60, Some("prev@b.com"));
+        let verified_guest = mk_player(0x05, "guest", 2, 500, 200, 60, true);
         assert!(
             is_guest_already_verified(Some(&verified_guest)),
             "verified guest must be rejected by claim_progress_self"

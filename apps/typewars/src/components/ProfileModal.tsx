@@ -112,7 +112,7 @@ export function ProfileModal({ username, onClose }: ProfileModalProps) {
 
   const legion = player.legion as LegionId;
   const info = LEGION_INFO[legion];
-  const verified = player.email != null;
+  const verified = player.verified;
   const joinedMs = Number(player.joinedAt.toMillis());
   const regionsHeld = allRegions.filter((r) => r.controllingLegion === legion).length;
 
