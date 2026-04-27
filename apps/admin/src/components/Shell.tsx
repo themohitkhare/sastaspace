@@ -70,8 +70,13 @@ function resolveAuth(): { state: AuthState; email: string } {
 
 export default function Shell() {
   const [route, setRoute] = useState<Route>(() => parsePath());
-  const [authState, setAuthState] = useState<AuthState>(() => resolveAuth().state);
-  const [userEmail, setUserEmail] = useState<string>(() => resolveAuth().email);
+  // Auth state must start as 'loading' on BOTH server and client to avoid
+  // a hydration mismatch: a lazy initializer that read localStorage on the
+  // client but returned 'loading' on the server snapped the UI from
+  // SSR's spinner straight into 'signin' or 'app' on hydrate, which read
+  // as a flicker. Resolve the real state in a useEffect after mount.
+  const [authState, setAuthState] = useState<AuthState>('loading');
+  const [userEmail, setUserEmail] = useState<string>('');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [secondsSince, setSecondsSince] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
@@ -99,6 +104,23 @@ export default function Shell() {
         restart_count: r.restartCount,
       }))
     : (containersPolled ?? null);
+
+  // Resolve the real auth state on mount (client-only). Also listen for
+  // cross-tab `admin_token` changes so signing out elsewhere flips this
+  // tab back to the sign-in screen.
+  useEffect(() => {
+    const apply = () => {
+      const { state, email } = resolveAuth();
+      setAuthState(state);
+      setUserEmail(email);
+    };
+    apply();
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === 'admin_token' || e.key === null) apply();
+    };
+    window.addEventListener('storage', onStorage);
+    return () => window.removeEventListener('storage', onStorage);
+  }, []);
 
   // Hash routing — only register the listener, initial state is set via lazy initializer
   useEffect(() => {
