@@ -191,16 +191,42 @@ test.describe("admin panels — STDB live updates", () => {
       ],
       OWNER_STDB_TOKEN,
     );
-    // friendlyName(): "e2e-probe-<n>" → "E2e Probe <n>"
+    // friendlyName(): "e2e-probe-<n>" → "E2e Probe <n>". Match the EXACT
+    // probe — concurrent test projects (desktop-chromium, notes-legacy,
+    // notes-stdb) write probes near-simultaneously, so a /e2e probe/i
+    // partial match hits multiple rows and trips strict-mode locator.
+    const friendlyProbe = probeName
+      .replace(/-/g, " ")
+      .replace(/\b\w/g, (c) => c.toUpperCase());
     await expect(
-      page.locator(".service-card__name", { hasText: /e2e probe/i }),
+      page.locator(".service-card__name", { hasText: friendlyProbe }),
     ).toBeVisible({ timeout: 5_000 });
   });
 
   test("Logs — log_event row appears in panel within 5s", async ({ page, request }) => {
+    // The Logs sidebar lists containers from `container_status` (STDB
+    // path) or /containers HTTP poll (legacy path). The admin-collector
+    // worker that normally populates either is currently disabled
+    // (binding regen pending). The STDB path lets us seed direct; the
+    // legacy path doesn't, so we skip it for this test until the
+    // admin-collector is back online.
+    test.skip(
+      test.info().project.name === "notes-legacy",
+      "Logs sidebar in legacy path needs admin-api/admin-collector — currently disabled",
+    );
+
+    await callReducer(
+      request,
+      "upsert_container_status",
+      ["sastaspace-stdb", "running", "clockworklabs/spacetime:latest", 60, 100, 1024, 0],
+      OWNER_STDB_TOKEN,
+    );
     await page.locator('button, a', { hasText: /^Logs$/ }).first().click();
-    // Click on the Stdb container in the sidebar to register log_interest.
-    await page.locator(".logs-service-item", { hasText: /Stdb/i }).first().click();
+    // Wait for the sidebar entry to render before clicking it (the upsert
+    // → STDB subscription → React render chain isn't instantaneous).
+    const stdbItem = page.locator(".logs-service-item", { hasText: /Stdb/i }).first();
+    await expect(stdbItem).toBeVisible({ timeout: 10_000 });
+    await stdbItem.click();
     // Give the add_log_interest reducer a beat to land before we append.
     await new Promise((r) => setTimeout(r, 500));
     const probeText = `E2E_PROBE_${Date.now()}`;
