@@ -1032,7 +1032,15 @@ jobs:
           # request_magic_link + verify_token reducers instead of POSTing
           # to auth.sastaspace.com (now a 410 tombstone).
           E2E_AUTH_BACKEND: stdb
-          E2E_MODERATOR_ENABLED: "true"
+          # moderator-agent is currently disabled in compose (it boots fine but
+          # an uncaught SDK 2.1 SenderError on its owner-only reducer call
+          # crashes the workers process). Until the SenderError handler lands
+          # the e2e moderator specs would always time out, so we skip them.
+          # Re-flip to "true" alongside `WORKER_MODERATOR_AGENT_ENABLED=true`
+          # in infra/docker-compose.yml. See
+          # docs/operator-runbooks/localai-musicgen-swap.md "Three other
+          # workers" section for context.
+          E2E_MODERATOR_ENABLED: "false"
       - name: upload playwright report on failure
         if: failure()
         uses: actions/upload-artifact@v7

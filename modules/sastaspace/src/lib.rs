@@ -1118,7 +1118,14 @@ fn cap_log_event_text(text: String) -> String {
 /// allow-list, returning the same error string the reducers use. Pulled
 /// out so the three call sites (`upsert_container_status`,
 /// `append_log_event`, `add_log_interest`) stay consistent.
+///
+/// `e2e-probe-*` names are accepted unconditionally so admin-panels e2e
+/// tests can seed unique probe rows without polluting real container
+/// statuses. The probes are still owner-only at the reducer layer.
 fn validate_container_name(name: &str) -> Result<(), String> {
+    if name.starts_with("e2e-probe-") {
+        return Ok(());
+    }
     if !ALLOWED_CONTAINERS.contains(&name) {
         return Err(format!("container `{name}` not in allow-list"));
     }
@@ -3388,6 +3395,17 @@ mod admin_collector_tests {
         // Allow-list uses exact-match strings; case variants must reject.
         assert!(validate_container_name("SASTASPACE-SPACETIME").is_err());
         assert!(validate_container_name("Sastaspace-Spacetime").is_err());
+    }
+
+    #[test]
+    fn validate_container_name_accepts_e2e_probes() {
+        // admin-panels e2e seeds unique probe rows per run with this prefix.
+        assert!(validate_container_name("e2e-probe-1").is_ok());
+        assert!(validate_container_name("e2e-probe-1777272721294").is_ok());
+        // Bare "e2e-probe" (no trailing dash) is NOT a probe and must reject.
+        assert!(validate_container_name("e2e-probe").is_err());
+        // Other prefixes still rejected.
+        assert!(validate_container_name("malicious-e2e-probe-1").is_err());
     }
 
     #[test]
