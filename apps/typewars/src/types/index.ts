@@ -23,7 +23,7 @@ export interface Player {
   total_damage: number;
   season_damage: number;
   best_wpm: number;
-  email?: string;
+  verified: boolean;
 }
 
 export interface LiberatedInfo {

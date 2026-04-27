@@ -174,7 +174,7 @@ export default function Battle({ player, region, onExit }: Props) {
           <Avatar
             callsign={player.username}
             legion={player.legion}
-            verified={!!player.email}
+            verified={player.verified}
             size={20}
           />
           <span className="ss-label" style={{ color: 'var(--brand-muted)' }}>

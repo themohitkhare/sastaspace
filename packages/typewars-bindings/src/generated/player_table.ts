@@ -18,5 +18,5 @@ export default __t.row({
   seasonDamage: __t.u64().name("season_damage"),
   bestWpm: __t.u32().name("best_wpm"),
   joinedAt: __t.timestamp().name("joined_at"),
-  email: __t.option(__t.string()),
+  verified: __t.bool(),
 });

@@ -20,7 +20,7 @@ interface PlayerEntry {
   seasonDamage: number;
   totalDamage: number;
   bestWpm: number;
-  email: string | undefined;
+  verified: boolean;
 }
 
 export default function Leaderboard({ regions, player, onBack, onOpenProfile }: Props) {
@@ -34,7 +34,7 @@ export default function Leaderboard({ regions, player, onBack, onOpenProfile }: 
         seasonDamage: Number(p.seasonDamage),
         totalDamage: Number(p.totalDamage),
         bestWpm: p.bestWpm,
-        email: p.email ?? undefined,
+        verified: p.verified,
       }))
       .sort((a, b) => b.seasonDamage - a.seasonDamage)
   ), [playerRows]);
@@ -152,7 +152,7 @@ export default function Leaderboard({ regions, player, onBack, onOpenProfile }: 
                   >
                     <span className="ss-mono" style={{ color: 'var(--brand-muted)' }}>{i + 1}</span>
                     <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <Avatar callsign={p.username} legion={p.legion} verified={!!p.email} size={20} />
+                      <Avatar callsign={p.username} legion={p.legion} verified={p.verified} size={20} />
                       {p.username}
                       {isMe && <span className="lb-you-tag">you</span>}
                     </span>

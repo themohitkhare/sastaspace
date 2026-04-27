@@ -42,7 +42,7 @@ export const Player = __t.object("Player", {
   seasonDamage: __t.u64(),
   bestWpm: __t.u32(),
   joinedAt: __t.timestamp(),
-  email: __t.option(__t.string()),
+  verified: __t.bool(),
 });
 export type Player = __Infer<typeof Player>;
 

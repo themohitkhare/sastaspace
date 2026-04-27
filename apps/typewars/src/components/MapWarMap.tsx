@@ -113,7 +113,7 @@ export default function MapWarMap({ regions, player, onEnter, onOpenBoard, onSwa
             <Avatar
               callsign={player.username}
               legion={player.legion}
-              verified={!!player.email}
+              verified={player.verified}
               size={20}
             />
             <span className="ss-mono" style={{ fontSize: 12 }}>{player.username}</span>
@@ -124,7 +124,7 @@ export default function MapWarMap({ regions, player, onEnter, onOpenBoard, onSwa
               swap ↺
             </span>
           </button>
-          {!player.email && <SignInTrigger />}
+          {!player.verified && <SignInTrigger />}
           <button className="link-btn" onClick={onOpenBoard}>leaderboard</button>
         </span>
       </header>

@@ -83,9 +83,11 @@ function connectTypewars(jwt: string): Promise<TypewarsConn> {
 
 /**
  * Subscribe to the User table on the active sastaspace connection and resolve
- * the email when the row keyed on `identityHex` is in the cache. verify_token
- * has already inserted/updated the row server-side, so the row should arrive
- * inside the SubscriptionApplied message in the common case.
+ * when verify_token has written the row keyed on `identityHex`. The actual
+ * email value is NOT read from STDB — the user typed it at sign-in and it is
+ * already stored in sessionStorage under PENDING_EMAIL_KEY. We use the
+ * presence of the User row (row.verified = true) only as a signal that
+ * verify_token has completed.
  *
  * Resolves to undefined on timeout so callers can decide whether to surface a
  * warning rather than blocking sign-in.
@@ -112,12 +114,23 @@ function readEmailFromUserRow(
       return;
     }
 
+    // Derive the email from sessionStorage — the user typed it at sign-in and
+    // it was stashed there by the AuthMenu / SignInModal (F1). This avoids
+    // exposing the email as a subscribable column on a public STDB table.
+    const getPendingEmail = (): string | undefined => {
+      try {
+        return window.sessionStorage.getItem(PENDING_EMAIL_KEY) ?? undefined;
+      } catch {
+        return undefined;
+      }
+    };
+
     // The connection's `db.user` view exposes ReadonlyTableMethods (iter,
     // count) plus onInsert, but the per-table accessor types are generated
     // from the schema at build time. We deliberately go through `unknown`
     // here to avoid pinning this page to internal generated types that
     // change shape with `pnpm bindings:generate`.
-    type UserRow = { identity: Identity; email: string };
+    type UserRow = { identity: Identity; verified: boolean };
     type UserTable = {
       iter: () => Iterable<UserRow>;
       onInsert?: (cb: (ctx: unknown, row: UserRow) => void) => void;
@@ -129,9 +142,9 @@ function readEmailFromUserRow(
       if (!userTable?.iter) return false;
       try {
         for (const row of userTable.iter()) {
-          if (row.identity.toHexString() === target.toHexString() && row.email) {
+          if (row.identity.toHexString() === target.toHexString() && row.verified) {
             clearTimeout(timer);
-            finish(row.email);
+            finish(getPendingEmail());
             return true;
           }
         }
@@ -151,10 +164,10 @@ function readEmailFromUserRow(
             userTable?.onInsert?.((_ctx, row) => {
               if (
                 row.identity.toHexString() === target.toHexString() &&
-                row.email
+                row.verified
               ) {
                 clearTimeout(timer);
-                finish(row.email);
+                finish(getPendingEmail());
               }
             });
           } catch {
