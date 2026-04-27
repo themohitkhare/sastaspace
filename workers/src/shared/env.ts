@@ -8,6 +8,9 @@ const Env = z.object({
   OLLAMA_URL: z.string().url().default("http://127.0.0.1:11434"),
   OLLAMA_MODEL: z.string().default("gemma3:1b"),
   LOCALAI_URL: z.string().url().default("http://127.0.0.1:8080"),
+  LOCALAI_AUDIO_PATH: z.string().default("/v1/audio/speech"),
+  LOCALAI_AUDIO_MODEL: z.string().default("tts-1"),
+  LOCALAI_AUDIO_VOICE: z.string().default("en-us-amy-low"),
 
   // Deck-agent (Phase 1 W3) — output paths for the renderer + zipper.
   // DECK_OUT_DIR is host-mounted into the container at this path; nginx (or

@@ -386,16 +386,19 @@ services:
       # and breaks STDB auth at boot.
       - OLLAMA_URL=http://127.0.0.1:11434
       - LOCALAI_URL=http://127.0.0.1:8080
-      # PHASE 3 CUTOVER: all four worker agents enabled. Each agent subscribes
-      # to its own STDB intent table (pending_email / system_metrics / plan_request
-      # / comment) and processes rows reactively. The legacy Python services
-      # (auth, admin-api, deck, moderator) are stopped by the cutover commit
-      # to free their respective ports. Revert: flip these back to false +
-      # docker compose start <legacy-service>.
-      - WORKER_AUTH_MAILER_ENABLED=true
-      - WORKER_ADMIN_COLLECTOR_ENABLED=true
+      # PHASE 3 CUTOVER (with 2026-04-27 mitigation): only deck-agent is
+      # currently safe to enable. auth-mailer + admin-collector subscribe to
+      # tables (`pending_email`, `log_interest`) that are not yet in the
+      # generated TS bindings — `dbView.<table>` is undefined and `.onInsert`
+      # crashes the process at boot. moderator-agent boots fine but tries
+      # owner-only `set_comment_status_with_reason` from a non-owner JWT and
+      # SDK 2.1's uncaught SenderError in #processMessage takes down the node.
+      # Re-enable each only after `pnpm bindings:generate` adds the missing
+      # accessors AND WORKERS_STDB_TOKEN is verified to decode to OWNER_HEX.
+      - WORKER_AUTH_MAILER_ENABLED=false
+      - WORKER_ADMIN_COLLECTOR_ENABLED=false
       - WORKER_DECK_AGENT_ENABLED=true
-      - WORKER_MODERATOR_AGENT_ENABLED=true
+      - WORKER_MODERATOR_AGENT_ENABLED=false
     depends_on:
       spacetime:
         condition: service_healthy
@@ -410,18 +413,27 @@ services:
       start_period: 30s
 
   # LocalAI: self-hosted OpenAI-compatible model server. Sibling to Ollama.
-  # Hosts the MusicGen audio model used by Phase 1 W3 deck-agent.
-  # Dev (this file): CPU image (`localai/localai:latest`) — no GPU mounts.
-  # Prod (taxila): swap image to AIO-GPU variant (`localai/localai:latest-aio-gpu-hipblas`
-  # for AMD 7900 XTX, or `latest-aio-gpu-nvidia-cuda-12` for NVIDIA) and add the
-  # corresponding `devices:` mounts. The AIO images bundle MusicGen; the slim
-  # default image does NOT — see infra/localai/README.md "Phase 1 W3 status".
+  # AIO image bundles many backends out of the box (whisper, piper, diffusers,
+  # silero-vad, llama-cpp, etc.). Audio backends like ace-step and transformers
+  # for MusicGen install on demand via POST /backends/apply (see
+  # docs/operator-runbooks/localai-musicgen-swap.md).
+  #
+  # The image + device mounts target taxila prod (AMD 7900 XTX / ROCm).
+  # On Mac dev this service won't start (no /dev/kfd); for Mac dev override
+  # via a docker-compose.override.yml that swaps the image to plain
+  # `localai/localai:latest` and removes `devices` + `group_add`.
   localai:
-    image: localai/localai:latest
+    image: localai/localai:latest-aio-gpu-hipblas
     container_name: sastaspace-localai
     restart: unless-stopped
     ports:
       - "127.0.0.1:8080:8080"
+    devices:
+      - /dev/kfd
+      - /dev/dri
+    group_add:
+      - "44"     # video — `getent group video` on host
+      - "993"    # render — `getent group render` on host
     volumes:
       # ./localai/models contains models.yaml (copied at infra setup time —
       # see infra/localai/README.md). Mounting the whole dir avoids the

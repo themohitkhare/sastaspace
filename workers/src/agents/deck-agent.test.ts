@@ -61,8 +61,8 @@ const samplePlanRow = {
 
 const sampleGenRow = {
   id: 7n,
-  plan_request_id: 1n,
-  tracks_json: JSON.stringify([
+  planRequestId: 1n,
+  tracksJson: JSON.stringify([
     {
       name: "Pad",
       type: "background",
@@ -100,14 +100,14 @@ function makeFakeDb(
       subscriptionBuilder: () => ({ subscribe: vi.fn() }),
       reducers,
       db: {
-        planRequest: {
+        plan_request: {
           onInsert: vi.fn(),
           iter: () => planRows,
           id: {
             find: (id: bigint) => planRows.find((r) => r.id === id) ?? null,
           },
         },
-        generateJob: {
+        generate_job: {
           onInsert: vi.fn(),
           iter: () => genRows,
         },
@@ -175,8 +175,11 @@ describe("deck-agent", () => {
     });
     await flush();
     expect(reducers.setPlan).toHaveBeenCalledTimes(1);
-    expect(reducers.setPlan.mock.calls[0][0]).toBe(1n);
-    const written = JSON.parse(reducers.setPlan.mock.calls[0][1] as string);
+    // SDK 2.1 reducer args: object form { requestId, tracksJson }.
+    expect(reducers.setPlan.mock.calls[0][0]).toMatchObject({ requestId: 1n });
+    const written = JSON.parse(
+      (reducers.setPlan.mock.calls[0][0] as { tracksJson: string }).tracksJson,
+    );
     expect(written).toHaveLength(3);
     expect(written[0].mood).toBe("calm");
     expect(reducers.setPlanFallback).not.toHaveBeenCalled();
@@ -192,7 +195,7 @@ describe("deck-agent", () => {
     await flush();
     expect(reducers.setPlan).not.toHaveBeenCalled();
     expect(reducers.setPlanFallback).toHaveBeenCalledTimes(1);
-    expect(reducers.setPlanFallback).toHaveBeenCalledWith(1n);
+    expect(reducers.setPlanFallback).toHaveBeenCalledWith({ requestId: 1n });
     await stop();
   });
 
@@ -207,7 +210,7 @@ describe("deck-agent", () => {
     });
     await flush();
     expect(reducers.setPlan).not.toHaveBeenCalled();
-    expect(reducers.setPlanFallback).toHaveBeenCalledWith(1n);
+    expect(reducers.setPlanFallback).toHaveBeenCalledWith({ requestId: 1n });
     await stop();
   });
 
@@ -224,10 +227,10 @@ describe("deck-agent", () => {
     await flush();
     expect(renderTrack).toHaveBeenCalledTimes(1);
     expect(reducers.setGenerateDone).toHaveBeenCalledTimes(1);
-    expect(reducers.setGenerateDone.mock.calls[0][0]).toBe(7n);
-    expect(reducers.setGenerateDone.mock.calls[0][1]).toBe(
-      "https://deck.sastaspace.com/7.zip",
-    );
+    expect(reducers.setGenerateDone.mock.calls[0][0]).toEqual({
+      jobId: 7n,
+      zipUrl: "https://deck.sastaspace.com/7.zip",
+    });
     // Zip actually written to disk.
     const written = await fs.readFile(path.join(outDir, "7.zip"));
     expect(written.length).toBeGreaterThan(0);
@@ -248,10 +251,12 @@ describe("deck-agent", () => {
     await flush();
     expect(reducers.setGenerateDone).not.toHaveBeenCalled();
     expect(reducers.setGenerateFailed).toHaveBeenCalledTimes(1);
-    expect(reducers.setGenerateFailed.mock.calls[0][0]).toBe(7n);
-    expect(String(reducers.setGenerateFailed.mock.calls[0][1])).toContain(
-      "localai 500",
-    );
+    const failArg = reducers.setGenerateFailed.mock.calls[0][0] as {
+      jobId: bigint;
+      error: string;
+    };
+    expect(failArg.jobId).toBe(7n);
+    expect(failArg.error).toContain("localai 500");
     await stop();
   });
 });
