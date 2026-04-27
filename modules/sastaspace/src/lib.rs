@@ -894,7 +894,8 @@ fn validate_mint_test_args(email: &str, secret: &str) -> Result<(), String> {
 /// keeps the admin from accidentally pulling logs from arbitrary host
 /// processes).
 const ALLOWED_CONTAINERS: &[&str] = &[
-    "sastaspace-spacetime",
+    "sastaspace-spacetime",  // legacy — `docker compose ps` reports container_name=sastaspace-stdb
+    "sastaspace-stdb",
     "sastaspace-ollama",
     "sastaspace-localai",
     "sastaspace-workers",
