@@ -7,6 +7,14 @@ const Env = z.object({
 
   OLLAMA_URL: z.string().url().default("http://127.0.0.1:11434"),
   OLLAMA_MODEL: z.string().default("gemma3:1b"),
+
+  // Deck planner backend. `gemini` (default) calls Google Generative
+  // Language REST. `ollama` falls back to the local gemma model — kept
+  // for offline dev. Both emit the same JSON schema (PLANNER_INSTRUCTIONS).
+  DECK_PLANNER_BACKEND: z.enum(["gemini", "ollama"]).default("gemini"),
+  GEMINI_API_KEY: z.string().optional(),
+  GEMINI_MODEL: z.string().default("gemini-2.5-flash"),
+
   LOCALAI_URL: z.string().url().default("http://127.0.0.1:8080"),
   LOCALAI_AUDIO_PATH: z.string().default("/v1/audio/speech"),
   LOCALAI_AUDIO_MODEL: z.string().default("tts-1"),

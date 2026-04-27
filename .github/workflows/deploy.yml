@@ -719,6 +719,7 @@ jobs:
           WORKERS_STDB_TOKEN: ${{ secrets.WORKERS_STDB_TOKEN }}
           SPACETIME_TOKEN: ${{ secrets.SPACETIME_TOKEN }}
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         timeout-minutes: 1
         run: |
           STDB_TOKEN_VALUE="${WORKERS_STDB_TOKEN:-$SPACETIME_TOKEN}"
@@ -731,6 +732,8 @@ jobs:
           {
             echo "STDB_TOKEN=$STDB_TOKEN_VALUE"
             echo "RESEND_API_KEY=$RESEND_API_KEY"
+            # Optional. When set, deck-agent's planner uses Gemini instead of Ollama.
+            [[ -n "$GEMINI_API_KEY" ]] && echo "GEMINI_API_KEY=$GEMINI_API_KEY"
           } > "$PROD/workers/.env"
           chmod 600 "$PROD/workers/.env"
       - name: build workers container

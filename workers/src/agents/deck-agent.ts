@@ -96,24 +96,37 @@ export async function start(
 ): Promise<() => Promise<void>> {
   const conn = (db as unknown as { connection: StdbAccessor }).connection;
 
-  // Lazy provider so env vars resolve at start() time. Mastra+Ollama wiring
-  // matches W4's moderator-agent (shared/mastra.ts).
-  const planner = new Agent({
+  // Lazy provider so env vars resolve at start() time. Two planner backends:
+  // `gemini` (default, calls the Generative Language REST API) and `ollama`
+  // (kept as fallback so the deck still drafts plans if Gemini is reachable
+  // at all). Both produce the same JSON schema downstream of parseTracks.
+  const ollamaPlanner = new Agent({
     name: "deck-planner",
     instructions: PLANNER_INSTRUCTIONS,
-    // gemma3:1b matches services/deck/agent.py default.
     model: ollamaProvider()(env.OLLAMA_MODEL),
   });
+
+  const draftPlanViaOllama = async (description: string, count: number): Promise<Track[]> => {
+    const resp = await ollamaPlanner.generate(
+      `project description:\n${description}\n\ntrack count: ${count}\n\nReturn the JSON array now.`,
+    );
+    const text = typeof resp.text === "string" ? resp.text.trim() : "";
+    return parseTracks(text, count);
+  };
 
   const deps: Deps = {
     draftPlan:
       overrides?.draftPlan ??
       (async (description, count) => {
-        const resp = await planner.generate(
-          `project description:\n${description}\n\ntrack count: ${count}\n\nReturn the JSON array now.`,
-        );
-        const text = typeof resp.text === "string" ? resp.text.trim() : "";
-        return parseTracks(text, count);
+        if (env.DECK_PLANNER_BACKEND === "gemini") {
+          try {
+            return await draftPlanViaGemini(description, count);
+          } catch (e) {
+            log("warn", "gemini planner failed, falling back to ollama", { error: String(e) });
+            return draftPlanViaOllama(description, count);
+          }
+        }
+        return draftPlanViaOllama(description, count);
       }),
     renderTrack: overrides?.renderTrack ?? renderTrack,
   };
@@ -323,6 +336,59 @@ export function parseTracks(raw: string, count: number): Track[] {
   }
   if (out.length === 0) throw new Error("no parseable tracks in agent output");
   return out;
+}
+
+/**
+ * Gemini planner via the Generative Language REST API. We deliberately
+ * skip the @google/genai SDK so the workers image stays slim and our
+ * type surface stays just `fetch + zod-shape parseTracks`.
+ *
+ * Returns the parsed Track[] (or throws so the caller can fall back to
+ * Ollama or call setPlanFallback). The PLANNER_INSTRUCTIONS constant
+ * keeps the schema requirements in one place; we inline it as a system
+ * instruction so Gemini emits raw JSON without code fences.
+ */
+export async function draftPlanViaGemini(
+  description: string,
+  count: number,
+): Promise<Track[]> {
+  if (!env.GEMINI_API_KEY) {
+    throw new Error("GEMINI_API_KEY not set");
+  }
+  const url =
+    `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(env.GEMINI_MODEL)}:generateContent` +
+    `?key=${encodeURIComponent(env.GEMINI_API_KEY)}`;
+  const body = {
+    systemInstruction: { parts: [{ text: PLANNER_INSTRUCTIONS }] },
+    contents: [
+      {
+        role: "user",
+        parts: [
+          {
+            text: `project description:\n${description}\n\ntrack count: ${count}\n\nReturn the JSON array now.`,
+          },
+        ],
+      },
+    ],
+    generationConfig: {
+      temperature: 0.7,
+      responseMimeType: "application/json",
+    },
+  };
+  const r = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!r.ok) {
+    throw new Error(`gemini ${r.status}: ${(await r.text()).slice(0, 200)}`);
+  }
+  const j = (await r.json()) as {
+    candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>;
+  };
+  const text = j.candidates?.[0]?.content?.parts?.[0]?.text?.trim() ?? "";
+  if (!text) throw new Error(`gemini returned empty body: ${JSON.stringify(j).slice(0, 200)}`);
+  return parseTracks(text, count);
 }
 
 // Audio backend selector. `tts` calls LocalAI piper at /v1/audio/speech
