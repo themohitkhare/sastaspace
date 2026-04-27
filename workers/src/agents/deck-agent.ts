@@ -115,7 +115,7 @@ export async function start(
         const text = typeof resp.text === "string" ? resp.text.trim() : "";
         return parseTracks(text, count);
       }),
-    renderTrack: overrides?.renderTrack ?? renderViaLocalAi,
+    renderTrack: overrides?.renderTrack ?? renderTrack,
   };
 
   // Some SDK shapes return a builder, some return the subscription handle
@@ -325,12 +325,15 @@ export function parseTracks(raw: string, count: number): Track[] {
   return out;
 }
 
-// LocalAI endpoint + model are env-driven so we can swap text-to-music
-// (ace-step / musicgen) and TTS (piper) without a code redeploy. The deck
-// pivoted to TTS-as-narration on 2026-04-27 because LocalAI v3 dropped the
-// dedicated musicgen backend and the ace-step ROCm path crashes in
-// GetCaption. Default targets piper at /v1/audio/speech which produces a
-// real WAV from a spoken track description.
+// Audio backend selector. `tts` calls LocalAI piper at /v1/audio/speech
+// (narrated description, default since 2026-04-27). `acestep` calls
+// ACE-Step 1.5's standalone async API (real music; runs natively on ROCm
+// per AMD's official guide — bypasses the broken LocalAI wrappers).
+export async function renderTrack(t: Track): Promise<Buffer> {
+  if (env.DECK_AUDIO_BACKEND === "acestep") return renderViaAceStep(t);
+  return renderViaLocalAi(t);
+}
+
 export async function renderViaLocalAi(t: Track): Promise<Buffer> {
   const prompt = buildMusicgenPrompt(t);
   const path = env.LOCALAI_AUDIO_PATH;
@@ -350,6 +353,119 @@ export async function renderViaLocalAi(t: Track): Promise<Buffer> {
   }
   const ab = await r.arrayBuffer();
   return Buffer.from(ab);
+}
+
+/**
+ * ACE-Step 1.5 standalone API client. The server is async-only:
+ *  1. POST /release_task with the prompt + duration → returns task_id.
+ *  2. Poll POST /query_result with [task_id] until status === 1 (success)
+ *     or 2 (failed). Times out at ACESTEP_TIMEOUT_MS to bound retries.
+ *  3. The success result contains audio file paths on the server's disk;
+ *     pull the first one via GET /v1/audio?path=... and return its bytes.
+ *
+ * Reference: docs/en/API.md in ace-step/ACE-Step-1.5.
+ */
+export async function renderViaAceStep(t: Track): Promise<Buffer> {
+  const base = env.ACESTEP_URL.replace(/\/$/, "");
+  const prompt = buildMusicgenPrompt(t);
+
+  // Step 1: kick off generation.
+  const releaseBody: Record<string, unknown> = {
+    prompt,
+    audio_duration: Math.max(10, t.length),
+    audio_format: env.ACESTEP_AUDIO_FORMAT,
+    inference_steps: env.ACESTEP_INFERENCE_STEPS,
+    batch_size: 1,
+    use_random_seed: true,
+  };
+  if (env.ACESTEP_MODEL) releaseBody.model = env.ACESTEP_MODEL;
+  const releaseRes = await fetch(`${base}/release_task`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(releaseBody),
+  });
+  if (!releaseRes.ok) {
+    throw new Error(
+      `acestep release_task ${releaseRes.status}: ${(await releaseRes.text()).slice(0, 200)}`,
+    );
+  }
+  const releaseJson = (await releaseRes.json()) as {
+    code: number;
+    error: string | null;
+    data: { task_id?: string };
+  };
+  const taskId = releaseJson.data?.task_id;
+  if (!taskId) {
+    throw new Error(`acestep release_task: no task_id in ${JSON.stringify(releaseJson).slice(0, 200)}`);
+  }
+
+  // Step 2: poll until done.
+  const deadline = Date.now() + env.ACESTEP_TIMEOUT_MS;
+  let resultJsonStr: string | null = null;
+  while (Date.now() < deadline) {
+    await new Promise((r) => setTimeout(r, 2000));
+    const qr = await fetch(`${base}/query_result`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ task_id_list: [taskId] }),
+    });
+    if (!qr.ok) continue;
+    const j = (await qr.json()) as {
+      data: Array<{ task_id: string; status: number; result: string }>;
+    };
+    const row = j.data?.[0];
+    if (row?.status === 1) {
+      resultJsonStr = row.result;
+      break;
+    }
+    if (row?.status === 2) {
+      throw new Error(`acestep task ${taskId} failed: ${row.result}`);
+    }
+  }
+  if (!resultJsonStr) {
+    throw new Error(`acestep task ${taskId} did not complete in ${env.ACESTEP_TIMEOUT_MS}ms`);
+  }
+
+  // Step 3: parse result, find the audio reference, then download. ACE-Step
+  // returns each item's `file` already as `/v1/audio?path=<urlencoded>` —
+  // the URL path is ready to append to the base host.
+  const parsed = JSON.parse(resultJsonStr) as unknown;
+  const audioPathOrUrl = extractAudioReference(parsed);
+  if (!audioPathOrUrl) {
+    throw new Error(`acestep result has no audio reference: ${resultJsonStr.slice(0, 200)}`);
+  }
+  const audioUrl = audioPathOrUrl.startsWith("/v1/audio")
+    ? `${base}${audioPathOrUrl}`
+    : `${base}/v1/audio?path=${encodeURIComponent(audioPathOrUrl)}`;
+  const audioRes = await fetch(audioUrl);
+  if (!audioRes.ok) {
+    throw new Error(`acestep /v1/audio ${audioRes.status} for ${audioPathOrUrl}`);
+  }
+  return Buffer.from(await audioRes.arrayBuffer());
+}
+
+// Walk a parsed query_result `result` payload and return the first
+// plausible audio reference. ACE-Step uses `{ file: "/v1/audio?path=..." }`
+// as the canonical handle; raw filesystem paths or wave-buffer hex are
+// fallback shapes worth tolerating.
+function extractAudioReference(parsed: unknown): string | undefined {
+  const seen = new Set<unknown>();
+  const stack: unknown[] = [parsed];
+  while (stack.length) {
+    const v = stack.pop();
+    if (!v || seen.has(v)) continue;
+    seen.add(v);
+    if (typeof v === "string") {
+      if (v.startsWith("/v1/audio")) return v;
+      if (/\.(wav|mp3|flac|ogg)(\?|$)/i.test(v)) return v;
+    }
+    if (Array.isArray(v)) {
+      for (const item of v) stack.push(item);
+    } else if (typeof v === "object") {
+      for (const item of Object.values(v as Record<string, unknown>)) stack.push(item);
+    }
+  }
+  return undefined;
 }
 
 export function buildMusicgenPrompt(t: Track): string {

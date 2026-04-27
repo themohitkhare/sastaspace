@@ -386,6 +386,14 @@ services:
       # and breaks STDB auth at boot.
       - OLLAMA_URL=http://127.0.0.1:11434
       - LOCALAI_URL=http://127.0.0.1:8080
+      # Music generation backend. `acestep` calls ACE-Step 1.5's standalone
+      # API server (real text-to-music, 48 kHz stereo, MIT-licensed); `tts`
+      # falls back to LocalAI piper at /v1/audio/speech (narration only).
+      # ACE-Step is run as a host process (see
+      # docs/operator-runbooks/localai-musicgen-swap.md), workers reach it
+      # via host loopback because of network_mode: host.
+      - DECK_AUDIO_BACKEND=acestep
+      - ACESTEP_URL=http://127.0.0.1:8001
       # PHASE 3 CUTOVER (with 2026-04-27 mitigation): only deck-agent is
       # currently safe to enable. auth-mailer + admin-collector subscribe to
       # tables (`pending_email`, `log_interest`) that are not yet in the
