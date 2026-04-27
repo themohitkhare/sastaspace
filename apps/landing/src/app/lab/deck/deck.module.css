@@ -361,6 +361,16 @@
   width: 0%;
   transition: width 200ms linear;
 }
+.progressFillIndet {
+  width: 30%;
+  background: linear-gradient(90deg, transparent, var(--brand-ink), transparent);
+  animation: progressIndet 1.4s ease-in-out infinite;
+  transition: none;
+}
+@keyframes progressIndet {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(380%); }
+}
 
 .liveBars {
   display: inline-flex;

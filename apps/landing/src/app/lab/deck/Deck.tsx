@@ -1,17 +1,17 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { unzipSync } from "fflate";
 import styles from "./deck.module.css";
 // Phase 2 F4 — STDB-native plan/generate path. Both this and the legacy
 // HTTP path coexist behind NEXT_PUBLIC_USE_STDB_DECK; the flag picks one
 // at build time. TODO(Phase 4 modularization): once cutover is stable,
 // the legacy path + this flag both go away and Deck.tsx splits into
 // per-step components (audit M1).
-import { useDeckStdb, type DeckStdb } from "./useDeckStdb";
+import { useDeckStdb } from "./useDeckStdb";
 import {
   submitPlan,
   submitGenerate,
-  downloadZipFromUrl,
   type Track as StdbTrack,
 } from "./deckStdbFlows";
 
@@ -28,8 +28,6 @@ const USE_STDB = process.env.NEXT_PUBLIC_USE_STDB_DECK === "true";
 
 type Phase = "idle" | "planning" | "plan" | "generating" | "results" | "error";
 
-type TrackKind = "pad" | "loop" | "ping";
-
 type Track = {
   id: string;
   name: string;
@@ -39,6 +37,12 @@ type Track = {
   tempo: string;
   instruments: string;
   mood: string;
+};
+
+type TrackAudio = {
+  url: string;
+  filename: string;
+  blob: Blob;
 };
 
 const MAX_TRACKS = 10;
@@ -103,6 +107,15 @@ export function Deck() {
   // may generate from their own plan").
   const stdb = useDeckStdb(USE_STDB);
   const [stdbPlanId, setStdbPlanId] = useState<bigint | null>(null);
+
+  // Real generated audio: per-track Blob URLs (extracted from the zip
+  // returned by /generate or the STDB worker), the zip blob itself for the
+  // bulk download button, a status string for the generating phase, and an
+  // error string when the pipeline fails.
+  const [audioByTrack, setAudioByTrack] = useState<Map<string, TrackAudio> | null>(null);
+  const [zipBlob, setZipBlob] = useState<Blob | null>(null);
+  const [generateStatus, setGenerateStatus] = useState<string>("");
+  const [generateError, setGenerateError] = useState<string | null>(null);
 
   const promptRef = useRef<HTMLTextAreaElement | null>(null);
   const trimmed = prompt.trim();
@@ -194,20 +207,115 @@ export function Deck() {
     [onPlan],
   );
 
+  // Free any per-track Object URLs we hold so the browser can release the
+  // underlying blob memory. Called whenever we discard the previous result
+  // set (new generate, reset, unmount).
+  const revokeAudio = useCallback(() => {
+    setAudioByTrack((prev) => {
+      if (prev) prev.forEach(({ url }) => URL.revokeObjectURL(url));
+      return null;
+    });
+    setZipBlob(null);
+  }, []);
+
   const reset = useCallback(() => {
+    revokeAudio();
     setPrompt("");
     setPlan([]);
     setOpenId(null);
     setPhase("idle");
     setPlanProgress(0);
+    setGenerateStatus("");
+    setGenerateError(null);
     if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
-  }, []);
+  }, [revokeAudio]);
 
   const onClear = useCallback(() => {
+    revokeAudio();
     setPrompt("");
     setPhase("idle");
     setPlan([]);
     setOpenId(null);
+    setGenerateError(null);
+  }, [revokeAudio]);
+
+  // ── real /generate flow ──
+  // Run only when phase is "generating": call the backend (STDB or HTTP),
+  // fetch the zip, unpack it client-side into per-track Blob URLs, then
+  // transition to "results". Any failure flips phase to "error" with a
+  // message — the user sees the truth, not a fake animation that lies
+  // about progress.
+  useEffect(() => {
+    if (phase !== "generating") return;
+    let cancelled = false;
+
+    const run = async () => {
+      // Revoke any previous URLs and clear state. setState inside an
+      // async callback is fine — only synchronous-in-effect-body is
+      // flagged by react-hooks/set-state-in-effect.
+      setAudioByTrack((prev) => {
+        if (prev) prev.forEach(({ url }) => URL.revokeObjectURL(url));
+        return null;
+      });
+      setZipBlob(null);
+      setGenerateError(null);
+      try {
+        setGenerateStatus("rendering audio…");
+        let blob: Blob;
+        if (USE_STDB) {
+          if (!stdb) throw new Error("STDB connection not ready — try again in a moment");
+          // Reducer expects camelCase fields without our client-side ids.
+          const tracks: StdbTrack[] = plan.map(({ id, ...rest }) => {
+            void id;
+            return rest;
+          });
+          const res = await submitGenerate(stdb.conn, stdb.identityHex, stdbPlanId, tracks);
+          if (cancelled) return;
+          if (res.kind !== "done") throw new Error(res.error || "generate failed");
+          const r = await fetch(res.zipUrl);
+          if (!r.ok) throw new Error(`zip fetch failed: ${r.status}`);
+          blob = await r.blob();
+        } else if (API_URL) {
+          blob = await fetchGenerate(API_URL, trimmed, plan);
+        } else {
+          throw new Error(
+            "deck is not configured: set NEXT_PUBLIC_DECK_API_URL or NEXT_PUBLIC_USE_STDB_DECK=true",
+          );
+        }
+        if (cancelled) return;
+        setGenerateStatus("unpacking tracks…");
+        const map = await unpackZipToTracks(blob, plan);
+        if (cancelled) {
+          map.forEach(({ url }) => URL.revokeObjectURL(url));
+          return;
+        }
+        setZipBlob(blob);
+        setAudioByTrack(map);
+        setGenerateStatus("");
+        setPhase("results");
+      } catch (err) {
+        if (cancelled) return;
+        console.warn("[deck] generate failed:", err);
+        setGenerateError(err instanceof Error ? err.message : String(err));
+        setGenerateStatus("");
+        setPhase("error");
+      }
+    };
+    void run();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase]);
+
+  // Free per-track URLs when the component unmounts.
+  useEffect(() => {
+    return () => {
+      if (audioByTrack) {
+        audioByTrack.forEach(({ url }) => URL.revokeObjectURL(url));
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const onExample = useCallback((p: string) => {
@@ -336,20 +444,23 @@ export function Deck() {
             />
           )}
           {phase === "generating" && (
-            <GeneratingView
-              plan={plan}
-              onDone={() => setPhase("results")}
+            <GeneratingView plan={plan} status={generateStatus} />
+          )}
+          {phase === "error" && (
+            <ErrorView
+              error={generateError ?? "unknown error"}
+              onRetry={() => setPhase("generating")}
+              onBack={() => setPhase("plan")}
             />
           )}
           {phase === "results" && (
             <Results
               plan={plan}
               estZipMb={estZipMb}
-              prompt={trimmed}
+              audioByTrack={audioByTrack}
+              zipBlob={zipBlob}
               onEdit={() => setPhase("plan")}
               onNew={reset}
-              stdb={stdb}
-              stdbPlanId={stdbPlanId}
             />
           )}
         </section>
@@ -774,94 +885,79 @@ function PlanEditor({ t, onUpdate }: { t: Track; onUpdate: (patch: Partial<Track
 }
 
 // ============================================================================
-// generating (step 3 — transient)
+// generating (step 3 — real, indeterminate)
 // ============================================================================
-function GeneratingView({ plan, onDone }: { plan: Track[]; onDone: () => void }) {
-  const [activeIdx, setActiveIdx] = useState(0);
-  const [stepProgress, setStepProgress] = useState(0);
-  const [doneIdxs, setDoneIdxs] = useState<Set<number>>(new Set());
-
-  const durs = useMemo(() => plan.map((t) => Math.max(900, t.length * 120)), [plan]);
-  const total = useMemo(() => durs.reduce((a, b) => a + b, 0), [durs]);
-
-  useEffect(() => {
-    if (plan.length === 0) {
-      onDone();
-      return;
-    }
-    let idx = 0;
-    let stepStart = performance.now();
-    const tick = window.setInterval(() => {
-      const now = performance.now();
-      const inStep = now - stepStart;
-      const r = Math.min(inStep / durs[idx], 1);
-      setStepProgress(r);
-      if (r >= 1) {
-        setDoneIdxs((prev) => new Set(prev).add(idx));
-        idx += 1;
-        if (idx >= plan.length) {
-          window.clearInterval(tick);
-          window.setTimeout(onDone, 350);
-          return;
-        }
-        stepStart = performance.now();
-        setActiveIdx(idx);
-        setStepProgress(0);
-      }
-    }, 80);
-    return () => window.clearInterval(tick);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const overall = useMemo(() => {
-    const before = durs.slice(0, activeIdx).reduce((a, b) => a + b, 0);
-    return total === 0 ? 0 : (before + stepProgress * (durs[activeIdx] ?? 0)) / total;
-  }, [activeIdx, stepProgress, durs, total]);
-
+//
+// We can't predict per-track progress without per-track callbacks from the
+// worker (the STDB schema reports done/failed for the whole job). Rather
+// than fake a progress bar that lies, we show an honest indeterminate
+// indicator with the current pipeline stage ("rendering audio…",
+// "unpacking tracks…") and the planned track list as a queue with no
+// status — they're all queued until the zip lands.
+function GeneratingView({ plan, status }: { plan: Track[]; status: string }) {
   return (
     <div className={`${styles.genCard} ${styles.fadeIn}`}>
       <div className={styles.genHead}>
         <div className={styles.genTitle}>
-          generating {plan.length} {plan.length === 1 ? "track" : "tracks"}&hellip;
+          {status || "starting…"}
           <span className={styles.liveBars} aria-hidden="true">
             <span /><span /><span /><span /><span />
           </span>
         </div>
-        <div className={styles.genHeadRight}>{Math.round(overall * 100)}%</div>
+        <div className={styles.genHeadRight}>
+          {plan.length} {plan.length === 1 ? "track" : "tracks"}
+        </div>
       </div>
       <div className={styles.genPrompt}>
-        running each track through musicgen with its own settings &mdash; cpu, sequential
+        rendering each track on the deck worker — large models, slow on cpu, fast on gpu
       </div>
       <div className={styles.progressTrack}>
-        <div className={styles.progressFill} style={{ width: `${(overall * 100).toFixed(1)}%` }} />
+        <div className={`${styles.progressFill} ${styles.progressFillIndet}`} />
       </div>
       <div className={styles.genTracks}>
-        {plan.map((t, i) => {
-          const isDone = doneIdxs.has(i);
-          const isActive = i === activeIdx && !isDone;
-          const fill = isDone ? 1 : isActive ? stepProgress : 0;
-          const label = isDone ? "done" : isActive ? "running" : "queued";
-          return (
-            <div
-              key={t.id}
-              className={`${styles.genTrackRow} ${
-                isDone ? styles.genTrackRowDone : isActive ? styles.genTrackRowActive : ""
-              }`}
-            >
-              <div className={styles.genIdx}>{String(i + 1).padStart(2, "0")}</div>
-              <div>
-                <div className={styles.genName}>{t.name}</div>
-                <div className={styles.genTrackMeta}>
-                  {t.type} · {t.mood} · {t.length}s
-                </div>
+        {plan.map((t, i) => (
+          <div key={t.id} className={styles.genTrackRow}>
+            <div className={styles.genIdx}>{String(i + 1).padStart(2, "0")}</div>
+            <div>
+              <div className={styles.genName}>{t.name}</div>
+              <div className={styles.genTrackMeta}>
+                {t.type} · {t.mood} · {t.length}s
               </div>
-              <div className={styles.genMiniBar}>
-                <div className={styles.genMiniFill} style={{ width: `${(fill * 100).toFixed(0)}%` }} />
-              </div>
-              <div className={styles.genTime}>{label}</div>
             </div>
-          );
-        })}
+            <div className={styles.genMiniBar}>
+              <div className={styles.genMiniFill} style={{ width: "0%" }} />
+            </div>
+            <div className={styles.genTime}>queued</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ============================================================================
+// error
+// ============================================================================
+function ErrorView({
+  error, onRetry, onBack,
+}: {
+  error: string;
+  onRetry: () => void;
+  onBack: () => void;
+}) {
+  return (
+    <div className={`${styles.genCard} ${styles.fadeIn}`}>
+      <div className={styles.genHead}>
+        <div className={styles.genTitle}>generate failed</div>
+      </div>
+      <div className={styles.genPrompt}>{error}</div>
+      <div className={styles.editorFoot} style={{ marginTop: 12, display: "flex", gap: 8 }}>
+        <button className={`${styles.btn} ${styles.btnGhost} ${styles.btnSm}`} type="button" onClick={onBack}>
+          ← back to plan
+        </button>
+        <button className={`${styles.btn} ${styles.btnPrimary} ${styles.btnSm}`} type="button" onClick={onRetry}>
+          retry
+        </button>
       </div>
     </div>
   );
@@ -871,66 +967,32 @@ function GeneratingView({ plan, onDone }: { plan: Track[]; onDone: () => void })
 // results
 // ============================================================================
 function Results({
-  plan, estZipMb, prompt, onEdit, onNew, stdb, stdbPlanId,
+  plan, estZipMb, audioByTrack, zipBlob, onEdit, onNew,
 }: {
   plan: Track[];
   estZipMb: string;
-  prompt: string;
+  // Per-track Blob URL + filename, extracted client-side from the zip.
+  // Null while the unpack is in flight or if the pipeline failed.
+  audioByTrack: Map<string, TrackAudio> | null;
+  // The whole zip — used to power the "download .zip" button without a
+  // second network round trip.
+  zipBlob: Blob | null;
   onEdit: () => void;
   onNew: () => void;
-  // Phase 2 F4 — present only when USE_STDB is on; otherwise null and
-  // onDownload falls through to the legacy HTTP/stub path.
-  stdb: DeckStdb | null;
-  stdbPlanId: bigint | null;
 }) {
   const [zipLabel, setZipLabel] = useState("download .zip");
   const [shareLabel, setShareLabel] = useState("copy share link");
   const totalSec = plan.reduce((s, t) => s + t.length, 0);
 
-  const onDownload = useCallback(async () => {
-    setZipLabel("building zip…");
-    try {
-      // ────────── F4: STDB path ──────────
-      if (USE_STDB && stdb) {
-        // Strip client-side ids before sending to the reducer.
-        const tracks: StdbTrack[] = plan.map(({ id, ...rest }) => {
-          void id;
-          return rest;
-        });
-        const res = await submitGenerate(
-          stdb.conn,
-          stdb.identityHex,
-          stdbPlanId,
-          tracks,
-        );
-        if (res.kind === "done") {
-          await downloadZipFromUrl(res.zipUrl, "deck.zip");
-          setZipLabel("downloaded ✓");
-        } else {
-          console.warn("[deck] stdb generate failed:", res.error);
-          setZipLabel("download failed — retry");
-        }
-        return;
-      }
-      // ────────── legacy: HTTP path ──────────
-      // If API_URL is unset we fall through to the offline stub which is a
-      // text file pretending to be a zip — useful for the UI flow demo but
-      // we should NOT lie about it being a real audio bundle. Surface the
-      // honest state: "demo only — no audio produced".
-      if (!API_URL) {
-        const blob = await stubZipBlob();
-        triggerDownload(blob, "deck-demo-only.txt");
-        setZipLabel("demo only — no audio (set NEXT_PUBLIC_DECK_API_URL or use STDB mode)");
-        return;
-      }
-      const blob = await fetchGenerate(API_URL, prompt, plan);
-      triggerDownload(blob, "deck.zip");
-      setZipLabel("downloaded ✓");
-    } catch (err) {
-      console.warn("[deck] /generate failed:", err);
-      setZipLabel("download failed — retry");
+  const onDownload = useCallback(() => {
+    if (!zipBlob) {
+      setZipLabel("no zip available");
+      return;
     }
-  }, [plan, prompt, stdb, stdbPlanId]);
+    triggerDownload(zipBlob, "deck.zip");
+    setZipLabel("downloaded ✓");
+    window.setTimeout(() => setZipLabel("download .zip"), 1400);
+  }, [zipBlob]);
 
   return (
     <div className={styles.fadeIn}>
@@ -952,6 +1014,7 @@ function Results({
             className={`${styles.btn} ${styles.btnPrimary} ${styles.btnSm}`}
             type="button"
             onClick={onDownload}
+            disabled={!zipBlob}
           >
             <span>{zipLabel}</span>
             <svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true">
@@ -969,7 +1032,12 @@ function Results({
       </div>
       <div className={styles.tracks}>
         {plan.map((t, i) => (
-          <ResultTrack key={t.id} t={t} i={i} />
+          <ResultTrack
+            key={t.id}
+            t={t}
+            i={i}
+            audio={audioByTrack?.get(t.id) ?? null}
+          />
         ))}
       </div>
       <div className={styles.planFoot}>
@@ -1002,115 +1070,143 @@ function Results({
   );
 }
 
-function ResultTrack({ t, i }: { t: Track; i: number }) {
+function ResultTrack({ t, i, audio }: { t: Track; i: number; audio: TrackAudio | null }) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
   const [playing, setPlaying] = useState(false);
-  const [pos, setPos] = useState(0); // 0..1
-  const [elapsed, setElapsed] = useState(0); // seconds
-  const seed = useMemo(() => hash(t.name + t.desc + t.mood + i), [t.name, t.desc, t.mood, i]);
+  const [elapsed, setElapsed] = useState(0);
+  const [duration, setDuration] = useState<number>(t.length);
+  const [peaks, setPeaks] = useState<Float32Array | null>(null);
+
   const colorMap = ["ink", "sasta", "rust"] as const;
   const colorKey = colorMap[i % 3];
   const cssColors = { ink: "#1a1917", sasta: "#c05621", rust: "#8a3d14" };
   const color = cssColors[colorKey];
-  const kind = pickKind(t);
 
-  // playback state — kept in refs so re-renders don't rebuild voices
-  const ctxRef = useRef<AudioContext | null>(null);
-  const voiceRef = useRef<{ stop: () => void } | null>(null);
-  const startedAtRef = useRef(0);
-  const offsetRef = useRef(0);
-  const rafRef = useRef<number | null>(null);
-
-  const draw = useCallback(
-    (progress: number) => {
-      const c = canvasRef.current;
-      if (!c) return;
-      drawWaveform(c, seed, color, progress);
-    },
-    [seed, color],
-  );
-
+  // Decode the WAV once to extract a real waveform (peak-per-bar). Without
+  // this the canvas would render an empty bar field while the <audio>
+  // element handles playback. The decode also gives us the precise
+  // duration, which can differ from the planned length when the renderer
+  // produces a slightly different envelope.
   useEffect(() => {
-    draw(0);
-  }, [draw]);
-
-  const stop = useCallback(() => {
-    voiceRef.current?.stop();
-    voiceRef.current = null;
-    setPlaying(false);
-    setPos(0);
-    setElapsed(0);
-    if (rafRef.current) cancelAnimationFrame(rafRef.current);
-    rafRef.current = null;
-    draw(0);
-  }, [draw]);
-
-  const play = useCallback(
-    (from = 0) => {
-      const Ctor = window.AudioContext || (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
-      if (!Ctor) return;
-      if (!ctxRef.current) ctxRef.current = new Ctor();
-      const ctx = ctxRef.current;
-      if (ctx.state === "suspended") void ctx.resume();
-      voiceRef.current?.stop();
-      const v = synthVoice(ctx, kind, t.length, from);
-      voiceRef.current = v;
-      startedAtRef.current = ctx.currentTime;
-      offsetRef.current = from;
-      setPlaying(true);
-
-      const tick = () => {
-        const c = ctxRef.current;
-        if (!c) return;
-        const e = c.currentTime - startedAtRef.current + offsetRef.current;
-        const p = Math.min(e / t.length, 1);
-        setElapsed(e);
-        setPos(p);
-        draw(p);
-        if (e >= t.length) {
-          stop();
-          return;
-        }
-        rafRef.current = requestAnimationFrame(tick);
-      };
-      rafRef.current = requestAnimationFrame(tick);
-    },
-    [kind, t.length, draw, stop],
-  );
-
-  useEffect(() => {
+    if (!audio) return;
+    let cancelled = false;
+    const Ctor =
+      window.AudioContext ||
+      (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+    if (!Ctor) return;
+    const ctx = new Ctor();
+    fetch(audio.url)
+      .then((r) => r.arrayBuffer())
+      .then((buf) => ctx.decodeAudioData(buf))
+      .then((decoded) => {
+        if (cancelled) return;
+        setDuration(decoded.duration);
+        setPeaks(computePeaks(decoded, 200));
+      })
+      .catch((err) => {
+        console.warn("[deck] decode failed for", audio.filename, err);
+      })
+      .finally(() => {
+        void ctx.close();
+      });
     return () => {
-      voiceRef.current?.stop();
-      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+      cancelled = true;
     };
-  }, []);
+  }, [audio]);
+
+  // Bind <audio> events for elapsed time + auto-stop at end.
+  useEffect(() => {
+    const el = audioRef.current;
+    if (!el) return;
+    const onTime = () => setElapsed(el.currentTime);
+    const onEnded = () => {
+      setPlaying(false);
+      setElapsed(0);
+      el.currentTime = 0;
+    };
+    const onLoaded = () => {
+      if (!Number.isNaN(el.duration) && el.duration > 0) {
+        setDuration(el.duration);
+      }
+    };
+    el.addEventListener("timeupdate", onTime);
+    el.addEventListener("ended", onEnded);
+    el.addEventListener("loadedmetadata", onLoaded);
+    return () => {
+      el.removeEventListener("timeupdate", onTime);
+      el.removeEventListener("ended", onEnded);
+      el.removeEventListener("loadedmetadata", onLoaded);
+    };
+  }, [audio]);
+
+  // Render the waveform canvas whenever peaks or playback position changes.
+  useEffect(() => {
+    const c = canvasRef.current;
+    if (!c) return;
+    drawWaveform(c, peaks, color, duration > 0 ? elapsed / duration : 0);
+  }, [peaks, color, elapsed, duration]);
+
+  const togglePlay = useCallback(() => {
+    const el = audioRef.current;
+    if (!el) return;
+    if (playing) {
+      el.pause();
+      setPlaying(false);
+    } else {
+      void el.play().catch((err) => {
+        console.warn("[deck] play failed:", err);
+        setPlaying(false);
+      });
+      setPlaying(true);
+    }
+  }, [playing]);
 
   const onCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    const el = audioRef.current;
+    if (!el || duration <= 0) return;
     const rect = e.currentTarget.getBoundingClientRect();
     const x = (e.clientX - rect.left) / rect.width;
-    const target = Math.max(0, Math.min(t.length, x * t.length));
-    stop();
-    play(target);
+    el.currentTime = Math.max(0, Math.min(duration, x * duration));
+    if (!playing) {
+      void el.play().catch(() => {/* user gesture required on some browsers */});
+      setPlaying(true);
+    }
+  };
+
+  const onDownloadOne = () => {
+    if (!audio) return;
+    triggerDownload(audio.blob, audio.filename);
   };
 
   const slug = slugify(t.name);
   const fmt = (s: number) => {
-    const clamped = Math.max(0, Math.min(t.length, s));
+    const clamped = Math.max(0, Math.min(duration, s));
     const m = Math.floor(clamped / 60);
     const sec = Math.floor(clamped % 60);
     return `${m}:${String(sec).padStart(2, "0")}`;
   };
+  const totalLabel = (() => {
+    const d = Math.max(1, Math.round(duration));
+    const m = Math.floor(d / 60);
+    const sec = d % 60;
+    return `${m}:${String(sec).padStart(2, "0")}`;
+  })();
 
-  // suppress unused warning — `pos` powers the rerender that drives `draw`
-  void pos;
+  const playable = !!audio;
+  const filename = audio?.filename ?? `${slug}.wav`;
 
   return (
     <div className={`${styles.track} ${playing ? styles.trackPlaying : ""}`}>
+      {audio && (
+        <audio ref={audioRef} src={audio.url} preload="metadata" />
+      )}
       <div className={styles.trackRow}>
         <button
           className={styles.playBtn}
           type="button"
-          onClick={() => (playing ? stop() : play(0))}
+          onClick={togglePlay}
+          disabled={!playable}
           aria-label={playing ? `Pause ${t.name}` : `Play ${t.name}`}
         >
           {playing ? (
@@ -1126,26 +1222,21 @@ function ResultTrack({ t, i }: { t: Track; i: number }) {
         </button>
         <div className={styles.trackInfo}>
           <div className={styles.trackName}>
-            {t.name} <span className={styles.filename}>{slug}.wav</span>
+            {t.name} <span className={styles.filename}>{filename}</span>
           </div>
           <div className={styles.trackDesc}>
             {t.type} · {t.mood} · {t.tempo} · {t.length}s
           </div>
         </div>
         <div className={styles.trackActions}>
-          <button className={styles.iconBtn} type="button" title="regenerate" aria-label="Regenerate">
-            <svg viewBox="0 0 16 16">
-              <path
-                d="M3 8 a5 5 0 0 1 9 -3 M12 3 L12 6 L9 6 M13 8 a5 5 0 0 1 -9 3 M4 13 L4 10 L7 10"
-                stroke="currentColor"
-                strokeWidth="1.4"
-                fill="none"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-          </button>
-          <button className={styles.iconBtn} type="button" title="download wav" aria-label="Download">
+          <button
+            className={styles.iconBtn}
+            type="button"
+            title="download wav"
+            aria-label="Download wav"
+            onClick={onDownloadOne}
+            disabled={!playable}
+          >
             <svg viewBox="0 0 16 16">
               <path
                 d="M8 2 L8 11 M4 7 L8 11 L12 7 M3 13 L13 13"
@@ -1162,7 +1253,7 @@ function ResultTrack({ t, i }: { t: Track; i: number }) {
       <div className={styles.waveRow}>
         <canvas ref={canvasRef} className={styles.waveCanvas} width={800} height={48} onClick={onCanvasClick} />
         <div className={styles.waveTime}>
-          {fmt(elapsed)} / 0:{String(t.length).padStart(2, "0")}
+          {fmt(elapsed)} / {totalLabel}
         </div>
       </div>
     </div>
@@ -1297,18 +1388,50 @@ function draftPlan(p: string, n: number): Track[] {
   return out;
 }
 
-function pickKind(t: Track): TrackKind {
-  if (t.type === "one-shot" || t.length <= 4 || /notify|notification|sting|alert/i.test(t.name + t.type)) {
-    return "ping";
+// ============================================================================
+// helpers — real PCM waveform + zip unpack
+// ============================================================================
+
+// Reduce a decoded AudioBuffer to ``bars`` peak amplitudes — one number in
+// [0, 1] per output bar, taken as the max abs sample over the slice.
+// Mixes channels by averaging so a stereo source still renders as one bar
+// strip.
+function computePeaks(buffer: AudioBuffer, bars: number): Float32Array {
+  const out = new Float32Array(bars);
+  const samples = buffer.length;
+  if (samples === 0) return out;
+  const channels = buffer.numberOfChannels;
+  const data: Float32Array[] = [];
+  for (let c = 0; c < channels; c++) data.push(buffer.getChannelData(c));
+  const step = samples / bars;
+  for (let i = 0; i < bars; i++) {
+    const start = Math.floor(i * step);
+    const end = Math.min(samples, Math.floor((i + 1) * step));
+    let peak = 0;
+    for (let s = start; s < end; s++) {
+      let v = 0;
+      for (let c = 0; c < channels; c++) v += data[c][s];
+      v = Math.abs(v / channels);
+      if (v > peak) peak = v;
+    }
+    out[i] = peak;
   }
-  if (t.type === "loop" || /loop|ui|button/i.test(t.name + t.type)) return "loop";
-  return "pad";
+  // Normalize to the clip's loudest peak so quiet tracks still render
+  // visible bars.
+  let max = 0;
+  for (let i = 0; i < bars; i++) if (out[i] > max) max = out[i];
+  if (max > 0) {
+    for (let i = 0; i < bars; i++) out[i] = out[i] / max;
+  }
+  return out;
 }
 
-// ============================================================================
-// helpers — waveform + audio
-// ============================================================================
-function drawWaveform(canvas: HTMLCanvasElement, seed: number, color: string, progress: number) {
+function drawWaveform(
+  canvas: HTMLCanvasElement,
+  peaks: Float32Array | null,
+  color: string,
+  progress: number,
+) {
   const dpr = window.devicePixelRatio || 1;
   const cssW = canvas.clientWidth || 800;
   const cssH = 48;
@@ -1323,13 +1446,10 @@ function drawWaveform(canvas: HTMLCanvasElement, seed: number, color: string, pr
   const barW = 2;
   const gap = 2;
   const total = Math.floor(cssW / (barW + gap));
-  const rng = mulberry32(seed);
   const playedTo = Math.floor(progress * total);
   for (let i = 0; i < total; i++) {
-    const r = rng();
-    const t = i / total;
-    const env = 0.35 + 0.65 * Math.sin(Math.PI * t);
-    const h = Math.max(2, (r * 0.85 + 0.15) * env * (cssH - 4));
+    const peak = peaks ? peaks[Math.floor((i / total) * peaks.length)] ?? 0 : 0;
+    const h = Math.max(2, peak * (cssH - 4));
     const x = i * (barW + gap);
     const y = (cssH - h) / 2;
     ctx.fillStyle = i <= playedTo ? color : "rgba(168,161,150,0.55)";
@@ -1337,111 +1457,41 @@ function drawWaveform(canvas: HTMLCanvasElement, seed: number, color: string, pr
   }
 }
 
-function mulberry32(a: number) {
-  let s = a;
-  return function () {
-    s |= 0;
-    s = (s + 0x6d2b79f5) | 0;
-    let t = s;
-    t = Math.imul(t ^ (t >>> 15), t | 1);
-    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
-
-function synthVoice(ctx: AudioContext, kind: TrackKind, length: number, from = 0) {
-  const gain = ctx.createGain();
-  gain.gain.value = 0;
-  gain.connect(ctx.destination);
-  let stopFn: () => void;
-
-  if (kind === "pad") {
-    const m = ctx.createGain();
-    m.gain.value = 0.15;
-    const lp = ctx.createBiquadFilter();
-    lp.type = "lowpass";
-    lp.frequency.value = 900;
-    [220, 277.18, 329.63].forEach((f, i) => {
-      const o = ctx.createOscillator();
-      o.type = i === 1 ? "triangle" : "sine";
-      o.frequency.value = f * (1 + (i - 1) * 0.005);
-      const lfo = ctx.createOscillator();
-      lfo.frequency.value = 0.12 + i * 0.04;
-      const lg = ctx.createGain();
-      lg.gain.value = 1.5;
-      lfo.connect(lg).connect(o.detune);
-      o.connect(m);
-      o.start();
-      lfo.start();
-    });
-    m.connect(lp).connect(gain);
-    gain.gain.linearRampToValueAtTime(0.25, ctx.currentTime + 0.6);
-    stopFn = () => {
-      gain.gain.cancelScheduledValues(ctx.currentTime);
-      gain.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.05);
-    };
-  } else if (kind === "loop") {
-    const m = ctx.createGain();
-    m.gain.value = 0.18;
-    m.connect(gain);
-    const notes = [392, 466, 523, 587];
-    const beat = 0.5;
-    const endT = ctx.currentTime + (length - from);
-    let beatI = Math.floor(from / beat);
-    let timer: number;
-    const plink = () => {
-      const now = ctx.currentTime;
-      if (now >= endT) return;
-      const f = notes[beatI % notes.length] * (beatI % 8 === 7 ? 0.5 : 1);
-      const o = ctx.createOscillator();
-      o.type = "triangle";
-      o.frequency.value = f;
-      const g = ctx.createGain();
-      g.gain.value = 0;
-      o.connect(g).connect(m);
-      g.gain.linearRampToValueAtTime(0.5, now + 0.01);
-      g.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
-      o.start(now);
-      o.stop(now + 0.45);
-      beatI++;
-      timer = window.setTimeout(plink, beat * 1000);
-    };
-    timer = window.setTimeout(plink, 0);
-    gain.gain.linearRampToValueAtTime(1, ctx.currentTime + 0.1);
-    stopFn = () => {
-      window.clearTimeout(timer);
-      gain.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.05);
-    };
-  } else {
-    const o1 = ctx.createOscillator();
-    o1.type = "sine";
-    o1.frequency.value = 880;
-    const o2 = ctx.createOscillator();
-    o2.type = "sine";
-    o2.frequency.value = 1318.5;
-    const g1 = ctx.createGain();
-    const g2 = ctx.createGain();
-    g1.gain.value = 0;
-    g2.gain.value = 0;
-    o1.connect(g1).connect(gain);
-    o2.connect(g2).connect(gain);
-    const t0 = ctx.currentTime;
-    g1.gain.linearRampToValueAtTime(0.3, t0 + 0.02);
-    g1.gain.exponentialRampToValueAtTime(0.001, t0 + 0.5);
-    g2.gain.linearRampToValueAtTime(0.25, t0 + 0.18);
-    g2.gain.exponentialRampToValueAtTime(0.001, t0 + 1.0);
-    o1.start(t0);
-    o2.start(t0 + 0.15);
-    o1.stop(t0 + 0.6);
-    o2.stop(t0 + 1.1);
-    gain.gain.value = 1;
-    stopFn = () => {
-      try { o1.stop(); } catch { /* already stopped */ }
-      try { o2.stop(); } catch { /* already stopped */ }
-    };
+// Unzip the bundle and pair each WAV (sorted by leading numeric prefix —
+// the worker writes them as `01-name.wav`, `02-name.wav`…) with the plan
+// track at the same index. Returns a Map keyed by track id so ResultTrack
+// can look up its blob/url.
+async function unpackZipToTracks(
+  zip: Blob,
+  plan: Track[],
+): Promise<Map<string, TrackAudio>> {
+  const buf = new Uint8Array(await zip.arrayBuffer());
+  let entries: Record<string, Uint8Array>;
+  try {
+    entries = unzipSync(buf);
+  } catch (err) {
+    throw new Error(
+      `not a valid zip — backend may be in offline/demo mode: ${String(err)}`,
+    );
   }
-
-  return { stop: stopFn };
+  const wavs = Object.entries(entries)
+    .filter(([name]) => name.toLowerCase().endsWith(".wav"))
+    .sort(([a], [b]) => a.localeCompare(b, "en", { numeric: true }));
+  if (wavs.length === 0) {
+    throw new Error("zip contained no WAV files");
+  }
+  const map = new Map<string, TrackAudio>();
+  const limit = Math.min(plan.length, wavs.length);
+  for (let i = 0; i < limit; i++) {
+    const [filename, bytes] = wavs[i];
+    // Copy into a fresh ArrayBuffer so the Blob owns its memory and the
+    // subsequent ArrayBuffer slice from `bytes` doesn't get GC'd
+    // unexpectedly.
+    const blob = new Blob([new Uint8Array(bytes)], { type: "audio/wav" });
+    const url = URL.createObjectURL(blob);
+    map.set(plan[i].id, { url, filename, blob });
+  }
+  return map;
 }
 
 // ============================================================================
@@ -1493,20 +1543,6 @@ async function fetchGenerate(apiUrl: string, description: string, plan: Track[])
   return await r.blob();
 }
 
-async function stubZipBlob(): Promise<Blob> {
-  // Offline mode — empty placeholder so the download UI flow still completes
-  // for demos. The real round-trip is exercised when NEXT_PUBLIC_DECK_API_URL
-  // is set against a running deck service.
-  return new Blob(
-    [
-      "deck — sastaspace audio designer\n" +
-        "================================\n\n" +
-        "offline mode — set NEXT_PUBLIC_DECK_API_URL to fetch real WAVs.\n",
-    ],
-    { type: "text/plain" },
-  );
-}
-
 function triggerDownload(blob: Blob, filename: string) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
@@ -1517,15 +1553,6 @@ function triggerDownload(blob: Blob, filename: string) {
   a.remove();
   // Revoke after a tick so the browser has time to start the download stream.
   window.setTimeout(() => URL.revokeObjectURL(url), 1000);
-}
-
-function hash(s: string) {
-  let h = 2166136261;
-  for (let i = 0; i < s.length; i++) {
-    h ^= s.charCodeAt(i);
-    h = Math.imul(h, 16777619);
-  }
-  return h >>> 0;
 }
 
 function slugify(s: string) {
