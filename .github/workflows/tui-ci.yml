@@ -6,6 +6,7 @@ on:
       - "crates/**"
       - "modules/**"
       - "tests/e2e/**"
+      - "tests/e2e-rust/**"
       - "Cargo.toml"
       - "rust-toolchain.toml"
       - ".github/workflows/tui-ci.yml"
@@ -14,6 +15,7 @@ on:
       - "crates/**"
       - "modules/**"
       - "tests/e2e/**"
+      - "tests/e2e-rust/**"
       - "Cargo.toml"
   workflow_dispatch:
 
@@ -36,5 +38,26 @@ jobs:
         run: cargo clippy --workspace --exclude sastaspace-module --exclude typewars --all-targets -- -D warnings
       - name: test
         run: cargo test --workspace --exclude sastaspace-module --exclude typewars --exclude e2e
+        env:
+          RUST_BACKTRACE: 1
+
+  e2e:
+    runs-on: ubuntu-latest
+    needs: check
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@1.85
+      - uses: Swatinem/rust-cache@v2
+      - name: install spacetime CLI
+        run: |
+          curl -sSf https://install.spacetimedb.com -o /tmp/install.sh
+          bash /tmp/install.sh -- --yes
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+      - name: install wasm target
+        run: rustup target add wasm32-unknown-unknown
+      - name: build shell binary
+        run: cargo build -p shell
+      - name: run e2e
+        run: SPACETIME_PORT=3199 cargo test -p e2e
         env:
           RUST_BACKTRACE: 1

@@ -10,6 +10,7 @@ members = [
     "crates/auth",
     "crates/app-portfolio",
     "crates/shell",
+    "tests/e2e-rust",
 ]
 
 [workspace.package]
