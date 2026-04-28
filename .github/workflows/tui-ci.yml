@@ -30,6 +30,8 @@ jobs:
         with:
           components: rustfmt, clippy
       - uses: Swatinem/rust-cache@v2
+      - name: install audio system deps (rodio → alsa-sys)
+        run: sudo apt-get update && sudo apt-get install -y libasound2-dev
       - name: fmt
         run: cargo fmt --all -- --check
       - name: clippy
@@ -46,6 +48,8 @@ jobs:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@1.93
       - uses: Swatinem/rust-cache@v2
+      - name: install audio system deps (rodio → alsa-sys)
+        run: sudo apt-get update && sudo apt-get install -y libasound2-dev
       - name: install spacetime CLI
         run: |
           curl -sSf https://install.spacetimedb.com -o /tmp/install.sh
