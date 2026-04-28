@@ -50,7 +50,12 @@ pnpm-debug.log*
 *.tsbuildinfo
 *.pyc
 graphify-out/
-.claude/
+
+# Claude Code local state stays out, but project-owned skills + scripts ship.
+.claude/*
+!.claude/skills/
+!.claude/skills/**
+!.claude/worktree_init.sh
 
 # Rust (additional)
 **/*.rs.bk
