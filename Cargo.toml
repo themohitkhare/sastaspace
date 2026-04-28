@@ -3,8 +3,6 @@ resolver = "2"
 # Add new crates to `members` as they are scaffolded — keeping non-existent
 # paths here makes `cargo metadata` fail across the whole workspace.
 members = [
-    "modules/sastaspace",
-    "modules/typewars",
     "crates/core",
     "crates/stdb-client",
     "crates/auth",
@@ -15,6 +13,14 @@ members = [
     "crates/app-admin",
     "crates/shell",
     "tests/e2e",
+]
+# Wasm-only SpacetimeDB modules — they have their own Cargo.toml and build
+# pipeline (modules/sastaspace, modules/typewars). Excluded from the workspace
+# so cargo-dist's native release builds don't try to link spacetimedb FFI
+# stubs that only exist at the wasm32-unknown-unknown target.
+exclude = [
+    "modules/sastaspace",
+    "modules/typewars",
 ]
 
 [workspace.package]
@@ -73,13 +79,6 @@ opt-level = 3
 lto = "thin"
 codegen-units = 1
 strip = true
-
-# Wasm modules optimize for size, not speed.
-[profile.release.package.sastaspace-module]
-opt-level = "z"
-
-[profile.release.package.typewars-module]
-opt-level = "z"
 
 # The profile that 'cargo dist' will build with
 [profile.dist]
