@@ -26,7 +26,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@1.88
+      - uses: dtolnay/rust-toolchain@1.93
         with:
           components: rustfmt, clippy
       - uses: Swatinem/rust-cache@v2
@@ -44,7 +44,7 @@ jobs:
     needs: check
     steps:
       - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@1.88
+      - uses: dtolnay/rust-toolchain@1.93
       - uses: Swatinem/rust-cache@v2
       - name: install spacetime CLI
         run: |

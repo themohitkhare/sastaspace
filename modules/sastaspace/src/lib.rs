@@ -3858,7 +3858,7 @@ mod admin_collector_tests {
             } else {
                 0
             };
-            out.push(CHARS[(b0 >> 2)] as char);
+            out.push(CHARS[b0 >> 2] as char);
             out.push(CHARS[((b0 & 3) << 4) | (b1 >> 4)] as char);
             if chunk.len() > 1 {
                 out.push(CHARS[((b1 & 0xf) << 2) | (b2 >> 6)] as char);
