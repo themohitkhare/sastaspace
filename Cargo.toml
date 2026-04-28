@@ -48,7 +48,7 @@ expectrl = "0.7"
 # Produces binaries for macOS (universal), Linux (x86_64 + aarch64), Windows.
 # Publishes to GitHub Releases + a Homebrew tap.
 [workspace.metadata.dist]
-cargo-dist-version = "0.22.0"
+cargo-dist-version = "0.31.0"
 ci = ["github"]
 installers = ["shell", "homebrew"]
 tap = "themohitkhare/homebrew-sastaspace"
