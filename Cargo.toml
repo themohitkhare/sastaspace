@@ -1,12 +1,8 @@
 [workspace]
 resolver = "2"
+# Add new crates to `members` as they are scaffolded — keeping non-existent
+# paths here makes `cargo metadata` fail across the whole workspace.
 members = [
-    "crates/core",
-    "crates/stdb-client",
-    "crates/auth",
-    "crates/app-portfolio",
-    "crates/shell",
-    "tests/e2e",
     "modules/sastaspace",
     "modules/typewars",
 ]
