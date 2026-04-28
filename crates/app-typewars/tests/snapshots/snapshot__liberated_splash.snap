@@ -1,0 +1,33 @@
+---
+source: crates/app-typewars/tests/snapshot.rs
+expression: s
+---
+                                                  ✦ REGION LIBERATED ✦                                                  
+                                                                                                                        
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+┌ battle stats ────────────────────────────────────────────┐┌ legion contribution ─────────────────────────────────────┐
+│Arkanis Prime                                             ││1  COD The Codex     2000                                 │
+│                                                          ││2  ASH Ashborn       1000                                 │
+│controlled by  The Codex                                  ││3  WAR Wardens       500                                  │
+│region tier    tier 1                                     ││4  SRG Surge         300                                  │
+│total damage   4000                                       ││5  SOL Solari        200                                  │
+│                                                          ││                                                          │
+│                                                          ││                                                          │
+│                                                          ││                                                          │
+│                                                          ││                                                          │
+│                                                          ││                                                          │
+│                                                          ││                                                          │
+│                                                          ││                                                          │
+│                                                          ││                                                          │
+│                                                          ││                                                          │
+│                                                          ││                                                          │
+│                                                          ││                                                          │
+│                                                          ││                                                          │
+│                                                          ││                                                          │
+│                                                          ││                                                          │
+│                                                          ││                                                          │
+│                                                          ││                                                          │
+│                                                          ││                                                          │
+└──────────────────────────────────────────────────────────┘└──────────────────────────────────────────────────────────┘
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  [ Enter ] RETURN TO MAP  ·  The Arkanis Prime has been liberated by The Codex. tier 1 regen suppressed.

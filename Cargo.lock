@@ -92,6 +92,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "app-typewars"
+version = "0.1.0"
+dependencies = [
+ "crossterm",
+ "insta",
+ "ratatui",
+ "sastaspace-core",
+ "serde",
+]
+
+[[package]]
 name = "approx"
 version = "0.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2539,6 +2550,7 @@ name = "shell"
 version = "0.1.0"
 dependencies = [
  "app-portfolio",
+ "app-typewars",
  "auth",
  "color-eyre",
  "crossterm",
