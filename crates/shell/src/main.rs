@@ -4,6 +4,7 @@ mod login;
 mod router;
 mod terminal;
 
+use app_notes::PendingAction;
 use auth::{keychain::KeychainStore, magic_link::MagicLinkConfig};
 use color_eyre::eyre::Result;
 use crossterm::event::{Event, EventStream};
@@ -62,6 +63,7 @@ async fn run(term: &mut terminal::Tui, cfg: Config) -> Result<()> {
 
     let mut router = router::Router::new("portfolio");
     router.register(Box::new(app_portfolio::Portfolio::new()));
+    router.register(Box::new(app_notes::Notes::new()));
 
     let store = Arc::new(KeychainStore::new());
     let magic_cfg = MagicLinkConfig {
@@ -114,12 +116,66 @@ async fn run(term: &mut terminal::Tui, cfg: Config) -> Result<()> {
                         p.set_projects(projects);
                     }
                 }
+                let notes = stdb_client::sub_helpers::read_notes(&handle.conn);
+                if let Some(app) = router.app_mut("notes") {
+                    if let Some(n) = app.as_any_mut().downcast_mut::<app_notes::Notes>() {
+                        n.set_notes(notes);
+                    }
+                }
+            }
+        }
+
+        if let Action::Stdb(StdbEvent::Updated("comment")) = &action {
+            if let Some(handle) = stdb.as_ref() {
+                let comments = stdb_client::sub_helpers::read_comments(&handle.conn);
+                if let Some(app) = router.app_mut("notes") {
+                    if let Some(n) = app.as_any_mut().downcast_mut::<app_notes::Notes>() {
+                        n.set_comments(comments);
+                    }
+                }
             }
         }
 
         let result = router.current().handle(action);
         if !router.dispatch(result) {
             break;
+        }
+
+        // Drain pending actions from notes app (reducer calls / login prompt).
+        if let Some(app) = router.app_mut("notes") {
+            if let Some(notes) = app.as_any_mut().downcast_mut::<app_notes::Notes>() {
+                if let Some(pending) = notes.take_pending() {
+                    match pending {
+                        PendingAction::NeedLogin => {
+                            modal = Some(LoginModal::new(magic_cfg.clone(), store.clone()));
+                        }
+                        PendingAction::SaveNote {
+                            slug,
+                            title,
+                            body,
+                            status,
+                            tags,
+                            url,
+                        } => {
+                            if let Some(handle) = stdb.as_ref() {
+                                use stdb_client::bindings::upsert_project_reducer::upsert_project;
+                                let _ = handle
+                                    .conn
+                                    .reducers
+                                    .upsert_project(slug, title, body, status, tags, url);
+                            } else {
+                                notes.on_save_err("offline — not connected to stdb".to_string());
+                            }
+                        }
+                        PendingAction::PostComment { post_slug, body } => {
+                            if let Some(handle) = stdb.as_ref() {
+                                use stdb_client::bindings::submit_user_comment_reducer::submit_user_comment;
+                                let _ = handle.conn.reducers.submit_user_comment(post_slug, body);
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 
