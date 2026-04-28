@@ -14,7 +14,7 @@ members = [
     "crates/app-typewars",
     "crates/app-admin",
     "crates/shell",
-    "tests/e2e-rust",
+    "tests/e2e",
 ]
 
 [workspace.package]

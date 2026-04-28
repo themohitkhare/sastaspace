@@ -6,7 +6,6 @@ on:
       - "crates/**"
       - "modules/**"
       - "tests/e2e/**"
-      - "tests/e2e-rust/**"
       - "Cargo.toml"
       - "rust-toolchain.toml"
       - ".github/workflows/tui-ci.yml"
@@ -15,7 +14,6 @@ on:
       - "crates/**"
       - "modules/**"
       - "tests/e2e/**"
-      - "tests/e2e-rust/**"
       - "Cargo.toml"
   workflow_dispatch:
 
