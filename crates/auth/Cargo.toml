@@ -13,3 +13,6 @@ tokio = { workspace = true }
 thiserror = { workspace = true }
 tracing = { workspace = true }
 sastaspace-core = { package = "core", path = "../core" }
+
+[dev-dependencies]
+wiremock = "0.6"
