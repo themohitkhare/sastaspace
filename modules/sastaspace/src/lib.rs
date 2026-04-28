@@ -559,13 +559,29 @@ pub fn request_magic_link(
         expires_at: expires,
         used_at: None,
     });
-    let magic_link = build_magic_link(&callback_url, &token, &app, prev_identity_hex.as_deref());
+    let (subject, body_html, body_text) = if app == "tui" {
+        let text = render_magic_link_text_for_tui(&token);
+        // For TUI, the HTML body mirrors the text body exactly — no link to
+        // click. Mail clients render this fine; CLIs rarely open HTML.
+        (
+            "Your sastaspace TUI sign-in token".to_string(),
+            text.clone(),
+            text,
+        )
+    } else {
+        let magic_link = build_magic_link(&callback_url, &token, &app, prev_identity_hex.as_deref());
+        (
+            "Your sign-in link to sastaspace".to_string(),
+            render_magic_link_html(&magic_link),
+            render_magic_link_text(&magic_link),
+        )
+    };
     ctx.db.pending_email().insert(PendingEmail {
         id: 0,
         to_email: email.clone(),
-        subject: "Your sign-in link to sastaspace".into(),
-        body_html: render_magic_link_html(&magic_link),
-        body_text: render_magic_link_text(&magic_link),
+        subject,
+        body_html,
+        body_text,
         created_at: now,
         status: "queued".into(),
         provider_msg_id: None,
@@ -677,6 +693,7 @@ const ALLOWED_CALLBACK_PREFIXES: &[&str] = &[
     "https://typewars.sastaspace.com/",
     "https://admin.sastaspace.com/",
     "https://sastaspace.com/",
+    "tui://",
 ];
 
 /// Pure helper: validates the inputs to `request_magic_link`. Pulled out so
@@ -685,7 +702,7 @@ fn validate_magic_link_args(email: &str, app: &str, callback_url: &str) -> Resul
     if !email.contains('@') || email.len() > 200 {
         return Err("invalid email".into());
     }
-    if !matches!(app, "notes" | "typewars" | "admin") {
+    if !matches!(app, "notes" | "typewars" | "admin" | "tui") {
         return Err("unknown app".into());
     }
     if callback_url.len() > 400 {
@@ -728,6 +745,22 @@ fn render_magic_link_html(link: &str) -> String {
 
 fn render_magic_link_text(link: &str) -> String {
     format!("Sign in to sastaspace.\n\nClick this link (good for 15 minutes, works once):\n\n  {link}\n\nIf you didn't ask for this, ignore.\n\n—\nsastaspace.com\n")
+}
+
+/// TUI variant: the email body shows the raw 32-char token in a fenced block
+/// rather than a clickable URL. The TUI prompts the user to paste the token
+/// back into a text field. Pulled out so it can be unit-tested on the host
+/// without a `ReducerContext`.
+fn render_magic_link_text_for_tui(token: &str) -> String {
+    format!(
+        "Hi,\n\n\
+         You requested a sign-in to sastaspace from the terminal app.\n\n\
+         Paste this token into the TUI when prompted:\n\n\
+         \t{token}\n\n\
+         The token expires in 15 minutes. If you didn't request this, ignore\n\
+         this email — no one can use it without your terminal session.\n\n\
+         — sastaspace\n"
+    )
 }
 
 // --- worker boot health check (Phase 3 prep, audit finding N13) ---
@@ -2703,6 +2736,27 @@ mod auth_mailer_tests {
     }
 
     #[test]
+    fn validate_magic_link_args_accepts_tui_app() {
+        let r = validate_magic_link_args("u@example.com", "tui", "tui://paste-token");
+        assert!(r.is_ok(), "tui app + tui:// callback should validate, got: {r:?}");
+    }
+
+    #[test]
+    fn validate_magic_link_args_rejects_tui_app_with_https_callback() {
+        // tui app with an https callback is still allowed (defensive — easier
+        // to support a TUI that re-uses an existing https link).
+        let r = validate_magic_link_args("u@example.com", "tui", "https://notes.sastaspace.com/");
+        assert!(r.is_ok());
+    }
+
+    #[test]
+    fn render_magic_link_text_for_tui_shows_raw_token() {
+        let text = render_magic_link_text_for_tui("abc123XYZ");
+        assert!(text.contains("abc123XYZ"), "tui text body must show raw token, got: {text}");
+        assert!(!text.contains("http"), "tui text body must not contain a URL, got: {text}");
+    }
+
+    #[test]
     fn validate_magic_link_args_rejects_non_https_callback() {
         assert!(validate_magic_link_args(
             "user@example.com",
@@ -2788,7 +2842,7 @@ mod auth_mailer_tests {
         assert!(ALLOWED_CALLBACK_PREFIXES.contains(&"https://typewars.sastaspace.com/"));
         assert!(ALLOWED_CALLBACK_PREFIXES.contains(&"https://admin.sastaspace.com/"));
         assert!(ALLOWED_CALLBACK_PREFIXES.contains(&"https://sastaspace.com/"));
-        assert_eq!(ALLOWED_CALLBACK_PREFIXES.len(), 4);
+        assert_eq!(ALLOWED_CALLBACK_PREFIXES.len(), 5);
     }
 
     #[test]
