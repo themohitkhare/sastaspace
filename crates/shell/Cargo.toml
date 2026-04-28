@@ -13,6 +13,8 @@ sastaspace-core = { path = "../core" }
 stdb-client = { path = "../stdb-client" }
 auth = { path = "../auth" }
 app-portfolio = { path = "../app-portfolio" }
+app-deck = { path = "../app-deck" }
+serde_json = { workspace = true }
 ratatui = { workspace = true }
 crossterm = { workspace = true }
 tokio = { workspace = true }

@@ -19,7 +19,10 @@ pub use connection::{StdbConfig, StdbError, StdbHandle, StdbStatus};
 /// Kept as a thin module here so app crates don't need to know about
 /// `spacetimedb-sdk` directly.
 pub mod sub_helpers {
-    use crate::bindings::{self, project_table::ProjectTableAccess};
+    use crate::bindings::{
+        self, generate_job_table::GenerateJobTableAccess,
+        plan_request_table::PlanRequestTableAccess, project_table::ProjectTableAccess,
+    };
     use spacetimedb_sdk::Table;
 
     /// Snapshot the `project` table into `app_portfolio::ProjectRow`s.
@@ -33,6 +36,50 @@ pub mod sub_helpers {
                 title: p.title.clone(),
                 blurb: p.blurb.clone(),
                 status: p.status.clone(),
+            })
+            .collect()
+    }
+
+    /// A minimal view of a `plan_request` row passed to the deck app.
+    pub struct PlanRequestView {
+        pub id: u64,
+        pub status: String,
+        pub tracks_json: Option<String>,
+        pub error: Option<String>,
+    }
+
+    /// Snapshot the `plan_request` table (all rows visible to this identity).
+    pub fn read_plan_requests(conn: &bindings::DbConnection) -> Vec<PlanRequestView> {
+        conn.db
+            .plan_request()
+            .iter()
+            .map(|r| PlanRequestView {
+                id: r.id,
+                status: r.status.clone(),
+                tracks_json: r.tracks_json.clone(),
+                error: r.error.clone(),
+            })
+            .collect()
+    }
+
+    /// A minimal view of a `generate_job` row passed to the deck app.
+    pub struct GenerateJobView {
+        pub id: u64,
+        pub status: String,
+        pub zip_url: Option<String>,
+        pub error: Option<String>,
+    }
+
+    /// Snapshot the `generate_job` table (all rows visible to this identity).
+    pub fn read_generate_jobs(conn: &bindings::DbConnection) -> Vec<GenerateJobView> {
+        conn.db
+            .generate_job()
+            .iter()
+            .map(|j| GenerateJobView {
+                id: j.id,
+                status: j.status.clone(),
+                zip_url: j.zip_url.clone(),
+                error: j.error.clone(),
             })
             .collect()
     }

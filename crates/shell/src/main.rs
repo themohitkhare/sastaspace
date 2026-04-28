@@ -4,6 +4,7 @@ mod login;
 mod router;
 mod terminal;
 
+use app_deck::DeckApp;
 use auth::{keychain::KeychainStore, magic_link::MagicLinkConfig};
 use color_eyre::eyre::Result;
 use crossterm::event::{Event, EventStream};
@@ -63,6 +64,11 @@ async fn run(term: &mut terminal::Tui, cfg: Config) -> Result<()> {
     let mut router = router::Router::new("portfolio");
     router.register(Box::new(app_portfolio::Portfolio::new()));
 
+    // Register deck app and wire the action sender for download tasks.
+    let mut deck = DeckApp::new();
+    deck.set_action_sender(tx.clone());
+    router.register(Box::new(deck));
+
     let store = Arc::new(KeychainStore::new());
     let magic_cfg = MagicLinkConfig {
         stdb_http_base: cfg
@@ -117,7 +123,94 @@ async fn run(term: &mut terminal::Tui, cfg: Config) -> Result<()> {
             }
         }
 
+        // ── Deck: plan_request updates ────────────────────────────────────────
+        if let Action::Stdb(StdbEvent::Updated("plan_request")) = &action {
+            if let Some(handle) = stdb.as_ref() {
+                let rows = stdb_client::sub_helpers::read_plan_requests(&handle.conn);
+                if let Some(app) = router.app_mut("deck") {
+                    if let Some(d) = app.as_any_mut().downcast_mut::<DeckApp>() {
+                        for r in rows {
+                            d.on_plan_request_update(
+                                r.id,
+                                &r.status,
+                                r.tracks_json.as_deref(),
+                                r.error.as_deref(),
+                            );
+                        }
+                    }
+                }
+            }
+        }
+
+        // ── Deck: generate_job updates ────────────────────────────────────────
+        if let Action::Stdb(StdbEvent::Updated("generate_job")) = &action {
+            if let Some(handle) = stdb.as_ref() {
+                let rows = stdb_client::sub_helpers::read_generate_jobs(&handle.conn);
+                if let Some(app) = router.app_mut("deck") {
+                    if let Some(d) = app.as_any_mut().downcast_mut::<DeckApp>() {
+                        for r in rows {
+                            d.on_generate_job_update(
+                                r.id,
+                                &r.status,
+                                r.zip_url.as_deref(),
+                                r.error.as_deref(),
+                            );
+                        }
+                    }
+                }
+            }
+        }
+
+        // ── Deck: reducer calls signalled via SwitchTo ─────────────────────────
+        // `app.handle()` returns `AppResult::SwitchTo("deck:request_plan")` or
+        // `"deck:request_generate"` to ask the shell to call the STDB reducer.
+        // We intercept these before passing to the router.
+        if let Action::Input(_) = &action {
+            // (The SwitchTo is produced as an AppResult below, not an Action —
+            //  we handle it in the dispatch path via `router.dispatch`.)
+        }
+
         let result = router.current().handle(action);
+
+        // Handle deck-specific routing signals before the generic router dispatch.
+        match &result {
+            sastaspace_core::AppResult::SwitchTo("deck:request_plan") => {
+                if let Some(handle) = stdb.as_ref() {
+                    if let Some(app) = router.app_mut("deck") {
+                        if let Some(d) = app.as_any_mut().downcast_mut::<DeckApp>() {
+                            let desc = d.state().description.clone();
+                            let count = d.state().track_count;
+                            use stdb_client::bindings::request_plan_reducer::request_plan;
+                            if let Err(e) = handle.conn.reducers.request_plan(desc, count) {
+                                error!(err = %e, "request_plan reducer failed");
+                            }
+                        }
+                    }
+                }
+                // Stay on deck screen.
+                continue;
+            }
+            sastaspace_core::AppResult::SwitchTo("deck:request_generate") => {
+                if let Some(handle) = stdb.as_ref() {
+                    if let Some(app) = router.app_mut("deck") {
+                        if let Some(d) = app.as_any_mut().downcast_mut::<DeckApp>() {
+                            let plan_id = d.state().plan_request_id;
+                            let tracks_json =
+                                serde_json::to_string(d.planned_tracks()).unwrap_or_default();
+                            use stdb_client::bindings::request_generate_reducer::request_generate;
+                            if let Err(e) =
+                                handle.conn.reducers.request_generate(plan_id, tracks_json)
+                            {
+                                error!(err = %e, "request_generate reducer failed");
+                            }
+                        }
+                    }
+                }
+                continue;
+            }
+            _ => {}
+        }
+
         if !router.dispatch(result) {
             break;
         }
