@@ -8,6 +8,8 @@ members = [
     "crates/core",
     "crates/stdb-client",
     "crates/auth",
+    "crates/app-portfolio",
+    "crates/shell",
 ]
 
 [workspace.package]
