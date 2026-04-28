@@ -11,4 +11,5 @@ tracing = { workspace = true }
 thiserror = { workspace = true }
 sastaspace-core = { path = "../core" }
 app-portfolio = { path = "../app-portfolio" }
+app-notes = { path = "../app-notes" }
 serde = { workspace = true }

@@ -68,6 +68,7 @@ impl StdbHandle {
         let tx_disconnect = tx.clone();
         let tx_sub_project = tx.clone();
         let tx_sub_presence = tx.clone();
+        let tx_sub_comment = tx.clone();
 
         let uri = cfg.uri.clone();
         let module = cfg.module.clone();
@@ -95,6 +96,13 @@ impl StdbHandle {
                             let _ = tx_pres.send(Action::Stdb(StdbEvent::Updated("presence")));
                         })
                         .subscribe(vec!["SELECT * FROM presence".to_string()]);
+
+                    let tx_com = tx_sub_comment.clone();
+                    ctx.subscription_builder()
+                        .on_applied(move |_sub_ctx| {
+                            let _ = tx_com.send(Action::Stdb(StdbEvent::Updated("comment")));
+                        })
+                        .subscribe(vec!["SELECT * FROM comment".to_string()]);
                 })
                 .on_connect_error(move |_ctx, err| {
                     error!("stdb: connect error: {err}");

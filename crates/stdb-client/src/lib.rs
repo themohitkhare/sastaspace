@@ -19,7 +19,9 @@ pub use connection::{StdbConfig, StdbError, StdbHandle, StdbStatus};
 /// Kept as a thin module here so app crates don't need to know about
 /// `spacetimedb-sdk` directly.
 pub mod sub_helpers {
-    use crate::bindings::{self, project_table::ProjectTableAccess};
+    use crate::bindings::{
+        self, comment_table::CommentTableAccess, project_table::ProjectTableAccess,
+    };
     use spacetimedb_sdk::Table;
 
     /// Snapshot the `project` table into `app_portfolio::ProjectRow`s.
@@ -33,6 +35,38 @@ pub mod sub_helpers {
                 title: p.title.clone(),
                 blurb: p.blurb.clone(),
                 status: p.status.clone(),
+            })
+            .collect()
+    }
+
+    /// Snapshot the `project` table into `app_notes::NoteRow`s.
+    /// All projects are treated as notes for v1 (no `kind` field in schema).
+    pub fn read_notes(conn: &bindings::DbConnection) -> Vec<app_notes::NoteRow> {
+        conn.db
+            .project()
+            .iter()
+            .map(|p| app_notes::NoteRow {
+                slug: p.slug.clone(),
+                title: p.title.clone(),
+                body: p.blurb.clone(),
+                status: p.status.clone(),
+                tags: p.tags.clone(),
+                url: p.url.clone(),
+            })
+            .collect()
+    }
+
+    /// Snapshot the `comment` table into `app_notes::CommentRow`s.
+    pub fn read_comments(conn: &bindings::DbConnection) -> Vec<app_notes::CommentRow> {
+        conn.db
+            .comment()
+            .iter()
+            .map(|c| app_notes::CommentRow {
+                id: c.id,
+                post_slug: c.post_slug.clone(),
+                author_name: c.author_name.clone(),
+                body: c.body.clone(),
+                status: c.status.clone(),
             })
             .collect()
     }

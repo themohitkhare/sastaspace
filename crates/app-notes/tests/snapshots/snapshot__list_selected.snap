@@ -1,0 +1,28 @@
+---
+source: crates/app-notes/tests/snapshot.rs
+expression: s
+---
+┌ notes ───────────────┐┌ editor ──────────────────────────────────────────────┐
+│ Async Await · draft  ││Async Await                                           │
+│ Rust Ownership · live││                                                      │
+│                      ││Async functions return a Future.                      │
+│                      ││                                                      │
+│                      ││slug: async-await  ·  tags: rust, async               │
+│                      ││Tab → editor  ·  c → comments  ·  j/k → navigate      │
+│                      ││                                                      │
+│                      ││                                                      │
+│                      ││                                                      │
+│                      ││                                                      │
+│                      ││                                                      │
+│                      ││                                                      │
+│                      ││                                                      │
+│                      ││                                                      │
+│                      ││                                                      │
+│                      ││                                                      │
+│                      ││                                                      │
+│                      ││                                                      │
+│                      ││                                                      │
+│                      ││                                                      │
+│                      ││                                                      │
+│                      ││                                                      │
+└──────────────────────┘└──────────────────────────────────────────────────────┘
