@@ -16,6 +16,13 @@ use std::{
     time::{Duration, Instant},
 };
 
+fn pick_free_port() -> u16 {
+    let listener = std::net::TcpListener::bind("127.0.0.1:0").expect("bind ephemeral");
+    let port = listener.local_addr().unwrap().port();
+    drop(listener);
+    port
+}
+
 /// Pre-built wasm in the sibling sastaspace checkout.
 ///
 /// KLUDGE: The dev machine has a broken wasm toolchain (`cargo build
@@ -38,18 +45,29 @@ pub struct SpacetimeFixture {
     proc: Child,
     pub http_url: String,
     pub ws_url: String,
+    /// Holds the tempdir alive until the fixture is dropped, then auto-deletes it.
+    _data_dir: tempfile::TempDir,
 }
 
 impl SpacetimeFixture {
     pub fn start() -> Result<Self, String> {
-        let port = std::env::var("SPACETIME_PORT").unwrap_or_else(|_| "3199".into());
+        let port = pick_free_port();
         // Resolve the spacetime binary: prefer PATH, fall back to known install location.
         let spacetime_bin = resolve_spacetime_bin()?;
         let listen_addr = format!("127.0.0.1:{port}");
-        // Use --in-memory so each fixture gets a clean slate without needing a
-        // data dir or --delete-data gymnastics across test runs.
+        // Each fixture gets its own tempdir for the control-plane database so
+        // consecutive runs do not share identity state (which causes 403 on re-publish).
+        let data_dir = tempfile::TempDir::new()
+            .map_err(|e| format!("create tempdir: {e}"))?;
         let proc = Command::new(&spacetime_bin)
-            .args(["start", "--listen-addr", &listen_addr, "--in-memory"])
+            .args([
+                "start",
+                "--listen-addr",
+                &listen_addr,
+                "--data-dir",
+                data_dir.path().to_str().unwrap(),
+                "--in-memory",
+            ])
             .stdout(Stdio::null())
             .stderr(Stdio::null())
             .spawn()
@@ -59,7 +77,7 @@ impl SpacetimeFixture {
         wait_for_http(&format!("{http_url}/v1/ping"), Duration::from_secs(20))?;
         publish_module(&spacetime_bin, &http_url, "sastaspace", "modules/sastaspace", SIBLING_WASM_SASTASPACE)?;
         publish_module(&spacetime_bin, &http_url, "typewars", "modules/typewars", SIBLING_WASM_TYPEWARS)?;
-        Ok(Self { proc, http_url, ws_url })
+        Ok(Self { proc, http_url, ws_url, _data_dir: data_dir })
     }
 }
 
