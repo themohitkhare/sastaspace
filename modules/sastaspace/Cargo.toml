@@ -7,19 +7,14 @@ publish = false
 [lib]
 crate-type = ["cdylib"]
 
-# This crate compiles only to wasm32-unknown-unknown (it's a SpacetimeDB module).
-# Exclude from cargo-dist's native release builds — otherwise dist tries to link
-# spacetimedb FFI stubs as a host binary and fails.
-[package.metadata.dist]
-dist = false
-
 [dependencies]
 spacetimedb = "2.1"
 log = "0.4"
 serde = { version = "1", default-features = false, features = ["derive", "alloc"] }
 serde_json = { version = "1", default-features = false, features = ["alloc"] }
 
-# [profile.release] intentionally omitted — per-package overrides for the wasm
-# size profile live in the root workspace Cargo.toml under
-# [profile.release.package.sastaspace-module] to avoid the "profiles for the
-# non-root package will be ignored" warning.
+[profile.release]
+opt-level = "z"
+lto = true
+strip = true
+codegen-units = 1
