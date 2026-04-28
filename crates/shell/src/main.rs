@@ -1,9 +1,12 @@
 //! sastaspace TUI binary entry point.
 
+mod login;
 mod router;
 mod terminal;
 
+use auth::{keychain::KeychainStore, magic_link::MagicLinkConfig};
 use color_eyre::eyre::Result;
+use login::{LoginModal, LoginOutcome};
 use sastaspace_core::{
     config::Config,
     event::{Action, InputAction, StdbEvent},
@@ -12,6 +15,7 @@ use sastaspace_core::{
 use crossterm::event::{Event, EventStream};
 use directories::ProjectDirs;
 use futures::StreamExt;
+use std::sync::Arc;
 use std::time::Duration;
 use stdb_client::{StdbConfig, StdbHandle};
 use tokio::sync::mpsc::{unbounded_channel, UnboundedSender};
@@ -59,27 +63,51 @@ async fn run(term: &mut terminal::Tui, cfg: Config) -> Result<()> {
     let mut router = router::Router::new("portfolio");
     router.register(Box::new(app_portfolio::Portfolio::new()));
 
-    loop {
-        // Render.
-        term.draw(|f| router.current().render(f, f.area()))?;
+    let store = Arc::new(KeychainStore::new());
+    let magic_cfg = MagicLinkConfig {
+        stdb_http_base: cfg.stdb_uri.replace("ws://", "http://").replace("wss://", "https://"),
+        module: cfg.stdb_module.clone(),
+        http_timeout: Duration::from_secs(10),
+    };
+    let mut modal: Option<LoginModal> = None;
 
-        // Drain available actions (don't block forever — the tick task wakes us).
+    loop {
+        // Render base + modal.
+        term.draw(|f| {
+            router.current().render(f, f.area());
+            if let Some(m) = &modal {
+                m.render(f, f.area());
+            }
+        })?;
+
         let action = match rx.recv().await {
             Some(a) => a,
             None => break,
         };
 
-        // Global key dispatch first.
         if let Action::Input(InputAction::Key(k)) = &action {
+            // Modal eats keys when open.
+            if let Some(m) = modal.as_mut() {
+                if let LoginOutcome::Closed = m.handle_key(*k).await {
+                    modal = None;
+                }
+                continue;
+            }
+            // Open modal on Shift-L (full :login palette comes later).
+            if matches!(k.code, crossterm::event::KeyCode::Char('L'))
+                && k.modifiers.is_empty()
+            {
+                modal = Some(LoginModal::new(magic_cfg.clone(), store.clone()));
+                continue;
+            }
             if let Some(GlobalKey::Quit) = classify(*k) {
                 break;
             }
         }
 
-        // STDB project updates pushed into the portfolio app — F11 wires
-        // the actual table read. For F8 we just confirm the channel works.
+        // STDB project updates pushed into the portfolio app — F11 fills this in.
         if let Action::Stdb(StdbEvent::Updated("project")) = &action {
-            // F11: read projects from stdb_client and push into the portfolio app.
+            // Will be wired in F11.
         }
 
         let result = router.current().handle(action);
