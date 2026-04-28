@@ -6,7 +6,7 @@ mod terminal;
 
 use auth::{keychain::KeychainStore, magic_link::MagicLinkConfig};
 use color_eyre::eyre::Result;
-use crossterm::event::{Event, EventStream};
+use crossterm::event::{Event, EventStream, KeyModifiers};
 use directories::ProjectDirs;
 use futures::StreamExt;
 use login::{LoginModal, LoginOutcome};
@@ -97,7 +97,11 @@ async fn run(term: &mut terminal::Tui, cfg: Config) -> Result<()> {
                 continue;
             }
             // Open modal on Shift-L (full :login palette comes later).
-            if matches!(k.code, crossterm::event::KeyCode::Char('L')) && k.modifiers.is_empty() {
+            // Crossterm 0.28 automatically sets SHIFT on uppercase chars, so we
+            // match KeyModifiers::SHIFT here (not is_empty()).
+            if matches!(k.code, crossterm::event::KeyCode::Char('L'))
+                && k.modifiers == KeyModifiers::SHIFT
+            {
                 modal = Some(LoginModal::new(magic_cfg.clone(), store.clone()));
                 continue;
             }
