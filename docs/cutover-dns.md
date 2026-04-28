@@ -1,89 +1,98 @@
 # Cut-over status
 
-The TUI migration is code-complete and v0.1.1 is published.
+The TUI migration is shipped. v0.1.2 is the live release.
 
-## ✅ Completed (autonomously, in this session)
+## ✅ Done
 
-### Cloudflare DNS — dead app subdomains deleted
-The 5 subdomains that pointed at the now-deleted Next.js apps are gone:
-- `admin.sastaspace.com` ✅ deleted
-- `auth.sastaspace.com` ✅ deleted
-- `deck.sastaspace.com` ✅ deleted
-- `notes.sastaspace.com` ✅ deleted
-- `typewars.sastaspace.com` ✅ deleted
+### Cloudflare DNS
+- 5 dead app CNAMEs deleted: `admin/auth/deck/notes/typewars.sastaspace.com`
+- Apex `sastaspace.com` and `www.sastaspace.com` continue routing through the tunnel — but to the new static site (see below). Both serve **HTTP 200**.
 
-`landing.sastaspace.com` was never created (the landing app was always served from apex).
-
-Survives untouched: `stdb.sastaspace.com`, `api.sastaspace.com`, the apex `sastaspace.com` (still tunnel-routed), `*.sastaspace.com` wildcard, `www.sastaspace.com`, MX/TXT records for Resend.
-
-### Cloudflared tunnel ingress — dead routes removed
-Tunnel config (Cloudflare-managed) updated. Ingress went from 9 → 4 entries. Remaining:
+### Cloudflared tunnel ingress (Cloudflare-managed)
+9 → 4 entries. Final state:
 | hostname | service |
 |---|---|
-| `sastaspace.com` | localhost:3110 (apex — see "Apex repoint" below) |
+| `sastaspace.com` | localhost:3110 (static site) |
 | `www.sastaspace.com` | localhost:3110 |
-| `stdb.sastaspace.com` | localhost:3100 |
+| `stdb.sastaspace.com` | localhost:3100 (SpacetimeDB) |
 | _catch-all_ | http_status:404 |
 
+### Static site on `taxila`
+A small `nginx:alpine` container (`sastaspace-www`) serves `~/mkhare/sastaspace-www/` as the apex content:
+- `https://sastaspace.com/` → install + run instructions (TUI-themed page).
+- `https://sastaspace.com/install.sh` → one-liner installer that curls the cargo-dist platform-detect installer from GitHub Releases.
+
+To regenerate / edit:
+```bash
+ssh 192.168.0.37 "ls /home/mkhare/sastaspace-www/"
+# Edit the html/sh; container picks up the volume mount on next request.
+# Restart if needed:
+ssh 192.168.0.37 "docker restart sastaspace-www"
+```
+
 ### Prod box (`taxila`) — dead containers stopped
-6 dead docker containers stopped:
-- `sastaspace-landing`, `sastaspace-notes`, `sastaspace-typewars`, `sastaspace-admin`, `sastaspace-deck-static`, `sastaspace-auth-410`
+Stopped: `sastaspace-{landing,notes,typewars,admin,deck-static,auth-410}`. Survivors: `sastaspace-{stdb,moderator,workers,www}`.
 
-Survivors (verified `docker ps`):
-- `sastaspace-stdb` (healthy)
-- `sastaspace-moderator` (healthy)
-- `sastaspace-workers` (running; "unhealthy" status is pre-existing — 3 of 4 agents are disabled by env config, healthcheck expects all 4)
-
-If you want the stopped containers gone for good (free disk):
+To free disk on the stopped containers:
 ```bash
 ssh 192.168.0.37 "docker rm sastaspace-landing sastaspace-notes sastaspace-typewars sastaspace-admin sastaspace-deck-static sastaspace-auth-410"
 ```
 
-### v0.1.1 release published
-- All 5 platform binaries on https://github.com/themohitkhare/sastaspace/releases/tag/v0.1.1
-- Homebrew tap published (`themohitkhare/homebrew-sastaspace`) — `brew install themohitkhare/sastaspace/sastaspace`
-- Curl installer: `curl -sSf https://github.com/themohitkhare/sastaspace/releases/latest/download/shell-installer.sh | sh`
+### Releases
+- v0.1.1, v0.1.2 published with binaries for 5 platforms.
+- Homebrew tap (`themohitkhare/homebrew-sastaspace`) up to date with v0.1.2.
+- Latest release URLs:
+  - https://github.com/themohitkhare/sastaspace/releases/latest
+  - `curl -sSf https://sastaspace.com/install.sh | sh`
+  - `brew install themohitkhare/sastaspace/sastaspace`
+- Binary on `taxila` at `~/.local/bin/sastaspace` (v0.1.2).
+
+### TUI binary (v0.1.2) bug fixes
+- Non-TTY panic → graceful exit + `--version` / `--help` flags
+- Typewars Esc trap on callsign input → fixed
+- Global navigation: `Shift-N/T/D/A/P` between apps
+- E2E coverage added for all 4 apps (notes, typewars, deck, admin) + version flag — 17 new scenarios.
 
 ---
 
-## ⚠️ Remaining — explicit user-facing decisions only
+## ⚠️ Last remaining manual item — Homebrew tap PAT
 
-### 1. Apex `sastaspace.com` repoint
-Currently still points to `localhost:3110` on taxila, where nothing listens. Visitors get a 502/404. The spec called for repointing to GitHub Pages serving install.sh + README.
+Auto-publish of the Homebrew formula on every tag still needs a cross-repo PAT. v0.1.1 and v0.1.2 formulas were pushed manually. To make it automatic:
 
-**Blocker:** GitHub Pages requires a paid GitHub plan for private repos, and `themohitkhare/sastaspace` is private. Three options, in increasing complexity:
-
-**Option A — Make the repo public.** GH Pages becomes free; once enabled, apex CNAME flips to `themohitkhare.github.io` and Cloudflare flattens it.
-- Tradeoffs: history audit (no leaked secrets), ongoing visibility of all code.
-- Steps: `gh repo edit themohitkhare/sastaspace --visibility public --accept-visibility-change-consequences`, then `gh api -X POST repos/themohitkhare/sastaspace/pages -f "source[branch]=main" -f "source[path]=/"`. The repo's `CNAME` file (already committed) is picked up automatically. Then via Cloudflare API: change apex DNS target from the tunnel to `themohitkhare.github.io`.
-
-**Option B — Cloudflare Pages.** Connect Cloudflare Pages to the private repo (Cloudflare's GitHub app supports private repos on free plan). Build settings: no build command, output dir = repo root.
-- Tradeoffs: requires installing Cloudflare's GH app via UI (one-time browser step at https://dash.cloudflare.com/?to=/:account/pages).
-- After that, point apex DNS to the Pages project's *.pages.dev hostname.
-
-**Option C — Tiny static site on `taxila:3110`.** Run an `nginx:alpine` container serving `install.sh` + a rendered README. Apex tunnel route already targets `localhost:3110`, just nothing listens there.
-- Tradeoffs: prod-box dependency for the homepage; needs a deploy pipeline; simplest operationally (one `docker run`).
-
-I'd recommend **B** — it's the simplest with the smallest blast radius (no public repo flip, no prod-box dependency).
-
-### 2. Homebrew tap PAT (for future auto-releases)
-v0.1.1's formula was pushed manually to the tap. The cargo-dist release workflow's `publish-homebrew-formula` job needs a cross-repo PAT to do this automatically on the next tag:
-
-1. Create a fine-grained PAT at https://github.com/settings/personal-access-tokens/new
+1. Mint a fine-grained PAT at https://github.com/settings/personal-access-tokens/new
    - Resource owner: `themohitkhare`
    - Repository access: only `themohitkhare/homebrew-sastaspace`
    - Repository permissions → Contents: **Read and write**
-2. Add to repo secrets:
+2. Add as a repo secret on the source repo:
    ```bash
    gh secret set HOMEBREW_TAP_TOKEN --repo themohitkhare/sastaspace --body "<paste-pat>"
    ```
-3. After this, `git tag -a vX.Y.Z && git push origin vX.Y.Z` is enough — full release including tap update.
+3. Done — next `git tag -a vX.Y.Z && git push origin vX.Y.Z` ships fully automated, including the tap update.
 
 ---
 
-## Verify the binary
+## Verify
 
 ```bash
+# Web
+curl -I https://sastaspace.com                    # 200
+curl -I https://stdb.sastaspace.com               # 200/upgrade
+
+# Install + run
+curl -sSf https://sastaspace.com/install.sh | sh
+sastaspace --version                              # sastaspace 0.1.2
+sastaspace                                        # opens the TUI
+
+# Or via Homebrew
 brew install themohitkhare/sastaspace/sastaspace
-sastaspace                       # opens portfolio splash; q to quit
+sastaspace
 ```
+
+## Mobile testing (today)
+
+1. Install Termius (or any SSH client) on phone.
+2. SSH to `192.168.0.37` (LAN, key auth already set up).
+3. Type `sastaspace` — TUI opens.
+4. Use `Shift-N/T/D/A/P` to switch between apps. `q` to quit.
+
+For off-LAN access from your phone, set up Cloudflare Access SSH (a UI step I can walk you through if you want).
