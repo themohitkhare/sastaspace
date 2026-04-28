@@ -241,10 +241,20 @@ Cut-over PR removes (in this order):
 6. `packages/` — Next.js shared packages (no consumer left).
 7. `infra/` Cloudflare tunnel routes for the deleted hostnames.
 
+Also deleted (root clutter from `docs/audits/2026-04-26-structure-audit.md` finding L1, mooted-or-now-removable by this migration):
+- `apps/landing/src/app/lab/deck/Deck.tsx` and the rest of `lab/` — folded into the deletion of `apps/landing/`.
+- `deck-step2-expanded.png`, `deck-step3-results.png` at repo root — orphaned mockups.
+- `idea.md` at repo root — superseded; the `README.md` becomes the project description.
+- `SECURITY_AUDIT.md` at repo root — moved to `docs/audits/2026-04-25-security.md` to match the audit dir convention.
+- `.playwright-mcp/` — Playwright MCP run artifacts; `.playwright-mcp/` is added to `.gitignore` and any committed snapshots removed.
+- `tests/` (root) — was Playwright-only; the new `tests/e2e/` lives at the workspace root and contains Rust expectrl scenarios instead.
+- `graphify-out/` — keep. Cheap, useful for navigation, the graphify post-edit hook still maintains it.
+
 What survives:
-- `modules/sastaspace/`, `modules/typewars/` — backend
-- `workers/` — TypeScript STDB workers (auth-mailer, deck-agent, moderator-agent, admin-collector). These are not user-facing UI; they're STDB-side automation. Keeping them in TS is fine for now (small, working, not the bottleneck the brainstorm was solving).
-- `infra/` minus the deleted hostnames
+- `modules/sastaspace/`, `modules/typewars/` — backend, only the three small changes from §7.
+- `workers/` — TypeScript STDB workers (auth-mailer, deck-agent, moderator-agent, admin-collector). They are *not* user-facing UI; they are STDB-side automation that runs on the prod box. Keeping them in TS for v1 per the *simple-is-best* and *staged-migrations* rules: they work, they're small, they're not the bottleneck this migration is solving. A future v2 project can port them to Rust if there's a reason.
+- `infra/` minus deleted hostnames.
+- `graphify-out/`, `docs/`.
 
 ## 7. Backend changes the migration requires
 
@@ -293,7 +303,27 @@ Bundle the work in three commits-per-app to keep PRs reviewable, but ship the cu
 - Multi-account support (one identity per binary instance).
 - A "headless" mode (running deck without ratatui). The Rust core is library-shaped enough that a CLI binary could be added later if there's demand.
 
-## 11. Repo layout decision
+## 11. Audit findings folded in
+
+`docs/audits/2026-04-26-structure-audit.md` enumerated 11 structural issues. The TUI migration moots 9 of them automatically:
+
+| Finding | Disposition |
+|---|---|
+| H1 `SpacetimeClient` duplicated per Python service | Moot — all Python services deleted |
+| H2 `module/` vs `game/` vs `packages/` naming | Already resolved — `modules/sastaspace/` + `modules/typewars/` exist as siblings |
+| H3 `services/admin-api` bundles three concerns | Moot — `admin-api` deleted entirely |
+| H4 No rule for `infra/agents/` vs `services/` | Mostly moot — `services/` gone; `workers/` is the only place backend automation lives |
+| M1 `deck` split across three places | Moot — `apps/landing/lab/deck`, `services/deck`, root PNGs all deleted |
+| M2 Service boilerplate hand-copied | Moot — services deleted |
+| M3 `design-tokens` not consumed by admin | Moot — all Next.js apps deleted; theme lives in `crates/core/src/theme.rs` |
+| M4 No typed contract frontend↔HTTP | Moot — no HTTP services, no frontend; all I/O is typed STDB reducers |
+| M5 Service naming inconsistent | Moot — services deleted |
+| L1 Root clutter (PNGs, idea.md, SECURITY_AUDIT.md, .playwright-mcp) | **Folded into §6 deletion list** |
+| L2 Root `tests/` purpose unclear | Folded — replaced by Rust `tests/e2e/` at workspace root |
+
+This is unusual leverage for a single migration: a structural audit's worth of cleanup happens for free.
+
+## 12. Repo layout decision
 
 **Choice:** keep `sastaspace/` as the repo root; add `crates/` alongside existing `modules/`, `workers/`, `infra/`. The cut-over PR removes `apps/`, `services/`, `packages/`, `tests/e2e/`. The repo's identity (mohit's monorepo named "sastaspace") is unchanged; only the surface shape inside it shrinks.
 
