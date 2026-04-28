@@ -58,7 +58,11 @@ fn short_version_flag_prints_version() {
         .output()
         .expect("spawn sastaspace -V");
 
-    assert!(out.status.success(), "-V should exit 0; got {:?}", out.status);
+    assert!(
+        out.status.success(),
+        "-V should exit 0; got {:?}",
+        out.status
+    );
     let stdout = String::from_utf8_lossy(&out.stdout);
     assert!(
         stdout.contains("0.1.1"),

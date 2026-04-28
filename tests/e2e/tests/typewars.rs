@@ -24,8 +24,12 @@ fn typewars_legion_select_renders() {
     tui.session.send("T").expect("send Shift-T");
 
     // LegionSelect always renders "CHOOSE YOUR LEGION".
-    expect_ansi(&mut tui.session, "CHOOSE YOUR LEGION", Duration::from_secs(6))
-        .expect("LegionSelect screen not found");
+    expect_ansi(
+        &mut tui.session,
+        "CHOOSE YOUR LEGION",
+        Duration::from_secs(6),
+    )
+    .expect("LegionSelect screen not found");
 
     tui.session.send("q").expect("quit");
     let _ = tui.session.expect(expectrl::Eof);
@@ -88,8 +92,12 @@ fn typewars_esc_on_legion_select_is_noop() {
 
     std::thread::sleep(Duration::from_millis(800));
     tui.session.send("T").expect("send Shift-T");
-    expect_ansi(&mut tui.session, "CHOOSE YOUR LEGION", Duration::from_secs(6))
-        .expect("LegionSelect screen");
+    expect_ansi(
+        &mut tui.session,
+        "CHOOSE YOUR LEGION",
+        Duration::from_secs(6),
+    )
+    .expect("LegionSelect screen");
 
     // Esc on LegionSelect is handled by handle_escape() which returns Continue —
     // the screen should still show "CHOOSE YOUR LEGION".

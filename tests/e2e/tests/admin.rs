@@ -101,5 +101,8 @@ fn admin_esc_stays_on_device_flow_panel() {
 
     // The 'q' global quit should still work after Esc.
     tui.session.send("q").expect("quit");
-    let _ = tui.session.expect(expectrl::Eof).expect("clean exit after q");
+    let _ = tui
+        .session
+        .expect(expectrl::Eof)
+        .expect("clean exit after q");
 }

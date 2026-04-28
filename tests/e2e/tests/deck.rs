@@ -68,7 +68,10 @@ fn deck_description_insert_mode() {
     std::thread::sleep(Duration::from_millis(150));
 
     tui.session.send("q").expect("quit");
-    let _ = tui.session.expect(expectrl::Eof).expect("clean exit after q");
+    let _ = tui
+        .session
+        .expect(expectrl::Eof)
+        .expect("clean exit after q");
 }
 
 #[test]

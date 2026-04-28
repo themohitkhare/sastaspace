@@ -90,5 +90,8 @@ fn notes_quit_cleanly() {
 
     // Send q — should exit cleanly.
     tui.session.send("q").expect("quit");
-    let _ = tui.session.expect(expectrl::Eof).expect("clean exit after q");
+    let _ = tui
+        .session
+        .expect(expectrl::Eof)
+        .expect("clean exit after q");
 }
