@@ -88,6 +88,12 @@ impl TypewarsApp {
     fn handle_key(&mut self, key: KeyEvent) -> AppResult {
         // Global: Escape goes "back" in most contexts.
         if key.code == KeyCode::Esc {
+            // If the callsign input is focused on the LegionSelect screen,
+            // Esc should defocus it (not navigate away from the screen).
+            if self.state.screen == Screen::LegionSelect && self.state.legion_select.focus_input {
+                self.state.legion_select.focus_input = false;
+                return AppResult::Continue;
+            }
             return self.handle_escape();
         }
 
