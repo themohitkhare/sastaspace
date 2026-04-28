@@ -11,6 +11,7 @@ members = [
     "crates/app-portfolio",
     "crates/app-notes",
     "crates/app-deck",
+    "crates/app-typewars",
     "crates/shell",
     "tests/e2e-rust",
 ]

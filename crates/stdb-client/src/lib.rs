@@ -11,6 +11,7 @@
 #![allow(clippy::all, dead_code)] // generated bindings are noisy
 
 pub mod bindings;
+pub mod bindings_typewars;
 pub mod connection;
 
 pub use connection::{StdbConfig, StdbError, StdbHandle, StdbStatus};

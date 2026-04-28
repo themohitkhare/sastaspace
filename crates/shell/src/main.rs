@@ -65,6 +65,7 @@ async fn run(term: &mut terminal::Tui, cfg: Config) -> Result<()> {
     let mut router = router::Router::new("portfolio");
     router.register(Box::new(app_portfolio::Portfolio::new()));
     router.register(Box::new(app_notes::Notes::new()));
+    router.register(Box::new(app_typewars::TypewarsApp::new()));
 
     // Register deck app and wire the action sender for download tasks.
     let mut deck = DeckApp::new();

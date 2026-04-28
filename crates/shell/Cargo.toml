@@ -15,6 +15,7 @@ auth = { path = "../auth" }
 app-portfolio = { path = "../app-portfolio" }
 app-notes = { path = "../app-notes" }
 app-deck = { path = "../app-deck" }
+app-typewars = { path = "../app-typewars" }
 serde_json = { workspace = true }
 ratatui = { workspace = true }
 crossterm = { workspace = true }
