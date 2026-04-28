@@ -55,8 +55,9 @@ pub struct StdbHandle {
 
 impl StdbHandle {
     /// Connects, attaches event callbacks that forward into `tx`, subscribes to
-    /// the `project` and `presence` tables, and spawns the SDK run loop on a
-    /// background OS thread (via `conn.run_threaded()`).
+    /// the `project`, `presence`, `comment`, `plan_request`, and `generate_job`
+    /// tables, and spawns the SDK run loop on a background OS thread (via
+    /// `conn.run_threaded()`).
     ///
     /// This function is synchronous internally — the SDK `build()` call blocks
     /// until the WebSocket handshake completes. We wrap it in
@@ -69,6 +70,8 @@ impl StdbHandle {
         let tx_sub_project = tx.clone();
         let tx_sub_presence = tx.clone();
         let tx_sub_comment = tx.clone();
+        let tx_sub_plan = tx.clone();
+        let tx_sub_gen = tx.clone();
 
         let uri = cfg.uri.clone();
         let module = cfg.module.clone();
@@ -103,6 +106,22 @@ impl StdbHandle {
                             let _ = tx_com.send(Action::Stdb(StdbEvent::Updated("comment")));
                         })
                         .subscribe(vec!["SELECT * FROM comment".to_string()]);
+
+                    // Deck subscriptions — plan_request and generate_job rows
+                    // are visibility-filtered server-side to the calling identity.
+                    let tx_plan = tx_sub_plan.clone();
+                    ctx.subscription_builder()
+                        .on_applied(move |_sub_ctx| {
+                            let _ = tx_plan.send(Action::Stdb(StdbEvent::Updated("plan_request")));
+                        })
+                        .subscribe(vec!["SELECT * FROM plan_request".to_string()]);
+
+                    let tx_gen = tx_sub_gen.clone();
+                    ctx.subscription_builder()
+                        .on_applied(move |_sub_ctx| {
+                            let _ = tx_gen.send(Action::Stdb(StdbEvent::Updated("generate_job")));
+                        })
+                        .subscribe(vec!["SELECT * FROM generate_job".to_string()]);
                 })
                 .on_connect_error(move |_ctx, err| {
                     error!("stdb: connect error: {err}");

@@ -20,7 +20,8 @@ pub use connection::{StdbConfig, StdbError, StdbHandle, StdbStatus};
 /// `spacetimedb-sdk` directly.
 pub mod sub_helpers {
     use crate::bindings::{
-        self, comment_table::CommentTableAccess, project_table::ProjectTableAccess,
+        self, comment_table::CommentTableAccess, generate_job_table::GenerateJobTableAccess,
+        plan_request_table::PlanRequestTableAccess, project_table::ProjectTableAccess,
     };
     use spacetimedb_sdk::Table;
 
@@ -67,6 +68,50 @@ pub mod sub_helpers {
                 author_name: c.author_name.clone(),
                 body: c.body.clone(),
                 status: c.status.clone(),
+            })
+            .collect()
+    }
+
+    /// A minimal view of a `plan_request` row passed to the deck app.
+    pub struct PlanRequestView {
+        pub id: u64,
+        pub status: String,
+        pub tracks_json: Option<String>,
+        pub error: Option<String>,
+    }
+
+    /// Snapshot the `plan_request` table (all rows visible to this identity).
+    pub fn read_plan_requests(conn: &bindings::DbConnection) -> Vec<PlanRequestView> {
+        conn.db
+            .plan_request()
+            .iter()
+            .map(|r| PlanRequestView {
+                id: r.id,
+                status: r.status.clone(),
+                tracks_json: r.tracks_json.clone(),
+                error: r.error.clone(),
+            })
+            .collect()
+    }
+
+    /// A minimal view of a `generate_job` row passed to the deck app.
+    pub struct GenerateJobView {
+        pub id: u64,
+        pub status: String,
+        pub zip_url: Option<String>,
+        pub error: Option<String>,
+    }
+
+    /// Snapshot the `generate_job` table (all rows visible to this identity).
+    pub fn read_generate_jobs(conn: &bindings::DbConnection) -> Vec<GenerateJobView> {
+        conn.db
+            .generate_job()
+            .iter()
+            .map(|j| GenerateJobView {
+                id: j.id,
+                status: j.status.clone(),
+                zip_url: j.zip_url.clone(),
+                error: j.error.clone(),
             })
             .collect()
     }
