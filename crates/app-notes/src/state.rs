@@ -78,7 +78,6 @@ pub struct NotesState {
     pub(crate) cmd_buf: String,
 }
 
-
 impl NotesState {
     pub fn set_notes(&mut self, mut rows: Vec<NoteRow>) {
         rows.sort_by(|a, b| a.title.cmp(&b.title));

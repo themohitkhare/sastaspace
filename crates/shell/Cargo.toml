@@ -16,6 +16,7 @@ app-portfolio = { path = "../app-portfolio" }
 app-notes = { path = "../app-notes" }
 app-deck = { path = "../app-deck" }
 app-typewars = { path = "../app-typewars" }
+app-admin = { path = "../app-admin" }
 serde_json = { workspace = true }
 ratatui = { workspace = true }
 crossterm = { workspace = true }

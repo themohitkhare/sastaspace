@@ -72,6 +72,11 @@ async fn run(term: &mut terminal::Tui, cfg: Config) -> Result<()> {
     deck.set_action_sender(tx.clone());
     router.register(Box::new(deck));
 
+    // Admin app — owner-gated. Device-flow client_id from config or env.
+    let google_client_id = std::env::var("GOOGLE_CLIENT_ID").unwrap_or_default();
+    let admin_device_cfg = auth::google_device::DeviceFlowConfig::for_client(google_client_id);
+    router.register(Box::new(app_admin::Admin::new(admin_device_cfg)));
+
     let store = Arc::new(KeychainStore::new());
     let magic_cfg = MagicLinkConfig {
         stdb_http_base: cfg
