@@ -56,9 +56,11 @@ const AUTH_TOKEN_TTL_MICROS: i64 = 15 * 60 * 1_000_000;
 ///
 /// Email is stored for: (a) future re-issue of identity if the user
 /// loses their token, (b) eventual unsubscribe / deletion. It is NEVER
-/// surfaced to other clients via the public schema — the only attribution
-/// shown publicly is `display_name`.
-#[table(accessor = user, public)]
+/// surfaced to other clients — this table is private; reducers read it
+/// via the module (which runs unprivileged of the caller's subscription
+/// scope). The public attribution path is `Comment.author_name`, which
+/// is denormalized at write time.
+#[table(accessor = user)]
 pub struct User {
     #[primary_key]
     pub identity: Identity,
@@ -79,11 +81,17 @@ pub struct User {
 pub struct AuthToken {
     #[primary_key]
     pub token: String,
+    #[index(btree)]
     pub email: String,
     pub created_at: Timestamp,
     pub expires_at: Timestamp,
     pub used_at: Option<Timestamp>,
 }
+
+/// Cap on simultaneously-pending magic-link tokens per email address.
+/// Prevents an unauthenticated caller from spamming a single recipient
+/// with arbitrary verification emails (M1 in 2026-04-28-security audit).
+const MAX_PENDING_TOKENS_PER_EMAIL: usize = 3;
 
 /// Single-row table that records the database owner at first publish.
 ///
@@ -115,10 +123,19 @@ fn assert_owner(ctx: &ReducerContext) -> Result<(), String> {
     Ok(())
 }
 
+/// Decoded JWT claims we care about. We deliberately avoid a full Google-id-token
+/// struct — Google can add claims and we don't want to break on shape changes.
+#[derive(Debug)]
+struct JwtClaims {
+    email: String,
+    /// Unix-seconds expiry — RFC 7519 §4.1.4. 0 means "missing".
+    exp: i64,
+}
+
 /// Decode the payload section of a JWT (base64url, no padding) and extract
-/// the `email` claim as a `String`. No signature verification — see the
+/// `email` and `exp` claims. No signature verification — see the
 /// `AppConfigSecret` doc-comment for the full design rationale.
-fn jwt_email_claim(token: &str) -> Result<String, String> {
+fn jwt_email_claim(token: &str) -> Result<JwtClaims, String> {
     // A JWT is `header.payload.signature` — three dot-separated segments.
     let mut parts = token.splitn(3, '.');
     let _header = parts.next().ok_or("jwt: missing header segment")?;
@@ -130,7 +147,7 @@ fn jwt_email_claim(token: &str) -> Result<String, String> {
     let payload_str =
         core::str::from_utf8(&payload_bytes).map_err(|_| "jwt: payload is not valid UTF-8")?;
 
-    // Parse just the `email` field; we deliberately avoid a full struct
+    // Parse just the fields we use; we deliberately avoid a full struct
     // derive to keep the match minimal (future-proofing against Google adding
     // claims we don't know about).
     let obj: serde_json::Value =
@@ -138,8 +155,10 @@ fn jwt_email_claim(token: &str) -> Result<String, String> {
     let email = obj
         .get("email")
         .and_then(|v| v.as_str())
-        .ok_or("jwt: missing email claim")?;
-    Ok(email.to_string())
+        .ok_or("jwt: missing email claim")?
+        .to_string();
+    let exp = obj.get("exp").and_then(|v| v.as_i64()).unwrap_or(0);
+    Ok(JwtClaims { email, exp })
 }
 
 /// Minimal base64url (RFC 4648 §5, no padding) decoder — only ASCII subset.
@@ -200,7 +219,17 @@ fn b64url_val(c: u8) -> Result<u8, String> {
 /// `assert_owner` STDB-identity gate called before this helper, the two
 /// checks together guard every owner-only reducer that the TUI admin calls.
 fn verify_owner_jwt(ctx: &ReducerContext, token: &str) -> Result<(), String> {
-    let email = jwt_email_claim(token)?;
+    let claims = jwt_email_claim(token)?;
+    // Reject expired tokens (M3 in 2026-04-28-security audit). `exp` is unix
+    // seconds; we also reject tokens missing the claim entirely (exp=0).
+    let now_secs = ctx.timestamp.to_micros_since_unix_epoch() / 1_000_000;
+    if claims.exp == 0 {
+        return Err("jwt: missing exp claim".into());
+    }
+    if now_secs > claims.exp {
+        return Err("jwt: expired".into());
+    }
+    let email = claims.email;
     let stored_email = ctx
         .db
         .app_config_secret()
@@ -677,6 +706,21 @@ pub fn request_magic_link(
 ) -> Result<(), String> {
     let email = email.trim().to_lowercase();
     validate_magic_link_args(&email, &app, &callback_url)?;
+    // Rate-limit unexpired-and-unused pending tokens per email (M1).
+    let now_micros = ctx.timestamp.to_micros_since_unix_epoch();
+    let active_count = ctx
+        .db
+        .auth_token()
+        .iter()
+        .filter(|t| {
+            t.email == email
+                && t.used_at.is_none()
+                && !is_token_expired(now_micros, t.expires_at.to_micros_since_unix_epoch())
+        })
+        .count();
+    if active_count >= MAX_PENDING_TOKENS_PER_EMAIL {
+        return Err("too many pending sign-in tokens for this email; wait 15 minutes".into());
+    }
     let token: String = (0..32)
         .map(|_| {
             let n: u32 = ctx.rng().gen_range(0..62);
@@ -1231,7 +1275,11 @@ pub struct LogInterest {
 
 /// Append-only ring of log lines. Collector inserts; `prune_log_events`
 /// trims down to LOG_EVENTS_PER_CONTAINER_CAP per container every 60 s.
-#[table(accessor = log_event, public)]
+///
+/// Private — only the owner (admin TUI) subscribes. Container logs may
+/// contain stack traces, recipient emails (Resend errors), and internal
+/// hostnames; making the table public would leak these to any client.
+#[table(accessor = log_event)]
 pub struct LogEvent {
     #[primary_key]
     #[auto_inc]
@@ -3807,17 +3855,27 @@ mod admin_collector_tests {
     }
 
     #[test]
-    fn jwt_email_claim_extracts_email() {
-        // Build a minimal synthetic JWT with a JSON payload containing an email claim.
-        // Header: {"alg":"RS256","typ":"JWT"} → base64url
-        // Payload: {"email":"owner@example.com","aud":"client","iat":0}
-        // Signature: arbitrary (not verified)
+    fn jwt_email_claim_extracts_email_and_exp() {
+        // Build a minimal synthetic JWT with a JSON payload containing email + exp.
         let header = base64url_encode(b"{\"alg\":\"RS256\",\"typ\":\"JWT\"}");
-        let payload =
-            base64url_encode(b"{\"email\":\"owner@example.com\",\"aud\":\"client\",\"iat\":0}");
+        let payload = base64url_encode(
+            b"{\"email\":\"owner@example.com\",\"aud\":\"client\",\"iat\":0,\"exp\":9999999999}",
+        );
         let token = format!("{header}.{payload}.fakesig");
-        let email = jwt_email_claim(&token).expect("should extract email");
-        assert_eq!(email, "owner@example.com");
+        let claims = jwt_email_claim(&token).expect("should extract claims");
+        assert_eq!(claims.email, "owner@example.com");
+        assert_eq!(claims.exp, 9999999999);
+    }
+
+    #[test]
+    fn jwt_email_claim_missing_exp_returns_zero() {
+        // exp is parsed as 0 when missing; verify_owner_jwt rejects 0 separately.
+        let header = base64url_encode(b"{\"alg\":\"RS256\"}");
+        let payload = base64url_encode(b"{\"email\":\"u@x\"}");
+        let token = format!("{header}.{payload}.fakesig");
+        let claims = jwt_email_claim(&token).expect("should extract claims");
+        assert_eq!(claims.email, "u@x");
+        assert_eq!(claims.exp, 0);
     }
 
     #[test]
