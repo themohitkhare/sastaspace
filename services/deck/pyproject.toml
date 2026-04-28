@@ -1,0 +1,55 @@
+[project]
+name = "sastaspace-deck"
+version = "0.1.0"
+description = "NLP→audio: expand a project description into MusicGen prompts and render WAVs as a zip."
+requires-python = ">=3.12,<3.14"
+dependencies = [
+    "fastapi>=0.118",
+    "uvicorn[standard]>=0.34",
+    "httpx>=0.28",
+    "tenacity>=9.0",
+    "pydantic>=2.9",
+    "numpy>=2.0",
+    # Agno + Ollama for plan drafting. Same pattern as infra/agents/moderator.
+    "agno>=2.5.0,<3.0",
+    # Agno's ollama submodule eagerly imports its openai shim. Cheap dep to
+    # carry; we never call it directly.
+    "openai>=1.50",
+    "ollama>=0.5",
+]
+
+[project.optional-dependencies]
+# Local-render backend (musicgen via audiocraft) was removed: production now
+# renders via workers/src/agents/deck-agent.ts → ACE-Step 1.5 standalone API.
+# The render.py stub remains and raises RenderUnavailableError if invoked
+# directly. This service itself is on the Phase 4 deletion list.
+dev = [
+    "pytest>=8.3",
+    "pytest-asyncio>=0.24",
+    "pytest-cov>=6.0",
+    "respx>=0.21",
+    "ruff>=0.8",
+]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+addopts = "-q --cov=src --cov-report=term-missing --cov-fail-under=70"
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "N"]
+ignore = ["E501"]

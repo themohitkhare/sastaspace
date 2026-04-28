@@ -104,7 +104,7 @@ checksum = "170433209e817da6aae2c51aa0dd443009a613425dd041ebfb2492d1c4c11a25"
 
 [[package]]
 name = "app-admin"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "auth",
  "crossterm",
@@ -119,7 +119,7 @@ dependencies = [
 
 [[package]]
 name = "app-deck"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "crossterm",
  "directories",
@@ -138,7 +138,7 @@ dependencies = [
 
 [[package]]
 name = "app-notes"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "crossterm",
  "insta",
@@ -149,7 +149,7 @@ dependencies = [
 
 [[package]]
 name = "app-portfolio"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "crossterm",
  "insta",
@@ -160,7 +160,7 @@ dependencies = [
 
 [[package]]
 name = "app-typewars"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "crossterm",
  "insta",
@@ -217,7 +217,7 @@ checksum = "1505bd5d3d116872e7271a6d4e16d81d0c8570876c8de68093a09ac269d8aac0"
 
 [[package]]
 name = "auth"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "keyring",
  "reqwest",
@@ -869,7 +869,7 @@ checksum = "d0881ea181b1df73ff77ffaaf9c7544ecc11e82fba9b5f27b262a3c73a332555"
 
 [[package]]
 name = "e2e"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "expectrl",
  "serde_json",
@@ -2719,7 +2719,7 @@ dependencies = [
 
 [[package]]
 name = "sastaspace-core"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "crossterm",
  "directories",
@@ -2999,7 +2999,7 @@ dependencies = [
 
 [[package]]
 name = "shell"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "app-admin",
  "app-deck",
@@ -3375,7 +3375,7 @@ checksum = "a2eb9349b6444b326872e140eb1cf5e7c522154d69e7a0ffb0fb81c06b37543f"
 
 [[package]]
 name = "stdb-client"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "app-notes",
  "app-portfolio",
