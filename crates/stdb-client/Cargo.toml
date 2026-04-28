@@ -9,5 +9,5 @@ spacetimedb-sdk = { workspace = true }
 tokio = { workspace = true }
 tracing = { workspace = true }
 thiserror = { workspace = true }
-sastaspace-core = { package = "core", path = "../core" }
+sastaspace-core = { path = "../core" }
 serde = { workspace = true }

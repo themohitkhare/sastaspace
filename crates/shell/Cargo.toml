@@ -9,7 +9,7 @@ name = "sastaspace"
 path = "src/main.rs"
 
 [dependencies]
-sastaspace-core = { package = "core", path = "../core" }
+sastaspace-core = { path = "../core" }
 stdb-client = { path = "../stdb-client" }
 auth = { path = "../auth" }
 app-portfolio = { path = "../app-portfolio" }

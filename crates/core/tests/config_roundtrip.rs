@@ -1,4 +1,4 @@
-use core::config::Config;
+use sastaspace_core::config::Config;
 use tempfile::tempdir;
 
 #[test]

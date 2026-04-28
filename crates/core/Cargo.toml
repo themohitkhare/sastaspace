@@ -1,12 +1,8 @@
 [package]
-name = "core"
+name = "sastaspace-core"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
-
-[lib]
-# Package name `core` shadows std::core in doctest harness; disable doctests.
-doctest = false
 
 [dependencies]
 ratatui = { workspace = true }
