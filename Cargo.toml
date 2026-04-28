@@ -44,6 +44,24 @@ thiserror = "1"
 insta = { version = "1.40", features = ["yaml"] }
 expectrl = "0.7"
 
+# Config for `cargo dist`.
+# Produces binaries for macOS (universal), Linux (x86_64 + aarch64), Windows.
+# Publishes to GitHub Releases + a Homebrew tap.
+[workspace.metadata.dist]
+cargo-dist-version = "0.22.0"
+ci = ["github"]
+installers = ["shell", "homebrew"]
+tap = "mohitkhare/homebrew-sastaspace"
+formula = "sastaspace"
+targets = [
+    "aarch64-apple-darwin",
+    "x86_64-apple-darwin",
+    "x86_64-unknown-linux-gnu",
+    "aarch64-unknown-linux-gnu",
+    "x86_64-pc-windows-msvc",
+]
+publish-prereleases = false
+
 [profile.release]
 opt-level = 3
 lto = "thin"
