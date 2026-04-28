@@ -10,4 +10,5 @@ tokio = { workspace = true }
 tracing = { workspace = true }
 thiserror = { workspace = true }
 sastaspace-core = { path = "../core" }
+app-portfolio = { path = "../app-portfolio" }
 serde = { workspace = true }

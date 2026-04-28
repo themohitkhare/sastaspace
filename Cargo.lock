@@ -658,6 +658,7 @@ version = "0.1.0"
 dependencies = [
  "expectrl",
  "serial_test",
+ "tempfile",
  "thiserror 1.0.69",
  "tokio",
  "tracing",
@@ -2908,6 +2909,7 @@ checksum = "a2eb9349b6444b326872e140eb1cf5e7c522154d69e7a0ffb0fb81c06b37543f"
 name = "stdb-client"
 version = "0.1.0"
 dependencies = [
+ "app-portfolio",
  "sastaspace-core",
  "serde",
  "spacetimedb-sdk",

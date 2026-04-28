@@ -51,7 +51,7 @@ async fn run(term: &mut terminal::Tui, cfg: Config) -> Result<()> {
     spawn_input_task(tx.clone());
     spawn_tick_task(tx.clone());
 
-    let _stdb = match connect_stdb(&cfg, tx.clone()).await {
+    let stdb = match connect_stdb(&cfg, tx.clone()).await {
         Ok(h) => Some(h),
         Err(e) => {
             // Don't crash on startup if STDB is down — show empty portfolio + a toast.
@@ -105,9 +105,15 @@ async fn run(term: &mut terminal::Tui, cfg: Config) -> Result<()> {
             }
         }
 
-        // STDB project updates pushed into the portfolio app — F11 fills this in.
         if let Action::Stdb(StdbEvent::Updated("project")) = &action {
-            // Will be wired in F11.
+            if let Some(handle) = stdb.as_ref() {
+                let projects = stdb_client::sub_helpers::read_projects(&handle.conn);
+                if let Some(app) = router.app_mut("portfolio") {
+                    if let Some(p) = app.as_any_mut().downcast_mut::<app_portfolio::Portfolio>() {
+                        p.set_projects(projects);
+                    }
+                }
+            }
         }
 
         let result = router.current().handle(action);

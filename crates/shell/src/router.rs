@@ -27,6 +27,11 @@ impl Router {
             .as_mut()
     }
 
+    /// Returns a mutable reference to the named app's `Box`, or `None` if not registered.
+    pub fn app_mut(&mut self, id: &'static str) -> Option<&mut Box<dyn sastaspace_core::App>> {
+        self.apps.get_mut(id)
+    }
+
     /// Returns true if the program should keep running.
     pub fn dispatch(&mut self, result: AppResult) -> bool {
         match result {

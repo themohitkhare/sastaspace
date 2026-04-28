@@ -14,3 +14,26 @@ pub mod bindings;
 pub mod connection;
 
 pub use connection::{StdbConfig, StdbError, StdbHandle, StdbStatus};
+
+/// Helpers that read STDB tables and convert rows into shapes app crates use.
+/// Kept as a thin module here so app crates don't need to know about
+/// `spacetimedb-sdk` directly.
+pub mod sub_helpers {
+    use crate::bindings::{self, project_table::ProjectTableAccess};
+    use spacetimedb_sdk::Table;
+
+    /// Snapshot the `project` table into `app_portfolio::ProjectRow`s.
+    /// Called from the shell whenever an `Updated("project")` event arrives.
+    pub fn read_projects(conn: &bindings::DbConnection) -> Vec<app_portfolio::ProjectRow> {
+        conn.db
+            .project()
+            .iter()
+            .map(|p| app_portfolio::ProjectRow {
+                slug: p.slug.clone(),
+                title: p.title.clone(),
+                blurb: p.blurb.clone(),
+                status: p.status.clone(),
+            })
+            .collect()
+    }
+}

@@ -5,7 +5,7 @@ use ratatui::{layout::Rect, Frame};
 use std::time::Duration;
 
 /// Per-screen update + render contract.
-pub trait App: Send {
+pub trait App: Send + std::any::Any {
     /// Stable identifier (lowercase, no spaces). Used by the router.
     fn id(&self) -> &'static str;
 
@@ -22,6 +22,10 @@ pub trait App: Send {
     fn tick(&mut self, _dt: Duration) -> AppResult {
         AppResult::Continue
     }
+
+    /// Downcasting support — allows the shell to recover a concrete type from
+    /// a `Box<dyn App>` without an unsafe transmute.
+    fn as_any_mut(&mut self) -> &mut dyn std::any::Any;
 }
 
 /// What the app wants the shell to do after `handle` / `tick`.
