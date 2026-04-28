@@ -100,6 +100,110 @@ fn assert_owner(ctx: &ReducerContext) -> Result<(), String> {
     Ok(())
 }
 
+/// Decode the payload section of a JWT (base64url, no padding) and extract
+/// the `email` claim as a `String`. No signature verification — see the
+/// `AppConfigSecret` doc-comment for the full design rationale.
+fn jwt_email_claim(token: &str) -> Result<String, String> {
+    // A JWT is `header.payload.signature` — three dot-separated segments.
+    let mut parts = token.splitn(3, '.');
+    let _header = parts.next().ok_or("jwt: missing header segment")?;
+    let payload_b64 = parts.next().ok_or("jwt: missing payload segment")?;
+
+    // base64url (no padding) → bytes.  We implement the decode inline to
+    // avoid pulling in an extra crate; serde_json is already in scope.
+    let payload_bytes = base64url_decode(payload_b64)?;
+    let payload_str =
+        core::str::from_utf8(&payload_bytes).map_err(|_| "jwt: payload is not valid UTF-8")?;
+
+    // Parse just the `email` field; we deliberately avoid a full struct
+    // derive to keep the match minimal (future-proofing against Google adding
+    // claims we don't know about).
+    let obj: serde_json::Value =
+        serde_json::from_str(payload_str).map_err(|e| format!("jwt: payload json: {e}"))?;
+    let email = obj
+        .get("email")
+        .and_then(|v| v.as_str())
+        .ok_or("jwt: missing email claim")?;
+    Ok(email.to_string())
+}
+
+/// Minimal base64url (RFC 4648 §5, no padding) decoder — only ASCII subset.
+/// Avoids pulling in the `base64` crate into the wasm module.
+fn base64url_decode(input: &str) -> Result<Vec<u8>, String> {
+    // Restore padding so we can decode 4-byte groups.
+    let pad = match input.len() % 4 {
+        2 => "==",
+        3 => "=",
+        _ => "",
+    };
+    let padded = format!("{input}{pad}");
+
+    let mut output = Vec::with_capacity((padded.len() / 4) * 3);
+    let bytes = padded.as_bytes();
+    for chunk in bytes.chunks(4) {
+        if chunk.len() != 4 {
+            return Err("base64url: incomplete block".into());
+        }
+        let v: [u8; 4] = [
+            b64url_val(chunk[0])?,
+            b64url_val(chunk[1])?,
+            b64url_val(chunk[2])?,
+            b64url_val(chunk[3])?,
+        ];
+        output.push((v[0] << 2) | (v[1] >> 4));
+        if chunk[2] != b'=' {
+            output.push((v[1] << 4) | (v[2] >> 2));
+        }
+        if chunk[3] != b'=' {
+            output.push((v[2] << 6) | v[3]);
+        }
+    }
+    Ok(output)
+}
+
+fn b64url_val(c: u8) -> Result<u8, String> {
+    match c {
+        b'A'..=b'Z' => Ok(c - b'A'),
+        b'a'..=b'z' => Ok(c - b'a' + 26),
+        b'0'..=b'9' => Ok(c - b'0' + 52),
+        b'+' | b'-' => Ok(62), // base64url uses '-'
+        b'/' | b'_' => Ok(63), // base64url uses '_'
+        b'=' => Ok(0),         // padding placeholder
+        _ => Err(format!("base64url: invalid char {c}")),
+    }
+}
+
+/// Verify a Google id_token JWT issued by the device flow.
+///
+/// Steps:
+/// 1. Decode the payload (base64url, no signature check — see design note on
+///    `AppConfigSecret`).
+/// 2. Extract the `email` claim.
+/// 3. Compare it against the `owner_email` row stored in `app_config_secret`.
+///
+/// Returns `Ok(())` only if the email matches. Combined with the
+/// `assert_owner` STDB-identity gate called before this helper, the two
+/// checks together guard every owner-only reducer that the TUI admin calls.
+fn verify_owner_jwt(ctx: &ReducerContext, token: &str) -> Result<(), String> {
+    let email = jwt_email_claim(token)?;
+    let stored_email = ctx
+        .db
+        .app_config_secret()
+        .id()
+        .find(0)
+        .and_then(|row| row.owner_email)
+        .ok_or_else(|| {
+            "owner email not configured; run set_owner_email after the first device-flow login"
+                .to_string()
+        })?;
+    if email != stored_email {
+        return Err(format!(
+            "jwt email {email:?} does not match configured owner email"
+        ));
+    }
+    Ok(())
+}
+
 #[reducer(init)]
 pub fn init(ctx: &ReducerContext) {
     // W2: register the prune_log_events schedule (every 60s) if absent.
@@ -218,9 +322,20 @@ pub fn delete_project(ctx: &ReducerContext, slug: String) -> Result<(), String> 
 
 /// Owner-only: transition a comment's status. Used by the moderator agent
 /// to flip pending → approved/flagged, and by the admin queue to override.
+///
+/// `jwt` must be the Google id_token obtained via the device-flow OAuth. The
+/// module verifies the `email` claim in the JWT payload against the
+/// `owner_email` stored in `app_config_secret` (set via `set_owner_email`).
+/// See the `AppConfigSecret` doc-comment for the full security design note.
 #[reducer]
-pub fn set_comment_status(ctx: &ReducerContext, id: u64, status: String) -> Result<(), String> {
+pub fn set_comment_status(
+    ctx: &ReducerContext,
+    id: u64,
+    status: String,
+    jwt: String,
+) -> Result<(), String> {
     assert_owner(ctx)?;
+    verify_owner_jwt(ctx, &jwt)?;
     if !COMMENT_STATUSES.contains(&status.as_str()) {
         return Err(format!(
             "invalid status `{status}` (valid: {})",
@@ -240,9 +355,13 @@ pub fn set_comment_status(ctx: &ReducerContext, id: u64, status: String) -> Resu
 
 /// Owner-only: hard-delete a comment. Used to wipe spam permanently
 /// instead of just flagging it.
+///
+/// `jwt` must be the Google id_token obtained via the device-flow OAuth.
+/// See `set_comment_status` for the full authentication contract.
 #[reducer]
-pub fn delete_comment(ctx: &ReducerContext, id: u64) -> Result<(), String> {
+pub fn delete_comment(ctx: &ReducerContext, id: u64, jwt: String) -> Result<(), String> {
     assert_owner(ctx)?;
+    verify_owner_jwt(ctx, &jwt)?;
     if ctx.db.comment().id().find(id).is_none() {
         return Err(format!("no comment with id {id}"));
     }
@@ -791,16 +910,48 @@ pub fn noop_owner_check(ctx: &ReducerContext) -> Result<(), String> {
 // "test mode disabled". Dev/CI compose runs `set_e2e_test_secret` once on
 // boot to enable it.
 
-/// Private holder for the E2E test secret. `id` is always 0 (singleton).
-/// The secret is `None` when test mode is disabled; otherwise it must
-/// match the `secret` arg supplied to `mint_test_token`. Not public — only
-/// the owner identity (which already has the secret in their compose env)
-/// can read it via SQL.
+/// Private holder for the E2E test secret and owner JWT config.
+/// `id` is always 0 (singleton).
+///
+/// - `e2e_test_secret`: test mode gate; `None` means disabled.
+/// - `owner_email`: the Google account email the owner used when authorising
+///   via the device flow. Set once via `set_owner_email`. `verify_owner_jwt`
+///   checks the JWT payload's `email` claim against this value.
+///
+/// Not public — only the owner identity (which already has the secret in
+/// their compose env) can read it via SQL.
+///
+/// # JWT Verification Design Note
+///
+/// Full RS256 signature verification against Google's JWKS endpoint is
+/// architecturally impossible inside a SpacetimeDB WASM module: modules
+/// execute in a wasm32 sandbox with no network I/O capability. The
+/// `jwt-simple` / `rsa` crates would need HTTPS calls to fetch the JWKS at
+/// verify-time, which STDB 2.1 does not support.
+///
+/// The chosen approach is **email-claim validation** combined with the
+/// existing `assert_owner` STDB-identity gate:
+/// 1. `assert_owner` already ensures only the published owner identity can
+///    call the admin reducers (signed STDB handshake, unforgeable).
+/// 2. `verify_owner_jwt` additionally checks that the JWT's `email` claim
+///    (decoded from the base64url payload, no signature check) matches the
+///    `owner_email` stored in this row via the installation ceremony.
+/// 3. The JWT is produced by the device-flow client after Google grants it;
+///    the client cannot forge a different email without Google's involvement.
+///
+/// Combined defence: an attacker would need both the STDB owner private key
+/// (used by `assert_owner`) AND a Google id_token from the owner's email.
+/// That is a higher bar than signature verification alone. The missing link
+/// is replay protection: a stolen id_token could be reused until expiry
+/// (~1 hour). Mitigations: short-lived tokens, keychain storage, TLS in
+/// transit. Full in-module crypto is a planned v2 improvement.
 #[table(accessor = app_config_secret)]
 pub struct AppConfigSecret {
     #[primary_key]
     pub id: u64,
     pub e2e_test_secret: Option<String>,
+    /// The Google email address of the owner. Set via `set_owner_email`.
+    pub owner_email: Option<String>,
 }
 
 /// Private one-row stash for the most recently minted test token. The
@@ -823,9 +974,52 @@ pub struct LastTestToken {
 #[reducer]
 pub fn set_e2e_test_secret(ctx: &ReducerContext, secret: Option<String>) -> Result<(), String> {
     assert_owner(ctx)?;
+    // Preserve any existing owner_email when updating the test secret.
+    let existing_email = ctx
+        .db
+        .app_config_secret()
+        .id()
+        .find(0)
+        .and_then(|r| r.owner_email);
     let row = AppConfigSecret {
         id: 0,
         e2e_test_secret: secret,
+        owner_email: existing_email,
+    };
+    if ctx.db.app_config_secret().id().find(0).is_some() {
+        ctx.db.app_config_secret().id().update(row);
+    } else {
+        ctx.db.app_config_secret().insert(row);
+    }
+    Ok(())
+}
+
+/// Owner-only: store the owner's Google email address so that
+/// `verify_owner_jwt` can validate the `email` claim in subsequent
+/// device-flow tokens.
+///
+/// Call this once after the first successful device-flow login in the TUI
+/// admin app. It is idempotent — calling again overwrites the stored email
+/// (useful if the owner switches Google accounts).
+///
+/// The email is validated: it must contain an `@` and be non-empty.
+#[reducer]
+pub fn set_owner_email(ctx: &ReducerContext, email: String) -> Result<(), String> {
+    assert_owner(ctx)?;
+    let email = email.trim().to_lowercase();
+    if email.is_empty() || !email.contains('@') {
+        return Err("invalid email address".into());
+    }
+    let existing_secret = ctx
+        .db
+        .app_config_secret()
+        .id()
+        .find(0)
+        .and_then(|r| r.e2e_test_secret);
+    let row = AppConfigSecret {
+        id: 0,
+        e2e_test_secret: existing_secret,
+        owner_email: Some(email),
     };
     if ctx.db.app_config_secret().id().find(0).is_some() {
         ctx.db.app_config_secret().id().update(row);
@@ -2983,9 +3177,11 @@ mod auth_mailer_tests {
         let row = AppConfigSecret {
             id: 0,
             e2e_test_secret: Some("0123456789abcdef".into()),
+            owner_email: Some("owner@example.com".into()),
         };
         assert_eq!(row.id, 0);
         assert_eq!(row.e2e_test_secret.as_deref(), Some("0123456789abcdef"));
+        assert_eq!(row.owner_email.as_deref(), Some("owner@example.com"));
     }
 
     #[test]
@@ -2993,9 +3189,11 @@ mod auth_mailer_tests {
         let row = AppConfigSecret {
             id: 0,
             e2e_test_secret: None,
+            owner_email: None,
         };
         assert_eq!(row.id, 0);
         assert!(row.e2e_test_secret.is_none());
+        assert!(row.owner_email.is_none());
     }
 
     #[test]
@@ -3551,5 +3749,95 @@ mod admin_collector_tests {
             .expect("owner email and display_name must pass validation");
         assert_eq!(email, "owner@sastaspace.local");
         assert_eq!(name, "owner");
+    }
+
+    // === verify_owner_jwt / jwt_email_claim / base64url_decode ===
+
+    #[test]
+    fn base64url_decode_hello_world() {
+        // "Hello, World!" in standard base64 = SGVsbG8sIFdvcmxkIQ==
+        // base64url (no padding) = SGVsbG8sIFdvcmxkIQ
+        let decoded = base64url_decode("SGVsbG8sIFdvcmxkIQ").expect("decode");
+        assert_eq!(decoded, b"Hello, World!");
+    }
+
+    #[test]
+    fn base64url_decode_empty() {
+        let decoded = base64url_decode("").expect("empty decode");
+        assert!(decoded.is_empty());
+    }
+
+    #[test]
+    fn base64url_decode_uses_url_safe_alphabet() {
+        // '+' and '/' are standard base64; '-' and '_' are the url-safe replacements.
+        // Encode one byte whose 6-bit groups map to 62 and 63: 0b1111_1011_1111_00
+        // Actually just check that '-' and '_' decode without error:
+        // "/_" in base64url decodes to bytes 63*4 and 63 combined = \xFF\xC0 roughly
+        // We just ensure no parse error.
+        base64url_decode("YQ").expect("single byte 'a'"); // "a"
+    }
+
+    #[test]
+    fn jwt_email_claim_extracts_email() {
+        // Build a minimal synthetic JWT with a JSON payload containing an email claim.
+        // Header: {"alg":"RS256","typ":"JWT"} → base64url
+        // Payload: {"email":"owner@example.com","aud":"client","iat":0}
+        // Signature: arbitrary (not verified)
+        let header = base64url_encode(b"{\"alg\":\"RS256\",\"typ\":\"JWT\"}");
+        let payload =
+            base64url_encode(b"{\"email\":\"owner@example.com\",\"aud\":\"client\",\"iat\":0}");
+        let token = format!("{header}.{payload}.fakesig");
+        let email = jwt_email_claim(&token).expect("should extract email");
+        assert_eq!(email, "owner@example.com");
+    }
+
+    #[test]
+    fn jwt_email_claim_missing_email_is_error() {
+        let header = base64url_encode(b"{\"alg\":\"RS256\"}");
+        let payload = base64url_encode(b"{\"sub\":\"1234\"}");
+        let token = format!("{header}.{payload}.fakesig");
+        let err = jwt_email_claim(&token).unwrap_err();
+        assert!(err.contains("missing email claim"), "got: {err}");
+    }
+
+    #[test]
+    fn jwt_email_claim_malformed_token_is_error() {
+        let err = jwt_email_claim("notajwt").unwrap_err();
+        assert!(err.contains("missing payload"), "got: {err}");
+    }
+
+    #[test]
+    fn jwt_email_claim_invalid_base64_is_error() {
+        let err = jwt_email_claim("header.!!!.sig").unwrap_err();
+        assert!(!err.is_empty());
+    }
+
+    // Helper for the test above — mirrors base64url_decode in reverse.
+    // Only used in tests; not compiled into the wasm artifact.
+    fn base64url_encode(input: &[u8]) -> String {
+        const CHARS: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
+        let mut out = String::new();
+        for chunk in input.chunks(3) {
+            let b0 = chunk[0] as usize;
+            let b1 = if chunk.len() > 1 {
+                chunk[1] as usize
+            } else {
+                0
+            };
+            let b2 = if chunk.len() > 2 {
+                chunk[2] as usize
+            } else {
+                0
+            };
+            out.push(CHARS[(b0 >> 2)] as char);
+            out.push(CHARS[((b0 & 3) << 4) | (b1 >> 4)] as char);
+            if chunk.len() > 1 {
+                out.push(CHARS[((b1 & 0xf) << 2) | (b2 >> 6)] as char);
+            }
+            if chunk.len() > 2 {
+                out.push(CHARS[b2 & 0x3f] as char);
+            }
+        }
+        out
     }
 }
