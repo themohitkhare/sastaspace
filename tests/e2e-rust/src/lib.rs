@@ -57,8 +57,7 @@ impl SpacetimeFixture {
         let listen_addr = format!("127.0.0.1:{port}");
         // Each fixture gets its own tempdir for the control-plane database so
         // consecutive runs do not share identity state (which causes 403 on re-publish).
-        let data_dir = tempfile::TempDir::new()
-            .map_err(|e| format!("create tempdir: {e}"))?;
+        let data_dir = tempfile::TempDir::new().map_err(|e| format!("create tempdir: {e}"))?;
         let proc = Command::new(&spacetime_bin)
             .args([
                 "start",
@@ -75,9 +74,26 @@ impl SpacetimeFixture {
         let http_url = format!("http://127.0.0.1:{port}");
         let ws_url = format!("ws://127.0.0.1:{port}");
         wait_for_http(&format!("{http_url}/v1/ping"), Duration::from_secs(20))?;
-        publish_module(&spacetime_bin, &http_url, "sastaspace", "modules/sastaspace", SIBLING_WASM_SASTASPACE)?;
-        publish_module(&spacetime_bin, &http_url, "typewars", "modules/typewars", SIBLING_WASM_TYPEWARS)?;
-        Ok(Self { proc, http_url, ws_url, _data_dir: data_dir })
+        publish_module(
+            &spacetime_bin,
+            &http_url,
+            "sastaspace",
+            "modules/sastaspace",
+            SIBLING_WASM_SASTASPACE,
+        )?;
+        publish_module(
+            &spacetime_bin,
+            &http_url,
+            "typewars",
+            "modules/typewars",
+            SIBLING_WASM_TYPEWARS,
+        )?;
+        Ok(Self {
+            proc,
+            http_url,
+            ws_url,
+            _data_dir: data_dir,
+        })
     }
 }
 
@@ -189,8 +205,8 @@ impl LaunchedTui {
         // `target/debug/sastaspace` is correct as a relative path. We also
         // check the CARGO_MANIFEST_DIR-relative absolute path as a fallback.
         let bin = resolve_tui_bin()?;
-        let mut session = expectrl::spawn(bin.to_str().unwrap())
-            .map_err(|e| format!("spawn tui: {e}"))?;
+        let mut session =
+            expectrl::spawn(bin.to_str().unwrap()).map_err(|e| format!("spawn tui: {e}"))?;
         session.set_expect_timeout(Some(Duration::from_secs(10)));
         Ok(Self { session })
     }
@@ -201,9 +217,7 @@ fn resolve_tui_bin() -> Result<PathBuf, String> {
     // workspace root and `CARGO_MANIFEST_DIR` points to the e2e crate.
     // Walk up from CARGO_MANIFEST_DIR to find the workspace root.
     let candidates: Vec<PathBuf> = {
-        let mut v = vec![
-            PathBuf::from("target/debug/sastaspace"),
-        ];
+        let mut v = vec![PathBuf::from("target/debug/sastaspace")];
         if let Ok(manifest) = std::env::var("CARGO_MANIFEST_DIR") {
             // e2e crate is at <workspace>/tests/e2e-rust; workspace root is two levels up.
             let workspace_root = PathBuf::from(&manifest)

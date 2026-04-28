@@ -47,8 +47,7 @@ impl KeychainStore {
     }
 
     fn entry(kind: TokenKind) -> Result<keyring::Entry, StoreError> {
-        keyring::Entry::new(SERVICE, kind.account())
-            .map_err(|e| StoreError::Backend(e.to_string()))
+        keyring::Entry::new(SERVICE, kind.account()).map_err(|e| StoreError::Backend(e.to_string()))
     }
 }
 
@@ -89,7 +88,9 @@ pub struct InMemoryStore {
 
 impl InMemoryStore {
     pub fn new() -> Self {
-        Self { inner: std::sync::Mutex::new(Default::default()) }
+        Self {
+            inner: std::sync::Mutex::new(Default::default()),
+        }
     }
 }
 
@@ -101,7 +102,9 @@ impl Default for InMemoryStore {
 
 impl TokenStore for InMemoryStore {
     fn get(&self, kind: TokenKind) -> Result<String, StoreError> {
-        self.inner.lock().unwrap()
+        self.inner
+            .lock()
+            .unwrap()
             .get(&kind)
             .cloned()
             .ok_or(StoreError::Missing(kind))

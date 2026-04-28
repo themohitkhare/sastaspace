@@ -1,7 +1,6 @@
 //! Pure render — no state mutation. Snapshot-tested.
 
 use crate::state::{PortfolioState, ProjectRow};
-use sastaspace_core::theme::Theme;
 use ratatui::{
     layout::{Constraint, Direction, Layout, Rect},
     style::{Modifier, Style},
@@ -9,6 +8,7 @@ use ratatui::{
     widgets::{Block, Borders, List, ListItem, Paragraph, Wrap},
     Frame,
 };
+use sastaspace_core::theme::Theme;
 
 pub fn render(frame: &mut Frame, area: Rect, state: &PortfolioState, theme: &Theme) {
     let layout = Layout::default()

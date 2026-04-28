@@ -6,15 +6,15 @@ mod terminal;
 
 use auth::{keychain::KeychainStore, magic_link::MagicLinkConfig};
 use color_eyre::eyre::Result;
+use crossterm::event::{Event, EventStream};
+use directories::ProjectDirs;
+use futures::StreamExt;
 use login::{LoginModal, LoginOutcome};
 use sastaspace_core::{
     config::Config,
     event::{Action, InputAction, StdbEvent},
     keymap::{classify, GlobalKey},
 };
-use crossterm::event::{Event, EventStream};
-use directories::ProjectDirs;
-use futures::StreamExt;
 use std::sync::Arc;
 use std::time::Duration;
 use stdb_client::{StdbConfig, StdbHandle};
@@ -65,7 +65,10 @@ async fn run(term: &mut terminal::Tui, cfg: Config) -> Result<()> {
 
     let store = Arc::new(KeychainStore::new());
     let magic_cfg = MagicLinkConfig {
-        stdb_http_base: cfg.stdb_uri.replace("ws://", "http://").replace("wss://", "https://"),
+        stdb_http_base: cfg
+            .stdb_uri
+            .replace("ws://", "http://")
+            .replace("wss://", "https://"),
         module: cfg.stdb_module.clone(),
         http_timeout: Duration::from_secs(10),
     };
@@ -94,9 +97,7 @@ async fn run(term: &mut terminal::Tui, cfg: Config) -> Result<()> {
                 continue;
             }
             // Open modal on Shift-L (full :login palette comes later).
-            if matches!(k.code, crossterm::event::KeyCode::Char('L'))
-                && k.modifiers.is_empty()
-            {
+            if matches!(k.code, crossterm::event::KeyCode::Char('L')) && k.modifiers.is_empty() {
                 modal = Some(LoginModal::new(magic_cfg.clone(), store.clone()));
                 continue;
             }

@@ -1,6 +1,6 @@
 use app_portfolio::{Portfolio, ProjectRow};
-use sastaspace_core::App;
 use ratatui::{backend::TestBackend, layout::Rect, Terminal};
+use sastaspace_core::App;
 
 fn fixture_projects() -> Vec<ProjectRow> {
     vec![
@@ -59,8 +59,8 @@ fn portfolio_with_projects_snapshot() {
 
 #[test]
 fn portfolio_selection_moves_with_j_k() {
-    use sastaspace_core::event::{Action, InputAction};
     use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
+    use sastaspace_core::event::{Action, InputAction};
     let mut app = Portfolio::new();
     app.set_projects(fixture_projects());
 

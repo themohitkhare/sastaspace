@@ -41,7 +41,10 @@ pub enum StdbEvent {
     /// (e.g. "projects", "comments"). Apps re-query the table accessors.
     Updated(&'static str),
     /// A reducer call returned an error. Routed to a toast by default.
-    ReducerError { reducer: &'static str, message: String },
+    ReducerError {
+        reducer: &'static str,
+        message: String,
+    },
 }
 
 #[derive(Debug, Clone)]
@@ -59,12 +62,21 @@ pub enum ToastLevel {
 
 impl Toast {
     pub fn info(msg: impl Into<String>) -> Self {
-        Self { level: ToastLevel::Info, message: msg.into() }
+        Self {
+            level: ToastLevel::Info,
+            message: msg.into(),
+        }
     }
     pub fn warn(msg: impl Into<String>) -> Self {
-        Self { level: ToastLevel::Warn, message: msg.into() }
+        Self {
+            level: ToastLevel::Warn,
+            message: msg.into(),
+        }
     }
     pub fn error(msg: impl Into<String>) -> Self {
-        Self { level: ToastLevel::Error, message: msg.into() }
+        Self {
+            level: ToastLevel::Error,
+            message: msg.into(),
+        }
     }
 }

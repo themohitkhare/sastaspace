@@ -37,13 +37,12 @@ async fn request_surfaces_reducer_error_body() {
     let server = MockServer::start().await;
     Mock::given(method("POST"))
         .and(path("/v1/database/sastaspace/call/request_magic_link"))
-        .respond_with(
-            ResponseTemplate::new(400)
-                .set_body_string(r#"{"error":"invalid email"}"#),
-        )
+        .respond_with(ResponseTemplate::new(400).set_body_string(r#"{"error":"invalid email"}"#))
         .mount(&server)
         .await;
-    let err = request(&cfg(&server), "user@example.com").await.unwrap_err();
+    let err = request(&cfg(&server), "user@example.com")
+        .await
+        .unwrap_err();
     match err {
         MagicLinkError::Reducer(m) => assert!(m.contains("invalid email")),
         other => panic!("expected Reducer error, got {other:?}"),
@@ -55,10 +54,7 @@ async fn verify_happy_path_returns_bearer() {
     let server = MockServer::start().await;
     Mock::given(method("POST"))
         .and(path("/v1/database/sastaspace/call/verify_token"))
-        .respond_with(
-            ResponseTemplate::new(200)
-                .set_body_string(r#"{"value":"bearer-xyz"}"#),
-        )
+        .respond_with(ResponseTemplate::new(200).set_body_string(r#"{"value":"bearer-xyz"}"#))
         .mount(&server)
         .await;
     let bearer = verify(&cfg(&server), "ABCDEFGH", "Mohit").await.unwrap();

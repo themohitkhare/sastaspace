@@ -51,7 +51,10 @@ fn portfolio_renders_projects_from_stdb() {
             ])
             .status()
             .expect("sql insert project");
-        assert!(sql_status.success(), "both upsert_project and sql INSERT failed");
+        assert!(
+            sql_status.success(),
+            "both upsert_project and sql INSERT failed"
+        );
     }
 
     std::env::set_var("SASTASPACE_STDB_URI", fixture.ws_url.clone());

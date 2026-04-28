@@ -52,9 +52,7 @@ async fn poll_surfaces_denial() {
     let server = MockServer::start().await;
     Mock::given(method("POST"))
         .and(path("/token"))
-        .respond_with(
-            ResponseTemplate::new(400).set_body_string(r#"{"error":"access_denied"}"#),
-        )
+        .respond_with(ResponseTemplate::new(400).set_body_string(r#"{"error":"access_denied"}"#))
         .mount(&server)
         .await;
     let dc = DeviceCode {

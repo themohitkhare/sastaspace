@@ -85,17 +85,26 @@ impl LoginModal {
                 self.theme.body(),
             ))],
             LoginState::Sending => {
-                vec![Line::from(Span::styled("sending\u{2026}", self.theme.muted()))]
+                vec![Line::from(Span::styled(
+                    "sending\u{2026}",
+                    self.theme.muted(),
+                ))]
             }
             LoginState::EnterToken => vec![Line::from(Span::styled(
                 "check your email and paste the token below",
                 self.theme.body(),
             ))],
             LoginState::Verifying => {
-                vec![Line::from(Span::styled("verifying\u{2026}", self.theme.muted()))]
+                vec![Line::from(Span::styled(
+                    "verifying\u{2026}",
+                    self.theme.muted(),
+                ))]
             }
             LoginState::Success => {
-                vec![Line::from(Span::styled("signed in \u{2713}", self.theme.body()))]
+                vec![Line::from(Span::styled(
+                    "signed in \u{2713}",
+                    self.theme.body(),
+                ))]
             }
             LoginState::Failure => vec![Line::from(Span::styled(
                 self.error.as_deref().unwrap_or("error").to_string(),

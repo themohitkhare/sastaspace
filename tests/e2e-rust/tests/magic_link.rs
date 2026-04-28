@@ -86,8 +86,12 @@ fn lookup_pending_token(fixture: &SpacetimeFixture, email: &str) -> String {
     stdout
         .lines()
         .map(str::trim)
-        .filter(|l| l.len() == 32 && l.chars().all(|c| c.is_ascii_alphanumeric()))
-        .last()
-        .unwrap_or_else(|| panic!("no token for {email} in:\n{stdout}\nstderr:\n{}", String::from_utf8_lossy(&out.stderr)))
+        .rfind(|l| l.len() == 32 && l.chars().all(|c| c.is_ascii_alphanumeric()))
+        .unwrap_or_else(|| {
+            panic!(
+                "no token for {email} in:\n{stdout}\nstderr:\n{}",
+                String::from_utf8_lossy(&out.stderr)
+            )
+        })
         .to_string()
 }

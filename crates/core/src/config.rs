@@ -44,8 +44,8 @@ pub enum ConfigError {
 impl Config {
     /// `~/.config/sastaspace/config.toml` on linux/mac, `%APPDATA%\sastaspace\config.toml` on windows.
     pub fn path() -> Result<PathBuf, ConfigError> {
-        let dirs = ProjectDirs::from("com", "sastaspace", "sastaspace")
-            .ok_or(ConfigError::NoConfigDir)?;
+        let dirs =
+            ProjectDirs::from("com", "sastaspace", "sastaspace").ok_or(ConfigError::NoConfigDir)?;
         Ok(dirs.config_dir().join("config.toml"))
     }
 

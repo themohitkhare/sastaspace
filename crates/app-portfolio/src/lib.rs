@@ -6,13 +6,13 @@ mod view;
 
 pub use state::{PortfolioState, ProjectRow};
 
+use crossterm::event::{KeyCode, KeyEvent};
+use ratatui::{layout::Rect, Frame};
 use sastaspace_core::{
     event::{Action, InputAction},
     theme::Theme,
     App, AppResult,
 };
-use crossterm::event::{KeyCode, KeyEvent};
-use ratatui::{layout::Rect, Frame};
 
 pub struct Portfolio {
     state: PortfolioState,

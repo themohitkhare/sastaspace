@@ -5,13 +5,19 @@ fn in_memory_store_roundtrip() {
     let s = InMemoryStore::new();
 
     // Initially empty.
-    assert!(matches!(s.get(TokenKind::Auth), Err(StoreError::Missing(_))));
+    assert!(matches!(
+        s.get(TokenKind::Auth),
+        Err(StoreError::Missing(_))
+    ));
 
     // Set + get + clear.
     s.set(TokenKind::Auth, "abc123").unwrap();
     assert_eq!(s.get(TokenKind::Auth).unwrap(), "abc123");
     s.clear(TokenKind::Auth).unwrap();
-    assert!(matches!(s.get(TokenKind::Auth), Err(StoreError::Missing(_))));
+    assert!(matches!(
+        s.get(TokenKind::Auth),
+        Err(StoreError::Missing(_))
+    ));
 
     // Clearing a missing token is idempotent.
     s.clear(TokenKind::OwnerJwt).unwrap();

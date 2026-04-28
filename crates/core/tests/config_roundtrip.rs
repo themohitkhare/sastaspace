@@ -15,9 +15,11 @@ fn save_then_load_roundtrips() {
     let dir = tempdir().unwrap();
     let path = dir.path().join("config.toml");
 
-    let mut c = Config::default();
-    c.google_client_id = Some("test-client.apps.googleusercontent.com".into());
-    c.start_screen = "typewars".into();
+    let c = Config {
+        google_client_id: Some("test-client.apps.googleusercontent.com".into()),
+        start_screen: "typewars".into(),
+        ..Config::default()
+    };
     c.save_to(&path).unwrap();
 
     let loaded = Config::load_from(&path).unwrap();

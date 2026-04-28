@@ -30,7 +30,9 @@ impl Theme {
     }
 
     pub fn header(&self) -> Style {
-        Style::default().fg(self.accent).add_modifier(Modifier::BOLD)
+        Style::default()
+            .fg(self.accent)
+            .add_modifier(Modifier::BOLD)
     }
 
     pub fn body(&self) -> Style {

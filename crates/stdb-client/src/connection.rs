@@ -62,10 +62,7 @@ impl StdbHandle {
     /// until the WebSocket handshake completes. We wrap it in
     /// `spawn_blocking` so that callers in async contexts don't block the
     /// tokio executor.
-    pub async fn connect(
-        cfg: StdbConfig,
-        tx: UnboundedSender<Action>,
-    ) -> Result<Self, StdbError> {
+    pub async fn connect(cfg: StdbConfig, tx: UnboundedSender<Action>) -> Result<Self, StdbError> {
         let tx_connect = tx.clone();
         let tx_error = tx.clone();
         let tx_disconnect = tx.clone();
@@ -118,8 +115,7 @@ impl StdbHandle {
                 .map_err(|e| StdbError::Connect(e.to_string()))
         })
         .await
-        .map_err(|e| StdbError::Connect(format!("spawn_blocking join error: {e}")))?
-        ?;
+        .map_err(|e| StdbError::Connect(format!("spawn_blocking join error: {e}")))??;
 
         // Spawn the SDK's internal message-processing loop on a background thread.
         conn.run_threaded();

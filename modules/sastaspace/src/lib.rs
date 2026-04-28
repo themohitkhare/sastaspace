@@ -569,7 +569,8 @@ pub fn request_magic_link(
             text,
         )
     } else {
-        let magic_link = build_magic_link(&callback_url, &token, &app, prev_identity_hex.as_deref());
+        let magic_link =
+            build_magic_link(&callback_url, &token, &app, prev_identity_hex.as_deref());
         (
             "Your sign-in link to sastaspace".to_string(),
             render_magic_link_html(&magic_link),
@@ -2738,7 +2739,10 @@ mod auth_mailer_tests {
     #[test]
     fn validate_magic_link_args_accepts_tui_app() {
         let r = validate_magic_link_args("u@example.com", "tui", "tui://paste-token");
-        assert!(r.is_ok(), "tui app + tui:// callback should validate, got: {r:?}");
+        assert!(
+            r.is_ok(),
+            "tui app + tui:// callback should validate, got: {r:?}"
+        );
     }
 
     #[test]
@@ -2752,8 +2756,14 @@ mod auth_mailer_tests {
     #[test]
     fn render_magic_link_text_for_tui_shows_raw_token() {
         let text = render_magic_link_text_for_tui("abc123XYZ");
-        assert!(text.contains("abc123XYZ"), "tui text body must show raw token, got: {text}");
-        assert!(!text.contains("http"), "tui text body must not contain a URL, got: {text}");
+        assert!(
+            text.contains("abc123XYZ"),
+            "tui text body must show raw token, got: {text}"
+        );
+        assert!(
+            !text.contains("http"),
+            "tui text body must not contain a URL, got: {text}"
+        );
     }
 
     #[test]

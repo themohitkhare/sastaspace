@@ -44,3 +44,10 @@ opt-level = 3
 lto = "thin"
 codegen-units = 1
 strip = true
+
+# Wasm modules optimize for size, not speed.
+[profile.release.package.sastaspace-module]
+opt-level = "z"
+
+[profile.release.package.typewars-module]
+opt-level = "z"
