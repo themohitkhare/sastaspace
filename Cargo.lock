@@ -104,7 +104,7 @@ checksum = "170433209e817da6aae2c51aa0dd443009a613425dd041ebfb2492d1c4c11a25"
 
 [[package]]
 name = "app-admin"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "auth",
  "crossterm",
@@ -119,7 +119,7 @@ dependencies = [
 
 [[package]]
 name = "app-deck"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "crossterm",
  "directories",
@@ -138,7 +138,7 @@ dependencies = [
 
 [[package]]
 name = "app-notes"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "crossterm",
  "insta",
@@ -149,7 +149,7 @@ dependencies = [
 
 [[package]]
 name = "app-portfolio"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "crossterm",
  "insta",
@@ -160,7 +160,7 @@ dependencies = [
 
 [[package]]
 name = "app-typewars"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "crossterm",
  "insta",
@@ -217,7 +217,7 @@ checksum = "1505bd5d3d116872e7271a6d4e16d81d0c8570876c8de68093a09ac269d8aac0"
 
 [[package]]
 name = "auth"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "keyring",
  "reqwest",
@@ -869,7 +869,7 @@ checksum = "d0881ea181b1df73ff77ffaaf9c7544ecc11e82fba9b5f27b262a3c73a332555"
 
 [[package]]
 name = "e2e"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "expectrl",
  "serde_json",
@@ -2333,7 +2333,7 @@ dependencies = [
  "bytes",
  "getrandom 0.3.4",
  "lru-slab",
- "rand 0.9.4",
+ "rand",
  "ring",
  "rustc-hash",
  "rustls",
@@ -2382,33 +2382,12 @@ checksum = "f8dcc9c7d52a811697d2151c701e0d08956f92b0e24136cf4cf27b57a6a0d9bf"
 
 [[package]]
 name = "rand"
-version = "0.8.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5ca0ecfa931c29007047d1bc58e623ab12e5590e8c7cc53200d5202b69266d8a"
-dependencies = [
- "libc",
- "rand_chacha 0.3.1",
- "rand_core 0.6.4",
-]
-
-[[package]]
-name = "rand"
 version = "0.9.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "44c5af06bb1b7d3216d91932aed5265164bf384dc89cd6ba05cf59a35f5f76ea"
 dependencies = [
- "rand_chacha 0.9.0",
- "rand_core 0.9.5",
-]
-
-[[package]]
-name = "rand_chacha"
-version = "0.3.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e6c10a63a0fa32252be49d21e7709d4d4baf8d231c2dbce1eaa8141b9b127d88"
-dependencies = [
- "ppv-lite86",
- "rand_core 0.6.4",
+ "rand_chacha",
+ "rand_core",
 ]
 
 [[package]]
@@ -2418,16 +2397,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d3022b5f1df60f26e1ffddd6c66e8aa15de382ae63b3a0c1bfc0e4d3e3f325cb"
 dependencies = [
  "ppv-lite86",
- "rand_core 0.9.5",
-]
-
-[[package]]
-name = "rand_core"
-version = "0.6.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ec0be4795e2f6a28069bec0b5ff3e2ac9bafc99e6a9a7dc3547996c5c816922c"
-dependencies = [
- "getrandom 0.2.17",
+ "rand_core",
 ]
 
 [[package]]
@@ -2719,7 +2689,7 @@ dependencies = [
 
 [[package]]
 name = "sastaspace-core"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "crossterm",
  "directories",
@@ -2730,16 +2700,6 @@ dependencies = [
  "thiserror 1.0.69",
  "tokio",
  "toml",
-]
-
-[[package]]
-name = "sastaspace-module"
-version = "0.1.0"
-dependencies = [
- "log",
- "serde",
- "serde_json",
- "spacetimedb",
 ]
 
 [[package]]
@@ -2783,12 +2743,6 @@ dependencies = [
  "serde",
  "serde_json",
 ]
-
-[[package]]
-name = "scoped-tls"
-version = "1.0.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e1cf6437eb19a8f4a6cc0f7dca544973b0b78843adbfeb3683d1a94a0024a294"
 
 [[package]]
 name = "scopeguard"
@@ -2999,7 +2953,7 @@ dependencies = [
 
 [[package]]
 name = "shell"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "app-admin",
  "app-deck",
@@ -3093,29 +3047,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "spacetimedb"
-version = "2.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "591f9068644aab6808e7612a869dedde7eeb26df78027a19bc9dc597cc649678"
-dependencies = [
- "anyhow",
- "bytemuck",
- "bytes",
- "derive_more",
- "getrandom 0.2.17",
- "http",
- "log",
- "rand 0.8.6",
- "scoped-tls",
- "serde_json",
- "spacetimedb-bindings-macro",
- "spacetimedb-bindings-sys",
- "spacetimedb-lib",
- "spacetimedb-primitives",
- "spacetimedb-query-builder",
-]
-
-[[package]]
 name = "spacetimedb-bindings-macro"
 version = "2.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3127,15 +3058,6 @@ dependencies = [
  "quote",
  "spacetimedb-primitives",
  "syn",
-]
-
-[[package]]
-name = "spacetimedb-bindings-sys"
-version = "2.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2c2fe9f4124a599c9deae8f8231be3ae5a49bc5b2eef5e04c04b2632cf4cc0b4"
-dependencies = [
- "spacetimedb-primitives",
 ]
 
 [[package]]
@@ -3264,7 +3186,7 @@ dependencies = [
  "hex",
  "itertools 0.12.1",
  "lean_string",
- "rand 0.9.4",
+ "rand",
  "second-stack",
  "serde",
  "sha3",
@@ -3327,7 +3249,7 @@ dependencies = [
  "native-tls",
  "once_cell",
  "prometheus",
- "rand 0.9.4",
+ "rand",
  "spacetimedb-client-api-messages",
  "spacetimedb-data-structures",
  "spacetimedb-lib",
@@ -3375,7 +3297,7 @@ checksum = "a2eb9349b6444b326872e140eb1cf5e7c522154d69e7a0ffb0fb81c06b37543f"
 
 [[package]]
 name = "stdb-client"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "app-notes",
  "app-portfolio",
@@ -3967,7 +3889,7 @@ dependencies = [
  "httparse",
  "log",
  "native-tls",
- "rand 0.9.4",
+ "rand",
  "sha1",
  "thiserror 2.0.18",
  "url",
@@ -3979,14 +3901,6 @@ name = "typenum"
 version = "1.20.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "40ce102ab67701b8526c123c1bab5cbe42d7040ccfd0f64af1a385808d2f43de"
-
-[[package]]
-name = "typewars-module"
-version = "0.1.0"
-dependencies = [
- "log",
- "spacetimedb",
-]
 
 [[package]]
 name = "unicode-ident"

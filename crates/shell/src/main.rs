@@ -28,6 +28,26 @@ const TICK_MS: u64 = 16;
 
 #[tokio::main(flavor = "multi_thread")]
 async fn main() -> Result<()> {
+    // Handle --version and --help before touching the terminal so they work
+    // in non-TTY contexts (CI, pipes, `ssh user@host sastaspace --version`).
+    let args: Vec<String> = std::env::args().collect();
+    if args.iter().any(|a| a == "--version" || a == "-V") {
+        println!("sastaspace {}", env!("CARGO_PKG_VERSION"));
+        return Ok(());
+    }
+    if args.iter().any(|a| a == "--help" || a == "-h") {
+        println!("sastaspace {}", env!("CARGO_PKG_VERSION"));
+        println!("Mohit's portfolio + projects as a TUI binary");
+        println!();
+        println!("USAGE:");
+        println!("  sastaspace [OPTIONS]");
+        println!();
+        println!("OPTIONS:");
+        println!("  -V, --version   Print version and exit");
+        println!("  -h, --help      Print this help message");
+        return Ok(());
+    }
+
     install_panic_hook()?;
     init_tracing();
 
@@ -118,6 +138,23 @@ async fn run(term: &mut terminal::Tui, cfg: Config) -> Result<()> {
             {
                 modal = Some(LoginModal::new(magic_cfg.clone(), store.clone()));
                 continue;
+            }
+            // Global navigation shortcuts (Shift + key switches apps).
+            // Shift-N → notes, Shift-T → typewars, Shift-D → deck,
+            // Shift-A → admin, Shift-P → portfolio (home).
+            if k.modifiers == KeyModifiers::SHIFT {
+                let dest = match k.code {
+                    crossterm::event::KeyCode::Char('N') => Some("notes"),
+                    crossterm::event::KeyCode::Char('T') => Some("typewars"),
+                    crossterm::event::KeyCode::Char('D') => Some("deck"),
+                    crossterm::event::KeyCode::Char('A') => Some("admin"),
+                    crossterm::event::KeyCode::Char('P') => Some("portfolio"),
+                    _ => None,
+                };
+                if let Some(id) = dest {
+                    router.dispatch(sastaspace_core::AppResult::SwitchTo(id));
+                    continue;
+                }
             }
             if let Some(GlobalKey::Quit) = classify(*k) {
                 break;

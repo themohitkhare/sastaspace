@@ -508,15 +508,22 @@ fn resolve_tui_bin() -> Result<PathBuf, String> {
     // When invoked via `cargo test -p e2e`, the working directory is the
     // workspace root and `CARGO_MANIFEST_DIR` points to the e2e crate.
     // Walk up from CARGO_MANIFEST_DIR to find the workspace root.
+    //
+    // Preference order: release > debug (release is smaller and faster for
+    // real user-facing e2e tests; debug is the fallback for quick dev iteration).
     let candidates: Vec<PathBuf> = {
-        let mut v = vec![PathBuf::from("target/debug/sastaspace")];
+        let mut v = vec![
+            PathBuf::from("target/release/sastaspace"),
+            PathBuf::from("target/debug/sastaspace"),
+        ];
         if let Ok(manifest) = std::env::var("CARGO_MANIFEST_DIR") {
-            // e2e crate is at <workspace>/tests/e2e-rust; workspace root is two levels up.
+            // e2e crate is at <workspace>/tests/e2e; workspace root is two levels up.
             let workspace_root = PathBuf::from(&manifest)
                 .parent() // tests/
                 .and_then(|p| p.parent()) // workspace root
                 .map(|p| p.to_path_buf());
             if let Some(root) = workspace_root {
+                v.push(root.join("target/release/sastaspace"));
                 v.push(root.join("target/debug/sastaspace"));
             }
         }
@@ -527,5 +534,5 @@ fn resolve_tui_bin() -> Result<PathBuf, String> {
             return Ok(path);
         }
     }
-    Err("target/debug/sastaspace not found — run `cargo build -p shell` first".into())
+    Err("sastaspace binary not found — run `cargo build -p shell [--release]` first".into())
 }
