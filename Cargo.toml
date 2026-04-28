@@ -21,7 +21,7 @@ members = [
 version = "0.1.0"
 edition = "2021"
 license = "MIT"
-repository = "https://github.com/mohitkhare/sastaspace"
+repository = "https://github.com/themohitkhare/sastaspace"
 
 [workspace.dependencies]
 tokio = { version = "1.40", features = ["rt-multi-thread", "macros", "signal", "time", "fs", "io-util", "sync"] }
@@ -51,7 +51,8 @@ expectrl = "0.7"
 cargo-dist-version = "0.22.0"
 ci = ["github"]
 installers = ["shell", "homebrew"]
-tap = "mohitkhare/homebrew-sastaspace"
+tap = "themohitkhare/homebrew-sastaspace"
+publish-jobs = ["homebrew"]
 formula = "sastaspace"
 targets = [
     "aarch64-apple-darwin",
@@ -74,3 +75,8 @@ opt-level = "z"
 
 [profile.release.package.typewars-module]
 opt-level = "z"
+
+# The profile that 'cargo dist' will build with
+[profile.dist]
+inherits = "release"
+lto = "thin"

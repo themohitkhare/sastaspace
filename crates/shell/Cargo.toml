@@ -3,6 +3,9 @@ name = "shell"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
+repository.workspace = true
+description = "sastaspace — Mohit's portfolio + projects as a TUI binary"
+homepage = "https://sastaspace.com"
 
 [[bin]]
 name = "sastaspace"
