@@ -62,6 +62,7 @@ async fn run(term: &mut terminal::Tui, cfg: Config) -> Result<()> {
 
     let mut router = router::Router::new("portfolio");
     router.register(Box::new(app_portfolio::Portfolio::new()));
+    router.register(Box::new(app_typewars::TypewarsApp::new()));
 
     let store = Arc::new(KeychainStore::new());
     let magic_cfg = MagicLinkConfig {
