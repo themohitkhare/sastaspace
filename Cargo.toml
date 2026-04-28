@@ -5,6 +5,7 @@ resolver = "2"
 members = [
     "modules/sastaspace",
     "modules/typewars",
+    "crates/core",
 ]
 
 [workspace.package]
