@@ -107,7 +107,7 @@ fn lookup_pending_token(fixture: &SpacetimeFixture, email: &str) -> String {
                 None
             }
         })
-        .last()
+        .next_back()
         .unwrap_or_else(|| {
             panic!(
                 "no token for {email} in:\n{stdout}\nstderr:\n{}",
