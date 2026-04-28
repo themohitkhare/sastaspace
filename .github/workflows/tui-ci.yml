@@ -26,16 +26,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@1.85
+      - uses: dtolnay/rust-toolchain@1.88
         with:
           components: rustfmt, clippy
       - uses: Swatinem/rust-cache@v2
       - name: fmt
         run: cargo fmt --all -- --check
       - name: clippy
-        run: cargo clippy --workspace --exclude sastaspace-module --exclude typewars --all-targets -- -D warnings
+        run: cargo clippy --workspace --exclude sastaspace-module --exclude typewars-module --all-targets -- -D warnings
       - name: test
-        run: cargo test --workspace --exclude sastaspace-module --exclude typewars --exclude e2e
+        run: cargo test --workspace --exclude sastaspace-module --exclude typewars-module --exclude e2e
         env:
           RUST_BACKTRACE: 1
 
@@ -44,7 +44,7 @@ jobs:
     needs: check
     steps:
       - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@1.85
+      - uses: dtolnay/rust-toolchain@1.88
       - uses: Swatinem/rust-cache@v2
       - name: install spacetime CLI
         run: |
