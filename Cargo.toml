@@ -63,6 +63,11 @@ targets = [
 ]
 publish-prereleases = false
 
+# alsa-sys (rodio's transitive dep for deck audio) needs libasound2-dev on Linux
+# AT BUILD TIME (default stage=run won't install on the build runner).
+[workspace.metadata.dist.dependencies.apt]
+libasound2-dev = { version = "*", stage = ["build", "run"] }
+
 [profile.release]
 opt-level = 3
 lto = "thin"

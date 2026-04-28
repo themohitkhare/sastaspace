@@ -7,6 +7,12 @@ publish = false
 [lib]
 crate-type = ["cdylib"]
 
+# This crate compiles only to wasm32-unknown-unknown (it's a SpacetimeDB module).
+# Exclude from cargo-dist's native release builds — otherwise dist tries to link
+# spacetimedb FFI stubs as a host binary and fails.
+[package.metadata.dist]
+dist = false
+
 [dependencies]
 spacetimedb = "2.1"
 log = "0.4"
