@@ -13,8 +13,7 @@ log = "0.4"
 serde = { version = "1", default-features = false, features = ["derive", "alloc"] }
 serde_json = { version = "1", default-features = false, features = ["alloc"] }
 
-[profile.release]
-opt-level = "z"
-lto = true
-strip = true
-codegen-units = 1
+# [profile.release] intentionally omitted — per-package overrides for the wasm
+# size profile live in the root workspace Cargo.toml under
+# [profile.release.package.sastaspace-module] to avoid the "profiles for the
+# non-root package will be ignored" warning.

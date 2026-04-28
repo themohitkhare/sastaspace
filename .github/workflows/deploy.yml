@@ -7,11 +7,6 @@ on:
   schedule:
     - cron: "0 4 * * *"
   workflow_dispatch:
-    inputs:
-      bindings_run_id:
-        description: "module run ID to pull stdb-bindings from (optional, for manual landing rebuild)"
-        required: false
-        type: string
 
 concurrency:
   group: deploy-${{ github.ref }}
@@ -19,19 +14,11 @@ concurrency:
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
-  NEXT_PUBLIC_STDB_URI: wss://stdb.sastaspace.com
-  NEXT_PUBLIC_STDB_MODULE: sastaspace
   STDB_SERVER_URL: https://stdb.sastaspace.com
   STDB_MODULE_NAME: sastaspace
   STDB_CLI_VERSION: "2.1.0"
-  # Bumped 20→55 (audit coverage section). Actual sastaspace module
-  # coverage is ~65% post audit-fix; 55 gives a 10% drop-buffer while
-  # still catching meaningful regressions instead of being a noise floor.
+  # Coverage threshold — sastaspace module unit coverage floor.
   COVERAGE_MIN_LINES: "55"
-  LANDING_OUT_DIR: /home/mkhare/sastaspace/infra/landing/out
-  NOTES_OUT_DIR: /home/mkhare/sastaspace/infra/notes/out
-  TYPEWARS_OUT_DIR: /home/mkhare/sastaspace/infra/typewars/out
-  ADMIN_OUT_DIR: /home/mkhare/sastaspace/infra/admin/out
 
 jobs:
 
@@ -39,14 +26,9 @@ jobs:
   changes:
     runs-on: [self-hosted, Linux]
     outputs:
-      module:   ${{ steps.diff.outputs.module }}
-      landing:  ${{ steps.diff.outputs.landing }}
-      notes:    ${{ steps.diff.outputs.notes }}
-      agents:   ${{ steps.diff.outputs.agents }}
-      workers:  ${{ steps.diff.outputs.workers }}
-      typewars: ${{ steps.diff.outputs.typewars }}
-      admin:    ${{ steps.diff.outputs.admin }}
-      deck:     ${{ steps.diff.outputs.deck }}
+      module:  ${{ steps.diff.outputs.module }}
+      agents:  ${{ steps.diff.outputs.agents }}
+      workers: ${{ steps.diff.outputs.workers }}
     steps:
       - uses: actions/checkout@v6
         with:
@@ -55,7 +37,7 @@ jobs:
         run: |
           # Schedule and manual dispatch always rebuild everything.
           if [[ "$GITHUB_EVENT_NAME" == "schedule" || "$GITHUB_EVENT_NAME" == "workflow_dispatch" ]]; then
-            printf 'module=true\nlanding=true\nnotes=true\nagents=true\nworkers=true\ntypewars=true\nadmin=true\ndeck=true\n' >> "$GITHUB_OUTPUT"
+            printf 'module=true\nagents=true\nworkers=true\n' >> "$GITHUB_OUTPUT"
             exit 0
           fi
           if [[ "$GITHUB_EVENT_NAME" == "pull_request" ]]; then
@@ -63,21 +45,16 @@ jobs:
           elif [[ "$GITHUB_EVENT_NAME" == "push" ]]; then
             BASE="${{ github.event.before }}"
             if [[ "$BASE" == "0000000000000000000000000000000000000000" ]]; then
-              BASE="$(git rev-parse HEAD~1)"  # new branch fallback
+              BASE="$(git rev-parse HEAD~1)"
             fi
           else
             BASE="$(git rev-parse HEAD~1)"
           fi
           changed=$(git diff --name-only "$BASE" HEAD)
           detect() { echo "$changed" | grep -qE "$1" && echo true || echo false; }
-          echo "module=$(detect    '^modules/sastaspace/')"                                              >> "$GITHUB_OUTPUT"
-          echo "landing=$(detect   '^(apps/landing|packages|infra/landing)/')"                           >> "$GITHUB_OUTPUT"
-          echo "notes=$(detect     '^(apps/notes|packages|infra/notes/|infra/landing/security_headers)')" >> "$GITHUB_OUTPUT"
-          echo "agents=$(detect    '^(services/auth|infra/agents|infra/docker-compose)')"                >> "$GITHUB_OUTPUT"
-          echo "workers=$(detect   '^(workers/|packages/stdb-bindings/|infra/docker-compose)')"          >> "$GITHUB_OUTPUT"
-          echo "typewars=$(detect  '^(apps/typewars|packages/typewars-bindings|packages/design-tokens|infra/typewars/|infra/landing/security_headers|infra/docker-compose)')" >> "$GITHUB_OUTPUT"
-          echo "admin=$(detect     '^(apps/admin|infra/admin/|infra/docker-compose)')"                    >> "$GITHUB_OUTPUT"
-          echo "deck=$(detect      '^(infra/deck/|infra/docker-compose)')"                                >> "$GITHUB_OUTPUT"
+          echo "module=$(detect  '^modules/sastaspace/')"                                           >> "$GITHUB_OUTPUT"
+          echo "agents=$(detect  '^(infra/agents|infra/docker-compose)')"                           >> "$GITHUB_OUTPUT"
+          echo "workers=$(detect '^(workers/|infra/docker-compose)')"                               >> "$GITHUB_OUTPUT"
 
   # ── 1. SpacetimeDB Rust module ────────────────────────────────────────────
   module-gate:
@@ -144,14 +121,11 @@ jobs:
         env:
           SPACETIME_TOKEN: ${{ secrets.SPACETIME_TOKEN }}
         run: |
-          [[ -z "$SPACETIME_TOKEN" ]] && { echo "::error::SPACETIME_TOKEN unset — publish would create a stranger identity"; exit 1; }
+          [[ -z "$SPACETIME_TOKEN" ]] && { echo "::error::SPACETIME_TOKEN unset"; exit 1; }
           spacetime login --token "$SPACETIME_TOKEN"
       - name: publish module
         run: spacetime publish --server prod --module-path modules/sastaspace "$STDB_MODULE_NAME" -y
-      - name: ensure owner User row (idempotent — register_owner_self)
-        # init only runs on first publish; this reducer keeps the owner
-        # identity registered in the User table on every republish so
-        # submit_user_comment + similar accept owner-issued e2e calls.
+      - name: ensure owner User row (idempotent)
         env:
           SPACETIME_TOKEN: ${{ secrets.SPACETIME_TOKEN }}
         run: |
@@ -164,378 +138,106 @@ jobs:
           echo "register_owner_self returned HTTP $status"
           head -3 /tmp/regowner.out 2>/dev/null
           [[ "$status" == "200" || "$status" == "204" ]] || exit 1
-      - name: regenerate ts bindings
-        run: |
-          spacetime generate \
-            --lang typescript \
-            --out-dir packages/stdb-bindings/src/generated \
-            --module-path modules/sastaspace
-      - uses: actions/upload-artifact@v7
-        with:
-          name: stdb-bindings
-          path: packages/stdb-bindings/src/generated
-          retention-days: 7
 
-  # ── 2. landing app ────────────────────────────────────────────────────────
-  # Phase 3 prep (audit N3): build_variant matrix produces both `landing-out-legacy`
-  # and `landing-out-stdb` artifacts. NEXT_PUBLIC_USE_STDB_DECK is baked into the
-  # bundle at build time (output: 'export'). The legacy artifact is what
-  # `landing-deploy` rsyncs today; Phase 3 cutover swaps to `landing-out-stdb`.
-  landing-gate:
-    needs: [changes, module-publish]
-    if: >-
-      always() && !cancelled() &&
-      (needs.changes.outputs.landing == 'true' || needs.module-publish.result == 'success')
+  # ── 2. TypeScript workers (lint + vitest) ────────────────────────────────
+  workers:
+    needs: changes
+    if: needs.changes.outputs.workers == 'true'
     runs-on: [self-hosted, Linux]
-    strategy:
-      fail-fast: false
-      matrix:
-        # On push events only build `stdb` (the active production variant).
-        # `legacy` is a rollback artifact — only rebuild it on workflow_dispatch
-        # (manual) so normal pushes don't pay double Next.js build time.
-        # Phase 4 will drop `legacy` from the matrix entirely.
-        build_variant: ${{ github.event_name == 'workflow_dispatch' && fromJSON('["legacy","stdb"]') || fromJSON('["stdb"]') }}
-    env:
-      # Defaults to "false" for the legacy variant; the stdb variant overrides
-      # via the step-level env below. Static export bakes this into the bundle.
-      NEXT_PUBLIC_USE_STDB_DECK: ${{ matrix.build_variant == 'stdb' && 'true' || 'false' }}
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-node@v6
         with: { node-version: 22 }
       - name: enable pnpm
         run: corepack enable && corepack prepare pnpm@9.12.0 --activate
-      - run: pnpm install --frozen-lockfile
-      - name: download fresh bindings (module just published)
-        if: needs.module-publish.result == 'success'
-        uses: actions/download-artifact@v8
-        with:
-          name: stdb-bindings
-          path: packages/stdb-bindings/src/generated
-      - name: download bindings from explicit run (manual dispatch)
-        if: inputs.bindings_run_id != ''
-        uses: actions/download-artifact@v8
-        with:
-          name: stdb-bindings
-          path: packages/stdb-bindings/src/generated
-          run-id: ${{ inputs.bindings_run_id }}
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-      # Audit/lint/test/coverage are flag-independent — only run on the legacy
-      # variant to avoid double work (the stdb variant just builds).
-      # pnpm audit pulls workspace-wide deps; the workers transitive
-      # advisories (jsondiffpatch via @mastra/core, uuid<14 via gcp-metadata)
-      # block at moderate. Threshold raised to high until @mastra/core
-      # ships a patched release. Tracked in audit N18 follow-up.
-      - if: matrix.build_variant == 'legacy'
+      - name: install workers deps
+        run: pnpm install --frozen-lockfile --filter @sastaspace/workers...
+      - name: lint (tsc --noEmit)
+        working-directory: workers
+        run: pnpm lint
+      - name: test (vitest)
+        working-directory: workers
+        run: pnpm test
+      - name: pnpm audit
+        working-directory: workers
         run: pnpm audit --prod --audit-level high
         continue-on-error: true
-      - if: matrix.build_variant == 'legacy'
-        run: pnpm --filter @sastaspace/landing typecheck
-      - if: matrix.build_variant == 'legacy'
-        run: pnpm --filter @sastaspace/landing lint --max-warnings 0
-      - if: matrix.build_variant == 'legacy'
-        run: pnpm --filter @sastaspace/landing coverage
-      - if: matrix.build_variant == 'legacy'
-        uses: actions/upload-artifact@v7
-        with:
-          name: landing-coverage
-          path: apps/landing/coverage
-          retention-days: 7
-      - run: pnpm --filter @sastaspace/landing build
-      - uses: actions/upload-artifact@v7
-        with:
-          name: landing-out-${{ matrix.build_variant }}
-          path: apps/landing/out
-          retention-days: 7
 
-  landing-deploy:
-    needs: landing-gate
-    # Phase 3 cutover: landing-gate matrix runs both `legacy` and `stdb` variants.
-    # Skip when landing-gate was skipped (no infra/landing or apps/landing
-    # change) — there's no fresh artifact to deploy. Run when landing-gate
-    # succeeded OR was non-fatal-failure (the legacy variant's audit step
-    # is non-blocking but still flips the overall result).
+  # ── 3. Workers deploy ─────────────────────────────────────────────────────
+  workers-deploy:
+    needs: [workers, module-publish]
     if: >-
       always() && !cancelled() &&
       (github.event_name == 'push' || github.event_name == 'workflow_dispatch') &&
-      needs.landing-gate.result != 'skipped' &&
-      needs.landing-gate.result != 'cancelled'
+      needs.workers.result == 'success' &&
+      needs.module-publish.result != 'failure'
     runs-on: [self-hosted, Linux]
+    timeout-minutes: 15
+    concurrency:
+      group: deploy-workers
+      cancel-in-progress: false
     steps:
       - uses: actions/checkout@v6
-        with: { sparse-checkout: infra/landing }
-      - uses: actions/download-artifact@v8
-        with:
-          # PHASE 3 CUTOVER: switched from landing-out-legacy to landing-out-stdb.
-          # NEXT_PUBLIC_USE_STDB_DECK is baked into the bundle at build time;
-          # the stdb variant routes /lab/deck through STDB plan_request +
-          # generate_job reducers instead of POSTing to deck.sastaspace.com.
-          name: landing-out-stdb
-          path: out/
-      - name: rsync site
+      - name: rsync workers source + compose to prod
+        timeout-minutes: 3
         run: |
-          mkdir -p "$LANDING_OUT_DIR"
-          rsync -a --delete out/ "$LANDING_OUT_DIR/"
-      - name: sync nginx config + restart if changed
+          PROD=/home/mkhare/sastaspace
+          mkdir -p "$PROD/workers"
+          rsync -a --delete workers/ "$PROD/workers/" --exclude node_modules --exclude dist --exclude .env
+          rsync -a pnpm-workspace.yaml pnpm-lock.yaml package.json "$PROD/"
+          rsync -a infra/docker-compose.yml "$PROD/infra/docker-compose.yml"
+      - name: provision workers/.env from secrets
+        env:
+          WORKERS_STDB_TOKEN: ${{ secrets.WORKERS_STDB_TOKEN }}
+          SPACETIME_TOKEN: ${{ secrets.SPACETIME_TOKEN }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        timeout-minutes: 1
         run: |
-          NGINX_DIR=/home/mkhare/sastaspace/infra/landing
-          NEW_HEADERS=$(sha256sum infra/landing/security_headers.conf | cut -d' ' -f1)
-          NEW_NGINX=$(sha256sum infra/landing/nginx.conf | cut -d' ' -f1)
-          OLD_HEADERS=$(sha256sum "$NGINX_DIR/security_headers.conf" 2>/dev/null | cut -d' ' -f1)
-          OLD_NGINX=$(sha256sum "$NGINX_DIR/nginx.conf" 2>/dev/null | cut -d' ' -f1)
-          cat infra/landing/security_headers.conf > "$NGINX_DIR/security_headers.conf"
-          cat infra/landing/nginx.conf > "$NGINX_DIR/nginx.conf"
-          if [[ "$NEW_HEADERS" != "$OLD_HEADERS" || "$NEW_NGINX" != "$OLD_NGINX" ]]; then
-            echo "nginx config changed — restarting both containers"
-            docker restart sastaspace-landing sastaspace-notes
-          else
-            echo "nginx config unchanged — reloading"
-            docker exec sastaspace-landing nginx -s reload
-            docker exec sastaspace-notes nginx -s reload
+          STDB_TOKEN_VALUE="${WORKERS_STDB_TOKEN:-$SPACETIME_TOKEN}"
+          if [[ -z "$STDB_TOKEN_VALUE" || -z "$RESEND_API_KEY" ]]; then
+            echo "::error::Neither WORKERS_STDB_TOKEN nor SPACETIME_TOKEN set, or RESEND_API_KEY missing"
+            exit 1
           fi
-      - name: smoke test
+          PROD=/home/mkhare/sastaspace
+          install -m 600 /dev/null "$PROD/workers/.env"
+          {
+            echo "STDB_TOKEN=$STDB_TOKEN_VALUE"
+            echo "RESEND_API_KEY=$RESEND_API_KEY"
+            [[ -n "$GEMINI_API_KEY" ]] && echo "GEMINI_API_KEY=$GEMINI_API_KEY"
+          } > "$PROD/workers/.env"
+          chmod 600 "$PROD/workers/.env"
+      - name: build workers container
+        timeout-minutes: 10
+        working-directory: /home/mkhare/sastaspace/infra
+        run: docker compose build workers
+      - name: deploy workers container
+        timeout-minutes: 3
+        working-directory: /home/mkhare/sastaspace/infra
         run: |
-          for i in 1 2 3 4 5; do
-            code=$(curl -sS -o /dev/null -w "%{http_code}" -L https://sastaspace.com/)
-            echo "attempt $i: HTTP $code"
-            [[ "$code" == "200" ]] && exit 0
-            sleep 4
-          done
-          exit 1
-
-  # ── 3. notes app ─────────────────────────────────────────────────────────
-  # Phase 3 prep (audit N3): build_variant matrix produces both `notes-out-legacy`
-  # and `notes-out-stdb` artifacts. NEXT_PUBLIC_USE_STDB_AUTH is baked into the
-  # bundle at build time. Through Phase 3 the legacy variant is what deploys;
-  # cutover swaps to the stdb variant.
-  notes:
-    needs: [changes, module-publish]
-    if: >-
-      always() && !cancelled() &&
-      (needs.changes.outputs.notes == 'true' || needs.module-publish.result == 'success')
-    runs-on: [self-hosted, Linux]
-    strategy:
-      fail-fast: false
-      matrix:
-        # On push events only build `stdb` (the active production variant).
-        # `legacy` is a rollback artifact — only rebuild it on workflow_dispatch.
-        # Phase 4 will drop `legacy` from the matrix entirely.
-        build_variant: ${{ github.event_name == 'workflow_dispatch' && fromJSON('["legacy","stdb"]') || fromJSON('["stdb"]') }}
-    env:
-      NEXT_PUBLIC_USE_STDB_AUTH: ${{ matrix.build_variant == 'stdb' && 'true' || 'false' }}
-    steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-node@v6
-        with: { node-version: 22 }
-      - name: enable pnpm
-        run: corepack enable && corepack prepare pnpm@9.12.0 --activate
-      - run: pnpm install --frozen-lockfile
-      - name: download fresh bindings (module just published)
-        if: needs.module-publish.result == 'success'
-        uses: actions/download-artifact@v8
-        with:
-          name: stdb-bindings
-          path: packages/stdb-bindings/src/generated
-      # Audit/lint/test/coverage are flag-independent — only run on the legacy
-      # variant to avoid double work (the stdb variant just builds).
-      # pnpm audit threshold raised to high to bypass workers' transitive
-      # advisories (see notes/landing audit comment); will revert to moderate
-      # when @mastra/core ships a patched release.
-      - if: matrix.build_variant == 'legacy'
-        run: pnpm audit --prod --audit-level high
-        continue-on-error: true
-      - if: matrix.build_variant == 'legacy'
-        run: pnpm --filter @sastaspace/notes typecheck
-      - if: matrix.build_variant == 'legacy'
-        run: pnpm --filter @sastaspace/notes lint --max-warnings 0
-      - if: matrix.build_variant == 'legacy'
-        run: pnpm --filter @sastaspace/notes coverage
-      - if: matrix.build_variant == 'legacy'
-        uses: actions/upload-artifact@v7
-        with:
-          name: notes-coverage
-          path: apps/notes/coverage
-          retention-days: 7
-      - run: pnpm --filter @sastaspace/notes build
-      - uses: actions/upload-artifact@v7
-        with:
-          name: notes-out-${{ matrix.build_variant }}
-          path: apps/notes/out
-          retention-days: 7
-      # PHASE 3 CUTOVER: switched from `legacy` to `stdb`. The stdb variant
-      # bundles NEXT_PUBLIC_USE_STDB_AUTH=true, so the SignInModal calls
-      # request_magic_link on STDB instead of POSTing to auth.sastaspace.com.
-      # The legacy variant still builds as a rollback target until Phase 4.
-      - name: deploy to nginx
-        if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && matrix.build_variant == 'stdb'
-        run: |
-          mkdir -p "$NOTES_OUT_DIR"
-          rsync -a --delete apps/notes/out/ "$NOTES_OUT_DIR/"
-          docker exec sastaspace-notes nginx -s reload
-      - name: smoke test
-        if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && matrix.build_variant == 'stdb'
-        run: |
-          for i in 1 2 3 4 5; do
-            code=$(curl -sS -o /dev/null -w "%{http_code}" -L https://notes.sastaspace.com/)
-            echo "attempt $i: HTTP $code"
-            [[ "$code" == "200" ]] && exit 0
-            sleep 4
-          done
-          exit 1
-
-  # ── 3b. typewars game UI ──────────────────────────────────────────────────
-  # Phase 3 prep (audit N3): build_variant matrix produces both `typewars-out-legacy`
-  # and `typewars-out-stdb` artifacts. NEXT_PUBLIC_USE_STDB_AUTH is baked in at
-  # build time. Through Phase 3 the legacy variant is what deploys; cutover swaps.
-  typewars:
-    needs: changes
-    if: >-
-      always() && !cancelled() &&
-      needs.changes.outputs.typewars == 'true'
-    runs-on: [self-hosted, Linux]
-    strategy:
-      fail-fast: false
-      matrix:
-        # On push events only build `stdb` (the active production variant).
-        # `legacy` is a rollback artifact — only rebuild it on workflow_dispatch.
-        # Phase 4 will drop `legacy` from the matrix entirely.
-        build_variant: ${{ github.event_name == 'workflow_dispatch' && fromJSON('["legacy","stdb"]') || fromJSON('["stdb"]') }}
-    env:
-      NEXT_PUBLIC_TYPEWARS_MODULE: typewars
-      NEXT_PUBLIC_USE_STDB_AUTH: ${{ matrix.build_variant == 'stdb' && 'true' || 'false' }}
-    steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-node@v6
-        with: { node-version: 22 }
-      - name: enable pnpm
-        run: corepack enable && corepack prepare pnpm@9.12.0 --activate
-      - run: pnpm install --frozen-lockfile
-      # Typecheck/lint are flag-independent — only on legacy to avoid duplication.
-      - if: matrix.build_variant == 'legacy'
-        run: pnpm --filter @sastaspace/typewars typecheck
-      - if: matrix.build_variant == 'legacy'
-        run: pnpm --filter @sastaspace/typewars lint --max-warnings 0
-      - run: pnpm --filter @sastaspace/typewars build
-      - uses: actions/upload-artifact@v7
-        with:
-          name: typewars-out-${{ matrix.build_variant }}
-          path: apps/typewars/out
-          retention-days: 7
-      # PHASE 3 CUTOVER: switched from `legacy` to `stdb`. The stdb variant
-      # bundles NEXT_PUBLIC_USE_STDB_AUTH=true.
-      - name: deploy to nginx
-        if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && matrix.build_variant == 'stdb'
-        run: |
-          PROD=/home/mkhare/sastaspace/infra
-          mkdir -p "$TYPEWARS_OUT_DIR"
-          rsync -a --delete apps/typewars/out/ "$TYPEWARS_OUT_DIR/"
-          # rsync --inplace for files that are bind-mounted as single files inside
-          # containers: Docker captures the inode at container start, so an atomic
-          # rename (the rsync default) leaves the container reading the old inode.
-          # Writing in place preserves the inode so nginx reload picks up the change.
-          HEADERS_BEFORE=$(sha256sum "$PROD/landing/security_headers.conf" 2>/dev/null | awk '{print $1}')
-          rsync -a --inplace infra/typewars/nginx.conf "$PROD/typewars/nginx.conf"
-          rsync -a --inplace infra/landing/security_headers.conf "$PROD/landing/security_headers.conf"
-          rsync -a infra/docker-compose.yml "$PROD/docker-compose.yml"
-          HEADERS_AFTER=$(sha256sum "$PROD/landing/security_headers.conf" | awk '{print $1}')
-          # Force-recreate the typewars container. Bind-mounts of single files
-          # capture the host inode at container start, so a previously-rsynced
-          # file change won't be visible to a container that started before it.
-          # Recreation is fast (~1s) and reliable.
-          cd "$PROD" && docker compose up -d --no-deps --force-recreate typewars
-          # Same shared security_headers.conf is bind-mounted by landing and notes;
-          # recreate those whenever the file content changed in this run.
-          if [[ "$HEADERS_BEFORE" != "$HEADERS_AFTER" ]]; then
-            echo "security_headers.conf changed — recreating landing + notes too"
-            for svc in landing notes; do
-              if docker ps --format '{{.Names}}' | grep -q "^sastaspace-$svc$"; then
-                docker compose up -d --no-deps --force-recreate "$svc"
-              fi
-            done
-          fi
-      - name: smoke test
-        if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && matrix.build_variant == 'stdb'
-        run: |
-          for i in 1 2 3 4 5; do
-            code=$(curl -sS -o /dev/null -w "%{http_code}" -L https://typewars.sastaspace.com/)
-            echo "attempt $i: HTTP $code"
-            [[ "$code" == "200" ]] && exit 0
-            sleep 4
-          done
-          exit 1
-
-  # ── 3c. admin panel ───────────────────────────────────────────────────────
-  # Phase 3 prep (audit N3): build_variant matrix produces both `admin-out-legacy`
-  # and `admin-out-stdb` artifacts. NEXT_PUBLIC_USE_STDB_ADMIN and
-  # NEXT_PUBLIC_USE_STDB_AUTH (shared with auth-ui) are baked in at build time.
-  # Through Phase 3 the legacy variant deploys; cutover swaps to stdb.
-  admin:
-    needs: changes
-    if: >-
-      always() && !cancelled() &&
-      needs.changes.outputs.admin == 'true'
-    runs-on: [self-hosted, Linux]
-    strategy:
-      fail-fast: false
-      matrix:
-        # On push events only build `stdb` (the active production variant).
-        # `legacy` is a rollback artifact — only rebuild it on workflow_dispatch.
-        # Phase 4 will drop `legacy` from the matrix entirely.
-        build_variant: ${{ github.event_name == 'workflow_dispatch' && fromJSON('["legacy","stdb"]') || fromJSON('["stdb"]') }}
-    env:
-      NEXT_PUBLIC_OWNER_EMAIL: mohitkhare582@gmail.com
-      NEXT_PUBLIC_USE_STDB_ADMIN: ${{ matrix.build_variant == 'stdb' && 'true' || 'false' }}
-      NEXT_PUBLIC_USE_STDB_AUTH: ${{ matrix.build_variant == 'stdb' && 'true' || 'false' }}
-    steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-node@v6
-        with: { node-version: 22 }
-      - name: enable pnpm
-        run: corepack enable && corepack prepare pnpm@9.12.0 --activate
-      - run: pnpm install --frozen-lockfile
-      # Typecheck/lint are flag-independent — only on legacy to avoid duplication.
-      - if: matrix.build_variant == 'legacy'
-        run: pnpm --filter @sastaspace/admin typecheck
-      - if: matrix.build_variant == 'legacy'
-        run: pnpm --filter @sastaspace/admin lint --max-warnings 0
-      - run: pnpm --filter @sastaspace/admin build
-      - uses: actions/upload-artifact@v7
-        with:
-          name: admin-out-${{ matrix.build_variant }}
-          path: apps/admin/out
-          retention-days: 7
-      # PHASE 3 CUTOVER: switched from `legacy` to `stdb`. The stdb variant
-      # bundles NEXT_PUBLIC_USE_STDB_ADMIN=true and NEXT_PUBLIC_USE_STDB_AUTH=true.
-      - name: deploy to nginx
-        if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && matrix.build_variant == 'stdb'
-        run: |
-          PROD=/home/mkhare/sastaspace/infra
-          mkdir -p "$ADMIN_OUT_DIR" "$PROD/admin"
-          rsync -a --delete apps/admin/out/ "$ADMIN_OUT_DIR/"
-          # If the admin volume target was previously created as a directory
-          # by Docker (when the host file was missing on first compose up),
-          # remove it so rsync can write a real file there.
-          if [[ -d "$PROD/admin/security_headers.conf" ]]; then
-            echo "removing empty security_headers.conf directory left by Docker"
-            rm -rf "$PROD/admin/security_headers.conf"
-          fi
-          rsync -a --inplace infra/admin/nginx.conf "$PROD/admin/nginx.conf"
-          rsync -a --inplace infra/admin/security_headers.conf "$PROD/admin/security_headers.conf"
-          rsync -a infra/docker-compose.yml "$PROD/docker-compose.yml"
-          cd "$PROD" && docker compose up -d --no-deps --force-recreate admin
-      - name: smoke test
-        if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && matrix.build_variant == 'stdb'
+          docker compose up -d --no-deps --force-recreate workers
+          sleep 5
+          docker compose ps workers
+      - name: smoke — workers booted
+        timeout-minutes: 2
         run: |
           for i in 1 2 3 4 5 6 7 8; do
-            code=$(curl -sS -o /dev/null -w "%{http_code}" -L https://admin.sastaspace.com/)
-            echo "attempt $i: HTTP $code"
-            [[ "$code" == "200" ]] && exit 0
-            sleep 4
+            if docker logs sastaspace-workers --tail 80 2>&1 | grep -qE "owner token verified|noop_owner_check absent on deployed module|no agents enabled, idling|all enabled agents started"; then
+              echo "workers healthy"
+              exit 0
+            fi
+            sleep 5
           done
-          docker logs sastaspace-admin --tail 30 || true
+          echo "::error::workers did not surface a healthy boot signature within 40s"
+          docker logs sastaspace-workers --tail 80 || true
           exit 1
+      - name: rollback on failure
+        if: failure()
+        run: |
+          echo "::warning::workers-deploy failed — stopping container"
+          docker compose -f /home/mkhare/sastaspace/infra/docker-compose.yml stop workers || true
 
-  # ── 4. Python agent services ──────────────────────────────────────────────
+  # ── 4. Moderator agent ───────────────────────────────────────────────────
   moderator:
     needs: changes
     if: needs.changes.outputs.agents == 'true'
@@ -577,8 +279,6 @@ jobs:
         working-directory: infra
         run: |
           sleep 4
-          # Match either the legacy SQL-poll log line or the current
-          # reducer-call path (set_comment_status, classifier outcomes).
           if docker compose logs --tail=40 moderator 2>&1 | grep -qE "POST.*sql.*200|set_comment_status|categories=|comment .*flagged|comment .*approved"; then
             echo "moderator is alive"
           else
@@ -586,477 +286,3 @@ jobs:
             docker compose logs --tail=40 moderator
             exit 1
           fi
-
-  auth:
-    needs: changes
-    if: needs.changes.outputs.agents == 'true'
-    runs-on: [self-hosted, Linux]
-    steps:
-      - uses: actions/checkout@v6
-      - name: lint + test
-        working-directory: services/auth
-        run: |
-          if [[ ! -d .venv ]] || [[ pyproject.toml -nt .venv/pyvenv.cfg ]]; then
-            rm -rf .venv
-            python3.12 -m venv .venv
-            . .venv/bin/activate
-            pip install -q --upgrade pip
-            pip install -q -e '.[dev]'
-          fi
-          . .venv/bin/activate
-          ruff check src tests
-          pytest
-      - name: build container
-        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
-        working-directory: infra
-        run: docker compose build auth
-      - name: deploy
-        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
-        working-directory: infra
-        env:
-          SPACETIME_TOKEN: ${{ secrets.SPACETIME_TOKEN }}
-          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
-          E2E_TEST_SECRET: ${{ secrets.E2E_TEST_SECRET }}
-        run: |
-          if [[ -z "$SPACETIME_TOKEN" || -z "$RESEND_API_KEY" ]]; then
-            echo "::error::SPACETIME_TOKEN or RESEND_API_KEY missing"
-            exit 1
-          fi
-          install -m 600 /dev/null ../services/auth/.env
-          {
-            echo "SPACETIME_TOKEN=$SPACETIME_TOKEN"
-            echo "RESEND_API_KEY=$RESEND_API_KEY"
-            echo "E2E_TEST_SECRET=$E2E_TEST_SECRET"
-          } > ../services/auth/.env
-          docker compose up -d --no-deps --force-recreate auth
-          sleep 6
-          docker compose ps auth
-      - name: smoke — /healthz responds
-        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
-        run: |
-          for i in 1 2 3 4 5; do
-            code=$(curl -sS -o /dev/null -w "%{http_code}" http://127.0.0.1:3130/healthz)
-            echo "attempt $i: HTTP $code"
-            [[ "$code" == "200" ]] && exit 0
-            sleep 3
-          done
-          docker compose -f infra/docker-compose.yml logs auth --tail=30
-          exit 1
-
-  # ── 4b. typescript workers (lint + vitest) ───────────────────────────────
-  # Phase 3 prep: this job lives alongside `auth` and `moderator` through Phase 3.
-  # Phase 4 deletes those Python jobs; this `workers` job survives as the gate
-  # for the rewired agent code under workers/.
-  workers:
-    needs: changes
-    if: needs.changes.outputs.workers == 'true'
-    runs-on: [self-hosted, Linux]
-    steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-node@v6
-        with: { node-version: 22 }
-      - name: enable pnpm
-        run: corepack enable && corepack prepare pnpm@9.12.0 --activate
-      - name: install workers deps
-        # Audit N8: lockfile lives at the repo root. Run pnpm install from
-        # there and filter to the workers package — preserves the
-        # frozen-lockfile guarantee + the workspace symlinks.
-        run: pnpm install --frozen-lockfile --filter @sastaspace/workers...
-      - name: lint (tsc --noEmit)
-        working-directory: workers
-        run: pnpm lint
-      - name: test (vitest)
-        working-directory: workers
-        run: pnpm test
-      - name: pnpm audit
-        working-directory: workers
-        # Transitive moderate advisories from @mastra/core (jsondiffpatch, uuid<14)
-        # — upstream has no patched release yet. Bumping to `high` so the gate
-        # still catches anything more severe. TODO: drop --audit-level back to
-        # moderate when @mastra/core ships a fix (tracked in audit N18 follow-up).
-        run: pnpm audit --prod --audit-level high
-        continue-on-error: true
-
-  # ── 4c. workers deploy (Mastra agents container) ─────────────────────────
-  # Builds and deploys the workers container. Per-agent flags default to
-  # false in compose, so a fresh deploy boots and idles. The B-task cutover
-  # commits flip individual flags (WORKER_<NAME>_ENABLED=true).
-  #
-  # Boot health gate: `noop_owner_check` reducer call from workers/src/index.ts
-  # (Phase 3 §A3) writes "owner token verified" to stdout when the token is
-  # the owner identity. The smoke step grep's for that line.
-  workers-deploy:
-    needs: [workers, module-publish]
-    if: >-
-      always() && !cancelled() &&
-      (github.event_name == 'push' || github.event_name == 'workflow_dispatch') &&
-      needs.workers.result == 'success' &&
-      needs.module-publish.result != 'failure'
-    runs-on: [self-hosted, Linux]
-    timeout-minutes: 15
-    concurrency:
-      group: deploy-workers
-      cancel-in-progress: false
-    steps:
-      - uses: actions/checkout@v6
-      - name: rsync workers source + compose to prod
-        timeout-minutes: 3
-        run: |
-          PROD=/home/mkhare/sastaspace
-          mkdir -p "$PROD/workers" "$PROD/packages/stdb-bindings" "$PROD/packages/typewars-bindings"
-          rsync -a --delete workers/ "$PROD/workers/" --exclude node_modules --exclude dist --exclude .env
-          rsync -a --delete packages/stdb-bindings/ "$PROD/packages/stdb-bindings/" --exclude node_modules
-          rsync -a --delete packages/typewars-bindings/ "$PROD/packages/typewars-bindings/" --exclude node_modules
-          rsync -a pnpm-workspace.yaml pnpm-lock.yaml package.json "$PROD/"
-          rsync -a infra/docker-compose.yml "$PROD/infra/docker-compose.yml"
-      - name: provision workers/.env from secrets
-        env:
-          # Prefer WORKERS_STDB_TOKEN if set — it's the prod-server-issued JWT
-          # that works on /v1/identity/websocket-token. SPACETIME_TOKEN is the
-          # maincloud-issued owner JWT used for HTTP-only endpoints (publish,
-          # SQL); the SDK's WebSocket handshake calls websocket-token-exchange,
-          # which only accepts prod-server-signed tokens.
-          WORKERS_STDB_TOKEN: ${{ secrets.WORKERS_STDB_TOKEN }}
-          SPACETIME_TOKEN: ${{ secrets.SPACETIME_TOKEN }}
-          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-        timeout-minutes: 1
-        run: |
-          STDB_TOKEN_VALUE="${WORKERS_STDB_TOKEN:-$SPACETIME_TOKEN}"
-          if [[ -z "$STDB_TOKEN_VALUE" || -z "$RESEND_API_KEY" ]]; then
-            echo "::error::Neither WORKERS_STDB_TOKEN nor SPACETIME_TOKEN set, or RESEND_API_KEY missing"
-            exit 1
-          fi
-          PROD=/home/mkhare/sastaspace
-          install -m 600 /dev/null "$PROD/workers/.env"
-          {
-            echo "STDB_TOKEN=$STDB_TOKEN_VALUE"
-            echo "RESEND_API_KEY=$RESEND_API_KEY"
-            # Optional. When set, deck-agent's planner uses Gemini instead of Ollama.
-            [[ -n "$GEMINI_API_KEY" ]] && echo "GEMINI_API_KEY=$GEMINI_API_KEY"
-          } > "$PROD/workers/.env"
-          chmod 600 "$PROD/workers/.env"
-      - name: build workers container
-        timeout-minutes: 10
-        working-directory: /home/mkhare/sastaspace/infra
-        run: |
-          docker compose build workers
-      - name: deploy workers container
-        timeout-minutes: 3
-        working-directory: /home/mkhare/sastaspace/infra
-        run: |
-          docker compose up -d --no-deps --force-recreate workers
-          sleep 5
-          docker compose ps workers
-      - name: smoke — workers booted (token verified or absent reducer warning)
-        timeout-minutes: 2
-        run: |
-          for i in 1 2 3 4 5 6 7 8; do
-            # Pass if any of:
-            # - "owner token verified" (full owner-check ok)
-            # - "noop_owner_check absent on deployed module" (older module,
-            #   token still works at handshake — agents will surface their own
-            #   owner-only failures if any)
-            # - "no agents enabled, idling" (all flags false — boots and idles)
-            # - "all enabled agents started" (final log line after agents init)
-            if docker logs sastaspace-workers --tail 80 2>&1 | grep -qE "owner token verified|noop_owner_check absent on deployed module|no agents enabled, idling|all enabled agents started"; then
-              echo "workers healthy"
-              exit 0
-            fi
-            sleep 5
-          done
-          echo "::error::workers did not surface a healthy boot signature within 40s"
-          docker logs sastaspace-workers --tail 80 || true
-          exit 1
-      - name: stop legacy services replaced by workers (idempotent)
-        # After the workers container is confirmed healthy, retire the four
-        # Python services it replaces. Each `stop` is a no-op if the
-        # container is already down or absent. The legacy services stay
-        # in compose (Phase 4 deletes them) so a fast revert via
-        # `docker compose start <name>` is still possible.
-        timeout-minutes: 2
-        working-directory: /home/mkhare/sastaspace/infra
-        run: |
-          docker compose stop moderator 2>&1 || true
-          docker compose stop admin-api 2>&1 || true
-          docker compose stop auth 2>&1 || true
-          docker compose stop deck 2>&1 || true
-          docker compose ps -a 2>&1 | head -40
-      - name: rollback on failure
-        if: failure()
-        run: |
-          echo "::warning::workers-deploy failed — stopping container to surface state"
-          docker compose -f /home/mkhare/sastaspace/infra/docker-compose.yml stop workers || true
-          {
-            echo "## workers-deploy FAILED"
-            echo ""
-            echo "Container stopped. Last 60 lines of logs:"
-            echo '```'
-            docker logs sastaspace-workers --tail 60 2>&1 || true
-            echo '```'
-          } >> "$GITHUB_STEP_SUMMARY"
-
-  # ── 4d. auth-410 deploy (tombstone for legacy /auth ingress) ─────────────
-  # Brings up the auth-410 container under profile `stdb-native`. This is
-  # the nginx that returns HTTP 410 Gone to anyone hitting auth.sastaspace.com
-  # after the cloudflared route is repointed in B1.
-  auth-410-deploy:
-    needs: changes
-    if: >-
-      always() && !cancelled() &&
-      (github.event_name == 'push' || github.event_name == 'workflow_dispatch') &&
-      (needs.changes.outputs.workers == 'true' || needs.changes.outputs.agents == 'true' || github.event_name == 'workflow_dispatch')
-    runs-on: [self-hosted, Linux]
-    timeout-minutes: 5
-    concurrency:
-      group: deploy-auth-410
-      cancel-in-progress: false
-    steps:
-      - uses: actions/checkout@v6
-      - name: rsync auth-410 config + compose to prod
-        timeout-minutes: 1
-        run: |
-          PROD=/home/mkhare/sastaspace
-          mkdir -p "$PROD/infra/landing"
-          rsync -a --inplace infra/landing/auth-410.conf "$PROD/infra/landing/auth-410.conf"
-          rsync -a infra/docker-compose.yml "$PROD/infra/docker-compose.yml"
-      - name: stop legacy services binding port 3170 (admin-api) and port 3130 (auth)
-        timeout-minutes: 2
-        working-directory: /home/mkhare/sastaspace/infra
-        run: |
-          # admin-api binds 127.0.0.1:3170 — same port auth-410 needs.
-          # auth (FastAPI) binds 127.0.0.1:3130 — freed for the cutover.
-          # `docker compose stop` is a no-op if the container isn't running.
-          docker compose stop admin-api 2>&1 | tee /tmp/stop-admin-api.log || true
-          docker compose stop auth 2>&1 | tee /tmp/stop-auth.log || true
-      - name: build + start auth-410 container
-        timeout-minutes: 3
-        working-directory: /home/mkhare/sastaspace/infra
-        run: |
-          docker compose --profile stdb-native build auth-410
-          # --force-recreate so bind-mounted nginx.conf changes pick up.
-          docker compose --profile stdb-native up -d --force-recreate auth-410
-          sleep 4
-          docker compose ps auth-410
-      - name: smoke — auth-410 returns 410
-        timeout-minutes: 1
-        run: |
-          for i in 1 2 3 4 5 6; do
-            code=$(curl -sS -o /dev/null -w "%{http_code}" http://127.0.0.1:3170/anything)
-            echo "attempt $i: HTTP $code"
-            [[ "$code" == "410" ]] && exit 0
-            sleep 3
-          done
-          docker logs sastaspace-auth-410 --tail 30 || true
-          exit 1
-      - name: rollback on failure
-        if: failure()
-        run: |
-          docker compose -f /home/mkhare/sastaspace/infra/docker-compose.yml stop auth-410 || true
-          echo "## auth-410-deploy FAILED" >> "$GITHUB_STEP_SUMMARY"
-
-  # ── 4e. deck-static deploy (nginx for MusicGen zips) ─────────────────────
-  # Brings up the deck-static container under profile `stdb-native`. Serves
-  # zip files written by the workers' deck-agent into ./deck-out/. Replaces
-  # the legacy Python `deck` FastAPI on the same port (3160) — they cannot
-  # coexist; cutover (B3) stops legacy first.
-  deck-static-deploy:
-    needs: changes
-    if: >-
-      always() && !cancelled() &&
-      (github.event_name == 'push' || github.event_name == 'workflow_dispatch') &&
-      (needs.changes.outputs.deck == 'true' || needs.changes.outputs.workers == 'true' || needs.changes.outputs.agents == 'true' || github.event_name == 'workflow_dispatch')
-    runs-on: [self-hosted, Linux]
-    timeout-minutes: 5
-    concurrency:
-      group: deploy-deck-static
-      cancel-in-progress: false
-    steps:
-      - uses: actions/checkout@v6
-      - name: rsync deck-static config + compose to prod
-        timeout-minutes: 1
-        run: |
-          PROD=/home/mkhare/sastaspace
-          mkdir -p "$PROD/infra/deck" "$PROD/infra/deck-out"
-          rsync -a --inplace infra/deck/nginx.conf "$PROD/infra/deck/nginx.conf"
-          rsync -a infra/docker-compose.yml "$PROD/infra/docker-compose.yml"
-      - name: stop legacy deck (frees port 3160) and start deck-static
-        timeout-minutes: 3
-        working-directory: /home/mkhare/sastaspace/infra
-        run: |
-          # Atomic-ish swap: legacy deck and deck-static both bind 3160.
-          # Stop legacy first, then start static.
-          docker compose stop deck 2>&1 | tee /tmp/deck-stop.log || true
-          docker compose --profile stdb-native build deck-static
-          # --force-recreate so bind-mounted nginx.conf changes (rsynced in
-          # the previous step) actually re-mount on container start. The
-          # plain `up -d` skips recreation when only bind-mounted files
-          # change since the image hash hasn't moved — that left the prior
-          # deploy serving the old "Index of /" config.
-          docker compose --profile stdb-native up -d --force-recreate deck-static
-          sleep 4
-          docker compose ps deck-static
-      - name: smoke — deck-static serves
-        timeout-minutes: 1
-        run: |
-          for i in 1 2 3 4 5 6; do
-            code=$(curl -sS -o /dev/null -w "%{http_code}" http://127.0.0.1:3160/)
-            echo "attempt $i: HTTP $code"
-            # 200 (autoindex empty) or 403 (autoindex disabled) both mean nginx is up
-            [[ "$code" == "200" || "$code" == "403" ]] && exit 0
-            sleep 3
-          done
-          docker logs sastaspace-deck-static --tail 30 || true
-          exit 1
-      - name: rollback on failure
-        if: failure()
-        run: |
-          docker compose -f /home/mkhare/sastaspace/infra/docker-compose.yml stop deck-static || true
-          echo "## deck-static-deploy FAILED — restarting legacy deck" >> "$GITHUB_STEP_SUMMARY"
-          docker compose -f /home/mkhare/sastaspace/infra/docker-compose.yml start deck || true
-
-  # ── 5. e2e against live prod (runs AFTER all deploys) ─────────────────────
-  e2e:
-    # PHASE 4 CLEANUP: remove `moderator` and `auth` from `needs:` and the
-    # corresponding `needs.<job>.result != 'failure'` guards below when those
-    # jobs are deleted. `workers` stays.
-    needs: [landing-deploy, notes, admin, moderator, auth, workers, workers-deploy, auth-410-deploy, deck-static-deploy]
-    if: >-
-      always() && !cancelled() &&
-      (github.event_name == 'push' || github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') &&
-      needs.landing-deploy.result != 'failure' &&
-      needs.notes.result != 'failure' &&
-      needs.admin.result != 'failure' &&
-      needs.moderator.result != 'failure' &&
-      needs.auth.result != 'failure' &&
-      needs.workers.result != 'failure'
-    runs-on: [self-hosted, Linux]
-    timeout-minutes: 15
-    env:
-      E2E_TEST_SECRET: ${{ secrets.E2E_TEST_SECRET }}
-      # Owner JWT for the new admin.sastaspace.com STDB-backed panels.
-      # When unset, tests/e2e/specs/admin-panels.spec.ts skips its describe
-      # block (the legacy admin.spec.ts still runs against notes/admin).
-      # Canonical name is E2E_STDB_OWNER_TOKEN (used by helpers/auth.ts,
-      # moderator.spec.ts, notes-auth-stdb.spec.ts). E2E_OWNER_STDB_TOKEN is
-      # kept as an alias because admin-panels.spec.ts still reads it directly;
-      # removing it would break that spec (Group 1 owns the SKIP_PENDING_BOOTSTRAP_FIX
-      # flip — unify to a single name when that lands in Phase 4).
-      # Both map to secrets.SPACETIME_TOKEN — the maincloud-issued owner JWT.
-      E2E_OWNER_STDB_TOKEN: ${{ secrets.SPACETIME_TOKEN }}
-      E2E_STDB_OWNER_TOKEN: ${{ secrets.SPACETIME_TOKEN }}
-    steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-node@v6
-        with: { node-version: 22 }
-      - name: enable pnpm
-        run: corepack enable && corepack prepare pnpm@9.12.0 --activate
-      - run: pnpm install --frozen-lockfile
-      - name: install playwright browsers
-        run: pnpm --filter @sastaspace/e2e exec playwright install chromium --with-deps
-      - name: typecheck
-        run: pnpm --filter @sastaspace/e2e exec tsc --noEmit
-      - name: gate — required env present
-        run: |
-          if [[ -z "$E2E_TEST_SECRET" ]]; then
-            echo "::error::E2E_TEST_SECRET must be set as a GH Actions secret"
-            exit 1
-          fi
-          if [[ -z "$E2E_STDB_OWNER_TOKEN" ]]; then
-            echo "::error::E2E_STDB_OWNER_TOKEN must be set (sourced from secrets.SPACETIME_TOKEN)"
-            exit 1
-          fi
-          echo "E2E_TEST_SECRET present"
-          echo "E2E_STDB_OWNER_TOKEN present"
-      # Phase 4 follow-up: a register_user-style bootstrap for the owner
-      # identity is needed before admin-panels.spec.ts and moderator.spec.ts
-      # can run their submit_user_comment-based seeders. STDB v2.1's HTTP
-      # API SATS encoding for Identity (u256) didn't accept hex / 0x-hex /
-      # decimal-string forms in our attempts. Cleaner fix is to add a
-      # dedicated `register_owner_e2e()` reducer that takes no args and
-      # uses ctx.sender() — no Identity encoding needed. Both specs are
-      # currently `test.skip()` pending that change.
-      - name: bootstrap — install E2E test secret on prod STDB
-        # continue-on-error: STDB HTTP API encoding for reducer args can break
-        # on STDB version bumps (Identity/u256 SATS format changes caused 10
-        # consecutive red runs on 2026-04-26). admin-panels.spec.ts and
-        # moderator.spec.ts are already `test.skip()`'d pending a dedicated
-        # register_owner_e2e() reducer (Phase 4 follow-up), so a bootstrap
-        # failure must never block the rest of the e2e suite.
-        continue-on-error: true
-        # The mint_test_token reducer requires (ctx, email, secret) where
-        # `secret` matches a row in app_config_secret installed via
-        # set_e_2_e_test_secret (owner-only). Without this row, the side
-        # door is closed and signIn helper returns "test mode disabled".
-        # Idempotent — upserts the singleton row.
-        # The reducer takes Option<String>; SATS encodes Some(s) as
-        # {"some": "value"} so the body shape is [{"some": "<secret>"}].
-        run: |
-          payload=$(jq -nc --arg s "$E2E_TEST_SECRET" '[{some: $s}]')
-          status=$(curl -sS -o /tmp/bootstrap.out -w "%{http_code}" \
-            -X POST \
-            -H "Authorization: Bearer $E2E_STDB_OWNER_TOKEN" \
-            -H "Content-Type: application/json" \
-            --data "$payload" \
-            "https://stdb.sastaspace.com/v1/database/sastaspace/call/set_e_2_e_test_secret")
-          echo "set_e_2_e_test_secret returned HTTP $status"
-          head -3 /tmp/bootstrap.out 2>/dev/null
-          if [[ "$status" != "200" && "$status" != "204" ]]; then
-            echo "::error::bootstrap failed; mint_test_token will reject sign-in attempts"
-            exit 1
-          fi
-      - name: smoke — live prod URLs reachable
-        run: |
-          # Phase 3 post-cutover: auth.sastaspace.com is the 410 tombstone now,
-          # so check it explicitly returns 410 (not 200). The /healthz endpoint
-          # is gone with the FastAPI service.
-          fail=0
-          for spec in \
-              "https://sastaspace.com/=200" \
-              "https://notes.sastaspace.com/=200" \
-              "https://typewars.sastaspace.com/=200" \
-              "https://admin.sastaspace.com/=200" \
-              "https://auth.sastaspace.com/=410" \
-              "https://stdb.sastaspace.com/v1/ping=200"; do
-            url="${spec%=*}"
-            want="${spec##*=}"
-            code=$(curl -sS -o /dev/null -w "%{http_code}" "$url" || echo 000)
-            echo "  $url -> $code (want $want)"
-            if [[ "$code" != "$want" ]]; then
-              echo "::error::$url returned $code, want $want"
-              fail=1
-            fi
-          done
-          [[ $fail -eq 0 ]] || exit 1
-      - name: run playwright
-        run: pnpm --filter @sastaspace/e2e test
-        env:
-          CI: "1"
-          # Phase 3 post-cutover: STDB-native auth is the production path.
-          # signIn helper dispatches via E2E_AUTH_BACKEND=stdb to call
-          # request_magic_link + verify_token reducers instead of POSTing
-          # to auth.sastaspace.com (now a 410 tombstone).
-          E2E_AUTH_BACKEND: stdb
-          # moderator-agent is currently disabled in compose (it boots fine but
-          # an uncaught SDK 2.1 SenderError on its owner-only reducer call
-          # crashes the workers process). Until the SenderError handler lands
-          # the e2e moderator specs would always time out, so we skip them.
-          # Re-flip to "true" alongside `WORKER_MODERATOR_AGENT_ENABLED=true`
-          # in infra/docker-compose.yml. See
-          # docs/operator-runbooks/localai-musicgen-swap.md "Three other
-          # workers" section for context.
-          E2E_MODERATOR_ENABLED: "false"
-      - name: upload playwright report on failure
-        if: failure()
-        uses: actions/upload-artifact@v7
-        with:
-          name: playwright-report-${{ github.run_id }}
-          path: tests/e2e/playwright-report/
-          retention-days: 14
-      - name: upload trace + video on failure
-        if: failure()
-        uses: actions/upload-artifact@v7
-        with:
-          name: playwright-traces-${{ github.run_id }}
-          path: tests/e2e/test-results/
-          retention-days: 14

@@ -11,8 +11,4 @@ crate-type = ["cdylib"]
 spacetimedb = "2.1"
 log = "0.4"
 
-[profile.release]
-opt-level = "z"
-lto = true
-strip = true
-codegen-units = 1
+# [profile.release] intentionally omitted — see modules/sastaspace/Cargo.toml.

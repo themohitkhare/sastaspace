@@ -41,6 +41,9 @@ spacetime-data
 npm-debug.log*
 pnpm-debug.log*
 
+# Playwright MCP test artifacts
+.playwright-mcp/
+
 # Cloudflare
 .wrangler
 *.egg-info/
@@ -48,3 +51,10 @@ pnpm-debug.log*
 *.pyc
 graphify-out/
 .claude/
+
+# Rust (additional)
+**/*.rs.bk
+Cargo.lock.bak
+
+# Insta pending snapshots
+**/*.snap.new

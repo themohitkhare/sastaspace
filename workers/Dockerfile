@@ -14,14 +14,14 @@ WORKDIR /repo
 RUN corepack enable && corepack prepare pnpm@9.12.0 --activate
 # Workspace metadata + lockfile.
 COPY pnpm-workspace.yaml pnpm-lock.yaml package.json ./
-# Workers + its in-workspace dep manifests.
+# Workers + its in-workspace dep manifests (bindings now live under workers/).
 COPY workers/package.json workers/tsconfig.json workers/
-COPY packages/stdb-bindings/package.json packages/stdb-bindings/
-COPY packages/typewars-bindings/package.json packages/typewars-bindings/
+COPY workers/stdb-bindings/package.json workers/stdb-bindings/
+COPY workers/typewars-bindings/package.json workers/typewars-bindings/
 # Source for workers + the bindings packages it depends on.
 COPY workers/src workers/src
-COPY packages/stdb-bindings/src packages/stdb-bindings/src
-COPY packages/typewars-bindings/src packages/typewars-bindings/src
+COPY workers/stdb-bindings/src workers/stdb-bindings/src
+COPY workers/typewars-bindings/src workers/typewars-bindings/src
 # Frozen install of the workers package and its workspace deps. Includes dev
 # deps so the build stage has TypeScript/vitest types.
 RUN pnpm install --frozen-lockfile --filter @sastaspace/workers...
@@ -53,8 +53,8 @@ RUN apk add --no-cache --repository=https://dl-cdn.alpinelinux.org/alpine/edge/t
 # `main`, so we run via tsx at runtime instead of compiled .js).
 COPY --from=prune /tmp/pruned/node_modules ./node_modules
 # Workspace bindings + worker source (tsx compiles them on demand).
-COPY --from=workspace /repo/packages/stdb-bindings ./packages/stdb-bindings
-COPY --from=workspace /repo/packages/typewars-bindings ./packages/typewars-bindings
+COPY --from=workspace /repo/workers/stdb-bindings ./workers/stdb-bindings
+COPY --from=workspace /repo/workers/typewars-bindings ./workers/typewars-bindings
 COPY --from=workspace /repo/workers/src ./src
 COPY --from=workspace /repo/workers/tsconfig.json ./tsconfig.json
 COPY --from=prune /tmp/pruned/package.json ./package.json

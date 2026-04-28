@@ -1,0 +1,29 @@
+[package]
+name = "shell"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "sastaspace"
+path = "src/main.rs"
+
+[dependencies]
+sastaspace-core = { path = "../core" }
+stdb-client = { path = "../stdb-client" }
+auth = { path = "../auth" }
+app-portfolio = { path = "../app-portfolio" }
+app-notes = { path = "../app-notes" }
+app-deck = { path = "../app-deck" }
+app-typewars = { path = "../app-typewars" }
+app-admin = { path = "../app-admin" }
+serde_json = { workspace = true }
+ratatui = { workspace = true }
+crossterm = { workspace = true }
+tokio = { workspace = true }
+color-eyre = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+tracing-appender = { workspace = true }
+directories = { workspace = true }
+futures = { workspace = true }

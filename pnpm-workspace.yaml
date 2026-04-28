@@ -1,5 +1,4 @@
 packages:
-  - apps/*
-  - packages/*
-  - tests/e2e
   - workers
+  - workers/stdb-bindings
+  - workers/typewars-bindings

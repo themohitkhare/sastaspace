@@ -1,0 +1,15 @@
+[package]
+name = "stdb-client"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+spacetimedb-sdk = { workspace = true }
+tokio = { workspace = true }
+tracing = { workspace = true }
+thiserror = { workspace = true }
+sastaspace-core = { path = "../core" }
+app-portfolio = { path = "../app-portfolio" }
+app-notes = { path = "../app-notes" }
+serde = { workspace = true }

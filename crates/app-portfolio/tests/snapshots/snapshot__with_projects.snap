@@ -1,0 +1,24 @@
+---
+source: crates/app-portfolio/tests/snapshot.rs
+expression: s
+---
+┌ projects ────────────────────┐┌ detail ──────────────────────────────────────┐
+│ Deck · beta                  ││Deck                                          │
+│ Notes · live                 ││                                              │
+│ TypeWars · live              ││Plain-text → ready-to-use audio packs         │
+│                              ││(background, loop, notification).             │
+│                              ││                                              │
+│                              ││slug:   deck                                  │
+│                              ││status: beta                                  │
+│                              ││                                              │
+│                              ││                                              │
+│                              ││                                              │
+│                              ││                                              │
+│                              ││                                              │
+│                              ││                                              │
+│                              ││                                              │
+│                              ││                                              │
+│                              ││                                              │
+│                              ││                                              │
+│                              ││                                              │
+└──────────────────────────────┘└──────────────────────────────────────────────┘

@@ -1,0 +1,22 @@
+[package]
+name = "e2e"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish = false
+
+[lib]
+path = "src/lib.rs"
+
+[dependencies]
+expectrl = { workspace = true }
+tokio = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+tempfile = "3"
+strip-ansi-escapes = "0.2"
+serde_json = { workspace = true }
+
+[dev-dependencies]
+serial_test = "3"
