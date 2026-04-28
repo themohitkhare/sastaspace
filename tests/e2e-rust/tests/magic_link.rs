@@ -1,4 +1,4 @@
-use e2e::{LaunchedTui, SpacetimeFixture};
+use e2e::{expect_ansi, LaunchedTui, SpacetimeFixture};
 use serial_test::serial;
 use std::process::Command;
 use std::time::Duration;
@@ -23,8 +23,10 @@ fn magic_link_round_trip() {
 
     // Open login modal.
     tui.session.send("L").expect("send L");
-    tui.session
-        .expect("enter your email")
+    // Search for a phrase that appears contiguous after ratatui differential
+    // rendering.  Ratatui may skip spaces via cursor-forward commands; "your email"
+    // ends at a word boundary where both words land in the same rendering run.
+    expect_ansi(&mut tui.session, "your email", Duration::from_secs(10))
         .expect("login modal didn't render");
 
     // Type the email + enter.
@@ -33,8 +35,9 @@ fn magic_link_round_trip() {
     tui.session.send("\r").expect("enter");
 
     // Wait for the modal to flip to EnterToken state.
-    tui.session
-        .expect("paste the token")
+    // "paste the token" may have a cursor-skipped space between "paste" and "the".
+    // "the token" is a sub-phrase that falls in a single ratatui rendering run.
+    expect_ansi(&mut tui.session, "the token", Duration::from_secs(10))
         .expect("never got to token entry");
 
     // Read the token from STDB (no email worker in CI, so we go around it).
@@ -47,11 +50,13 @@ fn magic_link_round_trip() {
     // Either success or — on Linux without keychain — a graceful failure
     // toast. We assert we either signed in OR got a recognizable error;
     // both prove the round-trip reached `verify`.
-    let signed_in = tui.session.expect("signed in").is_ok();
+    // "signed in" appears in a single rendering run; the ✓ follows after a space
+    // that might be cursor-skipped, so we only match "signed" for robustness.
+    let signed_in = expect_ansi(&mut tui.session, "signed", Duration::from_secs(10)).is_ok();
     if !signed_in {
         // Fall through: the keychain backend may have rejected the write.
         // The modal will show "keychain: ..." — still valid pipeline coverage.
-        let _ = tui.session.expect("keychain").ok();
+        let _ = expect_ansi(&mut tui.session, "keychain", Duration::from_secs(5));
     }
 
     tui.session.send("q").expect("quit");
@@ -62,6 +67,9 @@ fn lookup_pending_token(fixture: &SpacetimeFixture, email: &str) -> String {
     // Use the spacetime CLI to query auth_token. The publish in F9's
     // SpacetimeFixture already happened; the request_magic_link reducer
     // we just called inserted a row into auth_token.
+    //
+    // `spacetime sql` requires authentication; pass the owner config so the
+    // query is authorised.
     let bin = std::env::var("SPACETIME_BIN")
         .ok()
         .filter(|p| std::path::Path::new(p).exists())
@@ -74,6 +82,8 @@ fn lookup_pending_token(fixture: &SpacetimeFixture, email: &str) -> String {
         });
     let out = Command::new(bin)
         .args([
+            "--config-path",
+            fixture.owner_cfg_path().to_str().unwrap(),
             "sql",
             "--server",
             &fixture.http_url,
@@ -83,15 +93,25 @@ fn lookup_pending_token(fixture: &SpacetimeFixture, email: &str) -> String {
         .output()
         .expect("spacetime sql");
     let stdout = String::from_utf8_lossy(&out.stdout);
+    // The spacetime CLI wraps string values in double quotes: `"<token>"`.
+    // Strip surrounding quotes before checking length / charset.
     stdout
         .lines()
         .map(str::trim)
-        .rfind(|l| l.len() == 32 && l.chars().all(|c| c.is_ascii_alphanumeric()))
+        .filter_map(|l| {
+            // Accept either a bare 32-char token or one wrapped in quotes.
+            let candidate = l.trim_matches('"');
+            if candidate.len() == 32 && candidate.chars().all(|c| c.is_ascii_alphanumeric()) {
+                Some(candidate.to_string())
+            } else {
+                None
+            }
+        })
+        .last()
         .unwrap_or_else(|| {
             panic!(
                 "no token for {email} in:\n{stdout}\nstderr:\n{}",
                 String::from_utf8_lossy(&out.stderr)
             )
         })
-        .to_string()
 }
