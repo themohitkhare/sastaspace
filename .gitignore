@@ -41,6 +41,9 @@ spacetime-data
 npm-debug.log*
 pnpm-debug.log*
 
+# Playwright MCP test artifacts
+.playwright-mcp/
+
 # Cloudflare
 .wrangler
 *.egg-info/
