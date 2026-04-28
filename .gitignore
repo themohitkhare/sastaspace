@@ -48,3 +48,10 @@ pnpm-debug.log*
 *.pyc
 graphify-out/
 .claude/
+
+# Rust (additional)
+**/*.rs.bk
+Cargo.lock.bak
+
+# Insta pending snapshots
+**/*.snap.new

@@ -1,0 +1,40 @@
+name: tui-ci
+
+on:
+  push:
+    paths:
+      - "crates/**"
+      - "modules/**"
+      - "tests/e2e/**"
+      - "Cargo.toml"
+      - "rust-toolchain.toml"
+      - ".github/workflows/tui-ci.yml"
+  pull_request:
+    paths:
+      - "crates/**"
+      - "modules/**"
+      - "tests/e2e/**"
+      - "Cargo.toml"
+  workflow_dispatch:
+
+concurrency:
+  group: tui-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@1.85
+        with:
+          components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@v2
+      - name: fmt
+        run: cargo fmt --all -- --check
+      - name: clippy
+        run: cargo clippy --workspace --exclude sastaspace-module --exclude typewars --all-targets -- -D warnings
+      - name: test
+        run: cargo test --workspace --exclude sastaspace-module --exclude typewars --exclude e2e
+        env:
+          RUST_BACKTRACE: 1
