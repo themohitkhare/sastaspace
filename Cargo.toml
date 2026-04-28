@@ -9,6 +9,7 @@ members = [
     "crates/stdb-client",
     "crates/auth",
     "crates/app-portfolio",
+    "crates/app-admin",
     "crates/shell",
     "tests/e2e-rust",
 ]
