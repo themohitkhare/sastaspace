@@ -7,6 +7,7 @@ members = [
     "modules/typewars",
     "crates/core",
     "crates/stdb-client",
+    "crates/auth",
 ]
 
 [workspace.package]
