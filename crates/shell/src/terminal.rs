@@ -9,11 +9,15 @@ use crossterm::{
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
 use ratatui::{backend::CrosstermBackend, Terminal};
-use std::io::{self, Stdout};
+use std::io::{self, IsTerminal, Stdout};
 
 pub type Tui = Terminal<CrosstermBackend<Stdout>>;
 
 pub fn enter() -> Result<Tui> {
+    if !io::stdout().is_terminal() {
+        eprintln!("sastaspace requires a terminal. Run from an interactive shell.");
+        std::process::exit(1);
+    }
     enable_raw_mode()?;
     let mut stdout = io::stdout();
     execute!(stdout, EnterAlternateScreen, EnableMouseCapture)?;
