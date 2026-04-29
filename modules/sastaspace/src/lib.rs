@@ -56,10 +56,9 @@ const AUTH_TOKEN_TTL_MICROS: i64 = 15 * 60 * 1_000_000;
 ///
 /// Email is stored for: (a) future re-issue of identity if the user
 /// loses their token, (b) eventual unsubscribe / deletion. It is NEVER
-/// surfaced to other clients — this table is private; reducers read it
-/// via the module (which runs unprivileged of the caller's subscription
-/// scope). The public attribution path is `Comment.author_name`, which
-/// is denormalized at write time.
+/// surfaced to other clients — the table has no `public` attribute, so
+/// client subscriptions can't see it. The public attribution path is
+/// `Comment.author_name`, denormalized at write time.
 #[table(accessor = user)]
 pub struct User {
     #[primary_key]

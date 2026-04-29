@@ -227,20 +227,16 @@ async fn run(term: &mut terminal::Tui, cfg: Config) -> Result<()> {
             }
         }
 
-        // ── Deck: reducer calls signalled via SwitchTo ─────────────────────────
-        // `app.handle()` returns `AppResult::SwitchTo("deck:request_plan")` or
-        // `"deck:request_generate"` to ask the shell to call the STDB reducer.
-        // We intercept these before passing to the router.
-        if let Action::Input(_) = &action {
-            // (The SwitchTo is produced as an AppResult below, not an Action —
-            //  we handle it in the dispatch path via `router.dispatch`.)
-        }
-
+        // ── Deck: reducer calls signalled via AppResult::CallReducer ─────────
+        // `app.handle()` returns `AppResult::CallReducer(ReducerCall::Deck*)`
+        // to ask the shell to call the STDB reducer. We intercept these before
+        // passing to the router.
         let result = router.current().handle(action);
 
-        // Handle deck-specific routing signals before the generic router dispatch.
+        // Handle deck-specific reducer signals before the generic router dispatch.
+        use sastaspace_core::ReducerCall;
         match &result {
-            sastaspace_core::AppResult::SwitchTo("deck:request_plan") => {
+            sastaspace_core::AppResult::CallReducer(ReducerCall::DeckRequestPlan) => {
                 if let Some(handle) = stdb.as_ref() {
                     if let Some(app) = router.app_mut("deck") {
                         if let Some(d) = app.as_any_mut().downcast_mut::<DeckApp>() {
@@ -256,7 +252,7 @@ async fn run(term: &mut terminal::Tui, cfg: Config) -> Result<()> {
                 // Stay on deck screen.
                 continue;
             }
-            sastaspace_core::AppResult::SwitchTo("deck:request_generate") => {
+            sastaspace_core::AppResult::CallReducer(ReducerCall::DeckRequestGenerate) => {
                 if let Some(handle) = stdb.as_ref() {
                     if let Some(app) = router.app_mut("deck") {
                         if let Some(d) = app.as_any_mut().downcast_mut::<DeckApp>() {

@@ -37,4 +37,15 @@ pub enum AppResult {
     SwitchTo(&'static str),
     /// Exit the binary cleanly.
     Quit,
+    /// Deck app asks the shell to call a reducer; the shell reads the
+    /// current deck-app state for the arguments.
+    CallReducer(ReducerCall),
+}
+
+/// Typed reducer-call signal an app can return to the shell. Replaces the
+/// old `SwitchTo("deck:request_plan")` string overload.
+#[derive(Debug, Clone, Copy)]
+pub enum ReducerCall {
+    DeckRequestPlan,
+    DeckRequestGenerate,
 }

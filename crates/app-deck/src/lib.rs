@@ -19,7 +19,7 @@ use ratatui::{layout::Rect, Frame};
 use sastaspace_core::{
     event::{Action, InputAction},
     theme::Theme,
-    App, AppResult,
+    App, AppResult, ReducerCall,
 };
 use std::path::PathBuf;
 use tokio::sync::mpsc::UnboundedSender;
@@ -235,7 +235,7 @@ impl DeckApp {
             KeyCode::Char('h') => self.state.decrement_track_count(),
             KeyCode::Char('l') => self.state.increment_track_count(),
             // Enter submits plan (caller responsible for actually calling reducer).
-            // We signal via SwitchTo("deck:request_plan") — the shell handles.
+            // We signal via AppResult::CallReducer — the shell dispatches.
             KeyCode::Enter => {
                 if self.state.plan_status == PlanStatus::Done {
                     // Plan already done — treat Enter as approve.
@@ -243,7 +243,7 @@ impl DeckApp {
                 } else if !self.state.description.is_empty() {
                     self.state.plan_status = PlanStatus::Pending;
                     self.state.status_msg = Some("Submitting plan request…".into());
-                    return AppResult::SwitchTo("deck:request_plan");
+                    return AppResult::CallReducer(ReducerCall::DeckRequestPlan);
                 }
             }
             KeyCode::Char('g')
@@ -266,7 +266,7 @@ impl DeckApp {
             KeyCode::Enter if self.state.generate_status == GenerateStatus::Idle => {
                 self.state.generate_status = GenerateStatus::Pending;
                 self.state.status_msg = Some("Submitting generate job…".into());
-                return AppResult::SwitchTo("deck:request_generate");
+                return AppResult::CallReducer(ReducerCall::DeckRequestGenerate);
             }
             KeyCode::Char('p') if k.modifiers == KeyModifiers::NONE => {
                 self.maybe_play();
