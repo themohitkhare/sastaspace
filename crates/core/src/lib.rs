@@ -6,5 +6,5 @@ pub mod event;
 pub mod keymap;
 pub mod theme;
 
-pub use app::{App, AppResult};
+pub use app::{App, AppResult, ReducerCall};
 pub use event::{Action, InputAction};

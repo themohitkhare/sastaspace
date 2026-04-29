@@ -43,6 +43,9 @@ impl Router {
                 true
             }
             AppResult::Quit => false,
+            // Reducer signals are intercepted in the shell main loop before
+            // dispatch; if one ever reaches here, treat it as a no-op.
+            AppResult::CallReducer(_) => true,
         }
     }
 }
