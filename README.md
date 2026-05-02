@@ -1,109 +1,47 @@
-# sastaspace
+# Threadly
 
-A portfolio + projects you run in your terminal.
+> Your wardrobe, finally working for you.
 
-`sastaspace` is a single Rust binary. It opens a TUI splash with your projects, and routes between four small apps — typing game, notes, audio-pack generator, owner dashboard — all backed by one SpacetimeDB instance at `wss://stdb.sastaspace.com`.
+Threadly is an AI stylist that knows every piece you own. Snap your clothes, get outfit suggestions every morning, and shop only what fits what you already have.
 
-## Install
+This repo contains the marketing site and waitlist backend. Product app code lives elsewhere.
+
+## Layout
+
+```
+threadly/
+├── web/                  # marketing landing page (single static HTML)
+│   └── index.html
+└── workers/
+    └── waitlist/         # Cloudflare Worker capturing waitlist signups
+        ├── src/index.ts
+        ├── wrangler.toml
+        └── README.md
+```
+
+## Run the site locally
+
+The landing page is a single self-contained file. Serve it with anything:
 
 ```sh
-brew install themohitkhare/sastaspace/sastaspace
+npx serve web
+# or: python3 -m http.server -d web 8000
 ```
 
-Or:
+## Deploy
+
+**Site** — host `web/` on Cloudflare Pages, Netlify, Vercel, or any static host.
+
+**Waitlist worker** — see [`workers/waitlist/README.md`](workers/waitlist/README.md). Quick version:
 
 ```sh
-curl -sSf https://sastaspace.com/install.sh | sh
+cd workers/waitlist
+pnpm install
+pnpm kv:create          # paste returned KV id into wrangler.toml
+pnpm deploy
 ```
 
-Or grab a binary directly from [GitHub Releases](https://github.com/themohitkhare/sastaspace/releases/latest) — macOS (arm64+x86), Linux (x86+arm64), Windows.
-
-## Run
-
-```sh
-sastaspace
-```
-
-Switch between apps:
-
-| Key | App |
-|---|---|
-| `Shift-P` | Portfolio splash (default) |
-| `Shift-N` | Notes — vim-style editor + comments |
-| `Shift-T` | TypeWars — multiplayer typing game |
-| `Shift-D` | Deck — text → audio packs |
-| `Shift-A` | Admin (owner-only, Google OAuth) |
-| `Shift-L` | Sign-in modal (magic-link email) |
-| `q` / `Ctrl-C` | Quit |
-
-The TUI connects to the live `stdb.sastaspace.com`. Anonymous use is fine for read-only views; signing in (magic-link) lets you post comments and play TypeWars under a callsign.
-
-## Architecture
-
-```
-┌────────────────────────────┐    wss      ┌──────────────────────────┐
-│   sastaspace TUI (local)   │ ◄─────────► │  SpacetimeDB modules     │
-│   crates/shell + 4 apps    │             │  sastaspace + typewars   │
-└────────────────────────────┘             └────────┬─────────────────┘
-                                                    │
-                                                    ▼
-                                           ┌──────────────────────────┐
-                                           │  TypeScript workers      │
-                                           │  (auth-mailer, deck-     │
-                                           │   agent, moderator,      │
-                                           │   admin-collector)       │
-                                           └──────────────────────────┘
-```
-
-One Rust binary, one SpacetimeDB instance, four background workers running on the prod box. No web UI, no Python services, no per-app servers — the binary is the surface.
-
-## Development
-
-```sh
-git clone https://github.com/themohitkhare/sastaspace
-cd sastaspace
-cargo build -p shell --release
-target/release/sastaspace
-```
-
-Run tests:
-
-```sh
-cargo test --workspace                 # unit + snapshot tests
-SPACETIME_PORT=3199 cargo test -p e2e  # PTY end-to-end against a local fixture
-```
-
-## Repo layout
-
-```
-sastaspace/
-├── crates/
-│   ├── shell/             # the binary entry point + router
-│   ├── core/              # theme, keymap, App trait, Action enum
-│   ├── stdb-client/       # spacetimedb-sdk wrapper + generated bindings
-│   ├── auth/              # magic-link + Google OAuth device flow + keychain
-│   ├── app-portfolio/     # splash screen
-│   ├── app-notes/         # vim-style editor
-│   ├── app-typewars/      # typing game
-│   ├── app-deck/          # NLP→audio
-│   └── app-admin/         # owner dashboard
-├── modules/
-│   ├── sastaspace/        # main STDB module — projects, comments, auth
-│   └── typewars/          # game state — players, regions, words
-├── workers/               # TypeScript STDB-side automation (runs on prod)
-├── tests/e2e/             # Rust expectrl PTY scenarios
-├── docs/                  # specs, plans, audits
-└── infra/                 # Cloudflared tunnel config
-```
-
-## Releases
-
-Tagged with cargo-dist. Each `vX.Y.Z` tag triggers a 5-platform release with a Homebrew formula auto-generated from workspace metadata.
-
-```sh
-git tag -a v0.1.3 -m "..."
-git push origin v0.1.3
-```
+Then update `WAITLIST_ENDPOINT` in `web/index.html` to point at the deployed worker URL.
 
 ## License
 

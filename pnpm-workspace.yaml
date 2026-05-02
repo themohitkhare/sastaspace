@@ -1,4 +1,2 @@
 packages:
-  - workers
-  - workers/stdb-bindings
-  - workers/typewars-bindings
+  - workers/*

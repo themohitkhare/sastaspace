@@ -1,0 +1,697 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Threadly — your wardrobe, intelligent.</title>
+<meta name="description" content="Threadly is an AI stylist that lives in your closet. Snap your clothes, get outfit suggestions every morning, and only buy pieces that fit what you already own.">
+
+<meta property="og:title" content="Threadly — your wardrobe, intelligent.">
+<meta property="og:description" content="An AI stylist that knows everything you own. Outfit suggestions every morning. Smarter shopping.">
+<meta property="og:type" content="website">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+
+<style>
+  :root {
+    --bg: #faf7f1;
+    --bg-alt: #f1ebe0;
+    --ink: #1a1614;
+    --ink-soft: #4a423d;
+    --muted: #8a7f76;
+    --line: #e3dccf;
+    --accent: #b54023;
+    --accent-soft: #f3e6df;
+    --serif: "Fraunces", "Times New Roman", serif;
+    --sans: "Inter", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+    --shadow: 0 1px 2px rgba(26,22,20,0.04), 0 8px 24px rgba(26,22,20,0.06);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 17px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  .container { max-width: 1120px; margin: 0 auto; padding: 0 24px; }
+
+  /* Nav */
+  nav {
+    padding: 28px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    max-width: 1120px;
+    margin: 0 auto;
+  }
+  .logo {
+    font-family: var(--serif);
+    font-size: 22px;
+    font-weight: 500;
+    letter-spacing: -0.01em;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .logo-mark {
+    width: 14px; height: 14px;
+    border-radius: 50%;
+    background: var(--accent);
+    display: inline-block;
+  }
+  .nav-cta {
+    font-size: 14px;
+    color: var(--ink);
+    text-decoration: none;
+    padding: 8px 16px;
+    border: 1px solid var(--ink);
+    border-radius: 999px;
+    transition: background 0.15s, color 0.15s;
+  }
+  .nav-cta:hover { background: var(--ink); color: var(--bg); }
+
+  /* Hero */
+  .hero {
+    padding: 80px 0 100px;
+    text-align: center;
+  }
+  .eyebrow {
+    display: inline-block;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--accent);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    background: var(--accent-soft);
+    padding: 6px 14px;
+    border-radius: 999px;
+    margin-bottom: 28px;
+  }
+  h1 {
+    font-family: var(--serif);
+    font-weight: 400;
+    font-size: clamp(40px, 7vw, 76px);
+    line-height: 1.05;
+    letter-spacing: -0.02em;
+    margin: 0 0 24px;
+    color: var(--ink);
+  }
+  h1 em {
+    font-style: italic;
+    font-weight: 300;
+    color: var(--accent);
+  }
+  .lede {
+    font-size: clamp(17px, 1.8vw, 20px);
+    color: var(--ink-soft);
+    max-width: 580px;
+    margin: 0 auto 40px;
+  }
+
+  /* Waitlist form */
+  .waitlist {
+    display: flex;
+    gap: 8px;
+    max-width: 460px;
+    margin: 0 auto;
+    background: #fff;
+    padding: 6px;
+    border-radius: 999px;
+    box-shadow: var(--shadow);
+    border: 1px solid var(--line);
+  }
+  .waitlist input {
+    flex: 1;
+    border: 0;
+    background: transparent;
+    padding: 12px 18px;
+    font-size: 15px;
+    font-family: var(--sans);
+    color: var(--ink);
+    outline: none;
+    min-width: 0;
+  }
+  .waitlist input::placeholder { color: var(--muted); }
+  .waitlist button {
+    border: 0;
+    background: var(--ink);
+    color: var(--bg);
+    padding: 12px 22px;
+    border-radius: 999px;
+    font-size: 14px;
+    font-weight: 500;
+    font-family: var(--sans);
+    cursor: pointer;
+    transition: background 0.15s, transform 0.1s;
+    white-space: nowrap;
+  }
+  .waitlist button:hover { background: var(--accent); }
+  .waitlist button:active { transform: scale(0.98); }
+  .waitlist button[disabled] { opacity: 0.6; cursor: not-allowed; }
+  .form-note {
+    font-size: 13px;
+    color: var(--muted);
+    margin-top: 14px;
+    min-height: 20px;
+  }
+  .form-note.success { color: var(--accent); }
+  .form-note.error { color: #b54023; }
+
+  /* Closet preview */
+  .closet {
+    margin: 80px auto 0;
+    max-width: 720px;
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: var(--shadow);
+  }
+  .closet-header {
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--line);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--serif);
+    font-size: 14px;
+    color: var(--muted);
+  }
+  .closet-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--line);
+  }
+  .closet-body {
+    padding: 32px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 32px;
+    text-align: left;
+  }
+  @media (max-width: 600px) {
+    .closet-body { grid-template-columns: 1fr; gap: 20px; padding: 24px; }
+  }
+  .closet-side h4 {
+    font-family: var(--serif);
+    font-weight: 500;
+    font-size: 18px;
+    margin: 0 0 14px;
+    color: var(--ink);
+  }
+  .chip-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 8px;
+  }
+  .chip {
+    padding: 5px 11px;
+    border-radius: 999px;
+    background: var(--bg-alt);
+    color: var(--ink-soft);
+    font-size: 13px;
+  }
+  .chip.accent { background: var(--accent-soft); color: var(--accent); }
+  .suggestion {
+    background: var(--bg);
+    border: 1px dashed var(--line);
+    border-radius: 12px;
+    padding: 14px 16px;
+    font-size: 14px;
+    color: var(--ink-soft);
+  }
+  .suggestion strong { color: var(--ink); font-weight: 600; }
+
+  /* Sections */
+  section {
+    padding: 100px 0;
+    border-top: 1px solid var(--line);
+  }
+  .section-eyebrow {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--accent);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 16px;
+  }
+  h2 {
+    font-family: var(--serif);
+    font-weight: 400;
+    font-size: clamp(32px, 4.5vw, 48px);
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    margin: 0 0 20px;
+    max-width: 720px;
+  }
+  h2 em { font-style: italic; color: var(--accent); font-weight: 300; }
+  .section-lede {
+    font-size: 18px;
+    color: var(--ink-soft);
+    max-width: 640px;
+    margin: 0 0 56px;
+  }
+
+  /* How it works */
+  .steps {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 32px;
+  }
+  @media (max-width: 800px) {
+    .steps { grid-template-columns: 1fr; gap: 24px; }
+  }
+  .step {
+    padding: 32px;
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    position: relative;
+  }
+  .step-number {
+    font-family: var(--serif);
+    font-size: 14px;
+    color: var(--accent);
+    margin-bottom: 24px;
+    letter-spacing: 0.05em;
+  }
+  .step h3 {
+    font-family: var(--serif);
+    font-weight: 500;
+    font-size: 22px;
+    margin: 0 0 12px;
+    line-height: 1.2;
+  }
+  .step p {
+    font-size: 15px;
+    color: var(--ink-soft);
+    margin: 0;
+    line-height: 1.6;
+  }
+
+  /* Features */
+  .features {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1px;
+    background: var(--line);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    overflow: hidden;
+  }
+  @media (max-width: 700px) {
+    .features { grid-template-columns: 1fr; }
+  }
+  .feature {
+    background: var(--bg);
+    padding: 36px;
+  }
+  .feature-icon {
+    width: 36px; height: 36px;
+    border-radius: 8px;
+    background: var(--accent-soft);
+    color: var(--accent);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 18px;
+    font-family: var(--serif);
+    font-size: 18px;
+  }
+  .feature h3 {
+    font-family: var(--serif);
+    font-weight: 500;
+    font-size: 20px;
+    margin: 0 0 8px;
+  }
+  .feature p {
+    color: var(--ink-soft);
+    font-size: 15px;
+    margin: 0;
+  }
+
+  /* Stats */
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 32px;
+    padding: 60px 40px;
+    background: var(--bg-alt);
+    border-radius: 20px;
+    text-align: center;
+  }
+  @media (max-width: 700px) {
+    .stats { grid-template-columns: 1fr; padding: 40px 24px; gap: 28px; }
+  }
+  .stat-num {
+    font-family: var(--serif);
+    font-size: 48px;
+    font-weight: 400;
+    line-height: 1;
+    color: var(--accent);
+    margin-bottom: 8px;
+    letter-spacing: -0.02em;
+  }
+  .stat-label {
+    font-size: 14px;
+    color: var(--ink-soft);
+    max-width: 240px;
+    margin: 0 auto;
+  }
+
+  /* FAQ */
+  .faq-item {
+    border-bottom: 1px solid var(--line);
+    padding: 24px 0;
+  }
+  .faq-item summary {
+    font-family: var(--serif);
+    font-size: 19px;
+    font-weight: 500;
+    cursor: pointer;
+    list-style: none;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: var(--ink);
+  }
+  .faq-item summary::-webkit-details-marker { display: none; }
+  .faq-item summary::after {
+    content: "+";
+    font-size: 22px;
+    font-weight: 300;
+    color: var(--accent);
+    transition: transform 0.2s;
+  }
+  .faq-item[open] summary::after { transform: rotate(45deg); }
+  .faq-item p {
+    margin: 14px 0 0;
+    color: var(--ink-soft);
+    font-size: 15px;
+    line-height: 1.65;
+    max-width: 720px;
+  }
+
+  /* Closing CTA */
+  .cta-final {
+    background: var(--ink);
+    color: var(--bg);
+    border-radius: 24px;
+    padding: 80px 40px;
+    text-align: center;
+    margin: 80px 0;
+  }
+  .cta-final h2 { color: var(--bg); margin: 0 auto 20px; }
+  .cta-final h2 em { color: #f5b8a4; }
+  .cta-final .section-lede { color: rgba(250, 247, 241, 0.75); margin: 0 auto 40px; }
+  .cta-final .waitlist {
+    background: rgba(255,255,255,0.06);
+    border-color: rgba(255,255,255,0.12);
+  }
+  .cta-final .waitlist input { color: var(--bg); }
+  .cta-final .waitlist input::placeholder { color: rgba(250, 247, 241, 0.5); }
+  .cta-final .waitlist button { background: var(--accent); }
+  .cta-final .waitlist button:hover { background: #d04d2a; }
+  .cta-final .form-note { color: rgba(250, 247, 241, 0.6); }
+  .cta-final .form-note.success { color: #f5b8a4; }
+
+  /* Footer */
+  footer {
+    border-top: 1px solid var(--line);
+    padding: 40px 0;
+    text-align: center;
+    font-size: 14px;
+    color: var(--muted);
+  }
+  footer a { color: var(--ink-soft); text-decoration: none; }
+  footer a:hover { color: var(--accent); }
+  .footer-row {
+    display: flex;
+    justify-content: center;
+    gap: 24px;
+    margin-top: 12px;
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <span class="logo"><span class="logo-mark"></span>Threadly</span>
+  <a href="#waitlist" class="nav-cta">Join waitlist</a>
+</nav>
+
+<header class="hero container" id="waitlist">
+  <span class="eyebrow">Private beta · Spring 2026</span>
+  <h1>Your wardrobe,<br><em>finally working for you.</em></h1>
+  <p class="lede">Threadly is an AI stylist that knows every piece you own. Get outfit suggestions every morning. Shop only what fits what you already have.</p>
+
+  <form class="waitlist" data-form="hero" novalidate>
+    <input type="email" name="email" required placeholder="you@yourcloset.com" autocomplete="email" aria-label="Email address">
+    <button type="submit">Join waitlist</button>
+  </form>
+  <p class="form-note" data-note="hero">Early access goes out in batches. No spam — promise.</p>
+
+  <div class="closet" aria-hidden="true">
+    <div class="closet-header">
+      <span class="closet-dot"></span>
+      <span class="closet-dot"></span>
+      <span class="closet-dot"></span>
+      <span style="margin-left: 12px;">tuesday morning · 14°C · light rain</span>
+    </div>
+    <div class="closet-body">
+      <div class="closet-side">
+        <h4>In your closet</h4>
+        <div class="chip-row">
+          <span class="chip">cream knit</span>
+          <span class="chip">olive trousers</span>
+          <span class="chip">white tee</span>
+          <span class="chip">brown loafers</span>
+          <span class="chip">trench coat</span>
+          <span class="chip">indigo denim</span>
+          <span class="chip">+47 more</span>
+        </div>
+      </div>
+      <div class="closet-side">
+        <h4>Threadly suggests</h4>
+        <div class="suggestion">
+          <strong>Cream knit</strong> over the white tee, indigo denim, brown loafers. Trench in case the rain picks up.
+        </div>
+        <div class="chip-row" style="margin-top: 12px;">
+          <span class="chip accent">93% match</span>
+          <span class="chip">all clean</span>
+          <span class="chip">worn 9 days ago</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<section class="container">
+  <div class="section-eyebrow">How it works</div>
+  <h2>Three steps to a closet that <em>thinks for itself.</em></h2>
+
+  <div class="steps">
+    <div class="step">
+      <div class="step-number">01</div>
+      <h3>Snap your clothes</h3>
+      <p>Lay each piece flat or hang it up — point your camera. Threadly's vision model identifies fabric, color, cut, and silhouette. Most closets are catalogued in under an evening.</p>
+    </div>
+    <div class="step">
+      <div class="step-number">02</div>
+      <h3>Get daily outfits</h3>
+      <p>Every morning, Threadly proposes outfits that fit your weather, your calendar, and what's actually in the wash. Swipe for alternatives. Save what you love.</p>
+    </div>
+    <div class="step">
+      <div class="step-number">03</div>
+      <h3>Shop, but smarter</h3>
+      <p>Browse curated pieces that complete combinations you don't have yet. Threadly flags duplicates, gaps, and items that play well with at least five things you already own.</p>
+    </div>
+  </div>
+</section>
+
+<section class="container">
+  <div class="section-eyebrow">What it does</div>
+  <h2>An AI that's actually <em>seen</em> your closet.</h2>
+
+  <div class="features">
+    <div class="feature">
+      <div class="feature-icon">◐</div>
+      <h3>Visual cataloguing</h3>
+      <p>One photo per item. Threadly extracts color, material, season, formality, and patterns — automatically.</p>
+    </div>
+    <div class="feature">
+      <div class="feature-icon">◇</div>
+      <h3>Context-aware outfits</h3>
+      <p>Pulls in weather, your calendar, location, and what you wore last week. No more repeating Monday's fit.</p>
+    </div>
+    <div class="feature">
+      <div class="feature-icon">◍</div>
+      <h3>Gap-aware shopping</h3>
+      <p>Recommendations from real retailers, ranked by how many existing outfits the item unlocks. Five-outfit minimum, or it doesn't show up.</p>
+    </div>
+    <div class="feature">
+      <div class="feature-icon">◑</div>
+      <h3>Wear-tracking</h3>
+      <p>Tap an outfit when you wear it. See cost-per-wear, items collecting dust, and your most-loved pieces in one view.</p>
+    </div>
+  </div>
+</section>
+
+<section class="container">
+  <div class="section-eyebrow">By the numbers</div>
+  <h2>The closet you have is bigger <em>than you think.</em></h2>
+  <p class="section-lede">Most of us own far more than we wear. Threadly turns the gap between owned and worn into your styling advantage.</p>
+
+  <div class="stats">
+    <div>
+      <div class="stat-num">80%</div>
+      <p class="stat-label">of your wardrobe goes unworn in any given month</p>
+    </div>
+    <div>
+      <div class="stat-num">$1,800</div>
+      <p class="stat-label">average annual spend on clothes never worn twice</p>
+    </div>
+    <div>
+      <div class="stat-num">11min</div>
+      <p class="stat-label">spent staring at a closet every morning, on average</p>
+    </div>
+  </div>
+</section>
+
+<section class="container">
+  <div class="section-eyebrow">Questions</div>
+  <h2>Things people ask.</h2>
+
+  <details class="faq-item">
+    <summary>Do I really have to photograph every piece I own?</summary>
+    <p>For best results, yes — but you don't need to do it all at once. Most beta users catalogue in 20-minute batches over a week. Threadly also supports bulk-upload from a closet shelf or rack photo, where it auto-segments individual items.</p>
+  </details>
+
+  <details class="faq-item">
+    <summary>Where do shopping suggestions come from?</summary>
+    <p>We integrate with a curated set of retailers and small brands. Suggestions are ranked purely by how well an item fits your existing wardrobe — we don't take placement fees or prioritize sponsored items.</p>
+  </details>
+
+  <details class="faq-item">
+    <summary>What about privacy? My closet is personal.</summary>
+    <p>Photos are processed and stored encrypted. Your wardrobe is never used to train models for other users. You can export or delete everything at any time. Local-first sync is on the roadmap for power users.</p>
+  </details>
+
+  <details class="faq-item">
+    <summary>How much will it cost?</summary>
+    <p>Free to catalogue and get daily outfits for up to 100 items. Premium ($9/mo) unlocks unlimited items, calendar integration, and shopping intelligence. Beta users keep premium free for life.</p>
+  </details>
+
+  <details class="faq-item">
+    <summary>When does it launch?</summary>
+    <p>Private beta opens in waves through Spring 2026. Waitlist signups get early access in the order they joined, with a referral boost.</p>
+  </details>
+</section>
+
+<div class="container">
+  <div class="cta-final">
+    <h2>Be on the list when <em>doors open.</em></h2>
+    <p class="section-lede">First access goes out in small batches. The earlier you join, the sooner you'll get in.</p>
+
+    <form class="waitlist" data-form="footer" novalidate>
+      <input type="email" name="email" required placeholder="you@yourcloset.com" autocomplete="email" aria-label="Email address">
+      <button type="submit">Save my spot</button>
+    </form>
+    <p class="form-note" data-note="footer">We'll only email you when there's something real to share.</p>
+  </div>
+</div>
+
+<footer>
+  <div class="container">
+    <div class="logo" style="font-size: 18px;"><span class="logo-mark"></span>Threadly</div>
+    <div class="footer-row">
+      <a href="mailto:hello@threadly.app">hello@threadly.app</a>
+      <a href="#waitlist">Waitlist</a>
+      <a href="/privacy">Privacy</a>
+    </div>
+    <p style="margin-top: 16px;">© 2026 Threadly. Built for closets that deserve better.</p>
+  </div>
+</footer>
+
+<script>
+  // Waitlist form handling. Posts to a Cloudflare Worker; falls back to
+  // localStorage so the form is never broken in static-only environments.
+  const WAITLIST_ENDPOINT = "https://threadly-waitlist.themohitkhare.workers.dev/join";
+  const STORAGE_KEY = "threadly:waitlist";
+
+  function isValidEmail(s) {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s);
+  }
+
+  async function submitEmail(email) {
+    try {
+      const res = await fetch(WAITLIST_ENDPOINT, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ email, source: location.hostname || "local" }),
+      });
+      if (res.ok) return { ok: true, source: "remote" };
+      throw new Error("remote " + res.status);
+    } catch (err) {
+      try {
+        const list = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+        if (!list.includes(email)) list.push(email);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+        return { ok: true, source: "local" };
+      } catch (_) {
+        return { ok: false };
+      }
+    }
+  }
+
+  document.querySelectorAll("form[data-form]").forEach((form) => {
+    const key = form.dataset.form;
+    const note = document.querySelector(`[data-note="${key}"]`);
+    const button = form.querySelector("button");
+    const input = form.querySelector('input[type="email"]');
+    const defaultNote = note.textContent;
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const email = input.value.trim();
+
+      if (!isValidEmail(email)) {
+        note.textContent = "Please enter a valid email address.";
+        note.className = "form-note error";
+        return;
+      }
+
+      button.disabled = true;
+      button.textContent = "Saving…";
+      note.textContent = defaultNote;
+      note.className = "form-note";
+
+      const result = await submitEmail(email);
+
+      button.disabled = false;
+      if (result.ok) {
+        button.textContent = "You're on the list ✓";
+        note.textContent = "Welcome to Threadly. We'll be in touch.";
+        note.className = "form-note success";
+        input.value = "";
+        // Sync any locally-buffered emails on next successful submit
+      } else {
+        button.textContent = "Try again";
+        note.textContent = "Something went wrong. Please try again in a moment.";
+        note.className = "form-note error";
+      }
+    });
+  });
+</script>
+
+</body>
+</html>

@@ -1,0 +1,15 @@
+name = "threadly-waitlist"
+main = "src/index.ts"
+compatibility_date = "2025-01-15"
+
+# Bind a KV namespace for storing waitlist emails.
+# Create with:  wrangler kv namespace create THREADLY_WAITLIST
+# Then paste the resulting id below.
+[[kv_namespaces]]
+binding = "WAITLIST"
+id = "REPLACE_WITH_KV_ID"
+
+# Optional: restrict CORS to your production landing-page origins.
+# Leave empty to allow any origin.
+[vars]
+ALLOWED_ORIGINS = "https://threadly.app,https://www.threadly.app"

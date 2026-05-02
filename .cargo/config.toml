@@ -1,5 +1,0 @@
-[build]
-rustflags = ["-W", "unused_imports", "-W", "unused_variables"]
-
-[term]
-verbose = false

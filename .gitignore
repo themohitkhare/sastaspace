@@ -3,26 +3,8 @@ node_modules
 .pnpm-store
 
 # Build outputs
-.next
-out
 dist
 build
-target
-coverage
-.coverage
-.pytest_cache
-__pycache__
-.venv
-*.wasm
-lcov.info
-
-# SpacetimeDB local data
-.spacetime
-spacetime-data
-
-# Generated bindings are tracked — they're code, they unblock fresh clones,
-# and CI regenerates+commits them. Keeping the per-package .gitignore in case
-# we ever want to re-flip this.
 
 # Env / secrets
 .env
@@ -41,25 +23,12 @@ spacetime-data
 npm-debug.log*
 pnpm-debug.log*
 
-# Playwright MCP test artifacts
-.playwright-mcp/
-
 # Cloudflare
 .wrangler
-*.egg-info/
 *.tsbuildinfo
-*.pyc
-graphify-out/
 
 # Claude Code local state stays out, but project-owned skills + scripts ship.
 .claude/*
 !.claude/skills/
 !.claude/skills/**
 !.claude/worktree_init.sh
-
-# Rust (additional)
-**/*.rs.bk
-Cargo.lock.bak
-
-# Insta pending snapshots
-**/*.snap.new
